@@ -7,6 +7,7 @@ let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let diffutils = import "../diffutils/build.ncl" in
 let oniguruma = import "../oniguruma/build.ncl" in
 
 let version = "0.18.2" in
@@ -30,6 +31,7 @@ let version = "0.18.2" in
   runtime_deps = [
     glibc,
     oniguruma,
+    diffutils, # TODO: use subsets to just get diff tool
     gcc, # TODO, weird
   ],
 
