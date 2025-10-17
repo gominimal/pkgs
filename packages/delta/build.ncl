@@ -39,6 +39,6 @@ let version = "0.18.2" in
 
   outputs = {
     delta = { glob = "usr/bin/delta" } | OutputBin,
-    completions = { glob = "usr/share/bash-completion/*" } | OutputData,
+    completions = { glob = "usr/share/bash-completion/completions/*" } | OutputData,
   },
 } | BuildSpec

@@ -37,6 +37,6 @@ let version = "0.66.0" in
   outputs = {
     fzf = { glob = "usr/bin/fzf" } | OutputBin,
 
-    completions = { glob = "usr/share/bash-completion/*" } | OutputData,
+    completions = { glob = "usr/share/bash-completion/completions/*" } | OutputData,
   },
 } | BuildSpec

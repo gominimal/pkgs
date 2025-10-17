@@ -39,6 +39,6 @@ let version = "0.25.0" in
 
   outputs = {
     bat = { glob = "usr/bin/bat" } | OutputBin,
-    completions = { glob = "usr/share/bash-completion/*" } | OutputData,
+    completions = { glob = "usr/share/bash-completion/completions/*" } | OutputData,
   },
 } | BuildSpec

@@ -6,7 +6,5 @@ export RUSTFLAGS="-C linker=gcc"
 
 RUSTONIG_DYNAMIC_LIBONIG=1 cargo build --release
 
-mkdir -p $OUTPUT_DIR/usr/{bin,share/bash-completion}
-
-cp target/release/delta $OUTPUT_DIR/usr/bin
-cp -rv etc/completion/completion.bash  $OUTPUT_DIR/usr/share/bash-completion/delta
+install -D -m 0755 target/release/delta $OUTPUT_DIR/usr/bin/delta
+install -D -m 0755 etc/completion/completion.bash "$OUTPUT_DIR/usr/share/bash-completion/completions/delta"
