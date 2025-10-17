@@ -23,10 +23,10 @@ let version = "2.1.12-stable" in
     make,
     python,
     pkgconf,
-    openssl,
   ],
   runtime_deps = [
     glibc,
+    openssl,
   ],
 
   cmd = "./build.sh",
