@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -38,6 +38,6 @@ let version = "1.12.4" in
   cmd = "./build.sh",
 
   outputs = {
-    hex-patch = { glob = "usr/bin/hex-patch" } | OutputLib,
+    hex-patch = { glob = "usr/bin/hex-patch" } | OutputBin,
   },
 } | BuildSpec

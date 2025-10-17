@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -36,7 +36,7 @@ let version = "0.18.2" in
   cmd = "./build.sh",
 
   outputs = {
-    delta = { glob = "usr/bin/delta" } | OutputLib,
+    delta = { glob = "usr/bin/delta" } | OutputBin,
     completions = { glob = "usr/share/bash-completion/*" } | OutputData,
   },
 } | BuildSpec
