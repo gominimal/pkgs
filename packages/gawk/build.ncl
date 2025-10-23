@@ -2,7 +2,10 @@ let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Prebuilt, Source, .. }
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+
 let glibc = import "../glibc/build.ncl" in
+let mpfr = import "../mpfr/build.ncl" in
+let readline = import "../readline/build.ncl" in
 {
   name = "gawk",
   inputs = [
@@ -17,6 +20,8 @@ let glibc = import "../glibc/build.ncl" in
   ],
   runtime_deps = [
     glibc,
+    mpfr,
+    readline,
   ],
 
   cmd = "./build.sh",
