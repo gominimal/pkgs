@@ -3,11 +3,12 @@ let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let node = import "../node/build.ncl" in
+let ripgrep = import "../ripgrep/build.ncl" in
 
 let { version, sha256, gcs_bucket } = {
   gcs_bucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases",
-  version = "2.0.14",
-  sha256 = "26efadf9543a912a674217f546b43cb19041cee81f92483fcd7d994399938194",
+  version = "2.0.29",
+  sha256 = "b49ac7493e3202ad97eca2f44b7552b0a5d5f3da7636749b867c6171da0d2f98",
 }
 in
 
@@ -29,6 +30,7 @@ in
   runtime_deps = [
     bash,
     glibc,
+    ripgrep,
   ],
 
   cmd = "./build.sh",
