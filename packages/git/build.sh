@@ -7,4 +7,4 @@ set -e
             --with-libpcre2
 
 make -j$(nproc)
-make DESTDIR=$OUTPUT_DIR install
+make DESTDIR=$OUTPUT_DIR NO_INSTALL_HARDLINKS=1 install
