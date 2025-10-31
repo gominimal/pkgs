@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputLib, Prebuilt, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -31,5 +31,6 @@ let version = "1.6.50" in
 
   outputs = {
     libs = { glob = "usr/lib/libpng*.so*" } | OutputLib,
+    includes = { glob = "usr/include/**" } | OutputData,
   },
 } | BuildSpec
