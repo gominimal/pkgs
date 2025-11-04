@@ -24,13 +24,15 @@ let acl = import "../acl/build.ncl" in
 let attr = import "../attr/build.ncl" in
 let libcap = import "../libcap/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
+
+let version = "9.8" in
 {
   name = "coreutils",
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/coreutils-9.7.tar.xz",
-      sha256 = "e8bb26ad0293f9b5a1fc43fb42ba970e312c66ce92c1b0b16713d7500db251bf"
+      url = "gs://minimal-staging-archives/coreutils-%{version}.tar.xz",
+      sha256 = "e6d4fd2d852c9141a1c2a18a13d146a0cd7e45195f72293a4e4c044ec6ccca15"
     } | Source,
     # base
     bash,
@@ -62,7 +64,12 @@ let gmp = import "../gmp/build.ncl" in
     gmp,
     libcap,
   ],
+
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
+
   outputs = {
     # Core file operations
     ls = { glob = "usr/bin/ls" } | OutputBin,

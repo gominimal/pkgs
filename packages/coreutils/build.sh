@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar xf coreutils-9.7.tar.xz
-cd coreutils-9.7
+tar xf "coreutils-${MINIMAL_ARG_VERSION}.tar.xz"
+cd "coreutils-${MINIMAL_ARG_VERSION}"
 
 FORCE_UNSAFE_CONFIGURE=1 ./configure \
     --prefix=/usr \
