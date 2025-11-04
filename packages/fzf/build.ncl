@@ -7,14 +7,14 @@ let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.66.0" in
+let version = "0.66.1" in
 {
   name = "fzf",
   inputs = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/junegunn/fzf/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "576659beee244b4ecccf45f1c576340143d8ce6d97fa053e6cbdd3f75c66b351",
+      sha256 = "ae70923dba524d794451b806dbbb605684596c1b23e37cc5100daa04b984b706",
       extract = true,
       strip_prefix = "fzf-%{version}",
     } | Source,
