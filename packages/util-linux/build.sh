@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar xfo util-linux-2.40.4.tar.xz
-cd util-linux-2.40.4
+tar xfo "util-linux-${MINIMAL_ARG_VERSION}.tar.xz"
+cd "util-linux-${MINIMAL_ARG_VERSION}"
 
 ./configure --bindir=/usr/bin     \
             --libdir=/usr/lib     \
