@@ -1,8 +1,8 @@
 #!/bin/sh
 set -ex
 
-tar xf zstd-1.5.6.tar.gz
-cd zstd-1.5.6
+tar xf "zstd-${MINIMAL_ARG_VERSION}.tar.gz"
+cd "zstd-${MINIMAL_ARG_VERSION}"
 
 # /usr/bin/cc does not exist in the build environment
 export CC=gcc

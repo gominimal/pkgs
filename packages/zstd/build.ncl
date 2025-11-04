@@ -4,13 +4,15 @@ let lz4 = import "../lz4/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+
+let version = "1.5.7" in
 {
   name = "zstd",
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/zstd-1.5.6.tar.gz",
-      sha256 = "8c29e06cf42aacc1eafc4077ae2ec6c6fcb96a626157e0593d5e82a34fd403c1"
+      url = "gs://minimal-staging-archives/zstd-%{version}.tar.gz",
+      sha256 = "eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3"
     } | Source,
     base,
     make,
@@ -18,7 +20,12 @@ let zlib = import "../zlib/build.ncl" in
     toolchain,
     zlib,
   ],
+
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
+
   outputs = {
     zstd_bin = { glob = "usr/bin/zstd" } | OutputLib,
     zstdcat = { glob = "usr/bin/zstdcat" } | OutputLib,
