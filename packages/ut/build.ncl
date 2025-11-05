@@ -7,14 +7,14 @@ let ca-certificates = import "../ca-certificates/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.3.1" in
+let version = "0.5.0" in
 {
   name = "ut",
   inputs = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/ksdme/ut/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "1dd4a7efe89056e831889a0c0e2ba7c35f7d8ad78beb16153e819542608958ca",
+      sha256 = "9d48c738e8f238faddca6db16f9d02668b6942ad8a90748d6f9df7538eefcb3d",
       extract = true,
       strip_prefix = "ut-%{version}",
     } | Source,
