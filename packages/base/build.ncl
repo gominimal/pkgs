@@ -33,6 +33,5 @@ let xz = import "../xz/build.ncl" in
   cmd = "build.sh",
   outputs = {
     hosts = { glob = "etc/hosts" } | OutputData,
-    resolvconf = { glob = "etc/resolv.conf" } | OutputData,
   },
 } | BuildSpec

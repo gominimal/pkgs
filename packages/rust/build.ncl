@@ -9,6 +9,7 @@ let python = import "../python/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let toolchain-gnullvm = import "../toolchain-gnullvm/build.ncl" in
+let resolver-quad8 = import "../resolver-quad8/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 {
   name = "rust",
@@ -31,7 +32,8 @@ let gcc = import "../gcc/build.ncl" in
     llvm,
     openssl,
     sqlite,
-    gcc, # TODO: Use subsets for just libstdc++.so.6 and libgcc_s.so.1.
+    resolver-quad8,
+    gcc, # Needs libstdc++.so.6 and libgcc_s.so.1, but also a lot of crates need GCC
   ],
 
   cmd = "./build.sh",
