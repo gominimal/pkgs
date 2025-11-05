@@ -7,14 +7,14 @@ let ca-certificates = import "../ca-certificates/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.2.9" in
+let version = "0.2.13" in
 {
   name = "prek",
   inputs = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/j178/prek/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "0fd25048c1498e3a54f7847fc6fc5119a6201c8c998f13d2743fd99795bac260",
+      sha256 = "21c9bec0eac881761a6ad7a6f918e49a2436c9d85256b583ab930d947935f9e9",
       extract = true,
       strip_prefix = "prek-%{version}",
     } | Source,
