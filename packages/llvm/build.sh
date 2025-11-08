@@ -22,8 +22,8 @@ sed 's/utility/tool/' -i utils/FileCheck/CMakeLists.txt
 mkdir -v build
 cd build
 
-export CC=clang 
-export CXX=clang++ 
+export CC=clang
+export CXX=clang++
 
 cmake \
 	-D CLANG_CONFIG_FILE_SYSTEM_DIR=/etc/clang \
@@ -37,7 +37,7 @@ cmake \
 	-D LLVM_ENABLE_RTTI=ON \
 	-D LLVM_INCLUDE_BENCHMARKS=OFF \
 	-D LLVM_LINK_LLVM_DYLIB=ON \
-	-D LLVM_TARGETS_TO_BUILD="host" \
+	-D LLVM_TARGETS_TO_BUILD="all" \
 	-W no-dev -G Ninja ..
 
 ninja
