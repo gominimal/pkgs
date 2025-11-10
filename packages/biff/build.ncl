@@ -7,14 +7,14 @@ let ca-certificates = import "../ca-certificates/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.1.0" in
+let version = "0.1.1" in
 {
   name = "biff",
   inputs = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/BurntSushi/biff/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "2467dddc985a335f83049d19eec862dac7e9dab59044ed2932f8a371a88291f1",
+      sha256 = "459a9d4e085b1545e8974ed16a49f161f6efad2a7b14a4292fa28b49e6ef9292",
       extract = true,
       strip_prefix = "biff-%{version}",
     } | Source,
