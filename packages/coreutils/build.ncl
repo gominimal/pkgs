@@ -110,6 +110,8 @@ let version = "9.8" in
     locales = { glob = "usr/share/locale/**" } | OutputData,
   },
 
+  attrs.upstream_version = version,
+
   replace_on_cycle =
     {
       name = "coreutils (prebuilt)",

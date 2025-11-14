@@ -36,4 +36,5 @@ let version = "0.65.0" in
   outputs = {
     difft = { glob = "usr/bin/difft" } | OutputBin,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

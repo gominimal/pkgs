@@ -34,4 +34,5 @@ let version = "0.2.13" in
   outputs = {
     prek = { glob = "usr/bin/prek" } | OutputLib,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

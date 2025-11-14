@@ -34,4 +34,5 @@ let version = "0.5.0" in
   outputs = {
     ut = { glob = "usr/bin/ut" } | OutputLib,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

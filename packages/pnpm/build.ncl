@@ -31,4 +31,5 @@ let version = "10.15.1" in
 
     libexec = { glob = "usr/libexec/pnpm/**" } | OutputLib,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

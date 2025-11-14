@@ -41,4 +41,5 @@ let version = "0.25.0" in
     bat = { glob = "usr/bin/bat" } | OutputBin,
     completions = { glob = "usr/share/bash-completion/completions/*" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

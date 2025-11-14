@@ -38,4 +38,5 @@ let version = "3.0.1" in
     cmake_data = { glob = "usr/lib/cmake/**" } | OutputData,
     includes = { glob = "usr/include/**" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

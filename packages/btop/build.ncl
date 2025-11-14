@@ -24,4 +24,5 @@ let version = "1.4.5" in
     btop = { glob = "usr/bin/btop" } | OutputBin,
     data = { glob = "usr/share/**/*" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

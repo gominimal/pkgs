@@ -36,4 +36,5 @@ let version = "6.9.10" in
 
     includes = { glob = "usr/include/**" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

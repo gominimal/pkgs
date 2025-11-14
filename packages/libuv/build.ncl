@@ -46,4 +46,5 @@ let version = "1.51.0" in
     pkgconfigs = { glob = "usr/lib/pkgconfig/**" } | OutputData,
     includes = { glob = "usr/include/**" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

@@ -33,4 +33,5 @@ let version = "1.6.50" in
     libs = { glob = "usr/lib/libpng*.so*" } | OutputLib,
     includes = { glob = "usr/include/**" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

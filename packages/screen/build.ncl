@@ -42,4 +42,5 @@ let version = "5.0.1" in
     mans = { glob = "usr/share/man/**" } | OutputData,
     screendata = { glob = "usr/share/screen/**" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

@@ -36,4 +36,5 @@ let version = "2.17" in
     includes = { glob = "usr/include/**" } | OutputData,
     mans = { glob = "usr/share/man/**" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

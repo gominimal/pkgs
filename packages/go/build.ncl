@@ -44,4 +44,5 @@ let version = "1.25.1" in
 
     goroot = { glob = "usr/go/**/*" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

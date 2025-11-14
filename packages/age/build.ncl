@@ -34,4 +34,6 @@ let version = "1.2.1" in
   outputs = {
     age = { glob = "usr/bin/age" } | OutputBin,
   },
+
+  attrs.upstream_version = version,
 } | BuildSpec

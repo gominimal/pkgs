@@ -31,4 +31,5 @@ let version = "3.1" in
   outputs = {
     gperf = { glob = "usr/bin/gperf" } | OutputBin,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

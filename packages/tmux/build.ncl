@@ -50,4 +50,5 @@ let version = "3.5a" in
 
     mans = { glob = "usr/share/man/**" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

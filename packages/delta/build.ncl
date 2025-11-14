@@ -41,4 +41,5 @@ let version = "0.18.2" in
     delta = { glob = "usr/bin/delta" } | OutputBin,
     completions = { glob = "usr/share/bash-completion/completions/*" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

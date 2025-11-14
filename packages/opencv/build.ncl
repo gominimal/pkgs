@@ -44,4 +44,5 @@ let version = "4.12.0" in
     shares = { glob = "usr/share/opencv4/**" } | OutputData,
     includes = { glob = "usr/include/opencv4/**" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

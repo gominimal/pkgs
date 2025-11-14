@@ -40,4 +40,5 @@ let version = "1.12.4" in
   outputs = {
     hex-patch = { glob = "usr/bin/hex-patch" } | OutputBin,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

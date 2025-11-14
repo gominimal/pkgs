@@ -44,4 +44,5 @@ let version = "10.06.0" in
     ghostscript_data = { glob = "usr/share/ghostscript/**" } | OutputData,
     mans = { glob = "usr/share/man/**" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

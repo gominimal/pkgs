@@ -34,4 +34,5 @@ let version = "0.1.1" in
   outputs = {
     biff = { glob = "usr/bin/biff" } | OutputLib,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

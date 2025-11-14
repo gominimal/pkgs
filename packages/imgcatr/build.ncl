@@ -34,4 +34,5 @@ let version = "0.1.4" in
   outputs = {
     imgcatr = { glob = "usr/bin/imgcatr" } | OutputBin,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

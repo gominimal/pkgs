@@ -38,4 +38,5 @@ let version = "1.25.0" in
     wget = { glob = "usr/bin/wget" } | OutputBin,
     wgetrc = { glob = "etc/wgetrc" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

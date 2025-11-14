@@ -27,4 +27,5 @@ let version = "1.9" in
   outputs = {
     time = { glob = "usr/bin/time" } | OutputBin,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

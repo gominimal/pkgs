@@ -51,4 +51,5 @@ let version = "18.0" in
     includes = { glob = "usr/include/**" } | OutputData,
     share = { glob = "usr/share/postgresql/**" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

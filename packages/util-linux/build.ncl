@@ -35,4 +35,5 @@ let version = "2.41.2" in
     completions = { glob = "usr/share/bash-completion/**/*" } | OutputData,
     pkgconfig = { glob = "usr/lib/pkgconfig/**/*" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

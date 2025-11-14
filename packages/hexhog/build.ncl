@@ -34,4 +34,5 @@ let version = "0.1.3" in
   outputs = {
     hexhog = { glob = "usr/bin/hexhog" } | OutputBin,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

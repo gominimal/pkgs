@@ -26,4 +26,5 @@ let version = "2.1.1" in
   outputs = {
     glow = { glob = "usr/bin/glow" } | OutputBin,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

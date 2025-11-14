@@ -36,4 +36,5 @@ let version = "15.1.0" in
 
     completions = { glob = "usr/share/bash-completion/completions/*" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

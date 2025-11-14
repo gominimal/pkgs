@@ -42,4 +42,5 @@ let version = "2.1.12-stable" in
 
     includes = { glob = "usr/include/**" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec
