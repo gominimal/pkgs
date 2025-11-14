@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -40,7 +40,16 @@ in
 
   outputs = {
     claude = { glob = "usr/bin/claude" } | OutputBin,
-
     install = { glob = "usr/share/claude/versions/%{version}" } | OutputLib,
   },
+
+  attrs = {
+    upstream_version = version,
+
+    # Claude code needs two things to function properly:
+    #  - `.claude.json`, which contains anthropic credentials for the user
+    #  - `.claude`, which contains project state and recent context windows and such.
+    env_dir_mappings = [{read_only = false, path = "~/.claude", class = 'State}],
+    env_file_mappings = [{read_only = false, path = "~/.claude.json", class = 'Credential}],
+  } | Attrs,
 } | BuildSpec
