@@ -11,14 +11,18 @@ let libffi = import "../libffi/build.ncl" in
 let toolchain-gnullvm = import "../toolchain-gnullvm/build.ncl" in
 let resolver-quad8 = import "../resolver-quad8/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+
+let version = "1.91.1" in
 {
   name = "rust",
   inputs = [
     { file = "bootstrap.toml" } | Local,
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/rustc-1.89.0-src.tar.xz",
-      sha256 = "0b9d55610d8270e06c44f459d1e2b7918a5e673809c592abed9b9c600e33d95a"
+      url = "gs://minimal-staging-archives/rustc-%{version}-src.tar.xz",
+      sha256 = "66401bb815e236cc6b2aacbbe23b61b286c1fe27a67902e7c0222cfe77b3dbab",
+      extract = true,
+      strip_prefix = "rustc-%{version}-src",
     } | Source,
     base,
     cmake,
@@ -39,5 +43,13 @@ let gcc = import "../gcc/build.ncl" in
   cmd = "./build.sh",
   outputs = {
     usr = { glob = "usr/**/*" } | OutputLib,
+  },
+
+  attrs = {
+    upstream_version = version,
+    env_state_wiring = {
+        env_var = "CARGO_HOME",
+        prefix = ".cargo",
+    },
   },
 } | BuildSpec
