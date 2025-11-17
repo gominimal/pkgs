@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Prebuilt, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Prebuilt, Source, .. } = import "minimal.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -25,6 +25,7 @@ let mpc = import "../mpc/build.ncl" in
 let mpfr = import "../mpfr/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
+
 {
   name = "gcc",
   inputs = [
@@ -112,4 +113,9 @@ let zstd = import "../zstd/build.ncl" in
         usr = { glob = "usr/**/*" } | OutputLib,
       },
     } | BuildSpec,
+
+    attrs = {
+      upstream_version = "15.2.0",
+      repology_project = "gcc",
+    } | Attrs,
 } | BuildSpec

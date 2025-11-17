@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -36,5 +36,9 @@ let version = "2.17" in
     includes = { glob = "usr/include/**" } | OutputData,
     mans = { glob = "usr/share/man/**" } | OutputData,
   },
-  attrs.upstream_version = version,
+
+  attrs = {
+    upstream_version = version,
+    repology_project = "lcms",
+  } | Attrs,
 } | BuildSpec
