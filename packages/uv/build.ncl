@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, Needs, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
@@ -24,6 +24,11 @@ let toolchain = import "../toolchain/build.ncl" in
     glibc,
     gcc, # TODO, weird
   ],
+  needs = {
+    dns = {},
+    internet = {},
+  } | Needs,
+
   cmd = "./build.sh",
   outputs = {
     minimal = { glob = "usr/bin/uv" } | OutputLib,

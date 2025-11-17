@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
@@ -28,6 +28,10 @@ let zlib = import "../zlib/build.ncl" in
     openssl,
     zlib,
   ],
+  needs = {
+    dns = {},
+    internet = {},
+  } | Needs,
 
   cmd = "./build.sh",
   outputs = {

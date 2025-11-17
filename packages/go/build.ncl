@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let resolver-quad8 = import "../resolver-quad8/build.ncl" in
@@ -32,6 +32,10 @@ let version = "1.25.1" in
   runtime_deps = [
     resolver-quad8,
   ],
+  needs = {
+    dns = {},
+    internet = {},
+  } | Needs,
 
   cmd = "./build.sh",
   build_args = {
@@ -44,5 +48,6 @@ let version = "1.25.1" in
 
     goroot = { glob = "usr/go/**/*" } | OutputData,
   },
+
   attrs.upstream_version = version,
 } | BuildSpec

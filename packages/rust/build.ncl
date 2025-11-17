@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, Needs, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let curl = import "../curl/build.ncl" in
@@ -39,6 +39,10 @@ let version = "1.91.1" in
     resolver-quad8,
     gcc, # Needs libstdc++.so.6 and libgcc_s.so.1, but also a lot of crates need GCC
   ],
+  needs = {
+    dns = {},
+    internet = {},
+  } | Needs,
 
   cmd = "./build.sh",
   outputs = {
