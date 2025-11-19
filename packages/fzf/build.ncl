@@ -3,7 +3,6 @@ let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 
@@ -19,7 +18,6 @@ let version = "0.66.1" in
       strip_prefix = "fzf-%{version}",
     } | Source,
     base,
-    ca-certificates, # TODO: Should probably be on Go?
     go,
     make,
     toolchain,

@@ -1,7 +1,7 @@
 let { BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let resolver-quad8 = import "../resolver-quad8/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let variants = {
   "1.25.1" = {
@@ -30,7 +30,7 @@ let version = "1.25.1" in
     toolchain,
   ],
   runtime_deps = [
-    resolver-quad8,
+    ca-certificates,
   ],
   needs = {
     dns = {},

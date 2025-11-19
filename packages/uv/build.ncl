@@ -20,7 +20,7 @@ let toolchain = import "../toolchain/build.ncl" in
     toolchain,
   ],
   runtime_deps = [
-    ca-certificates, # TODO move to rust
+    ca-certificates,
     glibc,
     gcc, # TODO, weird
   ],

@@ -3,7 +3,6 @@ let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -20,7 +19,6 @@ let version = "0.65.0" in
       strip_prefix = "difftastic-%{version}",
     } | Source,
     base,
-    ca-certificates, # TODO: Should probably be on Rust?
     rust,
     make,
     toolchain,

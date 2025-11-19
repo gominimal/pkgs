@@ -4,7 +4,6 @@ let go = import "../go/build.ncl" in
 let make = import "../make/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 
@@ -20,7 +19,6 @@ let version = "1.20.0" in
       strip_prefix = "skopeo-%{version}",
     } | Source,
     base,
-    ca-certificates, # TODO: Should probably be on Go?
     go,
     make,
     pkgconf,

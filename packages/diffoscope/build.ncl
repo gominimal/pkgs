@@ -2,7 +2,6 @@ let { BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl
 let base = import "../base/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let resolver-quad8 = import "../resolver-quad8/build.ncl" in
 let uv = import "../uv/build.ncl" in
 {
   name = "diffoscope",
@@ -15,7 +14,6 @@ let uv = import "../uv/build.ncl" in
     base,
     python,
     toolchain,
-    resolver-quad8,
     uv,
   ],
   cmd = "./build.sh",

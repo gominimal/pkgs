@@ -5,7 +5,6 @@ let make = import "../make/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -22,7 +21,6 @@ let version = "1.12.4" in
       strip_prefix = "HexPatch-%{version}",
     } | Source,
     base,
-    ca-certificates, # TODO: Should probably be on Rust?
     rust,
     make,
     cmake,
