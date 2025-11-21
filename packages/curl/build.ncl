@@ -1,7 +1,6 @@
 let { BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
-let ca-certificates = import "../ca-certificates/build.ncl" in
 let libpsl = import "../libpsl/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -23,7 +22,6 @@ let zlib = import "../zlib/build.ncl" in
     toolchain,
   ],
   runtime_deps = [
-    ca-certificates,
     libpsl,
     openssl,
     zlib,

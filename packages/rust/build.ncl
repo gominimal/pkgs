@@ -9,7 +9,6 @@ let python = import "../python/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let toolchain-gnullvm = import "../toolchain-gnullvm/build.ncl" in
-let ca-certificates = import "../ca-certificates/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
 let version = "1.91.1" in
@@ -36,7 +35,6 @@ let version = "1.91.1" in
     llvm,
     openssl,
     sqlite,
-    ca-certificates,
     gcc, # Needs libstdc++.so.6 and libgcc_s.so.1, but also a lot of crates need GCC
   ],
   needs = {

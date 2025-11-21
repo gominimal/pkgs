@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 {
@@ -16,4 +16,8 @@ let openssl = import "../openssl/build.ncl" in
   outputs = {
     certs = { glob = "etc/ssl/certs/*" } | OutputData,
   },
+
+  attrs = {
+    needed_for_internet = {},
+  } | Attrs,
 } | BuildSpec

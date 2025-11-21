@@ -1,6 +1,5 @@
 let { BuildSpec, Local, Needs, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
-let ca-certificates = import "../ca-certificates/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -20,7 +19,6 @@ let toolchain = import "../toolchain/build.ncl" in
     toolchain,
   ],
   runtime_deps = [
-    ca-certificates,
     glibc,
     gcc, # TODO, weird
   ],

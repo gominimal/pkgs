@@ -2,7 +2,6 @@ let { BuildSpec, Local, Needs, OutputBin, OutputLib, Source, .. } = import "mini
 let base = import "../base/build.ncl" in
 let tar = import "../tar/build.ncl" in
 
-let ca-certificates = import "../ca-certificates/build.ncl" in
 let node = import "../node/build.ncl" in
 
 let version = "10.15.1" in
@@ -18,7 +17,6 @@ let version = "10.15.1" in
     tar,
   ],
   runtime_deps = [
-    ca-certificates,
     node,
   ],
   needs = {
