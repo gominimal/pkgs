@@ -25,4 +25,4 @@ sh Configure  -des                                          \
 
 make -j$(nproc)
 # TEST_JOBS=$(nproc) make test_harness # TODO there are failures
-make DESTDIR=$OUTPUT_DIR install
+make DESTDIR=$OUTPUT_DIR install-strip

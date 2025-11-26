@@ -9,4 +9,4 @@ FORCE_UNSAFE_CONFIGURE=1 ./configure \
     --enable-no-install-program=kill,uptime
 
 make -j$(nproc)
-make DESTDIR=$OUTPUT_DIR install
+make DESTDIR=$OUTPUT_DIR install-strip

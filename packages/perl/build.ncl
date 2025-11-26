@@ -20,12 +20,14 @@ let glibc = import "../glibc/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 # other
 let zlib = import "../zlib/build.ncl" in
+
+let version = "5.42.0" in
 {
   name = "perl",
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/perl-5.42.0.tar.xz",
+      url = "gs://minimal-staging-archives/perl-%{version}.tar.xz",
       sha256 = "73cf6cc1ea2b2b1c110a18c14bbbc73a362073003893ffcedc26d22ebdbdd0c3"
     } | Source,
     # base
@@ -58,4 +60,6 @@ let zlib = import "../zlib/build.ncl" in
     usr_lib = { glob = "usr/lib/**/*" } | OutputLib,
     usr_share = { glob = "usr/share/**/*" } | OutputLib,
   },
+
+  attrs.upstream_version = version,
 } | BuildSpec

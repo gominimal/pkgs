@@ -11,12 +11,15 @@ let make = import "../make/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 let sed = import "../sed/build.ncl" in
 let tar = import "../tar/build.ncl" in
+
+let version = "4.10.0" in
 {
   name = "findutils",
   inputs = [
     {
-      url = "gs://minimal-staging-archives/findutils-4.10.0.tar.xz",
-      sha256 = "1387e0b67ff247d2abde998f90dfbf70c1491391a59ddfecb8ae698789f0a4f5"
+      url = "gs://minimal-staging-archives/findutils-%{version}.tar.xz",
+      sha256 = "1387e0b67ff247d2abde998f90dfbf70c1491391a59ddfecb8ae698789f0a4f5",
+      extract = true,
     } | Source,
     { file = "build.sh" } | Local,
     bash,
@@ -32,10 +35,15 @@ let tar = import "../tar/build.ncl" in
     sed,
     tar,
   ],
-  cmd = "./build.sh",
   runtime_deps = [
     glibc,
   ],
+
+  cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
+
   outputs = {
     find = { glob = "usr/bin/find" } | OutputBin,
     locate = { glob = "usr/bin/locate" } | OutputBin,
@@ -48,6 +56,8 @@ let tar = import "../tar/build.ncl" in
     infos = { glob = "usr/share/info/*.info" } | OutputData,
     locales = { glob = "usr/share/locale/**" } | OutputData,
   },
+
+  attrs.upstream_version = version,
 
   replace_on_cycle =
     {
