@@ -8,3 +8,6 @@ set -e
 
 make -j$(nproc)
 make DESTDIR=$OUTPUT_DIR NO_INSTALL_HARDLINKS=1 install
+
+find -L "${OUTPUT_DIR}/usr/bin" -xtype f -executable | xargs strip --strip-debug || true
+find -L "${OUTPUT_DIR}/usr/libexec/git-core" -xtype f -executable | xargs strip --strip-debug || true
