@@ -31,7 +31,7 @@ cd build
 
 make -j$(nproc)
 # TODO make -k check
-make DESTDIR=$OUTPUT_DIR install
+make DESTDIR=$OUTPUT_DIR install-strip
 
 # TODO
 # ln -sf $OUTPUT_DIR/usr/bin/gcc $OUTPUT_DIR/usr/bin/cc

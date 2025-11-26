@@ -111,6 +111,9 @@ let zstd = import "../zstd/build.ncl" in
       cmd = "",
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,
+
+        libgcc = { glob = "usr/lib/libgcc_s.so*" } | OutputLib,
+        libstdcpp = { glob = "usr/lib/libstdc++*.so*" } | OutputLib,
       },
     } | BuildSpec,
 
