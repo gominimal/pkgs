@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-cd bash-5.3
+cd "bash-${MINIMAL_ARG_VERSION}"
 
 ./configure --prefix=/usr \
             --without-bash-malloc \
@@ -10,7 +10,7 @@ cd bash-5.3
 
 make -j$(nproc)
 # TODO make tests
-make DESTDIR=$OUTPUT_DIR install
+make DESTDIR=$OUTPUT_DIR install-strip
 
 # Create sh symlink in /usr/bin
 ln -sf bash $OUTPUT_DIR/usr/bin/sh

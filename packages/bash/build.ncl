@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Prebuilt, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Prebuilt, Source, .. } = import "minimal.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 let readline = import "../readline/build.ncl" in
@@ -13,12 +13,14 @@ let binutils = import "../binutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
+
+let version = "5.3" in
 {
   name = "bash",
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/bash-5.3.tar.gz",
+      url = "gs://minimal-staging-archives/bash-%{version}.tar.gz",
       sha256 = "0d5cd86965f869a26cf64f4b71be7b96f90a3ba8b3d74e27e8e9d9d5550f31ba",
       extract = true,
     } | Source,
@@ -38,17 +40,25 @@ let linux_headers = import "../linux_headers/build.ncl" in
     ncurses,
     readline,
   ],
+
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
+
   outputs = {
     bash = { glob = "usr/bin/bash" } | OutputBin,
     sh = { glob = "usr/bin/sh" } | OutputBin,
-
-    # libs = { glob = "usr/lib/bash/*" } | OutputLib,
 
     mans = { glob = "usr/share/man/**" } | OutputData,
     includes = { glob = "usr/include/**" } | OutputData,
     locales = { glob = "usr/share/locale/**" } | OutputData,
   },
+
+  attrs = {
+    upstream_version = version,
+    repology_project = "bash",
+  } | Attrs,
 
   replace_on_cycle =
     {

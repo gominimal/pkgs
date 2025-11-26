@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Prebuilt, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Prebuilt, Source, .. } = import "minimal.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -14,11 +14,13 @@ let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+
+let version = "2.45" in
 {
   name = "binutils",
   inputs = [
     {
-      url = "gs://minimal-staging-archives/binutils-2.45.tar.xz",
+      url = "gs://minimal-staging-archives/binutils-%{version}.tar.xz",
       sha256 = "c50c0e7f9cb188980e2cc97e4537626b1672441815587f1eab69d2a1bfbef5d2",
       extract = true,
     } | Source,
@@ -40,9 +42,14 @@ let zlib = import "../zlib/build.ncl" in
   runtime_deps = [
     glibc,
     zlib,
-    gcc, # TODO: Subsets for just libstdc++.so.6 & libgcc_s.so.1
+    subsetOf gcc ["libstdcpp", "libgcc"],
   ],
+
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
+
   outputs = {
     bins = { glob = "usr/bin/*" } | OutputBin,
     libs = { glob = "usr/lib/*.{a,so*}" } | OutputLib,
@@ -58,6 +65,11 @@ let zlib = import "../zlib/build.ncl" in
     etcs = { glob = "etc/*" } | OutputData,
     includes = { glob = "usr/include/**" } | OutputData,
   },
+
+  attrs = {
+    upstream_version = version,
+    repology_project = "binutils",
+  } | Attrs,
 
   replace_on_cycle =
     {
