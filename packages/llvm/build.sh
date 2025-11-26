@@ -42,4 +42,4 @@ cmake \
 	-W no-dev -G Ninja ..
 
 ninja
-DESTDIR=$OUTPUT_DIR ninja install
+DESTDIR=$OUTPUT_DIR ninja 'install/strip'
