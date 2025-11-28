@@ -15,13 +15,13 @@ let glibc = import "../glibc/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "2.45" in
+let version = "2.45.1" in
 {
   name = "binutils",
   inputs = [
     {
       url = "gs://minimal-staging-archives/binutils-%{version}.tar.xz",
-      sha256 = "c50c0e7f9cb188980e2cc97e4537626b1672441815587f1eab69d2a1bfbef5d2",
+      sha256 = "5fe101e6fe9d18fdec95962d81ed670fdee5f37e3f48f0bef87bddf862513aa5",
       extract = true,
     } | Source,
     { file = "build.sh" } | Local,
