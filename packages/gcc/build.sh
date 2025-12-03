@@ -19,8 +19,8 @@ cd build
 # --enable-nls
 
 ../configure \
-             --prefix=/usr             \
-             --enable-languages=c,c++ \
+             --prefix=/usr                      \
+             --enable-languages=c,c++,fortran   \
              --enable-default-pie     \
              --enable-default-ssp     \
              --disable-multilib       \

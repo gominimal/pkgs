@@ -83,7 +83,7 @@ let zstd = import "../zstd/build.ncl" in
     ltconfigs = { glob = "usr/lib/**/*.la" } | OutputData,
 
     # Wildcards are target/version
-    libexec_bins = { glob = "usr/libexec/gcc/*/*/{cc1,cc1plus,collect2,lto1,lto-wrapper}" } | OutputBin,
+    libexec_bins = { glob = "usr/libexec/gcc/*/*/{cc1,cc1plus,f951,collect2,lto1,lto-wrapper}" } | OutputBin,
     libexec_libs = { glob = "usr/libexec/gcc/*/*/g++-mapper-server" } | OutputLib,
     plugins = { glob = "usr/libexec/gcc/*/*/plugin/*" } | OutputBin,
     install_tools = { glob = "usr/libexec/gcc/*/*/install-tools/*" } | OutputBin,
