@@ -16,5 +16,5 @@ At this time we are not accepting contributions but hope to in the near future.
 
 ## License
 
-This project is licensed under the [Apache License Version 2.0]](LICENSE.md)
+This project is licensed under the [Apache License Version 2.0](LICENSE.md)
 - see the [LICENSE.md](LICENSE.md) file for details
