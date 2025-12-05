@@ -23,8 +23,8 @@ let version = "25.0" in
   ],
 
   cmds = [
-    "/bin/pip3 wheel -w dist --no-build-isolation --no-deps --no-cache-dir ./",
-    "/bin/pip3 install --no-index --find-links dist --no-user --root /build/output packaging",
+    "pip3 wheel -w dist --no-build-isolation --no-deps --no-cache-dir ./",
+    "pip3 install --no-index --find-links dist --no-user --root /build/output packaging",
   ],
 
   outputs = {
