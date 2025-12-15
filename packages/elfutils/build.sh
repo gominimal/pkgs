@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar xfo elfutils-0.192.tar.bz2
-cd elfutils-0.192
+tar xfo "elfutils-${MINIMAL_ARG_VERSION}.tar.bz2"
+cd "elfutils-${MINIMAL_ARG_VERSION}"
 
 ./configure --prefix=/usr                \
             --disable-debuginfod         \
