@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar xfo icu4c-77_1-src.tgz
+tar xfo "icu4c-${MINIMAL_ARG_VERSION}-sources.tgz"
 cd icu/source
 
 ./configure --prefix=/usr
