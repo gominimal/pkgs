@@ -1,4 +1,4 @@
-let { BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let libpsl = import "../libpsl/build.ncl" in
@@ -7,13 +7,17 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+
+let version = "8.17.0" in
 {
   name = "curl",
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/curl-8.15.0.tar.xz",
-      sha256 = "6cd0a8a5b126ddfda61c94dc2c3fc53481ba7a35461cf7c5ab66aa9d6775b609"
+      url = "gs://minimal-staging-archives/curl-%{version}.tar.xz",
+      sha256 = "955f6e729ad6b3566260e8fef68620e76ba3c31acf0a18524416a185acf77992",
+      extract = true,
+      strip_prefix = "curl-%{version}",
     } | Source,
     base,
     make,
@@ -42,4 +46,9 @@ let zlib = import "../zlib/build.ncl" in
     mans = { glob = "usr/share/man/**" } | OutputData,
     includes = { glob = "usr/include/curl/**" } | OutputData,
   },
+
+  attrs = {
+    upstream_version = version,
+    repology_project = "curl",
+  } | Attrs,
 } | BuildSpec
