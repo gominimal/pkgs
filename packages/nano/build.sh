@@ -1,9 +1,6 @@
 #!/bin/sh
 set -e
 
-tar xfo nano-8.6.tar.xz
-cd nano-8.6
-
 ./configure --prefix=/usr     \
             --sysconfdir=/etc \
             --enable-utf8     \
