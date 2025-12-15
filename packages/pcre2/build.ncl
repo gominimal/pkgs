@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputLib, Prebuilt, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputLib, Prebuilt, Source, .. } = import "minimal.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -21,13 +21,15 @@ let glibc = import "../glibc/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 # other
 let zlib = import "../zlib/build.ncl" in
+
+let version = "10.47" in
 {
   name = "pcre2",
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/pcre2-10.46.tar.bz2",
-      sha256 = "15fbc5aba6beee0b17aecb04602ae39432393aba1ebd8e39b7cabf7db883299f"
+      url = "gs://minimal-staging-archives/pcre2-%{version}.tar.bz2",
+      sha256 = "47fe8c99461250d42f89e6e8fdaeba9da057855d06eb7fc08d9ca03fd08d7bc7"
     } | Source,
     # base
     bash,
@@ -56,6 +58,10 @@ let zlib = import "../zlib/build.ncl" in
   ],
 
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
+
   outputs = {
     usr = { glob = "usr/**/*" } | OutputLib,
   },
@@ -71,4 +77,9 @@ let zlib = import "../zlib/build.ncl" in
         usr = { glob = "usr/**/*" } | OutputLib,
       },
     } | BuildSpec,
+
+  attrs = {
+    upstream_version = version,
+    repology_project = "pcre2",
+  } | Attrs,
 } | BuildSpec
