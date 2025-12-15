@@ -9,14 +9,14 @@ let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let oniguruma = import "../oniguruma/build.ncl" in
 
-let version = "0.25.0" in
+let version = "0.26.1" in
 {
   name = "bat",
   inputs = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/sharkdp/bat/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "4433403785ebb61d1e5d4940a8196d020019ce11a6f7d4553ea1d324331d8924",
+      sha256 = "4474de87e084953eefc1120cf905a79f72bbbf85091e30cf37c9214eafcaa9c9",
       extract = true,
       strip_prefix = "bat-%{version}",
     } | Source,
