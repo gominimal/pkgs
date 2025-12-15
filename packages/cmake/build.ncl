@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -38,4 +38,9 @@ let version = "4.2.1" in
     aclocals = { glob = "usr/share/aclocal/*" } | OutputData,
     completions = { glob = "usr/share/bash-completion/**/*" } | OutputData,
   },
+
+  attrs = {
+    upstream_version = version,
+    repology_project = "cmake",
+  } | Attrs,
 } | BuildSpec
