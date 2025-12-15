@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Prebuilt, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Prebuilt, Source, .. } = import "minimal.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -25,14 +25,14 @@ let attr = import "../attr/build.ncl" in
 let libcap = import "../libcap/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 
-let version = "9.8" in
+let version = "9.9" in
 {
   name = "coreutils",
   inputs = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/coreutils-%{version}.tar.xz",
-      sha256 = "e6d4fd2d852c9141a1c2a18a13d146a0cd7e45195f72293a4e4c044ec6ccca15"
+      sha256 = "19bcb6ca867183c57d77155eae946c5eced88183143b45ca51ad7d26c628ca75"
     } | Source,
     # base
     bash,
@@ -110,7 +110,10 @@ let version = "9.8" in
     locales = { glob = "usr/share/locale/**" } | OutputData,
   },
 
-  attrs.upstream_version = version,
+  attrs = {
+    upstream_version = version,
+    repology_project = "coreutils",
+  },
 
   replace_on_cycle =
     {
