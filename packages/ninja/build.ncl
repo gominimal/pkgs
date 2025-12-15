@@ -1,16 +1,20 @@
-let { BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+
+let version = "1.13.2" in
 {
   name = "ninja",
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/ninja-1.13.1.tar.gz",
-      sha256 = "f0055ad0369bf2e372955ba55128d000cfcc21777057806015b45e4accbebf23"
+      url = "gs://minimal-staging-archives/ninja-%{version}.tar.gz",
+      sha256 = "974d6b2f4eeefa25625d34da3cb36bdcebe7fbce40f4c16ac0835fd1c0cbae17",
+      extract = true,
+      strip_prefix = "ninja-%{version}",
     } | Source,
     base,
     python,
@@ -18,11 +22,17 @@ let gcc = import "../gcc/build.ncl" in
   ],
   runtime_deps = [
     glibc,
-    gcc, # TODO: just need libstdc++.so.6
+    subsetOf gcc ["libstdcpp"],
   ],
 
   cmd = "./build.sh",
   outputs = {
     ninja = { glob = "usr/bin/ninja" } | OutputLib,
   },
+
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "ninja",
+    } | Attrs,
 } | BuildSpec
