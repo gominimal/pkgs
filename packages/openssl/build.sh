@@ -1,13 +1,10 @@
 #!/bin/sh
 set -e
 
-tar xfo openssl-3.5.2.tar.gz
-cd openssl-3.5.2
-
-./config  --prefix=/usr          \
-         --openssldir=/etc/ssl \
-         --libdir=lib          \
-         shared                \
+./config  --prefix=/usr         \
+         --openssldir=/etc/ssl  \
+         --libdir=lib           \
+         shared                 \
          zlib-dynamic
 
 make -j$(nproc)
