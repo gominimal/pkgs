@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar xfo automake-1.17.tar.xz
-cd automake-1.17
+tar xfo "automake-${MINIMAL_ARG_VERSION}.tar.xz"
+cd "automake-${MINIMAL_ARG_VERSION}"
 
 ./configure --prefix=/usr
 
