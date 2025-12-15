@@ -1,18 +1,18 @@
-let { BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
 let variants = {
-  "1.25.1" = {
-    binaries_url = "https://go.dev/dl/go1.25.1.linux-amd64.tar.gz",
-    binaries_sha256 = "7716a0d940a0f6ae8e1f3b3f4f36299dc53e31b16840dbd171254312c41ca12e",
+  "1.25.5" = {
+    binaries_url = "https://go.dev/dl/go1.25.5.linux-amd64.tar.gz",
+    binaries_sha256 = "9e9b755d63b36acf30c12a9a3fc379243714c1c6d3dd72861da637f336ebb35b",
 
-    source_url = "https://go.dev/dl/go1.25.1.src.tar.gz",
-    source_sha256 = "d010c109cee94d80efe681eab46bdea491ac906bf46583c32e9f0dbb0bd1a594",
+    source_url = "https://go.dev/dl/go1.25.5.src.tar.gz",
+    source_sha256 = "22a5fd0a91efcd28a1b0537106b9959b2804b61f59c3758b51e8e5429c1a954f",
   },
 }
 in
-let version = "1.25.1" in
+let version = "1.25.5" in
 {
   name = "go",
   inputs = [
@@ -45,5 +45,8 @@ let version = "1.25.1" in
     goroot = { glob = "usr/go/**/*" } | OutputData,
   },
 
-  attrs.upstream_version = version,
+  attrs = {
+    upstream_version = version,
+    repology_project = "go",
+  } | Attrs,
 } | BuildSpec
