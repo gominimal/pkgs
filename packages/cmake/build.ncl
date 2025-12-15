@@ -5,12 +5,16 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+
+let version = "4.2.1" in
 {
   name = "cmake",
   inputs = [
     {
-      url = "gs://minimal-staging-archives/cmake-4.1.1.tar.gz",
-      sha256 = "b29f6f19733aa224b7763507a108a427ed48c688e1faf22b29c44e1c30549282"
+      url = "gs://minimal-staging-archives/cmake-%{version}.tar.gz",
+      sha256 = "414aacfac54ba0e78e64a018720b64ed6bfca14b587047b8b3489f407a14a070",
+      extract = true,
+      strip_prefix = "cmake-%{version}",
     } | Source,
     { file = "build.sh" } | Local,
     base,
