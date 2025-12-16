@@ -37,10 +37,11 @@ let version = "1.91.1" in
     sqlite,
     gcc, # Needs libstdc++.so.6 and libgcc_s.so.1, but also a lot of crates need GCC
   ],
-  needs = {
-    dns = {},
-    internet = {},
-  } | Needs,
+  needs =
+    {
+      dns = {},
+      internet = {},
+    } | Needs,
 
   cmd = "./build.sh",
   outputs = {
@@ -50,8 +51,8 @@ let version = "1.91.1" in
   attrs = {
     upstream_version = version,
     env_state_wiring = {
-        env_var = "CARGO_HOME",
-        prefix = ".cargo",
+      env_var = "CARGO_HOME",
+      prefix = ".cargo",
     },
   },
 } | BuildSpec

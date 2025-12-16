@@ -47,8 +47,9 @@ let version = "0.194" in
     includes = { glob = "usr/include/**" } | OutputData,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "elfutils",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "elfutils",
+    } | Attrs,
 } | BuildSpec

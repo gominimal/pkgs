@@ -43,13 +43,14 @@ in
     install = { glob = "usr/share/claude/versions/%{version}" } | OutputLib,
   },
 
-  attrs = {
-    upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
 
-    # Claude code needs two things to function properly:
-    #  - `.claude.json`, which contains anthropic credentials for the user
-    #  - `.claude`, which contains project state and recent context windows and such.
-    env_dir_mappings = [{read_only = false, path = "~/.claude", class = 'State}],
-    env_file_mappings = [{read_only = false, path = "~/.claude.json", class = 'Credential}],
-  } | Attrs,
+      # Claude code needs two things to function properly:
+      #  - `.claude.json`, which contains anthropic credentials for the user
+      #  - `.claude`, which contains project state and recent context windows and such.
+      env_dir_mappings = [{ read_only = false, path = "~/.claude", class = 'State }],
+      env_file_mappings = [{ read_only = false, path = "~/.claude.json", class = 'Credential }],
+    } | Attrs,
 } | BuildSpec

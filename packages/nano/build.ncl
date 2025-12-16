@@ -36,8 +36,9 @@ let version = "8.7" in
     man = { glob = "usr/share/man/**/*" } | OutputData,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "nano",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "nano",
+    } | Attrs,
 } | BuildSpec

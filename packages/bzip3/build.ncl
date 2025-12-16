@@ -41,8 +41,9 @@ let version = "1.5.3" in
     mans = { glob = "usr/share/man/**" } | OutputData,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "bzip3",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "bzip3",
+    } | Attrs,
 } | BuildSpec

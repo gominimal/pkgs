@@ -36,8 +36,9 @@ let version = "4.5.2" in
     includes = { glob = "usr/include/**" } | OutputData,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "libxcrypt",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "libxcrypt",
+    } | Attrs,
 } | BuildSpec

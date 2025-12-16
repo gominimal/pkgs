@@ -31,8 +31,9 @@ let version = "1.6.53" in
     includes = { glob = "usr/include/**" } | OutputData,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "libpng",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "libpng",
+    } | Attrs,
 } | BuildSpec

@@ -33,8 +33,9 @@ let version = "2.7.3" in
     pkgconfig = { glob = "usr/lib/pkgconfig/expat.pc" } | OutputData,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "expat",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "expat",
+    } | Attrs,
 } | BuildSpec

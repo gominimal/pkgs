@@ -37,8 +37,9 @@ let version = "2.17" in
     mans = { glob = "usr/share/man/**" } | OutputData,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "lcms",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "lcms",
+    } | Attrs,
 } | BuildSpec

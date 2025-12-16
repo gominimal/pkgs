@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputLib, Prebuilt, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -82,8 +82,9 @@ let version = "10.47" in
       },
     } | BuildSpec,
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "pcre2",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "pcre2",
+    } | Attrs,
 } | BuildSpec

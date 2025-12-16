@@ -28,10 +28,11 @@ let version = "1.25.5" in
     base,
     toolchain,
   ],
-  needs = {
-    dns = {},
-    internet = {},
-  } | Needs,
+  needs =
+    {
+      dns = {},
+      internet = {},
+    } | Needs,
 
   cmd = "./build.sh",
   build_args = {
@@ -45,8 +46,9 @@ let version = "1.25.5" in
     goroot = { glob = "usr/go/**/*" } | OutputData,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "go",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "go",
+    } | Attrs,
 } | BuildSpec

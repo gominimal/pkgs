@@ -30,10 +30,11 @@ let version = "8.17.0" in
     openssl,
     zlib,
   ],
-  needs = {
-    dns = {},
-    internet = {},
-  } | Needs,
+  needs =
+    {
+      dns = {},
+      internet = {},
+    } | Needs,
 
   cmd = "./build.sh",
   outputs = {
@@ -47,8 +48,9 @@ let version = "8.17.0" in
     includes = { glob = "usr/include/curl/**" } | OutputData,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "curl",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "curl",
+    } | Attrs,
 } | BuildSpec

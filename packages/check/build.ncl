@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -31,8 +31,7 @@ let make = import "../make/build.ncl" in
     bash,
     make,
   ],
-  runtime_deps = [
-  ],
+  runtime_deps = [],
 
   cmd = "./build.sh",
   outputs = {

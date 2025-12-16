@@ -37,8 +37,9 @@ let version = "6.18.0" in
     includes = { glob = "usr/include/iproute2/*" } | OutputData,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "iproute2",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "iproute2",
+    } | Attrs,
 } | BuildSpec

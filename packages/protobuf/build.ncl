@@ -14,10 +14,10 @@ let zlib = import "../zlib/build.ncl" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-        url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.0/protobuf-32.0.tar.gz",
-        sha256 = "9dfdf08129f025a6c5802613b8ee1395044fecb71d38210ca59ecad283ef68bb",
-        extract = true,
-        strip_prefix = "protobuf-32.0",
+      url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.0/protobuf-32.0.tar.gz",
+      sha256 = "9dfdf08129f025a6c5802613b8ee1395044fecb71d38210ca59ecad283ef68bb",
+      extract = true,
+      strip_prefix = "protobuf-32.0",
     } | Source,
     base,
     make,

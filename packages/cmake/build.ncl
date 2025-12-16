@@ -39,8 +39,9 @@ let version = "4.2.1" in
     completions = { glob = "usr/share/bash-completion/**/*" } | OutputData,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "cmake",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "cmake",
+    } | Attrs,
 } | BuildSpec

@@ -22,10 +22,11 @@ let toolchain = import "../toolchain/build.ncl" in
     glibc,
     gcc, # TODO, weird
   ],
-  needs = {
-    dns = {},
-    internet = {},
-  } | Needs,
+  needs =
+    {
+      dns = {},
+      internet = {},
+    } | Needs,
 
   cmd = "./build.sh",
   outputs = {

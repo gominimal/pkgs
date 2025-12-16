@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Prebuilt, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
@@ -9,7 +9,6 @@ let glibc = import "../glibc/build.ncl" in
 # See:
 #  - https://docs.opencv.org/4.x/db/d05/tutorial_config_reference.html
 #  - https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html
-
 let version = "4.12.0" in
 {
   name = "opencv",

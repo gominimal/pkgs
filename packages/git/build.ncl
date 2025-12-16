@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let curl = import "../curl/build.ncl" in
 let gettext = import "../gettext/build.ncl" in
 let expat = import "../expat/build.ncl" in

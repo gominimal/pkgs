@@ -25,8 +25,9 @@ let version = "0.402" in
     pkgconfigs = { glob = "usr/share/pkgconfig/*" } | OutputData,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "hwdata",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "hwdata",
+    } | Attrs,
 } | BuildSpec

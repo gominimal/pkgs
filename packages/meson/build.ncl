@@ -27,8 +27,9 @@ let version = "1.10.0" in
     site_packages = { glob = "usr/lib/python3.13/site-packages/**/*" } | OutputLib,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "meson",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "meson",
+    } | Attrs,
 } | BuildSpec

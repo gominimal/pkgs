@@ -29,8 +29,9 @@ let version = "1.4.1" in
     includes = { glob = "usr/include/**" } | OutputData,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "libunistring",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "libunistring",
+    } | Attrs,
 } | BuildSpec

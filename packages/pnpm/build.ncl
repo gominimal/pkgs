@@ -19,10 +19,11 @@ let version = "10.15.1" in
   runtime_deps = [
     node,
   ],
-  needs = {
-    dns = {},
-    internet = {},
-  } | Needs,
+  needs =
+    {
+      dns = {},
+      internet = {},
+    } | Needs,
 
   cmd = "./build.sh",
   build_args = {

@@ -6,7 +6,6 @@ let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 # TODO: Needs fortran compiler for LAPACK to properly work.
-
 let version = "0.3.30" in
 {
   name = "openblas",
@@ -35,8 +34,9 @@ let version = "0.3.30" in
     pkgconfigs = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "openblas",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "openblas",
+    } | Attrs,
 } | BuildSpec

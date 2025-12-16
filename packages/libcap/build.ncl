@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Prebuilt, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let bash = import "../bash/build.ncl" in
 let diffutils = import "../diffutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
@@ -44,10 +44,11 @@ let version = "2.77" in
     includes = { glob = "usr/include/**" } | OutputData,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "libcap",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "libcap",
+    } | Attrs,
 
   replace_on_cycle =
     {

@@ -34,8 +34,9 @@ let version = "1.18.1" in
     usr_share = { glob = "usr/share/**/*" } | OutputLib,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "automake",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "automake",
+    } | Attrs,
 } | BuildSpec

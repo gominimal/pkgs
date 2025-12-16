@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Prebuilt, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 let readline = import "../readline/build.ncl" in
@@ -55,10 +55,11 @@ let version = "5.3" in
     locales = { glob = "usr/share/locale/**" } | OutputData,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "bash",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "bash",
+    } | Attrs,
 
   replace_on_cycle =
     {

@@ -31,8 +31,9 @@ let version = "3.6.0" in
     usr = { glob = "usr/**/*" } | OutputLib,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "openssl",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "openssl",
+    } | Attrs,
 } | BuildSpec

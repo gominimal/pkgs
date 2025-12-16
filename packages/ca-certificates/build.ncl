@@ -17,7 +17,8 @@ let openssl = import "../openssl/build.ncl" in
     certs = { glob = "etc/ssl/certs/*" } | OutputData,
   },
 
-  attrs = {
-    needed_for_internet = {},
-  } | Attrs,
+  attrs =
+    {
+      needed_for_internet = {},
+    } | Attrs,
 } | BuildSpec
