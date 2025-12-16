@@ -98,8 +98,13 @@ let zstd = import "../zstd/build.ncl" in
   replace_on_cycle =
     {
       name = "gcc (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "gcc", sha256 = "69d6a1da34c99566214174776a09216dffb4b52f67971eb000de3e1f8aae7a86" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/gcc/90c1cc369996f1dca2e3e8aac418822dce19cc9216a05e620e434fb599f28a24.tar.zst",
+          sha256 = "16a7b18a04e465f65fd09e8b610390c9ba12b3a0c1d170a28fa1d22b552787f5",
+          extract = true,
+        } | Source,
       ],
       runtime_deps = [
         gmp,
@@ -108,7 +113,6 @@ let zstd = import "../zstd/build.ncl" in
         zlib,
         zstd,
       ],
-      cmd = "",
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,
 

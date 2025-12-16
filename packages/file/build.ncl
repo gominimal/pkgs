@@ -47,10 +47,14 @@ let xz = import "../xz/build.ncl" in
   replace_on_cycle =
     {
       name = "file (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "file" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/file/595683b1e5b1f4d571fe224eb0d19ebd61d55bcc64c09c67d0b1c1cecbf3046e.tar.zst",
+          sha256 = "380fddc64d1f1ea0fc2d1044d3b6a4a9b48c91f2b3f8fbe46c7d1faa2d315837",
+          extract = true,
+        } | Source,
       ],
-      cmd = "",
       outputs = {
         usr_bin = { glob = "usr/bin/**/*" } | OutputBin,
         usr_lib = { glob = "usr/lib/**/*" } | OutputLib,

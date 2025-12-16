@@ -63,15 +63,19 @@ let version = "5.3" in
   replace_on_cycle =
     {
       name = "bash (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "bash" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/bash/0932485779c77fb91805ea37baf5a97b6c64f1f45d2794b10f61eb0d805928d0.tar.zst",
+          sha256 = "bdb617c43eb4ba70f72a3a9750266cd57cb1cbc77db19e50366f50cacc5afcd7",
+          extract = true,
+        } | Source,
       ],
       runtime_deps = [
         glibc,
         ncurses,
         readline,
       ],
-      cmd = "",
       outputs = {},
     } | BuildSpec,
 } | BuildSpec

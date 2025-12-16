@@ -40,10 +40,14 @@ let readline = import "../readline/build.ncl" in
   replace_on_cycle =
     {
       name = "gawk (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "gawk" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/gawk/2c668aca10691d29a89f767fc19208a30e037c65ab01dcfc10c338de3dcfb478.tar.zst",
+          sha256 = "7c1b61fc5b0351ca48cc2ddb894ff84597295cb72c8a478ae5238b5ccd66cac8",
+          extract = true,
+        } | Source,
       ],
-      cmd = "",
       outputs = {
         usr_bin = { glob = "usr/bin/**/*" } | OutputBin,
         usr_include = { glob = "usr/include/**/*" } | OutputLib,

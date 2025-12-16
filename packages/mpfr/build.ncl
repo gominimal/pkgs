@@ -65,10 +65,14 @@ let gmp = import "../gmp/build.ncl" in
   replace_on_cycle =
     {
       name = "mpfr (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "mpfr" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/mpfr/2269dbfcccb3b624829aeb41192cd32fac30b4e7fb22270718a885e9f25d5cc8.tar.zst",
+          sha256 = "2ce617aea29ff171ba53070741f85f8559b66b7f29c8d2f1946147efa94c2694",
+          extract = true,
+        } | Source,
       ],
-      cmd = "",
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,
       },

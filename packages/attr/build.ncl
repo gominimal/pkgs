@@ -53,10 +53,14 @@ let sed = import "../sed/build.ncl" in
   replace_on_cycle =
     {
       name = "attr (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "attr" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/attr/1e7c99dbb23c903b50fa6f1093a1f629e135cbfd906a95a261816f4d96170728.tar.zst",
+          sha256 = "b6e4e7fb2f1b177c43e4b3ac88f24bb9a41b47f91de987351349a12838b06a45",
+          extract = true,
+        } | Source,
       ],
-      cmd = "",
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,
       },

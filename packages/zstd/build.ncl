@@ -42,10 +42,14 @@ let version = "1.5.7" in
   replace_on_cycle =
     {
       name = "zstd (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "zstd" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/zstd/8a24bda7b914208fe12d01fb1fa05de91aa5f506496896e422b21c07f88e6540.tar.zst",
+          sha256 = "360e8995e62f1928192c3057546f0205787879610268f5e192e6afa5cce97da9",
+          extract = true,
+        } | Source,
       ],
-      cmd = "",
       outputs = {
         zstd_bin = { glob = "usr/bin/zstd" } | OutputLib,
         zstdcat = { glob = "usr/bin/zstdcat" } | OutputLib,

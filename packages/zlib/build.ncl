@@ -36,10 +36,14 @@ let glibc = import "../glibc/build.ncl" in
   replace_on_cycle =
     {
       name = "zlib (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "zlib" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/zlib/b9d37702ffc6dd16207c56f16aa42425084528c9e20e2748478e16fa4607a443.tar.zst",
+          sha256 = "d80130aebaa9ecf50e382616d84423afead445271455c41f06eaffc75777dc6c",
+          extract = true,
+        } | Source,
       ],
-      cmd = "",
       outputs = {
         libz = { glob = "usr/lib/libz.so*" } | OutputLib,
         zconf_h = { glob = "usr/include/zconf.h" } | OutputData,

@@ -54,10 +54,14 @@ let zlib = import "../zlib/build.ncl" in
   replace_on_cycle =
     {
       name = "llvm (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "llvm" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/llvm/d94cae728eaa6da07b9f66608414197712e0e4054c8b2b14f2909b5563707b83.tar.zst",
+          sha256 = "3212b09ce95cc87e50b39a8b94db032eb496752d3282a51b5db5e719bb4de20a",
+          extract = true,
+        } | Source,
       ],
-      cmd = "",
       outputs = {},
     } | BuildSpec,
 } | BuildSpec

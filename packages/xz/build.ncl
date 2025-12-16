@@ -54,10 +54,14 @@ let glibc = import "../glibc/build.ncl" in
   replace_on_cycle =
     {
       name = "xz (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "xz" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/xz/c9082dfc1422992b88db6fb17c2ccf061ebf2e595872b470c82645a95799830e.tar.zst",
+          sha256 = "1f72a85d5fa9b779932934d5cfb5319473b1f71828d5e7afa8d75e87b97c24d6",
+          extract = true,
+        } | Source,
       ],
-      cmd = "",
       outputs = {
         usr_bin = { glob = "usr/bin/**/*" } | OutputLib,
         usr_lib = { glob = "usr/lib/**/*" } | OutputLib,

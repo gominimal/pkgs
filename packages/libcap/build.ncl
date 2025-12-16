@@ -52,10 +52,14 @@ let version = "2.77" in
   replace_on_cycle =
     {
       name = "libcap (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "libcap" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/libcap/1752dece484de73c426c2af4c37c660bd54ae2b5717d2406cbad6c645a2f667c.tar.zst",
+          sha256 = "c8745d5b3f2cde821d48a8526f339dc39eb7915b82e47c86050219aba71941f3",
+          extract = true,
+        } | Source,
       ],
-      cmd = "",
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,
       },

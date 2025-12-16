@@ -28,10 +28,14 @@ let glibc = import "../glibc/build.ncl" in
   replace_on_cycle =
     {
       name = "m4 (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "m4" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/m4/0e48c2baab84e74ed9916a01eecf0dbc0377e247a05220ea63536bd3d189d466.tar.zst",
+          sha256 = "104907b54fb3edd8c0c18fddffbb5bacda1dea11c224118670c3cbb52ace8cce",
+          extract = true,
+        } | Source,
       ],
-      cmd = "",
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,
       },

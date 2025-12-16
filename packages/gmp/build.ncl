@@ -68,10 +68,14 @@ let m4 = import "../m4/build.ncl" in
   replace_on_cycle =
     {
       name = "gmp (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "gmp" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/gmp/acaec4d86dd7eecdc941fddbc87751178539c1997d17dbfa81b59e60004ace58.tar.zst",
+          sha256 = "544d0211eab4b2c9e21bad9428177e9b9f61e8ce44f288607bd639d6d41babaa",
+          extract = true,
+        } | Source,
       ],
-      cmd = "",
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,
       },

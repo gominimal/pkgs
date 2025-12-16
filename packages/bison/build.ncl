@@ -40,10 +40,14 @@ let glibc = import "../glibc/build.ncl" in
   replace_on_cycle =
     {
       name = "bison (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "bison" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/bison/f20d864670fe5db56ec2d789aa3d2397a83a96536204652ff054ed06d8422303.tar.zst",
+          sha256 = "8e30740fcb39511167736ea64d4dec41854633075e26e4631a51df22e9522316",
+          extract = true,
+        } | Source,
       ],
-      cmd = "",
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,
       },

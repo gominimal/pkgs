@@ -30,10 +30,14 @@ let glibc = import "../glibc/build.ncl" in
   replace_on_cycle =
     {
       name = "gzip (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "gzip" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/gzip/578900779b149d12ff6b3268c3b473bb5d297b4f37d5730f821eccf22c5a7520.tar.zst",
+          sha256 = "98aaf741d11c4edea8f53ac6c10d774dcce1fa524e64deb22affb72bb832ca81",
+          extract = true,
+        } | Source,
       ],
-      cmd = "",
       outputs = {
         binaries = { glob = "usr/bin/*" } | OutputBin,
       },

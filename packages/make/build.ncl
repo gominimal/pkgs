@@ -63,10 +63,14 @@ let linux_headers = import "../linux_headers/build.ncl" in
   replace_on_cycle =
     {
       name = "make (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "make" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/make/44222ee590d7cd309ddb33e2f016a1c3a46499e855e0910ee6e748537ca14d17.tar.zst",
+          sha256 = "78a015c48e89ebd11acc973cb79f0d35c0badd9cf85c4ec626e6b68385330e5d",
+          extract = true,
+        } | Source,
       ],
-      cmd = "",
       outputs = {
         make = { glob = "usr/bin/make" } | OutputBin,
       },

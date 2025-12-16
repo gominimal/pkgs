@@ -118,8 +118,13 @@ let version = "9.9" in
   replace_on_cycle =
     {
       name = "coreutils (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "coreutils", sha256 = "1d0a839341e239e0f8e9efa026d0505f743e7d9965b4d7301f67adef4bc750e2" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/coreutils/00a9b94dccfb74f487297cfbb7e89aeb26c615fac4ea2f46ce7b18e3bcdfabe0.tar.zst",
+          sha256 = "f9fb6b4833ee57860479f1fa653b1894ef56886c652cd646b0d5fd6a50ddbc8b",
+          extract = true,
+        } | Source,
       ],
       runtime_deps = [
         acl,
@@ -127,7 +132,6 @@ let version = "9.9" in
         gmp,
         libcap,
       ],
-      cmd = "",
       outputs = {
         usr_bin = { glob = "usr/bin/**/*" } | OutputLib,
         usr_libexec = { glob = "usr/libexec/**/*" } | OutputLib,

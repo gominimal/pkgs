@@ -74,13 +74,17 @@ let version = "2.45.1" in
   replace_on_cycle =
     {
       name = "binutils (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "binutils", sha256 = "0c2d510d101dc38a2374bdf0b97c2dcb98447c2aeb5a505c7dad9958cbcf0864" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/binutils/baea2e99362c3138a3b129ca4fceee19d0444bbb68f3c57b08d3cb89145ea103.tar.zst",
+          sha256 = "63f6b776215970427b3360fb00d69b84debe607b57511c7832874049cf05a2d4",
+          extract = true,
+        } | Source,
       ],
       runtime_deps = [
         zlib,
       ],
-      cmd = "",
       outputs = {
         usr_bin = { glob = "usr/bin/**/*" } | OutputLib,
         usr_lib = { glob = "usr/lib/**/*" } | OutputLib,

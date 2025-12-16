@@ -64,10 +64,14 @@ let mpfr = import "../mpfr/build.ncl" in
   replace_on_cycle =
     {
       name = "mpc (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "mpc" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/mpc/94ebf966b773423844ef6b2b620c062f31e8479bbe9e97ad808e414b558743a7.tar.zst",
+          sha256 = "a3bb4b9e9bfcb0e2018065dd0036f2943cf0b5fda8aebb56f477026531ba7fdd",
+          extract = true,
+        } | Source,
       ],
-      cmd = "",
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,
       },

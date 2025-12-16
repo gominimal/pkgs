@@ -42,10 +42,14 @@ let linux_headers = import "../linux_headers/build.ncl" in
   replace_on_cycle =
     {
       name = "linux_headers (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "linux_headers" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/linux_headers/06b2114a47cb8be25785fa4fae5b2d5c18a21b6dac059dcfd50577fb16e688a9.tar.zst",
+          sha256 = "353a3bc9146169c825d8ee9cfc40338f943e352b498bc19626720507328f5328",
+          extract = true,
+        } | Source,
       ],
-      cmd = "",
       outputs = {
         includes = { glob = "usr/include/*/**" } | OutputData,
       },

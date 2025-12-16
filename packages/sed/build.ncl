@@ -49,15 +49,19 @@ let tar = import "../tar/build.ncl" in
   replace_on_cycle =
     {
       name = "sed (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "sed" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/sed/b2454441fcc0966caa42b1a66c39de67ed9f4fbf507443a4443313b2d955e43d.tar.zst",
+          sha256 = "0545b519704c923b41c2a704eb5162245f7496d35df09deeb051f54a7a218bed",
+          extract = true,
+        } | Source,
       ],
       # TODO: runtime_deps in a cycle breaker are borked?
       # runtime_deps = [
       #   acl,
       #   attr,
       # ],
-      cmd = "",
       outputs = {
         sed_bin = { glob = "usr/bin/sed" } | OutputBin,
       },

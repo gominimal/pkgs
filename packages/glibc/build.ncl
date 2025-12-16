@@ -65,10 +65,14 @@ let python = import "../python/build.ncl" in
   replace_on_cycle =
     {
       name = "glibc (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "glibc" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/glibc/0b3158f86607d703484cdc2b989850085ee57cd9d774f00ff6bf5b83c9fb20db.tar.zst",
+          sha256 = "0a8fe9137ed3e906bae9e1f922e80d6b198bd2d29d390f1283f7d32e0f921580",
+          extract = true,
+        } | Source,
       ],
-      cmd = "",
       outputs = {
         etc = { glob = "etc/**/*" } | OutputLib,
         usr = { glob = "usr/**/*" } | OutputLib,

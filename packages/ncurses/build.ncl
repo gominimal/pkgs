@@ -38,13 +38,17 @@ let gcc = import "../gcc/build.ncl" in
   replace_on_cycle =
     {
       name = "ncurses (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "ncurses" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/ncurses/bd06d23c33d5bae4467bf46e0fa31863d27972af520621c0007e02eac95002e6.tar.zst",
+          sha256 = "a0c8f8ba43f78f71526c1b3fdccf065cab3a6f3bb55ee271c53733f1c480f5f7",
+          extract = true,
+        } | Source,
       ],
       runtime_deps = [
         attr,
       ],
-      cmd = "",
       outputs = {
         bin = { glob = "usr/bin/*" } | OutputBin,
         form_lib = { glob = "usr/lib/libform*.so*" } | OutputLib,

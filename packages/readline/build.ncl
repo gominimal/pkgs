@@ -30,13 +30,17 @@ let toolchain = import "../toolchain/build.ncl" in
   replace_on_cycle =
     {
       name = "readline (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "readline" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/readline/0b0d99c0ecd377b7b8618468423fc679377d8f8ebc7475bd7fc71a2bec20d6a2.tar.zst",
+          sha256 = "0b1677ad712f7de3526d0a1ecf154ce9c8a2a3392fb2bcf1b8e006afa1b16d99",
+          extract = true,
+        } | Source,
       ],
       runtime_deps = [
         ncurses,
       ],
-      cmd = "",
       outputs = {
         usr_lib = { glob = "usr/lib/**/*" } | OutputLib,
         usr_include = { glob = "usr/include/**/*" } | OutputData,

@@ -41,10 +41,14 @@ let glibc = import "../glibc/build.ncl" in
   replace_on_cycle =
     {
       name = "bzip2 (prebuilt)",
+      prebuilt = true,
       inputs = [
-        { package = "bzip2" } | Prebuilt,
+        {
+          url = "gs://minimal-staging-archives/prebuilts/bzip2/75355884e09794f5aa09558214ab877cfd1d026cf1f888d093ecfe6dd762ee85.tar.zst",
+          sha256 = "30161bb4830b54bd007e1f4c9188e98b9d310d119d31bb0ab65b12a4a43cdaea",
+          extract = true,
+        } | Source,
       ],
-      cmd = "",
       outputs = {},
     } | BuildSpec,
 } | BuildSpec
