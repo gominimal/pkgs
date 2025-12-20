@@ -7,8 +7,8 @@ let ripgrep = import "../ripgrep/build.ncl" in
 
 let { version, sha256, gcs_bucket } = {
   gcs_bucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases",
-  version = "2.0.65",
-  sha256 = "3a9e90f7f6a820f158a2e83977e916ca6ce6082ad80ff038ba129cf8e519637a",
+  version = "2.0.67",
+  sha256 = "b2a12279d5df3814f59000682a571edb771b73e89b4bd894101f01e3726726f3",
 }
 in
 
