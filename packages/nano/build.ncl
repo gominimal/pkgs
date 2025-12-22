@@ -29,7 +29,12 @@ let version = "8.7" in
     ncurses,
     zlib,
   ],
+
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
+
   outputs = {
     bin = { glob = "usr/bin/nano" } | OutputBin,
     languages = { glob = "usr/share/nano/*" } | OutputData,
