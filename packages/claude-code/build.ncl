@@ -2,7 +2,6 @@ let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "mini
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let node = import "../node/build.ncl" in
 let ripgrep = import "../ripgrep/build.ncl" in
 
 let { version, sha256, gcs_bucket } = {
