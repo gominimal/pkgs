@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.5.0" in
+let version = "0.6.0" in
 {
   name = "ut",
   inputs = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/ksdme/ut/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "9d48c738e8f238faddca6db16f9d02668b6942ad8a90748d6f9df7538eefcb3d",
+      sha256 = "f9fd00d8913d15cae4f0124507cfdf95375be98a0d14522b5d58204dca0a0e69",
       extract = true,
       strip_prefix = "ut-%{version}",
     } | Source,
