@@ -1,5 +1,7 @@
 let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 
+# TODO: When packaging i see errors like: /usr/bin/bison: m4 subprocess failed: No such file or directory
+# Maybe m4 needs to be a runtime_dep here?
 let base = import "../base/build.ncl" in
 let flex = import "../flex/build.ncl" in
 let m4 = import "../m4/build.ncl" in
