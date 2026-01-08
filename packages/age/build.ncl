@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -28,10 +28,31 @@ let version = "1.2.1" in
   ],
 
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
 
   outputs = {
     age = { glob = "usr/bin/age" } | OutputBin,
+    age-keygen = { glob = "usr/bin/age-keygen" } | OutputBin,
   },
 
   attrs.upstream_version = version,
+
+  tests = {
+    smoketest = standaloneTest "/bin/age --version",
+
+    encrypt_decrypt =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "echo uwu_text > plaintext"],
+          ["/bin/age-keygen", "-o", "key.txt"],
+          ["/bin/age", "-e", "-i", "key.txt", "-o", "ciphertext", "plaintext"],
+          ["/bin/age", "-d", "-i", "key.txt", "-o", "plaintext2", "ciphertext"],
+          ["/bin/diff", "-q", "plaintext", "plaintext2"],
+        ],
+      } | Test,
+  },
 } | BuildSpec
