@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -26,12 +26,13 @@ let mpfr = import "../mpfr/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 
+let version = "15.2.0" in
 {
   name = "gcc",
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/gcc-15.2.0.tar.xz",
+      url = "gs://minimal-staging-archives/gcc-%{version}.tar.xz",
       sha256 = "438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e"
     } | Source,
     # base
@@ -68,6 +69,7 @@ let zstd = import "../zstd/build.ncl" in
     zlib,
     zstd,
   ],
+
   cmd = "./build.sh",
   outputs = {
     bins = { glob = "usr/bin/*" } | OutputBin,
@@ -95,6 +97,12 @@ let zstd = import "../zstd/build.ncl" in
     includes = { glob = "usr/include/**" } | OutputData,
   },
 
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "gcc",
+    } | Attrs,
+
   replace_on_cycle =
     {
       name = "gcc (prebuilt)",
@@ -121,9 +129,54 @@ let zstd = import "../zstd/build.ncl" in
       },
     } | BuildSpec,
 
-  attrs =
-    {
-      upstream_version = "15.2.0",
-      repology_project = "gcc",
-    } | Attrs,
+  tests = {
+    compile_exec_code =
+      {
+        class = 'Standalone,
+        test_deps = [bash, binutils, coreutils], # TODO: Some of these need to be runtime_deps
+        cmds = [
+          ["/bin/bash", "-c", "echo 'int main() { return 0; }' > hello.c"],
+          ["/bin/gcc", "hello.c", "-o", "hello"],
+          ["/bin/bash", "-c", "./hello"], # verify it runs and returns 0
+          ["/bin/bash", "-c", "./hello; test $? -eq 0"], # explicitly check exit code
+        ],
+      } | Test,
+
+    compile_exec_output =
+      {
+        class = 'Standalone,
+        test_deps = [bash, binutils, coreutils, grep], # TODO: Some of these need to be runtime_deps
+        cmds = [
+          ["/bin/bash", "-c", "cat > print.c << 'EOF'\n#include <stdio.h>\nint main() {\n    printf(\"Hello World\");\n    return 0;\n}\nEOF"],
+          ["/bin/gcc", "print.c", "-o", "print"],
+          ["/bin/bash", "-c", "./print > output.txt"],
+          ["/bin/bash", "-c", "grep -q '^Hello World$' output.txt"],
+        ],
+      } | Test,
+
+    compile_exec_math =
+      {
+        class = 'Standalone,
+        test_deps = [bash, binutils, coreutils, grep], # TODO: Some of these need to be runtime_deps
+        cmds = [
+          ["/bin/bash", "-c", "cat > math.c << 'EOF'\n#include <stdio.h>\nint main() {\n    int result = 2 + 2;\n    printf(\"%d\", result);\n    return 0;\n}\nEOF"],
+          ["/bin/gcc", "math.c", "-o", "math"],
+          ["/bin/bash", "-c", "./math | grep -q '^4$'"],
+        ],
+      } | Test,
+
+    compile_exec_linking =
+      {
+        class = 'Standalone,
+        test_deps = [bash, binutils, coreutils, grep], # TODO: Some of these need to be runtime_deps
+        cmds = [
+          ["/bin/bash", "-c", "cat > func.c << 'EOF'\nint multiply(int a, int b) {\n    return a * b;\n}\nEOF"],
+          ["/bin/bash", "-c", "cat > main.c << 'EOF'\n#include <stdio.h>\nint multiply(int a, int b);\nint main() {\n    printf(\"%d\", multiply(6, 7));\n    return 0;\n}\nEOF"],
+          ["/bin/gcc", "-c", "func.c", "-o", "func.o"],
+          ["/bin/gcc", "-c", "main.c", "-o", "main.o"],
+          ["/bin/gcc", "main.o", "func.o", "-o", "multi"],
+          ["/bin/bash", "-c", "./multi | grep -q '^42$'"],
+        ],
+      } | Test,
+  },
 } | BuildSpec
