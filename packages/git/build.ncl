@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let curl = import "../curl/build.ncl" in
 let gettext = import "../gettext/build.ncl" in
 let expat = import "../expat/build.ncl" in
@@ -48,5 +48,29 @@ let version = "2.52.0" in
   attrs = {
     upstream_version = version,
     repology_project = "git",
+  },
+
+  tests = {
+    basic_repo_ops =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "git config --global user.email 'test@example.com'"],
+          ["/bin/bash", "-c", "git config --global user.name 'Test User'"],
+          ["/bin/bash", "-c", "mkdir repo && cd repo && git init"],
+          ["/bin/bash", "-c", "cd repo && echo 'hello' > file.txt && git add file.txt"],
+          ["/bin/bash", "-c", "cd repo && git commit -m 'initial commit'"],
+          ["/bin/bash", "-c", "cd repo && git log --oneline | grep -q 'initial commit'"],
+          ["/bin/bash", "-c", "cd repo && echo 'world' >> file.txt && git add file.txt"],
+          ["/bin/bash", "-c", "cd repo && git commit -m 'second commit'"],
+          ["/bin/bash", "-c", "cd repo && git log --oneline | wc -l | grep -q '^2$'"], # verify 2 commits
+          ["/bin/bash", "-c", "cd repo && git checkout -b newbranch"],
+          ["/bin/bash", "-c", "cd repo && git branch | grep -q '\\* newbranch'"], # verify on new branch
+          ["/bin/bash", "-c", "cd repo && echo 'branch content' > branch.txt && git add branch.txt && git commit -m 'branch commit'"],
+          ["/bin/bash", "-c", "cd repo && git checkout master || git checkout main"],
+          ["/bin/bash", "-c", "cd repo && ! test -f branch.txt"], # verify file doesn't exist on main branch
+        ],
+      } | Test,
   },
 } | BuildSpec
