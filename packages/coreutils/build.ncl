@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -106,7 +106,7 @@ let version = "9.9" in
     libstdbuf = { glob = "usr/libexec/coreutils/libstdbuf.so" } | OutputLib,
 
     mans = { glob = "usr/share/man/**" } | OutputData,
-    infos = { glob = "usr/share/info/*.info" } | OutputLib,
+    infos = { glob = "usr/share/info/*.info" } | OutputData,
     locales = { glob = "usr/share/locale/**" } | OutputData,
   },
 
@@ -138,4 +138,89 @@ let version = "9.9" in
         usr_share = { glob = "usr/share/**/*" } | OutputLib,
       },
     } | BuildSpec,
+
+  tests = {
+    smoketest_cut = standaloneTest "/bin/cut --version",
+
+    cut =
+      {
+        class = 'Standalone,
+        test_deps = [bash, diffutils, grep],
+        cmds = [
+          ["/bin/bash", "-c", "echo 'a,b,c,d\ne,f,g,h' > csv.txt"],
+          ["/bin/bash", "-c", "cut -d, -f2 csv.txt > field2.txt"],
+          ["/bin/bash", "-c", "echo 'b\nf' > expected_field2.txt"],
+          ["/bin/diff", "-q", "field2.txt", "expected_field2.txt"],
+          ["/bin/bash", "-c", "echo 'hello world' > text.txt"],
+          ["/bin/bash", "-c", "cut -c1-5 text.txt | grep -q '^hello$'"],
+        ],
+      } | Test,
+    sort =
+      {
+        class = 'Standalone,
+        test_deps = [bash, diffutils, grep],
+        cmds = [
+          ["/bin/bash", "-c", "echo 'zebra\napple\nbanana' > unsorted.txt"],
+          ["/bin/bash", "-c", "sort unsorted.txt > sorted.txt"],
+          ["/bin/bash", "-c", "echo 'apple\nbanana\nzebra' > expected_sort.txt"],
+          ["/bin/diff", "-q", "sorted.txt", "expected_sort.txt"],
+          ["/bin/bash", "-c", "echo '10\n2\n1\n20' > numbers.txt"],
+          ["/bin/bash", "-c", "sort -n numbers.txt > sorted_nums.txt"],
+          ["/bin/bash", "-c", "echo '1\n2\n10\n20' > expected_nums.txt"],
+          ["/bin/diff", "-q", "sorted_nums.txt", "expected_nums.txt"],
+        ],
+      } | Test,
+    tr =
+      {
+        class = 'Standalone,
+        test_deps = [bash, diffutils, grep],
+        cmds = [
+          ["/bin/bash", "-c", "echo 'hello world' | tr 'a-z' 'A-Z' > upper.txt"],
+          ["/bin/bash", "-c", "echo 'HELLO WORLD' > expected_upper.txt"],
+          ["/bin/diff", "-q", "upper.txt", "expected_upper.txt"],
+          # squeeze spaces
+          ["/bin/bash", "-c", "echo 'hello  world' | tr -s ' ' | grep -q '^hello world$'"],
+          # delete digits
+          ["/bin/bash", "-c", "echo 'hello123world' | tr -d '0-9' | grep -q '^helloworld$'"],
+        ],
+      } | Test,
+    wc =
+      {
+        class = 'Standalone,
+        test_deps = [bash, gawk, grep],
+        cmds = [
+          ["/bin/bash", "-c", "echo 'one two three\nfour five' > count.txt"],
+          ["/bin/bash", "-c", "wc -l count.txt | awk '{print $1}' | grep -q '^2$'"], # 2 lines
+          ["/bin/bash", "-c", "wc -w count.txt | awk '{print $1}' | grep -q '^5$'"], # 5 words
+        ],
+      } | Test,
+    head_tail =
+      {
+        class = 'Standalone,
+        test_deps = [bash, diffutils, grep],
+        cmds = [
+          ["/bin/bash", "-c", "seq 1 100 > numbers.txt"],
+          ["/bin/bash", "-c", "head -n 5 numbers.txt > first5.txt"],
+          ["/bin/bash", "-c", "seq 1 5 > expected_first5.txt"],
+          ["/bin/diff", "-q", "first5.txt", "expected_first5.txt"],
+          ["/bin/bash", "-c", "tail -n 5 numbers.txt > last5.txt"],
+          ["/bin/bash", "-c", "seq 96 100 > expected_last5.txt"],
+          ["/bin/diff", "-q", "last5.txt", "expected_last5.txt"],
+        ],
+      } | Test,
+    sha256sum =
+      {
+        class = 'Standalone,
+        test_deps = [bash, diffutils],
+        cmds = [
+          ["/bin/bash", "-c", "echo 'content' > hashtest.txt"],
+          ["/bin/bash", "-c", "sha256sum hashtest.txt > hash1.txt"],
+          ["/bin/bash", "-c", "sha256sum hashtest.txt > hash2.txt"],
+          ["/bin/diff", "-q", "hash1.txt", "hash2.txt"], # verify match
+          ["/bin/bash", "-c", "echo 'different' > hashtest.txt"],
+          ["/bin/bash", "-c", "sha256sum hashtest.txt > hash3.txt"],
+          ["/bin/bash", "-c", "! diff -q hash1.txt hash3.txt"], # verify hashes differ
+        ],
+      } | Test,
+  },
 } | BuildSpec

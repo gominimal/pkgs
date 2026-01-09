@@ -1,10 +1,10 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
-let bash = import "../gcc/build.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash = import "../bash/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let diffutils = import "../diffutils/build.ncl" in
 let gawk = import "../gawk/build.ncl" in
-let gcc = import "../bash/build.ncl" in
+let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -56,8 +56,11 @@ let version = "4.10.0" in
     infos = { glob = "usr/share/info/*.info" } | OutputData,
     locales = { glob = "usr/share/locale/**" } | OutputData,
   },
-
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "findutils",
+    } | Attrs,
 
   replace_on_cycle =
     {
@@ -74,4 +77,22 @@ let version = "4.10.0" in
         usr = { glob = "usr/**/*" } | OutputLib,
       },
     } | BuildSpec,
+
+  tests = {
+    smoketest = standaloneTest "/bin/find --version",
+
+    find =
+      {
+        class = 'Standalone,
+        test_deps = [bash, coreutils, grep],
+        cmds = [
+          ["/bin/bash", "-c", "mkdir -p testdir && echo 'data' > testdir/test.txt"],
+          ["/bin/bash", "-c", "touch testdir/other.log"],
+          # verify find result
+          ["/bin/bash", "-c", "find testdir -name '*.txt' | grep -q 'test.txt'"],
+          # verify 2 files
+          ["/bin/bash", "-c", "find testdir -type f | wc -l | grep -q '^2$'"],
+        ],
+      } | Test,
+  },
 } | BuildSpec

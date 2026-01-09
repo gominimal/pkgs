@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -6,12 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let mpfr = import "../mpfr/build.ncl" in
 let readline = import "../readline/build.ncl" in
+
+let version = "5.3.2" in
 {
   name = "gawk",
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/gawk-5.3.2.tar.xz",
+      url = "gs://minimal-staging-archives/gawk-%{version}.tar.xz",
       sha256 = "f8c3486509de705192138b00ef2c00bbbdd0e84c30d5c07d23fc73a9dc4cc9cc"
     } | Source,
     base,
@@ -36,6 +38,11 @@ let readline = import "../readline/build.ncl" in
     mans = { glob = "usr/share/man/**" } | OutputData,
     locales = { glob = "usr/share/locale/**" } | OutputData,
   },
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "gawk",
+    } | Attrs,
 
   replace_on_cycle =
     {
@@ -56,4 +63,21 @@ let readline = import "../readline/build.ncl" in
         usr_share = { glob = "usr/share/**/*" } | OutputLib,
       },
     } | BuildSpec,
+
+  tests = {
+    smoketest = standaloneTest "/bin/gawk --version",
+
+    matching =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "echo 'one two three\nfour five six' > data.txt"],
+          ["/bin/bash", "-c", "gawk '{print $2}' data.txt > col2.txt"],
+          ["/bin/bash", "-c", "echo 'two\nfive' > expected.txt"],
+          ["/bin/diff", "-q", "col2.txt", "expected.txt"], # verify second column extracted
+          ["/bin/bash", "-c", "gawk '/five/ {print $1}' data.txt | grep -q '^four$'"], # verify pattern matching
+        ],
+      } | Test,
+  },
 } | BuildSpec

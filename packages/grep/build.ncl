@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -95,4 +95,21 @@ let version = "3.12" in
         fgrep_bin = { glob = "usr/bin/fgrep" } | OutputBin,
       },
     } | BuildSpec,
+
+  tests = {
+    smoketest = standaloneTest "/bin/grep --version",
+
+    text_matching =
+      {
+        class = 'Standalone,
+        test_deps = [bash, coreutils],
+        cmds = [
+          ["/bin/bash", "-c", "echo 'hello world\nfoo bar\nhello again' > test.txt"],
+          ["/bin/bash", "-c", "grep hello test.txt | wc -l | grep -q '^2$'"], # verify 2 matches
+          ["/bin/bash", "-c", "grep -c hello test.txt | grep -q '^2$'"], # verify count is 2
+          ["/bin/bash", "-c", "grep -v foo test.txt | grep -q 'hello world'"], # verify invert match works
+          ["/bin/bash", "-c", "grep -i HELLO test.txt | wc -l | grep -q '^2$'"], # verify case insensitive
+        ],
+      } | Test,
+  },
 } | BuildSpec

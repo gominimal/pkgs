@@ -1,10 +1,10 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
-let bash = import "../gcc/build.ncl" in
+let { standaloneTest, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash = import "../bash/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let diffutils = import "../diffutils/build.ncl" in
 let gawk = import "../gawk/build.ncl" in
-let gcc = import "../bash/build.ncl" in
+let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -73,4 +73,22 @@ let version = "3.12" in
         usr_share = { glob = "usr/share/**/*" } | OutputLib,
       },
     } | BuildSpec,
+
+  tests = {
+    smoketest = standaloneTest "/bin/cmp --version",
+
+    diff =
+      {
+        class = 'Standalone,
+        test_deps = [bash, coreutils],
+        cmds = [
+          ["/bin/bash", "-c", "echo 'hello world' > test1.txt"],
+          ["/bin/bash", "-c", "echo 'hello whrld' > test2.txt"],
+          # Differs
+          ["/bin/bash", "-c", "diff -q test1.txt test2.txt || echo worked"],
+          # Matches
+          ["/bin/diff", "-q", "test2.txt", "test2.txt"],
+        ],
+      } | Test,
+  },
 } | BuildSpec
