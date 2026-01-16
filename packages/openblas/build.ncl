@@ -6,14 +6,14 @@ let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 # TODO: Needs fortran compiler for LAPACK to properly work.
-let version = "0.3.30" in
+let version = "0.3.31" in
 {
   name = "openblas",
   inputs = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/OpenMathLib/OpenBLAS/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "27342cff518646afb4c2b976d809102e368957974c250a25ccc965e53063c95d",
+      sha256 = "6dd2a63ac9d32643b7cc636eab57bf4e57d0ed1fff926dfbc5d3d97f2d2be3a6",
       extract = true,
       strip_prefix = "OpenBLAS-%{version}",
     } | Source,

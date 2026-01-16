@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
-cd btop-1.4.5
+cd btop-1.4.6
 
 # Disable GPU paths at compile time
 make -j"$(nproc)" GPU_SUPPORT=false

@@ -8,14 +8,14 @@ let ninja = import "../ninja/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "1.5.4" in
+let version = "2.0.1" in
 {
   name = "clipper2",
   inputs = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/AngusJohnson/Clipper2/archive/refs/tags/Clipper2_%{version}.tar.gz",
-      sha256 = "9d8a35a29d04cd1b7b45f542c0ba48015feece1210036ea9e4efaad3140af4b0",
+      sha256 = "2a3693aceab4aed3e39b743e038d87701acc53cf05ed7b2013aab3e0aec5287e",
       extract = true,
       strip_prefix = "Clipper2-Clipper2_%{version}",
     } | Source,

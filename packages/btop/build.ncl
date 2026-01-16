@@ -4,14 +4,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 
-let version = "1.4.5" in
+let version = "1.4.6" in
 {
   name = "btop",
   inputs = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/aristocratos/btop/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "0ffe03d3e26a3e9bbfd5375adf34934137757994f297d6b699a46edd43c3fc02",
+      sha256 = "4beb90172c6acaac08c1b4a5112fb616772e214a7ef992bcbd461453295a58be",
       extract = true,
     } | Source,
     base,
