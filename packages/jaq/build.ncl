@@ -1,4 +1,4 @@
-let { subsetOf, BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, BuildSpec, Local, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -33,4 +33,19 @@ let version = "2.3.0" in
     jaq = { glob = "usr/bin/jaq" } | OutputLib,
   },
   attrs.upstream_version = version,
+
+  tests = {
+    smoketest = standaloneTest "/bin/jaq --version",
+
+    filtering =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "echo '[{\"name\":\"x\",\"val\":10},{\"name\":\"y\",\"val\":20},{\"name\":\"z\",\"val\":5}]' > items.json"],
+          ["/bin/bash", "-c", "jaq '[.[] | select(.val > 10)]' items.json > filtered.json"],
+          ["/bin/bash", "-c", "jaq 'length' filtered.json | grep -q '^1$'"],
+        ],
+      } | Test,
+  },
 } | BuildSpec
