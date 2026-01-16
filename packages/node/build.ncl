@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let make = import "../make/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let python = import "../python/build.ncl" in
@@ -50,4 +50,26 @@ let version = "24.9.0" in
     mans = { glob = "usr/share/man/**" } | OutputData,
   },
   attrs.upstream_version = version,
+
+  tests = {
+    eval =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "echo 'console.log(\"Hello Node\")' > script.js"],
+          ["/bin/bash", "-c", "node script.js | grep -q '^Hello Node$'"],
+          ["/bin/bash", "-c", "echo 'console.log(2 + 2)' > math.js"],
+          ["/bin/bash", "-c", "node math.js | grep -q '^4$'"],
+        ],
+      } | Test,
+    inline_eval =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "node -e 'console.log(10 * 5)' | grep -q '^50$'"],
+        ],
+      } | Test,
+  },
 } | BuildSpec
