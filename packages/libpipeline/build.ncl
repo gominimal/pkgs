@@ -3,6 +3,8 @@ let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let make = import "../make/build.ncl" in
+
+let glibc = import "../glibc/build.ncl" in
 {
   name = "libpipeline",
   inputs = [
@@ -16,6 +18,9 @@ let make = import "../make/build.ncl" in
     toolchain,
     make,
     pkgconf,
+  ],
+  runtime_deps = [
+    glibc,
   ],
 
   cmd = "./build.sh",

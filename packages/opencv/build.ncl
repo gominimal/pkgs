@@ -1,9 +1,12 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let make = import "../make/build.ncl" in
+
+let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let zlib = import "../zlib/build.ncl" in
 
 # TODO: This doesn't install the opencv_contrib, which has a LOT of the useful stuff. Implement that.
 # See:
@@ -27,6 +30,8 @@ let version = "4.12.0" in
   ],
   runtime_deps = [
     glibc,
+    subsetOf gcc ["libgcc", "libstdcpp"],
+    zlib,
   ],
 
   cmd = "./build.sh",
