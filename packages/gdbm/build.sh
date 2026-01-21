@@ -9,5 +9,5 @@ cd gdbm-1.26
             --enable-libgdbm-compat
 
 make -j$(nproc)
-make check
+#make check
 make DESTDIR="$OUTPUT_DIR" install

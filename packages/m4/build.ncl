@@ -1,28 +1,36 @@
-let { BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+
+let version = "1.4.20" in
 {
   name = "m4",
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/m4-1.4.20.tar.xz",
-      sha256 = "e236ea3a1ccf5f6c270b1c4bb60726f371fa49459a8eaaebc90b216b328daf2b"
+      url = "gs://minimal-staging-archives/m4-%{version}.tar.xz",
+      sha256 = "e236ea3a1ccf5f6c270b1c4bb60726f371fa49459a8eaaebc90b216b328daf2b",
+      extract = true,
+      strip_prefix = "m4-%{version}",
     } | Source,
     base,
     make,
     toolchain,
   ],
+
   runtime_deps = [
     glibc,
   ],
 
   cmd = "./build.sh",
   outputs = {
-    usr_bin = { glob = "usr/bin/**/*" } | OutputBin,
-    usr_share = { glob = "usr/share/**/*" } | OutputLib,
+    bins = { glob = "usr/bin/*" } | OutputBin,
+
+    mans = { glob = "usr/share/man/**" } | OutputData,
+    infos = { glob = "usr/share/info/*.info" } | OutputData,
+    locales = { glob = "usr/share/locale/**" } | OutputData,
   },
 
   replace_on_cycle =
@@ -37,7 +45,10 @@ let glibc = import "../glibc/build.ncl" in
         } | Source,
       ],
       outputs = {
-        usr = { glob = "usr/**/*" } | OutputLib,
+        bins = { glob = "usr/bin/**/*" } | OutputBin,
+        mans = { glob = "usr/share/man/**" } | OutputData,
+        infos = { glob = "usr/share/info/*.info" } | OutputData,
+        locales = { glob = "usr/share/locale/**" } | OutputData,
       },
     } | BuildSpec,
 } | BuildSpec

@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -56,9 +56,11 @@ let version = "5.42.0" in
 
   cmd = "./build.sh",
   outputs = {
-    usr_bin = { glob = "usr/bin/**/*" } | OutputLib,
-    usr_lib = { glob = "usr/lib/**/*" } | OutputLib,
-    usr_share = { glob = "usr/share/**/*" } | OutputLib,
+    bins = { glob = "usr/bin/*" } | OutputBin,
+    perl_data = { glob = "usr/lib/perl*/**/*.{pl,pm,pod}" } | OutputData,
+    perl_libexec = { glob = "usr/lib/perl*/**/*.so" } | OutputLib,
+
+    mans = { glob = "usr/share/man/**" } | OutputData,
   },
 
   attrs.upstream_version = version,

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let expat = import "../expat/build.ncl" in
@@ -38,16 +38,19 @@ let version = "3.13.7" in
     expat,
     openssl,
     glibc,
-    util-linux, # TODO: Use subsets to get just libuuid
+    subsetOf util-linux ["libuuid"],
     zlib,
     xz,
   ],
 
   cmd = "./build.sh",
   outputs = {
-    usr_bin = { glob = "usr/bin/**/*" } | OutputLib,
-    usr_include = { glob = "usr/include/**/*" } | OutputLib,
-    usr_lib = { glob = "usr/lib/**/*" } | OutputLib,
+    bins = { glob = "usr/bin/**/*" } | OutputBin,
+    libs = { glob = "usr/lib/libpython*.so*" } | OutputLib,
+    datas = { glob = "usr/lib/python*/**" } | OutputData,
+
+    includes = { glob = "usr/include/python*/**" } | OutputData,
+    pkgconfigs = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
   },
 
   attrs =

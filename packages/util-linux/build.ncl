@@ -30,6 +30,11 @@ let version = "2.41.2" in
     bins = { glob = "usr/bin/*" } | OutputBin,
     sbins = { glob = "usr/sbin/*" } | OutputBin,
 
+    libblkid = { glob = "usr/lib/libblkid*.so*" } | OutputLib,
+    libfdisk = { glob = "usr/lib/libfdisk*.so*" } | OutputLib,
+    libmount = { glob = "usr/lib/libmount*.so*" } | OutputLib,
+    libsmartcols = { glob = "usr/lib/libsmartcols*.so*" } | OutputLib,
+    libuuid = { glob = "usr/lib/libuuid*.so*" } | OutputLib,
     libs = { glob = "usr/lib/lib*.{a,so*}" } | OutputLib,
 
     includes = { glob = "usr/include/**/*" } | OutputData,

@@ -1,15 +1,19 @@
-let { BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+
+let version = "2.5.1" in
 {
   name = "pkgconf",
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/pkgconf-2.5.1.tar.xz",
-      sha256 = "cd05c9589b9f86ecf044c10a2269822bc9eb001eced2582cfffd658b0a50c243"
+      url = "gs://minimal-staging-archives/pkgconf-%{version}.tar.xz",
+      sha256 = "cd05c9589b9f86ecf044c10a2269822bc9eb001eced2582cfffd658b0a50c243",
+      extract = true,
+      strip_prefix = "pkgconf-%{version}",
     } | Source,
     base,
     make,
@@ -21,11 +25,13 @@ let glibc = import "../glibc/build.ncl" in
 
   cmd = "./build.sh",
   outputs = {
-    pkg_config = { glob = "usr/bin/pkg-config" } | OutputLib,
-    usr_bin = { glob = "usr/bin/*" } | OutputLib,
-    usr_include_pkgconf_libpkgconf = { glob = "usr/include/pkgconf/libpkgconf/*" } | OutputLib,
-    usr_lib = { glob = "usr/lib/*" } | OutputLib,
-    usr_lib_pkgconfig = { glob = "usr/lib/pkgconfig/*" } | OutputLib,
-    usr_share_aclocal = { glob = "usr/share/aclocal/*" } | OutputLib,
+    bins = { glob = "usr/bin/*" } | OutputBin,
+    libs = { glob = "usr/lib/libpkgconf.so*" } | OutputLib,
+
+    includes = { glob = "usr/include/pkgconf/**" } | OutputData,
+    pkgconfigs = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
+    ltconfigs = { glob = "usr/lib/*.la" } | OutputData,
+    aclocals = { glob = "usr/share/aclocal/*" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

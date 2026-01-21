@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 {
   name = "iana-etc",
@@ -12,7 +12,7 @@ let base = import "../base/build.ncl" in
   ],
   cmd = "./build.sh",
   outputs = {
-    protocols = { glob = "etc/protocols" } | OutputLib,
-    services = { glob = "etc/services" } | OutputLib,
+    protocols = { glob = "etc/protocols" } | OutputData,
+    services = { glob = "etc/services" } | OutputData,
   },
 } | BuildSpec

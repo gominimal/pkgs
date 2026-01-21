@@ -1,9 +1,10 @@
-let { BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
-let lz4 = import "../lz4/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+
+let lz4 = import "../lz4/build.ncl" in
 
 let version = "1.5.7" in
 {
@@ -27,16 +28,17 @@ let version = "1.5.7" in
   },
 
   outputs = {
-    zstd_bin = { glob = "usr/bin/zstd" } | OutputLib,
-    zstdcat = { glob = "usr/bin/zstdcat" } | OutputLib,
-    zstdgrep = { glob = "usr/bin/zstdgrep" } | OutputLib,
-    zstdless = { glob = "usr/bin/zstdless" } | OutputLib,
-    zstdmt = { glob = "usr/bin/zstdmt" } | OutputLib,
-    unzstd = { glob = "usr/bin/unzstd" } | OutputLib,
-    libzstd = { glob = "usr/lib/libzstd.so*" } | OutputLib,
-    libzstd_a = { glob = "usr/lib/libzstd.a" } | OutputLib,
-    headers = { glob = "usr/include/*.h" } | OutputLib,
-    pkgconfig = { glob = "usr/lib/pkgconfig/libzstd.pc" } | OutputLib,
+    zstd_bin = { glob = "usr/bin/zstd" } | OutputBin,
+    zstdcat = { glob = "usr/bin/zstdcat" } | OutputBin,
+    zstdgrep = { glob = "usr/bin/zstdgrep" } | OutputBin,
+    zstdless = { glob = "usr/bin/zstdless" } | OutputBin,
+    zstdmt = { glob = "usr/bin/zstdmt" } | OutputBin,
+    unzstd = { glob = "usr/bin/unzstd" } | OutputBin,
+
+    libzstd = { glob = "usr/lib/libzstd.{so*,la}" } | OutputLib,
+
+    includes = { glob = "usr/include/**" } | OutputData,
+    pkgconfigs = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
   },
 
   replace_on_cycle =

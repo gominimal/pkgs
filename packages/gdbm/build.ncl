@@ -3,12 +3,14 @@ let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+
+let version = "1.26" in
 {
   name = "gdbm",
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/gdbm-1.26.tar.gz",
+      url = "gs://minimal-staging-archives/gdbm-%{version}.tar.gz",
       sha256 = "6a24504a14de4a744103dcb936be976df6fbe88ccff26065e54c1c47946f4a5e"
     } | Source,
     base,
@@ -21,10 +23,14 @@ let glibc = import "../glibc/build.ncl" in
 
   cmd = "./build.sh",
   outputs = {
-    bin = { glob = "usr/bin/*" } | OutputBin,
-    lib = { glob = "usr/lib/*" } | OutputLib,
-    usr_include = { glob = "usr/include/**/*" } | OutputData,
-    man = { glob = "usr/share/man/**/*" } | OutputData,
-    info = { glob = "usr/share/info/*" } | OutputData,
+    bins = { glob = "usr/bin/*" } | OutputBin,
+    libs = { glob = "usr/lib/libgdbm*.{a,so*}" } | OutputLib,
+
+    ltconfigs = { glob = "usr/lib/libgdbm.la" } | OutputData,
+    includes = { glob = "usr/include/**" } | OutputData,
+
+    mans = { glob = "usr/share/man/**" } | OutputData,
+    infos = { glob = "usr/share/info/*.info" } | OutputData,
   },
+  attrs.upstream_version = version,
 } | BuildSpec

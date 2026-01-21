@@ -7,7 +7,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 
 let bzip2 = import "../bzip2/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let libz = import "../zlib/build.ncl" in
+let zlib = import "../zlib/build.ncl" in
 let xz = import "../xz/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
@@ -30,7 +30,7 @@ let version = "0.194" in
   runtime_deps = [
     bzip2,
     glibc,
-    libz,
+    zlib,
     xz,
     zstd,
     subsetOf gcc ["libgcc", "libstdcpp"],

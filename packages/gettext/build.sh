@@ -1,9 +1,6 @@
 #!/bin/sh
 set -e
 
-tar xfo gettext-0.26.tar.xz
-cd gettext-0.26
-
 ./configure  --prefix=/usr      \
             --disable-static    \
             --docdir=/usr/share/doc/gettext-0.26
