@@ -26,7 +26,7 @@ let zlib = import "../zlib/build.ncl" in
     bins = { glob = "usr/bin/**/*" } | OutputBin,
     libs = { glob = "usr/lib/**/*.{a,so*}" } | OutputLib,
 
-    datas = { glob = "usr/lib/**/*.{tm,uuid,tcl,sh,enc,msg}" } | OutputData,
+    datas = { glob = "usr/lib/**/{tclIndex,*.c,*.tm,*.uuid,*.tcl,*.sh,*.enc,*.msg}" } | OutputData,
     tzdata = { glob = "usr/lib/tcl*/tzdata/**" } | OutputData,
 
     includes = { glob = "usr/include/**" } | OutputData,
