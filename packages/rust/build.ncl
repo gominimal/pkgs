@@ -1,4 +1,4 @@
-let { BuildSpec, Local, Needs, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let curl = import "../curl/build.ncl" in
@@ -11,7 +11,7 @@ let libffi = import "../libffi/build.ncl" in
 let toolchain-gnullvm = import "../toolchain-gnullvm/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "1.91.1" in
+let version = "1.92.0" in
 {
   name = "rust",
   inputs = [
@@ -19,7 +19,7 @@ let version = "1.91.1" in
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/rustc-%{version}-src.tar.xz",
-      sha256 = "66401bb815e236cc6b2aacbbe23b61b286c1fe27a67902e7c0222cfe77b3dbab",
+      sha256 = "ebee170bfe4c4dfc59521a101de651e5534f4dae889756a5c97ca9ea40d0c307",
       extract = true,
       strip_prefix = "rustc-%{version}-src",
     } | Source,
@@ -35,7 +35,7 @@ let version = "1.91.1" in
     llvm,
     openssl,
     sqlite,
-    gcc, # Needs libstdc++.so.6 and libgcc_s.so.1, but also a lot of crates need GCC
+    subsetOf gcc ["libgcc", "libstdcpp"],
   ],
   needs =
     {
@@ -45,7 +45,17 @@ let version = "1.91.1" in
 
   cmd = "./build.sh",
   outputs = {
-    usr = { glob = "usr/**/*" } | OutputLib,
+    bins = { glob = "usr/bin/*" } | OutputBin,
+
+    librustc_driver = { glob = "usr/lib/librustc_driver*.so" } | OutputLib,
+    rustlib_src = { glob = "usr/lib/rustlib/src/**" } | OutputData,
+    rustlib_etc = { glob = "usr/lib/rustlib/etc/**" } | OutputData,
+    rustlib_bins = { glob = "usr/lib/rustlib/*/bin/**" } | OutputBin,
+    rustlib_libs = { glob = "usr/lib/rustlib/*/lib/*.{so*,rlib}" } | OutputLib,
+
+    rust-analyzer-proc-macro-srv = { glob = "usr/libexec/rust-analyzer-proc-macro-srv" } | OutputBin,
+
+    mans = { glob = "usr/share/man/**" } | OutputData,
   },
 
   attrs = {
