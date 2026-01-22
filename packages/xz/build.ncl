@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -21,34 +21,33 @@ let glibc = import "../glibc/build.ncl" in
 
   cmd = "./build.sh",
   outputs = {
-    xz_bin = { glob = "usr/bin/xz" } | OutputLib,
-    xzcat = { glob = "usr/bin/xzcat" } | OutputLib,
-    xzcmp = { glob = "usr/bin/xzcmp" } | OutputLib,
-    xzdec = { glob = "usr/bin/xzdec" } | OutputLib,
-    xzdiff = { glob = "usr/bin/xzdiff" } | OutputLib,
-    xzegrep = { glob = "usr/bin/xzegrep" } | OutputLib,
-    xzfgrep = { glob = "usr/bin/xzfgrep" } | OutputLib,
-    xzgrep = { glob = "usr/bin/xzgrep" } | OutputLib,
-    xzless = { glob = "usr/bin/xzless" } | OutputLib,
-    xzmore = { glob = "usr/bin/xzmore" } | OutputLib,
-    lzcat = { glob = "usr/bin/lzcat" } | OutputLib,
-    lzcmp = { glob = "usr/bin/lzcmp" } | OutputLib,
-    lzdiff = { glob = "usr/bin/lzdiff" } | OutputLib,
-    lzegrep = { glob = "usr/bin/lzegrep" } | OutputLib,
-    lzfgrep = { glob = "usr/bin/lzfgrep" } | OutputLib,
-    lzgrep = { glob = "usr/bin/lzgrep" } | OutputLib,
-    lzless = { glob = "usr/bin/lzless" } | OutputLib,
-    lzma = { glob = "usr/bin/lzma" } | OutputLib,
-    lzmadec = { glob = "usr/bin/lzmadec" } | OutputLib,
-    lzmainfo = { glob = "usr/bin/lzmainfo" } | OutputLib,
-    lzmore = { glob = "usr/bin/lzmore" } | OutputLib,
-    unlzma = { glob = "usr/bin/unlzma" } | OutputLib,
-    unxz = { glob = "usr/bin/unxz" } | OutputLib,
+    xz_bin = { glob = "usr/bin/xz" } | OutputBin,
+    xzcat = { glob = "usr/bin/xzcat" } | OutputBin,
+    xzcmp = { glob = "usr/bin/xzcmp" } | OutputBin,
+    xzdec = { glob = "usr/bin/xzdec" } | OutputBin,
+    xzdiff = { glob = "usr/bin/xzdiff" } | OutputBin,
+    xzegrep = { glob = "usr/bin/xzegrep" } | OutputBin,
+    xzfgrep = { glob = "usr/bin/xzfgrep" } | OutputBin,
+    xzgrep = { glob = "usr/bin/xzgrep" } | OutputBin,
+    xzless = { glob = "usr/bin/xzless" } | OutputBin,
+    xzmore = { glob = "usr/bin/xzmore" } | OutputBin,
+    lzcat = { glob = "usr/bin/lzcat" } | OutputBin,
+    lzcmp = { glob = "usr/bin/lzcmp" } | OutputBin,
+    lzdiff = { glob = "usr/bin/lzdiff" } | OutputBin,
+    lzegrep = { glob = "usr/bin/lzegrep" } | OutputBin,
+    lzfgrep = { glob = "usr/bin/lzfgrep" } | OutputBin,
+    lzgrep = { glob = "usr/bin/lzgrep" } | OutputBin,
+    lzless = { glob = "usr/bin/lzless" } | OutputBin,
+    lzma = { glob = "usr/bin/lzma" } | OutputBin,
+    lzmadec = { glob = "usr/bin/lzmadec" } | OutputBin,
+    lzmainfo = { glob = "usr/bin/lzmainfo" } | OutputBin,
+    lzmore = { glob = "usr/bin/lzmore" } | OutputBin,
+    unlzma = { glob = "usr/bin/unlzma" } | OutputBin,
+    unxz = { glob = "usr/bin/unxz" } | OutputBin,
 
     liblzma = { glob = "usr/lib/liblzma.so*" } | OutputLib,
 
-    headers = { glob = "usr/include/lzma.h" } | OutputLib,
-    lzma_headers = { glob = "usr/include/lzma/*.h" } | OutputLib,
+    includes = { glob = "usr/include/**" } | OutputData,
   },
 
   replace_on_cycle =
