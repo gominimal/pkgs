@@ -6,7 +6,10 @@ cd readline-8.3
 
 sed -i 's/-Wl,-rpath,[^ ]*//' support/shobj-conf
 
-./configure --prefix=/usr     \
+export CFLAGS="-march=x86-64-v3 -O2 -pipe"
+export CXXFLAGS="${CFLAGS}"
+
+./configure --prefix=/usr   \
            --disable-static \
            --with-curses    \
            --docdir="/usr/share/doc/readline-8.3"

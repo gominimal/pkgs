@@ -4,6 +4,9 @@ set -e
 tar xf tcl8.6.16-src.tar.gz
 cd tcl8.6.16
 
+export CFLAGS="-march=x86-64-v3 -O2 -pipe"
+export CXXFLAGS="${CFLAGS}"
+
 SRCDIR=$(pwd)
 cd unix
 ./configure  --prefix=/usr            \

@@ -4,6 +4,9 @@ set -e
 tar xf make-4.4.1.tar.gz
 cd make-4.4.1
 
+export CFLAGS="-march=x86-64-v3 -O2 -pipe"
+export CXXFLAGS="${CFLAGS}"
+
 ./configure --prefix=/usr
 
 make

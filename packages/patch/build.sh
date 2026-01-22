@@ -1,10 +1,11 @@
 #!/bin/sh
 set -ex
 
-echo "hello"
-
 tar -xf patch-2.8.tar.xz
 cd patch-2.8
+
+export CFLAGS="-march=x86-64-v3 -O2 -pipe"
+export CXXFLAGS="${CFLAGS}"
 
 ./configure --prefix=/usr
 

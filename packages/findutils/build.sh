@@ -3,6 +3,9 @@ set -e
 
 cd "findutils-${MINIMAL_ARG_VERSION}"
 
+export CFLAGS="-march=x86-64-v3 -O2 -pipe"
+export CXXFLAGS="${CFLAGS}"
+
 ./configure --prefix=/usr --localstatedir=/var/lib/locate
 
 make -j$(nproc)

@@ -6,6 +6,8 @@ cd perl-5.42.0
 
 export BUILD_ZLIB=False
 export BUILD_BZIP2=0
+export CFLAGS="-march=x86-64-v3 -O2 -pipe"
+export CXXFLAGS="${CFLAGS}"
 
 sh Configure  -des                                          \
              -D cc=gcc                                     \

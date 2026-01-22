@@ -6,6 +6,10 @@ cd patchelf-b49de1b3384e7928bf0df9a889fe5a4e7b3fbddf
 
 mkdir build
 cd build
+
+export CFLAGS="-march=x86-64-v3 -O2 -pipe"
+export CXXFLAGS="${CFLAGS}"
+
 cmake .. -GNinja -DCMAKE_INSTALL_PREFIX=/usr
 ninja all
 

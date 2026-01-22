@@ -6,6 +6,9 @@ cd expect5.45.4
 
 patch -Np1 -i ../expect-5.45.4-gcc15-1.patch
 
+export CFLAGS="-march=x86-64-v3 -O2 -pipe"
+export CXXFLAGS="${CFLAGS}"
+
 ./configure  --prefix=/usr            \
             --with-tcl=/usr/lib     \
             --enable-shared         \

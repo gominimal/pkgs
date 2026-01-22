@@ -6,6 +6,9 @@ cd gawk-5.3.2
 
 sed -i 's/extras//' Makefile.in
 
+export CFLAGS="-march=x86-64-v3 -O2 -pipe"
+export CXXFLAGS="${CFLAGS}"
+
 ./configure --prefix=/usr
 
 make -j$(nproc)

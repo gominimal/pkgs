@@ -4,6 +4,9 @@ set -e
 tar xfo "util-linux-${MINIMAL_ARG_VERSION}.tar.xz"
 cd "util-linux-${MINIMAL_ARG_VERSION}"
 
+export CFLAGS="-march=x86-64-v3 -O2 -pipe"
+export CXXFLAGS="${CFLAGS}"
+
 ./configure --bindir=/usr/bin     \
             --libdir=/usr/lib     \
             --runstatedir=/run    \

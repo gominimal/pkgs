@@ -9,6 +9,9 @@ cd build
 
 echo "rootsbindir=/usr/sbin" > configparms
 
+export CFLAGS="-march=x86-64-v3 -O2 -pipe"
+export CXXFLAGS="${CFLAGS}"
+
 ../configure --prefix=/usr                    \
             --disable-werror                \
             --disable-nscd                  \

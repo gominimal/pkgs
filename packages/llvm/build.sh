@@ -24,6 +24,8 @@ cd build
 
 export CC=clang
 export CXX=clang++
+export CFLAGS="-march=x86-64-v3 -O2 -pipe"
+export CXXFLAGS="${CFLAGS}"
 
 cmake \
 	-D CLANG_CONFIG_FILE_SYSTEM_DIR=/etc/clang \

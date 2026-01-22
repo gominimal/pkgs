@@ -4,6 +4,9 @@ set -e
 tar xfo boost-1.89.0-b2-nodocs.tar.xz
 cd boost-1.89.0
 
+export CFLAGS="-march=x86-64-v3 -O2 -pipe"
+export CXXFLAGS="${CFLAGS}"
+
 ./bootstrap.sh --prefix=/usr --with-python=python3
 ./b2 stage -j$(nproc) threading=multi link=shared
 

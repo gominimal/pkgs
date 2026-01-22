@@ -4,10 +4,13 @@ set -e
 tar xf Python-3.13.7.tar.xz
 cd Python-3.13.7
 
-./configure  --prefix=/usr           \
-            --enable-shared        \
-            --with-system-expat    \
-            --enable-optimizations \
+export CFLAGS="-march=x86-64-v3 -O3 -pipe"
+export CXXFLAGS="${CFLAGS}"
+
+./configure  --prefix=/usr          \
+            --enable-shared         \
+            --with-system-expat     \
+            --enable-optimizations  \
             --without-static-libpython
 
 make -j$(nproc)

@@ -9,6 +9,9 @@ cd build
 # TODO
 # --enable-nls
 
+export CFLAGS="-march=x86-64-v3 -O3 -pipe"
+export CXXFLAGS="${CFLAGS}"
+
 ../configure    --prefix=/usr       \
                 --sysconfdir=/etc   \
                 --enable-ld=default \
