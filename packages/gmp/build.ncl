@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -53,6 +53,7 @@ let m4 = import "../m4/build.ncl" in
   ],
   runtime_deps = [
     glibc,
+    subsetOf gcc ["libstdcpp", "libgcc"],
   ],
 
   cmd = "./build.sh",
