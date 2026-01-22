@@ -16,6 +16,7 @@ let zlib = import "../zlib/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 let lz4 = import "../lz4/build.ncl" in
+let xz = import "../xz/build.ncl" in
 
 let version = "1.5.7" in
 {
@@ -43,6 +44,7 @@ let version = "1.5.7" in
   runtime_deps = [
     glibc,
     lz4,
+    xz,
   ],
 
   cmd = "./build.sh",

@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -59,7 +59,11 @@ let mpfr = import "../mpfr/build.ncl" in
 
   cmd = "./build.sh",
   outputs = {
-    usr = { glob = "usr/**/*" } | OutputLib,
+    libs = { glob = "usr/lib/libmpc.so*" } | OutputLib,
+
+    ltconfigs = { glob = "usr/lib/libmpc.la" } | OutputData,
+    includes = { glob = "usr/include/mpc.h" } | OutputData,
+    infos = { glob = "usr/share/info/*.info" } | OutputData,
   },
   replace_on_cycle =
     {

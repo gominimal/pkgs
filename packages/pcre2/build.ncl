@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -63,7 +63,16 @@ let version = "10.47" in
   },
 
   outputs = {
-    usr = { glob = "usr/**/*" } | OutputLib,
+    pcre2-config = { glob = "usr/bin/pcre2-config" } | OutputBin,
+    pcre2grep = { glob = "usr/bin/pcre2grep" } | OutputBin,
+    #pcre2test = { glob = "usr/bin/pcre2test" } | OutputBin, - does anything need this?
+
+    libs = { glob = "usr/lib/libpcre2*.so*" } | OutputLib,
+    ltconfigs = { glob = "usr/lib/libpcre2*.la" } | OutputData,
+    pkgconfigs = { glob = "usr/lib/pkgconfig/**" } | OutputData,
+
+    mans = { glob = "usr/share/man/**" } | OutputData,
+    includes = { glob = "usr/include/**" } | OutputData,
   },
 
   replace_on_cycle =

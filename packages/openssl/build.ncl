@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -27,8 +27,21 @@ let version = "3.6.0" in
 
   cmd = "./build.sh",
   outputs = {
-    etc = { glob = "etc/ssl/**/*" } | OutputLib,
-    usr = { glob = "usr/**/*" } | OutputLib,
+    openssl = { glob = "usr/bin/openssl" } | OutputBin,
+    c_rehash = { glob = "usr/bin/c_rehash" } | OutputBin,
+
+    libcrypto = { glob = "usr/lib/libcrypto.so*" } | OutputLib,
+    libssl = { glob = "usr/lib/libssl.so*" } | OutputLib,
+
+    engines-3 = { glob = "usr/lib/engines-3/*.so*" } | OutputLib,
+    ossl-modules = { glob = "usr/lib/engines-3/*.so*" } | OutputLib,
+
+    pkgconfigs = { glob = "usr/lib/pkgconfig/**" } | OutputData,
+    cmake_data = { glob = "usr/lib/cmake/OpenSSL/*.cmake" } | OutputData,
+
+    includes = { glob = "usr/include/openssl/**" } | OutputData,
+    mans = { glob = "usr/share/man/**" } | OutputData,
+    etc = { glob = "etc/ssl/**/*" } | OutputData,
   },
 
   attrs =
