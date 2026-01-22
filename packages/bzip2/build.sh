@@ -10,6 +10,9 @@ sed -i "s@(PREFIX)/man@(PREFIX)/share/man@g" Makefile
 make -f Makefile-libbz2_so
 make clean
 
+export CFLAGS="-march=x86-64-v3 -O3 -pipe"
+export CXXFLAGS="${CFLAGS}"
+
 make -j$(nproc)
 make PREFIX="$OUTPUT_DIR/usr" install
 

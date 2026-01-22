@@ -7,6 +7,9 @@ cd "pcre2-${MINIMAL_ARG_VERSION}"
 # TODO
 # --enable-pcre2test-libreadline
 
+export CFLAGS="-march=x86-64-v3 -O3 -pipe"
+export CXXFLAGS="${CFLAGS}"
+
 ./configure  --prefix=/usr                          \
             --docdir=/usr/share/doc/pcre2-10.45     \
             --enable-unicode                        \

@@ -18,6 +18,9 @@ cd build
 # --enable-host-pie
 # --enable-nls
 
+export CFLAGS="-march=x86-64-v3 -O3 -pipe"
+export CXXFLAGS="${CFLAGS}"
+
 ../configure \
              --prefix=/usr                      \
              --enable-languages=c,c++,fortran   \
