@@ -1,9 +1,20 @@
 let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
-let base = import "../base/build.ncl" in
+# base
+let bash = import "../bash/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let diffutils = import "../diffutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
+let file = import "../file/build.ncl" in
 let make = import "../make/build.ncl" in
-let toolchain = import "../toolchain/build.ncl" in
+let sed = import "../sed/build.ncl" in
+# toolchain
+let binutils = import "../binutils/build.ncl" in
+let gcc = import "../gcc/build.ncl" in
+let linux_headers = import "../linux_headers/build.ncl" in
+
 let zlib = import "../zlib/build.ncl" in
 
+let glibc = import "../glibc/build.ncl" in
 let lz4 = import "../lz4/build.ncl" in
 
 let version = "1.5.7" in
@@ -13,19 +24,28 @@ let version = "1.5.7" in
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/zstd-%{version}.tar.gz",
-      sha256 = "eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3"
+      sha256 = "eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3",
+      extract = true,
+      strip_prefix = "zstd-%{version}",
     } | Source,
-    base,
+    bash,
+    coreutils,
+    diffutils,
+    file,
+    sed,
+    grep,
     make,
-    lz4,
-    toolchain,
+    binutils,
+    gcc,
+    linux_headers,
     zlib,
+  ],
+  runtime_deps = [
+    glibc,
+    lz4,
   ],
 
   cmd = "./build.sh",
-  build_args = {
-    include version,
-  },
 
   outputs = {
     zstd_bin = { glob = "usr/bin/zstd" } | OutputBin,
