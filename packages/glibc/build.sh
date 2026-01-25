@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar xf glibc-2.42.tar.xz
-cd glibc-2.42
+tar xf "glibc-${MINIMAL_ARG_VERSION}.tar.xz"
+cd "glibc-${MINIMAL_ARG_VERSION}"
 
 mkdir -v build
 cd build
@@ -12,7 +12,7 @@ echo "rootsbindir=/usr/sbin" > configparms
 export CFLAGS="-march=x86-64-v3 -O2 -pipe"
 export CXXFLAGS="${CFLAGS}"
 
-../configure --prefix=/usr                    \
+../configure --prefix=/usr                  \
             --disable-werror                \
             --disable-nscd                  \
             libc_cv_slibdir=/usr/lib        \

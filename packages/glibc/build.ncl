@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -23,13 +23,16 @@ let linux_headers = import "../linux_headers/build.ncl" in
 let bison = import "../bison/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 let python = import "../python/build.ncl" in
+
+let version = "2.43" in
 {
   name = "glibc",
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/glibc-2.42.tar.xz",
-      sha256 = "d1775e32e4628e64ef930f435b67bb63af7599acb6be2b335b9f19f16509f17f"
+      # Downloadable from: https://ftp.gnu.org/gnu/glibc/
+      url = "gs://minimal-staging-archives/glibc-%{version}.tar.xz",
+      sha256 = "d9c86c6b5dbddb43a3e08270c5844fc5177d19442cf5b8df4be7c07cd5fa3831"
     } | Source,
     # base
     bash,
@@ -56,12 +59,22 @@ let python = import "../python/build.ncl" in
     m4,
     python,
   ],
+
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
+
   outputs = {
     etc = { glob = "etc/**/*" } | OutputLib,
     usr = { glob = "usr/**/*" } | OutputLib,
     var = { glob = "var/**/*" } | OutputLib,
   },
+  attrs = {
+    upstream_version = version,
+    repology_project = "glibc",
+  } | Attrs,
+
   replace_on_cycle =
     {
       name = "glibc (prebuilt)",
