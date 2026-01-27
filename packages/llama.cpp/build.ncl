@@ -10,14 +10,14 @@ let hwdata = import "../hwdata/build.ncl" in
 let pciutils = import "../pciutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "b7818" in
+let version = "b7843" in
 {
   name = "llama.cpp",
   inputs = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/ggml-org/llama.cpp/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "892e68611f94609a0a7f612f2f63d7abceef685a5a85ed0c738c29999fb7c987",
+      sha256 = "1941ffaeb37c05837727bba2196f7eeb09ef14af4ba27bd21ff896794bc42f5b",
       extract = true,
       strip_prefix = "llama.cpp-%{version}",
     } | Source,
