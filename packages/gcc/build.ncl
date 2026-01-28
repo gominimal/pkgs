@@ -80,7 +80,7 @@ let version = "15.2.0" in
     libgomp = { glob = "usr/lib/libgomp.so*" } | OutputLib,
     libstdcpp = { glob = "usr/lib/libstdc++*.so*" } | OutputLib,
 
-    libs_data = { glob = "usr/lib/**/*.{py,spec,cfg}" } | OutputData,
+    libs_data = { glob = "usr/lib/**" } | OutputData,
     share_data = { glob = "usr/share/gcc-*/**" } | OutputData,
     ltconfigs = { glob = "usr/lib/**/*.la" } | OutputData,
 
