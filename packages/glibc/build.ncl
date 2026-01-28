@@ -70,10 +70,11 @@ let version = "2.42" in
     usr = { glob = "usr/**/*" } | OutputLib,
     var = { glob = "var/**/*" } | OutputLib,
   },
-  attrs = {
-    upstream_version = version,
-    repology_project = "glibc",
-  } | Attrs,
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "glibc",
+    } | Attrs,
 
   replace_on_cycle =
     {
