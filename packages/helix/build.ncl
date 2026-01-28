@@ -1,4 +1,4 @@
-let { BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -40,6 +40,7 @@ let version = "25.07.1" in
   outputs = {
     hx = { glob = "usr/bin/hx" } | OutputBin,
     runtime = { glob = "usr/lib/helix/runtime/**" } | OutputData,
+    grammars = { glob = "usr/lib/helix/runtime/grammars/*.so" } | OutputLib,
   },
   attrs.upstream_version = version,
 } | BuildSpec

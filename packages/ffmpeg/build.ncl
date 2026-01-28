@@ -6,6 +6,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let freetype = import "../freetype/build.ncl" in
 let fontconfig = import "../fontconfig/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
+let xz = import "../xz/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
 let version = "8.0.1" in
@@ -28,6 +29,7 @@ let version = "8.0.1" in
     freetype,
     fontconfig,
     openssl,
+    xz,
     zlib,
   ],
 

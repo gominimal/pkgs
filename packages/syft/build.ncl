@@ -2,6 +2,7 @@ let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+let glibc = import "../glibc/build.ncl" in
 
 let version = "1.41.0" in
 {
@@ -24,6 +25,10 @@ let version = "1.41.0" in
       dns = {},
       internet = {},
     } | Needs,
+
+  runtime_deps = [
+    glibc,
+  ],
 
   cmd = "./build.sh",
   build_args = {
