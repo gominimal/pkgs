@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.68.2" in
+let version = "0.69.0" in
 {
   name = "trivy",
   inputs = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/aquasecurity/trivy/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "dd8efd719709d09b41c98cdb9090654f8ed326f07b05ba7a4ffca4de2745aea3",
+      sha256 = "b99b38c3233146a386b45a751a5340a744eb47cd438e30526c23e25e4e719b6c",
       extract = true,
       strip_prefix = "trivy-%{version}",
     } | Source,
