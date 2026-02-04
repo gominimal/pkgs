@@ -6,7 +6,7 @@ harness {
   build_packages = ["pnpm", "base"],
 
   build_cmds_cmd = ["/bin/bash", "-c", m%"
-    [ ! -d node_modules ] || ! pnpm install --verbose --frozen-lockfile --prefer-offline 2>/dev/null && echo '/bin/pnpm install'
+    [ ! -d node_modules ] || ! pnpm install --verbose --frozen-lockfile --prefer-offline 1>&2 && echo '/bin/pnpm install'
     echo '/bin/pnpm build'
   "%],
 }
