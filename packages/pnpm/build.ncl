@@ -1,5 +1,6 @@
 let { BuildSpec, Local, Needs, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
 
 let node = import "../node/build.ncl" in
@@ -18,6 +19,7 @@ let version = "10.15.1" in
   ],
   runtime_deps = [
     node,
+    coreutils, # pnpm is a sheband script that invokes node like `#!/usr/bin/env node`
   ],
   needs =
     {
