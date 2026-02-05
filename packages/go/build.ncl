@@ -43,7 +43,22 @@ let version = "1.25.5" in
     go_bin = { glob = "usr/bin/go" } | OutputBin,
     gofmt_bin = { glob = "usr/bin/gofmt" } | OutputBin,
 
-    goroot = { glob = "usr/go/**/*" } | OutputData,
+    goroot_api_data = { glob = "usr/go/api/*" } | OutputData,
+    goroot_bins = { glob = "usr/go/bin/*" } | OutputBin,
+    goroot_lib_fips = { glob = "usr/go/lib/fips140/**" } | OutputData,
+    goroot_lib_time = { glob = "usr/go/lib/time/**" } | OutputData,
+    goroot_lib_wasm = { glob = "usr/go/lib/wasm/**" } | OutputData,
+    goroot_misc = { glob = "usr/go/misc/**" } | OutputData,
+    goroot_pkg_bins = { glob = "usr/go/pkg/tool/*/**" } | OutputBin,
+    goroot_src = { glob = "usr/go/src/**" } | OutputData,
+    goroot_test = { glob = "usr/go/test/**" } | OutputData,
+
+    goroot_goenv = { glob = "usr/go/go.env" } | OutputData,
+    goroot_license = { glob = "usr/go/LICENSE" } | OutputData,
+    goroot_patents = { glob = "usr/go/PATENTS" } | OutputData,
+    goroot_version = { glob = "usr/go/VERSION" } | OutputData,
+
+    includes = { glob = "usr/go/pkg/include/**" } | OutputData,
   },
 
   attrs =
