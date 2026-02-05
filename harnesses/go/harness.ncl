@@ -1,6 +1,6 @@
 let { harness, .. } = import "minimal.ncl" in
 harness {
-  name = "go-harness",
+  name = "go",
   build_packages = ["go", "binutils", "linux_headers"],
   build_env_vars = {},
   build_cmd = "go build",
