@@ -50,7 +50,7 @@ let version = "1.25.5" in
     goroot_lib_wasm = { glob = "usr/go/lib/wasm/**" } | OutputData,
     goroot_misc = { glob = "usr/go/misc/**" } | OutputData,
     goroot_pkg_bins = { glob = "usr/go/pkg/tool/*/**" } | OutputBin,
-    goroot_src = { glob = "usr/go/src/**" } | OutputData,
+    goroot_src = { glob = "usr/go/src/**", allow_executable = true } | OutputData,
     goroot_test = { glob = "usr/go/test/**" } | OutputData,
 
     goroot_goenv = { glob = "usr/go/go.env" } | OutputData,
