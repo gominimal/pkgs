@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -32,5 +32,9 @@ let version = "4.29.0" in
   outputs = {
     railway = { glob = "usr/bin/railway" } | OutputBin,
   },
-  attrs.upstream_version = version,
+  attrs = {
+    # Wire up Railway's global state directory.
+    env_dir_mappings = [{ read_only = false, path = "~/.railway", class = 'State }],
+    upstream_version = version,
+  } | Attrs,
 } | BuildSpec
