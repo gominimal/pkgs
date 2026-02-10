@@ -12,7 +12,7 @@ let version = "1.2.4" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/bootandy/dust/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/bootandy/dust/v%{version}.tar.gz",
       sha256 = "2f6768534bd01727234e67f1dd3754c9547aa18c715f6ee52094e881ebac50e3",
       extract = true,
       strip_prefix = "dust-%{version}",

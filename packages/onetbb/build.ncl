@@ -14,7 +14,7 @@ let version = "2022.3.0" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/uxlfoundation/oneTBB/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/uxlfoundation/oneTBB/v%{version}.tar.gz",
       sha256 = "01598a46c1162c27253a0de0236f520fd8ee8166e9ebb84a4243574f88e6e50a",
       extract = true,
       strip_prefix = "oneTBB-%{version}",

@@ -6,15 +6,15 @@ let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "4.2.1" in
+let version = "4.2.3" in
 {
   name = "cmake",
   inputs = [
     {
-      url = "gs://minimal-staging-archives/cmake-%{version}.tar.gz",
-      sha256 = "414aacfac54ba0e78e64a018720b64ed6bfca14b587047b8b3489f407a14a070",
+      url = "gs://minimal-staging-archives/Kitware/CMake/v%{version}.tar.gz",
+      sha256 = "803186734800e1e8b2a242154ba1ed7bda4e77643e77e12477c71f3cdc7ede1d",
       extract = true,
-      strip_prefix = "cmake-%{version}",
+      strip_prefix = "CMake-%{version}",
     } | Source,
     { file = "build.sh" } | Local,
     base,

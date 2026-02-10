@@ -10,7 +10,7 @@ let version = "2.86.0" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/cli/cli/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/cli/cli/v%{version}.tar.gz",
       sha256 = "cd2998310e81727af5c2056e9936e6541a20f968d6e3a4891f7fedbc0b336008",
       extract = true,
       strip_prefix = "cli-%{version}",

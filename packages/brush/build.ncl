@@ -12,7 +12,7 @@ let version = "0.3.0" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/reubeno/brush/archive/refs/tags/brush-shell-v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/reubeno/brush/brush-shell-v%{version}.tar.gz",
       sha256 = "a0dac5cf7e9d8bced9bf28ed400955750ed6b7320d1154522a14f4a74e75a056",
       extract = true,
       strip_prefix = "brush-brush-shell-v%{version}",

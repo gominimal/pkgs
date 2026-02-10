@@ -17,7 +17,7 @@ let version = "3.4.1" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/htop-dev/htop/archive/refs/tags/%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/htop-dev/htop/%{version}.tar.gz",
       sha256 = "af9ec878f831b7c27d33e775c668ec79d569aa781861c995a0fbadc1bdb666cf",
       extract = true,
       strip_prefix = "htop-%{version}",

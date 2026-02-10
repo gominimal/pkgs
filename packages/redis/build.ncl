@@ -16,7 +16,7 @@ let version = "8.4.1" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/redis/redis/archive/refs/tags/%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/redis/redis/%{version}.tar.gz",
       sha256 = "b5edf7a234bbd11c8effb75bf0e50f1470c7f4b29898d596e2a7e88621af4912",
       extract = true,
       strip_prefix = "redis-%{version}",

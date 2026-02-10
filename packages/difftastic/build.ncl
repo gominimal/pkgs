@@ -13,7 +13,7 @@ let version = "0.67.0" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/Wilfred/difftastic/archive/refs/tags/%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/Wilfred/difftastic/%{version}.tar.gz",
       sha256 = "a6a15d6ca9f9ab7c034d1770417d1829deb3fbe9dcf4731b9cba867e50e78437",
       extract = true,
       strip_prefix = "difftastic-%{version}",

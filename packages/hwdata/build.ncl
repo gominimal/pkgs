@@ -9,7 +9,7 @@ let version = "0.404" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/vcrhonek/hwdata/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/vcrhonek/hwdata/v%{version}.tar.gz",
       sha256 = "5c14fc99bf193faad1ccc267ccfff14ee4e4550a582b17a76aec72178539f837",
       extract = true,
       strip_prefix = "hwdata-%{version}",

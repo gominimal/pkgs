@@ -12,7 +12,7 @@ let version = "2.3.0" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/01mf02/jaq/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/01mf02/jaq/v%{version}.tar.gz",
       sha256 = "80fae7c5bbbc244580ca77d3e5a4fc6e9c3ea08a5526d562e3c5300edd44fe8b",
       extract = true,
       strip_prefix = "jaq-%{version}",

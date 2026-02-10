@@ -10,7 +10,7 @@ let version = "1.14.4" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/hashicorp/terraform/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/hashicorp/terraform/v%{version}.tar.gz",
       sha256 = "fff97e2a29560e3d5f0b51ce0e6a83eb2fda8bdbe2c083c397d8cb76b3a638e2",
       extract = true,
       strip_prefix = "terraform-%{version}",

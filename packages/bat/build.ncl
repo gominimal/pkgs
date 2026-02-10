@@ -15,7 +15,7 @@ let version = "0.26.1" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/sharkdp/bat/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/sharkdp/bat/v%{version}.tar.gz",
       sha256 = "4474de87e084953eefc1120cf905a79f72bbbf85091e30cf37c9214eafcaa9c9",
       extract = true,
       strip_prefix = "bat-%{version}",

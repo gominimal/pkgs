@@ -9,7 +9,7 @@ let version = "0.1.0" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/noperator/jqfmt/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/noperator/jqfmt/v%{version}.tar.gz",
       sha256 = "5435c3166921ea103513d516c4d56ee00755d6b0b798f3edbdabfc06a1d98268",
       extract = true,
       strip_prefix = "jqfmt-%{version}",

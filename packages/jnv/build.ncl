@@ -12,7 +12,7 @@ let version = "0.6.1" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/ynqa/jnv/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/ynqa/jnv/v%{version}.tar.gz",
       sha256 = "03223fb20a4c65c2610b94e6208b65098e6b3fe836d3deea75931a5c808f4869",
       extract = true,
       strip_prefix = "jnv-%{version}",

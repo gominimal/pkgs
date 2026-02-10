@@ -12,7 +12,7 @@ let version = "0.23.4" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/eza-community/eza/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/eza-community/eza/v%{version}.tar.gz",
       sha256 = "9fbcad518b8a2095206ac385329ca62d216bf9fdc652dde2d082fcb37c309635",
       extract = true,
       strip_prefix = "eza-%{version}",

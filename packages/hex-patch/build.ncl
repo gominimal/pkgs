@@ -15,7 +15,7 @@ let version = "1.12.5" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/Etto48/HexPatch/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/Etto48/HexPatch/v%{version}.tar.gz",
       sha256 = "089a87c1128483507bef4f89df5ea4e0a7ffe09210b3a9cfa687705f86ea621f",
       extract = true,
       strip_prefix = "HexPatch-%{version}",

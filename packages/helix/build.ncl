@@ -13,7 +13,7 @@ let version = "25.07.1" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/helix-editor/helix/archive/refs/tags/%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/helix-editor/helix/%{version}.tar.gz",
       sha256 = "27c8bc3eba46bc7bab1e3629c6b28ff94882eeff17366b3ea69cd8ceffba7541",
       extract = true,
       strip_prefix = "helix-%{version}",

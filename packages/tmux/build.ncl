@@ -19,7 +19,7 @@ let version = "3.6a" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/tmux/tmux/archive/refs/tags/%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/tmux/tmux/%{version}.tar.gz",
       sha256 = "cd8d97f344cd2faa89e41358428b3ada883e4c72fd7d4f43ccac93daec1442eb",
       extract = true,
       strip_prefix = "tmux-%{version}",

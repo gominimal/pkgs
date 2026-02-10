@@ -12,7 +12,7 @@ let version = "0.1.4" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/SilinMeng0510/imgcatr/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/SilinMeng0510/imgcatr/v%{version}.tar.gz",
       sha256 = "8e59a4ad83d1b474372fb8c5c1f11f07c742ea9443c26a9f02a4465140026f0e",
       extract = true,
       strip_prefix = "imgcatr-%{version}",

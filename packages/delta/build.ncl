@@ -15,7 +15,7 @@ let version = "0.18.2" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/dandavison/delta/archive/refs/tags/%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/dandavison/delta/%{version}.tar.gz",
       sha256 = "64717c3b3335b44a252b8e99713e080cbf7944308b96252bc175317b10004f02",
       extract = true,
       strip_prefix = "delta-%{version}",

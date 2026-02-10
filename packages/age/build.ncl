@@ -12,7 +12,7 @@ let version = "1.3.1" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/FiloSottile/age/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/FiloSottile/age/v%{version}.tar.gz",
       sha256 = "396007bc0bc53de253391493bda1252757ba63af1a19db86cfb60a35cb9d290a",
       extract = true,
       strip_prefix = "age-%{version}",

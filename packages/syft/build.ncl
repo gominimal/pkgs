@@ -10,7 +10,7 @@ let version = "1.41.2" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/anchore/syft/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/anchore/syft/v%{version}.tar.gz",
       sha256 = "29377f383cc262113188bdd373899e7c7f7aa73cb5c5cca81fdf2ee0658c603f",
       extract = true,
       strip_prefix = "syft-%{version}",

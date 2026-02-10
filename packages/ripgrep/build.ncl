@@ -12,7 +12,7 @@ let version = "15.1.0" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/BurntSushi/ripgrep/archive/refs/tags/%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/BurntSushi/ripgrep/%{version}.tar.gz",
       sha256 = "046fa01a216793b8bd2750f9d68d4ad43986eb9c0d6122600f993906012972e8",
       extract = true,
       strip_prefix = "ripgrep-%{version}",

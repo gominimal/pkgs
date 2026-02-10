@@ -12,7 +12,7 @@ let version = "0.67.0" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/junegunn/fzf/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/junegunn/fzf/v%{version}.tar.gz",
       sha256 = "da72936dd23045346769dbf233a7a1fa6b4cfe4f0e856b279821598ce8f692af",
       extract = true,
       strip_prefix = "fzf-%{version}",

@@ -11,7 +11,7 @@ let version = "2.1.1" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/charmbracelet/glow/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/charmbracelet/glow/v%{version}.tar.gz",
       sha256 = "f13e1d6be1ab4baf725a7fedc4cd240fc7e5c7276af2d92f199e590e1ef33967",
       extract = true,
       strip_prefix = "glow-%{version}",

@@ -12,7 +12,7 @@ let version = "0.3.2" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/j178/prek/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/j178/prek/v%{version}.tar.gz",
       sha256 = "1e17e690d65b8d84b9d23adff8189a6b0667e3484d65f5add0acf7e8a787beec",
       extract = true,
       strip_prefix = "prek-%{version}",

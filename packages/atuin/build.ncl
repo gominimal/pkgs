@@ -12,7 +12,7 @@ let version = "18.11.0" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/atuinsh/atuin/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/atuinsh/atuin/v%{version}.tar.gz",
       sha256 = "9d47c1b176be1c0d4a4c16e94dcb55df9c893ee9d2ad6dbc09b4719d5b557645",
       extract = true,
       strip_prefix = "atuin-%{version}",

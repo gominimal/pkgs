@@ -16,7 +16,7 @@ let version = "b7974" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/ggml-org/llama.cpp/archive/refs/tags/%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/ggml-org/llama.cpp/%{version}.tar.gz",
       sha256 = "c4f68cdb611fad37ab7cb166c108b5ae9494fff19737cb00e1440c538c1bc970",
       extract = true,
       strip_prefix = "llama.cpp-%{version}",

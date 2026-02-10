@@ -13,7 +13,7 @@ let version = "0.43.1" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/zellij-org/zellij/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/zellij-org/zellij/v%{version}.tar.gz",
       sha256 = "e9fd24190869be6e9e8d731df2ccd0b3b1dd368ae9dbb9d620ec905b83e325ec",
       extract = true,
       strip_prefix = "zellij-%{version}",

@@ -10,7 +10,7 @@ let version = "0.107.1" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/anchore/grype/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/anchore/grype/v%{version}.tar.gz",
       sha256 = "9cc155d5b168f6ba6807b0e95ef191687c4d4e43d7e43f04c86eadf8649ec491",
       extract = true,
       strip_prefix = "grype-%{version}",

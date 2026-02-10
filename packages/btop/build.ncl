@@ -10,7 +10,7 @@ let version = "1.4.6" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/aristocratos/btop/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/aristocratos/btop/v%{version}.tar.gz",
       sha256 = "4beb90172c6acaac08c1b4a5112fb616772e214a7ef992bcbd461453295a58be",
       extract = true,
     } | Source,

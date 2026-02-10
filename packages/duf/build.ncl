@@ -9,7 +9,7 @@ let version = "0.9.1" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/muesli/duf/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/muesli/duf/v%{version}.tar.gz",
       sha256 = "1334d8c1a7957d0aceebe651e3af9e1c1e0c6f298f1feb39643dd0bd8ad1e955",
       extract = true,
       strip_prefix = "duf-%{version}",

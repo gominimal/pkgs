@@ -10,7 +10,7 @@ let version = "1.9.3" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/fullstorydev/grpcurl/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/fullstorydev/grpcurl/v%{version}.tar.gz",
       sha256 = "bb555087f279af156159c86d4d3d5dd3f2991129e4cd6b09114e6851a679340d",
       extract = true,
       strip_prefix = "grpcurl-%{version}",

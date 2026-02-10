@@ -12,7 +12,7 @@ let version = "0.6.0" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/ksdme/ut/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/ksdme/ut/v%{version}.tar.gz",
       sha256 = "f9fd00d8913d15cae4f0124507cfdf95375be98a0d14522b5d58204dca0a0e69",
       extract = true,
       strip_prefix = "ut-%{version}",

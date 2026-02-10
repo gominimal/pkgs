@@ -9,7 +9,7 @@ let version = "1.1.0" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/AlexanderGrooff/mermaid-ascii/archive/refs/tags/%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/AlexanderGrooff/mermaid-ascii/%{version}.tar.gz",
       sha256 = "28c8b9a5ff1e475518d2054384a08bf23bb372f2f21cd3a7a3a5ba97eecd552a",
       extract = true,
       strip_prefix = "mermaid-ascii-%{version}",

@@ -13,7 +13,7 @@ let version = "1.21.0" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/containers/skopeo/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/containers/skopeo/v%{version}.tar.gz",
       sha256 = "f76eeddf697a3cc7a872e3077ab4d0fdbebe9f3c6171462e3e9feb84368b3fac",
       extract = true,
       strip_prefix = "skopeo-%{version}",

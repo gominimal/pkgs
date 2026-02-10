@@ -12,7 +12,7 @@ let version = "10.3.0" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/sharkdp/fd/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/sharkdp/fd/v%{version}.tar.gz",
       sha256 = "2edbc917a533053855d5b635dff368d65756ce6f82ddefd57b6c202622d791e9",
       extract = true,
       strip_prefix = "fd-%{version}",

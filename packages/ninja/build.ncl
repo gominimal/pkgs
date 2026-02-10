@@ -11,7 +11,7 @@ let version = "1.13.2" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/ninja-%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/ninja-build/ninja/v%{version}.tar.gz",
       sha256 = "974d6b2f4eeefa25625d34da3cb36bdcebe7fbce40f4c16ac0835fd1c0cbae17",
       extract = true,
       strip_prefix = "ninja-%{version}",

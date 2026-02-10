@@ -12,7 +12,7 @@ let version = "0.12.3" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/ClementTsang/bottom/archive/refs/tags/%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/ClementTsang/bottom/%{version}.tar.gz",
       sha256 = "1c70894f0eceb7034075959ff3080cf4706c11d7c012912c24e777abe4e62b70",
       extract = true,
       strip_prefix = "bottom-%{version}",

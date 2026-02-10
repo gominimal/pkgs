@@ -12,7 +12,7 @@ let version = "0.3.31" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/OpenMathLib/OpenBLAS/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/OpenMathLib/OpenBLAS/v%{version}.tar.gz",
       sha256 = "6dd2a63ac9d32643b7cc636eab57bf4e57d0ed1fff926dfbc5d3d97f2d2be3a6",
       extract = true,
       strip_prefix = "OpenBLAS-%{version}",

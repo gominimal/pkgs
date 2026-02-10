@@ -16,8 +16,10 @@ let version = "1.51.0" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/libuv-%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/libuv/libuv/v%{version}.tar.gz",
       sha256 = "27e55cf7083913bfb6826ca78cde9de7647cded648d35f24163f2d31bb9f51cd",
+      extract = true,
+      strip_prefix = "libuv-%{version}",
     } | Source,
     base,
     toolchain,

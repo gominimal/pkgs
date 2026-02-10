@@ -12,7 +12,7 @@ let version = "0.1.1" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/BurntSushi/biff/archive/refs/tags/%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/BurntSushi/biff/%{version}.tar.gz",
       sha256 = "459a9d4e085b1545e8974ed16a49f161f6efad2a7b14a4292fa28b49e6ef9292",
       extract = true,
       strip_prefix = "biff-%{version}",

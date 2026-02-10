@@ -10,7 +10,7 @@ let version = "0.69.1" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/aquasecurity/trivy/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/aquasecurity/trivy/v%{version}.tar.gz",
       sha256 = "997f7b744e93bd2faa9f0c2f86345ab142d50d42a6ed2b3a35dc8b65676355ee",
       extract = true,
       strip_prefix = "trivy-%{version}",

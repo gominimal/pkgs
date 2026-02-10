@@ -12,7 +12,7 @@ let version = "0.14.10" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/dalance/procs/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/dalance/procs/v%{version}.tar.gz",
       sha256 = "7b287ac253fd1d202b0ea6a9a8ba2ed97598cf8e7dfd539bd40e382c6dc6d350",
       extract = true,
       strip_prefix = "procs-%{version}",

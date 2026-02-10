@@ -12,7 +12,7 @@ let version = "4.29.0" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/railwayapp/cli/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/railwayapp/cli/v%{version}.tar.gz",
       sha256 = "a355f0fbed7784751332b52a03d6cf5e1cf434f38d0a953c5fb548e3cbef4866",
       extract = true,
       strip_prefix = "cli-%{version}",

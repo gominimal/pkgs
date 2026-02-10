@@ -10,7 +10,7 @@ let version = "3.0.4" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/sigstore/cosign/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/sigstore/cosign/v%{version}.tar.gz",
       sha256 = "8096c07e9a3ae21fa600c19cc8ff8c6f15b027184858d0bc0edde5f74589a01a",
       extract = true,
       strip_prefix = "cosign-%{version}",

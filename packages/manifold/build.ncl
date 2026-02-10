@@ -15,7 +15,7 @@ let version = "3.3.2" in
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/elalish/manifold/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/elalish/manifold/v%{version}.tar.gz",
       sha256 = "92a37034c407156f71446f9ca03bd4487adeb1b8246a03d1c047b859b1b9d211",
       extract = true,
       strip_prefix = "manifold-%{version}",
