@@ -14,7 +14,7 @@ let all_outputs = {
 
   libllvm = { glob = "usr/lib/*LLVM*.{so*,a}" } | OutputLib,
   libear = { glob = "usr/lib/libear/**", allow_data = true } | OutputLib,
-  liblto = { glob = "usr/lib/liblto.so*" } | OutputLib,
+  liblto = { glob = "usr/lib/libLTO.so*" } | OutputLib,
   libremarks = { glob = "usr/lib/libRemarks.so*" } | OutputLib,
   libscanbuild = { glob = "usr/lib/libscanbuild/**", allow_data = true } | OutputLib,
 
