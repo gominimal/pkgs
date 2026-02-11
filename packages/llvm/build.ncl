@@ -21,13 +21,11 @@ let all_outputs = {
   libclang = { glob = "usr/lib/libclang*.{so*,a}" } | OutputLib,
   libs_clang = { glob = "usr/lib/clang/*/**", allow_data = true } | OutputLib,
 
-  libexec = { glob = "usr/libexec/**" } | OutputLib,
+  libexec = { glob = "usr/libexec/**" } | OutputBin,
   share_data = { glob = "usr/share/**" } | OutputData,
 
   cmake_data_llvm = { glob = "usr/lib/cmake/llvm/*.cmake" } | OutputData,
   cmake_data_clang = { glob = "usr/lib/cmake/clang/*.cmake" } | OutputData,
-
-  usr = { glob = "usr/**/*" } | OutputLib,
 
   mans = { glob = "usr/share/man/**" } | OutputData,
   includes = { glob = "usr/include/**" } | OutputData,
