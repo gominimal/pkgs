@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let python = import "../python/build.ncl" in
 let setuptools = import "../setuptools/build.ncl" in
@@ -23,8 +23,8 @@ let version = "1.10.1" in
 
   cmd = "./build.sh",
   outputs = {
-    meson = { glob = "usr/bin/meson" } | OutputLib,
-    site_packages = { glob = "usr/lib/python3.13/site-packages/**/*" } | OutputLib,
+    meson = { glob = "usr/bin/meson" } | OutputBin,
+    site_packages = { glob = "usr/lib/python3.13/site-packages/**/*" } | OutputData,
   },
 
   attrs =

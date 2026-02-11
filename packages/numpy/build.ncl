@@ -35,7 +35,7 @@ let version = "2.3.5" in
     f2py = { glob = "usr/bin/f2py" } | OutputBin,
     numpy-config = { glob = "usr/bin/numpy-config" } | OutputBin,
 
-    python_site_package = { glob = "usr/lib/python3.13/site-packages/numpy/**" } | OutputData,
+    python_site_package = { glob = "usr/lib/python3.13/site-packages/numpy/**", allow_executable = true } | OutputData,
     python_dist_info = { glob = "usr/lib/python3.13/site-packages/numpy-*.dist-info/**" } | OutputData,
   },
 

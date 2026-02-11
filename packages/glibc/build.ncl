@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -23,6 +23,26 @@ let linux_headers = import "../linux_headers/build.ncl" in
 let bison = import "../bison/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 let python = import "../python/build.ncl" in
+
+let all_outputs = {
+  bins = { glob = "usr/bin/**" } | OutputBin,
+  sbins = { glob = "usr/sbin/**" } | OutputBin,
+  etc = { glob = "etc/**/*" } | OutputData,
+
+  libs = { glob = "usr/lib/*.{so*,a}" } | OutputLib,
+  crts = { glob = "usr/lib/{crt,gcrt,grcrt,Mcrt,rcrt,Scrt}*.o" } | OutputLib,
+  lib_audit = { glob = "usr/lib/audit/*.so*" } | OutputLib,
+  lib_locale = { glob = "usr/lib/locale/**" } | OutputData,
+  lib_gconv = { glob = "usr/lib/gconv/**", allow_data = true } | OutputLib,
+
+  libexec_getconf = { glob = "usr/libexec/getconf/**" } | OutputLib,
+
+  i18n = { glob = "usr/share/i18n/**" } | OutputData,
+  locales = { glob = "usr/share/locale/**" } | OutputData,
+
+  includes = { glob = "usr/include/**" } | OutputData,
+}
+in
 
 let version = "2.42" in
 {
@@ -65,15 +85,15 @@ let version = "2.42" in
     include version,
   },
 
-  outputs = {
-    etc = { glob = "etc/**/*" } | OutputLib,
-    usr = { glob = "usr/**/*" } | OutputLib,
-    var = { glob = "var/**/*" } | OutputLib,
-  },
+  outputs = all_outputs,
   attrs =
     {
       upstream_version = version,
       repology_project = "glibc",
+      source_provenance = {
+        category = 'GnuProject,
+        name = "glibc",
+      },
     } | Attrs,
 
   replace_on_cycle =
@@ -87,10 +107,6 @@ let version = "2.42" in
           extract = true,
         } | Source,
       ],
-      outputs = {
-        etc = { glob = "etc/**/*" } | OutputLib,
-        usr = { glob = "usr/**/*" } | OutputLib,
-        var = { glob = "var/**/*" } | OutputLib,
-      },
+      outputs = all_outputs,
     } | BuildSpec,
 } | BuildSpec

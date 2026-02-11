@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -19,12 +19,14 @@ let binutils = import "../binutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
+
+let version = "4.4.1" in
 {
   name = "make",
   inputs = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/make-4.4.1.tar.gz",
+      url = "gs://minimal-staging-archives/make-%{version}.tar.gz",
       sha256 = "dd16fb1d67bfab79a72f5e8390735c49e3e8e70b4945a15ab1f81ddb78658fb3"
     } | Source,
     # base
@@ -53,12 +55,14 @@ let linux_headers = import "../linux_headers/build.ncl" in
 
   cmd = "./build.sh",
   outputs = {
-    make_bin = { glob = "usr/bin/make" } | OutputBin,
-    headers = { glob = "usr/include/*.h" } | OutputLib,
-    info_pages = { glob = "usr/share/info/*.info*" } | OutputLib,
-    man_pages = { glob = "usr/share/man/man1/*.1" } | OutputLib,
-    locale_files = { glob = "usr/share/locale/*/LC_MESSAGES/*.mo" } | OutputLib,
+    make = { glob = "usr/bin/make" } | OutputBin,
+
+    includes = { glob = "usr/include/**" } | OutputData,
+    mans = { glob = "usr/share/man/**" } | OutputData,
+    infos = { glob = "usr/share/info/*.info" } | OutputData,
+    locales = { glob = "usr/share/locale/**" } | OutputData,
   },
+  attrs.upstream_version = version,
 
   replace_on_cycle =
     {
