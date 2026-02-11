@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let setuptools = import "../setuptools/build.ncl" in
 
@@ -30,7 +30,7 @@ let version = "3.2.1" in
   outputs = {
     bins = { glob = "usr/bin/**" } | OutputBin,
 
-    python_site_package = { glob = "usr/lib/python3.13/site-packages/{cython.py,Cython/**}" } | OutputData,
+    python_site_package = { glob = "usr/lib/python3.13/site-packages/{cython.py,Cython/**}", allow_data = true } | OutputLib,
     python_dist_info = { glob = "usr/lib/python3.13/site-packages/cython-*.dist-info/**" } | OutputData,
 
     python_site_other = { glob = "usr/lib/python3.13/site-packages/{pyximport,__pycache__}/**" } | OutputData,

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let autoconf = import "../autoconf/build.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -30,8 +30,12 @@ let version = "1.18.1" in
   },
 
   outputs = {
-    usr_bin = { glob = "usr/bin/**/*" } | OutputLib,
-    usr_share = { glob = "usr/share/**/*" } | OutputLib,
+    bins = { glob = "usr/bin/*" } | OutputBin,
+    share_data = { glob = "usr/share/{aclocal*,automake*}/**" } | OutputData,
+
+    docs = { glob = "usr/share/doc/**" } | OutputData,
+    infos = { glob = "usr/share/info/*.info" } | OutputData,
+    mans = { glob = "usr/share/man/**" } | OutputData,
   },
 
   attrs =

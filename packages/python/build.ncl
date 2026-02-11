@@ -47,7 +47,7 @@ let version = "3.13.7" in
   outputs = {
     bins = { glob = "usr/bin/**/*" } | OutputBin,
     libs = { glob = "usr/lib/libpython*.so*" } | OutputLib,
-    datas = { glob = "usr/lib/python*/**" } | OutputData,
+    datas = { glob = "usr/lib/python*/**", allow_executable = true } | OutputData,
 
     includes = { glob = "usr/include/python*/**" } | OutputData,
     pkgconfigs = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,

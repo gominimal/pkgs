@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -19,6 +19,6 @@ let uv = import "../uv/build.ncl" in
   cmd = "./build.sh",
   outputs = {
     diffoscope = { glob = "usr/bin/diffoscope" } | OutputBin,
-    site_packages = { glob = "usr/lib/python3.13/site-packages/**/*" } | OutputLib,
+    site_packages = { glob = "usr/lib/python3.13/site-packages/**/*" } | OutputData,
   },
 } | BuildSpec

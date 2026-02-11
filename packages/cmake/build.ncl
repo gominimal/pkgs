@@ -43,5 +43,11 @@ let version = "4.2.3" in
     {
       upstream_version = version,
       repology_project = "cmake",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "Kitware",
+        repo = "CMake",
+        releases = 'TagBased {},
+      },
     } | Attrs,
 } | BuildSpec

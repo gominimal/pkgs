@@ -74,13 +74,14 @@ let version = "15.2.0" in
   outputs = {
     bins = { glob = "usr/bin/*" } | OutputBin,
 
-    libs = { glob = "usr/lib/**/*.{a,o,so*}" } | OutputLib,
+    libs = { glob = "usr/lib/**/*.{a,o,so*}", allow_data = true } | OutputLib, # allows data as a few .so's are stubs that don't parse in our checker
     libatomic = { glob = "usr/lib/libatomic.so*" } | OutputLib,
-    libgcc = { glob = "usr/lib/libgcc_s.so*" } | OutputLib,
-    libgomp = { glob = "usr/lib/libgomp.so*" } | OutputLib,
-    libstdcpp = { glob = "usr/lib/libstdc++*.so*" } | OutputLib,
 
-    libs_data = { glob = "usr/lib/**" } | OutputData,
+    libgcc = { glob = "usr/lib/libgcc_s.so*", allow_data = true } | OutputLib, # allows data as libgcc_s.so is a stub that does not parse in our checker
+    libgomp = { glob = "usr/lib/libgomp.so*" } | OutputLib,
+    libstdcpp = { glob = "usr/lib/libstdc++*.so*", allow_data = true } | OutputLib, # libstdc++.so.6.0.34-gdb.py...
+
+    libs_all = { glob = "usr/lib/**", allow_executable = true } | OutputData,
     share_data = { glob = "usr/share/gcc-*/**" } | OutputData,
     ltconfigs = { glob = "usr/lib/**/*.la" } | OutputData,
 

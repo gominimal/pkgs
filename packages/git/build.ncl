@@ -40,8 +40,8 @@ let version = "2.52.0" in
 
   outputs = {
     bins = { glob = "usr/bin/*" } | OutputBin,
-    git_core = { glob = "usr/libexec/git-core/*" } | OutputLib,
-    git_core_mergetools = { glob = "usr/libexec/git-core/mergetools/*" } | OutputLib,
+    git_core = { glob = "usr/libexec/git-core/*", allow_data = true } | OutputLib,
+    git_core_mergetools = { glob = "usr/libexec/git-core/mergetools/*", allow_data = true } | OutputLib,
 
     locale = { glob = "usr/share/locale/**/*" } | OutputData,
   },

@@ -32,8 +32,11 @@ let less = import "../less/build.ncl" in
   outputs = {
     sbins = { glob = "usr/sbin/*" } | OutputBin,
     bins = { glob = "usr/bin/*" } | OutputBin,
-    libs = { glob = "usr/lib/**" } | OutputLib,
-    libExec = { glob = "usr/libexec/man-db/*" } | OutputLib,
+
+    libs = { glob = "usr/lib/man-db/libman*.so*" } | OutputLib,
+    ltconfigs = { glob = "usr/lib/man-db/*.la" } | OutputData,
+    libexec = { glob = "usr/libexec/man-db/*" } | OutputLib,
+
     etc = { glob = "usr/etc/*" } | OutputData,
     docs = { glob = "usr/share/doc/**" } | OutputData,
     mans = { glob = "usr/share/man/**" } | OutputData,

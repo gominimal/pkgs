@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
@@ -8,6 +8,33 @@ let toolchain-gnullvm = import "../toolchain-gnullvm/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+
+let all_outputs = {
+  bins = { glob = "usr/bin/*" } | OutputBin,
+
+  libllvm = { glob = "usr/lib/*LLVM*.{so*,a}" } | OutputLib,
+  libear = { glob = "usr/lib/libear/**", allow_data = true } | OutputLib,
+  liblto = { glob = "usr/lib/liblto.so*" } | OutputLib,
+  libremarks = { glob = "usr/lib/libRemarks.so*" } | OutputLib,
+  libscanbuild = { glob = "usr/lib/libscanbuild/**", allow_data = true } | OutputLib,
+
+  libclang = { glob = "usr/lib/libclang*.{so*,a}" } | OutputLib,
+  libs_clang = { glob = "usr/lib/clang/*/**", allow_data = true } | OutputLib,
+
+  libexec = { glob = "usr/libexec/**" } | OutputLib,
+  share_data = { glob = "usr/share/**" } | OutputData,
+
+  cmake_data_llvm = { glob = "usr/lib/cmake/llvm/*.cmake" } | OutputData,
+  cmake_data_clang = { glob = "usr/lib/cmake/clang/*.cmake" } | OutputData,
+
+  usr = { glob = "usr/**/*" } | OutputLib,
+
+  mans = { glob = "usr/share/man/**" } | OutputData,
+  includes = { glob = "usr/include/**" } | OutputData,
+  include_clang = { glob = "usr/include/clang*/**" } | OutputData,
+  include_llvm = { glob = "usr/include/llvm*/**" } | OutputData,
+}
+in
 
 {
   name = "llvm",
@@ -42,14 +69,12 @@ let zlib = import "../zlib/build.ncl" in
   runtime_deps = [
     glibc,
     libffi,
-    gcc, # TODO: Only need libgcc_s.so.1, libstdc++.so.6
+    subsetOf gcc ["libgcc", "libstdcpp"],
     zlib,
   ],
 
   cmd = "./build.sh",
-  outputs = {
-    usr = { glob = "usr/**/*" } | OutputLib,
-  },
+  outputs = all_outputs,
 
   replace_on_cycle =
     {
@@ -62,6 +87,6 @@ let zlib = import "../zlib/build.ncl" in
           extract = true,
         } | Source,
       ],
-      outputs = {},
+      outputs = all_outputs,
     } | BuildSpec,
 } | BuildSpec
