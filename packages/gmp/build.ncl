@@ -73,7 +73,7 @@ let m4 = import "../m4/build.ncl" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/gmp/arm64-linux-gnu/gmp_6.3.0_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "f1c41c3fc909f78e3f8e1b6aeb81fa20bfe783b9ba82fe924e4d2350c080592f",
+          sha256 = "65274a24bfe58b66683a3aea63d731d0936665ee7dda84a55c0721be4d70366d",
           extract = true,
         } | Source,
       ],

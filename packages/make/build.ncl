@@ -71,7 +71,7 @@ let version = "4.4.1" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/make/arm64-linux-gnu/make_4.4.1_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "4085cc50ad9a8b0518df6d10911537044d93e6805fc8dc4c3bff5c5cb9022398",
+          sha256 = "9a20bc16988f9ac976abc823e2378d772d6b619c67f64377c47b816dbf21be77",
           extract = true,
         } | Source,
       ],

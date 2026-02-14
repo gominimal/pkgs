@@ -40,7 +40,7 @@ let version = "1.4.20" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/m4/arm64-linux-gnu/m4_1.4.21_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "72bd803973233401e0cef30eb2c4eac46a1bf1aef0377475de616941c8e08f1b",
+          sha256 = "4e8fc546a57c64b17a16fae8ac69b3fe9ed7408eecc353c8cd8f1aaef47e8149",
           extract = true,
         } | Source,
       ],

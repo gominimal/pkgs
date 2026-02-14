@@ -75,7 +75,7 @@ let gmp = import "../gmp/build.ncl" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/mpfr/arm64-linux-gnu/mpfr_4.2.2_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "e38b40a68c4591229430b2933c37f9fc7befa5b7db797d7ddf889604134e346f",
+          sha256 = "9273d674566bc310de4507ebfae0aa40c31cddde7f345115e38f0f6ecc3f48f6",
           extract = true,
         } | Source,
       ],

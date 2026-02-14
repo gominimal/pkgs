@@ -64,7 +64,7 @@ let version = "3.12" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/diffutils/arm64-linux-gnu/diffutils_3.12_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "d13a39c474927eff7ed2576bd4adee4670aab0be1e6dd498d876de2949e65229",
+          sha256 = "fb356cf42b82b4dd1a50c075ca2eddd83ad8ea3db9ca6201593a43acf97b0e86",
           extract = true,
         } | Source,
       ],

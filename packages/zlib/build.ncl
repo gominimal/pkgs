@@ -40,7 +40,7 @@ let glibc = import "../glibc/build.ncl" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/zlib/arm64-linux-gnu/zlib_1.3.1_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "051138c676859d17d37c8e55cd7a1dee456b47082c29cfa31f3f66af724c9946",
+          sha256 = "cfc9bd997715f85c996772d07cb500084d12ca41d9a0dcb8b3feae8b1f1e6023",
           extract = true,
         } | Source,
       ],

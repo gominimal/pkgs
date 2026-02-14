@@ -47,7 +47,7 @@ let version = "6.5-20250830" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/ncurses/arm64-linux-gnu/ncurses_6.5_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "5cac78e5f78eaf41b948bc0afe85cee66135b89a7567849d23be750c39b496f8",
+          sha256 = "5a03e782caaa01afff641563760bf8cfe1da0e6342f8ab8a5326dcf44f7d05df",
           extract = true,
         } | Source,
       ],

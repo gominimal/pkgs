@@ -82,7 +82,7 @@ let version = "10.47" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/pcre2/arm64-linux-gnu/pcre2_10.45_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "2426846d203faea5e40e58fb9f2318b51f972f9713106bfeef586c07888a6474",
+          sha256 = "30d6b645f5f76c8d511d1fc1225349951c19185d60752fa977e2c8339aa6ba4f",
           extract = true,
         } | Source,
       ],

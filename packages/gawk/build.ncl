@@ -51,7 +51,7 @@ let version = "5.3.2" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/gawk/arm64-linux-gnu/gawk_5.3.2_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "0eec8c98d68ec67c34052217db119c8b599cf831087d4841184d37db66630b15",
+          sha256 = "13f289193878abaaf5007b7d2e49f890d6672b114cdf3d7a30718707d45d978c",
           extract = true,
         } | Source,
       ],
