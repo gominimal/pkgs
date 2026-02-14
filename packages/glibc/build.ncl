@@ -103,7 +103,7 @@ let version = "2.42" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/glibc/arm64-linux-gnu/glibc_2.40_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "f9a4f9a90fdfb85bc5d77d70a54d27f08c3aadaaed8bc5bda87d64357fc2898c",
+          sha256 = "cbc715b9aa991cb6c694619d6efb2c7f15509ef63837d36ebbc5c6221d97e05c",
           extract = true,
         } | Source,
       ],

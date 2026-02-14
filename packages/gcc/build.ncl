@@ -111,7 +111,7 @@ let version = "15.2.0" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/gcc/arm64-linux-gnu/gcc_12.4.0_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "68a9f4a4d1b9bcff40bd813e4596369347f5d88e4b7dbee52ce15160f0315820",
+          sha256 = "ca69cd5291974da266dfb7e1abd1b9e2039597f8741f9ddff80327de106cf92a",
           extract = true,
         } | Source,
       ],

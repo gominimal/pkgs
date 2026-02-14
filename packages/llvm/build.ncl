@@ -81,7 +81,7 @@ in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/llvm/arm64-linux-gnu/llvm_19.1.7_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "24bbdb577edb817680d7ba33bac6fb89e4c454169ec490fbd368040b3e359827",
+          sha256 = "d7666edcb21c7f71d0a87b249bf4203b40ade6ae7dbf93c9ebe2f57702bbffb7",
           extract = true,
         } | Source,
       ],

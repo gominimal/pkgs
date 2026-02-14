@@ -42,7 +42,7 @@ let version = "1.14" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/gzip/arm64-linux-gnu/gzip_1.14_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "99f398822f33d0e759842b1a4205327f7cc588d3ba34508a56bc2c6b729503db",
+          sha256 = "2e239cf5f1931ad90668829221ac8a727f01f62f87e7b12a678f977c8e91468e",
           extract = true,
         } | Source,
       ],

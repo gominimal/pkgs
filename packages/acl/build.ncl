@@ -54,7 +54,7 @@ let sed = import "../sed/build.ncl" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/acl/arm64-linux-gnu/acl_2.3.2_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "d753d0df07017ea88695b3f21b6f1b138cfbb3eea40e0b9d6eac5deb6d2757b7",
+          sha256 = "ab5fc019bfd055eaaf261a70a77f47f443c2172cd09e2faa0d47a5e5a4648637",
           extract = true,
         } | Source,
       ],

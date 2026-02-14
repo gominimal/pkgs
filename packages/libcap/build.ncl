@@ -57,7 +57,7 @@ let version = "2.77" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/libcap/arm64-linux-gnu/libcap_2.73_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "1cf86afc8a1d4c3688d9048ee8e93be255efeb0946cdfd46556919ef9bfbcf15",
+          sha256 = "23a54c85222da1022a13523c0341894b18f64bf14eab04fd75adf6fde0990664",
           extract = true,
         } | Source,
       ],
