@@ -54,8 +54,8 @@ let sed = import "../sed/build.ncl" in
       prebuilt = true,
       inputs = [
         {
-          url = "gs://minimal-staging-archives/prebuilts/attr/1e7c99dbb23c903b50fa6f1093a1f629e135cbfd906a95a261816f4d96170728.tar.zst",
-          sha256 = "b6e4e7fb2f1b177c43e4b3ac88f24bb9a41b47f91de987351349a12838b06a45",
+          url = "gs://minimal-staging-archives/prebuilts/attr/arm64-linux-gnu/attr_2.5.2_arm64-linux-gnu_prebuilt.tar.zst",
+          sha256 = "9aecebc7dbe12271ba2c80bec593a4ee3200bd91c3618082fc8630edf9b681fd",
           extract = true,
         } | Source,
       ],

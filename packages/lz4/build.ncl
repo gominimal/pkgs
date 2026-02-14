@@ -51,8 +51,8 @@ let glibc = import "../glibc/build.ncl" in
       prebuilt = true,
       inputs = [
         {
-          url = "gs://minimal-staging-archives/prebuilts/lz4/fbd8d1e9a8c1cb2987f8264b4b86466e4e6c185cae545f5ab5f4f40a45525730.tar.zst",
-          sha256 = "e346a414f9ce3fcbd0d190aa835c9bc5881019919f4dcbb99e4e661cb9c77b34",
+          url = "gs://minimal-staging-archives/prebuilts/lz4/arm64-linux-gnu/lz4_1.10.0_arm64-linux-gnu_prebuilt.tar.zst",
+          sha256 = "e57728b055eceb6b529ce95251f0c90f48ca7bf9e996eb7cc5005fc473da0b61",
           extract = true,
         } | Source,
       ],

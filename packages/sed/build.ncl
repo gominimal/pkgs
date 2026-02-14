@@ -57,8 +57,8 @@ let version = "4.9" in
       prebuilt = true,
       inputs = [
         {
-          url = "gs://minimal-staging-archives/prebuilts/sed/b2454441fcc0966caa42b1a66c39de67ed9f4fbf507443a4443313b2d955e43d.tar.zst",
-          sha256 = "0545b519704c923b41c2a704eb5162245f7496d35df09deeb051f54a7a218bed",
+          url = "gs://minimal-staging-archives/prebuilts/sed/arm64-linux-gnu/sed_4.9_arm64-linux-gnu_prebuilt.tar.zst",
+          sha256 = "a02c755c5ef88ac170614cd8ac48b95e117ab861ecf3950d52e45602ceb8892a",
           extract = true,
         } | Source,
       ],

@@ -78,8 +78,8 @@ let version = "2.45.1" in
       prebuilt = true,
       inputs = [
         {
-          url = "gs://minimal-staging-archives/prebuilts/binutils/baea2e99362c3138a3b129ca4fceee19d0444bbb68f3c57b08d3cb89145ea103.tar.zst",
-          sha256 = "63f6b776215970427b3360fb00d69b84debe607b57511c7832874049cf05a2d4",
+          url = "gs://minimal-staging-archives/prebuilts/binutils/arm64-linux-gnu/binutils_2.46.0_arm64-linux-gnu_prebuilt.tar.zst",
+          sha256 = "d85a395de2005f47ccd81bff5c1e52a483ff759c0ad5eeaaff6b391374c84461",
           extract = true,
         } | Source,
       ],

@@ -80,8 +80,8 @@ in
       prebuilt = true,
       inputs = [
         {
-          url = "gs://minimal-staging-archives/prebuilts/llvm/d94cae728eaa6da07b9f66608414197712e0e4054c8b2b14f2909b5563707b83.tar.zst",
-          sha256 = "e030c98ee399764a95560252decb1a7e0f9dc2f81dd21d938b01ebf06bdf32ad",
+          url = "gs://minimal-staging-archives/prebuilts/llvm/arm64-linux-gnu/llvm_19.1.7_arm64-linux-gnu_prebuilt.tar.zst",
+          sha256 = "24bbdb577edb817680d7ba33bac6fb89e4c454169ec490fbd368040b3e359827",
           extract = true,
         } | Source,
       ],

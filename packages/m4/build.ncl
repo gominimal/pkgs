@@ -39,8 +39,8 @@ let version = "1.4.20" in
       prebuilt = true,
       inputs = [
         {
-          url = "gs://minimal-staging-archives/prebuilts/m4/0e48c2baab84e74ed9916a01eecf0dbc0377e247a05220ea63536bd3d189d466.tar.zst",
-          sha256 = "104907b54fb3edd8c0c18fddffbb5bacda1dea11c224118670c3cbb52ace8cce",
+          url = "gs://minimal-staging-archives/prebuilts/m4/arm64-linux-gnu/m4_1.4.21_arm64-linux-gnu_prebuilt.tar.zst",
+          sha256 = "7e4dfbe004f89bc4fd3136dac98c4f507d0ad1988b9f18e5c07a42ae922c0af8",
           extract = true,
         } | Source,
       ],
