@@ -12,7 +12,7 @@ let perl = import "../perl/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.0.21" in
+let version = "1.0.21-RELEASE" in
 {
   name = "libsodium",
   inputs = [
