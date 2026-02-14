@@ -70,7 +70,7 @@ let version = "1.5.7" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/zstd/arm64-linux-gnu/zstd_1.5.6_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "351407a5d2c8541f0758143fe4901aa3ba1e0a0a876b697289eb295749b3fda1",
+          sha256 = "197523727a6d3e22c5f9074ee493a9c831bdb913fd88ea6cdcdf9cf5fe21bd2e",
           extract = true,
         } | Source,
       ],

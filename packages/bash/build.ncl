@@ -68,7 +68,7 @@ let version = "5.3" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/bash/arm64-linux-gnu/bash_5.3_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "241f1366928d3a938ae43f235336fa0519284500c60d0435d5ad34473b9ad5ab",
+          sha256 = "4010d313ae5648f2f5246fdf26a9516fe815631d350886e6247e60a4fb4bda87",
           extract = true,
         } | Source,
       ],

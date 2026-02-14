@@ -34,7 +34,7 @@ let toolchain = import "../toolchain/build.ncl" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/readline/arm64-linux-gnu/readline_8.3_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "cb81880b57dee285da43cacddf58f48b0443b2e21db46332f33e47c607052fdf",
+          sha256 = "779aba61e3d11eb0d78c9617792a922ffaa7fbf28db576bdc67e47654d4c9e99",
           extract = true,
         } | Source,
       ],

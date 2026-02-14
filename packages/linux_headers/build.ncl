@@ -46,7 +46,7 @@ let linux_headers = import "../linux_headers/build.ncl" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/linux_headers/arm64-linux-gnu/linux_headers_6.12_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "548f72abad38e00f0445b168856ea03c28e67107dbcccbdc46a82d5042b5bf19",
+          sha256 = "62e0eb7766a203e65e21561cd6f22f618122c393f2f6a73ad2e44d21c8d45355",
           extract = true,
         } | Source,
       ],

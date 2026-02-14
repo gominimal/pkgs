@@ -82,7 +82,7 @@ let version = "3.12" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/grep/arm64-linux-gnu/grep_3.12_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "edbf8be9eaa4a7a2657b785a79e00aa0f9575f1f84e82b3a06a89b60493413da",
+          sha256 = "d82d76f12fe7096b019eb16d78d1bc24c95de3621614cc086d5c4733ccc53c91",
           extract = true,
         } | Source,
       ],

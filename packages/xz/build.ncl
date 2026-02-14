@@ -57,7 +57,7 @@ let glibc = import "../glibc/build.ncl" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/xz/arm64-linux-gnu/xz_5.8.1_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "5030f66fb1c3ae7852d148ad69afba0ca31c5b4a293c1b8d3c8e201af27e58cd",
+          sha256 = "2ad71c250f5116748858333680d3b5593842fb588be334b4628c088a90f85a47",
           extract = true,
         } | Source,
       ],

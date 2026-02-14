@@ -122,7 +122,7 @@ let version = "9.9" in
       inputs = [
         {
           url = "gs://minimal-staging-archives/prebuilts/coreutils/arm64-linux-gnu/coreutils_9.10_arm64-linux-gnu_prebuilt.tar.zst",
-          sha256 = "36e0a1cffa67372197e7782d05eabf4b93aaa696c4e9e30ea75f9fba67895b9b",
+          sha256 = "c119ebe9bf4d09347157f57e3840c8cbfa6748251d5946f59459b86aeef2a37c",
           extract = true,
         } | Source,
       ],
