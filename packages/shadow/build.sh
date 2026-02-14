@@ -17,7 +17,12 @@ sed -e 's:#ENCRYPT_METHOD DES:ENCRYPT_METHOD YESCRYPT:' \
 mkdir -p "$OUTPUT_DIR/usr/bin"
 touch "$OUTPUT_DIR/usr/bin/passwd"
 
-export CFLAGS="-march=x86-64-v3 -O2 -pipe"
+case $(uname -m) in
+  x86_64)  MARCH="-march=x86-64-v3" ;;
+  aarch64) MARCH="-march=armv8-a" ;;
+  *)       MARCH="" ;;
+esac
+export CFLAGS="$MARCH -O2 -pipe"
 export CXXFLAGS="${CFLAGS}"
 
 ./configure --sysconfdir=/etc   \
