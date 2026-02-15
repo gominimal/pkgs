@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"strings"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/creack/pty"
 	"github.com/gliderlabs/ssh"
+	"github.com/pkg/sftp"
 	gossh "golang.org/x/crypto/ssh"
 )
 
@@ -53,6 +55,13 @@ func main() {
 		Handler: func(s ssh.Session) {
 			handleSession(s, shell)
 		},
+		SubsystemHandlers: map[string]ssh.SubsystemHandler{
+			"sftp": handleSFTP,
+		},
+		ConnCallback: func(ctx ssh.Context, conn net.Conn) net.Conn {
+			log.Printf("[conn] new connection from %s", conn.RemoteAddr())
+			return conn
+		},
 	}
 
 	// Configure authentication
@@ -67,10 +76,32 @@ func main() {
 		log.Printf("generated demo credentials — user: %s  password: %s", user, password)
 	}
 
+	// checkPassword is used by both password and keyboard-interactive auth.
+	checkPassword := func(ctx ssh.Context, pass string) bool {
+		userOk := user == "" || ctx.User() == user
+		ok := userOk && pass == password
+		if ok {
+			log.Printf("[auth] password accepted for user=%s", ctx.User())
+		} else {
+			log.Printf("[auth] password rejected for user=%s", ctx.User())
+		}
+		return ok
+	}
+
 	if password != "" {
 		srv.PasswordHandler = func(ctx ssh.Context, pass string) bool {
-			userOk := user == "" || ctx.User() == user
-			return userOk && pass == password
+			return checkPassword(ctx, pass)
+		}
+
+		// Many SSH clients (including OpenSSH and Claude Code) prefer
+		// keyboard-interactive auth over plain password auth.
+		srv.KeyboardInteractiveHandler = func(ctx ssh.Context, challenger gossh.KeyboardInteractiveChallenge) bool {
+			answers, err := challenger("", "", []string{"Password: "}, []bool{false})
+			if err != nil || len(answers) == 0 {
+				log.Printf("[auth] keyboard-interactive failed for user=%s: %v", ctx.User(), err)
+				return false
+			}
+			return checkPassword(ctx, answers[0])
 		}
 	}
 
@@ -83,9 +114,11 @@ func main() {
 				}
 				for _, ak := range authorizedKeys {
 					if ssh.KeysEqual(key, ak) {
+						log.Printf("[auth] public key accepted for user=%s", ctx.User())
 						return true
 					}
 				}
+				log.Printf("[auth] public key rejected for user=%s", ctx.User())
 				return false
 			}
 		}
@@ -115,18 +148,63 @@ func main() {
 	log.Fatal(srv.ListenAndServe())
 }
 
+// sshServerVars are environment variables used by the server itself that
+// should not leak into spawned shell sessions.
+var sshServerVars = map[string]bool{
+	"SSH_PORT":            true,
+	"SSH_SHELL":           true,
+	"SSH_USER":            true,
+	"SSH_PASSWORD":        true,
+	"SSH_AUTHORIZED_KEYS": true,
+	"SSH_HOST_KEY":        true,
+}
+
+// buildEnv constructs the environment for a spawned shell process.
+// It starts with the server process's own environment (which includes
+// sandbox-provided PATH, HOME, XDG_* etc.), filters out server-internal
+// variables, then overlays any variables sent by the SSH client, and
+// finally adds server-set overrides.
+func buildEnv(base []string, overrides ...string) []string {
+	env := make(map[string]string, len(base)+len(overrides))
+	for _, e := range base {
+		if k, v, ok := strings.Cut(e, "="); ok {
+			if !sshServerVars[k] {
+				env[k] = v
+			}
+		}
+	}
+	for _, e := range overrides {
+		if k, v, ok := strings.Cut(e, "="); ok {
+			env[k] = v
+		}
+	}
+	result := make([]string, 0, len(env))
+	for k, v := range env {
+		result = append(result, k+"="+v)
+	}
+	return result
+}
+
 func handleSession(s ssh.Session, shell string) {
 	cmd := s.Command()
 
+	log.Printf("[session] new session: user=%s cmd=%v subsystem=%s env=%v",
+		s.User(), cmd, s.Subsystem(), s.Environ())
+
+	// Start with the server's environment (sandbox-provided PATH, HOME, etc.),
+	// then overlay SSH client env vars so the client can still override.
+	serverEnv := os.Environ()
+
 	ptyReq, winCh, isPty := s.Pty()
+	log.Printf("[session] pty=%v", isPty)
 	if isPty {
 		// PTY session: spawn shell with pseudo-terminal
 		args := []string{"-l"}
 		c := exec.Command(shell, args...)
-		c.Env = append(s.Environ(),
+		c.Env = buildEnv(serverEnv, append(s.Environ(),
 			"TERM="+ptyReq.Term,
 			"SHELL="+shell,
-		)
+		)...)
 
 		ptmx, err := pty.Start(c)
 		if err != nil {
@@ -134,7 +212,6 @@ func handleSession(s ssh.Session, shell string) {
 			s.Exit(1)
 			return
 		}
-		defer ptmx.Close()
 
 		// Handle window resize
 		go func() {
@@ -146,26 +223,36 @@ func handleSession(s ssh.Session, shell string) {
 		// Set initial window size
 		setWinsize(ptmx, ptyReq.Window.Width, ptyReq.Window.Height)
 
-		// Copy data between SSH session and PTY
+		// Copy data between SSH session and PTY.
+		// Only wait on the output (pty→session) goroutine. The input
+		// goroutine (session→pty) blocks on s.Read() which won't return
+		// until the SSH client closes the channel. Waiting on it causes a
+		// deadlock: the client waits for exit-status, but we can't send it
+		// until wg.Wait() returns, which never happens because the client
+		// hasn't closed stdin. Fire-and-forget the input side; it cleans up
+		// when the session closes or the pty is closed.
 		var wg sync.WaitGroup
-		wg.Add(2)
+		wg.Add(1)
 		go func() {
-			defer wg.Done()
-			io.Copy(ptmx, s) // stdin -> pty
+			io.Copy(ptmx, s) // stdin -> pty (fire-and-forget)
 		}()
 		go func() {
 			defer wg.Done()
 			io.Copy(s, ptmx) // pty -> stdout
 		}()
 
+		exitCode := 0
 		if err := c.Wait(); err != nil {
 			if exitErr, ok := err.(*exec.ExitError); ok {
-				s.Exit(exitErr.ExitCode())
-				return
+				exitCode = exitErr.ExitCode()
 			}
 		}
+
+		// Close the pty master so the output goroutine gets EOF and flushes
+		// remaining data to the SSH session.
+		ptmx.Close()
 		wg.Wait()
-		s.Exit(0)
+		s.Exit(exitCode)
 	} else {
 		// Non-PTY session: execute command directly
 		var c *exec.Cmd
@@ -174,23 +261,56 @@ func handleSession(s ssh.Session, shell string) {
 		} else {
 			c = exec.Command(shell, "-l")
 		}
-		c.Env = append(s.Environ(), "SHELL="+shell)
+		c.Env = buildEnv(serverEnv, append(s.Environ(),
+			"SHELL="+shell,
+		)...)
 
-		c.Stdin = s
-		c.Stdout = s
-		c.Stderr = s.Stderr()
-
-		if err := c.Run(); err != nil {
-			if exitErr, ok := err.(*exec.ExitError); ok {
-				s.Exit(exitErr.ExitCode())
-				return
-			}
-			fmt.Fprintf(s.Stderr(), "failed to run command: %v\n", err)
+		// Use StdinPipe so Go's Wait() doesn't track the stdin copy
+		// goroutine. Otherwise Wait() deadlocks: it waits for the
+		// stdin goroutine which blocks on s.Read(), but the SSH client
+		// won't close stdin until it receives exit-status from us.
+		stdinPipe, err := c.StdinPipe()
+		if err != nil {
+			fmt.Fprintf(s.Stderr(), "failed to create stdin pipe: %v\n", err)
 			s.Exit(1)
 			return
 		}
-		s.Exit(0)
+		c.Stdout = s
+		c.Stderr = s.Stderr()
+
+		if err := c.Start(); err != nil {
+			fmt.Fprintf(s.Stderr(), "failed to start command: %v\n", err)
+			s.Exit(1)
+			return
+		}
+
+		go func() {
+			io.Copy(stdinPipe, s)
+			stdinPipe.Close()
+		}()
+
+		exitCode := 0
+		if err := c.Wait(); err != nil {
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				exitCode = exitErr.ExitCode()
+			}
+		}
+		s.Exit(exitCode)
 	}
+}
+
+func handleSFTP(s ssh.Session) {
+	log.Printf("[sftp] starting SFTP subsystem for user=%s", s.User())
+	server, err := sftp.NewServer(s)
+	if err != nil {
+		log.Printf("[sftp] failed to create server: %v", err)
+		s.Exit(1)
+		return
+	}
+	if err := server.Serve(); err != nil && err != io.EOF {
+		log.Printf("[sftp] server exited with error: %v", err)
+	}
+	s.Exit(0)
 }
 
 func generateHostKey() gossh.Signer {
