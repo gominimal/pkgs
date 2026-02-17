@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -80,11 +81,20 @@ let version = "10.47" in
       name = "pcre2 (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/pcre2/b360a2688b2b47a9624e85ed4b43c2fa720c4c73551ea6210eddfd8d6b5bbb02.tar.zst",
-          sha256 = "a68ebe779fa253fe3a93806bd7d38faed940103c4122ea6e6bda44b6d50d7d04",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/pcre2/b360a2688b2b47a9624e85ed4b43c2fa720c4c73551ea6210eddfd8d6b5bbb02.tar.zst",
+              sha256 = "a68ebe779fa253fe3a93806bd7d38faed940103c4122ea6e6bda44b6d50d7d04",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/pcre2/arm64-linux-gnu/pcre2_10.45_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "30d6b645f5f76c8d511d1fc1225349951c19185d60752fa977e2c8339aa6ba4f",
+              extract = true,
+            } | Source,
+        } target,
       ],
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,

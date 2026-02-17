@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -109,11 +110,20 @@ let version = "15.2.0" in
       name = "gcc (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/gcc/90c1cc369996f1dca2e3e8aac418822dce19cc9216a05e620e434fb599f28a24.tar.zst",
-          sha256 = "16a7b18a04e465f65fd09e8b610390c9ba12b3a0c1d170a28fa1d22b552787f5",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/gcc/90c1cc369996f1dca2e3e8aac418822dce19cc9216a05e620e434fb599f28a24.tar.zst",
+              sha256 = "16a7b18a04e465f65fd09e8b610390c9ba12b3a0c1d170a28fa1d22b552787f5",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/gcc/arm64-linux-gnu/gcc_12.4.0_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "1ef95ce51de775151d0afe0c9e955bda9ec5e7ce85ed6a13aa35a36fedc6c9f0",
+              extract = true,
+            } | Source,
+        } target,
       ],
       runtime_deps = [
         gmp,

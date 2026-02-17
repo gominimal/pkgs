@@ -1,4 +1,5 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -80,11 +81,20 @@ let version = "3.12" in
       name = "grep (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/grep/bc88864516b96d7d7b20e927f0129d57581a2a634f642522ae2f20ad2e15e391.tar.zst",
-          sha256 = "0a031ab16d0f899eb5013eaffc1bc4b44c11531b0fa42226ad7b7511ccf2d493",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/grep/bc88864516b96d7d7b20e927f0129d57581a2a634f642522ae2f20ad2e15e391.tar.zst",
+              sha256 = "0a031ab16d0f899eb5013eaffc1bc4b44c11531b0fa42226ad7b7511ccf2d493",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/grep/arm64-linux-gnu/grep_3.12_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "753eae168119e8d94a56afd70b04af27ea17c6e56a5254b5e38e3958bf1e83b7",
+              extract = true,
+            } | Source,
+        } target,
       ],
       runtime_deps = [
         pcre2,

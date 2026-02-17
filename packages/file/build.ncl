@@ -1,4 +1,5 @@
 let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let bash = import "../bash/build.ncl" in
 let tar = import "../tar/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -49,11 +50,20 @@ let xz = import "../xz/build.ncl" in
       name = "file (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/file/595683b1e5b1f4d571fe224eb0d19ebd61d55bcc64c09c67d0b1c1cecbf3046e.tar.zst",
-          sha256 = "380fddc64d1f1ea0fc2d1044d3b6a4a9b48c91f2b3f8fbe46c7d1faa2d315837",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/file/595683b1e5b1f4d571fe224eb0d19ebd61d55bcc64c09c67d0b1c1cecbf3046e.tar.zst",
+              sha256 = "380fddc64d1f1ea0fc2d1044d3b6a4a9b48c91f2b3f8fbe46c7d1faa2d315837",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/file/arm64-linux-gnu/file_5.46_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "388a5c9a1889ab1b51d9adffef0450f2b125e9ade0bea9a548d539797cc8032b",
+              extract = true,
+            } | Source,
+        } target,
       ],
       outputs = {
         usr_bin = { glob = "usr/bin/**/*" } | OutputBin,

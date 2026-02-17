@@ -1,4 +1,5 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -77,11 +78,20 @@ let version = "2.45.1" in
       name = "binutils (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/binutils/baea2e99362c3138a3b129ca4fceee19d0444bbb68f3c57b08d3cb89145ea103.tar.zst",
-          sha256 = "63f6b776215970427b3360fb00d69b84debe607b57511c7832874049cf05a2d4",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/binutils/baea2e99362c3138a3b129ca4fceee19d0444bbb68f3c57b08d3cb89145ea103.tar.zst",
+              sha256 = "63f6b776215970427b3360fb00d69b84debe607b57511c7832874049cf05a2d4",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/binutils/arm64-linux-gnu/binutils_2.46.0_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "2109091e81ce1949a84032bfc173389d6cb392c8aed61ccc322fa847c9f3de4d",
+              extract = true,
+            } | Source,
+        } target,
       ],
       runtime_deps = [
         zlib,

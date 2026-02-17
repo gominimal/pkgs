@@ -1,4 +1,5 @@
 let { BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -73,11 +74,20 @@ let gmp = import "../gmp/build.ncl" in
       name = "mpfr (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/mpfr/2269dbfcccb3b624829aeb41192cd32fac30b4e7fb22270718a885e9f25d5cc8.tar.zst",
-          sha256 = "2ce617aea29ff171ba53070741f85f8559b66b7f29c8d2f1946147efa94c2694",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/mpfr/2269dbfcccb3b624829aeb41192cd32fac30b4e7fb22270718a885e9f25d5cc8.tar.zst",
+              sha256 = "2ce617aea29ff171ba53070741f85f8559b66b7f29c8d2f1946147efa94c2694",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/mpfr/arm64-linux-gnu/mpfr_4.2.2_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "9273d674566bc310de4507ebfae0aa40c31cddde7f345115e38f0f6ecc3f48f6",
+              extract = true,
+            } | Source,
+        } target,
       ],
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,

@@ -1,4 +1,5 @@
 let { subsetOf, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let attr = import "../attr/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -45,11 +46,20 @@ let version = "6.5-20250830" in
       name = "ncurses (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/ncurses/bd06d23c33d5bae4467bf46e0fa31863d27972af520621c0007e02eac95002e6.tar.zst",
-          sha256 = "a0c8f8ba43f78f71526c1b3fdccf065cab3a6f3bb55ee271c53733f1c480f5f7",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/ncurses/bd06d23c33d5bae4467bf46e0fa31863d27972af520621c0007e02eac95002e6.tar.zst",
+              sha256 = "a0c8f8ba43f78f71526c1b3fdccf065cab3a6f3bb55ee271c53733f1c480f5f7",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/ncurses/arm64-linux-gnu/ncurses_6.5_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "5a03e782caaa01afff641563760bf8cfe1da0e6342f8ab8a5326dcf44f7d05df",
+              extract = true,
+            } | Source,
+        } target,
       ],
       runtime_deps = [
         attr,

@@ -1,4 +1,5 @@
 let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 
 # TODO: When packaging i see errors like: /usr/bin/bison: m4 subprocess failed: No such file or directory
 # Maybe m4 needs to be a runtime_dep here?
@@ -44,11 +45,20 @@ let glibc = import "../glibc/build.ncl" in
       name = "bison (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/bison/f20d864670fe5db56ec2d789aa3d2397a83a96536204652ff054ed06d8422303.tar.zst",
-          sha256 = "8e30740fcb39511167736ea64d4dec41854633075e26e4631a51df22e9522316",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/bison/f20d864670fe5db56ec2d789aa3d2397a83a96536204652ff054ed06d8422303.tar.zst",
+              sha256 = "8e30740fcb39511167736ea64d4dec41854633075e26e4631a51df22e9522316",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/bison/arm64-linux-gnu/bison_3.8.2_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "35b0dc8ab84896842d4d55e1e550b455ca0c075d0d488464038f753207ca7d05",
+              extract = true,
+            } | Source,
+        } target,
       ],
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,

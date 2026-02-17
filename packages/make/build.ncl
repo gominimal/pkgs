@@ -1,4 +1,5 @@
 let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -69,11 +70,20 @@ let version = "4.4.1" in
       name = "make (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/make/44222ee590d7cd309ddb33e2f016a1c3a46499e855e0910ee6e748537ca14d17.tar.zst",
-          sha256 = "78a015c48e89ebd11acc973cb79f0d35c0badd9cf85c4ec626e6b68385330e5d",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/make/44222ee590d7cd309ddb33e2f016a1c3a46499e855e0910ee6e748537ca14d17.tar.zst",
+              sha256 = "78a015c48e89ebd11acc973cb79f0d35c0badd9cf85c4ec626e6b68385330e5d",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/make/arm64-linux-gnu/make_4.4.1_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "9a20bc16988f9ac976abc823e2378d772d6b619c67f64377c47b816dbf21be77",
+              extract = true,
+            } | Source,
+        } target,
       ],
       outputs = {
         make = { glob = "usr/bin/make" } | OutputBin,

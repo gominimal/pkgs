@@ -1,4 +1,5 @@
 let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let bash = import "../bash/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -53,11 +54,20 @@ let sed = import "../sed/build.ncl" in
       name = "attr (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/attr/1e7c99dbb23c903b50fa6f1093a1f629e135cbfd906a95a261816f4d96170728.tar.zst",
-          sha256 = "b6e4e7fb2f1b177c43e4b3ac88f24bb9a41b47f91de987351349a12838b06a45",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/attr/1e7c99dbb23c903b50fa6f1093a1f629e135cbfd906a95a261816f4d96170728.tar.zst",
+              sha256 = "b6e4e7fb2f1b177c43e4b3ac88f24bb9a41b47f91de987351349a12838b06a45",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/attr/arm64-linux-gnu/attr_2.5.2_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "3492bdf1a696e763534c4a12da475e7060be69815ef0001f03bbb42cdeb62db6",
+              extract = true,
+            } | Source,
+        } target,
       ],
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,

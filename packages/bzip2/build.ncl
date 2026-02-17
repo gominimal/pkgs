@@ -1,4 +1,5 @@
 let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -43,11 +44,20 @@ let glibc = import "../glibc/build.ncl" in
       name = "bzip2 (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/bzip2/75355884e09794f5aa09558214ab877cfd1d026cf1f888d093ecfe6dd762ee85.tar.zst",
-          sha256 = "30161bb4830b54bd007e1f4c9188e98b9d310d119d31bb0ab65b12a4a43cdaea",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/bzip2/75355884e09794f5aa09558214ab877cfd1d026cf1f888d093ecfe6dd762ee85.tar.zst",
+              sha256 = "30161bb4830b54bd007e1f4c9188e98b9d310d119d31bb0ab65b12a4a43cdaea",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/bzip2/arm64-linux-gnu/bzip2_1.0.8_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "b63624201dd389a5f5e035604aab47c52023f0e72e2161238c0c3feaa28771cd",
+              extract = true,
+            } | Source,
+        } target,
       ],
       outputs = {},
     } | BuildSpec,

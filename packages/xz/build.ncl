@@ -1,4 +1,5 @@
 let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -55,11 +56,20 @@ let glibc = import "../glibc/build.ncl" in
       name = "xz (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/xz/c9082dfc1422992b88db6fb17c2ccf061ebf2e595872b470c82645a95799830e.tar.zst",
-          sha256 = "1f72a85d5fa9b779932934d5cfb5319473b1f71828d5e7afa8d75e87b97c24d6",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/xz/c9082dfc1422992b88db6fb17c2ccf061ebf2e595872b470c82645a95799830e.tar.zst",
+              sha256 = "1f72a85d5fa9b779932934d5cfb5319473b1f71828d5e7afa8d75e87b97c24d6",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/xz/arm64-linux-gnu/xz_5.8.1_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "8b5c6a5f4ffb3f07e22c0a28dc934ccb2424901250b5807d475b03ecc0f943fc",
+              extract = true,
+            } | Source,
+        } target,
       ],
       outputs = {
         usr_bin = { glob = "usr/bin/**/*" } | OutputLib,

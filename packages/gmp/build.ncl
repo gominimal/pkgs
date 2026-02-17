@@ -1,4 +1,5 @@
 let { subsetOf, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -71,11 +72,20 @@ let m4 = import "../m4/build.ncl" in
       name = "gmp (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/gmp/acaec4d86dd7eecdc941fddbc87751178539c1997d17dbfa81b59e60004ace58.tar.zst",
-          sha256 = "544d0211eab4b2c9e21bad9428177e9b9f61e8ce44f288607bd639d6d41babaa",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/gmp/acaec4d86dd7eecdc941fddbc87751178539c1997d17dbfa81b59e60004ace58.tar.zst",
+              sha256 = "544d0211eab4b2c9e21bad9428177e9b9f61e8ce44f288607bd639d6d41babaa",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/gmp/arm64-linux-gnu/gmp_6.3.0_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "65274a24bfe58b66683a3aea63d731d0936665ee7dda84a55c0721be4d70366d",
+              extract = true,
+            } | Source,
+        } target,
       ],
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,

@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 let readline = import "../readline/build.ncl" in
@@ -66,11 +67,20 @@ let version = "5.3" in
       name = "bash (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/bash/0932485779c77fb91805ea37baf5a97b6c64f1f45d2794b10f61eb0d805928d0.tar.zst",
-          sha256 = "bdb617c43eb4ba70f72a3a9750266cd57cb1cbc77db19e50366f50cacc5afcd7",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/bash/0932485779c77fb91805ea37baf5a97b6c64f1f45d2794b10f61eb0d805928d0.tar.zst",
+              sha256 = "bdb617c43eb4ba70f72a3a9750266cd57cb1cbc77db19e50366f50cacc5afcd7",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/bash/arm64-linux-gnu/bash_5.3_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "84893ca61f6656413cf829f24c341a713454b13536ec7af08f24c67de142ddcc",
+              extract = true,
+            } | Source,
+        } target,
       ],
       runtime_deps = [
         glibc,

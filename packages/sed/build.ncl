@@ -1,4 +1,5 @@
 let { standaloneTest, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let acl = import "../acl/build.ncl" in
 let attr = import "../attr/build.ncl" in
 let bash = import "../bash/build.ncl" in
@@ -56,11 +57,20 @@ let version = "4.9" in
       name = "sed (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/sed/b2454441fcc0966caa42b1a66c39de67ed9f4fbf507443a4443313b2d955e43d.tar.zst",
-          sha256 = "0545b519704c923b41c2a704eb5162245f7496d35df09deeb051f54a7a218bed",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/sed/b2454441fcc0966caa42b1a66c39de67ed9f4fbf507443a4443313b2d955e43d.tar.zst",
+              sha256 = "0545b519704c923b41c2a704eb5162245f7496d35df09deeb051f54a7a218bed",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/sed/arm64-linux-gnu/sed_4.9_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "8ed9f3fdc9037e64425cdb5471b2dffde7d481e8296f9bc2acff4e79512b449d",
+              extract = true,
+            } | Source,
+        } target,
       ],
       # TODO: runtime_deps in a cycle breaker are borked?
       # runtime_deps = [

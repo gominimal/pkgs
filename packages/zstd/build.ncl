@@ -1,4 +1,5 @@
 let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -68,11 +69,20 @@ let version = "1.5.7" in
       name = "zstd (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/zstd/8a24bda7b914208fe12d01fb1fa05de91aa5f506496896e422b21c07f88e6540.tar.zst",
-          sha256 = "360e8995e62f1928192c3057546f0205787879610268f5e192e6afa5cce97da9",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/zstd/8a24bda7b914208fe12d01fb1fa05de91aa5f506496896e422b21c07f88e6540.tar.zst",
+              sha256 = "360e8995e62f1928192c3057546f0205787879610268f5e192e6afa5cce97da9",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/zstd/arm64-linux-gnu/zstd_1.5.6_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "c27462b2d4acae0279976b74acfb6ef3ec80afa4d7333d35b13cb78373e5ebf2",
+              extract = true,
+            } | Source,
+        } target,
       ],
       outputs = {
         zstd_bin = { glob = "usr/bin/zstd" } | OutputLib,

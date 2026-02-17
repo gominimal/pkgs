@@ -1,4 +1,5 @@
 let { BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -32,11 +33,20 @@ let toolchain = import "../toolchain/build.ncl" in
       name = "readline (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/readline/0b0d99c0ecd377b7b8618468423fc679377d8f8ebc7475bd7fc71a2bec20d6a2.tar.zst",
-          sha256 = "0b1677ad712f7de3526d0a1ecf154ce9c8a2a3392fb2bcf1b8e006afa1b16d99",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/readline/0b0d99c0ecd377b7b8618468423fc679377d8f8ebc7475bd7fc71a2bec20d6a2.tar.zst",
+              sha256 = "0b1677ad712f7de3526d0a1ecf154ce9c8a2a3392fb2bcf1b8e006afa1b16d99",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/readline/arm64-linux-gnu/readline_8.3_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "4158f23deb2b313d16630378f735cc440fc33b277b295dea29038ce081c0e3fa",
+              extract = true,
+            } | Source,
+        } target,
       ],
       runtime_deps = [
         ncurses,

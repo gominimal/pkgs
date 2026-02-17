@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let bash = import "../bash/build.ncl" in
 let diffutils = import "../diffutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
@@ -55,11 +56,20 @@ let version = "2.77" in
       name = "libcap (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/libcap/1752dece484de73c426c2af4c37c660bd54ae2b5717d2406cbad6c645a2f667c.tar.zst",
-          sha256 = "c8745d5b3f2cde821d48a8526f339dc39eb7915b82e47c86050219aba71941f3",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/libcap/1752dece484de73c426c2af4c37c660bd54ae2b5717d2406cbad6c645a2f667c.tar.zst",
+              sha256 = "c8745d5b3f2cde821d48a8526f339dc39eb7915b82e47c86050219aba71941f3",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/libcap/arm64-linux-gnu/libcap_2.73_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "22041525efd9b1e1173f249b4abd279a41aa834b7314f430d448e83980260098",
+              extract = true,
+            } | Source,
+        } target,
       ],
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,

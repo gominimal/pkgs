@@ -1,4 +1,5 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -40,11 +41,20 @@ let version = "1.14" in
       name = "gzip (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/gzip/578900779b149d12ff6b3268c3b473bb5d297b4f37d5730f821eccf22c5a7520.tar.zst",
-          sha256 = "98aaf741d11c4edea8f53ac6c10d774dcce1fa524e64deb22affb72bb832ca81",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/gzip/578900779b149d12ff6b3268c3b473bb5d297b4f37d5730f821eccf22c5a7520.tar.zst",
+              sha256 = "98aaf741d11c4edea8f53ac6c10d774dcce1fa524e64deb22affb72bb832ca81",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/gzip/arm64-linux-gnu/gzip_1.14_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "2ed75c96522418980b5e133737ee3b7fb71e0900b50ba987947d0d70d2bc3b41",
+              extract = true,
+            } | Source,
+        } target,
       ],
       outputs = {
         binaries = { glob = "usr/bin/*" } | OutputBin,

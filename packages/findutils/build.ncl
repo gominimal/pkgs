@@ -1,4 +1,5 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let bash = import "../bash/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -67,11 +68,20 @@ let version = "4.10.0" in
       name = "findutils (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/findutils/6d2d376ab982c9fe5bc932457922e40984208f49b5d3419b00774f6f1f57df89.tar.zst",
-          sha256 = "94a015e63faf0de0d4dd9d1d615c07a38e1baa2d0f5b7515b83abe0292ccac7e",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/findutils/6d2d376ab982c9fe5bc932457922e40984208f49b5d3419b00774f6f1f57df89.tar.zst",
+              sha256 = "94a015e63faf0de0d4dd9d1d615c07a38e1baa2d0f5b7515b83abe0292ccac7e",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/findutils/arm64-linux-gnu/findutils_4.10.0_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "16edcc079964a1f03e81800d062898e00c746514868683b09bbd57062c28df1f",
+              extract = true,
+            } | Source,
+        } target,
       ],
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,

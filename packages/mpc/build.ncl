@@ -1,4 +1,5 @@
 let { BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -70,11 +71,20 @@ let mpfr = import "../mpfr/build.ncl" in
       name = "mpc (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/mpc/94ebf966b773423844ef6b2b620c062f31e8479bbe9e97ad808e414b558743a7.tar.zst",
-          sha256 = "a3bb4b9e9bfcb0e2018065dd0036f2943cf0b5fda8aebb56f477026531ba7fdd",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/mpc/94ebf966b773423844ef6b2b620c062f31e8479bbe9e97ad808e414b558743a7.tar.zst",
+              sha256 = "a3bb4b9e9bfcb0e2018065dd0036f2943cf0b5fda8aebb56f477026531ba7fdd",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/mpc/arm64-linux-gnu/mpc_1.3.1_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "53bde157437bdd32c2502952e327a902982000acc136312487b9cb7179652cab",
+              extract = true,
+            } | Source,
+        } target,
       ],
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,

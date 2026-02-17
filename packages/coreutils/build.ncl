@@ -1,4 +1,5 @@
 let { standaloneTest, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -120,11 +121,20 @@ let version = "9.9" in
       name = "coreutils (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/coreutils/00a9b94dccfb74f487297cfbb7e89aeb26c615fac4ea2f46ce7b18e3bcdfabe0.tar.zst",
-          sha256 = "f9fb6b4833ee57860479f1fa653b1894ef56886c652cd646b0d5fd6a50ddbc8b",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/coreutils/00a9b94dccfb74f487297cfbb7e89aeb26c615fac4ea2f46ce7b18e3bcdfabe0.tar.zst",
+              sha256 = "f9fb6b4833ee57860479f1fa653b1894ef56886c652cd646b0d5fd6a50ddbc8b",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/coreutils/arm64-linux-gnu/coreutils_9.10_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "b6819ee13b556ddcc6e39a2999482bc31fa55128e308b52ceb1a9d76e35afd24",
+              extract = true,
+            } | Source,
+        } target,
       ],
       runtime_deps = [
         acl,

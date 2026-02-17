@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -101,11 +102,20 @@ let version = "2.42" in
       name = "glibc (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/glibc/0b3158f86607d703484cdc2b989850085ee57cd9d774f00ff6bf5b83c9fb20db.tar.zst",
-          sha256 = "0a8fe9137ed3e906bae9e1f922e80d6b198bd2d29d390f1283f7d32e0f921580",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/glibc/0b3158f86607d703484cdc2b989850085ee57cd9d774f00ff6bf5b83c9fb20db.tar.zst",
+              sha256 = "0a8fe9137ed3e906bae9e1f922e80d6b198bd2d29d390f1283f7d32e0f921580",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/glibc/arm64-linux-gnu/glibc_2.40_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "9a413aa884e45c177a1bad440f817a8b2470dc27eeeb67ed5213a6ad17fb11bc",
+              extract = true,
+            } | Source,
+        } target,
       ],
       outputs = all_outputs,
     } | BuildSpec,

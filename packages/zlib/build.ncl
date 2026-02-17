@@ -1,4 +1,5 @@
 let { BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -38,11 +39,20 @@ let glibc = import "../glibc/build.ncl" in
       name = "zlib (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/zlib/b9d37702ffc6dd16207c56f16aa42425084528c9e20e2748478e16fa4607a443.tar.zst",
-          sha256 = "d80130aebaa9ecf50e382616d84423afead445271455c41f06eaffc75777dc6c",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/zlib/b9d37702ffc6dd16207c56f16aa42425084528c9e20e2748478e16fa4607a443.tar.zst",
+              sha256 = "d80130aebaa9ecf50e382616d84423afead445271455c41f06eaffc75777dc6c",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/zlib/arm64-linux-gnu/zlib_1.3.1_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "cfc9bd997715f85c996772d07cb500084d12ca41d9a0dcb8b3feae8b1f1e6023",
+              extract = true,
+            } | Source,
+        } target,
       ],
       outputs = {
         libz = { glob = "usr/lib/libz.so*" } | OutputLib,

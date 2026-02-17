@@ -1,4 +1,5 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -46,11 +47,20 @@ let version = "1.35" in
       name = "tar (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/tar/b2215579b4fe963bdd7d5c9ec96393f50b52f25942e021b25447d0eb72e634a4.tar.zst",
-          sha256 = "c0d8ecf7bf311d04596aebb46aadc976afecb64f79b1e56e914becd8820b7cfd",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/tar/b2215579b4fe963bdd7d5c9ec96393f50b52f25942e021b25447d0eb72e634a4.tar.zst",
+              sha256 = "c0d8ecf7bf311d04596aebb46aadc976afecb64f79b1e56e914becd8820b7cfd",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/tar/arm64-linux-gnu/tar_1.35_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "db49014635bda3d99361ab01e36868e5b9cdf5884d97ba82d4864bef8831f14a",
+              extract = true,
+            } | Source,
+        } target,
       ],
       runtime_deps = [
         acl,

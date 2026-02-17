@@ -1,4 +1,5 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -49,11 +50,20 @@ let version = "5.3.2" in
       name = "gawk (prebuilt)",
       prebuilt = true,
       inputs = [
-        {
-          url = "gs://minimal-staging-archives/prebuilts/gawk/2c668aca10691d29a89f767fc19208a30e037c65ab01dcfc10c338de3dcfb478.tar.zst",
-          sha256 = "7c1b61fc5b0351ca48cc2ddb894ff84597295cb72c8a478ae5238b5ccd66cac8",
-          extract = true,
-        } | Source,
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/gawk/2c668aca10691d29a89f767fc19208a30e037c65ab01dcfc10c338de3dcfb478.tar.zst",
+              sha256 = "7c1b61fc5b0351ca48cc2ddb894ff84597295cb72c8a478ae5238b5ccd66cac8",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/gawk/arm64-linux-gnu/gawk_5.3.2_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "13f289193878abaaf5007b7d2e49f890d6672b114cdf3d7a30718707d45d978c",
+              extract = true,
+            } | Source,
+        } target,
       ],
       outputs = {
         usr_bin = { glob = "usr/bin/**/*" } | OutputBin,
