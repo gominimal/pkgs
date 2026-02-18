@@ -32,6 +32,10 @@ let version = "9.3.1" in
   attrs =
     {
       upstream_version = version,
+      env_state_wiring = {
+        env_var = "GRADLE_USER_HOME",
+        prefix = "gradle",
+      },
     } | Attrs,
 
   tests = {

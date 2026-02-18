@@ -71,9 +71,15 @@ let version = "1.25.5" in
       #
       # This ultimately allows Go to store intermediate build artifacts across
       # task environments which share the same state, speeding up builds.
-      env_state_wiring = {
-        env_var = "GOCACHE",
-        prefix = ".gocache",
-      },
+      env_state_wiring = [
+        {
+          env_var = "GOCACHE",
+          prefix = ".gocache",
+        },
+        {
+          env_var = "GOMODCACHE",
+          prefix = "gomodcache",
+        },
+      ],
     } | Attrs,
 } | BuildSpec

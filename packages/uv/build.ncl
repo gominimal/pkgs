@@ -1,4 +1,4 @@
-let { BuildSpec, Local, Needs, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -32,4 +32,12 @@ let toolchain = import "../toolchain/build.ncl" in
   outputs = {
     minimal = { glob = "usr/bin/uv" } | OutputLib,
   },
+
+  attrs =
+    {
+      env_state_wiring = {
+        env_var = "UV_CACHE_DIR",
+        prefix = "uv-cache",
+      },
+    } | Attrs,
 } | BuildSpec

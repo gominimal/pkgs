@@ -4,9 +4,6 @@ harness {
 
   runtime_packages = ["node"],
   build_packages = ["base", "curl"],
-  build_env_vars = {
-    NPM_CONFIG_CACHE = "/state/npm-cache",
-  },
 
   build_cmds_cmd = [
     "/bin/bash",

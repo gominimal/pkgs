@@ -31,6 +31,16 @@ let version = "0.15.1" in
   attrs =
     {
       upstream_version = version,
+      env_state_wiring = [
+        {
+          env_var = "ZIG_LOCAL_CACHE_DIR",
+          prefix = "zig-cache",
+        },
+        {
+          env_var = "ZIG_GLOBAL_CACHE_DIR",
+          prefix = "zig-global-cache",
+        },
+      ],
     } | Attrs,
 
   tests = {

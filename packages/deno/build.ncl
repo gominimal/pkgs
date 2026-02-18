@@ -28,6 +28,10 @@ let version = "2.6.9" in
   attrs =
     {
       upstream_version = version,
+      env_state_wiring = {
+        env_var = "DENO_DIR",
+        prefix = "deno-cache",
+      },
     } | Attrs,
 
   tests = {

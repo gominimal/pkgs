@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let make = import "../make/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let python = import "../python/build.ncl" in
@@ -49,7 +49,14 @@ let version = "24.9.0" in
     includes = { glob = "usr/include/**" } | OutputData,
     mans = { glob = "usr/share/man/**" } | OutputData,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      env_state_wiring = {
+        env_var = "NPM_CONFIG_CACHE",
+        prefix = "npm-cache",
+      },
+    } | Attrs,
 
   tests = {
     eval =

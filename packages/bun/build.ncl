@@ -29,6 +29,10 @@ let version = "1.3.9" in
   attrs =
     {
       upstream_version = version,
+      env_state_wiring = {
+        env_var = "BUN_INSTALL_CACHE_DIR",
+        prefix = "bun-cache",
+      },
     } | Attrs,
 
   tests = {
