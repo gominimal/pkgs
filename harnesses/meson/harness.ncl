@@ -15,4 +15,11 @@ harness {
     echo '/bin/bash -c "set -ex; meson setup build --buildtype=release; ninja -C build"'
     "%
   ],
+
+  # Predicates for when this harness is usable in a source tree - powers `minimal init`
+  project_matchers = [
+    {
+      file_regexes."meson.build" = "*",
+    },
+  ],
 }

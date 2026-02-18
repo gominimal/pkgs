@@ -15,4 +15,11 @@ harness {
     echo '/bin/bash -c "set -ex; cmake -B build .; cmake --build build -j$(nproc)"'
     "%
   ],
+
+  # Predicates for when this harness is usable in a source tree - powers `minimal init`
+  project_matchers = [
+    {
+      file_regexes."CMakeLists.txt" = "*",
+    },
+  ],
 }

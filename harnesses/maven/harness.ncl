@@ -8,4 +8,11 @@ harness {
     MAVEN_OPTS = "-Dmaven.repo.local=/state/m2/repository",
   },
   build_cmd = "mvn package -DskipTests -q",
+
+  # Predicates for when this harness is usable in a source tree - powers `minimal init`
+  project_matchers = [
+    {
+      file_regexes."pom.xml" = "*",
+    },
+  ],
 }

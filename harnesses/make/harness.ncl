@@ -16,4 +16,14 @@ harness {
     echo '/bin/bash -c "set -ex; if [ -f configure ]; then ./configure; fi; make -j$(nproc)"'
     "%
   ],
+
+  # Predicates for when this harness is usable in a source tree - powers `minimal init`
+  project_matchers = [
+    {
+      file_regexes."Makefile" = "*",
+    },
+    {
+      file_regexes."GNUmakefile" = "*",
+    },
+  ],
 }
