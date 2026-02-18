@@ -55,10 +55,11 @@ let version = "1.94.1" in
     } | Attrs,
 
   tests = {
-    version_check = {
-      class = 'Standalone,
-      test_deps = [],
-      cmds = [["tailscale", "version"]],
-    } | Test,
+    version_check =
+      {
+        class = 'Standalone,
+        test_deps = [],
+        cmds = [["/bin/tailscale", "version"]],
+      } | Test,
   },
 } | BuildSpec
