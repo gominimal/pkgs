@@ -9,7 +9,8 @@ harness {
   },
 
   build_cmds_cmd = [
-    "/bin/bash", "-c",
+    "/bin/bash",
+    "-c",
     m%"
     echo '/bin/bash -c "set -ex; cmake -B build .; cmake --build build -j$(nproc)"'
     "%

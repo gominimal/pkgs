@@ -6,7 +6,8 @@ harness {
   runtime_packages = ["python"],
 
   build_cmds_cmd = [
-    "/bin/bash", "-c",
+    "/bin/bash",
+    "-c",
     m%"
     echo '/bin/uv sync'
     echo '/bin/uv build'

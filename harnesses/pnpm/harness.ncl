@@ -14,4 +14,14 @@ harness {
     echo '/bin/pnpm build'
   "%
   ],
+
+  # Predicates for when this harness is usable in a source tree - powers `minimal init`
+  project_matchers = [
+    {
+      file_regexes = {
+        "pnpm-lock.yaml" = "*",
+        "pnpm-workspace.yaml" = "*",
+      },
+    }
+  ],
 }

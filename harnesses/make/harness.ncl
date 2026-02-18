@@ -10,7 +10,8 @@ harness {
   },
 
   build_cmds_cmd = [
-    "/bin/bash", "-c",
+    "/bin/bash",
+    "-c",
     m%"
     echo '/bin/bash -c "set -ex; if [ -f configure ]; then ./configure; fi; make -j$(nproc)"'
     "%
