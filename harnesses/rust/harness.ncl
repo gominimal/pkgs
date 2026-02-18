@@ -5,7 +5,7 @@ harness {
   build_packages = ["gcc", "rust", "binutils"],
   build_env_vars = {
     # The 'env_state_wiring' attribute on the 'rust' package already wires a
-    # state directory `.cargo`, set to `$CARGO_HOME`. As such, we set the
+    # state directory `cargo`, set to `$CARGO_HOME`. As such, we set the
     # location for storing built packages to `$CARGO_HOME/build`, so incremental
     # artifacts are stored in the state dir.
     CARGO_BUILD_BUILD_DIR = "{cargo-cache-home}/build",

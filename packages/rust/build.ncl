@@ -62,7 +62,7 @@ let version = "1.93.1" in
     upstream_version = version,
     env_state_wiring = {
       env_var = "CARGO_HOME",
-      prefix = ".cargo",
+      prefix = "cargo",
     },
   },
 } | BuildSpec

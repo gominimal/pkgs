@@ -66,7 +66,7 @@ let version = "1.25.5" in
       upstream_version = version,
       repology_project = "go",
 
-      # When Go is used in a task environment, a `.gocache` directory is created
+      # When Go is used in a task environment, a `gocache` directory is created
       # in a persistent state directory, the path of which is set as GOCACHE.
       #
       # This ultimately allows Go to store intermediate build artifacts across
@@ -74,7 +74,7 @@ let version = "1.25.5" in
       env_state_wiring = [
         {
           env_var = "GOCACHE",
-          prefix = ".gocache",
+          prefix = "gocache",
         },
         {
           env_var = "GOMODCACHE",
