@@ -16,4 +16,9 @@ harness {
   },
 
   build_cmd = "cargo build --release",
+
+  # Predicates for when this harness is usable in a source tree - powers `minimal init`
+  project_matchers = [{
+    file_regexes."Cargo.toml" = "*",
+  }],
 }
