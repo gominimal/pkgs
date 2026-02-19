@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .., } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let bash = import "../bash/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
@@ -73,13 +73,5 @@ let sed = import "../sed/build.ncl" in
         usr = { glob = "usr/**/*" } | OutputLib,
       },
     } | BuildSpec,
-  attrs =
-    {
-      upstream_version = version,
-      source_provenance = {
-        category = 'GithubRepo,
-        owner = "attr",
-        repo = "attr",
-      },
-    } | Attrs,
+  attrs.upstream_version = version,
 } | BuildSpec
