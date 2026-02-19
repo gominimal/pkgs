@@ -50,6 +50,11 @@ let version = "1.11.1" in
     {
       upstream_version = version,
       repology_project = "libssh2",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "libssh2",
+        repo = "libssh2",
+      },
     } | Attrs,
 
   tests = {

@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -34,5 +34,13 @@ let version = "0.67.0" in
   outputs = {
     difft = { glob = "usr/bin/difft" } | OutputBin,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "Wilfred",
+        repo = "difftastic",
+      },
+    } | Attrs,
 } | BuildSpec

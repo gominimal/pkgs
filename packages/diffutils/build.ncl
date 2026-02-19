@@ -1,4 +1,4 @@
-let { standaloneTest, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let bash = import "../bash/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
@@ -56,7 +56,14 @@ let version = "3.12" in
     locales = { glob = "usr/share/locale/**" } | OutputData,
   },
 
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GnuProject,
+        name = "diffutils",
+      },
+    } | Attrs,
 
   replace_on_cycle =
     {

@@ -37,5 +37,10 @@ let version = "0.18.0" in
   attrs =
     {
       upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "mesonbuild",
+        repo = "meson-python",
+      },
     } | Attrs,
 } | BuildSpec

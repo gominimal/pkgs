@@ -1,4 +1,4 @@
-let { subsetOf, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -46,5 +46,13 @@ let version = "10.06.0" in
     ghostscript_data = { glob = "usr/share/ghostscript/**" } | OutputData,
     mans = { glob = "usr/share/man/**" } | OutputData,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "ArtifexSoftware",
+        repo = "ghostpdl-downloads",
+      },
+    } | Attrs,
 } | BuildSpec

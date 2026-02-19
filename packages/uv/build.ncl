@@ -39,5 +39,10 @@ let toolchain = import "../toolchain/build.ncl" in
         env_var = "UV_CACHE_DIR",
         prefix = "uv-cache",
       },
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "astral-sh",
+        repo = "uv",
+      },
     } | Attrs,
 } | BuildSpec

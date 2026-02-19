@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let make = import "../make/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let base = import "../base/build.ncl" in
@@ -51,5 +51,13 @@ let version = "18.0" in
     includes = { glob = "usr/include/**" } | OutputData,
     share = { glob = "usr/share/postgresql/**" } | OutputData,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "postgres",
+        repo = "postgres",
+      },
+    } | Attrs,
 } | BuildSpec

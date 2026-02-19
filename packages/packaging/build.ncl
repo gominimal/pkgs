@@ -35,5 +35,10 @@ let version = "25.0" in
   attrs =
     {
       upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "pypa",
+        repo = "packaging",
+      },
     } | Attrs,
 } | BuildSpec

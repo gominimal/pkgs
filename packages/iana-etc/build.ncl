@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 {
   name = "iana-etc",
@@ -15,4 +15,12 @@ let base = import "../base/build.ncl" in
     protocols = { glob = "etc/protocols" } | OutputData,
     services = { glob = "etc/services" } | OutputData,
   },
+  attrs =
+    {
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "Mic92",
+        repo = "iana-etc",
+      },
+    } | Attrs,
 } | BuildSpec

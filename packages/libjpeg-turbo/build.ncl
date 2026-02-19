@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -38,5 +38,13 @@ let version = "3.0.1" in
     cmake_data = { glob = "usr/lib/cmake/**" } | OutputData,
     includes = { glob = "usr/include/**" } | OutputData,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "libjpeg-turbo",
+        repo = "libjpeg-turbo",
+      },
+    } | Attrs,
 } | BuildSpec

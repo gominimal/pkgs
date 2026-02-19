@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -29,5 +29,13 @@ let version = "2.1.1" in
   outputs = {
     glow = { glob = "usr/bin/glow" } | OutputBin,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "charmbracelet",
+        repo = "glow",
+      },
+    } | Attrs,
 } | BuildSpec

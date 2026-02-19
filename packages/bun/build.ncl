@@ -33,6 +33,11 @@ let version = "1.3.9" in
         env_var = "BUN_INSTALL_CACHE_DIR",
         prefix = "bun-cache",
       },
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "oven-sh",
+        repo = "bun",
+      },
     } | Attrs,
 
   tests = {

@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -29,4 +29,12 @@ let ncurses = import "../ncurses/build.ncl" in
 
     data = { glob = "usr/share/**/*" } | OutputData,
   },
+  attrs =
+    {
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "vim",
+        repo = "vim",
+      },
+    } | Attrs,
 } | BuildSpec

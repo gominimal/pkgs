@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -32,5 +32,13 @@ let version = "0.1.1" in
   outputs = {
     biff = { glob = "usr/bin/biff" } | OutputLib,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "BurntSushi",
+        repo = "biff",
+      },
+    } | Attrs,
 } | BuildSpec

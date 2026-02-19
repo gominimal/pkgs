@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 
 # TODO: When packaging i see errors like: /usr/bin/bison: m4 subprocess failed: No such file or directory
@@ -64,4 +64,11 @@ let glibc = import "../glibc/build.ncl" in
         usr = { glob = "usr/**/*" } | OutputLib,
       },
     } | BuildSpec,
+  attrs =
+    {
+      source_provenance = {
+        category = 'GnuProject,
+        name = "bison",
+      },
+    } | Attrs,
 } | BuildSpec

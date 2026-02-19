@@ -81,5 +81,10 @@ let version = "1.25.5" in
           prefix = "gomodcache",
         },
       ],
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "golang",
+        repo = "go",
+      },
     } | Attrs,
 } | BuildSpec

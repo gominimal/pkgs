@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
@@ -93,4 +93,11 @@ let gmp = import "../gmp/build.ncl" in
         usr = { glob = "usr/**/*" } | OutputLib,
       },
     } | BuildSpec,
+  attrs =
+    {
+      source_provenance = {
+        category = 'GnuProject,
+        name = "mpfr",
+      },
+    } | Attrs,
 } | BuildSpec

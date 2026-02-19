@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let bash = import "../bash/build.ncl" in
 let tar = import "../tar/build.ncl" in
@@ -72,4 +72,12 @@ let xz = import "../xz/build.ncl" in
         usr_share = { glob = "usr/share/**/*" } | OutputLib,
       }
     } | BuildSpec,
+  attrs =
+    {
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "file",
+        repo = "file",
+      },
+    } | Attrs,
 } | BuildSpec

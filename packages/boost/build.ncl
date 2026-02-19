@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -31,4 +31,12 @@ let xz = import "../xz/build.ncl" in
     includes = { glob = "usr/include/boost/**" } | OutputData,
     cmake_data = { glob = "usr/lib/cmake/**/*" } | OutputData,
   },
+  attrs =
+    {
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "boostorg",
+        repo = "boost",
+      },
+    } | Attrs,
 } | BuildSpec

@@ -45,5 +45,9 @@ let version = "8.7" in
     {
       upstream_version = version,
       repology_project = "nano",
+      source_provenance = {
+        category = 'GnuProject,
+        name = "nano",
+      },
     } | Attrs,
 } | BuildSpec

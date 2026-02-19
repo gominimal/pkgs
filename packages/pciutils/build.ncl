@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let sed = import "../sed/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -32,4 +32,12 @@ let zlib = import "../zlib/build.ncl" in
     includes = { glob = "usr/include/**/*" } | OutputData,
     pkgconfig = { glob = "usr/lib/pkgconfig/*" } | OutputData,
   },
+  attrs =
+    {
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "pciutils",
+        repo = "pciutils",
+      },
+    } | Attrs,
 } | BuildSpec

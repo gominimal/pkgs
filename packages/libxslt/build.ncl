@@ -47,6 +47,11 @@ let version = "1.1.45" in
     {
       upstream_version = version,
       repology_project = "libxslt",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "GNOME",
+        repo = "libxslt",
+      },
     } | Attrs,
 
   tests = {

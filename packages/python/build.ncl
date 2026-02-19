@@ -56,6 +56,11 @@ let version = "3.13.7" in
   attrs =
     {
       upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "python",
+        repo = "cpython",
+      },
     } | Attrs,
 
   tests = {

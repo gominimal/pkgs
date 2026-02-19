@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -77,4 +77,12 @@ let glibc = import "../glibc/build.ncl" in
         usr_include = { glob = "usr/include/**/*" } | OutputLib,
       },
     } | BuildSpec,
+  attrs =
+    {
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "tukaani-project",
+        repo = "xz",
+      },
+    } | Attrs,
 } | BuildSpec

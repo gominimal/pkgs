@@ -37,5 +37,10 @@ let version = "2.7.3" in
     {
       upstream_version = version,
       repology_project = "expat",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "libexpat",
+        repo = "libexpat",
+      },
     } | Attrs,
 } | BuildSpec

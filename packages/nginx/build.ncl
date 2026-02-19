@@ -55,5 +55,10 @@ let version = "1.28.1" in
     {
       upstream_version = version,
       repology_project = "nginx",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "nginx",
+        repo = "nginx",
+      },
     } | Attrs,
 } | BuildSpec

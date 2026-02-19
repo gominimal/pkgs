@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -61,4 +61,12 @@ let version = "1.4.20" in
         locales = { glob = "usr/share/locale/**" } | OutputData,
       },
     } | BuildSpec,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GnuProject,
+        name = "m4",
+      },
+    } | Attrs,
 } | BuildSpec

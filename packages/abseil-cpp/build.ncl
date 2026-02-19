@@ -1,4 +1,4 @@
-let { subsetOf, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -37,4 +37,12 @@ let gcc = import "../gcc/build.ncl" in
     cmake_data = { glob = "usr/lib/cmake/absl/*.cmake" } | OutputData,
     pkgconfigs = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
   },
+  attrs =
+    {
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "abseil",
+        repo = "abseil-cpp",
+      },
+    } | Attrs,
 } | BuildSpec

@@ -31,6 +31,10 @@ let version = "2.8" in
     {
       upstream_version = version,
       repology_project = "patch",
+      source_provenance = {
+        category = 'GnuProject,
+        name = "patch",
+      },
     } | Attrs,
 
   tests = {

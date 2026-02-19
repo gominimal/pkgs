@@ -1,4 +1,4 @@
-let { standaloneTest, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -37,7 +37,15 @@ let version = "1.3.1" in
     age-keygen = { glob = "usr/bin/age-keygen" } | OutputBin,
   },
 
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "FiloSottile",
+        repo = "age",
+      },
+    } | Attrs,
 
   tests = {
     smoketest = standaloneTest "/bin/age --version",

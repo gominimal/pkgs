@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -38,5 +38,13 @@ let version = "1.12.5" in
   outputs = {
     hex-patch = { glob = "usr/bin/hex-patch" } | OutputBin,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "Etto48",
+        repo = "HexPatch",
+      },
+    } | Attrs,
 } | BuildSpec

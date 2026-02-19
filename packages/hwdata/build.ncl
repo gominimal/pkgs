@@ -29,5 +29,10 @@ let version = "0.404" in
     {
       upstream_version = version,
       repology_project = "hwdata",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "vcrhonek",
+        repo = "hwdata",
+      },
     } | Attrs,
 } | BuildSpec

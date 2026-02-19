@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -32,4 +32,11 @@ let glibc = import "../glibc/build.ncl" in
     includes = { glob = "usr/include/**" } | OutputData,
     locales = { glob = "usr/share/locale/**" } | OutputData,
   },
+  attrs =
+    {
+      source_provenance = {
+        category = 'GnuProject,
+        name = "libidn2",
+      },
+    } | Attrs,
 } | BuildSpec

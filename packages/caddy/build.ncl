@@ -43,5 +43,10 @@ let version = "2.10.2" in
     {
       upstream_version = version,
       repology_project = "caddy",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "caddyserver",
+        repo = "caddy",
+      },
     } | Attrs,
 } | BuildSpec

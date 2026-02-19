@@ -34,5 +34,10 @@ let version = "1.13.2" in
     {
       upstream_version = version,
       repology_project = "ninja",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "ninja-build",
+        repo = "ninja",
+      },
     } | Attrs,
 } | BuildSpec

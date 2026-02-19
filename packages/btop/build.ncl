@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -24,5 +24,13 @@ let version = "1.4.6" in
     btop = { glob = "usr/bin/btop" } | OutputBin,
     data = { glob = "usr/share/**/*" } | OutputData,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "aristocratos",
+        repo = "btop",
+      },
+    } | Attrs,
 } | BuildSpec

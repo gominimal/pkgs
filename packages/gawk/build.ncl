@@ -43,6 +43,10 @@ let version = "5.3.2" in
     {
       upstream_version = version,
       repology_project = "gawk",
+      source_provenance = {
+        category = 'GnuProject,
+        name = "gawk",
+      },
     } | Attrs,
 
   replace_on_cycle =

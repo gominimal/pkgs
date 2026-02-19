@@ -40,5 +40,10 @@ let version = "4.5.2" in
     {
       upstream_version = version,
       repology_project = "libxcrypt",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "besser82",
+        repo = "libxcrypt",
+      },
     } | Attrs,
 } | BuildSpec

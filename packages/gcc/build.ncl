@@ -103,6 +103,10 @@ let version = "15.2.0" in
     {
       upstream_version = version,
       repology_project = "gcc",
+      source_provenance = {
+        category = 'GnuProject,
+        name = "gcc",
+      },
     } | Attrs,
 
   replace_on_cycle =

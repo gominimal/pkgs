@@ -1,4 +1,4 @@
-let { subsetOf, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let meson = import "../meson/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
@@ -31,4 +31,12 @@ let glibc = import "../glibc/build.ncl" in
     patchelf = { glob = "usr/bin/patchelf" } | OutputBin,
     man = { glob = "usr/share/man/**/*" } | OutputData,
   },
+  attrs =
+    {
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "NixOS",
+        repo = "patchelf",
+      },
+    } | Attrs,
 } | BuildSpec

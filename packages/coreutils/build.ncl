@@ -1,4 +1,4 @@
-let { standaloneTest, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
@@ -111,10 +111,15 @@ let version = "9.9" in
     locales = { glob = "usr/share/locale/**" } | OutputData,
   },
 
-  attrs = {
-    upstream_version = version,
-    repology_project = "coreutils",
-  },
+  attrs =
+    {
+      upstream_version = version,
+      repology_project = "coreutils",
+      source_provenance = {
+        category = 'GnuProject,
+        name = "coreutils",
+      },
+    } | Attrs,
 
   replace_on_cycle =
     {

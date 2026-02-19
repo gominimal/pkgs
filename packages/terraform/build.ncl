@@ -43,5 +43,10 @@ let version = "1.14.5" in
     {
       upstream_version = version,
       repology_project = "terraform",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "hashicorp",
+        repo = "terraform",
+      },
     } | Attrs,
 } | BuildSpec

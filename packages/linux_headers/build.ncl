@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
@@ -65,4 +65,12 @@ let linux_headers = import "../linux_headers/build.ncl" in
         includes = { glob = "usr/include/*/**" } | OutputData,
       },
     } | BuildSpec,
+  attrs =
+    {
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "torvalds",
+        repo = "linux",
+      },
+    } | Attrs,
 } | BuildSpec

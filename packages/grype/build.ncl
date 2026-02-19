@@ -43,5 +43,10 @@ let version = "0.108.0" in
     {
       upstream_version = version,
       repology_project = "grype",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "anchore",
+        repo = "grype",
+      },
     } | Attrs,
 } | BuildSpec

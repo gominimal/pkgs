@@ -41,5 +41,10 @@ let version = "2.17" in
     {
       upstream_version = version,
       repology_project = "lcms",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "mm2",
+        repo = "Little-CMS",
+      },
     } | Attrs,
 } | BuildSpec

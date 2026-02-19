@@ -1,4 +1,4 @@
-let { subsetOf, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let acl = import "../acl/build.ncl" in
 let base = import "../base/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
@@ -44,5 +44,12 @@ let version = "0.26" in
     locales = { glob = "usr/share/locale/**" } | OutputData,
     aclocals = { glob = "usr/share/aclocal/*" } | OutputData,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GnuProject,
+        name = "gettext",
+      },
+    } | Attrs,
 } | BuildSpec

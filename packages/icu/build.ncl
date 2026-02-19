@@ -41,5 +41,10 @@ let version = "78.1" in
     {
       upstream_version = version,
       repology_project = "icu",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "unicode-org",
+        repo = "icu",
+      },
     } | Attrs,
 } | BuildSpec

@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let sed = import "../sed/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -42,5 +42,12 @@ let version = "5.0.1" in
     mans = { glob = "usr/share/man/**" } | OutputData,
     screendata = { glob = "usr/share/screen/**" } | OutputData,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GnuProject,
+        name = "screen",
+      },
+    } | Attrs,
 } | BuildSpec

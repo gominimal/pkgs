@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -48,5 +48,13 @@ let version = "1.52.0" in
     pkgconfigs = { glob = "usr/lib/pkgconfig/**" } | OutputData,
     includes = { glob = "usr/include/**" } | OutputData,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "libuv",
+        repo = "libuv",
+      },
+    } | Attrs,
 } | BuildSpec

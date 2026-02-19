@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
@@ -97,4 +97,13 @@ let version = "1.5.7" in
         pkgconfig = { glob = "usr/lib/pkgconfig/libzstd.pc" } | OutputLib,
       },
     } | BuildSpec,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "facebook",
+        repo = "zstd",
+      },
+    } | Attrs,
 } | BuildSpec

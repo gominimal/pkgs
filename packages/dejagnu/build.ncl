@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let tcl = import "../tcl/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -23,4 +23,11 @@ let toolchain = import "../toolchain/build.ncl" in
     includes = { glob = "usr/include/**" } | OutputData,
     usr_share_dejagnu = { glob = "usr/share/dejagnu/**/*" } | OutputData,
   },
+  attrs =
+    {
+      source_provenance = {
+        category = 'GnuProject,
+        name = "dejagnu",
+      },
+    } | Attrs,
 } | BuildSpec

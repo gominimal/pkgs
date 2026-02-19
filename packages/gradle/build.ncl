@@ -36,6 +36,11 @@ let version = "9.3.1" in
         env_var = "GRADLE_USER_HOME",
         prefix = "gradle",
       },
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "gradle",
+        repo = "gradle",
+      },
     } | Attrs,
 
   tests = {

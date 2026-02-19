@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -39,5 +39,13 @@ let version = "0.18.2" in
     delta = { glob = "usr/bin/delta" } | OutputBin,
     completions = { glob = "usr/share/bash-completion/completions/*" } | OutputData,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "dandavison",
+        repo = "delta",
+      },
+    } | Attrs,
 } | BuildSpec

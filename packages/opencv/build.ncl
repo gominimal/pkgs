@@ -1,4 +1,4 @@
-let { subsetOf, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
@@ -48,5 +48,13 @@ let version = "4.12.0" in
     shares = { glob = "usr/share/opencv4/**" } | OutputData,
     includes = { glob = "usr/include/opencv4/**" } | OutputData,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "opencv",
+        repo = "opencv",
+      },
+    } | Attrs,
 } | BuildSpec
