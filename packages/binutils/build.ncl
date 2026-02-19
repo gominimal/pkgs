@@ -71,6 +71,10 @@ let version = "2.45.1" in
     {
       upstream_version = version,
       repology_project = "binutils",
+      source_provenance = {
+        category = 'GnuProject,
+        name = "binutils",
+      },
     } | Attrs,
 
   replace_on_cycle =

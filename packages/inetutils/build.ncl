@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, Source, .., } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let sed = import "../sed/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -25,4 +25,12 @@ let glibc = import "../glibc/build.ncl" in
   outputs = {
     bins = { glob = "usr/bin/*" } | OutputBin,
   },
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GnuProject,
+        name = "inetutils",
+      },
+    } | Attrs,
 } | BuildSpec

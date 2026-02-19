@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .., } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -33,5 +33,13 @@ let version = "2.5.1" in
     ltconfigs = { glob = "usr/lib/*.la" } | OutputData,
     aclocals = { glob = "usr/share/aclocal/*" } | OutputData,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "pkgconf",
+        repo = "pkgconf",
+      },
+    } | Attrs,
 } | BuildSpec

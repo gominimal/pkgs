@@ -43,5 +43,10 @@ let version = "2.0.1" in
     {
       upstream_version = version,
       repology_project = "clipper2",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "AngusJohnson",
+        repo = "Clipper2",
+      },
     } | Attrs,
 } | BuildSpec

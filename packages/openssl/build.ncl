@@ -48,5 +48,10 @@ let version = "3.6.1" in
     {
       upstream_version = version,
       repology_project = "openssl",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "openssl",
+        repo = "openssl",
+      },
     } | Attrs,
 } | BuildSpec

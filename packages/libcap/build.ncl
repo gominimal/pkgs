@@ -49,6 +49,11 @@ let version = "2.77" in
     {
       upstream_version = version,
       repology_project = "libcap",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "libcap",
+        repo = "libcap",
+      },
     } | Attrs,
 
   replace_on_cycle =

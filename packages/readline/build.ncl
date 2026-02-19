@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .., } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
@@ -56,4 +56,12 @@ let toolchain = import "../toolchain/build.ncl" in
         usr_include = { glob = "usr/include/**/*" } | OutputData,
       },
     } | BuildSpec,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GnuProject,
+        name = "readline",
+      },
+    } | Attrs,
 } | BuildSpec

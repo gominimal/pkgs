@@ -42,5 +42,9 @@ let version = "1.18.1" in
     {
       upstream_version = version,
       repology_project = "automake",
+      source_provenance = {
+        category = 'GnuProject,
+        name = "automake",
+      },
     } | Attrs,
 } | BuildSpec

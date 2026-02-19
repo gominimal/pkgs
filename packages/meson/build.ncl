@@ -31,5 +31,10 @@ let version = "1.10.1" in
     {
       upstream_version = version,
       repology_project = "meson",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "mesonbuild",
+        repo = "meson",
+      },
     } | Attrs,
 } | BuildSpec

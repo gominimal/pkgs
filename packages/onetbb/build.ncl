@@ -43,5 +43,10 @@ let version = "2022.3.0" in
     {
       upstream_version = version,
       repology_project = "onetbb",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "uxlfoundation",
+        repo = "oneTBB",
+      },
     } | Attrs,
 } | BuildSpec

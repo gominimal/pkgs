@@ -38,5 +38,10 @@ let version = "0.12.3" in
     {
       upstream_version = version,
       repology_project = "bottom",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "ClementTsang",
+        repo = "bottom",
+      },
     } | Attrs,
 } | BuildSpec

@@ -43,5 +43,10 @@ let version = "3.0.4" in
     {
       upstream_version = version,
       repology_project = "cosign",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "sigstore",
+        repo = "cosign",
+      },
     } | Attrs,
 } | BuildSpec

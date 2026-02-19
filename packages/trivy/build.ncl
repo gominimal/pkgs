@@ -43,5 +43,10 @@ let version = "0.69.1" in
     {
       upstream_version = version,
       repology_project = "trivy",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "aquasecurity",
+        repo = "trivy",
+      },
     } | Attrs,
 } | BuildSpec

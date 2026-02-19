@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .., } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let libidn2 = import "../libidn2/build.ncl" in
 let libunistring = import "../libunistring/build.ncl" in
@@ -34,4 +34,13 @@ let toolchain = import "../toolchain/build.ncl" in
     mans = { glob = "usr/share/man/**" } | OutputData,
     includes = { glob = "usr/include/**" } | OutputData,
   },
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "rockdaboot",
+        repo = "libpsl",
+      },
+    } | Attrs,
 } | BuildSpec

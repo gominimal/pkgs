@@ -42,5 +42,10 @@ let version = "2.3.5" in
   attrs =
     {
       upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "numpy",
+        repo = "numpy",
+      },
     } | Attrs,
 } | BuildSpec

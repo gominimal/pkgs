@@ -45,5 +45,10 @@ let version = "3.3.2" in
     {
       upstream_version = version,
       repology_project = "manifold-geometry-library",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "elalish",
+        repo = "manifold",
+      },
     } | Attrs,
 } | BuildSpec

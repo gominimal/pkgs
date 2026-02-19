@@ -56,6 +56,11 @@ let version = "24.9.0" in
         env_var = "NPM_CONFIG_CACHE",
         prefix = "npm-cache",
       },
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "nodejs",
+        repo = "node",
+      },
     } | Attrs,
 
   tests = {

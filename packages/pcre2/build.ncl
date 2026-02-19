@@ -105,5 +105,10 @@ let version = "10.47" in
     {
       upstream_version = version,
       repology_project = "pcre2",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "PCRE2Project",
+        repo = "pcre2",
+      },
     } | Attrs,
 } | BuildSpec

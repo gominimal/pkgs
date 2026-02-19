@@ -37,6 +37,11 @@ let build_num = "7" in
   attrs =
     {
       upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "adoptium",
+        repo = "temurin21-binaries",
+      },
     } | Attrs,
 
   tests = {

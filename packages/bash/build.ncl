@@ -60,6 +60,10 @@ let version = "5.3" in
     {
       upstream_version = version,
       repology_project = "bash",
+      source_provenance = {
+        category = 'GnuProject,
+        name = "bash",
+      },
     } | Attrs,
 
   replace_on_cycle =

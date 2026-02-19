@@ -1,4 +1,4 @@
-let { subsetOf, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, subsetOf, .., } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let attr = import "../attr/build.ncl" in
 let base = import "../base/build.ncl" in
@@ -39,7 +39,14 @@ let version = "6.5-20250830" in
 
     terminfo = { glob = "usr/{lib,share}/terminfo/**/*" } | OutputData,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GnuProject,
+        name = "ncurses",
+      },
+    } | Attrs,
 
   replace_on_cycle =
     {

@@ -52,6 +52,11 @@ let version = "2.15.1" in
     {
       upstream_version = version,
       repology_project = "libxml2",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "GNOME",
+        repo = "libxml2",
+      },
     } | Attrs,
 
   tests = {

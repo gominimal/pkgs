@@ -39,5 +39,10 @@ let version = "3.2.1" in
   attrs =
     {
       upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "cython",
+        repo = "cython",
+      },
     } | Attrs,
 } | BuildSpec

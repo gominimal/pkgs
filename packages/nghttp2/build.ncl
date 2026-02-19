@@ -49,6 +49,11 @@ let version = "1.68.0" in
     {
       upstream_version = version,
       repology_project = "nghttp2",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "nghttp2",
+        repo = "nghttp2",
+      },
     } | Attrs,
 
   tests = {

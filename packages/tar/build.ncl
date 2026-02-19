@@ -40,6 +40,10 @@ let version = "1.35" in
     {
       upstream_version = version,
       repology_project = "tar",
+      source_provenance = {
+        category = 'GnuProject,
+        name = "tar",
+      },
     } | Attrs,
 
   replace_on_cycle =

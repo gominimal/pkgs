@@ -35,6 +35,10 @@ let version = "7.0.3" in
     {
       upstream_version = version,
       repology_project = "bc-gh",
+      source_provenance = {
+        category = 'GnuProject,
+        name = "bc",
+      },
     } | Attrs,
 
   tests = {

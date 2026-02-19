@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .., } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -61,4 +61,13 @@ let glibc = import "../glibc/build.ncl" in
         pkgconfig = { glob = "usr/lib/pkgconfig/zlib.pc" } | OutputData,
       },
     } | BuildSpec,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "madler",
+        repo = "zlib",
+      },
+    } | Attrs,
 } | BuildSpec

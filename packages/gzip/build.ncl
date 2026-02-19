@@ -34,6 +34,10 @@ let version = "1.14" in
     {
       upstream_version = version,
       repology_project = "gzip",
+      source_provenance = {
+        category = 'GnuProject,
+        name = "gzip",
+      },
     } | Attrs,
 
   replace_on_cycle =

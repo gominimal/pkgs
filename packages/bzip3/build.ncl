@@ -45,5 +45,10 @@ let version = "1.5.3" in
     {
       upstream_version = version,
       repology_project = "bzip3",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "iczelia",
+        repo = "bzip3",
+      },
     } | Attrs,
 } | BuildSpec

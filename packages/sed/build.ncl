@@ -1,4 +1,4 @@
-let { standaloneTest, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, standaloneTest, .., } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let acl = import "../acl/build.ncl" in
 let attr = import "../attr/build.ncl" in
@@ -50,7 +50,14 @@ let version = "4.9" in
     infos = { glob = "usr/share/info/*.info" } | OutputData,
     locales = { glob = "usr/share/locale/**" } | OutputData,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GnuProject,
+        name = "sed",
+      },
+    } | Attrs,
 
   replace_on_cycle =
     {

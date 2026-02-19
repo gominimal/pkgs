@@ -40,6 +40,11 @@ let version = "0.2.5" in
     {
       upstream_version = version,
       repology_project = "libyaml",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "yaml",
+        repo = "libyaml",
+      },
     } | Attrs,
 
   tests = {

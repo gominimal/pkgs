@@ -43,5 +43,10 @@ let version = "1.42.0" in
     {
       upstream_version = version,
       repology_project = "syft",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "anchore",
+        repo = "syft",
+      },
     } | Attrs,
 } | BuildSpec

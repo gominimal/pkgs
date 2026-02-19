@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .., } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -31,4 +31,13 @@ let zlib = import "../zlib/build.ncl" in
     pkgconfigs = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
     mans = { glob = "usr/share/man/**" } | OutputData,
   },
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "sqlite",
+        repo = "sqlite",
+      },
+    } | Attrs,
 } | BuildSpec

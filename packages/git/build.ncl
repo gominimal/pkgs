@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .., } = import "minimal.ncl" in
 let curl = import "../curl/build.ncl" in
 let gettext = import "../gettext/build.ncl" in
 let expat = import "../expat/build.ncl" in
@@ -48,7 +48,12 @@ let version = "2.52.0" in
   attrs = {
     upstream_version = version,
     repology_project = "git",
-  },
+    source_provenance = {
+      category = 'GithubRepo,
+      owner = "git",
+      repo = "git",
+    },
+  } | Attrs,
 
   tests = {
     basic_repo_ops =

@@ -44,5 +44,10 @@ let version = "10.2p1" in
     {
       upstream_version = version,
       repology_project = "openssh",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "openssh",
+        repo = "openssh-portable",
+      },
     } | Attrs,
 } | BuildSpec

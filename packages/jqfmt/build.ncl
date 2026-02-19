@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, Source, .., } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -27,5 +27,13 @@ let version = "0.1.0" in
   outputs = {
     jqfmt = { glob = "usr/bin/jqfmt" } | OutputBin,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "noperator",
+        repo = "jqfmt",
+      },
+    } | Attrs,
 } | BuildSpec

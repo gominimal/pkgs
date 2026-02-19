@@ -33,5 +33,9 @@ let version = "1.4.1" in
     {
       upstream_version = version,
       repology_project = "libunistring",
+      source_provenance = {
+        category = 'GnuProject,
+        name = "libunistring",
+      },
     } | Attrs,
 } | BuildSpec

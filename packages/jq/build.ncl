@@ -43,6 +43,11 @@ let version = "1.8.1" in
     {
       upstream_version = version,
       repology_project = "jq",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "jqlang",
+        repo = "jq",
+      },
     } | Attrs,
 
   tests = {

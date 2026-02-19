@@ -1,4 +1,4 @@
-let { BuildSpec, Local, Needs, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputLib, Source, .., } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
@@ -38,5 +38,13 @@ let version = "10.15.1" in
 
     libexec = { glob = "usr/libexec/pnpm/**" } | OutputLib,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "pnpm",
+        repo = "pnpm",
+      },
+    } | Attrs,
 } | BuildSpec

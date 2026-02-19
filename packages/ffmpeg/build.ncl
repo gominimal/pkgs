@@ -46,5 +46,10 @@ let version = "8.0.1" in
     {
       upstream_version = version,
       repology_project = "ffmpeg",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "FFmpeg",
+        repo = "FFmpeg",
+      },
     } | Attrs,
 } | BuildSpec

@@ -41,6 +41,11 @@ let version = "0.15.1" in
           prefix = "zig-global-cache",
         },
       ],
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "ziglang",
+        repo = "zig",
+      },
     } | Attrs,
 
   tests = {

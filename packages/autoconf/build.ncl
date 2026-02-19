@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .., } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -27,5 +27,12 @@ let version = "2.72" in
     bins = { glob = "usr/bin/*" } | OutputBin,
     autoconf_data = { glob = "usr/share/autoconf/**" } | OutputData,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GnuProject,
+        name = "autoconf",
+      },
+    } | Attrs,
 } | BuildSpec

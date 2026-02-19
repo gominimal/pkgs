@@ -1,4 +1,4 @@
-let { subsetOf, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, subsetOf, .., } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let curl = import "../curl/build.ncl" in
@@ -60,9 +60,14 @@ let version = "1.93.1" in
 
   attrs = {
     upstream_version = version,
+    source_provenance = {
+      category = 'GithubRepo,
+      owner = "rust-lang",
+      repo = "rust",
+    },
     env_state_wiring = {
       env_var = "CARGO_HOME",
       prefix = "cargo",
     },
-  },
+  } | Attrs,
 } | BuildSpec

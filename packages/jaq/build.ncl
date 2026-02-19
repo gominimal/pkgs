@@ -1,4 +1,4 @@
-let { standaloneTest, subsetOf, BuildSpec, Local, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputLib, Source, Test, standaloneTest, subsetOf, .., } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -32,7 +32,15 @@ let version = "2.3.0" in
   outputs = {
     jaq = { glob = "usr/bin/jaq" } | OutputLib,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "01mf02",
+        repo = "jaq",
+      },
+    } | Attrs,
 
   tests = {
     smoketest = standaloneTest "/bin/jaq --version",

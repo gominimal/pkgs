@@ -36,5 +36,10 @@ let version = "1.9.3" in
     {
       upstream_version = version,
       repology_project = "grpcurl",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "fullstorydev",
+        repo = "grpcurl",
+      },
     } | Attrs,
 } | BuildSpec

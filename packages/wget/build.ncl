@@ -1,4 +1,4 @@
-let { BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .., } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -45,5 +45,12 @@ let version = "1.25.0" in
     wget = { glob = "usr/bin/wget" } | OutputBin,
     wgetrc = { glob = "etc/wgetrc" } | OutputData,
   },
-  attrs.upstream_version = version,
+  attrs =
+    {
+      upstream_version = version,
+      source_provenance = {
+        category = 'GnuProject,
+        name = "wget",
+      },
+    } | Attrs,
 } | BuildSpec

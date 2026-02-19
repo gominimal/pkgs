@@ -38,5 +38,10 @@ let version = "1.6.53" in
     {
       upstream_version = version,
       repology_project = "libpng",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "pnggroup",
+        repo = "libpng",
+      },
     } | Attrs,
 } | BuildSpec

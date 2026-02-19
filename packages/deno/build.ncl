@@ -32,6 +32,11 @@ let version = "2.6.9" in
         env_var = "DENO_DIR",
         prefix = "deno-cache",
       },
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "denoland",
+        repo = "deno",
+      },
     } | Attrs,
 
   tests = {

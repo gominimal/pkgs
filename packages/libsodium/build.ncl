@@ -35,6 +35,11 @@ let version = "1.0.21" in
     {
       upstream_version = version,
       repology_project = "libsodium",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "jedisct1",
+        repo = "libsodium",
+      },
     } | Attrs,
 
   tests = {

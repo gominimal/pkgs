@@ -50,5 +50,10 @@ let version = "8.6.0" in
     {
       upstream_version = version,
       repology_project = "redis",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "redis",
+        repo = "redis",
+      },
     } | Attrs,
 } | BuildSpec

@@ -43,5 +43,10 @@ let version = "b8041" in
   attrs =
     {
       upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "ggml-org",
+        repo = "llama.cpp",
+      },
     } | Attrs,
 } | BuildSpec

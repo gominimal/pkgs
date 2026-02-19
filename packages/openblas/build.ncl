@@ -39,5 +39,10 @@ let version = "0.3.31" in
     {
       upstream_version = version,
       repology_project = "openblas",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "OpenMathLib",
+        repo = "OpenBLAS",
+      },
     } | Attrs,
 } | BuildSpec
