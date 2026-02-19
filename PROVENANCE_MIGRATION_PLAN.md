@@ -91,7 +91,7 @@ Straightforward — each is a well-known GNU project. The `name` field matches t
 
 ### Phase 2: GitHub Repos — GCS owner/repo pattern (53 packages)
 
-These have source URLs like `gs://minimal-staging-archives/{owner}/{repo}/...` so the owner/repo mapping is directly visible in the URL.
+These have source URLs like `gs://minimal-staging-archives/{owner}/{repo}/...` — the owner/repo is extracted using the same GCS URL regex that `pkgmgr` uses (`gcsURLRe` in `manager.go`).
 
 | Package | Owner | Repo |
 |---------|-------|------|
@@ -152,7 +152,7 @@ These have source URLs like `gs://minimal-staging-archives/{owner}/{repo}/...` s
 
 ### Phase 3: GitHub Repos — Direct GitHub URLs (19 packages)
 
-These download directly from `github.com/{owner}/{repo}/...` so mapping is also straightforward.
+These download directly from `github.com/{owner}/{repo}/...` — the owner/repo is extracted using pkgmgr's GitHub URL regex (`urlFieldRe` in `manager.go`).
 
 | Package | Owner | Repo |
 |---------|-------|------|
@@ -179,7 +179,7 @@ These download directly from `github.com/{owner}/{repo}/...` so mapping is also 
 
 ### Phase 4: GitHub Repos — GCS plain + known upstream (44 packages)
 
-These use GCS URLs without owner/repo in the path, but their upstream GitHub repos are well-known. Each mapping has been verified.
+These use plain GCS URLs (`gs://minimal-staging-archives/packagename-version.tar.gz`) without owner/repo in the path — pkgmgr's GCS regex can't auto-resolve these. Each mapping was resolved from build.ncl source comments (e.g. `# https://github.com/...`) and verified against the upstream project.
 
 | Package | Owner | Repo |
 |---------|-------|------|
@@ -230,7 +230,7 @@ These use GCS URLs without owner/repo in the path, but their upstream GitHub rep
 
 ### Phase 5: GitHub Repos — alternate download sources (12 packages)
 
-These download from PyPI, npm, go.dev, etc. but their authoritative source repo is on GitHub.
+These download from PyPI, npm, go.dev, etc. — outside pkgmgr's URL regex coverage. Their authoritative source repo is on GitHub, mapped from canonical upstream project pages.
 
 | Package | Owner | Repo | Download source |
 |---------|-------|------|----------------|
@@ -297,6 +297,26 @@ These projects' canonical repos are not on GitHub. A future `'GitlabRepo` or `'F
 
 ## Implementation Approach
 
+### Owner/Repo Resolution via pkgmgr
+
+The `owner/repo` for each package is resolved using the same regex-based URL parsing that `pkgmgr` (`../pkgmgr`) uses internally. This ensures consistency with the existing package management tooling.
+
+**GCS URL extraction** (`pkgmgr/internal/package_manager/manager.go`):
+```go
+gcsURLRe := regexp.MustCompile(`url\s*=\s*"(gs://[^/]+/([^/"\s]+/[^/"\s]+)/[^"]*%\{version\}[^"]*)"`)
+```
+Matches GCS URLs in the format `gs://bucket/owner/repo/...` and extracts the `owner/repo` path segment directly. This covers Phase 2 packages (53 packages with `gs://minimal-staging-archives/{owner}/{repo}/...` URLs).
+
+**GitHub URL extraction** (fallback):
+```go
+urlFieldRe := regexp.MustCompile(`url\s*=\s*"(https://github\.com/([^/]+/[^/]+)/archive/refs/tags/[^"]+)"`)
+```
+Extracts `owner/repo` from direct `github.com` download URLs. This covers Phase 3 packages.
+
+**Packages not matched by pkgmgr regexes** (Phases 4 & 5):
+- **GCS plain URLs** (`gs://minimal-staging-archives/packagename-version.tar.gz`) don't contain `owner/repo` in the path, so pkgmgr can't auto-resolve them. These were mapped to their known GitHub upstreams by cross-referencing the GCS archive comments in build.ncl (many contain `# https://github.com/...` hints) and verifying against the upstream project.
+- **Alternate source URLs** (PyPI, npm, go.dev, etc.) also fall outside pkgmgr's regex patterns. These were mapped to their canonical GitHub repos.
+
 ### Edit Pattern
 
 Most packages use one of two `attrs` styles that need updating:
@@ -350,11 +370,11 @@ Most packages use one of two `attrs` styles that need updating:
 
 ### Execution Plan
 
-1. **Phase 1 (GNU)**: 35 packages — small batch, easy to verify
-2. **Phase 2 (GCS owner/repo)**: 53 packages — owner/repo directly from URL
-3. **Phase 3 (Direct GitHub)**: 19 packages — owner/repo from URL
-4. **Phase 4 (GCS plain)**: 44 packages — owner/repo manually verified
-5. **Phase 5 (Alternate sources)**: 12 packages — owner/repo manually verified
+1. **Phase 1 (GNU)**: 35 packages — well-known GNU project names
+2. **Phase 2 (GCS owner/repo)**: 53 packages — owner/repo extracted via pkgmgr GCS URL regex
+3. **Phase 3 (Direct GitHub)**: 19 packages — owner/repo extracted via pkgmgr GitHub URL regex
+4. **Phase 4 (GCS plain)**: 44 packages — owner/repo resolved from build.ncl source comments and upstream verification (not auto-resolvable by pkgmgr)
+5. **Phase 5 (Alternate sources)**: 12 packages — owner/repo resolved from canonical upstream repos (PyPI/npm/etc. sources not covered by pkgmgr regexes)
 
 Each phase can be committed separately for clean review.
 
@@ -362,7 +382,8 @@ Each phase can be committed separately for clean review.
 
 After each phase:
 - Verify NCL syntax is valid (no trailing comma issues, correct `| Attrs` contract)
-- Spot-check a few packages to ensure owner/repo are correct
+- Cross-check owner/repo against pkgmgr's URL resolution for GCS/GitHub URL packages
+- For plain GCS and alternate-source packages, verify owner/repo against the upstream project
 - Confirm the `source_provenance` field placement is consistent with existing examples (cmake, glibc, tailscale)
 
 ### Risk Assessment
@@ -370,17 +391,18 @@ After each phase:
 - **Low risk**: This is additive metadata only — no build behavior changes
 - **Schema validation**: The `attr_classes.ncl` contract validates category + required fields at eval time
 - **No build impact**: `source_provenance` is consumed for metadata/SBOM only, not build execution
+- **pkgmgr consistency**: Phases 2 & 3 use the same resolution logic as pkgmgr, ensuring the provenance data matches what the tooling would derive
 
 ---
 
 ## Summary
 
-| Phase | Category | Count | Difficulty |
-|-------|----------|-------|------------|
-| 1 | GnuProject | 35 | Easy |
-| 2 | GithubRepo (GCS owner/repo) | 53 | Easy |
-| 3 | GithubRepo (direct GitHub) | 19 | Easy |
-| 4 | GithubRepo (GCS plain) | 44 | Medium (verify mappings) |
-| 5 | GithubRepo (alternate sources) | 12 | Medium (verify mappings) |
+| Phase | Category | Count | Resolution method |
+|-------|----------|-------|-------------------|
+| 1 | GnuProject | 35 | Known GNU project names |
+| 2 | GithubRepo (GCS owner/repo) | 53 | pkgmgr GCS URL regex |
+| 3 | GithubRepo (direct GitHub) | 19 | pkgmgr GitHub URL regex |
+| 4 | GithubRepo (GCS plain) | 44 | build.ncl source comments + upstream verification |
+| 5 | GithubRepo (alternate sources) | 12 | Canonical upstream repo mapping |
 | — | Skipped (meta/other/borderline) | 24 | N/A |
 | **Total** | | **163 new + 3 existing** | |
