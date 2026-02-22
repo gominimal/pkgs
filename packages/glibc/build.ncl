@@ -112,7 +112,7 @@ let version = "2.42" in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/glibc/arm64-linux-gnu/glibc_2.40_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "399accca0a7dbc31b2a6ca432396b2fd71cd1910e2851fbed949c40f287ccf14",
+              sha256 = "ad3db9a736d6989959a502b025beb180d332bfbe7bacc8d397ba4ffd87d91f41",
               extract = true,
             } | Source,
         } target,

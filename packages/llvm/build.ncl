@@ -90,7 +90,7 @@ in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/llvm/arm64-linux-gnu/llvm_19.1.7_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "afcf8eb4d95eb4da3686c0123cbe37bb27cf557c5dfd8bf5bfa614442f96db06",
+              sha256 = "0e19155bd2b0ae61ceab9482a2158d4ab9fd0bb6556d808cfa533a355562a9ed",
               extract = true,
             } | Source,
         } target,

@@ -74,7 +74,7 @@ let version = "4.9" in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/sed/arm64-linux-gnu/sed_4.9_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "f3c3f5d2d2c05e156f4368b08c771a2e991d864e8819858f22d1e7ac3475af94",
+              sha256 = "ddd1864e3dfb3cb070a9a10a163d34d7dcff91077095dccdfc75524435421684",
               extract = true,
             } | Source,
         } target,

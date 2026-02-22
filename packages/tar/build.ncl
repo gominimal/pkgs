@@ -61,7 +61,7 @@ let version = "1.35" in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/tar/arm64-linux-gnu/tar_1.35_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "407a8dc74b53cb91b69a54e143180423ce552bb4c2cbf12655d4d1417cea90c5",
+              sha256 = "5a010735e7da7db2ce248f0681ededc1078da213e33b52957c3e1679f6e2ce91",
               extract = true,
             } | Source,
         } target,

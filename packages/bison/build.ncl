@@ -55,7 +55,7 @@ let glibc = import "../glibc/build.ncl" in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/bison/arm64-linux-gnu/bison_3.8.2_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "1ee51af5db7f6d00d883b6c66c46b6d2421c937288f666fe6ce907010fb2acce",
+              sha256 = "f09ca4bcb9ee68128f1519940bcd7697e511f255716d70696bef3ecbd9712e05",
               extract = true,
             } | Source,
         } target,

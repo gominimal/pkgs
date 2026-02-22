@@ -92,7 +92,7 @@ let version = "2.45.1" in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/binutils/arm64-linux-gnu/binutils_2.46.0_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "e02122c7a0a6d4f2dd346dbfa774852d4a5d7755b27d661d7c2f632414bff162",
+              sha256 = "a5ba065c25d940e93de3f860d957d814582af234f5641ccac46905e538f75931",
               extract = true,
             } | Source,
         } target,
