@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex
 
-tar -xfo patch-2.8.tar.xz
+tar -xof patch-2.8.tar.xz
 cd patch-2.8
 
 case $(uname -m) in

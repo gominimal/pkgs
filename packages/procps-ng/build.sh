@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo procps-ng-4.0.5.tar.xz
+tar -xof procps-ng-4.0.5.tar.xz
 cd procps-ng-4.0.5
 
 case $(uname -m) in

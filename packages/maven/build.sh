@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex
 
-tar -xfo "apache-maven-${MINIMAL_ARG_VERSION}-bin.tar.gz"
+tar -xof "apache-maven-${MINIMAL_ARG_VERSION}-bin.tar.gz"
 
 mkdir -p $OUTPUT_DIR/usr/{bin,share/maven}
 cp -r "apache-maven-${MINIMAL_ARG_VERSION}"/* $OUTPUT_DIR/usr/share/maven/

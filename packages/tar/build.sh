@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo tar-1.35.tar.xz
+tar -xof tar-1.35.tar.xz
 cd tar-1.35
 
 case $(uname -m) in

@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo tcl8.6.16-src.tar.gz
+tar -xof tcl8.6.16-src.tar.gz
 cd tcl8.6.16
 
 case $(uname -m) in

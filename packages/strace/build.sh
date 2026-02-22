@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo strace-6.17.tar.xz
+tar -xof strace-6.17.tar.xz
 cd strace-6.17
 
 case $(uname -m) in

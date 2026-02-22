@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo Python-3.13.7.tar.xz
+tar -xof Python-3.13.7.tar.xz
 cd Python-3.13.7
 
 case $(uname -m) in

@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex
 
-tar -xfo mpfr-4.2.2.tar.xz
+tar -xof mpfr-4.2.2.tar.xz
 cd mpfr-4.2.2
 
 case $(uname -m) in

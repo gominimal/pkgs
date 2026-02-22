@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo file-5.46.tar.gz
+tar -xof file-5.46.tar.gz
 cd file-5.46
 
 case $(uname -m) in

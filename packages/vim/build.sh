@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo vim-9.1.1629.tar.gz
+tar -xof vim-9.1.1629.tar.gz
 cd vim-9.1.1629
 
 case $(uname -m) in

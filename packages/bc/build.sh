@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo "bc-${MINIMAL_ARG_VERSION}.tar.xz"
+tar -xof "bc-${MINIMAL_ARG_VERSION}.tar.xz"
 cd "bc-${MINIMAL_ARG_VERSION}"
 
 case $(uname -m) in

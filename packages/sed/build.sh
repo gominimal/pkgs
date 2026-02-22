@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo sed-4.9.tar.xz
+tar -xof sed-4.9.tar.xz
 cd sed-4.9
 
 case $(uname -m) in

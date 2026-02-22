@@ -3,7 +3,7 @@ set -e
 
 export CC=gcc
 
-tar -xfo "node-v${MINIMAL_ARG_VERSION}.tar.xz"
+tar -xof "node-v${MINIMAL_ARG_VERSION}.tar.xz"
 cd "node-v${MINIMAL_ARG_VERSION}"
 
 case $(uname -m) in

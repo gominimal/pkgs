@@ -2,10 +2,10 @@
 set -e
 
 mkdir -p bootstrap
-tar -xfo "go${MINIMAL_ARG_VERSION}.linux-amd64.tar.gz" -C bootstrap
+tar -xof "go${MINIMAL_ARG_VERSION}.linux-amd64.tar.gz" -C bootstrap
 export GOROOT_BOOTSTRAP="$(pwd)/bootstrap/go"
 
-tar -xfo "go${MINIMAL_ARG_VERSION}.src.tar.gz"
+tar -xof "go${MINIMAL_ARG_VERSION}.src.tar.gz"
 cd go/src
 GOROOT=/usr/go ./make.bash # TODO: do ./all.bash once we have /etc setup correctly so those tests will pass
 

@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo lz4-1.10.0.tar.gz
+tar -xof lz4-1.10.0.tar.gz
 cd lz4-1.10.0
 
 export CC=gcc

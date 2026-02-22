@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo xz-5.8.1.tar.xz
+tar -xof xz-5.8.1.tar.xz
 cd xz-5.8.1
 
 case $(uname -m) in

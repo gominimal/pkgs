@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo "groff-${MINIMAL_ARG_VERSION}.tar.gz"
+tar -xof "groff-${MINIMAL_ARG_VERSION}.tar.gz"
 cd "groff-${MINIMAL_ARG_VERSION}"
 
 case $(uname -m) in

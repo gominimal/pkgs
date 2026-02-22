@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo "shadow-${MINIMAL_ARG_VERSION}.tar.xz"
+tar -xof "shadow-${MINIMAL_ARG_VERSION}.tar.xz"
 cd "shadow-${MINIMAL_ARG_VERSION}"
 
 sed -i 's/groups$(EXEEXT) //' src/Makefile.in

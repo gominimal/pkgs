@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo perl-5.42.0.tar.xz
+tar -xof perl-5.42.0.tar.xz
 cd perl-5.42.0
 
 export BUILD_ZLIB=False

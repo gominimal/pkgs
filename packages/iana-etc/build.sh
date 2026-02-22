@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo iana-etc-20250618.tar.gz
+tar -xof iana-etc-20250618.tar.gz
 cd iana-etc-20250618
 
 mkdir -p "$OUTPUT_DIR/etc"

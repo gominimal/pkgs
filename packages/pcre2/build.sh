@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo "pcre2-${MINIMAL_ARG_VERSION}.tar.bz2"
+tar -xof "pcre2-${MINIMAL_ARG_VERSION}.tar.bz2"
 cd "pcre2-${MINIMAL_ARG_VERSION}"
 
 # TODO

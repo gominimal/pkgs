@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex
 
-tar -xfo check-0.15.2.tar.gz
+tar -xof check-0.15.2.tar.gz
 cd check-0.15.2
 
 autoreconf --install

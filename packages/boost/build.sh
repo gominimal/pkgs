@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo boost-1.89.0-b2-nodocs.tar.xz
+tar -xof boost-1.89.0-b2-nodocs.tar.xz
 cd boost-1.89.0
 
 case $(uname -m) in

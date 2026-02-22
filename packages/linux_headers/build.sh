@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex
 
-tar -xfo linux-6.12.43.tar.xz
+tar -xof linux-6.12.43.tar.xz
 cd linux-6.12.43
 
 make headers

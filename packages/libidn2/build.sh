@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo libidn2-2.3.8.tar.gz
+tar -xof libidn2-2.3.8.tar.gz
 cd libidn2-2.3.8
 
 case $(uname -m) in

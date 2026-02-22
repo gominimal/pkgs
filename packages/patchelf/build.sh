@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo b49de1b3384e7928bf0df9a889fe5a4e7b3fbddf.tar.gz
+tar -xof b49de1b3384e7928bf0df9a889fe5a4e7b3fbddf.tar.gz
 cd patchelf-b49de1b3384e7928bf0df9a889fe5a4e7b3fbddf
 
 mkdir build

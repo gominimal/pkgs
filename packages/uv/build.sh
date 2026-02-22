@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex
 
-tar -xfo uv-0.9.3.tar.gz
+tar -xof uv-0.9.3.tar.gz
 cd uv-0.9.3
 
 export CC=gcc

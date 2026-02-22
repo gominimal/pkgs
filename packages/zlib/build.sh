@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex
 
-tar -xfo zlib-1.3.1.tar.gz
+tar -xof zlib-1.3.1.tar.gz
 cd zlib-1.3.1
 
 case $(uname -m) in

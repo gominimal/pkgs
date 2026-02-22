@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 set -e
 
-tar -xfo gcc-15.2.0.tar.xz
+tar -xof gcc-15.2.0.tar.xz
 cd gcc-15.2.0
 
 case $(uname -m) in

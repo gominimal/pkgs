@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo "elfutils-${MINIMAL_ARG_VERSION}.tar.bz2"
+tar -xof "elfutils-${MINIMAL_ARG_VERSION}.tar.bz2"
 cd "elfutils-${MINIMAL_ARG_VERSION}"
 
 case $(uname -m) in

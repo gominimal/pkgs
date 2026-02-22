@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex
 
-tar -xfo minpkgs-ca7133e671320bc33ccb07d2a682a5f2ec10586d.tar.gz
+tar -xof minpkgs-ca7133e671320bc33ccb07d2a682a5f2ec10586d.tar.gz
 cd minpkgs-ca7133e671320bc33ccb07d2a682a5f2ec10586d
 
 export CC=gcc

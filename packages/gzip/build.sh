@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo gzip-1.14.tar.xz
+tar -xof gzip-1.14.tar.xz
 cd gzip-1.14
 
 case $(uname -m) in

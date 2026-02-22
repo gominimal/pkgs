@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex
 
-tar -xfo mpc-1.3.1.tar.gz
+tar -xof mpc-1.3.1.tar.gz
 cd mpc-1.3.1
 
 case $(uname -m) in

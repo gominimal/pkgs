@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo sqlite-autoconf-3500400.tar.gz
+tar -xof sqlite-autoconf-3500400.tar.gz
 cd sqlite-autoconf-3500400
 
 case $(uname -m) in

@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo flex-2.6.4.tar.gz
+tar -xof flex-2.6.4.tar.gz
 cd flex-2.6.4
 
 case $(uname -m) in

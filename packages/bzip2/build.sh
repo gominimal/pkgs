@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo bzip2-1.0.8.tar.gz
+tar -xof bzip2-1.0.8.tar.gz
 cd bzip2-1.0.8
 
 sed -i 's@\(ln -s -f \)$(PREFIX)/bin/@\1@' Makefile

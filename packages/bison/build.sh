@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo bison-3.8.2.tar.xz
+tar -xof bison-3.8.2.tar.xz
 cd bison-3.8.2
 
 case $(uname -m) in

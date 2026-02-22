@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo "util-linux-${MINIMAL_ARG_VERSION}.tar.xz"
+tar -xof "util-linux-${MINIMAL_ARG_VERSION}.tar.xz"
 cd "util-linux-${MINIMAL_ARG_VERSION}"
 
 case $(uname -m) in

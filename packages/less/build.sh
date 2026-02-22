@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex
 
-tar -xfo less-679.tar.gz
+tar -xof less-679.tar.gz
 cd less-679
 
 case $(uname -m) in

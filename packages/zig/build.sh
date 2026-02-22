@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex
 
-tar -xfo "zig-x86_64-linux-${MINIMAL_ARG_VERSION}.tar.xz"
+tar -xof "zig-x86_64-linux-${MINIMAL_ARG_VERSION}.tar.xz"
 cd "zig-x86_64-linux-${MINIMAL_ARG_VERSION}"
 
 mkdir -p $OUTPUT_DIR/usr/{bin,lib/zig,share/doc/zig}

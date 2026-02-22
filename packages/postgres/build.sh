@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo "postgresql-${MINIMAL_ARG_VERSION}.tar.gz"
+tar -xof "postgresql-${MINIMAL_ARG_VERSION}.tar.gz"
 cd "postgresql-${MINIMAL_ARG_VERSION}"
 
 case $(uname -m) in

@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo dejagnu-1.6.3.tar.gz
+tar -xof dejagnu-1.6.3.tar.gz
 cd dejagnu-1.6.3
 
 mkdir -v build

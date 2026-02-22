@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo inetutils-2.6.tar.xz
+tar -xof inetutils-2.6.tar.xz
 cd inetutils-2.6
 
 ./configure --prefix=/usr        \

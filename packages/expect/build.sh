@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo expect5.45.4.tar.gz
+tar -xof expect5.45.4.tar.gz
 cd expect5.45.4
 
 patch -Np1 -i ../expect-5.45.4-gcc15-1.patch

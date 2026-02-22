@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo "pnpm-${MINIMAL_ARG_VERSION}.tgz"
+tar -xof "pnpm-${MINIMAL_ARG_VERSION}.tgz"
 cd package
 
 install -d $OUTPUT_DIR/usr/{bin,libexec}

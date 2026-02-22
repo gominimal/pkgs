@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo gdbm-1.26.tar.gz
+tar -xof gdbm-1.26.tar.gz
 cd gdbm-1.26
 
 case $(uname -m) in

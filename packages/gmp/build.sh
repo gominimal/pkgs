@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex
 
-tar -xfo gmp-6.3.0.tar.xz
+tar -xof gmp-6.3.0.tar.xz
 cd gmp-6.3.0
 
 # Fix GMP's "long long reliability test 1" configure check.

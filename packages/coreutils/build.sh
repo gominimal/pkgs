@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo "coreutils-${MINIMAL_ARG_VERSION}.tar.xz"
+tar -xof "coreutils-${MINIMAL_ARG_VERSION}.tar.xz"
 cd "coreutils-${MINIMAL_ARG_VERSION}"
 
 case $(uname -m) in

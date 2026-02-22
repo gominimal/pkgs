@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo libffi-3.5.2.tar.gz
+tar -xof libffi-3.5.2.tar.gz
 cd libffi-3.5.2
 
 case $(uname -m) in

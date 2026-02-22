@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-tar -xfo setuptools-80.9.0.tar.gz
+tar -xof setuptools-80.9.0.tar.gz
 cd setuptools-80.9.0
 
 pip3 wheel -w dist --no-cache-dir --no-build-isolation --no-deps $PWD
