@@ -91,7 +91,7 @@ let version = "10.47" in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/pcre2/arm64-linux-gnu/pcre2_10.45_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "c20ddf5fa6be7623d7282d91ff78cf6a9b6fac806a023b6e09bc3d3dea2c3d3b",
+              sha256 = "184d8e5fd124d725a68e7b3b705e86fa20945561960874c5e213774ed5a7c422",
               extract = true,
             } | Source,
         } target,

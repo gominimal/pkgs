@@ -124,7 +124,7 @@ let version = "15.2.0" in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/gcc/arm64-linux-gnu/gcc_12.4.0_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "ebbabf0a17f3db99d35e4a2aaa1f7e900510a67d7bf167901e9d6401f73cee5d",
+              sha256 = "eb0c777ac64c41781a8c846056b5817d23e8e16d16628f0b845c7b504e432654",
               extract = true,
             } | Source,
         } target,

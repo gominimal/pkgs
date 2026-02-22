@@ -136,7 +136,7 @@ let version = "9.9" in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/coreutils/arm64-linux-gnu/coreutils_9.10_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "cc647cfee314bd16d0577ca8895ae2fc1ff05f1b6fcde12203bea8b87de566b2",
+              sha256 = "cb080f02328be487d38ae8fa395b5d106a0a1b54fead0176bffea506328893ac",
               extract = true,
             } | Source,
         } target,

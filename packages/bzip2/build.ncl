@@ -54,7 +54,7 @@ let glibc = import "../glibc/build.ncl" in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/bzip2/arm64-linux-gnu/bzip2_1.0.8_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "bde66696043c5b5819e99284362c85ff9aa82930ca7bd3d96fcf3808bab8bb2b",
+              sha256 = "59684a904c14cbc161a743692366a112f211e2ce51e38cc92ae2476aaf961a52",
               extract = true,
             } | Source,
         } target,
