@@ -13,6 +13,7 @@ export CFLAGS="$MARCH -O2 -pipe"
 export CXXFLAGS="${CFLAGS}"
 
 ./configure  --prefix=/usr      \
+            --libdir=/usr/lib   \
             --disable-static    \
             --with-gcc-arch=native
 

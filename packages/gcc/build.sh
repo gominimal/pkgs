@@ -28,6 +28,7 @@ export CXXFLAGS="${CFLAGS}"
 
 ../configure \
              --prefix=/usr                      \
+             --libdir=/usr/lib                   \
              --enable-languages=c,c++,fortran   \
              --enable-default-pie     \
              --enable-default-ssp     \
