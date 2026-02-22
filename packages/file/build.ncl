@@ -60,7 +60,7 @@ let xz = import "../xz/build.ncl" in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/file/arm64-linux-gnu/file_5.46_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "20aecea0cfc6ba3f7d12756028ae8f0562b1a7f0fcc06ed090fd5b53969f71eb",
+              sha256 = "f12168a0462c7b2da927ec081a78199309b48279d7651ea1bf8018868a28ce44",
               extract = true,
             } | Source,
         } target,

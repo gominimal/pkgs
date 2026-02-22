@@ -78,7 +78,7 @@ let version = "4.10.0" in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/findutils/arm64-linux-gnu/findutils_4.10.0_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "1974d3c53e4a64d417c9496c0aa67a5117aa0719e2399d66b4d9ec5bf79deb37",
+              sha256 = "160c90839261f09511633948f24bc1d692a93f05734315de8f3de6a537881dea",
               extract = true,
             } | Source,
         } target,

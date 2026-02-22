@@ -64,7 +64,7 @@ let sed = import "../sed/build.ncl" in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/attr/arm64-linux-gnu/attr_2.5.2_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "dc1947748102f63ced5a5770604034e7bf35bf1a5173ad93fd4d049518a2ab93",
+              sha256 = "ef4d69d02d2139e844fbcb2437b2ebbb9846544ff54d12d87e1c7f7aea335024",
               extract = true,
             } | Source,
         } target,

@@ -49,7 +49,7 @@ let version = "1.4.20" in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/m4/arm64-linux-gnu/m4_1.4.21_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "251ab6f5ae2cedd4ba79a82d30069fea7ab68747a592f4c2c22ab07c5f52f32b",
+              sha256 = "d633acc0ae751c6a76aae3a69595a3972b9ae3864e9cc6e0c9c8bcc584fcdf87",
               extract = true,
             } | Source,
         } target,

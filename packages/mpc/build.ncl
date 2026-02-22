@@ -81,7 +81,7 @@ let mpfr = import "../mpfr/build.ncl" in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/mpc/arm64-linux-gnu/mpc_1.3.1_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "7977a773ddd8334c110d14027350a6a1fd48f2e0a5726c1814a6e2af9740bf74",
+              sha256 = "a2a8b2b588786194de22bbda6f653f795ad978cd946496df1d4da106d0073db6",
               extract = true,
             } | Source,
         } target,

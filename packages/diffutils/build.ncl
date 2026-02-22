@@ -80,7 +80,7 @@ let version = "3.12" in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/diffutils/arm64-linux-gnu/diffutils_3.12_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "1ee320081cf6a49e878bd341dc96f593707ef17574d74cd9b3da913b45503d93",
+              sha256 = "f36f70f38ed0442b911120dde401631c3c59601cf8bea0069bc2eab86e91480a",
               extract = true,
             } | Source,
         } target,
