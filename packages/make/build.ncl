@@ -87,7 +87,7 @@ let version = "4.4.1" in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/make/arm64-linux-gnu/make_4.4.1_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "9a20bc16988f9ac976abc823e2378d772d6b619c67f64377c47b816dbf21be77",
+              sha256 = "d71de0b2448f67bf1f98990f08bdf51d2961a8bc56a185304d61ff31c79ef7ad",
               extract = true,
             } | Source,
         } target,

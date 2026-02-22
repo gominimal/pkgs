@@ -66,7 +66,7 @@ let version = "2.77" in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/libcap/arm64-linux-gnu/libcap_2.73_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "22041525efd9b1e1173f249b4abd279a41aa834b7314f430d448e83980260098",
+              sha256 = "36edf7ad7d019b032c8ccca111c57933f12153036de3dcd1cc575eecf866d3be",
               extract = true,
             } | Source,
         } target,

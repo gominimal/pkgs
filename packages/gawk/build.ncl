@@ -64,7 +64,7 @@ let version = "5.3.2" in
           { arch = 'Arm64, .. } =>
             {
               url = "gs://minimal-staging-archives/prebuilts/gawk/arm64-linux-gnu/gawk_5.3.2_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "13f289193878abaaf5007b7d2e49f890d6672b114cdf3d7a30718707d45d978c",
+              sha256 = "a3900acbac297c4965fae72dca239f59e85293a87c302a61ed24bb0302608566",
               extract = true,
             } | Source,
         } target,
