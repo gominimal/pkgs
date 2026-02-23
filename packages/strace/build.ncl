@@ -5,8 +5,6 @@ let make = import "../make/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 let file = import "../file/build.ncl" in
-let ncurses = import "../ncurses/build.ncl" in
-let zlib = import "../zlib/build.ncl" in
 {
   name = "strace",
   inputs = [
