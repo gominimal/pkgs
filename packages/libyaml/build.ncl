@@ -1,7 +1,4 @@
 let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
-let bash = import "../bash/build.ncl" in
-let binutils = import "../binutils/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -33,7 +30,7 @@ let version = "0.2.5" in
   outputs = {
     libs = { glob = "usr/lib/libyaml*.so*" } | OutputLib,
     includes = { glob = "usr/include/yaml.h" } | OutputData,
-    cmake_data = { glob = "usr/cmake/yaml*" } | OutputData,
+    cmake_data = { glob = "usr/cmake/yaml*.cmake" } | OutputData,
   },
 
   attrs =
@@ -51,7 +48,7 @@ let version = "0.2.5" in
     link_and_run =
       {
         class = 'Standalone,
-        test_deps = [bash, gcc, binutils],
+        test_deps = [base, toolchain],
         cmds = [
           ["/bin/bash", "-c", "echo '#include <yaml.h>\n#include <stdio.h>\nint main() { printf(\"%s\\n\", yaml_get_version_string()); return 0; }' > test.c"],
           ["/bin/gcc", "test.c", "-lyaml", "-o", "test"],
