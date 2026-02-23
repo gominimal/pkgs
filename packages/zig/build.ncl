@@ -1,4 +1,4 @@
-let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -33,8 +33,7 @@ let version = "0.15.1" in
 
   outputs = {
     zig = { glob = "usr/bin/zig" } | OutputBin,
-    lib = { glob = "usr/lib/zig/**" } | OutputLib,
-    doc = { glob = "usr/share/doc/zig/**" } | OutputData,
+    lib = { glob = "usr/lib/zig/**" } | OutputData,
   },
 
   attrs =
