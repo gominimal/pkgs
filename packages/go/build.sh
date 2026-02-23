@@ -2,7 +2,12 @@
 set -e
 
 mkdir -p bootstrap
-tar -xof "go${MINIMAL_ARG_VERSION}.linux-amd64.tar.gz" -C bootstrap
+case $(uname -m) in
+  x86_64)  GOARCH=amd64 ;;
+  aarch64) GOARCH=arm64 ;;
+  *)       echo "unsupported architecture: $(uname -m)" >&2; exit 1 ;;
+esac
+tar -xof "go${MINIMAL_ARG_VERSION}.linux-${GOARCH}.tar.gz" -C bootstrap
 export GOROOT_BOOTSTRAP="$(pwd)/bootstrap/go"
 
 tar -xof "go${MINIMAL_ARG_VERSION}.src.tar.gz"

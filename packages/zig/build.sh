@@ -1,8 +1,14 @@
 #!/bin/sh
 set -ex
 
-tar -xof "zig-x86_64-linux-${MINIMAL_ARG_VERSION}.tar.xz"
-cd "zig-x86_64-linux-${MINIMAL_ARG_VERSION}"
+case $(uname -m) in
+  x86_64)  ZIGARCH=x86_64 ;;
+  aarch64) ZIGARCH=aarch64 ;;
+  *)       echo "unsupported architecture: $(uname -m)" >&2; exit 1 ;;
+esac
+
+tar -xof "zig-${ZIGARCH}-linux-${MINIMAL_ARG_VERSION}.tar.xz"
+cd "zig-${ZIGARCH}-linux-${MINIMAL_ARG_VERSION}"
 
 mkdir -p $OUTPUT_DIR/usr/{bin,lib/zig,share/doc/zig}
 

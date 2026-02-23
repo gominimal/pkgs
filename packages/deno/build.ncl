@@ -1,4 +1,5 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let python = import "../python/build.ncl" in
@@ -8,10 +9,18 @@ let version = "2.6.9" in
   name = "deno",
   inputs = [
     { file = "build.sh" } | Local,
-    {
-      url = "https://github.com/denoland/deno/releases/download/v%{version}/deno-x86_64-unknown-linux-gnu.zip",
-      sha256 = "8a677a4b0cea1a25aaecfc70d6c6a288f9ad69af0a92e9e9d513cabaaf3c688f",
-    } | Source,
+    match {
+      { arch = 'Amd64, .. } =>
+        {
+          url = "https://github.com/denoland/deno/releases/download/v%{version}/deno-x86_64-unknown-linux-gnu.zip",
+          sha256 = "8a677a4b0cea1a25aaecfc70d6c6a288f9ad69af0a92e9e9d513cabaaf3c688f",
+        } | Source,
+      { arch = 'Arm64, .. } =>
+        {
+          url = "https://github.com/denoland/deno/releases/download/v%{version}/deno-aarch64-unknown-linux-gnu.zip",
+          sha256 = "d1cd2f5f08abdc22156b67fc1cd9e8dcd2e8e3ab5caffe1da603992c8b1b5d67",
+        } | Source,
+    } target,
     base,
     python,
   ],

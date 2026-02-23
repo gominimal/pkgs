@@ -12,7 +12,7 @@ esac
 export CFLAGS="$MARCH -O2 -pipe"
 export CXXFLAGS="${CFLAGS}"
 
-./configure --prefix=/usr
+./configure --prefix=/usr --enable-mpers=check
 make -j$(nproc)
 
 make DESTDIR="$OUTPUT_DIR" install
