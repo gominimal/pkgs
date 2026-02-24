@@ -1,7 +1,4 @@
 let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
-let bash = import "../bash/build.ncl" in
-let binutils = import "../binutils/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -61,7 +58,7 @@ let version = "1.11.1" in
     link_and_run =
       {
         class = 'Standalone,
-        test_deps = [bash, gcc, binutils],
+        test_deps = [base, toolchain],
         cmds = [
           ["/bin/bash", "-c", "echo '#include <libssh2.h>\n#include <stdio.h>\nint main() { printf(\"%s\\n\", libssh2_version(0)); return 0; }' > test.c"],
           ["/bin/gcc", "test.c", "-lssh2", "-o", "test"],
