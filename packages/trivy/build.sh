@@ -3,6 +3,7 @@ set -ex
 
 export GOROOT=/usr/go
 export GOEXPERIMENT=jsonv2
+export CGO_LDFLAGS="-fuse-ld=bfd"
 
 go build -ldflags "-w -s -X 'github.com/aquasecurity/trivy/pkg/version/app.ver=${MINIMAL_ARG_VERSION}'" -o trivy ./cmd/trivy
 
