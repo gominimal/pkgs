@@ -4,8 +4,7 @@ harness {
   build_packages = ["zig", "base", "glibc", "linux_headers"],
   build_cmd = "zig build -Doptimize=ReleaseSafe",
 
-  # Predicates for when this harness is usable in a source tree - powers `minimal init`
-  project_matchers = [
+  matches_project_if_any = [
     {
       file_regexes = {
         "build.zig" = "*",

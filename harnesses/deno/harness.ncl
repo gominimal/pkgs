@@ -5,8 +5,7 @@ harness {
   build_packages = ["base", "curl"],
   build_cmd = "deno compile --allow-net --allow-read --output ./build/app main.ts",
 
-  # Predicates for when this harness is usable in a source tree - powers `minimal init`
-  project_matchers = [
+  matches_project_if_any = [
     {
       file_regexes."deno.json" = "*",
     },

@@ -8,8 +8,7 @@ harness {
   },
   build_cmd = "gradle build -x test --no-daemon -q",
 
-  # Predicates for when this harness is usable in a source tree - powers `minimal init`
-  project_matchers = [
+  matches_project_if_any = [
     {
       file_regexes."build.gradle" = "*",
     },

@@ -2,7 +2,7 @@ let { harness, .. } = import "minimal.ncl" in
 harness {
   name = "rust",
 
-  build_packages = ["gcc", "rust", "binutils"],
+  build_packages = ["gcc", "rust", "binutils", "pkgconf"],
   build_env_vars = {
     # The 'env_state_wiring' attribute on the 'rust' package already wires a
     # state directory `cargo`, set to `$CARGO_HOME`. As such, we set the
@@ -17,8 +17,7 @@ harness {
 
   build_cmd = "cargo build --release",
 
-  # Predicates for when this harness is usable in a source tree - powers `minimal init`
-  project_matchers = [
+  matches_project_if_any = [
     {
       file_regexes."Cargo.toml" = "*",
     }
