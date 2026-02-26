@@ -10,7 +10,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "0.46.4" in
 {
   name = "pixman",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       # https://www.cairographics.org/releases/pixman-0.46.4.tar.gz

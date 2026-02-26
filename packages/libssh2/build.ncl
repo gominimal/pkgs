@@ -11,7 +11,7 @@ let zlib = import "../zlib/build.ncl" in
 let version = "1.11.1" in
 {
   name = "libssh2",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/libssh2/libssh2/archive/refs/tags/libssh2-%{version}.tar.gz",

@@ -8,7 +8,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "3.6.1" in
 {
   name = "openssl",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/openssl/openssl/openssl-%{version}.tar.gz",

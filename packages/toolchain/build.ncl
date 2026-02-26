@@ -5,7 +5,7 @@ let glibc = import "../glibc/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 {
   name = "toolchain",
-  inputs = [],
+  build_deps = [],
   runtime_deps = [
     binutils,
     gcc,

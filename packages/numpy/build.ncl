@@ -10,7 +10,7 @@ let openblas = import "../openblas/build.ncl" in
 let version = "2.3.5" in
 {
   name = "numpy",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://files.pythonhosted.org/packages/source/n/numpy/numpy-%{version}.tar.gz",

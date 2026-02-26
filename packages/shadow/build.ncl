@@ -9,7 +9,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let version = "4.18.0" in
 {
   name = "shadow",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/shadow-%{version}.tar.xz",

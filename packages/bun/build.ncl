@@ -6,7 +6,7 @@ let python = import "../python/build.ncl" in
 let version = "1.3.9" in
 {
   name = "bun",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/oven-sh/bun/releases/download/bun-v%{version}/bun-linux-x64.zip",

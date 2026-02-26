@@ -29,7 +29,7 @@ let gmp = import "../gmp/build.ncl" in
 let version = "9.9" in
 {
   name = "coreutils",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/coreutils-%{version}.tar.xz",
@@ -125,7 +125,7 @@ let version = "9.9" in
     {
       name = "coreutils (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

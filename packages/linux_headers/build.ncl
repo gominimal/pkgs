@@ -16,7 +16,7 @@ let glibc = import "../glibc/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 {
   name = "linux_headers",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/linux-6.12.43.tar.xz",
@@ -45,7 +45,7 @@ let linux_headers = import "../linux_headers/build.ncl" in
     {
       name = "linux_headers (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

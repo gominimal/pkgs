@@ -9,7 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "10.3.0" in
 {
   name = "fd",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/sharkdp/fd/v%{version}.tar.gz",

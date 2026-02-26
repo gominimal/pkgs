@@ -9,7 +9,7 @@ let zlib = import "../zlib/build.ncl" in
 let version = "1.6.53" in
 {
   name = "libpng",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       # https://downloads.sourceforge.net/libpng/libpng-1.6.53.tar.xz

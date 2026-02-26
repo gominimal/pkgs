@@ -13,7 +13,7 @@ let zlib = import "../zlib/build.ncl" in
 let version = "1.25.0" in
 {
   name = "wget",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/wget-%{version}.tar.gz",

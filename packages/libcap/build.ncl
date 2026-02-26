@@ -13,7 +13,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "2.77" in
 {
   name = "libcap",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libcap-%{version}.tar.gz",
@@ -55,7 +55,7 @@ let version = "2.77" in
     {
       name = "libcap (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

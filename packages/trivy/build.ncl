@@ -7,7 +7,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "0.69.1" in
 {
   name = "trivy",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/aquasecurity/trivy/v%{version}.tar.gz",

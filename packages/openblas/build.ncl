@@ -9,7 +9,7 @@ let gcc = import "../gcc/build.ncl" in
 let version = "0.3.31" in
 {
   name = "openblas",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/OpenMathLib/OpenBLAS/v%{version}.tar.gz",

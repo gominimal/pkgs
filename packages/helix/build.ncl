@@ -10,7 +10,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "25.07.1" in
 {
   name = "helix",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/helix-editor/helix/%{version}.tar.gz",

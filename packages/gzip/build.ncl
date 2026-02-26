@@ -8,7 +8,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "1.14" in
 {
   name = "gzip",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/gzip-%{version}.tar.xz",
@@ -44,7 +44,7 @@ let version = "1.14" in
     {
       name = "gzip (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

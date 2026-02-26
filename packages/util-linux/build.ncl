@@ -7,7 +7,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "2.41.2" in
 {
   name = "util-linux",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/util-linux-%{version}.tar.xz",

@@ -7,7 +7,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "1.8.1" in
 {
   name = "jq",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/jq-%{version}.tar.gz",

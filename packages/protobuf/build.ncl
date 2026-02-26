@@ -11,7 +11,7 @@ let gcc = import "../gcc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 {
   name = "protobuf",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.0/protobuf-32.0.tar.gz",

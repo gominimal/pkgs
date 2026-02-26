@@ -17,7 +17,7 @@ let zlib = import "../zlib/build.ncl" in
 let version = "18.0" in
 {
   name = "postgres",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/postgresql-%{version}.tar.gz",

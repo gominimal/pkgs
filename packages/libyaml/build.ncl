@@ -8,7 +8,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "0.2.5" in
 {
   name = "libyaml",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/yaml/libyaml/archive/refs/tags/%{version}.tar.gz",

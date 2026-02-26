@@ -8,7 +8,7 @@ let pyproject-hooks = import "../pyproject-hooks/build.ncl" in
 let version = "1.3.0" in
 {
   name = "build",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://files.pythonhosted.org/packages/source/b/build/build-%{version}.tar.gz",

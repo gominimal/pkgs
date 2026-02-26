@@ -8,7 +8,7 @@ let node = import "../node/build.ncl" in
 let version = "10.15.1" in
 {
   name = "pnpm",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://registry.npmjs.org/pnpm/-/pnpm-%{version}.tgz",

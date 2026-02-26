@@ -8,7 +8,7 @@ let flit-core = import "../flit-core/build.ncl" in
 let version = "0.9.1" in
 {
   name = "pyproject-metadata",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://files.pythonhosted.org/packages/source/p/pyproject-metadata/pyproject_metadata-%{version}.tar.gz",

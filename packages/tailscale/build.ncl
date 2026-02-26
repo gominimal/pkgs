@@ -8,7 +8,7 @@ let iproute2 = import "../iproute2/build.ncl" in
 let version = "1.94.1" in
 {
   name = "tailscale",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/tailscale/tailscale/archive/refs/tags/v%{version}.tar.gz",

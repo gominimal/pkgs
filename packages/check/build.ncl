@@ -12,7 +12,7 @@ let perl = import "../perl/build.ncl" in
 let make = import "../make/build.ncl" in
 {
   name = "check",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       # https://github.com/libcheck/check/releases/download/0.15.2/check-0.15.2.tar.gz

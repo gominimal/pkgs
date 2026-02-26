@@ -8,7 +8,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "1.2.15.3" in
 {
   name = "alsa-lib",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       # http://www.alsa-project.org/files/pub/lib/alsa-lib-1.2.15.3.tar.bz2

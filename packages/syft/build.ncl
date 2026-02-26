@@ -7,7 +7,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "1.42.0" in
 {
   name = "syft",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/anchore/syft/v%{version}.tar.gz",

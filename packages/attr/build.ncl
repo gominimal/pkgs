@@ -12,7 +12,7 @@ let linux_headers = import "../linux_headers/build.ncl" in
 let sed = import "../sed/build.ncl" in
 {
   name = "attr",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/attr-2.5.2.tar.gz",
@@ -53,7 +53,7 @@ let sed = import "../sed/build.ncl" in
     {
       name = "attr (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

@@ -6,7 +6,7 @@ let python = import "../python/build.ncl" in
 let version = "9.3.1" in
 {
   name = "gradle",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://services.gradle.org/distributions/gradle-%{version}-bin.zip",

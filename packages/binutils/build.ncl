@@ -19,7 +19,7 @@ let zlib = import "../zlib/build.ncl" in
 let version = "2.45.1" in
 {
   name = "binutils",
-  inputs = [
+  build_deps = [
     {
       url = "gs://minimal-staging-archives/binutils-%{version}.tar.xz",
       sha256 = "5fe101e6fe9d18fdec95962d81ed670fdee5f37e3f48f0bef87bddf862513aa5",
@@ -81,7 +81,7 @@ let version = "2.45.1" in
     {
       name = "binutils (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

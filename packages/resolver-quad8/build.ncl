@@ -3,7 +3,7 @@ let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 {
   name = "resolver-quad8",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     bash,
     coreutils,

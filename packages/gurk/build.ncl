@@ -13,7 +13,7 @@ let openssl = import "../openssl/build.ncl" in
 let version = "0.8.1" in
 {
   name = "gurk",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/boxdot/gurk-rs/v%{version}.tar.gz",

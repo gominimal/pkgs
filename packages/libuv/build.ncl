@@ -13,7 +13,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "1.52.0" in
 {
   name = "libuv",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libuv/libuv/v%{version}.tar.gz",

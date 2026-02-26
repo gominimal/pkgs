@@ -13,7 +13,7 @@ let tar = import "../tar/build.ncl" in
 let xz = import "../xz/build.ncl" in
 {
   name = "base",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
   ],
   runtime_deps = [

@@ -7,7 +7,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "2.17" in
 {
   name = "lcms2",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       # https://github.com/mm2/Little-CMS/releases/download/lcms2.17/lcms2-2.17.tar.gz

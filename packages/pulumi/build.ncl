@@ -7,7 +7,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "3.220.0" in
 {
   name = "pulumi",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/pulumi/pulumi/v%{version}.tar.gz",

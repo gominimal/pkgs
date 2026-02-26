@@ -9,7 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "0.3.2" in
 {
   name = "prek",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/j178/prek/v%{version}.tar.gz",

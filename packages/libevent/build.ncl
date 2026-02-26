@@ -10,7 +10,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "2.1.12-stable" in
 {
   name = "libevent",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/libevent/libevent/releases/download/release-%{version}/libevent-%{version}.tar.gz",

@@ -6,7 +6,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "0.1.0" in
 {
   name = "jqfmt",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/noperator/jqfmt/v%{version}.tar.gz",

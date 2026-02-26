@@ -24,7 +24,7 @@ let linux_headers = import "../linux_headers/build.ncl" in
 let version = "4.4.1" in
 {
   name = "make",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/make-%{version}.tar.gz",
@@ -76,7 +76,7 @@ let version = "4.4.1" in
     {
       name = "make (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

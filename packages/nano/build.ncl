@@ -11,7 +11,7 @@ let zlib = import "../zlib/build.ncl" in
 let version = "8.7" in
 {
   name = "nano",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/nano-%{version}.tar.xz",

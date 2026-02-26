@@ -10,7 +10,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "1.22.0" in
 {
   name = "skopeo",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/containers/skopeo/v%{version}.tar.gz",

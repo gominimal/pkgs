@@ -8,7 +8,7 @@ let gcc = import "../gcc/build.ncl" in
 let version = "1.13.2" in
 {
   name = "ninja",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/ninja-build/ninja/v%{version}.tar.gz",

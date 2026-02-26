@@ -6,7 +6,7 @@ let libunistring = import "../libunistring/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 {
   name = "libidn2",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libidn2-2.3.8.tar.gz",

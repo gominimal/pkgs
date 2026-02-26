@@ -9,7 +9,7 @@ let libpipeline = import "../libpipeline/build.ncl" in
 let less = import "../less/build.ncl" in
 {
   name = "man-db",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       # https://download.savannah.gnu.org/releases/man-db/man-db-2.13.1.tar.xz

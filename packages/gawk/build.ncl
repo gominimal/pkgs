@@ -11,7 +11,7 @@ let readline = import "../readline/build.ncl" in
 let version = "5.3.2" in
 {
   name = "gawk",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/gawk-%{version}.tar.xz",
@@ -53,7 +53,7 @@ let version = "5.3.2" in
     {
       name = "gawk (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

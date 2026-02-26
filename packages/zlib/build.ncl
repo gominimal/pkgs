@@ -9,7 +9,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 {
   name = "zlib",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/zlib-1.3.1.tar.gz",
@@ -38,7 +38,7 @@ let glibc = import "../glibc/build.ncl" in
     {
       name = "zlib (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

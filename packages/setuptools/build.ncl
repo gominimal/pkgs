@@ -4,7 +4,7 @@ let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 {
   name = "setuptools",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/setuptools-80.9.0.tar.gz",

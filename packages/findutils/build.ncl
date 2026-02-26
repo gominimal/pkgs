@@ -16,7 +16,7 @@ let tar = import "../tar/build.ncl" in
 let version = "4.10.0" in
 {
   name = "findutils",
-  inputs = [
+  build_deps = [
     {
       url = "gs://minimal-staging-archives/findutils-%{version}.tar.xz",
       sha256 = "1387e0b67ff247d2abde998f90dfbf70c1491391a59ddfecb8ae698789f0a4f5",
@@ -67,7 +67,7 @@ let version = "4.10.0" in
     {
       name = "findutils (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

@@ -6,7 +6,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "0.15.1" in
 {
   name = "zig",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     match {
       { arch = 'Amd64, .. } =>

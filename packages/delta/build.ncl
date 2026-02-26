@@ -12,7 +12,7 @@ let oniguruma = import "../oniguruma/build.ncl" in
 let version = "0.18.2" in
 {
   name = "delta",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/dandavison/delta/%{version}.tar.gz",

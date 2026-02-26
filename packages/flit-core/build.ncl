@@ -5,7 +5,7 @@ let python = import "../python/build.ncl" in
 let version = "3.12.0" in
 {
   name = "flit-core",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://pypi.org/packages/source/f/flit-core/flit_core-%{version}.tar.gz",

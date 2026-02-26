@@ -26,7 +26,7 @@ let pcre2 = import "../pcre2/build.ncl" in
 let version = "3.12" in
 {
   name = "grep",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/grep-%{version}.tar.xz",
@@ -84,7 +84,7 @@ let version = "3.12" in
     {
       name = "grep (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

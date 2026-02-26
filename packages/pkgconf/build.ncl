@@ -7,7 +7,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "2.5.1" in
 {
   name = "pkgconf",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/pkgconf-%{version}.tar.xz",

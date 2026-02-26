@@ -12,7 +12,7 @@ let zlib = import "../zlib/build.ncl" in
 let version = "8.0.1" in
 {
   name = "ffmpeg",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://ffmpeg.org/releases/ffmpeg-%{version}.tar.xz",

@@ -5,7 +5,7 @@ let toolchain = import "../toolchain/build.ncl" in
 
 {
   name = "minimal-sshd",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     { file = "main.go" } | Local,
     { file = "go.mod" } | Local,

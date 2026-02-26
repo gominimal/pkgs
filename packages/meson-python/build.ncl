@@ -9,7 +9,7 @@ let pyproject-metadata = import "../pyproject-metadata/build.ncl" in
 let version = "0.18.0" in
 {
   name = "meson-python",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://files.pythonhosted.org/packages/source/m/meson_python/meson_python-%{version}.tar.gz",

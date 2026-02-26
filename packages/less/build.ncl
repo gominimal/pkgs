@@ -6,7 +6,7 @@ let ncurses = import "../ncurses/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 {
   name = "less",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/less-679.tar.gz",

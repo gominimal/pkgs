@@ -7,7 +7,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let xz = import "../xz/build.ncl" in
 {
   name = "boost",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/boost-1.89.0-b2-nodocs.tar.xz",

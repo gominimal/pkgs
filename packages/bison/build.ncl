@@ -11,7 +11,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 {
   name = "bison",
-  inputs = [
+  build_deps = [
     {
       url = "gs://minimal-staging-archives/bison-3.8.2.tar.xz",
       sha256 = "9bba0214ccf7f1079c5d59210045227bcf619519840ebfa80cd3849cff5a5bf2"
@@ -44,7 +44,7 @@ let glibc = import "../glibc/build.ncl" in
     {
       name = "bison (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

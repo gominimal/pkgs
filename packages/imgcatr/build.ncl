@@ -9,7 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "0.1.4" in
 {
   name = "imgcatr",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/SilinMeng0510/imgcatr/v%{version}.tar.gz",

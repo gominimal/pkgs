@@ -8,7 +8,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "1.4.20" in
 {
   name = "m4",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/m4-%{version}.tar.xz",
@@ -38,7 +38,7 @@ let version = "1.4.20" in
     {
       name = "m4 (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

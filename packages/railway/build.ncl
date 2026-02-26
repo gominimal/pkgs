@@ -9,7 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "4.30.2" in
 {
   name = "railway",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/railwayapp/cli/v%{version}.tar.gz",

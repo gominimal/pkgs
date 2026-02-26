@@ -7,7 +7,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let version = "7.0.3" in
 {
   name = "bc",
-  inputs = [
+  build_deps = [
     {
       url = "gs://minimal-staging-archives/bc-%{version}.tar.xz",
       sha256 = "91eb74caed0ee6655b669711a4f350c25579778694df248e28363318e03c7fc4"

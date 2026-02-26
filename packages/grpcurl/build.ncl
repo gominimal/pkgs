@@ -7,7 +7,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "1.9.3" in
 {
   name = "grpcurl",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/fullstorydev/grpcurl/v%{version}.tar.gz",

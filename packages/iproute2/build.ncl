@@ -11,7 +11,7 @@ let libcap = import "../libcap/build.ncl" in
 let version = "6.18.0" in
 {
   name = "iproute2",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/iproute2-%{version}.tar.xz",

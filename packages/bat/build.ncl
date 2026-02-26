@@ -12,7 +12,7 @@ let oniguruma = import "../oniguruma/build.ncl" in
 let version = "0.26.1" in
 {
   name = "bat",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/sharkdp/bat/v%{version}.tar.gz",

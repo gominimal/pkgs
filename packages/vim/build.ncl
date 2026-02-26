@@ -7,7 +7,7 @@ let acl = import "../acl/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 {
   name = "vim",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/vim-9.1.1629.tar.gz",

@@ -9,7 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "0.6.1" in
 {
   name = "jnv",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/ynqa/jnv/v%{version}.tar.gz",

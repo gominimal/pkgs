@@ -11,7 +11,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "2.5.4" in
 {
   name = "openjpeg",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/uclouvain/openjpeg/archive/v%{version}/openjpeg-%{version}.tar.gz",

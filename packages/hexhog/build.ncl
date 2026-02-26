@@ -9,7 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "0.1.3" in
 {
   name = "hexhog",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/DVDTSB/hexhog/v%{version}.tar.gz",

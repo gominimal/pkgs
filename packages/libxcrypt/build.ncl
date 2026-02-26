@@ -8,7 +8,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "4.5.2" in
 {
   name = "libxcrypt",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libxcrypt-%{version}.tar.xz",

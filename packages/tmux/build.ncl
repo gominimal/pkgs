@@ -16,7 +16,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "3.6a" in
 {
   name = "tmux",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/tmux/tmux/%{version}.tar.gz",

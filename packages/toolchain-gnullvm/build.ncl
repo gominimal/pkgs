@@ -3,7 +3,7 @@ let llvm = import "../llvm/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 {
   name = "toolchain-gnullvm",
-  inputs = [],
+  build_deps = [],
   runtime_deps = [
     llvm,
     toolchain,

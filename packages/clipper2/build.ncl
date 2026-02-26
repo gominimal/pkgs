@@ -11,7 +11,7 @@ let gcc = import "../gcc/build.ncl" in
 let version = "2.0.1" in
 {
   name = "clipper2",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/AngusJohnson/Clipper2/Clipper2_%{version}.tar.gz",

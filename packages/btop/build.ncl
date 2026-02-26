@@ -7,7 +7,7 @@ let ncurses = import "../ncurses/build.ncl" in
 let version = "1.4.6" in
 {
   name = "btop",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/aristocratos/btop/v%{version}.tar.gz",

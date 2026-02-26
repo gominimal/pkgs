@@ -12,7 +12,7 @@ let zlib = import "../zlib/build.ncl" in
 let version = "2.15.1" in
 {
   name = "libxml2",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/GNOME/libxml2/archive/refs/tags/v%{version}.tar.gz",

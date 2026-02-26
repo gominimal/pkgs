@@ -10,7 +10,7 @@ let gcc = import "../gcc/build.ncl" in
 
 {
   name = "abseil-cpp",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/abseil/abseil-cpp/releases/download/20250814.1/abseil-cpp-20250814.1.tar.gz",

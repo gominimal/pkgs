@@ -9,7 +9,7 @@ let gcc = import "../gcc/build.ncl" in
 let version = "4.2.3" in
 {
   name = "cmake",
-  inputs = [
+  build_deps = [
     {
       url = "gs://minimal-staging-archives/Kitware/CMake/v%{version}.tar.gz",
       sha256 = "803186734800e1e8b2a242154ba1ed7bda4e77643e77e12477c71f3cdc7ede1d",

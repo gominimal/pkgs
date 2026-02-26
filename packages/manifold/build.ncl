@@ -12,7 +12,7 @@ let onetbb = import "../onetbb/build.ncl" in
 let version = "3.3.2" in
 {
   name = "manifold",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/elalish/manifold/v%{version}.tar.gz",

@@ -8,7 +8,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "78.1" in
 {
   name = "icu",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/unicode-org/icu/releases/download/release-%{version}/icu4c-%{version}-sources.tgz",

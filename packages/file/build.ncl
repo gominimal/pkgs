@@ -14,7 +14,7 @@ let lz4 = import "../lz4/build.ncl" in
 let xz = import "../xz/build.ncl" in
 {
   name = "file",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/file-5.46.tar.gz",
@@ -49,7 +49,7 @@ let xz = import "../xz/build.ncl" in
     {
       name = "file (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

@@ -2,7 +2,7 @@ let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" i
 let base = import "../base/build.ncl" in
 {
   name = "iana-etc",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/iana-etc-20250618.tar.gz",

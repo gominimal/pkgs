@@ -25,7 +25,7 @@ let m4 = import "../m4/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 {
   name = "mpfr",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/mpfr-4.2.2.tar.xz",
@@ -73,7 +73,7 @@ let gmp = import "../gmp/build.ncl" in
     {
       name = "mpfr (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

@@ -10,7 +10,7 @@ let libxml2 = import "../libxml2/build.ncl" in
 let version = "1.1.45" in
 {
   name = "libxslt",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/GNOME/libxslt/archive/refs/tags/v%{version}.tar.gz",

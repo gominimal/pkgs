@@ -6,7 +6,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 {
   name = "procps-ng",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/procps-ng-4.0.5.tar.xz",

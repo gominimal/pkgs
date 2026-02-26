@@ -9,7 +9,7 @@ let gcc = import "../gcc/build.ncl" in
 let version = "6.5-20250830" in
 {
   name = "ncurses",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/ncurses-%{version}.tgz",
@@ -52,7 +52,7 @@ let version = "6.5-20250830" in
     {
       name = "ncurses (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

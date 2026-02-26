@@ -7,7 +7,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let version = "2.8" in
 {
   name = "patch",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/patch-%{version}.tar.xz",

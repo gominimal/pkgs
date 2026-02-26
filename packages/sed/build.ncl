@@ -18,7 +18,7 @@ let tar = import "../tar/build.ncl" in
 let version = "4.9" in
 {
   name = "sed",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/sed-%{version}.tar.xz",
@@ -63,7 +63,7 @@ let version = "4.9" in
     {
       name = "sed (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

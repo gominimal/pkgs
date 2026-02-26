@@ -8,7 +8,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "2.1.1" in
 {
   name = "glow",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/charmbracelet/glow/v%{version}.tar.gz",

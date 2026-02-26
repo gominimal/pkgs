@@ -15,7 +15,7 @@ let zlib = import "../zlib/build.ncl" in
 let version = "2.17.1" in
 {
   name = "fontconfig",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       # https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/2.17.1/fontconfig-2.17.1.tar.xz

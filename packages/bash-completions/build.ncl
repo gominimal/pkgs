@@ -6,7 +6,7 @@ let make = import "../make/build.ncl" in
 let version = "2.16.0" in
 {
   name = "bash-completions",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/scop/bash-completion/releases/download/%{version}/bash-completion-%{version}.tar.xz",

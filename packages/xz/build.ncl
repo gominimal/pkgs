@@ -6,7 +6,7 @@ let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 {
   name = "xz",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/xz-5.8.1.tar.xz",
@@ -55,7 +55,7 @@ let glibc = import "../glibc/build.ncl" in
     {
       name = "xz (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

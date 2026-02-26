@@ -13,7 +13,7 @@ let linux_headers = import "../linux_headers/build.ncl" in
 let sed = import "../sed/build.ncl" in
 {
   name = "acl",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/acl-2.3.2.tar.xz",
@@ -52,7 +52,7 @@ let sed = import "../sed/build.ncl" in
     {
       name = "acl (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

@@ -7,7 +7,7 @@ let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 {
   name = "libpipeline",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       # https://download.savannah.gnu.org/releases/libpipeline/libpipeline-1.5.8.tar.gz

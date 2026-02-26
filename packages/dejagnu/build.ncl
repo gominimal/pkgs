@@ -4,7 +4,7 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 {
   name = "dejagnu",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/dejagnu-1.6.3.tar.gz",

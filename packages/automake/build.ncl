@@ -10,7 +10,7 @@ let zstd = import "../zstd/build.ncl" in
 let version = "1.18.1" in
 {
   name = "automake",
-  inputs = [
+  build_deps = [
     {
       url = "gs://minimal-staging-archives/automake-%{version}.tar.xz",
       sha256 = "168aa363278351b89af56684448f525a5bce5079d0b6842bd910fdd3f1646887"

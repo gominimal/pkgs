@@ -9,7 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "18.12.1" in
 {
   name = "atuin",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/atuinsh/atuin/v%{version}.tar.gz",

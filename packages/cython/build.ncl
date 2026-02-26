@@ -8,7 +8,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let version = "3.2.1" in
 {
   name = "cython",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/cython/cython/releases/download/%{version}/cython-%{version}.tar.gz",

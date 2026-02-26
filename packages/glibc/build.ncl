@@ -48,7 +48,7 @@ in
 let version = "2.42" in
 {
   name = "glibc",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       # Downloadable from: https://ftp.gnu.org/gnu/glibc/
@@ -101,7 +101,7 @@ let version = "2.42" in
     {
       name = "glibc (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

@@ -17,7 +17,7 @@ let libpng = import "../libpng/build.ncl" in
 let version = "14.1.1" in
 {
   name = "graphviz",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives//graphviz-%{version}.tar.bz2",

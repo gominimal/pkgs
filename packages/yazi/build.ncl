@@ -10,7 +10,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "26.1.22" in
 {
   name = "yazi",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/sxyazi/yazi/v%{version}.tar.gz",

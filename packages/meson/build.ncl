@@ -7,7 +7,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let version = "1.10.1" in
 {
   name = "meson",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/mesonbuild/meson/%{version}.tar.gz",

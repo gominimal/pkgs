@@ -6,7 +6,7 @@ let python = import "../python/build.ncl" in
 let version = "11076708" in
 {
   name = "android-sdk",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://dl.google.com/android/repository/commandlinetools-linux-%{version}_latest.zip",

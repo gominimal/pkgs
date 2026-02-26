@@ -5,7 +5,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let uv = import "../uv/build.ncl" in
 {
   name = "diffoscope",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/diffoscope-306.tar.gz",

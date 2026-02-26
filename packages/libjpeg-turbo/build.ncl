@@ -8,7 +8,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "3.0.1" in
 {
   name = "libjpeg-turbo",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       # https://downloads.sourceforge.net/libjpeg-turbo/libjpeg-turbo-3.0.1.tar.gz

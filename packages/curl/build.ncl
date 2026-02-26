@@ -11,7 +11,7 @@ let zlib = import "../zlib/build.ncl" in
 let version = "8.17.0" in
 {
   name = "curl",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/curl-%{version}.tar.xz",

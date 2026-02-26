@@ -24,7 +24,7 @@ let linux_headers = import "../linux_headers/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 {
   name = "gmp",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/gmp-6.3.0.tar.xz",
@@ -71,7 +71,7 @@ let m4 = import "../m4/build.ncl" in
     {
       name = "gmp (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

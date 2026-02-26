@@ -26,7 +26,7 @@ let zlib = import "../zlib/build.ncl" in
 let version = "10.47" in
 {
   name = "pcre2",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/pcre2-%{version}.tar.bz2",
@@ -80,7 +80,7 @@ let version = "10.47" in
     {
       name = "pcre2 (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

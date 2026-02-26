@@ -8,7 +8,7 @@ let version = "21.0.10" in
 let build_num = "7" in
 {
   name = "jdk",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-%{version}+%{build_num}/OpenJDK21U-jdk_x64_linux_hotspot_%{version}_%{build_num}.tar.gz",

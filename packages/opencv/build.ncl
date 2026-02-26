@@ -15,7 +15,7 @@ let zlib = import "../zlib/build.ncl" in
 let version = "4.12.0" in
 {
   name = "opencv",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       # https://github.com/opencv/opencv/archive/refs/tags/4.12.0.tar.gz

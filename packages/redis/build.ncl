@@ -13,7 +13,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "8.6.0" in
 {
   name = "redis",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/redis/redis/%{version}.tar.gz",

@@ -15,7 +15,7 @@ let gcc = import "../gcc/build.ncl" in
 let version = "0.194" in
 {
   name = "elfutils",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/elfutils-%{version}.tar.bz2",

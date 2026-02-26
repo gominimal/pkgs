@@ -11,7 +11,7 @@ let gcc = import "../gcc/build.ncl" in
 let version = "2022.3.0" in
 {
   name = "onetbb",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/uxlfoundation/oneTBB/v%{version}.tar.gz",

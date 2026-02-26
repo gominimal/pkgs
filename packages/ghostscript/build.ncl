@@ -15,7 +15,7 @@ let gcc = import "../gcc/build.ncl" in
 let version = "10.06.0" in
 {
   name = "ghostscript",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10060/ghostscript-%{version}.tar.xz",

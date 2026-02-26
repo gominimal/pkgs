@@ -9,7 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "0.6.0" in
 {
   name = "ut",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/ksdme/ut/v%{version}.tar.gz",

@@ -6,7 +6,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let version = "0.9.1" in
 {
   name = "duf",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/muesli/duf/v%{version}.tar.gz",

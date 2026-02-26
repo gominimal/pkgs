@@ -14,7 +14,7 @@ let gcc = import "../gcc/build.ncl" in
 let version = "1.93.1" in
 {
   name = "rust",
-  inputs = [
+  build_deps = [
     { file = "bootstrap.toml" } | Local,
     { file = "build.sh" } | Local,
     {

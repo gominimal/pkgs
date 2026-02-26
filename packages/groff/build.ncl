@@ -13,7 +13,7 @@ let gcc = import "../gcc/build.ncl" in
 let version = "1.23.0" in
 {
   name = "groff",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/groff-%{version}.tar.gz",

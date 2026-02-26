@@ -6,7 +6,7 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 {
   name = "readline",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/readline-8.3.tar.gz",
@@ -32,7 +32,7 @@ let toolchain = import "../toolchain/build.ncl" in
     {
       name = "readline (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

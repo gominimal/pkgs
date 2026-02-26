@@ -9,7 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "1.3.0" in
 {
   name = "weathr",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/Veirt/weathr/v%{version}.tar.gz",

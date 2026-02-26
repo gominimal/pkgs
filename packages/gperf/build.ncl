@@ -8,7 +8,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "3.1" in
 {
   name = "gperf",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       # http://ftp.gnu.org/gnu/gperf/gperf-3.1.tar.gz

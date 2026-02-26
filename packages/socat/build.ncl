@@ -10,7 +10,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let version = "1.8.1.1" in
 {
   name = "socat",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "http://www.dest-unreach.org/socat/download/socat-%{version}.tar.gz",

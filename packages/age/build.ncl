@@ -9,7 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "1.3.1" in
 {
   name = "age",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/FiloSottile/age/v%{version}.tar.gz",

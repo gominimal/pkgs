@@ -16,7 +16,7 @@ let pcre2 = import "../pcre2/build.ncl" in
 let version = "1.28.1" in
 {
   name = "nginx",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://nginx.org/download/nginx-%{version}.tar.gz",

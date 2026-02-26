@@ -9,7 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "0.67.0" in
 {
   name = "fzf",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/junegunn/fzf/v%{version}.tar.gz",

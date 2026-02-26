@@ -7,7 +7,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "2.7.3" in
 {
   name = "expat",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/expat-%{version}.tar.xz",

@@ -6,7 +6,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "1.1.0" in
 {
   name = "mermaid-ascii",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/AlexanderGrooff/mermaid-ascii/%{version}.tar.gz",

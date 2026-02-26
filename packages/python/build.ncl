@@ -18,7 +18,7 @@ let xz = import "../xz/build.ncl" in
 let version = "3.13.7" in
 {
   name = "python",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/Python-%{version}.tar.xz",

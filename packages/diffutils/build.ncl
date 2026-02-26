@@ -16,7 +16,7 @@ let tar = import "../tar/build.ncl" in
 let version = "3.12" in
 {
   name = "diffutils",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/diffutils-%{version}.tar.xz",
@@ -69,7 +69,7 @@ let version = "3.12" in
     {
       name = "diffutils (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

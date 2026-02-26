@@ -30,7 +30,7 @@ let zstd = import "../zstd/build.ncl" in
 let version = "15.2.0" in
 {
   name = "gcc",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/gcc-%{version}.tar.xz",
@@ -113,7 +113,7 @@ let version = "15.2.0" in
     {
       name = "gcc (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

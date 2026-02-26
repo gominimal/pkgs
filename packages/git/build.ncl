@@ -13,7 +13,7 @@ let zlib = import "../zlib/build.ncl" in
 let version = "2.52.0" in
 {
   name = "git",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       # https://www.kernel.org/pub/software/scm/git/git-2.52.0.tar.xz

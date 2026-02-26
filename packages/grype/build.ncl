@@ -7,7 +7,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "0.108.0" in
 {
   name = "grype",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/anchore/grype/v%{version}.tar.gz",

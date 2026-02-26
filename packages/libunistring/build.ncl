@@ -7,7 +7,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "1.4.1" in
 {
   name = "libunistring",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libunistring-%{version}.tar.xz",

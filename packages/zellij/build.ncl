@@ -10,7 +10,7 @@ let openssl = import "../openssl/build.ncl" in
 let version = "0.43.1" in
 {
   name = "zellij",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/zellij-org/zellij/v%{version}.tar.gz",

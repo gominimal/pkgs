@@ -11,7 +11,7 @@ let libxcrypt = import "../libxcrypt/build.ncl" in
 let version = "5.0.1" in
 {
   name = "screen",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/screen-%{version}.tar.gz",

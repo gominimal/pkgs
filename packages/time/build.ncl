@@ -7,7 +7,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "1.9" in
 {
   name = "time",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/time-%{version}.tar.gz",

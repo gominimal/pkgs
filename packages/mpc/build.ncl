@@ -25,7 +25,7 @@ let gmp = import "../gmp/build.ncl" in
 let mpfr = import "../mpfr/build.ncl" in
 {
   name = "mpc",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/mpc-1.3.1.tar.gz",
@@ -70,7 +70,7 @@ let mpfr = import "../mpfr/build.ncl" in
     {
       name = "mpc (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

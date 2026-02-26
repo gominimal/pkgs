@@ -7,7 +7,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "2.10.2" in
 {
   name = "caddy",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/caddyserver/caddy/v%{version}.tar.gz",

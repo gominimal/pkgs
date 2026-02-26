@@ -7,7 +7,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "1.14.5" in
 {
   name = "terraform",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/hashicorp/terraform/v%{version}.tar.gz",

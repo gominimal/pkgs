@@ -9,7 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "0.1.1" in
 {
   name = "biff",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/BurntSushi/biff/%{version}.tar.gz",

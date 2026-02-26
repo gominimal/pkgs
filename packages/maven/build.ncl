@@ -5,7 +5,7 @@ let jdk = import "../jdk/build.ncl" in
 let version = "3.9.12" in
 {
   name = "maven",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://archive.apache.org/dist/maven/maven-3/%{version}/binaries/apache-maven-%{version}-bin.tar.gz",

@@ -7,7 +7,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "6.9.10" in
 {
   name = "oniguruma",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/kkos/oniguruma/releases/download/v%{version}/onig-%{version}.tar.gz",

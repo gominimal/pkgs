@@ -9,7 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "0.14.10" in
 {
   name = "procs",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/dalance/procs/v%{version}.tar.gz",

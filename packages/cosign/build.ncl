@@ -7,7 +7,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "3.0.4" in
 {
   name = "cosign",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/sigstore/cosign/v%{version}.tar.gz",

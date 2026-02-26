@@ -9,7 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "2.14.1" in
 {
   name = "freetype",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       # https://downloads.sourceforge.net/freetype/freetype-2.14.1.tar.xz

@@ -14,7 +14,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "1.18.4" in
 {
   name = "cairo",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       # https://www.cairographics.org/releases/cairo-1.18.4.tar.xz

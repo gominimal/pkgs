@@ -3,7 +3,7 @@ let base = import "../base/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 {
   name = "ca-certificates",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/ssl-certs-complete.tar.gz",

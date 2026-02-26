@@ -7,7 +7,7 @@ let flit-core = import "../flit-core/build.ncl" in
 let version = "1.2.0" in
 {
   name = "pyproject-hooks",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://files.pythonhosted.org/packages/source/p/pyproject-hooks/pyproject_hooks-%{version}.tar.gz",

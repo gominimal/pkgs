@@ -15,7 +15,7 @@ let gcc = import "../gcc/build.ncl" in
 let version = "24.9.0" in
 {
   name = "node",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/node-v%{version}.tar.xz",

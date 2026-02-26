@@ -10,7 +10,7 @@ let openssl = import "../openssl/build.ncl" in
 let version = "0.110.0" in
 {
   name = "nushell",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/nushell/nushell/%{version}.tar.gz",

@@ -15,7 +15,7 @@ in
 
 {
   name = "claude-code",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     # Based on https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases/bootstrap.sh
     #

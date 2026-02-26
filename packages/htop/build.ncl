@@ -14,7 +14,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "3.4.1" in
 {
   name = "htop",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/htop-dev/htop/%{version}.tar.gz",

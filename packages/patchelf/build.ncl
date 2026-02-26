@@ -9,7 +9,7 @@ let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 {
   name = "patchelf",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/NixOS/patchelf/archive/b49de1b3384e7928bf0df9a889fe5a4e7b3fbddf.tar.gz",

@@ -18,7 +18,7 @@ let linux_headers = import "../linux_headers/build.ncl" in
 let version = "5.3" in
 {
   name = "bash",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/bash-%{version}.tar.gz",
@@ -70,7 +70,7 @@ let version = "5.3" in
     {
       name = "bash (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

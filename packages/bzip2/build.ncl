@@ -6,7 +6,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 {
   name = "bzip2",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/bzip2-1.0.8.tar.gz",
@@ -43,7 +43,7 @@ let glibc = import "../glibc/build.ncl" in
     {
       name = "bzip2 (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

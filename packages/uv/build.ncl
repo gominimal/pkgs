@@ -7,7 +7,7 @@ let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 {
   name = "uv",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/uv-0.9.3.tar.gz",

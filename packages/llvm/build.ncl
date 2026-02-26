@@ -37,7 +37,7 @@ in
 
 {
   name = "llvm",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/clang-20.1.8.src.tar.xz",
@@ -79,7 +79,7 @@ in
     {
       name = "llvm (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

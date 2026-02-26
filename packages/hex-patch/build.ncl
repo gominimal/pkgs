@@ -12,7 +12,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "1.12.5" in
 {
   name = "hex-patch",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/Etto48/HexPatch/v%{version}.tar.gz",

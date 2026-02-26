@@ -8,7 +8,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let version = "2.72" in
 {
   name = "autoconf",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/autoconf-%{version}.tar.xz",

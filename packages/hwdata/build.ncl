@@ -6,7 +6,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let version = "0.404" in
 {
   name = "hwdata",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/vcrhonek/hwdata/v%{version}.tar.gz",

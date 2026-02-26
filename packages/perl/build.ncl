@@ -24,7 +24,7 @@ let zlib = import "../zlib/build.ncl" in
 let version = "5.42.0" in
 {
   name = "perl",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/perl-%{version}.tar.xz",

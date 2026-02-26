@@ -8,7 +8,7 @@ let python = import "../python/build.ncl" in
 let version = "2.6.9" in
 {
   name = "deno",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     match {
       { arch = 'Amd64, .. } =>

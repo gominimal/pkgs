@@ -10,7 +10,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "0.67.0" in
 {
   name = "difftastic",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/Wilfred/difftastic/%{version}.tar.gz",

@@ -19,7 +19,7 @@ in
 let version = "1.25.5" in
 {
   name = "go",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     match {
       { arch = 'Amd64, .. } =>

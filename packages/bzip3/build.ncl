@@ -7,7 +7,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "1.5.3" in
 {
   name = "bzip3",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/iczelia/bzip3/releases/download/%{version}/bzip3-%{version}.tar.xz",

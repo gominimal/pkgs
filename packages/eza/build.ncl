@@ -9,7 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "0.23.4" in
 {
   name = "eza",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/eza-community/eza/v%{version}.tar.gz",

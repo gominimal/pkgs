@@ -13,7 +13,7 @@ let gcc = import "../gcc/build.ncl" in
 let version = "b8041" in
 {
   name = "llama.cpp",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/ggml-org/llama.cpp/%{version}.tar.gz",

@@ -22,7 +22,7 @@ let xz = import "../xz/build.ncl" in
 let version = "1.5.7" in
 {
   name = "zstd",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/zstd-%{version}.tar.gz",
@@ -68,7 +68,7 @@ let version = "1.5.7" in
     {
       name = "zstd (prebuilt)",
       prebuilt = true,
-      inputs = [
+      build_deps = [
         match {
           { arch = 'Amd64, .. } =>
             {

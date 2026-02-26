@@ -7,7 +7,7 @@ let glibc = import "../glibc/build.ncl" in
 let file = import "../file/build.ncl" in
 {
   name = "strace",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/strace-6.17.tar.xz",

@@ -9,7 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let version = "15.1.0" in
 {
   name = "ripgrep",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/BurntSushi/ripgrep/%{version}.tar.gz",

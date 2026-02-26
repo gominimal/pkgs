@@ -10,7 +10,7 @@ let openssl = import "../openssl/build.ncl" in
 let version = "10.2p1" in
 {
   name = "openssh",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/openssh-%{version}.tar.gz",

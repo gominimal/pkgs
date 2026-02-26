@@ -11,7 +11,7 @@ let zlib = import "../zlib/build.ncl" in
 let version = "1.68.0" in
 {
   name = "nghttp2",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/nghttp2/nghttp2/archive/refs/tags/v%{version}.tar.gz",

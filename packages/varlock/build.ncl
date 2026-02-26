@@ -5,7 +5,7 @@ let base = import "../base/build.ncl" in
 let version = "0.2.3" in
 {
   name = "varlock",
-  inputs = [
+  build_deps = [
     { file = "build.sh" } | Local,
     match {
       { arch = 'Amd64, .. } =>
