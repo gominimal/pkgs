@@ -20,6 +20,36 @@ harness {
   matches_project_if_any = [
     {
       file_regexes."Cargo.toml" = "*",
+
+      build_package_if_any."protobuf" = [
+        {
+          file_predicates."Cargo.toml" = ".workspace.dependencies.\"prost-build\"",
+        }
+      ],
+
+      runtime_package_if_any."openssl" = [
+        {
+          file_predicates."Cargo.toml" = ".workspace.dependencies.reqwest.features | contains(\"native-tls\")",
+        },
+        {
+          file_predicates."Cargo.toml" = ".workspace.dependencies.\"openssl-sys\"",
+        }
+      ],
+      runtime_package_if_any."bzip2" = [
+        {
+          file_predicates."Cargo.toml" = ".workspace.dependencies.bzip2.features | contains(\"bzip2-sys\")",
+        }
+      ],
+      runtime_package_if_any."zstd" = [
+        {
+          file_predicates."Cargo.toml" = ".workspace.dependencies.zstd",
+        }
+      ],
+      runtime_package_if_any."zlib" = [
+        {
+          file_predicates."Cargo.toml" = ".workspace.dependencies.flate2.features | any(. == \"zlib\" or . == \"zlib-default\" or . == \"cloudflare_zlib\")",
+        }
+      ],
     }
   ],
 }
