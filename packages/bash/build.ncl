@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
@@ -41,6 +41,12 @@ let version = "5.3" in
     ncurses,
     readline,
   ],
+
+  needs =
+    {
+      dns = {},
+      internet = {},
+    } | Needs,
 
   cmd = "./build.sh",
   build_args = {
