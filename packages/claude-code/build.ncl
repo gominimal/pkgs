@@ -1,13 +1,15 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let ripgrep = import "../ripgrep/build.ncl" in
 
-let { version, sha256, gcs_bucket } = {
+let { version, amd64_sha256, arm64_sha256, gcs_bucket } = {
   gcs_bucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases",
   version = "2.1.37",
-  sha256 = "f967a4d06e16a32436b6329e2dbed459a9fa4d34f07635a1fb271b74f706c91f",
+  amd64_sha256 = "f967a4d06e16a32436b6329e2dbed459a9fa4d34f07635a1fb271b74f706c91f",
+  arm64_sha256 = "d725cc73060f400a7ac03a769969397daec9d411dbd5b1c7bb1fa60427bf657e",
 }
 in
 
@@ -20,10 +22,18 @@ in
     # - The current stable version is given by the string in the file at: $GCS_BUCKET/stable
     # - The manifest JSON for a version is $GCS_BUCKET/$version/manifest.json
     # - The actual binary is $GCS_BUCKET/$version/$platform/claude, where $platform is "$os-$arch" where $os in [linux, darwin] and arch in [x64, arm64].
-    {
-      url = "%{gcs_bucket}/%{version}/linux-x64/claude",
-      include sha256,
-    } | Source,
+    match {
+      { arch = 'Amd64, .. } =>
+        {
+          url = "%{gcs_bucket}/%{version}/linux-x64/claude",
+          sha256 = amd64_sha256,
+        } | Source,
+      { arch = 'Arm64, .. } =>
+        {
+          url = "%{gcs_bucket}/%{version}/linux-arm64/claude",
+          sha256 = arm64_sha256,
+        } | Source,
+    } target,
     base,
   ],
   runtime_deps = [

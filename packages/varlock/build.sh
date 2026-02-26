@@ -7,6 +7,6 @@ case $(uname -m) in
   *)       echo "unsupported architecture: $(uname -m)" >&2; exit 1 ;;
 esac
 
-tar -xzf "varlock-linux-${ARCH}-${MINIMAL_ARG_VERSION}.tar.gz"
+tar -xzof "varlock-linux-${ARCH}-${MINIMAL_ARG_VERSION}.tar.gz"
 
 install -D -m 0755 varlock "$OUTPUT_DIR/usr/bin/varlock"
