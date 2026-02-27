@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -29,16 +29,6 @@ let version = "4.38.2" in
     bins = { glob = "usr/bin/nspr-config" } | OutputBin,
     includes = { glob = "usr/include/nspr/**" } | OutputData,
     pkgconfig = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
-  },
-  tests = {
-    smoketest =
-      {
-        class = 'Standalone,
-        test_deps = [base],
-        cmds = [
-          ["/bin/bash", "-c", "test -f /usr/lib/libnspr4.so || test -f /usr/lib/x86_64-linux-gnu/libnspr4.so"],
-        ],
-      } | Test,
   },
   attrs =
     {

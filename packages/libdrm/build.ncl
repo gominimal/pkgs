@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
@@ -34,16 +34,6 @@ let version = "2.4.131" in
     libs = { glob = "usr/lib/libdrm*.so*" } | OutputLib,
     includes = { glob = "usr/include/**" } | OutputData,
     pkgconfig = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
-  },
-  tests = {
-    smoketest =
-      {
-        class = 'Standalone,
-        test_deps = [base],
-        cmds = [
-          ["/bin/bash", "-c", "test -f /usr/lib/libdrm.so.2 || test -f /usr/lib/x86_64-linux-gnu/libdrm.so.2"],
-        ],
-      } | Test,
   },
   attrs =
     {

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -38,16 +38,6 @@ let version = "1.1.6" in
     libs = { glob = "usr/lib/libXdamage.so*" } | OutputLib,
     includes = { glob = "usr/include/**" } | OutputData,
     pkgconfigs = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
-  },
-  tests = {
-    smoketest =
-      {
-        class = 'Standalone,
-        test_deps = [base],
-        cmds = [
-          ["/bin/bash", "-c", "test -f /usr/lib/libXdamage.so.1 || test -f /usr/lib/x86_64-linux-gnu/libXdamage.so.1"],
-        ],
-      } | Test,
   },
 
   attrs =

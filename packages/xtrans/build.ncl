@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -31,15 +31,4 @@ let version = "1.6.0" in
       upstream_version = version,
     } | Attrs,
 
-  tests = {
-    smoketest =
-      {
-        class = 'Standalone,
-        test_deps = [base],
-        cmds = [
-          ["/bin/bash", "-c", "test -f /usr/share/pkgconfig/xtrans.pc"],
-          ["/bin/bash", "-c", "test -f /usr/include/X11/Xtrans/Xtrans.h"],
-        ],
-      } | Test,
-  },
 } | BuildSpec

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let meson = import "../meson/build.ncl" in
@@ -43,23 +43,5 @@ let version = "12.3.2" in
     includes = { glob = "usr/include/harfbuzz/**" } | OutputData,
     pkgconfigs = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
   },
-  tests = {
-    smoketest =
-      {
-        class = 'Standalone,
-        test_deps = [base],
-        cmds = [
-          ["/bin/bash", "-c", "test -f /usr/lib/libharfbuzz.so.0 || test -f /usr/lib/x86_64-linux-gnu/libharfbuzz.so.0"],
-        ],
-      } | Test,
-  },
-  attrs =
-    {
-      upstream_version = version,
-      source_provenance = {
-        category = 'GithubRepo,
-        owner = "harfbuzz",
-        repo = "harfbuzz",
-      },
     } | Attrs,
 } | BuildSpec

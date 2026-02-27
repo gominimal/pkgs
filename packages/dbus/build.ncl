@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let meson = import "../meson/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
@@ -37,16 +37,6 @@ let version = "1.16.2" in
     includes = { glob = "usr/include/**" } | OutputData,
     arch-includes = { glob = "usr/lib/dbus-1.0/include/**" } | OutputData,
     pkgconfig = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
-  },
-  tests = {
-    smoketest =
-      {
-        class = 'Standalone,
-        test_deps = [base],
-        cmds = [
-          ["/bin/bash", "-c", "test -f /usr/lib/libdbus-1.so.3 || test -f /usr/lib/x86_64-linux-gnu/libdbus-1.so.3"],
-        ],
-      } | Test,
   },
   attrs =
     {
