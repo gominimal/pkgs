@@ -47,7 +47,7 @@ let version = "18.0" in
 
   outputs = {
     bins = { glob = "usr/bin/*" } | OutputBin,
-    libs = { glob = "usr/lib/**" } | OutputLib,
+    libs = { glob = "usr/lib/**", allow_data = true } | OutputLib,
     includes = { glob = "usr/include/**" } | OutputData,
     share = { glob = "usr/share/postgresql/**" } | OutputData,
   },

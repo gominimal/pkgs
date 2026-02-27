@@ -39,7 +39,7 @@ let version = "25.07.1" in
 
   outputs = {
     hx = { glob = "usr/bin/hx" } | OutputBin,
-    runtime = { glob = "usr/lib/helix/runtime/**" } | OutputData,
+    runtime = { glob = "usr/lib/helix/runtime/**", allow_executable = true } | OutputData,
     grammars = { glob = "usr/lib/helix/runtime/grammars/*.so" } | OutputLib,
   },
   attrs =
