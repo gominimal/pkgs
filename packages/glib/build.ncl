@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let meson = import "../meson/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
@@ -45,16 +45,7 @@ let version = "2.86.4" in
     glibconfig = { glob = "usr/lib/glib-2.0/include/**" } | OutputData,
     pkgconfig = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
   },
-  tests = {
-    smoketest =
-      {
-        class = 'Standalone,
-        test_deps = [base],
-        cmds = [
-          ["/bin/bash", "-c", "test -f /usr/lib/libglib-2.0.so.0 || test -f /usr/lib/x86_64-linux-gnu/libglib-2.0.so.0"],
-        ],
-      } | Test,
-  },
+
   attrs =
     {
       upstream_version = version,

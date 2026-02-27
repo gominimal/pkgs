@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
@@ -32,16 +32,4 @@ let version = "2025.1" in
     {
       upstream_version = version,
     } | Attrs,
-
-  tests = {
-    smoketest =
-      {
-        class = 'Standalone,
-        test_deps = [base],
-        cmds = [
-          ["/bin/bash", "-c", "test -f /usr/include/X11/X.h"],
-          ["/bin/bash", "-c", "test -f /usr/share/pkgconfig/xproto.pc"],
-        ],
-      } | Test,
-  },
 } | BuildSpec

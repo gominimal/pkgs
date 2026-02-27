@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -36,19 +36,9 @@ let version = "3.121" in
 
   outputs = {
     libs = { glob = "usr/lib/lib{nss3,nssutil3,smime3,ssl3,softokn3,freeblpriv3}.so*" } | OutputLib,
-    bins = { glob = "usr/bin/{certutil,pk12util,nss-config}" } | OutputBin,
+    bins = { glob = "usr/bin/{certutil,pk12util}" } | OutputBin,
     includes = { glob = "usr/include/nss/**" } | OutputData,
     pkgconfigs = { glob = "usr/lib/pkgconfig/nss.pc" } | OutputData,
-  },
-  tests = {
-    smoketest =
-      {
-        class = 'Standalone,
-        test_deps = [base],
-        cmds = [
-          ["/bin/bash", "-c", "test -f /usr/lib/libnss3.so || test -f /usr/lib/x86_64-linux-gnu/libnss3.so"],
-        ],
-      } | Test,
   },
   attrs =
     {

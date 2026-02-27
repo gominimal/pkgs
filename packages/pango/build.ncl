@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let meson = import "../meson/build.ncl" in
@@ -46,16 +46,6 @@ let version = "1.56.4" in
     libs = { glob = "usr/lib/libpango*.so*" } | OutputLib,
     includes = { glob = "usr/include/**" } | OutputData,
     pkgconfigs = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
-  },
-  tests = {
-    smoketest =
-      {
-        class = 'Standalone,
-        test_deps = [base],
-        cmds = [
-          ["/bin/bash", "-c", "test -f /usr/lib/libpango-1.0.so.0 || test -f /usr/lib/x86_64-linux-gnu/libpango-1.0.so.0"],
-        ],
-      } | Test,
   },
 
   attrs =

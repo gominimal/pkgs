@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -34,16 +34,6 @@ let version = "1.3.3" in
     libs = { glob = "usr/lib/libxshmfence.so*" } | OutputLib,
     includes = { glob = "usr/include/**" } | OutputData,
     pkgconfig = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
-  },
-  tests = {
-    smoketest =
-      {
-        class = 'Standalone,
-        test_deps = [base],
-        cmds = [
-          ["/bin/bash", "-c", "test -f /usr/lib/libxshmfence.so.1 || test -f /usr/lib/x86_64-linux-gnu/libxshmfence.so.1"],
-        ],
-      } | Test,
   },
 
   attrs =

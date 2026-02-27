@@ -2,6 +2,7 @@ let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import 
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 
+# TODO: build rather than fetch
 let version = "0.2.3" in
 {
   name = "varlock",
