@@ -5,10 +5,11 @@ let cmake = import "../cmake/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let python = import "../python/build.ncl" in
-let toolchain-gnullvm = import "../toolchain-gnullvm/build.ncl" in
+let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+let llvm = import "../llvm/build.ncl" in
 
 let all_outputs = {
   bins = { glob = "usr/bin/*" } | OutputBin,
@@ -63,7 +64,9 @@ in
     cmake,
     ninja,
     python,
-    toolchain-gnullvm,
+    toolchain,
+#   use replace on cycle dependency to bootstrap
+    llvm,
   ],
   runtime_deps = [
     glibc,
@@ -89,8 +92,8 @@ in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/llvm/arm64-linux-gnu/llvm_19.1.7_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "baf70f778da0f801f1a967f3f0856ded15f682e6ece7e4c71110780e474b862a",
+              url = "gs://minimal-staging-archives/prebuilts/llvm/arm64-linux-gnu/llvm_21.1.8_arm64-linux-gnu_prebuilt_363e67d.tar.zst",
+              sha256 = "67af603c2c3423142de179d4cfe463d22f2ab48f976e28703d027ac8b576732c",
               extract = true,
             } | Source,
         } target,
