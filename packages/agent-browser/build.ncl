@@ -15,6 +15,7 @@ let alsa-lib = import "../alsa-lib/build.ncl" in
 let cairo = import "../cairo/build.ncl" in
 let cups = import "../cups/build.ncl" in
 let dbus = import "../dbus/build.ncl" in
+let eudev = import "../eudev/build.ncl" in
 let expat = import "../expat/build.ncl" in
 let fontconfig = import "../fontconfig/build.ncl" in
 let freetype = import "../freetype/build.ncl" in
@@ -67,6 +68,7 @@ let version = "0.15.1" in
     cairo,
     cups,
     dbus,
+    eudev,
     expat,
     fontconfig,
     freetype,
