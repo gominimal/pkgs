@@ -13,4 +13,12 @@ harness {
     echo '/bin/npm run build --if-present'
   "%
   ],
+
+  matches_project_if_any = [
+    {
+      file_regexes = {
+        "package-lock.json" = "*",
+      },
+    }
+  ],
 }
