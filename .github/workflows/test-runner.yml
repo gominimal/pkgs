@@ -1,0 +1,16 @@
+name: Test Self-Hosted Runner
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: minimal
+    steps:
+      - uses: actions/checkout@v4
+      - name: Hello from self-hosted runner
+        run: |
+          echo "Runner: $(hostname)"
+          echo "OS: $(uname -a)"
+          echo "Working directory: $(pwd)"
+          ls -la
