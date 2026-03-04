@@ -2,6 +2,9 @@ let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Te
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let icu = import "../icu/build.ncl" in
+let openssl = import "../openssl/build.ncl" in
+let zlib = import "../zlib/build.ncl" in
 
 let version = "2.332.0" in
 
@@ -31,6 +34,9 @@ in
   ],
   runtime_deps = [
     glibc,
+    icu,
+    openssl,
+    zlib,
   ],
 
   cmd = "./build.sh",
