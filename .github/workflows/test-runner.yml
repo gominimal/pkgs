@@ -5,7 +5,7 @@ on:
 
 jobs:
   test:
-    runs-on: minimal-ubuntu-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Hello from self-hosted runner
