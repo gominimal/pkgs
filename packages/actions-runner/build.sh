@@ -8,7 +8,7 @@ case $(uname -m) in
 esac
 
 mkdir runner
-tar -xf "actions-runner-linux-${ARCH}-${MINIMAL_ARG_VERSION}.tar.gz" -C runner
+tar -xof "actions-runner-linux-${ARCH}-${MINIMAL_ARG_VERSION}.tar.gz" -C runner
 
 mkdir -p $OUTPUT_DIR/usr/{bin,lib}
 mv runner $OUTPUT_DIR/usr/lib/actions-runner
