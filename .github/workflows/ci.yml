@@ -18,6 +18,22 @@ jobs:
     runs-on: minimal-ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Debug env
+        run: |
+          echo "HOME=$HOME"
+          echo "USER=$USER"
+          echo "whoami=$(whoami)"
+          echo "pwd=$(pwd)"
+          ls -la $HOME/.minimal/ 2>&1 || true
+          ls -la $HOME/.minimal/shim/bin/ 2>&1 || true
+          find / -name minimal -type f 2>/dev/null | head -10 || true
       - uses: ./.github/actions/setup-minimal
+      - name: Debug post-setup
+        run: |
+          echo "HOME=$HOME"
+          echo "PATH=$PATH"
+          which minimal 2>&1 || true
+          ls -la $HOME/.minimal/ 2>&1 || true
+          ls -la $HOME/.minimal/shim/bin/ 2>&1 || true
       - name: Check Harnesses
         run: minimal check --harnesses
