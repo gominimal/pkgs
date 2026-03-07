@@ -25,6 +25,7 @@ jobs:
           echo "PATH=$PATH"
           which minimal 2>&1 || true
           ls -la $HOME/.minimal/ 2>&1 || true
-          ls -la $HOME/.minimal/shim/bin/ 2>&1 || true
+          find /opt/actions-runner/_work -name '.minimal' -type d 2>/dev/null || true
+          find /opt/actions-runner/_work -name 'minimal' -type f 2>/dev/null || true
       - name: Check Harnesses
         run: minimal check --harnesses
