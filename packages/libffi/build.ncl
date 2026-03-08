@@ -1,5 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
-let base = import "../base/build.ncl" in
+let base_bootstrap = import "../base-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -11,7 +11,7 @@ let glibc = import "../glibc/build.ncl" in
       url = "gs://minimal-staging-archives/libffi-3.5.2.tar.gz",
       sha256 = "f3a3082a23b37c293a4fcd1053147b371f2ff91fa7ea1b2a52e335676bac82dc"
     } | Source,
-    base,
+    base_bootstrap,
     make,
     toolchain,
   ],

@@ -1,11 +1,11 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
-let bash = import "../bash/build.ncl" in
+let bash = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let diffutils = import "../diffutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
-let gawk = import "../gawk/build.ncl" in
+let gawk = import "../gawk-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let sed = import "../sed/build.ncl" in

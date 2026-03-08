@@ -1,5 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
-let base = import "../base/build.ncl" in
+let base_bootstrap = import "../base-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
@@ -13,7 +13,7 @@ let zlib = import "../zlib/build.ncl" in
       url = "gs://minimal-staging-archives/sqlite-autoconf-3500400.tar.gz",
       sha256 = "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18"
     } | Source,
-    base,
+    base_bootstrap,
     make,
     toolchain,
   ],

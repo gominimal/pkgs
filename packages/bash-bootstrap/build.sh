@@ -1,0 +1,22 @@
+#!/bin/sh
+set -e
+
+cd "bash-${MINIMAL_ARG_VERSION}"
+
+case $(uname -m) in
+  x86_64)  MARCH="-march=x86-64-v3" ;;
+  aarch64) MARCH="-march=armv8-a" ;;
+  *)       MARCH="" ;;
+esac
+export CFLAGS="$MARCH -O3 -pipe"
+export CXXFLAGS="${CFLAGS}"
+
+./configure --prefix=/usr \
+            --without-bash-malloc \
+            --disable-readline
+
+make -j$(nproc)
+make DESTDIR=$OUTPUT_DIR install-strip
+
+# Create sh symlink in /usr/bin
+ln -sf bash $OUTPUT_DIR/usr/bin/sh

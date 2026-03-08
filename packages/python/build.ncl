@@ -1,5 +1,5 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
-let base = import "../base/build.ncl" in
+let base_bootstrap = import "../base-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
 let expat = import "../expat/build.ncl" in
 let gdbm = import "../gdbm/build.ncl" in
@@ -24,7 +24,7 @@ let version = "3.13.7" in
       url = "gs://minimal-staging-archives/Python-%{version}.tar.xz",
       sha256 = "5462f9099dfd30e238def83c71d91897d8caa5ff6ebc7a50f14d4802cdaaa79a"
     } | Source,
-    base,
+    base_bootstrap,
     make,
     gdbm,
     ncurses,
@@ -67,7 +67,7 @@ let version = "3.13.7" in
     smoketest_output =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [base_bootstrap],
         cmds = [
           ["/bin/bash", "-c", "echo 'print(\"Hello Python\")' > script.py"],
           ["/bin/python3", "script.py"],
@@ -79,7 +79,7 @@ let version = "3.13.7" in
     smoketest_math =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [base_bootstrap],
         cmds = [
           ["/bin/bash", "-c", "echo 'print(2 + 2)' > math.py"],
           ["/bin/bash", "-c", "python3 math.py | grep -q '^4$'"],
@@ -91,7 +91,7 @@ let version = "3.13.7" in
     smoketest_imports =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [base_bootstrap],
         cmds = [
           ["/bin/bash", "-c", "cat > mymodule.py << 'EOF'\ndef greet(name):\n    return f\"Hello, {name}\"\nEOF"],
           ["/bin/bash", "-c", "cat > use_module.py << 'EOF'\nimport mymodule\nprint(mymodule.greet(\"World\"))\nEOF"],

@@ -1,9 +1,8 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
-let { target, .. } = import "config.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 let readline = import "../readline/build.ncl" in
-let bash = import "../bash/build.ncl" in
+let bash_bootstrap = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let gawk = import "../gawk/build.ncl" in
 let grep = import "../grep/build.ncl" in
@@ -25,7 +24,7 @@ let version = "5.3" in
       sha256 = "0d5cd86965f869a26cf64f4b71be7b96f90a3ba8b3d74e27e8e9d9d5550f31ba",
       extract = true,
     } | Source,
-    bash,
+    bash_bootstrap,
     coreutils,
     gawk,
     grep,
@@ -65,34 +64,6 @@ let version = "5.3" in
         name = "bash",
       },
     } | Attrs,
-
-  replace_on_cycle =
-    {
-      name = "bash (prebuilt)",
-      prebuilt = true,
-      build_deps = [
-        match {
-          { arch = 'Amd64, .. } =>
-            {
-              url = "gs://minimal-staging-archives/prebuilts/bash/0932485779c77fb91805ea37baf5a97b6c64f1f45d2794b10f61eb0d805928d0.tar.zst",
-              sha256 = "bdb617c43eb4ba70f72a3a9750266cd57cb1cbc77db19e50366f50cacc5afcd7",
-              extract = true,
-            } | Source,
-          { arch = 'Arm64, .. } =>
-            {
-              url = "gs://minimal-staging-archives/prebuilts/bash/arm64-linux-gnu/bash_5.3_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "590d9c1ce69dbb6c13d90bc1feab2a669279fd850e8d8bda99e5551e23003187",
-              extract = true,
-            } | Source,
-        } target,
-      ],
-      runtime_deps = [
-        glibc,
-        ncurses,
-        readline,
-      ],
-      outputs = {},
-    } | BuildSpec,
 
   tests = {
     arithmetic =

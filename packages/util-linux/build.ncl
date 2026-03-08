@@ -1,5 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
-let base = import "../base/build.ncl" in
+let base_bootstrap = import "../base-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -13,7 +13,7 @@ let version = "2.41.2" in
       url = "gs://minimal-staging-archives/util-linux-%{version}.tar.xz",
       sha256 = "6062a1d89b571a61932e6fc0211f36060c4183568b81ee866cf363bce9f6583e"
     } | Source,
-    base,
+    base_bootstrap,
     make,
     toolchain,
   ],
@@ -57,7 +57,7 @@ let version = "2.41.2" in
     smoketest_uuidgen =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [base_bootstrap],
         cmds = [
           ["/bin/bash", "-c", "uuidgen > uuid.txt"],
           ["/bin/bash", "-c", "grep -E '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' uuid.txt"],
@@ -67,7 +67,7 @@ let version = "2.41.2" in
     hexdump =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [base_bootstrap],
         cmds = [
           ["/bin/bash", "-c", "echo 'ABC' > hex_test.txt"],
           ["/bin/hexdump", "-C", "hex_test.txt"],

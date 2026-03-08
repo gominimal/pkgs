@@ -1,5 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
-let base = import "../base/build.ncl" in
+let base_bootstrap = import "../base-bootstrap/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -16,7 +16,7 @@ let version = "3.6.1" in
       extract = true,
       strip_prefix = "openssl-openssl-%{version}",
     } | Source,
-    base,
+    base_bootstrap,
     perl,
     make,
     toolchain,
