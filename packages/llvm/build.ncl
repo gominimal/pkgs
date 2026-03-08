@@ -2,7 +2,7 @@ let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Sourc
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
-let llvm_bootstrap = import "../llvm-bootstrap/build.ncl" in
+let llvm-bootstrap = import "../llvm-bootstrap/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -44,7 +44,7 @@ let zlib = import "../zlib/build.ncl" in
     } | Source,
     base,
     cmake,
-    llvm_bootstrap,
+    llvm-bootstrap,
     ninja,
     python,
     toolchain,
@@ -53,6 +53,7 @@ let zlib = import "../zlib/build.ncl" in
     glibc,
     libffi,
     zlib,
+    subsetOf gcc ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",
@@ -66,6 +67,7 @@ let zlib = import "../zlib/build.ncl" in
     libscanbuild = { glob = "usr/lib/libscanbuild/**", allow_data = true } | OutputLib,
 
     libclang = { glob = "usr/lib/libclang*.{so*,a}" } | OutputLib,
+    liblld = { glob = "usr/lib/liblld*.{so*,a}" } | OutputLib,
     libs_clang = { glob = "usr/lib/clang/*/**", allow_data = true } | OutputLib,
 
     libexec = { glob = "usr/libexec/**" } | OutputBin,

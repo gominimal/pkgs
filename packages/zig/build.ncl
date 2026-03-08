@@ -1,29 +1,31 @@
-let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
-let { target, .. } = import "config.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let cmake = import "../cmake/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let gcc = import "../gcc/build.ncl" in
+let llvm = import "../llvm/build.ncl" in
+let ninja = import "../ninja/build.ncl" in
+let toolchain = import "../toolchain/build.ncl" in
 
-let version = "0.15.1" in
+let version = "0.16.0-dev.2682+02142a54d" in
 {
   name = "zig",
   build_deps = [
     { file = "build.sh" } | Local,
-    match {
-      { arch = 'Amd64, .. } =>
-        {
-          url = "https://ziglang.org/download/%{version}/zig-x86_64-linux-%{version}.tar.xz",
-          sha256 = "c61c5da6edeea14ca51ecd5e4520c6f4189ef5250383db33d01848293bfafe05",
-        } | Source,
-      { arch = 'Arm64, .. } =>
-        {
-          url = "https://ziglang.org/download/%{version}/zig-aarch64-linux-%{version}.tar.xz",
-          sha256 = "bb4a8d2ad735e7fba764c497ddf4243cb129fece4148da3222a7046d3f1f19fe",
-        } | Source,
-    } target,
+    {
+      url = "https://ziglang.org/builds/zig-%{version}.tar.xz",
+      sha256 = "2884607e55761aa2a178ca50b5277ee1abb4320db6a7d023c46cf0ffe7632f8f",
+    } | Source,
     base,
+    cmake,
+    llvm,
+    ninja,
+    toolchain,
   ],
   runtime_deps = [
     glibc,
+    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf llvm ["libllvm", "libclang", "liblld"],
   ],
 
   cmd = "./build.sh",
