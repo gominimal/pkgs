@@ -2,6 +2,9 @@ let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "mini
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let findutils = import "../findutils/build.ncl" in
+let curl = import "../curl/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let ripgrep = import "../ripgrep/build.ncl" in
 
@@ -38,6 +41,9 @@ in
   ],
   runtime_deps = [
     bash,
+    coreutils,
+    findutils,
+    curl,
     glibc,
     ripgrep,
   ],
