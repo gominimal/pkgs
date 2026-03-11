@@ -44,5 +44,6 @@ let version = "26.1.22" in
         owner = "sxyazi",
         repo = "yazi",
       },
+      build_cost_multiple = 2,
     } | Attrs,
 } | BuildSpec

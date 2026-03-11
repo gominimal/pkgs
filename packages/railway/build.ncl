@@ -42,5 +42,6 @@ let version = "4.30.2" in
         owner = "railwayapp",
         repo = "cli",
       },
+      build_cost_multiple = 2,
     } | Attrs,
 } | BuildSpec

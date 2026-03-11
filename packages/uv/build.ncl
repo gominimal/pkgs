@@ -44,5 +44,6 @@ let toolchain = import "../toolchain/build.ncl" in
         owner = "astral-sh",
         repo = "uv",
       },
+      build_cost_multiple = 2,
     } | Attrs,
 } | BuildSpec

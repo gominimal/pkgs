@@ -43,5 +43,6 @@ let version = "0.43.1" in
         owner = "zellij-org",
         repo = "zellij",
       },
+      build_cost_multiple = 2,
     } | Attrs,
 } | BuildSpec

@@ -40,5 +40,6 @@ let version = "0.3.2" in
         owner = "j178",
         repo = "prek",
       },
+      build_cost_multiple = 2,
     } | Attrs,
 } | BuildSpec
