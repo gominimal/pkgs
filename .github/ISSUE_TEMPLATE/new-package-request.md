@@ -8,4 +8,4 @@ type: Task
 
 ---
 
-**Please provide the name and source link of the package.**
+**Please provide the name and source link to the package.**
