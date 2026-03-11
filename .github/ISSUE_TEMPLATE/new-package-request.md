@@ -1,7 +1,7 @@
 ---
 name: New package request
 about: Request a new package added to Minimal
-title: "[PkgRequest]"
+title: "[PkgReq]"
 labels: pkgreq
 assignees: jessie-minimal
 type: Task
