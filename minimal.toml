@@ -1,5 +1,5 @@
 [stdlib]
-minimum_version = "0.0.6"
+minimum_version = "0.0.8"
 
 [tasks.shell]
 packages = ["base", "bash", "claude-code"]

@@ -49,5 +49,6 @@ let version = "4.2.3" in
         repo = "CMake",
         releases = 'TagBased {},
       },
+      build_cost_multiple = 2,
     } | Attrs,
 } | BuildSpec

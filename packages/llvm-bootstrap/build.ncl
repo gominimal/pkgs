@@ -57,4 +57,6 @@ let zlib = import "../zlib/build.ncl" in
     cmake_data_clang = { glob = "usr/lib/cmake/clang/*.cmake" } | OutputData,
     includes = { glob = "usr/include/**" } | OutputData,
   },
+
+  attrs.build_cost_multiple = 5,
 } | BuildSpec

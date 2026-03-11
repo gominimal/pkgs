@@ -56,5 +56,6 @@ let version = "4.12.0" in
         owner = "opencv",
         repo = "opencv",
       },
+      build_cost_multiple = 2,
     } | Attrs,
 } | BuildSpec

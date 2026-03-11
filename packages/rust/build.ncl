@@ -70,5 +70,6 @@ let version = "1.93.1" in
         env_var = "CARGO_HOME",
         prefix = "cargo",
       },
+      build_cost_multiple = 3,
     } | Attrs,
 } | BuildSpec

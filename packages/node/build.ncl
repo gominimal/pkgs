@@ -61,6 +61,7 @@ let version = "24.9.0" in
         owner = "nodejs",
         repo = "node",
       },
+      build_cost_multiple = 4,
     } | Attrs,
 
   tests = {

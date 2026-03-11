@@ -92,6 +92,7 @@ in
         owner = "oven-sh",
         repo = "bun",
       },
+      build_cost_multiple = 2,
     } | Attrs,
 
   tests = {

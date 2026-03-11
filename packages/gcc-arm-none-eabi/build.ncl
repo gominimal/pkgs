@@ -63,5 +63,6 @@ let newlib_version = "4.4.0.20231231" in
         category = 'GnuProject,
         name = "gcc",
       },
+      build_cost_multiple = 2,
     } | Attrs,
 } | BuildSpec

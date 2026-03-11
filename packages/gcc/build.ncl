@@ -107,6 +107,7 @@ let version = "15.2.0" in
         category = 'GnuProject,
         name = "gcc",
       },
+      build_cost_multiple = 2,
     } | Attrs,
 
   replace_on_cycle =
