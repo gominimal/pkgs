@@ -17,6 +17,11 @@ export CXXFLAGS="${CFLAGS}"
             --enable-openssl        \
             --enable-libfreetype    \
             --enable-libfontconfig  \
+            --enable-libdav1d       \
+            --enable-libaom         \
+            --enable-libopus        \
+            --enable-libvmaf        \
+            --enable-libvpx         \
             --disable-doc           \
             --disable-debug         \
             --disable-x86asm

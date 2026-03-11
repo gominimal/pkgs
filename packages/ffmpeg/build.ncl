@@ -8,6 +8,11 @@ let fontconfig = import "../fontconfig/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let xz = import "../xz/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+let dav1d = import "../dav1d/build.ncl" in
+let libaom = import "../libaom/build.ncl" in
+let libopus = import "../libopus/build.ncl" in
+let libvmaf = import "../libvmaf/build.ncl" in
+let libvpx = import "../libvpx/build.ncl" in
 
 let version = "8.0.1" in
 {
@@ -31,6 +36,11 @@ let version = "8.0.1" in
     openssl,
     xz,
     zlib,
+    dav1d,
+    libaom,
+    libopus,
+    libvmaf,
+    libvpx,
   ],
 
   cmd = "./build.sh",
