@@ -2,9 +2,9 @@
 minimum_version = "0.0.8"
 
 [tasks.shell]
-packages = ["base", "bash", "claude-code"]
+packages = ["base", "bash", "claude-code", "curl"]
 exec = "bash --noprofile -l"
 
 [tasks.claude]
-packages = ["base", "bash", "claude-code"]
+packages = ["base", "bash", "claude-code", "curl"]
 exec = "claude --dangerously-skip-permissions"
