@@ -9,6 +9,9 @@ esac
 export CFLAGS="$MARCH -O2 -pipe"
 export CXXFLAGS="${CFLAGS}"
 
+# Fix SVT-AV1 4.x compatibility: enable_adaptive_quantization was removed
+sed -i '/enable_adaptive_quantization/d' libavcodec/libsvtav1.c
+
 ./configure --prefix=/usr           \
             --disable-static        \
             --enable-shared         \
@@ -22,6 +25,11 @@ export CXXFLAGS="${CFLAGS}"
             --enable-libopus        \
             --enable-libvmaf        \
             --enable-libvpx         \
+            --enable-libfdk-aac     \
+            --enable-libsvtav1      \
+            --enable-libx264        \
+            --enable-libx265        \
+            --enable-nonfree        \
             --disable-doc           \
             --disable-debug         \
             --disable-x86asm

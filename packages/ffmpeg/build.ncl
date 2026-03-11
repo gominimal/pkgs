@@ -13,6 +13,10 @@ let libaom = import "../libaom/build.ncl" in
 let libopus = import "../libopus/build.ncl" in
 let libvmaf = import "../libvmaf/build.ncl" in
 let libvpx = import "../libvpx/build.ncl" in
+let libfdk-aac = import "../libfdk-aac/build.ncl" in
+let libsvtav1 = import "../libsvtav1/build.ncl" in
+let libx264 = import "../libx264/build.ncl" in
+let libx265 = import "../libx265/build.ncl" in
 
 let version = "8.0.1" in
 {
@@ -41,6 +45,10 @@ let version = "8.0.1" in
     libopus,
     libvmaf,
     libvpx,
+    libfdk-aac,
+    libsvtav1,
+    libx264,
+    libx265,
   ],
 
   cmd = "./build.sh",
