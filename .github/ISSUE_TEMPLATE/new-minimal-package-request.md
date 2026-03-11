@@ -1,5 +1,5 @@
 ---
-name: New package request
+name: New Minimal Package Request
 about: Request a new package added to Minimal
 title: "[PkgReq]"
 labels: pkgreq
