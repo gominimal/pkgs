@@ -1,0 +1,27 @@
+name: Update packages
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  update-packages:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+          cache: false
+
+      - name: Install pkgmgr
+        run: go install github.com/gominimal/pkgmgr@latest
+
+      - name: Run pkgmgr
+        run: pkgmgr --repo-path . --update --create-pr --verbose
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
