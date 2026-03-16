@@ -17,6 +17,7 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 let libgd = import "../libgd/build.ncl" in
 let libpng = import "../libpng/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
+let libwebp = import "../libwebp/build.ncl" in
 let pango = import "../pango/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
@@ -49,6 +50,7 @@ let version = "14.1.1" in
     libgd,
     libpng,
     libtool,
+    libwebp,
     pango,
     zlib,
     subsetOf gcc ["libgcc", "libstdcpp"],

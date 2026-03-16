@@ -40,7 +40,6 @@ let version = "1.6.0" in
     bins = { glob = "usr/bin/*" } | OutputBin,
     libs = { glob = "usr/lib/lib*.so*" } | OutputLib,
     pkgconfigs = { glob = "usr/lib/pkgconfig/**" } | OutputData,
-    cmake_data = { glob = "usr/lib/cmake/**" } | OutputData,
     includes = { glob = "usr/include/**" } | OutputData,
   },
 
