@@ -37,6 +37,9 @@ let version = "3.220.0" in
 
   outputs = {
     pulumi = { glob = "usr/bin/pulumi" } | OutputBin,
+    pulumi-language-go = { glob = "usr/bin/pulumi-language-go" } | OutputBin,
+    pulumi-language-nodejs = { glob = "usr/bin/pulumi-language-nodejs" } | OutputBin,
+    pulumi-language-python = { glob = "usr/bin/pulumi-language-python" } | OutputBin,
   },
 
   attrs =
