@@ -23,12 +23,14 @@ let linux_headers = import "../linux_headers/build.ncl" in
 # other
 let gmp = import "../gmp/build.ncl" in
 let mpfr = import "../mpfr/build.ncl" in
+
+let version = "1.3.1" in
 {
   name = "mpc",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/mpc-1.3.1.tar.gz",
+      url = "gs://minimal-staging-archives/mpc-%{version}.tar.gz",
       sha256 = "ab642492f5cf882b74aa0cb730cd410a81edcdbec895183ce930e706c1c759b8"
     } | Source,
     # base
@@ -92,6 +94,7 @@ let mpfr = import "../mpfr/build.ncl" in
     } | BuildSpec,
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GnuProject,
         name = "mpc",

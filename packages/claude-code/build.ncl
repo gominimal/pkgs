@@ -60,6 +60,7 @@ in
 
   attrs =
     {
+      upstream_version = version,
 
       # Claude code needs two things to function properly:
       #  - `.claude.json`, which contains anthropic credentials for the user

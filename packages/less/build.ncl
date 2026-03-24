@@ -4,12 +4,13 @@ let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+let version = "679" in
 {
   name = "less",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/less-679.tar.gz",
+      url = "gs://minimal-staging-archives/less-%{version}.tar.gz",
       sha256 = "9b68820c34fa8a0af6b0e01b74f0298bcdd40a0489c61649b47058908a153d78"
     } | Source,
     base,
@@ -27,6 +28,7 @@ let toolchain = import "../toolchain/build.ncl" in
   },
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GithubRepo,
         owner = "gwsw",

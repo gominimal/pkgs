@@ -9,15 +9,17 @@ let abseil-cpp = import "../abseil-cpp/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+
+let version = "32.0" in
 {
   name = "protobuf",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/protocolbuffers/protobuf/releases/download/v32.0/protobuf-32.0.tar.gz",
+      url = "https://github.com/protocolbuffers/protobuf/releases/download/v%{version}/protobuf-%{version}.tar.gz",
       sha256 = "9dfdf08129f025a6c5802613b8ee1395044fecb71d38210ca59ecad283ef68bb",
       extract = true,
-      strip_prefix = "protobuf-32.0",
+      strip_prefix = "protobuf-%{version}",
     } | Source,
     base,
     make,
@@ -47,6 +49,7 @@ let zlib = import "../zlib/build.ncl" in
   },
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GithubRepo,
         owner = "protocolbuffers",

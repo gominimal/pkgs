@@ -5,12 +5,14 @@ let glibc = import "../glibc/build.ncl" in
 let make = import "../make/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+
+let version = "0.9.3" in
 {
   name = "uv",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/uv-0.9.3.tar.gz",
+      url = "gs://minimal-staging-archives/uv-%{version}.tar.gz",
       sha256 = "79246789f62f62886815d647af39760c8fe9ab0724f149e02f397b85cf35428b"
     } | Source,
     base,
@@ -35,6 +37,7 @@ let toolchain = import "../toolchain/build.ncl" in
 
   attrs =
     {
+      upstream_version = version,
       env_state_wiring = {
         env_var = "UV_CACHE_DIR",
         prefix = "uv-cache",

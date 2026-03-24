@@ -5,12 +5,14 @@ let make = import "../make/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 let file = import "../file/build.ncl" in
+
+let version = "6.17" in
 {
   name = "strace",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/strace-6.17.tar.xz",
+      url = "gs://minimal-staging-archives/strace-%{version}.tar.xz",
       sha256 = "0a7c7bedc7efc076f3242a0310af2ae63c292a36dd4236f079e88a93e98cb9c0"
     } | Source,
     base,
@@ -29,6 +31,7 @@ let file = import "../file/build.ncl" in
   },
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GithubRepo,
         owner = "strace",

@@ -10,13 +10,14 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let make = import "../make/build.ncl" in
+let version = "0.15.2" in
 {
   name = "check",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       # https://github.com/libcheck/check/releases/download/0.15.2/check-0.15.2.tar.gz
-      url = "gs://minimal-staging-archives/check-0.15.2.tar.gz",
+      url = "gs://minimal-staging-archives/check-%{version}.tar.gz",
       sha256 = "a8de4e0bacfb4d76dd1c618ded263523b53b85d92a146d8835eb1a52932fa20a",
     } | Source,
     base,
@@ -40,6 +41,7 @@ let make = import "../make/build.ncl" in
   },
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GithubRepo,
         owner = "libcheck",

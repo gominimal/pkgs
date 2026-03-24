@@ -22,12 +22,13 @@ let glibc = import "../glibc/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 # other
 let m4 = import "../m4/build.ncl" in
+let version = "6.3.0" in
 {
   name = "gmp",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/gmp-6.3.0.tar.xz",
+      url = "gs://minimal-staging-archives/gmp-%{version}.tar.xz",
       sha256 = "a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898"
     } | Source,
     # base
@@ -93,6 +94,7 @@ let m4 = import "../m4/build.ncl" in
     } | BuildSpec,
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GnuProject,
         name = "gmp",

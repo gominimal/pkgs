@@ -12,12 +12,13 @@ let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let lz4 = import "../lz4/build.ncl" in
 let xz = import "../xz/build.ncl" in
+let version = "5.46" in
 {
   name = "file",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/file-5.46.tar.gz",
+      url = "gs://minimal-staging-archives/file-%{version}.tar.gz",
       sha256 = "c9cc77c7c560c543135edc555af609d5619dbef011997e988ce40a3d75d86088"
     } | Source,
     bash-bootstrap,
@@ -74,6 +75,7 @@ let xz = import "../xz/build.ncl" in
     } | BuildSpec,
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GithubRepo,
         owner = "file",

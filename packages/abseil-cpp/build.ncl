@@ -8,15 +8,16 @@ let ninja = import "../ninja/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
+let version = "20250814.1" in
 {
   name = "abseil-cpp",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/abseil/abseil-cpp/releases/download/20250814.1/abseil-cpp-20250814.1.tar.gz",
+      url = "https://github.com/abseil/abseil-cpp/releases/download/%{version}/abseil-cpp-%{version}.tar.gz",
       sha256 = "1692f77d1739bacf3f94337188b78583cf09bab7e420d2dc6c5605a4f86785a1",
       extract = true,
-      strip_prefix = "abseil-cpp-20250814.1",
+      strip_prefix = "abseil-cpp-%{version}",
     } | Source,
     base,
     make,
@@ -39,6 +40,7 @@ let gcc = import "../gcc/build.ncl" in
   },
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GithubRepo,
         owner = "abseil",

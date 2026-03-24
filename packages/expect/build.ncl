@@ -5,16 +5,17 @@ let python = import "../python/build.ncl" in
 let tcl = import "../tcl/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+let version = "5.45.4" in
 {
   name = "expect",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/expect5.45.4.tar.gz",
+      url = "gs://minimal-staging-archives/expect%{version}.tar.gz",
       sha256 = "49a7da83b0bdd9f46d04a04deec19c7767bb9a323e40c4781f89caf760b92c34"
     } | Source,
     {
-      url = "gs://minimal-staging-archives/expect-5.45.4-gcc15-1.patch",
+      url = "gs://minimal-staging-archives/expect-%{version}-gcc15-1.patch",
       sha256 = "ab5fc0af9e2e0f80d7623c1a3a3dbeb1da3d8c9134276792199df401f9eb2cec"
     } | Source,
     base,
@@ -32,5 +33,8 @@ let toolchain = import "../toolchain/build.ncl" in
     libs = { glob = "usr/lib/**/*.{a,so*}" } | OutputLib,
 
     includes = { glob = "usr/include/**" } | OutputData,
+  },
+  attrs = {
+    upstream_version = version,
   },
 } | BuildSpec

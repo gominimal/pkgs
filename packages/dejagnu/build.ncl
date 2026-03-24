@@ -2,12 +2,13 @@ let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "min
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+let version = "1.6.3" in
 {
   name = "dejagnu",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/dejagnu-1.6.3.tar.gz",
+      url = "gs://minimal-staging-archives/dejagnu-%{version}.tar.gz",
       sha256 = "87daefacd7958b4a69f88c6856dbd1634261963c414079d0c371f589cd66a2e3"
     } | Source,
     base,
@@ -24,6 +25,7 @@ let toolchain = import "../toolchain/build.ncl" in
   },
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GnuProject,
         name = "dejagnu",

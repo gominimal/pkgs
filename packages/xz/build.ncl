@@ -4,12 +4,14 @@ let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+
+let version = "5.8.1" in
 {
   name = "xz",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/xz-5.8.1.tar.xz",
+      url = "gs://minimal-staging-archives/xz-%{version}.tar.xz",
       sha256 = "0b54f79df85912504de0b14aec7971e3f964491af1812d83447005807513cd9e"
     } | Source,
     base-bootstrap,
@@ -79,6 +81,7 @@ let glibc = import "../glibc/build.ncl" in
     } | BuildSpec,
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GithubRepo,
         owner = "tukaani-project",

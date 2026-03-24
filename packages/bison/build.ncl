@@ -9,11 +9,13 @@ let m4 = import "../m4/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+
+let version = "3.8.2" in
 {
   name = "bison",
   build_deps = [
     {
-      url = "gs://minimal-staging-archives/bison-3.8.2.tar.xz",
+      url = "gs://minimal-staging-archives/bison-%{version}.tar.xz",
       sha256 = "9bba0214ccf7f1079c5d59210045227bcf619519840ebfa80cd3849cff5a5bf2"
     } | Source,
     { file = "build.sh" } | Local,
@@ -66,6 +68,7 @@ let glibc = import "../glibc/build.ncl" in
     } | BuildSpec,
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GnuProject,
         name = "bison",

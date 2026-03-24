@@ -4,12 +4,14 @@ let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+
+let version = "1.0.8" in
 {
   name = "bzip2",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/bzip2-1.0.8.tar.gz",
+      url = "gs://minimal-staging-archives/bzip2-%{version}.tar.gz",
       sha256 = "ab5a03176ee106d3f0fa90e381da478ddae405918153cca248e682cd0c4a2269"
     } | Source,
     base-bootstrap,
@@ -63,6 +65,7 @@ let glibc = import "../glibc/build.ncl" in
     } | BuildSpec,
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GithubRepo,
         owner = "libarchive",

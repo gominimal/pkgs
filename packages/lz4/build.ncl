@@ -10,12 +10,14 @@ let diffutils = import "../diffutils/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
+
+let version = "1.10.0" in
 {
   name = "lz4",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/lz4-1.10.0.tar.gz",
+      url = "gs://minimal-staging-archives/lz4-%{version}.tar.gz",
       sha256 = "537512904744b35e232912055ccf8ec66d768639ff3abe5788d90d792ec5f48b"
     } | Source,
     bash-bootstrap,
@@ -79,6 +81,7 @@ let glibc = import "../glibc/build.ncl" in
     } | BuildSpec,
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GithubRepo,
         owner = "lz4",

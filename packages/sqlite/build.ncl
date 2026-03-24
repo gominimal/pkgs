@@ -5,6 +5,8 @@ let toolchain = import "../toolchain/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+
+let version = "3.50.4" in
 {
   name = "sqlite",
   build_deps = [
@@ -33,6 +35,7 @@ let zlib = import "../zlib/build.ncl" in
   },
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GithubRepo,
         owner = "sqlite",

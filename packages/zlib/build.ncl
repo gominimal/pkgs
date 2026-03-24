@@ -7,12 +7,14 @@ let tar = import "../tar/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+
+let version = "1.3.1" in
 {
   name = "zlib",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/zlib-1.3.1.tar.gz",
+      url = "gs://minimal-staging-archives/zlib-%{version}.tar.gz",
       sha256 = "9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23"
     } | Source,
     bash-bootstrap,
@@ -63,6 +65,7 @@ let glibc = import "../glibc/build.ncl" in
     } | BuildSpec,
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GithubRepo,
         owner = "madler",

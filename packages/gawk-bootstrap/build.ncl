@@ -38,6 +38,10 @@ let version = "5.3.2" in
     locales = { glob = "usr/share/locale/**" } | OutputData,
   },
 
+  attrs = {
+    upstream_version = version,
+  },
+
   replace_on_cycle =
     {
       name = "gawk-bootstrap (prebuilt)",

@@ -4,12 +4,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+
+let version = "8.6.16" in
 {
   name = "tcl",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/tcl8.6.16-src.tar.gz",
+      url = "gs://minimal-staging-archives/tcl%{version}-src.tar.gz",
       sha256 = "91cb8fa61771c63c262efb553059b7c7ad6757afa5857af6265e4b0bdc2a14a5"
     } | Source,
     base,
@@ -35,6 +37,7 @@ let zlib = import "../zlib/build.ncl" in
   },
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GithubRepo,
         owner = "tcltk",

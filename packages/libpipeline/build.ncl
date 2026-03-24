@@ -5,13 +5,14 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let make = import "../make/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
+let version = "1.5.8" in
 {
   name = "libpipeline",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://download.savannah.gnu.org/releases/libpipeline/libpipeline-1.5.8.tar.gz
-      url = "gs://minimal-staging-archives/libpipeline-1.5.8.tar.gz",
+      # https://download.savannah.gnu.org/releases/libpipeline/libpipeline-%{version}.tar.gz
+      url = "gs://minimal-staging-archives/libpipeline-%{version}.tar.gz",
       sha256 = "1b1203ca152ccd63983c3f2112f7fe6fa5afd453218ede5153d1b31e11bb8405",
     } | Source,
     base,
@@ -29,5 +30,8 @@ let glibc = import "../glibc/build.ncl" in
     pkgconf = { glob = "usr/lib/pkgconfig/libpipeline.pc" } | OutputData,
     includes = { glob = "usr/include/*.h" } | OutputData,
     docs = { glob = "usr/share/man/man3/*" } | OutputData,
+  },
+  attrs = {
+    upstream_version = version,
   },
 } | BuildSpec

@@ -5,12 +5,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+
+let version = "3.14.0" in
 {
   name = "pciutils",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/pciutils-3.14.0.tar.gz",
+      url = "gs://minimal-staging-archives/pciutils-%{version}.tar.gz",
       sha256 = "e31c79722dbbe9d2906b92996ce295268e54d4342fefe3ff476caa613e51be2a"
     } | Source,
     base,
@@ -34,6 +36,7 @@ let zlib = import "../zlib/build.ncl" in
   },
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GithubRepo,
         owner = "pciutils",

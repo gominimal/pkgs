@@ -4,12 +4,13 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let libunistring = import "../libunistring/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let version = "2.3.8" in
 {
   name = "libidn2",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/libidn2-2.3.8.tar.gz",
+      url = "gs://minimal-staging-archives/libidn2-%{version}.tar.gz",
       sha256 = "f557911bf6171621e1f72ff35f5b1825bb35b52ed45325dcdee931e5d3c0787a",
     } | Source,
     base,
@@ -34,6 +35,7 @@ let glibc = import "../glibc/build.ncl" in
   },
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GnuProject,
         name = "libidn2",

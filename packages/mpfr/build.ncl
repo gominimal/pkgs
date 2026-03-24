@@ -23,12 +23,14 @@ let linux_headers = import "../linux_headers/build.ncl" in
 # other
 let m4 = import "../m4/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
+
+let version = "4.2.2" in
 {
   name = "mpfr",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/mpfr-4.2.2.tar.xz",
+      url = "gs://minimal-staging-archives/mpfr-%{version}.tar.xz",
       sha256 = "b67ba0383ef7e8a8563734e2e889ef5ec3c3b898a01d00fa0a6869ad81c6ce01"
     } | Source,
     # base
@@ -95,6 +97,7 @@ let gmp = import "../gmp/build.ncl" in
     } | BuildSpec,
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GnuProject,
         name = "mpfr",

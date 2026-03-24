@@ -11,15 +11,17 @@ let grep = import "../grep/build.ncl" in
 let make = import "../make/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 let sed = import "../sed/build.ncl" in
+
+let version = "2.3.2" in
 {
   name = "acl",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/acl-2.3.2.tar.xz",
+      url = "gs://minimal-staging-archives/acl-%{version}.tar.xz",
       sha256 = "97203a72cae99ab89a067fe2210c1cbf052bc492b479eca7d226d9830883b0bd",
       extract = true,
-      strip_prefix = "acl-2.3.2",
+      strip_prefix = "acl-%{version}",
     } | Source,
     bash-bootstrap,
     binutils,
@@ -46,6 +48,10 @@ let sed = import "../sed/build.ncl" in
     mans = { glob = "usr/share/man/**" } | OutputData,
     includes = { glob = "usr/include/**" } | OutputData,
     locales = { glob = "usr/share/locale/**" } | OutputData,
+  },
+
+  attrs = {
+    upstream_version = version,
   },
 
   replace_on_cycle =

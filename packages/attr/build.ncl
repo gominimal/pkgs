@@ -10,15 +10,17 @@ let grep = import "../grep/build.ncl" in
 let make = import "../make/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 let sed = import "../sed/build.ncl" in
+
+let version = "2.5.2" in
 {
   name = "attr",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/attr-2.5.2.tar.gz",
+      url = "gs://minimal-staging-archives/attr-%{version}.tar.gz",
       sha256 = "39bf67452fa41d0948c2197601053f48b3d78a029389734332a6309a680c6c87",
       extract = true,
-      strip_prefix = "attr-2.5.2",
+      strip_prefix = "attr-%{version}",
     } | Source,
     bash-bootstrap,
     binutils,
@@ -47,6 +49,10 @@ let sed = import "../sed/build.ncl" in
     mans = { glob = "usr/share/man/**" } | OutputData,
     includes = { glob = "usr/include/**" } | OutputData,
     locales = { glob = "usr/share/locale/**" } | OutputData,
+  },
+
+  attrs = {
+    upstream_version = version,
   },
 
   replace_on_cycle =

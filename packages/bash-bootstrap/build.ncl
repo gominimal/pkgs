@@ -47,6 +47,10 @@ let version = "5.3" in
     sh = { glob = "usr/bin/sh" } | OutputBin,
   },
 
+  attrs = {
+    upstream_version = version,
+  },
+
   replace_on_cycle =
     {
       name = "bash-bootstrap (prebuilt)",

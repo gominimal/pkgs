@@ -14,12 +14,13 @@ let binutils = import "../binutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
+let version = "6.12.43" in
 {
   name = "linux_headers",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/linux-6.12.43.tar.xz",
+      url = "gs://minimal-staging-archives/linux-%{version}.tar.xz",
       sha256 = "0fcbbbbcd456e87bbbfc8bf37af541fda62ccfcce76903503424fd101ef7bdee"
     } | Source,
     bash-bootstrap,
@@ -67,6 +68,7 @@ let linux_headers = import "../linux_headers/build.ncl" in
     } | BuildSpec,
   attrs =
     {
+      upstream_version = version,
       source_provenance = {
         category = 'GithubRepo,
         owner = "torvalds",
