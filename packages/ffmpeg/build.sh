@@ -20,6 +20,9 @@ sed -i '/enable_adaptive_quantization/d' libavcodec/libsvtav1.c
             --enable-openssl        \
             --enable-libfreetype    \
             --enable-libfontconfig  \
+            --enable-libharfbuzz    \
+            --enable-libfribidi     \
+            --enable-libass         \
             --enable-libdav1d       \
             --enable-libaom         \
             --enable-libopus        \
