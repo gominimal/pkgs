@@ -1,9 +1,8 @@
 let { BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
-
-let version = "1.35.3" in
-
 let bash = import "../bash/build.ncl" in
 let go = import "../go/build.ncl" in
+
+let version = "1.35.3" in
 
 {
   name = "kubectl",
