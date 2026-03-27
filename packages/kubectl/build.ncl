@@ -44,5 +44,6 @@ let version = "1.35.3" in
         repo = "kubernetes",
       },
       env_dir_mappings = [{ read_only = false, path = "~/.kube", class = 'Credential }],
+      env_file_mappings = [{ read_only = false, path = "~/.kubeconfig", class = 'Credential }],
     } | Attrs,
 } | BuildSpec
