@@ -43,7 +43,7 @@ let version = "1.35.3" in
         owner = "kubernetes",
         repo = "kubernetes",
       },
-      env_dir_mappings = [{ read_only = false, path = "~/.kube", class = 'Credential }],
+      env_dir_mappings = [{ read_only = false, path = "~/.kube", class = 'Credential }, { read_only = false, path = "~/.minikube", class = 'Credential }],
       env_file_mappings = [{ read_only = false, path = "~/.kubeconfig", class = 'Credential }],
     } | Attrs,
 } | BuildSpec
