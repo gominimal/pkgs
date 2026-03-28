@@ -37,7 +37,7 @@ let version = "2.54.2" in
   cmd = "./build.sh",
 
   outputs = {
-    libs = { glob = "usr/lib/libatspi.so*" } | OutputLib,
+    libs = { glob = "usr/lib/lib{atspi,atk-bridge-2.0}.so*" } | OutputLib,
     includes = { glob = "usr/include/at-spi*/**" } | OutputData,
     pkgconfigs = { glob = "usr/lib/pkgconfig/{atk-bridge*,atspi*}.pc" } | OutputData,
   },
