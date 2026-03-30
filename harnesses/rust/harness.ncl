@@ -13,6 +13,7 @@ harness {
     # Environment variables that configure the compiler/linker
     CC = "gcc",
     CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "gcc",
+    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "gcc",
   },
 
   build_cmd = "cargo build --release",
