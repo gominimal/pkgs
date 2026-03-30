@@ -14,8 +14,11 @@ case $(uname -m) in
   aarch64) MARCH="-march=armv8-a" ;;
   *)       MARCH="" ;;
 esac
-export CFLAGS="$MARCH -O3 -pipe"
+export SOURCE_DATE_EPOCH=0
+export CFLAGS="$MARCH -O3 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
+export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
+export ARFLAGS=Drc
 
 ../configure    --prefix=/usr       \
                 --sysconfdir=/etc   \
@@ -26,7 +29,8 @@ export CXXFLAGS="${CFLAGS}"
                 --disable-nls       \
                 --enable-new-dtags  \
                 --with-system-zlib  \
-                --enable-default-hash-style=gnu
+                --enable-default-hash-style=gnu \
+                --enable-deterministic-archives
 
 make -j$(nproc) tooldir=/usr
 # make -k check # TODO

@@ -6,7 +6,7 @@ harness {
   build_env_vars = {
     CC = "gcc",
     CXX = "g++",
-    CFLAGS = "-O2 -pipe",
+    CFLAGS = "-O2 -pipe -gno-record-gcc-switches",
   },
 
   build_cmds_cmd = [

@@ -6,7 +6,9 @@ case $(uname -m) in
   aarch64) MARCH="-march=armv8-a" ;;
   *)       MARCH="" ;;
 esac
-export CFLAGS="$MARCH -O2 -pipe"
+export SOURCE_DATE_EPOCH=0
+export CFLAGS="$MARCH -O2 -pipe -ffile-prefix-map=$(pwd)=/builddir"
+export LDFLAGS="-Wl,--build-id=none"
 
 ./configure --prefix=/usr \
             --disable-static \

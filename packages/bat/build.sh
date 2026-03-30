@@ -2,7 +2,7 @@
 set -ex
 export CC=gcc
 export LD=gcc
-export RUSTFLAGS="-C linker=gcc"
+export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 
 RUSTONIG_DYNAMIC_LIBONIG=1 cargo build --release
 

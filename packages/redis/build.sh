@@ -7,7 +7,9 @@ case $(uname -m) in
   aarch64) MARCH="-march=armv8-a" ;;
   *)       MARCH="" ;;
 esac
-export CFLAGS="$MARCH -O3 -pipe"
+export SOURCE_DATE_EPOCH=0
+export CFLAGS="$MARCH -O3 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
+export LDFLAGS="-Wl,--build-id=none"
 
 make -j$(nproc) PREFIX=/usr MALLOC=libc
 

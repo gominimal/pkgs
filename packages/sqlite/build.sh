@@ -9,7 +9,10 @@ case $(uname -m) in
   aarch64) MARCH="-march=armv8-a" ;;
   *)       MARCH="" ;;
 esac
-export CFLAGS="-DSQLITE_ENABLE_COLUMN_METADATA $MARCH -O2 -pipe"
+export SOURCE_DATE_EPOCH=0
+export CFLAGS="-DSQLITE_ENABLE_COLUMN_METADATA $MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
+export LDFLAGS="-Wl,--build-id=none"
+export ARFLAGS=Drc
 
 ./configure  --prefix=/usr         \
             --disable-static       \

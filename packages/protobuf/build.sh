@@ -9,7 +9,10 @@ case $(uname -m) in
   aarch64) MARCH="-march=armv8-a" ;;
   *)       MARCH="" ;;
 esac
-export CFLAGS="$MARCH -O2 -pipe"
+export SOURCE_DATE_EPOCH=0
+export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
+export LDFLAGS="-Wl,--build-id=none"
+export ARFLAGS=Drc
 export CXXFLAGS="${CFLAGS}"
 
 cmake -D CMAKE_INSTALL_PREFIX=/usr      \

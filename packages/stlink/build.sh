@@ -6,7 +6,9 @@ case $(uname -m) in
   aarch64) MARCH="-march=armv8-a" ;;
   *)       MARCH="" ;;
 esac
-export CFLAGS="$MARCH -O2 -pipe -Wno-error=calloc-transposed-args"
+export SOURCE_DATE_EPOCH=0
+export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -Wno-error=calloc-transposed-args -ffile-prefix-map=$(pwd)=/builddir"
+export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="$CFLAGS"
 
 cmake -B build \

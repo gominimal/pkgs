@@ -6,8 +6,10 @@ case $(uname -m) in
   aarch64) MARCH="-march=armv8-a" ;;
   *)       MARCH="" ;;
 esac
-export CFLAGS="$MARCH -O2 -pipe -std=gnu17"
-export CXXFLAGS="$MARCH -O2 -pipe -std=gnu++17"
+export SOURCE_DATE_EPOCH=0
+export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -std=gnu17 -ffile-prefix-map=$(pwd)=/builddir"
+export LDFLAGS="-Wl,--build-id=none"
+export CXXFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -std=gnu++17"
 
 ./configure --prefix=/usr \
   --without-all \

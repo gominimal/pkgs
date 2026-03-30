@@ -6,6 +6,7 @@ export FZF_REVISION=tarball
 
 export GOROOT=/usr/go
 
+export GOFLAGS="-trimpath"
 make
 make install
 install -D -m 0755 bin/fzf "$OUTPUT_DIR/usr/bin/fzf"
