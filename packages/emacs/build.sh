@@ -7,9 +7,16 @@ case $(uname -m) in
   *)       MARCH="" ;;
 esac
 export SOURCE_DATE_EPOCH=0
+export TZ=UTC
+export LC_ALL=C
 export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -std=gnu17 -ffile-prefix-map=$(pwd)=/builddir"
+export CXXFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -std=gnu++17 -ffile-prefix-map=$(pwd)=/builddir"
 export LDFLAGS="-Wl,--build-id=none"
-export CXXFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -std=gnu++17"
+export ARFLAGS=Drc
+
+# Build LD_PRELOAD shim that makes getrandom() and /dev/urandom reads
+# deterministic, fixing Emacs hash table seeding and thus .elc/.pdmp output.
+gcc -shared -fPIC -O2 -ldl -o fixrand.so fixrand.c
 
 ./configure --prefix=/usr \
   --without-all \
@@ -23,10 +30,11 @@ export CXXFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -std=gnu++17"
   --with-threads \
   --with-file-notification=inotify \
   --without-compress-install \
+  --disable-build-details \
   MAKEINFO=true
 
-make MAKEINFO=true -j$(nproc)
-make MAKEINFO=true DESTDIR=$OUTPUT_DIR install
+LD_PRELOAD=$(pwd)/fixrand.so make MAKEINFO=true -j$(nproc)
+LD_PRELOAD=$(pwd)/fixrand.so make MAKEINFO=true DESTDIR=$OUTPUT_DIR install
 
 # Replace the emacs symlink with a wrapper that redirects user-emacs-directory
 # to an ephemeral /tmp path, avoiding the need for a writable ~/.emacs.d
@@ -35,7 +43,7 @@ cat > "$OUTPUT_DIR/usr/bin/emacs" <<'WRAPPER'
 #!/bin/sh
 dir="/tmp/emacs.d"
 mkdir -p "$dir"
-exec emacs-30.1 --init-directory "$dir" "$@"
+exec emacs-30.2 --init-directory "$dir" "$@"
 WRAPPER
 chmod +x "$OUTPUT_DIR/usr/bin/emacs"
 
