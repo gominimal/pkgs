@@ -7,4 +7,4 @@ export GONOSUMCHECK=*
 export GONOSUMDB=*
 export GOFLAGS="-mod=vendor"
 
-go build -o $OUTPUT_DIR/usr/bin/kubectl ./cmd/kubectl/
+go build -ldflags="-buildid=" -o $OUTPUT_DIR/usr/bin/kubectl ./cmd/kubectl/

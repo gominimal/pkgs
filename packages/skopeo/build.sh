@@ -7,5 +7,6 @@ export BUILDTAGS=containers_image_openpgp
 export DISABLE_DOCS=1
 
 export GOFLAGS="-trimpath"
+export EXTRA_LDFLAGS="-buildid="
 make
 DESTDIR=$OUTPUT_DIR PREFIX=/usr make install

@@ -2,5 +2,5 @@
 set -ex
 
 export GOROOT=/usr/go
-go build -o 'grpcurl' ./cmd/grpcurl
+go build -ldflags="-buildid=" -o 'grpcurl' ./cmd/grpcurl
 install -D -m 0755 grpcurl "$OUTPUT_DIR/usr/bin/grpcurl"

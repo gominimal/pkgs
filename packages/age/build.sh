@@ -3,8 +3,8 @@ set -ex
 
 
 export GOROOT=/usr/go
-go build -o 'age' -ldflags "-X main.Version=$MINIMAL_ARG_VERSION" ./cmd/age
+go build -trimpath -o 'age' -ldflags "-buildid= -X main.Version=$MINIMAL_ARG_VERSION" ./cmd/age
 install -D -m 0755 age "$OUTPUT_DIR/usr/bin/age"
 
-go build -o 'age-keygen' -ldflags "-X main.Version=$MINIMAL_ARG_VERSION" ./cmd/age-keygen
+go build -trimpath -o 'age-keygen' -ldflags "-buildid= -X main.Version=$MINIMAL_ARG_VERSION" ./cmd/age-keygen
 install -D -m 0755 age-keygen "$OUTPUT_DIR/usr/bin/age-keygen"

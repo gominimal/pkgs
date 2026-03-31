@@ -7,4 +7,4 @@ export GONOSUMDB=*
 
 cd gopls
 
-go build -o $OUTPUT_DIR/usr/bin/gopls .
+go build -ldflags="-buildid=" -o $OUTPUT_DIR/usr/bin/gopls .
