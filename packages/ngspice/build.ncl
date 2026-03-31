@@ -9,14 +9,14 @@ let glibc = import "../glibc/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 let readline = import "../readline/build.ncl" in
 
-let version = "45.2" in
+let version = "46" in
 {
   name = "ngspice",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/ngspice-%{version}.tar.gz",
-      sha256 = "ba8345f4c3774714c10f33d7da850d361cec7d14b3a295d0dc9fd96f7423812d",
+      sha256 = "a0d1699af1940b06649276dcd6ff5a566c8c0cad01b2f7b5e99dedbb4d64c19b",
       extract = true,
       strip_prefix = "ngspice-%{version}",
     } | Source,
