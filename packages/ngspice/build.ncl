@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let bison = import "../bison/build.ncl" in
@@ -39,7 +39,7 @@ let version = "45.2" in
 
   outputs = {
     bins = { glob = "usr/bin/*" } | OutputBin,
-    codemodels = { glob = "usr/lib/ngspice/*.cm" } | OutputData,
+    codemodels = { glob = "usr/lib/ngspice/*.cm", allow_executable = true } | OutputData,
     scripts = { glob = "usr/share/ngspice/scripts/**" } | OutputData,
     man = { glob = "usr/share/man/**/*" } | OutputData,
   },
@@ -59,6 +59,36 @@ let version = "45.2" in
         class = 'Standalone,
         test_deps = [base],
         cmds = [["/bin/bash", "-c", "ngspice -v 2>&1 | grep -q ngspice"]],
+      } | Test,
+    rc_transient =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+          cat > rc_test.cir << 'NETLIST'
+          RC Transient Test
+          V1 in 0 PWL(0 0 1n 1)
+          R1 in out 1k
+          C1 out 0 1n
+          .tran 10n 5u
+          .control
+          run
+          wrdata rc_out.txt v(out)
+          quit
+          .endc
+          .end
+          NETLIST
+          ngspice -b rc_test.cir
+          test -s rc_out.txt
+          # After 5 time constants (tau=RC=1us), cap voltage should be ~0.993V
+          tail -1 rc_out.txt | awk '{if ($2 > 0.99) exit 0; else exit 1}'
+        "%
+          ]
+        ],
       } | Test,
   },
 } | BuildSpec
