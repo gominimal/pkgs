@@ -3,8 +3,8 @@ set -e
 
 export CC=gcc
 
-tar -xof "node-v${MINIMAL_ARG_VERSION}.tar.xz"
-cd "node-v${MINIMAL_ARG_VERSION}"
+tar -xof "node-${MINIMAL_ARG_VERSION}.tar.gz"
+cd "node-${MINIMAL_ARG_VERSION}"
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
@@ -16,7 +16,6 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
-./configure --prefix=/usr --with-intl=system-icu --shared-openssl --shared-zlib --shared-sqlite --shared-libuv
-
+./configure --prefix=/usr --with-intl=system-icu --shared-openssl --shared-zlib --shared-sqlite --shared-libuv --shared-nghttp2 --shared-zstd --shared-gtest
 make -j$(nproc)
 make DESTDIR=$OUTPUT_DIR install

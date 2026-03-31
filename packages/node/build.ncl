@@ -7,19 +7,22 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let icu = import "../icu/build.ncl" in
 let libuv = import "../libuv/build.ncl" in
+let nghttp2 = import "../nghttp2/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+let zstd = import "../zstd/build.ncl" in
+let gtest = import "../gtest/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "24.9.0" in
+let version = "25.8.2" in
 {
   name = "node",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/node-v%{version}.tar.xz",
-      sha256 = "f17bc4cb01f59098c34a288c1bb109a778867c14eeb0ebbd608d0617b1193bbf",
+      url = "gs://minimal-staging-archives/node-%{version}.tar.gz",
+      sha256 = "f4351a409f84e94c1dbd772194491f12c4d2a38f747ed8bc330ba4404675719f",
     } | Source,
     base,
     make,
@@ -33,6 +36,9 @@ let version = "24.9.0" in
     libuv,
     zlib,
     sqlite,
+    nghttp2,
+    zstd,
+    gtest,
     glibc,
     subsetOf gcc ["libgcc", "libstdcpp"],
   ],
