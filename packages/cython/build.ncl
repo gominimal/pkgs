@@ -44,5 +44,6 @@ let version = "3.2.1" in
         owner = "cython",
         repo = "cython",
       },
+      build_cost_multiple = 2,
     } | Attrs,
 } | BuildSpec

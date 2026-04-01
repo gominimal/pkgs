@@ -48,6 +48,7 @@ let version = "4.16.0" in
       owner = "Z3Prover",
       repo = "z3",
     },
+    build_cost_multiple = 3,
   },
 
   tests = {

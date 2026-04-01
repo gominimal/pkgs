@@ -63,5 +63,6 @@ let version = "9.15" in
         owner = "google",
         repo = "or-tools",
       },
+      build_cost_multiple = 2,
     } | Attrs,
 } | BuildSpec

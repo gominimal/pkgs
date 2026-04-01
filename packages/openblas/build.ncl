@@ -44,5 +44,6 @@ let version = "0.3.31" in
         owner = "OpenMathLib",
         repo = "OpenBLAS",
       },
+      build_cost_multiple = 2,
     } | Attrs,
 } | BuildSpec

@@ -48,5 +48,6 @@ let version = "b8041" in
         owner = "ggml-org",
         repo = "llama.cpp",
       },
+      build_cost_multiple = 3,
     } | Attrs,
 } | BuildSpec

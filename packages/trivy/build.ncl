@@ -48,5 +48,6 @@ let version = "0.69.1" in
         owner = "aquasecurity",
         repo = "trivy",
       },
+      build_cost_multiple = 2,
     } | Attrs,
 } | BuildSpec
