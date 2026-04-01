@@ -98,6 +98,7 @@
                  (python     . ("\\.py\\'"   . python-ts-mode))
                  (bash       . ("\\.sh\\'"   . bash-ts-mode))
                  (c          . ("\\.c\\'"    . c-ts-mode))
+                 (cpp        . ("\\.[ch]pp\\'"  . c++-ts-mode))
                  (json       . ("\\.json\\'" . json-ts-mode))
                  (yaml       . ("\\.ya?ml\\'" . yaml-ts-mode))
                  (toml       . ("\\.toml\\'" . toml-ts-mode))))
@@ -108,34 +109,50 @@
 (when (fboundp 'editorconfig-mode)
   (editorconfig-mode 1))
 
-;; ── Eglot (LSP) ──────────────────────────────────────────────────────
-(with-eval-after-load 'eglot
-  (dolist (entry '((nickel-mode . ("nls"))
-                   (go-mode . ("gopls"))
-                   (go-ts-mode . ("gopls"))
-                   (rust-mode . ("rust-analyzer"))
-                   (rust-ts-mode . ("rust-analyzer"))
-                   ((js-mode js-ts-mode tsx-ts-mode typescript-ts-mode typescript-mode)
-                    . ("typescript-language-server" "--stdio"))
-                   (python-mode . ("pyright-langserver" "--stdio"))
-                   (python-ts-mode . ("pyright-langserver" "--stdio"))
-                   ((bash-ts-mode sh-mode) . ("bash-language-server" "start"))
-                   ((c-mode c-ts-mode c++-mode c++-ts-mode) . ("clangd"))))
-    (add-to-list 'eglot-server-programs entry)))
+;; ── Project detection ────────────────────────────────────────────
+;; Tell project.el to recognise language-specific marker files as
+;; project roots so eglot sends the correct workspace root to LSP
+;; servers (instead of always defaulting to the git root).
+(setq project-vc-extra-root-markers
+      '("Cargo.toml" "go.mod" "package.json" "pyproject.toml"
+        "setup.py" "compile_commands.json" "CMakeLists.txt"
+        "meson.build"))
 
-;; Auto-start eglot for programming modes where an LSP server is likely available
+;; ── xref navigation (M-. / M-,) ─────────────────────────────────
+;; Remove the etags backend so M-. never prompts "Visit TAGS table".
+;; Eglot adds its own xref backend when active; this fallback gives a
+;; clear message when no LSP server is running.
+(remove-hook 'xref-backend-functions #'etags--xref-backend)
+
+(defun minimal--xref-no-tags-backend () 'no-tags)
+(cl-defmethod xref-backend-identifier-at-point ((_backend (eql 'no-tags)))
+  (thing-at-point 'symbol t))
+(cl-defmethod xref-backend-definitions ((_backend (eql 'no-tags)) identifier)
+  (user-error "No LSP server running for `%s'" identifier))
+(cl-defmethod xref-backend-references ((_backend (eql 'no-tags)) _identifier)
+  (user-error "No LSP server running"))
+(add-hook 'xref-backend-functions #'minimal--xref-no-tags-backend 100)
+
+;; ── Eglot (LSP) ──────────────────────────────────────────────────────
+;; Emacs 30 ships eglot with built-in entries for go, rust, python,
+;; typescript, bash, c/c++ etc.  We only need to add nickel-mode.
+(with-eval-after-load 'eglot
+  (add-to-list 'eglot-server-programs '(nickel-mode . ("nls"))))
+
+;; Auto-start eglot for programming modes.  eglot-ensure is an
+;; autoload that silently does nothing when no server is configured,
+;; so it is safe to call on every prog-mode buffer.
 (defun minimal--maybe-eglot ()
-  "Start eglot if a server program is configured for the current mode."
-  (when (and (fboundp 'eglot-ensure)
-             (not (derived-mode-p 'emacs-lisp-mode))
-             (boundp 'eglot-server-programs)
-             (assoc major-mode eglot-server-programs
-                    (lambda (key mode)
-                      (if (listp key)
-                          (memq mode key)
-                        (eq key mode)))))
+  "Start eglot unless this is an emacs-lisp buffer."
+  (unless (derived-mode-p 'emacs-lisp-mode)
     (eglot-ensure)))
 
 (add-hook 'prog-mode-hook #'minimal--maybe-eglot)
+
+;; Format buffer via LSP on save when eglot is active.
+(add-hook 'eglot-managed-mode-hook
+          (lambda ()
+            (when (eglot-managed-p)
+              (add-hook 'before-save-hook #'eglot-format-buffer nil t))))
 
 ;;; minimal-init-dev1.el ends here

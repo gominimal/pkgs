@@ -1,9 +1,16 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-language-server = import "../bash-language-server/build.ncl" in
 let emacs = import "../emacs/build.ncl" in
 let git = import "../git/build.ncl" in
+let gopls = import "../gopls/build.ncl" in
+let llvm = import "../llvm/build.ncl" in
+let nickel-lsp = import "../nickel-lsp/build.ncl" in
+let pyright = import "../pyright/build.ncl" in
+let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let tree-sitter = import "../tree-sitter/build.ncl" in
+let typescript-language-server = import "../typescript-language-server/build.ncl" in
 {
   name = "emacs-config-dev1",
   build_deps = [
@@ -56,8 +63,8 @@ let tree-sitter = import "../tree-sitter/build.ncl" in
       extract = true,
     } | Source,
     {
-      url = "https://github.com/magit/transient/archive/refs/tags/v0.8.4.tar.gz",
-      sha256 = "3e5a7290f020b008df6957b56f1f489b4bf789fb16c81be8fedc61a016fe5fd0",
+      url = "https://github.com/magit/transient/archive/refs/tags/v0.12.0.tar.gz",
+      sha256 = "4253eb2cedb988651f747f9aa953d44d0f5a45c2fca89f9c57ed925ecd5b2a46",
       extract = true,
     } | Source,
     {
@@ -66,8 +73,8 @@ let tree-sitter = import "../tree-sitter/build.ncl" in
       extract = true,
     } | Source,
     {
-      url = "https://github.com/magit/magit/archive/refs/tags/v4.1.3.tar.gz",
-      sha256 = "1714bc53466611a5dffd66f86e7d0edc99537f1a74c73c3c92c3ac1795da8d46",
+      url = "https://github.com/magit/magit/archive/refs/tags/v4.5.0.tar.gz",
+      sha256 = "8f99c6080fb9656606be1dc588b82d9756de1c7461375b0f24f83d0ac09ef413",
       extract = true,
     } | Source,
 
@@ -83,8 +90,8 @@ let tree-sitter = import "../tree-sitter/build.ncl" in
       extract = true,
     } | Source,
     {
-      url = "https://github.com/spotify/dockerfile-mode/archive/refs/tags/v1.7.tar.gz",
-      sha256 = "13b03ff28ea8f7ad646dadd46113a9a191f0afca2c3d9182380441801d5af6a7",
+      url = "https://github.com/spotify/dockerfile-mode/archive/refs/tags/v1.9.tar.gz",
+      sha256 = "47ea016b8f6b05d15ba5e12e1773eeca9cea13f79fd73cd44f6873f1f276db0e",
       extract = true,
     } | Source,
     {
@@ -130,13 +137,18 @@ let tree-sitter = import "../tree-sitter/build.ncl" in
       extract = true,
     } | Source,
     {
+      url = "https://github.com/tree-sitter/tree-sitter-cpp/archive/refs/tags/v0.23.4.tar.gz",
+      sha256 = "7a2c55afe3028f4105f25762ea58cc16537d1f5a1dcd9cca90410b3cd5d46051",
+      extract = true,
+    } | Source,
+    {
       url = "https://github.com/tree-sitter/tree-sitter-json/archive/refs/tags/v0.24.8.tar.gz",
       sha256 = "acf6e8362457e819ed8b613f2ad9a0e1b621a77556c296f3abea58f7880a9213",
       extract = true,
     } | Source,
     {
-      url = "https://github.com/tree-sitter-grammars/tree-sitter-yaml/archive/refs/tags/v0.7.0.tar.gz",
-      sha256 = "8182760587f14d5131161dee3605613ccebe86062909f0879edf63b4bdd99d44",
+      url = "https://github.com/tree-sitter-grammars/tree-sitter-yaml/archive/refs/tags/v0.7.2.tar.gz",
+      sha256 = "aeaff5731bb8b66c7054c8aed33cd5edea5f4cd2ac71654f3f6c2ba2073d8fac",
       extract = true,
     } | Source,
     {
@@ -155,9 +167,16 @@ let tree-sitter = import "../tree-sitter/build.ncl" in
   ],
 
   runtime_deps = [
+    bash-language-server,
+    subsetOf llvm ["clangd"],
     emacs,
     git,
+    gopls,
+    nickel-lsp,
+    pyright,
+    rust,
     tree-sitter,
+    typescript-language-server,
   ],
 
   cmd = "./build.sh",

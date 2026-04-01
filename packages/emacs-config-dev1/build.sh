@@ -33,16 +33,16 @@ install_pkg which-key emacs-which-key-3.6.0
 # Magit dependencies (must be installed before magit)
 install_pkg compat compat-30.1.0.1
 install_pkg dash dash.el-2.20.0
-install_pkg transient transient-0.8.4/lisp
+install_pkg transient transient-0.12.0/lisp
 install_pkg with-editor with-editor-3.4.9/lisp
 
 # Magit itself
-install_pkg magit magit-4.1.3/lisp
+install_pkg magit magit-4.5.0/lisp
 
 # Extra modes
 install_pkg markdown-mode markdown-mode-2.8
 install_pkg yaml-mode yaml-mode-0.0.13
-install_pkg dockerfile-mode dockerfile-mode-1.7
+install_pkg dockerfile-mode dockerfile-mode-1.9
 install_pkg nickel-mode nickel-mode-e2dcd6cf66d9b5bcde3e3cd69efe053f73b081ab
 install_pkg rust-mode rust-mode-1.0.6
 
@@ -69,6 +69,11 @@ done
 cp init.el "$SITE_LISP/minimal-init-dev1.el"
 emacs --batch $LOAD_PATH -f batch-byte-compile "$SITE_LISP/minimal-init-dev1.el" 2>&1 || true
 
+# Ensure .elc files are newer than .el files.  Reproducible-build
+# settings (SOURCE_DATE_EPOCH=0) can cause byte-compiled files to
+# carry an epoch-0 timestamp, making Emacs think they are stale.
+find "$SITE_LISP" -name '*.elc' -exec touch {} +
+
 # ── Tree-sitter grammars ─────────────────────────────────────────────
 TS_DIR="$OUTPUT_DIR/usr/lib/emacs/tree-sitter"
 mkdir -p "$TS_DIR"
@@ -92,8 +97,9 @@ build_grammar go      tree-sitter-go-0.23.4         ""
 build_grammar python  tree-sitter-python-0.23.6     scanner.c
 build_grammar bash    tree-sitter-bash-0.23.3        scanner.c
 build_grammar c       tree-sitter-c-0.23.4          ""
+build_grammar cpp     tree-sitter-cpp-0.23.4        scanner.c
 build_grammar json    tree-sitter-json-0.24.8       ""
-build_grammar yaml    tree-sitter-yaml-0.7.0        scanner.c
+build_grammar yaml    tree-sitter-yaml-0.7.2        scanner.c
 build_grammar toml    tree-sitter-toml-0.7.0        scanner.c
 build_grammar gomod   tree-sitter-go-mod-1.1.0      ""
 
