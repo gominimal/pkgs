@@ -20,6 +20,10 @@ let version = "21.1.8" in
       sha256 = "6090e3f23720d003cdd84483a47d0eec6d01adbb5e0c714ac0c8b58de546aa62"
     } | Source,
     {
+      url = "gs://minimal-staging-archives/clang-tools-extra-%{version}.src.tar.xz",
+      sha256 = "6ddb7e731bf09ab821132e2e8a3c706b6d9c52c92a9ce9a9ed0976a9c6c28829"
+    } | Source,
+    {
       url = "gs://minimal-staging-archives/cmake-%{version}.src.tar.xz",
       sha256 = "85735f20fd8c81ecb0a09abb0c267018475420e93b65050cc5b7634eab744de9"
     } | Source,
@@ -60,6 +64,7 @@ let version = "21.1.8" in
   cmd = "./build.sh",
   outputs = {
     bins = { glob = "usr/bin/*" } | OutputBin,
+    clangd = { glob = "usr/bin/clangd" } | OutputBin,
 
     libllvm = { glob = "usr/lib/*LLVM*.{so*,a}" } | OutputLib,
     libear = { glob = "usr/lib/libear/**", allow_data = true } | OutputLib,

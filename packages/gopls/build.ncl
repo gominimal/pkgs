@@ -16,11 +16,11 @@ let version = "0.21.1" in
       strip_prefix = "tools-gopls-v%{version}",
     } | Source,
     base,
-    go,
     toolchain,
   ],
   runtime_deps = [
     glibc,
+    go,
   ],
   needs =
     {

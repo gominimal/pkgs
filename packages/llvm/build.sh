@@ -8,6 +8,8 @@ tar -xof third-party-21.1.8.src.tar.xz
 mv third-party-21.1.8.src third-party
 tar -xof clang-21.1.8.src.tar.xz
 mv clang-21.1.8.src clang
+tar -xof clang-tools-extra-21.1.8.src.tar.xz
+mv clang-tools-extra-21.1.8.src clang-tools-extra
 tar -xof lld-21.1.8.src.tar.xz
 mv lld-21.1.8.src lld
 tar -xof libunwind-21.1.8.src.tar.xz
@@ -46,7 +48,7 @@ cmake \
 	-D LLVM_INCLUDE_BENCHMARKS=OFF \
 	-D LLVM_LINK_LLVM_DYLIB=ON \
 	-D LLVM_USE_LINKER=lld \
-	-D LLVM_ENABLE_PROJECTS="clang;compiler-rt;lld" \
+	-D LLVM_ENABLE_PROJECTS="clang;clang-tools-extra;compiler-rt;lld" \
 	-D LLVM_TARGETS_TO_BUILD="all" \
 	-W no-dev -G Ninja ..
 
