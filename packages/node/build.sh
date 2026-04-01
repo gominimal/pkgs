@@ -16,6 +16,8 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
-./configure --prefix=/usr --with-intl=system-icu --shared-openssl --shared-zlib --shared-sqlite --shared-libuv --shared-nghttp2 --shared-zstd --shared-gtest
+./configure --prefix=/usr \
+    --with-intl=system-icu --shared-openssl --shared-zlib --shared-zstd --shared-sqlite --shared-libuv \
+    --shared-nghttp2 --shared-nghttp3 --shared-ngtcp2 --shared-gtest  --shared-lief --shared-cares
 make -j$(nproc)
 make DESTDIR=$OUTPUT_DIR install

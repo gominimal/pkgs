@@ -5,9 +5,13 @@ let python = import "../python/build.ncl" in
 let base = import "../base/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+let c-ares = import "../c-ares/build.ncl" in
 let icu = import "../icu/build.ncl" in
+let lief = import "../lief/build.ncl" in
 let libuv = import "../libuv/build.ncl" in
 let nghttp2 = import "../nghttp2/build.ncl" in
+let nghttp3 = import "../nghttp3/build.ncl" in
+let ngtcp2 = import "../ngtcp2/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
@@ -32,11 +36,15 @@ let version = "25.8.2" in
   ],
   runtime_deps = [
     openssl,
+    c-ares,
     icu,
+    lief,
     libuv,
     zlib,
     sqlite,
     nghttp2,
+    nghttp3,
+    ngtcp2,
     zstd,
     gtest,
     glibc,
