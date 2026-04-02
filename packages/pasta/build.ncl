@@ -27,7 +27,8 @@ let version = "2026_01_20.386b5f5" in
   build_args = { include version },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    pasta = { glob = "usr/bin/pasta" } | OutputBin,
+    passt = { glob = "usr/bin/passt" } | OutputBin,
   },
 
   attrs =

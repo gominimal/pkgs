@@ -10,7 +10,6 @@ case $(uname -m) in
   *)       MARCH="" ;;
 esac
 export PYTHONHASHSEED=0
-export SOURCE_DATE_EPOCH=0
 export CFLAGS="$MARCH -O3 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"

@@ -23,7 +23,6 @@ esac
 # GCC 15+ defaults to -std=gnu23 (C23). GMP 6.3.0's configure tests
 # use patterns invalid in C23 (implicit declarations, K&R functions).
 # Force C17 mode so configure's compiler checks pass.
-export SOURCE_DATE_EPOCH=0
 export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -std=gnu17 -ffile-prefix-map=$(pwd)=/builddir"
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -std=gnu++17"

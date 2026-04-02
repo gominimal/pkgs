@@ -7,7 +7,6 @@ case $(uname -m) in
   *)       MARCH="" ;;
 esac
 export CC=gcc
-export SOURCE_DATE_EPOCH=0
 export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
 export LDFLAGS="-Wl,--build-id=none"
 

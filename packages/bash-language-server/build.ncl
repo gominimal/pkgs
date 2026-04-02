@@ -27,7 +27,7 @@ let version = "5.4.3" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    bash-language-server = { glob = "usr/bin/bash-language-server" } | OutputBin,
     libexec = { glob = "usr/lib/node_modules/**" } | OutputData,
   },
 

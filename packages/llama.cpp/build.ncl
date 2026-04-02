@@ -35,7 +35,8 @@ let version = "b8041" in
   ],
   cmd = "./build.sh",
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    llama-server = { glob = "usr/bin/llama-server" } | OutputBin,
+    llama-cli = { glob = "usr/bin/llama-cli" } | OutputBin,
 
     libs = { glob = "usr/lib/*" } | OutputLib,
   },

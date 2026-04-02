@@ -25,7 +25,9 @@ let version = "2.5.1" in
 
   cmd = "./build.sh",
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    pkgconf = { glob = "usr/bin/pkgconf" } | OutputBin,
+    bomtool = { glob = "usr/bin/bomtool" } | OutputBin,
+    pkg-config = { glob = "usr/bin/pkg-config" } | OutputBin,
     libs = { glob = "usr/lib/libpkgconf.so*" } | OutputLib,
 
     includes = { glob = "usr/include/pkgconf/**" } | OutputData,

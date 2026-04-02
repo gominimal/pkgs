@@ -27,7 +27,7 @@ let version = "1.4.20" in
 
   cmd = "./build.sh",
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    m4 = { glob = "usr/bin/m4" } | OutputBin,
 
     mans = { glob = "usr/share/man/**" } | OutputData,
     infos = { glob = "usr/share/info/*.info" } | OutputData,

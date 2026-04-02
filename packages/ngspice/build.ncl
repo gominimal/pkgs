@@ -38,7 +38,7 @@ let version = "46" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    ngspice = { glob = "usr/bin/ngspice" } | OutputBin,
     codemodels = { glob = "usr/lib/ngspice/*.cm", allow_executable = true } | OutputData,
     scripts = { glob = "usr/share/ngspice/scripts/**" } | OutputData,
     man = { glob = "usr/share/man/**/*" } | OutputData,

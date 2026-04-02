@@ -11,7 +11,6 @@ case $(uname -m) in
   aarch64) MARCH="-march=armv8-a";   BUILD_TRIPLET="aarch64-unknown-linux-gnu" ;;
   *)       MARCH="";                 BUILD_TRIPLET="$(uname -m)-unknown-linux-gnu" ;;
 esac
-export SOURCE_DATE_EPOCH=0
 export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"

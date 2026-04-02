@@ -40,7 +40,12 @@ let version = "4.12.0" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    "setup_vars_opencv4.sh" = { glob = "usr/bin/setup_vars_opencv4.sh" } | OutputBin,
+    opencv_version = { glob = "usr/bin/opencv_version" } | OutputBin,
+    opencv_interactive-calibration = { glob = "usr/bin/opencv_interactive-calibration" } | OutputBin,
+    opencv_annotation = { glob = "usr/bin/opencv_annotation" } | OutputBin,
+    opencv_model_diagnostics = { glob = "usr/bin/opencv_model_diagnostics" } | OutputBin,
+    opencv_visualisation = { glob = "usr/bin/opencv_visualisation" } | OutputBin,
     libs = { glob = "usr/lib/*.so*" } | OutputLib,
 
     pkgconfigs = { glob = "usr/lib/pkgconfig/**" } | OutputData,

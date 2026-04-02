@@ -25,7 +25,8 @@ let version = "3.01" in
 
   cmd = "./build.sh",
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    ndisasm = { glob = "usr/bin/ndisasm" } | OutputBin,
+    nasm = { glob = "usr/bin/nasm" } | OutputBin,
   },
   attrs =
     {

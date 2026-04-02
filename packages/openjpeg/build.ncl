@@ -33,7 +33,9 @@ let version = "2.5.4" in
   cmd = "./build.sh",
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    opj_compress = { glob = "usr/bin/opj_compress" } | OutputBin,
+    opj_dump = { glob = "usr/bin/opj_dump" } | OutputBin,
+    opj_decompress = { glob = "usr/bin/opj_decompress" } | OutputBin,
     libs = { glob = "usr/lib/libopenjp2*.so*" } | OutputLib,
 
     cmake_data = { glob = "usr/lib/cmake/**/*" } | OutputData,

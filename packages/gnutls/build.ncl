@@ -40,7 +40,12 @@ let version = "3.8.9" in
   cmd = "./build.sh",
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    gnutls-cli-debug = { glob = "usr/bin/gnutls-cli-debug" } | OutputBin,
+    gnutls-serv = { glob = "usr/bin/gnutls-serv" } | OutputBin,
+    gnutls-cli = { glob = "usr/bin/gnutls-cli" } | OutputBin,
+    certtool = { glob = "usr/bin/certtool" } | OutputBin,
+    psktool = { glob = "usr/bin/psktool" } | OutputBin,
+    ocsptool = { glob = "usr/bin/ocsptool" } | OutputBin,
     libs = { glob = "usr/lib/libgnutls*.so*" } | OutputLib,
     includes = { glob = "usr/include/gnutls/**" } | OutputData,
     pkgconfigs = { glob = "usr/lib/pkgconfig/**" } | OutputData,

@@ -27,7 +27,8 @@ let version = "0.21.5" in
   ],
   cmd = "./build.sh",
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    psl-make-dafsa = { glob = "usr/bin/psl-make-dafsa" } | OutputBin,
+    psl = { glob = "usr/bin/psl" } | OutputBin,
     libs = { glob = "usr/lib/*.so*" } | OutputLib,
 
     pkgconfigs = { glob = "usr/lib/pkgconfig/**" } | OutputData,

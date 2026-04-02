@@ -47,7 +47,11 @@ let version = "4.28.0" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    lake = { glob = "usr/bin/lake" } | OutputBin,
+    leanchecker = { glob = "usr/bin/leanchecker" } | OutputBin,
+    leanmake = { glob = "usr/bin/leanmake" } | OutputBin,
+    leanc = { glob = "usr/bin/leanc" } | OutputBin,
+    lean = { glob = "usr/bin/lean" } | OutputBin,
     libs = { glob = "usr/lib/lean/*.{a,so*}" } | OutputLib,
     includes = { glob = "usr/include/**" } | OutputData,
     data = { glob = "usr/lib/lean/**/*.olean" } | OutputData,

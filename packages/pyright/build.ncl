@@ -27,7 +27,8 @@ let version = "1.1.398" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    pyright = { glob = "usr/bin/pyright" } | OutputBin,
+    pyright-langserver = { glob = "usr/bin/pyright-langserver" } | OutputBin,
     libexec = { glob = "usr/lib/node_modules/**" } | OutputData,
   },
 

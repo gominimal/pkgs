@@ -23,7 +23,9 @@ let version = "1.26" in
 
   cmd = "./build.sh",
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    gdbmtool = { glob = "usr/bin/gdbmtool" } | OutputBin,
+    gdbm_load = { glob = "usr/bin/gdbm_load" } | OutputBin,
+    gdbm_dump = { glob = "usr/bin/gdbm_dump" } | OutputBin,
     libs = { glob = "usr/lib/libgdbm*.{a,so*}" } | OutputLib,
 
     ltconfigs = { glob = "usr/lib/libgdbm.la" } | OutputData,

@@ -27,7 +27,8 @@ let version = "7.0.3" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    dc = { glob = "usr/bin/dc" } | OutputBin,
+    bc = { glob = "usr/bin/bc" } | OutputBin,
     mans = { glob = "usr/share/man/**" } | OutputData,
   },
 

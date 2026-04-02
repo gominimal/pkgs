@@ -114,7 +114,7 @@ let version = "11.12.0" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    mmdc = { glob = "usr/bin/mmdc" } | OutputBin,
     libexec = { glob = "usr/lib/node_modules/**", allow_executable = true } | OutputData,
     chromium = { glob = "usr/share/mermaid-cli/chromium/**", allow_executable = true } | OutputData,
     config = { glob = "usr/share/mermaid-cli/*.json" } | OutputData,

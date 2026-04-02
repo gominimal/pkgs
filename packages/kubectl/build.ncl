@@ -23,7 +23,7 @@ let version = "1.35.3" in
   build_args = { include version },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    kubectl = { glob = "usr/bin/kubectl" } | OutputBin,
   },
 
   tests = {

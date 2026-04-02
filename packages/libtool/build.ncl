@@ -27,7 +27,8 @@ let version = "2.5.4" in
 
   cmd = "./build.sh",
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    libtoolize = { glob = "usr/bin/libtoolize" } | OutputBin,
+    libtool = { glob = "usr/bin/libtool" } | OutputBin,
     libs = { glob = "usr/lib/libltdl.{a,so*}" } | OutputLib,
 
     ltconfigs = { glob = "usr/lib/*.la" } | OutputData,

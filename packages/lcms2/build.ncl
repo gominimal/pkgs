@@ -27,7 +27,9 @@ let version = "2.17" in
   cmd = "./build.sh",
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    linkicc = { glob = "usr/bin/linkicc" } | OutputBin,
+    psicc = { glob = "usr/bin/psicc" } | OutputBin,
+    transicc = { glob = "usr/bin/transicc" } | OutputBin,
     libs = { glob = "usr/lib/liblcms2*.so*" } | OutputLib,
 
     ltconfigs = { glob = "usr/lib/*.la" } | OutputData,

@@ -27,7 +27,7 @@ let version = "11076708" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    sdkmanager = { glob = "usr/bin/sdkmanager" } | OutputBin,
     sdk = { glob = "usr/lib/android-sdk/**" } | OutputData,
   },
 

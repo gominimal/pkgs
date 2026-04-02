@@ -6,7 +6,6 @@ case $(uname -m) in
   aarch64) MARCH="-march=armv8-a" ;;
   *)       MARCH="" ;;
 esac
-export SOURCE_DATE_EPOCH=0
 export TZ=UTC
 export LC_ALL=C
 export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -std=gnu17 -ffile-prefix-map=$(pwd)=/builddir"

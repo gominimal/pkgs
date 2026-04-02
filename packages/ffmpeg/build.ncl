@@ -59,7 +59,8 @@ let version = "8.1" in
 
   cmd = "./build.sh",
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    ffmpeg = { glob = "usr/bin/ffmpeg" } | OutputBin,
+    ffprobe = { glob = "usr/bin/ffprobe" } | OutputBin,
     libs = { glob = "usr/lib/lib*.so*" } | OutputLib,
 
     pkgconfigs = { glob = "usr/lib/pkgconfig/**" } | OutputData,

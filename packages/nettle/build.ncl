@@ -30,7 +30,11 @@ let version = "3.10.1" in
   cmd = "./build.sh",
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    nettle-pbkdf2 = { glob = "usr/bin/nettle-pbkdf2" } | OutputBin,
+    nettle-lfib-stream = { glob = "usr/bin/nettle-lfib-stream" } | OutputBin,
+    nettle-hash = { glob = "usr/bin/nettle-hash" } | OutputBin,
+    sexp-conv = { glob = "usr/bin/sexp-conv" } | OutputBin,
+    pkcs1-conv = { glob = "usr/bin/pkcs1-conv" } | OutputBin,
     libs = { glob = "usr/lib/lib{nettle,hogweed}.so*" } | OutputLib,
     includes = { glob = "usr/include/nettle/**" } | OutputData,
     pkgconfigs = { glob = "usr/lib/pkgconfig/**" } | OutputData,

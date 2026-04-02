@@ -37,7 +37,10 @@ let version = "1.6.0" in
   cmd = "./build.sh",
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    dwebp = { glob = "usr/bin/dwebp" } | OutputBin,
+    webpinfo = { glob = "usr/bin/webpinfo" } | OutputBin,
+    webpmux = { glob = "usr/bin/webpmux" } | OutputBin,
+    cwebp = { glob = "usr/bin/cwebp" } | OutputBin,
     libs = { glob = "usr/lib/lib*.so*" } | OutputLib,
     pkgconfigs = { glob = "usr/lib/pkgconfig/**" } | OutputData,
     includes = { glob = "usr/include/**" } | OutputData,

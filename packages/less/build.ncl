@@ -23,7 +23,9 @@ let version = "679" in
   ],
   cmd = "./build.sh",
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    less = { glob = "usr/bin/less" } | OutputBin,
+    lessecho = { glob = "usr/bin/lessecho" } | OutputBin,
+    lesskey = { glob = "usr/bin/lesskey" } | OutputBin,
     mans = { glob = "usr/share/man/**" } | OutputData,
   },
   attrs =

@@ -35,7 +35,8 @@ let version = "1.16.0" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    vpxenc = { glob = "usr/bin/vpxenc" } | OutputBin,
+    vpxdec = { glob = "usr/bin/vpxdec" } | OutputBin,
     libs = { glob = "usr/lib/libvpx.so*" } | OutputLib,
     includes = { glob = "usr/include/vpx/**" } | OutputData,
     pkgconfig = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,

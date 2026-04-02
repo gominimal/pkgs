@@ -57,7 +57,9 @@ let version = "25.8.2" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    node = { glob = "usr/bin/node" } | OutputBin,
+    npx = { glob = "usr/bin/npx" } | OutputBin,
+    npm = { glob = "usr/bin/npm" } | OutputBin,
     node_modules = { glob = "usr/lib/node_modules/**" } | OutputData,
 
     includes = { glob = "usr/include/**" } | OutputData,

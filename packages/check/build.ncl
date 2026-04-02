@@ -36,7 +36,7 @@ let version = "0.15.2" in
 
   cmd = "./build.sh",
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    checkmk = { glob = "usr/bin/checkmk" } | OutputBin,
     mans = { glob = "usr/share/man/**" } | OutputData,
   },
   attrs =

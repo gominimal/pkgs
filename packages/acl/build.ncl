@@ -39,7 +39,9 @@ let version = "2.3.2" in
   ],
   cmd = "./build.sh",
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    setfacl = { glob = "usr/bin/setfacl" } | OutputBin,
+    chacl = { glob = "usr/bin/chacl" } | OutputBin,
+    getfacl = { glob = "usr/bin/getfacl" } | OutputBin,
     libs = { glob = "usr/lib/*.{a,so*}" } | OutputLib,
 
     ltconfigs = { glob = "usr/lib/libacl.la" } | OutputData,

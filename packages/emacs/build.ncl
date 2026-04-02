@@ -46,7 +46,12 @@ let version = "30.2" in
   cmd = "./build.sh",
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    ebrowse = { glob = "usr/bin/ebrowse" } | OutputBin,
+    ctags = { glob = "usr/bin/ctags" } | OutputBin,
+    "emacs-30.2" = { glob = "usr/bin/emacs-30.2" } | OutputBin,
+    emacs = { glob = "usr/bin/emacs" } | OutputBin,
+    etags = { glob = "usr/bin/etags" } | OutputBin,
+    emacsclient = { glob = "usr/bin/emacsclient" } | OutputBin,
     libexec = { glob = "usr/libexec/emacs/**", allow_executable = true } | OutputData,
     share = { glob = "usr/share/emacs/**", allow_executable = true } | OutputData,
   },
@@ -54,39 +59,43 @@ let version = "30.2" in
   tests = {
     version = standaloneTest "/usr/bin/emacs --version",
 
-    batch_eval = {
-      class = 'Standalone,
-      test_deps = [base],
-      cmds = [
-        ["/bin/bash", "-c", "emacs --batch --eval '(message \"hello\")' 2>&1 | grep -q hello"],
-      ],
-    } | Test,
+    batch_eval =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "emacs --batch --eval '(message \"hello\")' 2>&1 | grep -q hello"],
+        ],
+      } | Test,
 
-    byte_compile = {
-      class = 'Standalone,
-      test_deps = [base],
-      cmds = [
-        ["/bin/bash", "-c", "echo '(defun test-fn () 42)' > /tmp/test.el"],
-        ["/bin/bash", "-c", "emacs --batch -f batch-byte-compile /tmp/test.el"],
-        ["/bin/bash", "-c", "test -f /tmp/test.elc"],
-      ],
-    } | Test,
+    byte_compile =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "echo '(defun test-fn () 42)' > /tmp/test.el"],
+          ["/bin/bash", "-c", "emacs --batch -f batch-byte-compile /tmp/test.el"],
+          ["/bin/bash", "-c", "test -f /tmp/test.elc"],
+        ],
+      } | Test,
 
-    gnutls = {
-      class = 'Standalone,
-      test_deps = [base],
-      cmds = [
-        ["/bin/bash", "-c", "emacs --batch --eval '(message \"%s\" (gnutls-available-p))' 2>&1 | grep -q t"],
-      ],
-    } | Test,
+    gnutls =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "emacs --batch --eval '(message \"%s\" (gnutls-available-p))' 2>&1 | grep -q t"],
+        ],
+      } | Test,
 
-    tree_sitter = {
-      class = 'Standalone,
-      test_deps = [base],
-      cmds = [
-        ["/bin/bash", "-c", "emacs --batch --eval '(message \"%s\" (treesit-available-p))' 2>&1 | grep -q t"],
-      ],
-    } | Test,
+    tree_sitter =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "emacs --batch --eval '(message \"%s\" (treesit-available-p))' 2>&1 | grep -q t"],
+        ],
+      } | Test,
   },
 
   attrs =

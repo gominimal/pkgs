@@ -39,7 +39,9 @@ let version = "2.5.2" in
 
   cmd = "./build.sh",
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    attr = { glob = "usr/bin/attr" } | OutputBin,
+    setfattr = { glob = "usr/bin/setfattr" } | OutputBin,
+    getfattr = { glob = "usr/bin/getfattr" } | OutputBin,
     libs = { glob = "usr/lib/*.{a,so*}" } | OutputLib,
 
     ltconfigs = { glob = "usr/lib/libattr.la" } | OutputData,

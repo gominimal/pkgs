@@ -27,7 +27,9 @@ let version = "4.3.3" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    typescript-language-server = { glob = "usr/bin/typescript-language-server" } | OutputBin,
+    tsserver = { glob = "usr/bin/tsserver" } | OutputBin,
+    tsc = { glob = "usr/bin/tsc" } | OutputBin,
     libexec = { glob = "usr/lib/node_modules/**" } | OutputData,
   },
 

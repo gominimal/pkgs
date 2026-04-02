@@ -30,7 +30,7 @@ let all_outputs = {
   sbins = { glob = "usr/sbin/**" } | OutputBin,
   etc = { glob = "etc/**/*" } | OutputData,
 
-  libs = { glob = "usr/lib/*.{so*,a}" } | OutputLib,
+  libs = { glob = "usr/lib/*.{so*,a}", allow_data = true } | OutputLib, # libc.so is a linker script, not an ELF binary
   crts = { glob = "usr/lib/{crt,gcrt,grcrt,Mcrt,rcrt,Scrt}*.o" } | OutputLib,
   lib_audit = { glob = "usr/lib/audit/*.so*" } | OutputLib,
   lib_locale = { glob = "usr/lib/locale/**" } | OutputData,
