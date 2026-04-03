@@ -1,6 +1,7 @@
 let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let autoconf = import "../autoconf/build.ncl" in
 let base = import "../base/build.ncl" in
+let bash = import "../bash/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
@@ -32,6 +33,7 @@ let version = "30.2" in
     toolchain,
   ],
   runtime_deps = [
+    bash,
     glibc,
     gmp,
     gnutls,
@@ -73,9 +75,7 @@ let version = "30.2" in
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          ["/bin/bash", "-c", "echo '(defun test-fn () 42)' > /tmp/test.el"],
-          ["/bin/bash", "-c", "emacs --batch -f batch-byte-compile /tmp/test.el"],
-          ["/bin/bash", "-c", "test -f /tmp/test.elc"],
+          ["/bin/bash", "-c", "echo '(defun test-fn () 42)' > /tmp/test.el && emacs --batch -f batch-byte-compile /tmp/test.el && test -f /tmp/test.elc"],
         ],
       } | Test,
 
