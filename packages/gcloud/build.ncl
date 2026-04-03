@@ -59,8 +59,7 @@ in
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          ["/bin/bash", "-c", "gcloud config set project test-project 2>&1"],
-          ["/bin/bash", "-c", "gcloud config get project 2>&1 | grep -q 'test-project'"],
+          ["/bin/bash", "-c", "gcloud config set project test-project 2>/dev/null && gcloud config get project 2>/dev/null | grep -q 'test-project'"],
         ],
       } | Test,
   },
