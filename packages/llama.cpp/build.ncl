@@ -10,14 +10,14 @@ let hwdata = import "../hwdata/build.ncl" in
 let pciutils = import "../pciutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "b8041" in
+let version = "b8651" in
 {
   name = "llama.cpp",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/ggml-org/llama.cpp/%{version}.tar.gz",
-      sha256 = "3d3015ce8326b22024e8d833be996f82c6444b232a804b2b983bf6e57ba65a2e",
+      sha256 = "b88b0469a1d1cff4344b234b5e18ffc60be3ff3e0516b7d3116c3c605520afb2",
       extract = true,
       strip_prefix = "llama.cpp-%{version}",
     } | Source,
