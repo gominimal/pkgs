@@ -43,3 +43,19 @@ JOBS=$(( $(nproc) / 4 ))
 
 ninja -C build -j"$JOBS"
 DESTDIR="$OUTPUT_DIR" ninja -C build -j"$JOBS" install
+
+# Move sbin binaries (fdbserver) to bin
+mv "$OUTPUT_DIR/usr/sbin/"* "$OUTPUT_DIR/usr/bin/" 2>/dev/null || true
+rmdir "$OUTPUT_DIR/usr/sbin" 2>/dev/null || true
+
+# Move fdbmonitor to bin (separate binary)
+mv "$OUTPUT_DIR/usr/lib/foundationdb/fdbmonitor" "$OUTPUT_DIR/usr/bin/" 2>/dev/null || true
+
+# Replace duplicate copies of fdbbackup with symlinks (argv[0]-dispatched)
+rm -f "$OUTPUT_DIR/usr/lib/foundationdb/backup_agent/backup_agent" 2>/dev/null || true
+for name in fdbrestore fdbdr dr_agent backup_agent; do
+  rm -f "$OUTPUT_DIR/usr/bin/$name" 2>/dev/null || true
+  ln -s fdbbackup "$OUTPUT_DIR/usr/bin/$name"
+done
+rm -rf "$OUTPUT_DIR/usr/lib/foundationdb" 2>/dev/null || true
+
