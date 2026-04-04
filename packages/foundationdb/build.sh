@@ -38,5 +38,8 @@ mkdir -p build/bindings/python/fdb
 touch build/bindings/python/fdb/fdboptions.py
 touch build/bindings/python/fdb/apiversion.py
 
-ninja -C build
-DESTDIR="$OUTPUT_DIR" ninja -C build install
+JOBS=$(( $(nproc) / 4 ))
+[ "$JOBS" -lt 1 ] && JOBS=1
+
+ninja -C build -j"$JOBS"
+DESTDIR="$OUTPUT_DIR" ninja -C build -j"$JOBS" install
