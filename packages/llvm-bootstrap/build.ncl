@@ -52,9 +52,7 @@ let version = "21.1.8" in
   cmd = "./build.sh",
   outputs = {
     bins = { glob = "usr/bin/*" } | OutputBin,
-    libs = { glob = "usr/lib/*.{so*,a}" } | OutputLib,
     libs_clang = { glob = "usr/lib/clang/*/**", allow_data = true } | OutputLib,
-    libexec = { glob = "usr/libexec/**" } | OutputBin,
     cmake_data_llvm = { glob = "usr/lib/cmake/llvm/*.cmake" } | OutputData,
     cmake_data_clang = { glob = "usr/lib/cmake/clang/*.cmake" } | OutputData,
     includes = { glob = "usr/include/**" } | OutputData,

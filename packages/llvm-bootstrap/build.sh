@@ -23,6 +23,11 @@ case $(uname -m) in
   *)       LLVM_TARGET="host" ;;
 esac
 
+DIST_COMPONENTS="clang;clang-resource-headers;lld"
+DIST_COMPONENTS="${DIST_COMPONENTS};llvm-headers;clang-headers"
+DIST_COMPONENTS="${DIST_COMPONENTS};cmake-exports;clang-cmake-exports"
+DIST_COMPONENTS="${DIST_COMPONENTS};llvm-ar;llvm-ranlib;llvm-nm;llvm-objcopy;llvm-objdump;llvm-strip;llvm-config"
+
 cmake \
 	-D CMAKE_BUILD_TYPE=Release \
 	-D CMAKE_INSTALL_PREFIX=/usr \
@@ -39,7 +44,8 @@ cmake \
 	-D LLVM_INSTALL_UTILS=ON \
 	-D CLANG_DEFAULT_PIE_ON_LINUX=ON \
 	-D LLVM_ENABLE_PROJECTS="clang;lld" \
+	-D LLVM_DISTRIBUTION_COMPONENTS="$DIST_COMPONENTS" \
 	-W no-dev -G Ninja ..
 
-ninja
-DESTDIR=$OUTPUT_DIR ninja 'install/strip'
+ninja distribution
+DESTDIR=$OUTPUT_DIR ninja install-distribution-stripped
