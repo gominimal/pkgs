@@ -3,7 +3,7 @@ set -ex
 
 export GOROOT=/usr/go
 
-LDFLAGS="-buildid= -s -w -X github.com/spiffe/spire/pkg/common/version.gittag=v${MINIMAL_ARG_VERSION}"
+LDFLAGS="-buildid= -s -w -X github.com/spiffe/spire/pkg/common/version.gittag=${MINIMAL_ARG_VERSION}"
 
 go build -trimpath -buildvcs=false -ldflags "$LDFLAGS" -o spire-server ./cmd/spire-server
 go build -trimpath -buildvcs=false -ldflags "$LDFLAGS" -o spire-agent ./cmd/spire-agent
