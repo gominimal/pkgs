@@ -4,19 +4,19 @@ let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
 let variants = {
-  "1.25.5" = {
-    amd64_url = "https://go.dev/dl/go1.25.5.linux-amd64.tar.gz",
-    amd64_sha256 = "9e9b755d63b36acf30c12a9a3fc379243714c1c6d3dd72861da637f336ebb35b",
+  "1.25.8" = {
+    amd64_url = "https://go.dev/dl/go1.25.8.linux-amd64.tar.gz",
+    amd64_sha256 = "ceb5e041bbc3893846bd1614d76cb4681c91dadee579426cf21a63f2d7e03be6",
 
-    arm64_url = "https://go.dev/dl/go1.25.5.linux-arm64.tar.gz",
-    arm64_sha256 = "b00b694903d126c588c378e72d3545549935d3982635ba3f7a964c9fa23fe3b9",
+    arm64_url = "https://go.dev/dl/go1.25.8.linux-arm64.tar.gz",
+    arm64_sha256 = "7d137f59f66bb93f40a6b2b11e713adc2a9d0c8d9ae581718e3fad19e5295dc7",
 
-    source_url = "https://go.dev/dl/go1.25.5.src.tar.gz",
-    source_sha256 = "22a5fd0a91efcd28a1b0537106b9959b2804b61f59c3758b51e8e5429c1a954f",
+    source_url = "https://go.dev/dl/go1.25.8.src.tar.gz",
+    source_sha256 = "e988d4a2446ac7fe3f6daa089a58e9936a52a381355adec1c8983230a8d6c59e",
   },
 }
 in
-let version = "1.25.5" in
+let version = "1.25.8" in
 {
   name = "go",
   build_deps = [
