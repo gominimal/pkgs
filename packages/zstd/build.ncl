@@ -51,10 +51,12 @@ let version = "1.5.7" in
   cmd = "./build.sh",
 
   outputs = {
+    # Technically bins like zstdless depend on /bin/sh, but its not practical to depend on bash at such a low level.
+    # Disable the lint for now.
     zstd_bin = { glob = "usr/bin/zstd" } | OutputBin,
     zstdcat = { glob = "usr/bin/zstdcat" } | OutputBin,
-    zstdgrep = { glob = "usr/bin/zstdgrep" } | OutputBin,
-    zstdless = { glob = "usr/bin/zstdless" } | OutputBin,
+    zstdgrep = { glob = "usr/bin/zstdgrep", allow_missing_interpreter = true } | OutputBin,
+    zstdless = { glob = "usr/bin/zstdless", allow_missing_interpreter = true } | OutputBin,
     zstdmt = { glob = "usr/bin/zstdmt" } | OutputBin,
     unzstd = { glob = "usr/bin/unzstd" } | OutputBin,
 

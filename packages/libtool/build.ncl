@@ -3,6 +3,9 @@ let base = import "../base/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+
+let bash = import "../bash/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 let version = "2.5.4" in
@@ -22,6 +25,8 @@ let version = "2.5.4" in
     toolchain,
   ],
   runtime_deps = [
+    bash,
+    coreutils,
     glibc,
   ],
 

@@ -1,13 +1,13 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
-let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let diffutils = import "../diffutils/build.ncl" in
 let file = import "../file/build.ncl" in
 let findutils = import "../findutils/build.ncl" in
-let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in
+let gawk = import "../gawk/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let gzip = import "../gzip/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -26,7 +26,9 @@ let m4 = import "../m4/build.ncl" in
 let python = import "../python/build.ncl" in
 
 let all_outputs = {
-  bins = { glob = "usr/bin/**" } | OutputBin,
+  # Technically a few binaries (xtrace, ldd) depend on bash, but we omit that dep given how low-level glibc is +
+  # practical uses of those tools are in a shell environment anyway.
+  bins = { glob = "usr/bin/**", allow_missing_interpreter = true } | OutputBin,
   sbins = { glob = "usr/sbin/**" } | OutputBin,
   etc = { glob = "etc/**/*" } | OutputData,
 
@@ -56,13 +58,13 @@ let version = "2.42" in
       sha256 = "d1775e32e4628e64ef930f435b67bb63af7599acb6be2b335b9f19f16509f17f"
     } | Source,
     # base
-    bash-bootstrap,
+    bash,
     bzip2,
     coreutils,
     diffutils,
     file,
     findutils,
-    gawk-bootstrap,
+    gawk,
     grep,
     gzip,
     make,

@@ -6,6 +6,7 @@ let m4 = import "../m4/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+let bash = import "../bash/build.ncl" in
 let libcap = import "../libcap/build.ncl" in
 
 let version = "6.18.0" in
@@ -28,6 +29,7 @@ let version = "6.18.0" in
     toolchain,
   ],
   runtime_deps = [
+    bash, # needed by /usr/sbin/routel
     libcap,
   ],
   cmd = "./build.sh",

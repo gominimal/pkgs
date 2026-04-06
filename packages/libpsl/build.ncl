@@ -27,7 +27,9 @@ let version = "0.21.5" in
   ],
   cmd = "./build.sh",
   outputs = {
-    psl-make-dafsa = { glob = "usr/bin/psl-make-dafsa" } | OutputBin,
+    # Technically this depends on /usr/bin/env, but in practice any environment that
+    # will use this (i.e. a build) will have coreutils already.
+    psl-make-dafsa = { glob = "usr/bin/psl-make-dafsa", allow_missing_interpreter = true } | OutputBin,
     psl = { glob = "usr/bin/psl" } | OutputBin,
     libs = { glob = "usr/lib/*.so*" } | OutputLib,
 

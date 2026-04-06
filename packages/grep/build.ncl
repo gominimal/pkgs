@@ -64,8 +64,10 @@ let version = "3.12" in
 
   outputs = {
     grep_bin = { glob = "usr/bin/grep" } | OutputBin,
-    egrep_bin = { glob = "usr/bin/egrep" } | OutputBin,
-    fgrep_bin = { glob = "usr/bin/fgrep" } | OutputBin,
+    # Technically egrep & fgrep depend on /bin/sh, but its not practical to depend on bash at such a low level.
+    # Disable the lint for now.
+    egrep_bin = { glob = "usr/bin/egrep", allow_missing_interpreter = true } | OutputBin,
+    fgrep_bin = { glob = "usr/bin/fgrep", allow_missing_interpreter = true } | OutputBin,
 
     locales = { glob = "usr/share/locale/**" } | OutputData,
   },

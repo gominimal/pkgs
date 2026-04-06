@@ -2,9 +2,12 @@ let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import 
 let base = import "../base/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let python = import "../python/build.ncl" in
-let tcl = import "../tcl/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+
+let bash = import "../bash/build.ncl" in
+let tcl = import "../tcl/build.ncl" in
+
 let version = "5.45.4" in
 {
   name = "expect",
@@ -25,7 +28,8 @@ let version = "5.45.4" in
     toolchain,
   ],
   runtime_deps = [
-    tcl
+    bash,
+    tcl,
   ],
   cmd = "./build.sh",
   outputs = {

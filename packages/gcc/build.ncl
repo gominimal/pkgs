@@ -91,7 +91,8 @@ let version = "15.2.0" in
       libexec_bins = { glob = "usr/libexec/gcc/*/*/{cc1,cc1plus,f951,collect2,lto1,lto-wrapper}" } | OutputBin,
       libexec_libs = { glob = "usr/libexec/gcc/*/*/g++-mapper-server" } | OutputLib,
       plugins = { glob = "usr/libexec/gcc/*/*/plugin/*" } | OutputBin,
-      install_tools = { glob = "usr/libexec/gcc/*/*/install-tools/*" } | OutputBin,
+      # mkinstalldirs technically needs /bin/sh but depending on bash at this package would be difficult, ignore lint for now
+      install_tools = { glob = "usr/libexec/gcc/*/*/install-tools/*", allow_missing_interpreter = true } | OutputBin,
 
       liblto_plugin = { glob = "usr/libexec/gcc/*/*/liblto_plugin.so" } | OutputLib,
       lto_plugin_ltconfig = { glob = "usr/libexec/gcc/*/*/liblto_plugin.la" } | OutputData,

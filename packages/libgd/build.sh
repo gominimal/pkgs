@@ -36,3 +36,7 @@ cmake \
 
 make -j$(nproc)
 DESTDIR="$OUTPUT_DIR" make install
+
+# bdftogd is a script to convert formats but it depends on perl - not a good
+# fit for a library package
+rm "$OUTPUT_DIR/usr/bin/bdftogd"

@@ -26,7 +26,6 @@ let version = "8.6.16" in
   cmd = "./build.sh",
   outputs = {
     "tclsh8.6" = { glob = "usr/bin/tclsh8.6" } | OutputBin,
-    "sqlite3_analyzer" = { glob = "usr/bin/sqlite3_analyzer" } | OutputBin,
     libs = { glob = "usr/lib/**/*.{a,so*}" } | OutputLib,
 
     datas = { glob = "usr/lib/**/{tclIndex,*.c,*.tm,*.uuid,*.tcl,*.sh,*.enc,*.msg}" } | OutputData,

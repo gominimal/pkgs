@@ -6,6 +6,7 @@ let llvm-bootstrap = import "../llvm-bootstrap/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
@@ -55,6 +56,7 @@ let version = "21.1.8" in
     toolchain,
   ],
   runtime_deps = [
+    coreutils, # For /usr/bin/env
     glibc,
     libffi,
     zlib,

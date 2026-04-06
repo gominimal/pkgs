@@ -31,9 +31,13 @@ let version = "0.26" in
 
   cmd = "./build.sh",
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    # Theres a few binaries which depend on /bin/sh, we dont depend on bash as a runtime dep because it will
+    # bloat our deps and also an environment which is likely to use these tools (a build) is pretty much guaranteed
+    # to have a shell wired.
+
+    bins = { glob = "usr/bin/*", allow_missing_interpreter = true } | OutputBin,
     libs = { glob = "usr/lib/lib*.so*" } | OutputLib,
-    libexec = { glob = "usr/libexec/gettext/*" } | OutputBin,
+    libexec = { glob = "usr/libexec/gettext/*", allow_missing_interpreter = true } | OutputBin,
     datas = { glob = "usr/share/gettext/**" } | OutputData,
 
     ltconfigs = { glob = "usr/lib/*.la" } | OutputData,

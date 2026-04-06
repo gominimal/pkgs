@@ -24,17 +24,19 @@ let version = "1.0.8" in
 
   cmd = "./build.sh",
   outputs = {
+    # Technically a bunch of these binaries need a shell interpreter, but given how low level this
+    # package is its better not to bring in bash at this level.
     bunzip2 = { glob = "usr/bin/bunzip2" } | OutputBin,
     bzcat = { glob = "usr/bin/bzcat" } | OutputBin,
-    bzcmp = { glob = "usr/bin/bzcmp" } | OutputBin,
-    bzdiff = { glob = "usr/bin/bzdiff" } | OutputBin,
-    bzegrep = { glob = "usr/bin/bzegrep" } | OutputBin,
-    bzfgrep = { glob = "usr/bin/bzfgrep" } | OutputBin,
-    bzgrep = { glob = "usr/bin/bzgrep" } | OutputBin,
+    bzcmp = { glob = "usr/bin/bzcmp", allow_missing_interpreter = true } | OutputBin,
+    bzdiff = { glob = "usr/bin/bzdiff", allow_missing_interpreter = true } | OutputBin,
+    bzegrep = { glob = "usr/bin/bzegrep", allow_missing_interpreter = true } | OutputBin,
+    bzfgrep = { glob = "usr/bin/bzfgrep", allow_missing_interpreter = true } | OutputBin,
+    bzgrep = { glob = "usr/bin/bzgrep", allow_missing_interpreter = true } | OutputBin,
     bzip2 = { glob = "usr/bin/bzip2" } | OutputBin,
     bzip2recover = { glob = "usr/bin/bzip2recover" } | OutputBin,
-    bzless = { glob = "usr/bin/bzless" } | OutputBin,
-    bzmore = { glob = "usr/bin/bzmore" } | OutputBin,
+    bzless = { glob = "usr/bin/bzless", allow_missing_interpreter = true } | OutputBin,
+    bzmore = { glob = "usr/bin/bzmore", allow_missing_interpreter = true } | OutputBin,
 
     libs = { glob = "usr/lib/*" } | OutputLib,
 

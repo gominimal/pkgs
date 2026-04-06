@@ -26,7 +26,7 @@ let version = "4.38.2" in
   cmd = "./build.sh",
   outputs = {
     libs = { glob = "usr/lib/lib{nspr4,plc4,plds4}.so*" } | OutputLib,
-    bins = { glob = "usr/bin/nspr-config" } | OutputBin,
+    bins = { glob = "usr/bin/nspr-config", allow_missing_interpreter = true } | OutputBin,
     includes = { glob = "usr/include/nspr/**" } | OutputData,
     pkgconfig = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
   },

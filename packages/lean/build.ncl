@@ -49,7 +49,7 @@ let version = "4.28.0" in
   outputs = {
     lake = { glob = "usr/bin/lake" } | OutputBin,
     leanchecker = { glob = "usr/bin/leanchecker" } | OutputBin,
-    leanmake = { glob = "usr/bin/leanmake" } | OutputBin,
+    leanmake = { glob = "usr/bin/leanmake", allow_missing_interpreter = true } | OutputBin,
     leanc = { glob = "usr/bin/leanc" } | OutputBin,
     lean = { glob = "usr/bin/lean" } | OutputBin,
     libs = { glob = "usr/lib/lean/*.{a,so*}" } | OutputLib,

@@ -39,7 +39,8 @@ let version = "2.86.4" in
 
   cmd = "./build.sh",
   outputs = {
-    bins = { glob = "usr/bin/{glib-*,gdbus,gio,gobject-query,gresource,gsettings,gtester}" } | OutputBin,
+    # shell or env needed by some of the build utilities
+    bins = { glob = "usr/bin/{glib-*,gdbus,gio,gobject-query,gresource,gsettings,gtester}", allow_missing_interpreter = true } | OutputBin,
     libs = { glob = "usr/lib/libg{lib,object,io,module,thread}-2.0.so*" } | OutputLib,
     includes = { glob = "usr/include/**" } | OutputData,
     glibconfig = { glob = "usr/lib/glib-2.0/include/**" } | OutputData,

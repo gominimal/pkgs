@@ -48,7 +48,9 @@ let version = "4.10.0" in
   outputs = {
     find = { glob = "usr/bin/find" } | OutputBin,
     locate = { glob = "usr/bin/locate" } | OutputBin,
-    updatedb = { glob = "usr/bin/updatedb" } | OutputBin,
+    # Technically updatedb depends on /bin/sh, but its not practical to depend on bash at such a low level.
+    # Disable the lint for now.
+    updatedb = { glob = "usr/bin/updatedb", allow_missing_interpreter = true } | OutputBin,
     xargs = { glob = "usr/bin/xargs" } | OutputBin,
 
     libexec_frcode = { glob = "usr/libexec/frcode" } | OutputLib,

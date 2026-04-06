@@ -38,9 +38,9 @@ let version = "8.17.0" in
 
   cmd = "./build.sh",
   outputs = {
-    curl-config = { glob = "usr/bin/curl-config" } | OutputBin,
     curl = { glob = "usr/bin/curl" } | OutputBin,
-    wcurl = { glob = "usr/bin/wcurl" } | OutputBin,
+    curl-config = { glob = "usr/bin/curl-config", allow_missing_interpreter = true } | OutputBin,
+    wcurl = { glob = "usr/bin/wcurl", allow_missing_interpreter = true } | OutputBin,
     libs = { glob = "usr/lib/libcurl.so*" } | OutputLib,
 
     ltconfigs = { glob = "usr/lib/libcurl.la" } | OutputData,

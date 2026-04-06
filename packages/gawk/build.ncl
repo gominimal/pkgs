@@ -31,7 +31,6 @@ let version = "5.3.2" in
   outputs = {
     "gawk-5.3.2" = { glob = "usr/bin/gawk-5.3.2" } | OutputBin,
     gawk = { glob = "usr/bin/gawk" } | OutputBin,
-    gawkbug = { glob = "usr/bin/gawkbug" } | OutputBin,
     awk = { glob = "usr/bin/awk" } | OutputBin,
     libs = { glob = "usr/lib/gawk/*.so" } | OutputLib,
     libexec = { glob = "usr/libexec/awk/*" } | OutputLib,

@@ -26,7 +26,8 @@ let version = "6.5-20250830" in
 
   cmd = "./build.sh",
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    # ncursesw6-config needs /bin/sh
+    bins = { glob = "usr/bin/*", allow_missing_interpreter = true } | OutputBin,
 
     libform = { glob = "usr/lib/libform*.so*" } | OutputLib,
     libncurses = { glob = "usr/lib/libncurses*.so*" } | OutputLib,

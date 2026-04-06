@@ -1,6 +1,7 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 
 let base = import "../base/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let make = import "../make/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
@@ -23,6 +24,7 @@ let version = "1.8.1.1" in
     toolchain,
   ],
   runtime_deps = [
+    coreutils, # usr/bin/env needed by some executable scripts
     glibc,
     openssl,
     readline,

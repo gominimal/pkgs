@@ -15,3 +15,5 @@ export CXXFLAGS="${CFLAGS}"
 ./x.py build
 
 DESTDIR=$OUTPUT_DIR ./x.py install
+
+rm $OUTPUT_DIR/usr/bin/rust-gdbgui

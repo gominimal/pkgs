@@ -45,7 +45,9 @@ let version = "1.93.1" in
 
   cmd = "./build.sh",
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    # rust-gdb/rust-lldb require a shell, but in practice they are always gonna be used in an environment with a shell
+    # so its better just to disable the lint
+    bins = { glob = "usr/bin/*", allow_missing_interpreter = true } | OutputBin,
 
     librustc_driver = { glob = "usr/lib/librustc_driver*.so" } | OutputLib,
     rustlib_src = { glob = "usr/lib/rustlib/src/**" } | OutputData,

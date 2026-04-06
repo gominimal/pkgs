@@ -24,7 +24,9 @@ let version = "1.14" in
 
   cmd = "./build.sh",
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    # Technically bins like zgrep depend on /bin/sh, but its not practical to depend on bash at such a low level.
+    # Disable the lint for now.
+    bins = { glob = "usr/bin/*", allow_missing_interpreter = true } | OutputBin,
 
     infos = { glob = "usr/share/info/*.info" } | OutputData,
     mans = { glob = "usr/share/man/**" } | OutputData,

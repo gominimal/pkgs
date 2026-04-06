@@ -31,7 +31,7 @@ let version = "2.14.1" in
   cmd = "./build.sh",
 
   outputs = {
-    freetype-config = { glob = "usr/bin/freetype-config" } | OutputBin,
+    freetype-config = { glob = "usr/bin/freetype-config", allow_missing_interpreter = true } | OutputBin,
 
     libs = { glob = "usr/lib/libfreetype*.so*" } | OutputLib,
 

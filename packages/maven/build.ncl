@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash = import "../bash/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 
 let version = "3.9.12" in
@@ -14,6 +15,7 @@ let version = "3.9.12" in
     base,
   ],
   runtime_deps = [
+    bash, # mvn is a shell script
     jdk,
   ],
 

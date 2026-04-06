@@ -20,3 +20,6 @@ export CXXFLAGS="${CFLAGS}"
 
 make -j$(nproc)
 make DESTDIR=$OUTPUT_DIR install
+
+# gawkbug is a shell script to report bugs in gawk- not needed
+rm "$OUTPUT_DIR/usr/bin/gawkbug"

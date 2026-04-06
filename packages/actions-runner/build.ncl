@@ -1,6 +1,7 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let icu = import "../icu/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
@@ -33,6 +34,7 @@ in
     base,
   ],
   runtime_deps = [
+    bash,
     glibc,
     icu,
     openssl,

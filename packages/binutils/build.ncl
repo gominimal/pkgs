@@ -52,7 +52,22 @@ let version = "2.45.1" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    addr2line = { glob = "usr/bin/addr2line" } | OutputBin,
+    ar = { glob = "usr/bin/ar" } | OutputBin,
+    as = { glob = "usr/bin/as" } | OutputBin,
+    cppfilt = { glob = "usr/bin/c++filt" } | OutputBin,
+    elfedit = { glob = "usr/bin/elfedit" } | OutputBin,
+    gp = { glob = "usr/bin/{gp,gprof}*", allow_missing_interpreter = true } | OutputBin,
+    ld = { glob = "usr/bin/ld*" } | OutputBin,
+    nm = { glob = "usr/bin/nm" } | OutputBin,
+    objcopy = { glob = "usr/bin/objcopy" } | OutputBin,
+    objdump = { glob = "usr/bin/objdump" } | OutputBin,
+    ranlib = { glob = "usr/bin/ranlib" } | OutputBin,
+    readelf = { glob = "usr/bin/readelf" } | OutputBin,
+    size = { glob = "usr/bin/size" } | OutputBin,
+    strings = { glob = "usr/bin/strings" } | OutputBin,
+    strip = { glob = "usr/bin/strip" } | OutputBin,
+
     libs = { glob = "usr/lib/*.{a,so*}" } | OutputLib,
 
     ltconfigs = { glob = "usr/lib/*.la" } | OutputData,

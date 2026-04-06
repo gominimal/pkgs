@@ -5,6 +5,7 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 
+let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
@@ -28,6 +29,7 @@ let version = "0.194" in
     pkgconf,
   ],
   runtime_deps = [
+    bash, # /usr/bin/eu-make-debug-archive depends on /bin/sh
     bzip2,
     glibc,
     zlib,

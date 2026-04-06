@@ -45,3 +45,5 @@ make DESTDIR=$OUTPUT_DIR install-private-headers
 
 # Conflicts with a Perl man page
 mv $OUTPUT_DIR/usr/share/man/man3/{Thread,Tcl_Thread}.3
+# omit sqlite3_analyzer, an example-esque program
+rm $OUTPUT_DIR/usr/bin/sqlite3_analyzer

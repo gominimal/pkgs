@@ -5,6 +5,7 @@ let python = import "../python/build.ncl" in
 let base = import "../base/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 let c-ares = import "../c-ares/build.ncl" in
 let icu = import "../icu/build.ncl" in
 let lief = import "../lief/build.ncl" in
@@ -35,6 +36,7 @@ let version = "25.8.2" in
     toolchain,
   ],
   runtime_deps = [
+    coreutils, # npx/npm need /usr/bin/env
     openssl,
     c-ares,
     icu,

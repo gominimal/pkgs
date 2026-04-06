@@ -2,6 +2,8 @@ let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = 
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+let bash = import "../bash/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 let version = "1.5.3" in
@@ -20,6 +22,8 @@ let version = "1.5.3" in
     toolchain,
   ],
   runtime_deps = [
+    bash, # bunzip3 is a shell script
+    coreutils, # numerous binaries depend on /usr/bin/env
     glibc,
   ],
 

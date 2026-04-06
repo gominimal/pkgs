@@ -29,7 +29,8 @@ let version = "78.1" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    # icu-config needs a shell
+    bins = { glob = "usr/bin/*", allow_missing_interpreter = true } | OutputBin,
     sbins = { glob = "usr/sbin/*" } | OutputBin,
     libs = { glob = "usr/lib/*.{a,so*}" } | OutputLib,
 

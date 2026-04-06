@@ -40,7 +40,7 @@ let version = "4.12.0" in
   },
 
   outputs = {
-    "setup_vars_opencv4.sh" = { glob = "usr/bin/setup_vars_opencv4.sh" } | OutputBin,
+    "setup_vars_opencv4.sh" = { glob = "usr/bin/setup_vars_opencv4.sh", allow_missing_interpreter = true } | OutputBin,
     opencv_version = { glob = "usr/bin/opencv_version" } | OutputBin,
     opencv_interactive-calibration = { glob = "usr/bin/opencv_interactive-calibration" } | OutputBin,
     opencv_annotation = { glob = "usr/bin/opencv_annotation" } | OutputBin,

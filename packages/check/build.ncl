@@ -10,6 +10,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let make = import "../make/build.ncl" in
+let bash = import "../bash/build.ncl" in
 let version = "0.15.2" in
 {
   name = "check",
@@ -32,7 +33,9 @@ let version = "0.15.2" in
     bash,
     make,
   ],
-  runtime_deps = [],
+  runtime_deps = [
+    bash,
+  ],
 
   cmd = "./build.sh",
   outputs = {

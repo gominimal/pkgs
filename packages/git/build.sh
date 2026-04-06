@@ -18,5 +18,9 @@ export CXXFLAGS="${CFLAGS}"
 make -j$(nproc)
 make DESTDIR=$OUTPUT_DIR NO_INSTALL_HARDLINKS=1 install
 
+# Remove some ancillary tools that ship with git by default, but depend on random packages like perl
+rm "${OUTPUT_DIR}/usr/bin/gitk"
+rm "${OUTPUT_DIR}/usr/bin/git-cvsserver"
+
 find -L "${OUTPUT_DIR}/usr/bin" -xtype f -executable | xargs strip --strip-debug || true
 find -L "${OUTPUT_DIR}/usr/libexec/git-core" -xtype f -executable | xargs strip --strip-debug || true

@@ -41,7 +41,10 @@ let version = "10.06.0" in
   cmd = "./build.sh",
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    # Technically a bunch of misc binaries are shell scripts (i.e. pdf2dsc), but given this package
+    # is mostly used as a library + uses of those binaries are likely to bring a shell anyway, we
+    # omit the dependency.
+    bins = { glob = "usr/bin/*", allow_missing_interpreter = true } | OutputBin,
 
     ghostscript_data = { glob = "usr/share/ghostscript/**" } | OutputData,
     mans = { glob = "usr/share/man/**" } | OutputData,

@@ -28,7 +28,7 @@ let version = "3.6.1" in
   cmd = "./build.sh",
   outputs = {
     openssl = { glob = "usr/bin/openssl" } | OutputBin,
-    c_rehash = { glob = "usr/bin/c_rehash" } | OutputBin,
+    c_rehash = { glob = "usr/bin/c_rehash", allow_missing_interpreter = true } | OutputBin,
 
     libcrypto = { glob = "usr/lib/libcrypto.so*" } | OutputLib,
     libssl = { glob = "usr/lib/libssl.so*" } | OutputLib,
