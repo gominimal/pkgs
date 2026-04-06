@@ -14,10 +14,10 @@ permissions:
   contents: write
 
 jobs:
-  minimal-check-harnesses:
+  minimal-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-minimal
-      - name: Check Harnesses
-        run: minimal check --harnesses
+      - name: Check all
+        run: minimal check
