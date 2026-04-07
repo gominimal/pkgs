@@ -39,7 +39,14 @@ let version = "2.52.0" in
   cmd = "./build.sh",
 
   outputs = {
+    git = { glob = "usr/bin/git" } | OutputBin,
+    git-shell = { glob = "usr/bin/git-shell" } | OutputBin,
+    git-upload-archive = { glob = "usr/bin/git-upload-archive" } | OutputBin,
+    git-upload-pack = { glob = "usr/bin/git-upload-pack" } | OutputBin,
+    git-receive-pack = { glob = "usr/bin/git-receive-pack" } | OutputBin,
+    scalar = { glob = "usr/bin/scalar" } | OutputBin,
     bins = { glob = "usr/bin/*" } | OutputBin,
+
     git_core = { glob = "usr/libexec/git-core/*", allow_data = true } | OutputLib,
     git_core_mergetools = { glob = "usr/libexec/git-core/mergetools/*", allow_data = true } | OutputLib,
 
