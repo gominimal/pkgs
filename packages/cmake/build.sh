@@ -13,7 +13,14 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
-../bootstrap --prefix=/usr
+../bootstrap --prefix=/usr --parallel=$(nproc) \
+  --system-curl \
+  --system-zlib \
+  --system-bzip2 \
+  --system-liblzma \
+  --system-zstd \
+  --system-expat \
+  --system-libuv
 
 make -j$(nproc)
 make DESTDIR=$OUTPUT_DIR install

@@ -3,9 +3,16 @@ let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let glibc = import "../glibc/build.ncl" in
+let bzip2 = import "../bzip2/build.ncl" in
+let curl = import "../curl/build.ncl" in
+let expat = import "../expat/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let glibc = import "../glibc/build.ncl" in
+let libuv = import "../libuv/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
+let xz = import "../xz/build.ncl" in
+let zlib = import "../zlib/build.ncl" in
+let zstd = import "../zstd/build.ncl" in
 
 let version = "4.2.3" in
 {
@@ -23,9 +30,16 @@ let version = "4.2.3" in
     toolchain,
   ],
   runtime_deps = [
+    bzip2,
+    curl,
+    expat,
     glibc,
     subsetOf gcc ["libgcc", "libstdcpp"],
+    libuv,
     openssl,
+    xz,
+    zlib,
+    zstd,
   ],
 
   cmd = "./build.sh",
