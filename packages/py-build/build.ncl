@@ -2,12 +2,12 @@ let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" i
 let base = import "../base/build.ncl" in
 
 let python = import "../python/build.ncl" in
-let packaging = import "../packaging/build.ncl" in
+let py-packaging = import "../py-packaging/build.ncl" in
 let pyproject-hooks = import "../pyproject-hooks/build.ncl" in
 
 let version = "1.3.0" in
 {
-  name = "build",
+  name = "py-build",
   build_deps = [
     { file = "build.sh" } | Local,
     {
@@ -21,7 +21,7 @@ let version = "1.3.0" in
 
   runtime_deps = [
     python,
-    packaging,
+    py-packaging,
     pyproject-hooks,
   ],
 

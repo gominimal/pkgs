@@ -2,7 +2,7 @@ let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" i
 let base = import "../base/build.ncl" in
 
 let python = import "../python/build.ncl" in
-let packaging = import "../packaging/build.ncl" in
+let py-packaging = import "../py-packaging/build.ncl" in
 let flit-core = import "../flit-core/build.ncl" in
 
 let version = "0.9.1" in
@@ -21,7 +21,7 @@ let version = "0.9.1" in
 
   runtime_deps = [
     python,
-    packaging,
+    py-packaging,
     flit-core,
   ],
 

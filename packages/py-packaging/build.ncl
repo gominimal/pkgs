@@ -6,7 +6,7 @@ let pyproject-hooks = import "../pyproject-hooks/build.ncl" in
 
 let version = "25.0" in
 {
-  name = "packaging",
+  name = "py-packaging",
   build_deps = [
     {
       url = "https://files.pythonhosted.org/packages/source/p/packaging/packaging-%{version}.tar.gz",
