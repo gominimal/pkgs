@@ -1,8 +1,8 @@
 #!/bin/sh
 set -ex
 
-tar -xof zlib-1.3.1.tar.gz
-cd zlib-1.3.1
+tar -xof zlib-1.3.2.tar.gz
+cd zlib-1.3.2
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;

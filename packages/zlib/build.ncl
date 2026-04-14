@@ -8,14 +8,14 @@ let coreutils = import "../coreutils/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.3.1" in
+let version = "1.3.2" in
 {
   name = "zlib",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/zlib-%{version}.tar.gz",
-      sha256 = "9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23"
+      sha256 = "b99a0b86c0ba9360ec7e78c4f1e43b1cbdf1e6936c8fa0f6835c0cd694a495a1"
     } | Source,
     bash-bootstrap,
     make,
