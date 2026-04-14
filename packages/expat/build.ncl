@@ -4,14 +4,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.7.3" in
+let version = "2.7.5" in
 {
   name = "expat",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/expat-%{version}.tar.xz",
-      sha256 = "71df8f40706a7bb0a80a5367079ea75d91da4f8c65c58ec59bcdfbf7decdab9f",
+      sha256 = "1032dfef4ff17f70464827daa28369b20f6584d108bc36f17ab1676e1edd2f91",
       extract = true,
       strip_prefix = "expat-%{version}",
     } | Source,
@@ -24,6 +24,9 @@ let version = "2.7.3" in
   ],
 
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
   outputs = {
     xmlwf = { glob = "usr/bin/xmlwf" } | OutputBin,
 

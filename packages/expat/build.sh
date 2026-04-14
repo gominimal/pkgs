@@ -12,7 +12,7 @@ export CXXFLAGS="${CFLAGS}"
 
 ./configure --prefix="/usr" \
             --disable-static \
-            --docdir="/usr/share/doc/expat-2.7.1"
+            --docdir="/usr/share/doc/expat-${MINIMAL_ARG_VERSION}"
 
 make -j$(nproc)
 make check
