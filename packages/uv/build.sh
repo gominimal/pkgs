@@ -1,8 +1,8 @@
 #!/bin/sh
 set -ex
 
-tar -xof uv-0.9.3.tar.gz
-cd uv-0.9.3
+tar -xof uv-${MINIMAL_ARG_VERSION}.tar.gz
+cd uv-${MINIMAL_ARG_VERSION}
 
 export CC=gcc
 export LD=gcc

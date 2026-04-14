@@ -31,6 +31,9 @@ let version = "0.11.6" in
     } | Needs,
 
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
   outputs = {
     minimal = { glob = "usr/bin/uv" } | OutputLib,
   },
