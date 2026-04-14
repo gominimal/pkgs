@@ -16,7 +16,7 @@ let version = "14.1.0" in
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/harfbuzz-%{version}.tar.xz",
-      sha256 = "9deffe9dded3c367c7d08265fd0a64193fad505a362a4889d898568c1cd46812",
+      sha256 = "ee0eb3a1da2c5a28147f12dff55f6c7d60aeeeb29ac7ef334eabe84c8476c105",
       extract = true,
       strip_prefix = "harfbuzz-%{version}",
     } | Source,
