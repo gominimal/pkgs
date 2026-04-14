@@ -61,6 +61,7 @@ in
   attrs =
     {
       upstream_version = version,
+      closed_source = true,
 
       # Claude code needs two things to function properly:
       #  - `.claude.json`, which contains anthropic credentials for the user
