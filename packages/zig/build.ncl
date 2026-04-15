@@ -7,14 +7,14 @@ let llvm = import "../llvm/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "0.16.0-dev.2682+02142a54d" in
+let version = "0.16.0" in
 {
   name = "zig",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://ziglang.org/builds/zig-%{version}.tar.xz",
-      sha256 = "2884607e55761aa2a178ca50b5277ee1abb4320db6a7d023c46cf0ffe7632f8f",
+      url = "https://ziglang.org/download/%{version}/zig-%{version}.tar.xz",
+      sha256 = "43186959edc87d5c7a1be7b7d2a25efffd22ce5807c7af99067f86f99641bfdf",
     } | Source,
     base,
     cmake,
