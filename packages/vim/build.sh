@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof vim-9.1.1629.tar.gz
-cd vim-9.1.1629
+tar -xof vim-9.2.0350.tar.gz
+cd vim-9.2.0350
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
