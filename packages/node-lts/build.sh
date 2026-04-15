@@ -1,0 +1,23 @@
+#!/bin/sh
+set -e
+
+export CC=gcc
+
+tar -xof "node-v${MINIMAL_ARG_VERSION}.tar.gz"
+cd "node-v${MINIMAL_ARG_VERSION}"
+
+case $(uname -m) in
+  x86_64)  MARCH="-march=x86-64-v3" ;;
+  aarch64) MARCH="-march=armv8-a" ;;
+  *)       MARCH="" ;;
+esac
+export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
+export LDFLAGS="-Wl,--build-id=none"
+export CXXFLAGS="${CFLAGS}"
+
+./configure --prefix=/usr \
+    --with-intl=system-icu --shared-openssl --shared-zlib --shared-zstd --shared-sqlite --shared-libuv \
+    --shared-nghttp2 --shared-nghttp3 --shared-ngtcp2 --shared-gtest --shared-cares
+    # Note: --shared-lief is omitted; that configure option was not added until Node.js v25.
+make -j$(nproc)
+make DESTDIR=$OUTPUT_DIR install
