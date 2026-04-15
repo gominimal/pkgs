@@ -25,6 +25,9 @@ let version = "9.2.0350" in
     ncurses,
   ],
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
   outputs = {
     vim = { glob = "usr/bin/vim" } | OutputBin,
     vimdiff = { glob = "usr/bin/vimdiff" } | OutputBin,
