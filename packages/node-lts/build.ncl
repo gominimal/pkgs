@@ -35,6 +35,8 @@ let version = "24.14.1" in
     toolchain,
   ],
   runtime_deps = [
+    # Note: lief is absent here (unlike packages/node/) because --shared-lief was not added
+    # to Node.js configure until v25; the v24 LTS branch does not support it.
     coreutils, # npx/npm need /usr/bin/env
     openssl,
     c-ares,

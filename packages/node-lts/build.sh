@@ -18,5 +18,6 @@ export CXXFLAGS="${CFLAGS}"
 ./configure --prefix=/usr \
     --with-intl=system-icu --shared-openssl --shared-zlib --shared-zstd --shared-sqlite --shared-libuv \
     --shared-nghttp2 --shared-nghttp3 --shared-ngtcp2 --shared-gtest --shared-cares
+    # Note: --shared-lief is omitted; that configure option was not added until Node.js v25.
 make -j$(nproc)
 make DESTDIR=$OUTPUT_DIR install
