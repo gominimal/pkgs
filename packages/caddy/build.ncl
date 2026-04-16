@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.10.2" in
+let version = "2.11.2" in
 {
   name = "caddy",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/caddyserver/caddy/v%{version}.tar.gz",
-      sha256 = "f63f46b7ae68ced0a5c2e31df1b6dfc7656117d162a1bc7fed4bd4afd14ddc8f",
+      sha256 = "ee12f7b5f97308708de5067deebb3d3322fc24f6d54f906a47a0a4e8db799122",
       extract = true,
       strip_prefix = "caddy-%{version}",
     } | Source,
