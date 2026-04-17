@@ -30,8 +30,8 @@ let version = "0.18.0" in
   cmd = "./build.sh",
 
   outputs = {
-    python_site_package = { glob = "usr/lib/python3.13/site-packages/mesonpy/**" } | OutputData,
-    python_dist_info = { glob = "usr/lib/python3.13/site-packages/meson_python-*.dist-info/**" } | OutputData,
+    python_site_package = { glob = "usr/lib/python*/site-packages/mesonpy/**" } | OutputData,
+    python_dist_info = { glob = "usr/lib/python*/site-packages/meson_python-*.dist-info/**" } | OutputData,
   },
 
   attrs =

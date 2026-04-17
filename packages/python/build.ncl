@@ -16,14 +16,14 @@ let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let xz = import "../xz/build.ncl" in
 
-let version = "3.13.7" in
+let version = "3.14.4" in
 {
   name = "python",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/Python-%{version}.tar.xz",
-      sha256 = "5462f9099dfd30e238def83c71d91897d8caa5ff6ebc7a50f14d4802cdaaa79a"
+      sha256 = "d923c51303e38e249136fc1bdf3568d56ecb03214efdef48516176d3d7faaef8"
     } | Source,
     base,
     make,
@@ -46,15 +46,21 @@ let version = "3.13.7" in
   ],
 
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
   outputs = {
+    # Wildcards avoid coupling to a specific python minor version. Future
+    # bumps (3.14 → 3.15 → ...) don't require touching this file — the
+    # `python3.*` patterns match whichever minor is installed.
     python3 = { glob = "usr/bin/python3" } | OutputBin,
-    "python3.13" = { glob = "usr/bin/python3.13" } | OutputBin,
+    python3_minor = { glob = "usr/bin/python3.*" } | OutputBin,
     pip3 = { glob = "usr/bin/pip3" } | OutputBin,
-    "pip3.13" = { glob = "usr/bin/pip3.13" } | OutputBin,
+    pip3_minor = { glob = "usr/bin/pip3.*" } | OutputBin,
     pydoc3 = { glob = "usr/bin/pydoc3" } | OutputBin,
-    "pydoc3.13" = { glob = "usr/bin/pydoc3.13" } | OutputBin,
+    pydoc3_minor = { glob = "usr/bin/pydoc3.*" } | OutputBin,
     python3-config = { glob = "usr/bin/python3-config" } | OutputBin,
-    "python3.13-config" = { glob = "usr/bin/python3.13-config" } | OutputBin,
+    python3_minor-config = { glob = "usr/bin/python3.*-config" } | OutputBin,
 
     libs = { glob = "usr/lib/libpython*.so*" } | OutputLib,
     datas = { glob = "usr/lib/python*/**", allow_executable = true } | OutputData,

@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof Python-3.13.7.tar.xz
-cd Python-3.13.7
+tar -xof "Python-${MINIMAL_ARG_VERSION}.tar.xz"
+cd "Python-${MINIMAL_ARG_VERSION}"
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;

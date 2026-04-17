@@ -28,8 +28,8 @@ let version = "1.3.0" in
   cmd = "./build.sh",
 
   outputs = {
-    python_site_package = { glob = "usr/lib/python3.13/site-packages/build/**" } | OutputData,
-    python_dist_info = { glob = "usr/lib/python3.13/site-packages/build-*.dist-info/**" } | OutputData,
+    python_site_package = { glob = "usr/lib/python*/site-packages/build/**" } | OutputData,
+    python_dist_info = { glob = "usr/lib/python*/site-packages/build-*.dist-info/**" } | OutputData,
   },
 
   attrs =

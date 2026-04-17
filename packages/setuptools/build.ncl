@@ -18,7 +18,7 @@ let version = "80.9.0" in
   ],
   cmd = "./build.sh",
   outputs = {
-    site_packages = { glob = "usr/lib/python3.13/site-packages/**/*" } | OutputData,
+    site_packages = { glob = "usr/lib/python*/site-packages/**/*" } | OutputData,
   },
   attrs =
     {

@@ -24,7 +24,7 @@ let version = "1.10.1" in
   cmd = "./build.sh",
   outputs = {
     meson = { glob = "usr/bin/meson" } | OutputBin,
-    site_packages = { glob = "usr/lib/python3.13/site-packages/**/*" } | OutputData,
+    site_packages = { glob = "usr/lib/python*/site-packages/**/*" } | OutputData,
   },
 
   attrs =

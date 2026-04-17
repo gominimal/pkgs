@@ -23,8 +23,8 @@ let version = "3.12.0" in
   cmd = "./build.sh",
 
   outputs = {
-    python_site_package = { glob = "usr/lib/python3.13/site-packages/flit_core/**" } | OutputData,
-    python_dist_info = { glob = "usr/lib/python3.13/site-packages/flit_core-*.dist-info/**" } | OutputData,
+    python_site_package = { glob = "usr/lib/python*/site-packages/flit_core/**" } | OutputData,
+    python_dist_info = { glob = "usr/lib/python*/site-packages/flit_core-*.dist-info/**" } | OutputData,
   },
 
   attrs =

@@ -32,10 +32,10 @@ let version = "3.2.1" in
     cython = { glob = "usr/bin/cython" } | OutputBin,
     cygdb = { glob = "usr/bin/cygdb" } | OutputBin,
 
-    python_site_package = { glob = "usr/lib/python3.13/site-packages/{cython.py,Cython/**}", allow_data = true } | OutputLib,
-    python_dist_info = { glob = "usr/lib/python3.13/site-packages/cython-*.dist-info/**" } | OutputData,
+    python_site_package = { glob = "usr/lib/python*/site-packages/{cython.py,Cython/**}", allow_data = true } | OutputLib,
+    python_dist_info = { glob = "usr/lib/python*/site-packages/cython-*.dist-info/**" } | OutputData,
 
-    python_site_other = { glob = "usr/lib/python3.13/site-packages/{pyximport,__pycache__}/**" } | OutputData,
+    python_site_other = { glob = "usr/lib/python*/site-packages/{pyximport,__pycache__}/**" } | OutputData,
   },
 
   attrs =

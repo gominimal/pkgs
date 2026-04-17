@@ -28,8 +28,8 @@ let version = "0.9.1" in
   cmd = "./build.sh",
 
   outputs = {
-    python_site_package = { glob = "usr/lib/python3.13/site-packages/pyproject_metadata/**" } | OutputData,
-    python_dist_info = { glob = "usr/lib/python3.13/site-packages/pyproject_metadata-*.dist-info/**" } | OutputData,
+    python_site_package = { glob = "usr/lib/python*/site-packages/pyproject_metadata/**" } | OutputData,
+    python_dist_info = { glob = "usr/lib/python*/site-packages/pyproject_metadata-*.dist-info/**" } | OutputData,
   },
 
   attrs =

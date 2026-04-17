@@ -23,7 +23,7 @@ let version = "306" in
   cmd = "./build.sh",
   outputs = {
     diffoscope = { glob = "usr/bin/diffoscope" } | OutputBin,
-    site_packages = { glob = "usr/lib/python3.13/site-packages/**/*" } | OutputData,
+    site_packages = { glob = "usr/lib/python*/site-packages/**/*" } | OutputData,
   },
   attrs = {
     upstream_version = version,

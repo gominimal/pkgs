@@ -28,8 +28,8 @@ let version = "25.0" in
   ],
 
   outputs = {
-    python_site_package = { glob = "usr/lib/python3.13/site-packages/packaging/**" } | OutputData,
-    python_dist_info = { glob = "usr/lib/python3.13/site-packages/packaging-*.dist-info/**" } | OutputData,
+    python_site_package = { glob = "usr/lib/python*/site-packages/packaging/**" } | OutputData,
+    python_dist_info = { glob = "usr/lib/python*/site-packages/packaging-*.dist-info/**" } | OutputData,
   },
 
   attrs =
