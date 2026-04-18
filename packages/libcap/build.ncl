@@ -10,14 +10,16 @@ let coreutils = import "../coreutils/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.77" in
+let version = "2.78" in
 {
   name = "libcap",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/libcap-%{version}.tar.gz",
-      sha256 = "5e339f5ab434bf5b7979f65437ca24942ddcd6e6a3e57347370cd791bc0ea51c",
+      # Home page: https://sites.google.com/site/fullycapable/
+      # Download: https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.78.tar.xz
+      url = "gs://minimal-staging-archives/libcap-%{version}.tar.xz",
+      sha256 = "0d621e562fd932ccf67b9660fb018e468a683d7b827541df27813228c996bb11",
       extract = true,
       strip_prefix = "libcap-%{version}",
     } | Source,
