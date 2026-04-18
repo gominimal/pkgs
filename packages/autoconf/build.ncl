@@ -5,14 +5,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let perl = import "../perl/build.ncl" in
 
-let version = "2.72" in
+let version = "2.73" in
 {
   name = "autoconf",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/autoconf-%{version}.tar.xz",
-      sha256 = "ba885c1319578d6c94d46e9b0dceb4014caafe2490e437a0dbca3f270a223f5a",
+      sha256 = "9fd672b1c8425fac2fa67fa0477b990987268b90ff36d5f016dae57be0d6b52e",
       extract = true,
       strip_prefix = "autoconf-%{version}",
     } | Source,
