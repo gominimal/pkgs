@@ -1,8 +1,8 @@
 #!/bin/sh
 set -ex
 
-tar -xof mpc-1.3.1.tar.gz
-cd mpc-1.3.1
+tar -xof "mpc-$MINIMAL_ARG_VERSION.tar.xz"
+cd "mpc-$MINIMAL_ARG_VERSION"
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
@@ -15,7 +15,7 @@ export CXXFLAGS="${CFLAGS}"
 
 ./configure  --prefix=/usr      \
             --disable-static    \
-            --docdir=/usr/share/doc/mpc-1.3.1
+            --docdir="/usr/share/doc/mpc-$MINIMAL_ARG_VERSION"
 
 make -j$(nproc)
 #make check

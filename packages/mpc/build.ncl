@@ -24,14 +24,14 @@ let linux_headers = import "../linux_headers/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let mpfr = import "../mpfr/build.ncl" in
 
-let version = "1.3.1" in
+let version = "1.4.0" in
 {
   name = "mpc",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/mpc-%{version}.tar.gz",
-      sha256 = "ab642492f5cf882b74aa0cb730cd410a81edcdbec895183ce930e706c1c759b8"
+      url = "gs://minimal-staging-archives/mpc-%{version}.tar.xz",
+      sha256 = "3210b3a546b1cb00c296ca360891d7740ee6ff06deb02a27a35b20cd3c0bb1a5"
     } | Source,
     # base
     bash-bootstrap,
@@ -61,6 +61,10 @@ let version = "1.3.1" in
   ],
 
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
+
   outputs = {
     libs = { glob = "usr/lib/libmpc.so*" } | OutputLib,
 
