@@ -4,14 +4,15 @@ let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let version = "679" in
+let version = "692" in
 {
   name = "less",
   build_deps = [
     { file = "build.sh" } | Local,
     {
+      # https://www.greenwoodsoftware.com/less/less-692.tar.gz
       url = "gs://minimal-staging-archives/less-%{version}.tar.gz",
-      sha256 = "9b68820c34fa8a0af6b0e01b74f0298bcdd40a0489c61649b47058908a153d78"
+      sha256 = "61300f603798ecf1d7786570789f0ff3f5a1acf075a6fb9f756837d166e37d14"
     } | Source,
     base,
     make,
@@ -22,6 +23,10 @@ let version = "679" in
     ncurses,
   ],
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
+
   outputs = {
     less = { glob = "usr/bin/less" } | OutputBin,
     lessecho = { glob = "usr/bin/lessecho" } | OutputBin,
@@ -31,10 +36,6 @@ let version = "679" in
   attrs =
     {
       upstream_version = version,
-      source_provenance = {
-        category = 'GithubRepo,
-        owner = "gwsw",
-        repo = "less",
-      },
+      # Home page: https://www.greenwoodsoftware.com/less/
     } | Attrs,
 } | BuildSpec
