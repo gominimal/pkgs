@@ -8,14 +8,14 @@ let glibc = import "../glibc/build.ncl" in
 let mpfr = import "../mpfr/build.ncl" in
 let readline = import "../readline/build.ncl" in
 
-let version = "5.3.2" in
+let version = "5.4.0" in
 {
   name = "gawk",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/gawk-%{version}.tar.xz",
-      sha256 = "f8c3486509de705192138b00ef2c00bbbdd0e84c30d5c07d23fc73a9dc4cc9cc"
+      sha256 = "3dd430f0cd3b4428c6c3f6afc021b9cd3c1f8c93f7a688dc268ca428a90b4ac1"
     } | Source,
     base-bootstrap,
     make,
@@ -28,8 +28,12 @@ let version = "5.3.2" in
   ],
 
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
+
   outputs = {
-    "gawk-5.3.2" = { glob = "usr/bin/gawk-5.3.2" } | OutputBin,
+    "gawk-%{version}" = { glob = "usr/bin/gawk-%{version}" } | OutputBin,
     gawk = { glob = "usr/bin/gawk" } | OutputBin,
     awk = { glob = "usr/bin/awk" } | OutputBin,
     libs = { glob = "usr/lib/gawk/*.so" } | OutputLib,

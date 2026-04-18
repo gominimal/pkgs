@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof gawk-5.3.2.tar.xz
-cd gawk-5.3.2
+tar -xof "gawk-$MINIMAL_ARG_VERSION.tar.xz"
+cd "gawk-$MINIMAL_ARG_VERSION"
 
 sed -i 's/extras//' Makefile.in
 
