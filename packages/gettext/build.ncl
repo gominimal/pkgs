@@ -7,14 +7,14 @@ let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "0.26" in
+let version = "1.0" in
 {
   name = "gettext",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/gettext-%{version}.tar.xz",
-      sha256 = "d1fb86e260cfe7da6031f94d2e44c0da55903dbae0a2fa0fae78c91ae1b56f00",
+      sha256 = "71132a3fb71e68245b8f2ac4e9e97137d3e5c02f415636eb508ae607bc01add7",
       extract = true,
       strip_prefix = "gettext-%{version}",
     } | Source,
@@ -30,6 +30,10 @@ let version = "0.26" in
   ],
 
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
+
   outputs = {
     # Theres a few binaries which depend on /bin/sh, we dont depend on bash as a runtime dep because it will
     # bloat our deps and also an environment which is likely to use these tools (a build) is pretty much guaranteed

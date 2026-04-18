@@ -12,7 +12,7 @@ export CXXFLAGS="${CFLAGS}"
 
 ./configure  --prefix=/usr      \
             --disable-static    \
-            --docdir=/usr/share/doc/gettext-0.26
+            --docdir="/usr/share/doc/gettext-$MINIMAL_ARG_VERSION"
 
 make -j$(nproc)
 # make check # TODO: Move somewhere else
