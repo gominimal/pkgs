@@ -1,8 +1,8 @@
 #!/bin/sh
 set -ex
 
-tar -xof less-679.tar.gz
-cd less-679
+tar -xof "less-$MINIMAL_ARG_VERSION.tar.gz"
+cd "less-$MINIMAL_ARG_VERSION"
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
