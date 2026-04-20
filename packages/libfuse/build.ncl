@@ -7,14 +7,14 @@ let meson = import "../meson/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 
-let version = "3.18.1" in
+let version = "3.18.2" in
 {
   name = "libfuse",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libfuse/libfuse/fuse-%{version}.tar.gz",
-      sha256 = "dd395c88f29c7540bbdd0b830260ab8092ccb241bb6e66f603643f715fb9322c",
+      sha256 = "55a97cfd8661a9b42ff0123b44af52cac49feaec36987f4d968c046f93b42e1d",
       extract = true,
       strip_prefix = "fuse-%{version}",
     } | Source,
