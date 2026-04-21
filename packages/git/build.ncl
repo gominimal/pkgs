@@ -55,6 +55,7 @@ let version = "2.54.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-2.0-only",
       repology_project = "git",
       source_provenance = {
         category = 'GithubRepo,
