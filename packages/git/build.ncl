@@ -61,6 +61,11 @@ let version = "2.52.0" in
         owner = "git",
         repo = "git",
       },
+      # git distributes source tarballs at kernel.org; no GitHub release
+      # assets. pkgmgr uses this template to fetch the new tarball when
+      # updating, since provenance (GithubRepo) only identifies where
+      # advisories are tracked, not where the source lives.
+      upstream_download_url_template = "https://www.kernel.org/pub/software/scm/git/git-%{version}.tar.xz",
     } | Attrs,
 
   tests = {
