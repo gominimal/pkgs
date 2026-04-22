@@ -326,7 +326,7 @@ needs = {
 
 #### `prebuilt`
 
-Used for packages whose artifacts are downloaded pre-compiled rather than built from source. Not covered in detail here — check existing packages that use it for reference.
+Declares the package's output as a checked-in prebuilt binary rather than something built from source during the pipeline. Typically used for toolchain-bootstrap packages that need a working binary before the toolchain itself can compile anything — see `packages/bash-bootstrap/build.ncl` as an example.
 
 
 
