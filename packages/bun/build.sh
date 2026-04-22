@@ -1,6 +1,38 @@
 #!/bin/sh
 set -ex
 
+# Provide an `unzip` shim backed by python's zipfile module (no unzip package
+# in the minimal environment). The nested build calls `unzip -o -DD -d <dest>
+# <zip>` to extract the downloaded zig toolchain.
+mkdir -p shims
+cat > shims/unzip <<'SHIM'
+#!/usr/bin/env python3
+import sys, os, zipfile
+args = sys.argv[1:]
+dest, src = ".", None
+i = 0
+while i < len(args):
+    a = args[i]
+    if a in ("-o", "-DD", "-q", "-qq"):
+        i += 1
+    elif a == "-d":
+        dest = args[i + 1]; i += 2
+    else:
+        src = a; i += 1
+if src is None:
+    sys.exit("unzip shim: missing zip path")
+os.makedirs(dest, exist_ok=True)
+with zipfile.ZipFile(src) as z:
+    z.extractall(dest)
+    for info in z.infolist():
+        if info.external_attr:
+            mode = (info.external_attr >> 16) & 0o777
+            if mode:
+                os.chmod(os.path.join(dest, info.filename), mode)
+SHIM
+chmod +x shims/unzip
+export PATH="$(pwd)/shims:$PATH"
+
 # Extract and set up bootstrap bun binary
 case $(uname -m) in
   x86_64)  BUN_ARCH=x64;   CARGO_TARGET=x86_64-unknown-linux-gnu ;;
@@ -33,29 +65,16 @@ export CXXFLAGS="${CFLAGS}"
 # our stable rust is sufficient for lol-html
 rm -f rust-toolchain.toml
 
-# Initialize a git repo so CMake's dependency version generation works
+# Initialize a git repo so nested dep version generation works
 # (it runs "git rev-parse HEAD" to get version strings for bundled packages)
 git init -q
 git -c user.email=build@local -c user.name=build commit -q -m "v${MINIMAL_ARG_VERSION}" --allow-empty
 
-# Install npm dependencies and generate source file lists
-bun install --frozen-lockfile
-bun run glob-sources
-
-# Configure with CMake
-cmake -GNinja -B build \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_INSTALL_PREFIX=/usr \
-  -DENABLE_BASELINE=OFF \
-  -DENABLE_LTO=OFF \
-  -DENABLE_ASAN=OFF \
-  -DUSE_STATIC_LIBATOMIC=OFF \
-  -Wno-dev
-
-# Build
-ninja -C build bun
+# Build via bun's own build orchestration (handles bun install, codegen, cmake
+# deps, zig, linking, and strip). Outputs the stripped binary at build/release/bun.
+bun run build:release
 
 # Install
 mkdir -p "$OUTPUT_DIR/usr/bin"
-install -m 755 build/bun "$OUTPUT_DIR/usr/bin/bun"
+install -m 755 build/release/bun "$OUTPUT_DIR/usr/bin/bun"
 ln -s bun "$OUTPUT_DIR/usr/bin/bunx"
