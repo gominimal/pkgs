@@ -36,7 +36,7 @@ rm -f rust-toolchain.toml
 # Initialize a git repo so CMake's dependency version generation works
 # (it runs "git rev-parse HEAD" to get version strings for bundled packages)
 git init -q
-git -c user.email=build@local -c user.name=build commit -q -m "v1.3.10" --allow-empty
+git -c user.email=build@local -c user.name=build commit -q -m "v${MINIMAL_ARG_VERSION}" --allow-empty
 
 # Install npm dependencies and generate source file lists
 bun install --frozen-lockfile
