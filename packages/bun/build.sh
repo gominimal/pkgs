@@ -1,44 +1,12 @@
 #!/bin/sh
 set -ex
 
-# Provide an `unzip` shim backed by python's zipfile module (no unzip package
-# in the minimal environment). The nested build calls `unzip -o -DD -d <dest>
-# <zip>` to extract the downloaded zig toolchain.
-mkdir -p shims
-cat > shims/unzip <<'SHIM'
-#!/usr/bin/env python3
-import sys, os, zipfile
-args = sys.argv[1:]
-dest, src = ".", None
-i = 0
-while i < len(args):
-    a = args[i]
-    if a in ("-o", "-DD", "-q", "-qq"):
-        i += 1
-    elif a == "-d":
-        dest = args[i + 1]; i += 2
-    else:
-        src = a; i += 1
-if src is None:
-    sys.exit("unzip shim: missing zip path")
-os.makedirs(dest, exist_ok=True)
-with zipfile.ZipFile(src) as z:
-    z.extractall(dest)
-    for info in z.infolist():
-        if info.external_attr:
-            mode = (info.external_attr >> 16) & 0o777
-            if mode:
-                os.chmod(os.path.join(dest, info.filename), mode)
-SHIM
-chmod +x shims/unzip
-export PATH="$(pwd)/shims:$PATH"
-
 # Extract and set up bootstrap bun binary
 case $(uname -m) in
   x86_64)  BUN_ARCH=x64;   CARGO_TARGET=x86_64-unknown-linux-gnu ;;
   aarch64) BUN_ARCH=aarch64; CARGO_TARGET=aarch64-unknown-linux-gnu ;;
 esac
-python3 -m zipfile -e "bun-linux-${BUN_ARCH}.zip" .
+unzip -o "bun-linux-${BUN_ARCH}.zip"
 chmod +x "bun-linux-${BUN_ARCH}/bun"
 export PATH="$(pwd)/bun-linux-${BUN_ARCH}:$PATH"
 bun --version

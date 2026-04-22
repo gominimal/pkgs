@@ -16,6 +16,7 @@ let git = import "../git/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let automake = import "../automake/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
+let unzip = import "../unzip/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 let version = "1.3.13" in
@@ -63,6 +64,7 @@ in
     curl,
     automake,
     libtool,
+    unzip,
   ],
   runtime_deps = [
     glibc,
