@@ -2,7 +2,7 @@ let { harness, .. } = import "minimal.ncl" in
 harness {
   name = "npm",
 
-  runtime_packages = ["node"],
+  runtime_packages = ["node-lts"],
   build_packages = ["base", "curl"],
 
   build_cmds_cmd = [
