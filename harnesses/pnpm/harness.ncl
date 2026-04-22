@@ -2,7 +2,7 @@ let { harness, .. } = import "minimal.ncl" in
 harness {
   name = "pnpm",
 
-  runtime_packages = ["node"],
+  runtime_packages = ["node-lts"],
   build_packages = ["pnpm", "base"],
 
   build_cmds_cmd = [
