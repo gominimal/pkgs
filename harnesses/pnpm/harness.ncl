@@ -2,7 +2,7 @@ let { harness, .. } = import "minimal.ncl" in
 harness {
   name = "pnpm",
 
-  runtime_packages = ["node"],
+  runtime_packages = ["node-lts"],
   build_packages = ["pnpm", "base"],
 
   build_cmds_cmd = [
@@ -10,7 +10,9 @@ harness {
     "-c",
     m%"
     # Run pnpm install if no packages are installed (first start)
-    [ -z "$(pnpm list 2>/dev/null)" ] && echo "/bin/pnpm install"
+    if [ -z "$(pnpm list 2>/dev/null)" ]; then
+      [ -f pnpm-lock.yaml ] && echo '/bin/pnpm install --frozen-lockfile' || echo '/bin/pnpm install'
+    fi
     echo '/bin/pnpm build'
   "%
   ],
