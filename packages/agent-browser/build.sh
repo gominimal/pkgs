@@ -5,8 +5,12 @@ export CC=gcc
 export LD=gcc
 export RUSTFLAGS="-C linker=gcc"
 
-# Install JS deps (skip postinstall which downloads pre-built binary)
-pnpm install --ignore-scripts
+# Install JS deps (skip postinstall which downloads pre-built binary).
+# Use the hoisted node-linker so node_modules is a flat, self-contained
+# tree — pnpm's default symlinked layout into .pnpm/ doesn't survive
+# being copied into $OUTPUT_DIR and causes runtime ERR_MODULE_NOT_FOUND
+# on transitive deps (e.g. jszip).
+pnpm install --ignore-scripts --config.node-linker=hoisted
 
 # Build TypeScript daemon
 pnpm build

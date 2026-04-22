@@ -38,6 +38,8 @@ let nspr = import "../nspr/build.ncl" in
 let pango = import "../pango/build.ncl" in
 let atk = import "../atk/build.ncl" in
 let at-spi2-core = import "../at-spi2-core/build.ncl" in
+let eudev = import "../eudev/build.ncl" in
+let liberation-fonts = import "../liberation-fonts/build.ncl" in
 
 let version = "0.15.1" in
 {
@@ -90,6 +92,8 @@ let version = "0.15.1" in
     pango,
     atk,
     at-spi2-core,
+    eudev, # provides libudev.so.1, required by Chromium at runtime
+    liberation-fonts, # Chromium renders boxes without a fallback font available
   ],
 
   cmd = "./build.sh",
