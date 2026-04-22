@@ -3,7 +3,7 @@ let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
 
-let node = import "../node/build.ncl" in
+let node-lts = import "../node-lts/build.ncl" in
 
 let version = "10.33.0" in
 {
@@ -18,7 +18,7 @@ let version = "10.33.0" in
     tar,
   ],
   runtime_deps = [
-    node,
+    node-lts,
     coreutils, # pnpm is a sheband script that invokes node like `#!/usr/bin/env node`
   ],
   needs =

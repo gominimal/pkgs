@@ -10,7 +10,9 @@ harness {
     "-c",
     m%"
     # Run pnpm install if no packages are installed (first start)
-    [ -z "$(pnpm list 2>/dev/null)" ] && echo "/bin/pnpm install"
+    if [ -z "$(pnpm list 2>/dev/null)" ]; then
+      [ -f pnpm-lock.yaml ] && echo '/bin/pnpm install --frozen-lockfile' || echo '/bin/pnpm install'
+    fi
     echo '/bin/pnpm build'
   "%
   ],
