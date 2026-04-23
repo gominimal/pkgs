@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # pkgs repository
 
 You are in the packaging repository for the Minimal build system & package manager, containing the
@@ -9,7 +13,7 @@ You are running in an environment with access to a few specialized tools to help
 goals. These tools are all subcommands of the `min` command.
  
  * `min add <package name>` - Installs the package with the given name into your environment, letting you
-    use the CLI tools it encapsulates. If you arent sure of the right package name, you can use
+    use the CLI tools it encapsulates. If you aren't sure of the right package name, you can use
     `min search <term>` to help find it.
  * `min check [--packages] [--profiles] [--harnesses] [--fix] [<name 1>[, <name N>]]` - Runs linters and static checks on the packages/profiles/harnesses with the given names, or all if names are not specified. If none of --profiles, --harnesses, and --packages are set, then checks are run for all three object kinds.
  * `min patched-pkg <package name>` - Runs the build for the named package. Unlike a full build, a patched build will wire dependencies to the most recent available version of the package with the same name, so you won't have long rebuilds when editing packages which are circularly dependent on a lot of other packages.
@@ -24,7 +28,28 @@ Specifically:
 
  * Packages: `packages/<package name>/build.ncl`
  * Harnesses: `harnesses/<harness name>/harness.ncl`
- * Profile: `profiles/<profile name>/profile.ncl`
+
+The repo-level config lives at `minimal.toml` (declares the minimum `stdlib` version and interactive `tasks` like `min run shell` / `min run claude`).
+
+### Harnesses
+
+A harness describes a reusable build environment for a class of project (e.g. a Go module, a Rust crate, a CMake project). Each harness declares the packages it needs, a default build command, and a set of project-detection rules — `minimal init` uses these rules to auto-select the right harness for a source tree.
+
+Example (`harnesses/go/harness.ncl`):
+
+```ncl
+let { harness, .. } = import "minimal.ncl" in
+harness {
+  name = "go",
+  build_packages = ["go", "binutils", "linux_headers"],
+  build_cmd = "go build",
+  matches_project_if_any = [
+    { file_regexes = { "go.mod" = "*", "go.sum" = "*" } },
+  ],
+}
+```
+
+Current harnesses cover: bun, cmake, deno, go, gradle, make, maven, meson, npm, pip, pnpm, pulumi-go, pulumi-nodejs, rust, shell, uv, zig.
 
 
 
@@ -136,7 +161,7 @@ by the build script, or `go` for building Golang source code into a binary.
 A package belongs as a `runtime_deps` entry if it is needed anywhere the package itself would be deployed.
 Examples of this include `glibc` for built binaries that link with glibc, similarly for openssl. Interpreted
 languages like packages that are python scripts typically need their intepreter as a runtime dep as well. All
-entries in `runtime_deps` will be injected into the build environment, so theres no need to have an identical
+entries in `runtime_deps` will be injected into the build environment, so there's no need to have an identical
 entry in `build_deps` if you have a dependency in `runtime_deps`.
 
 Any package listed in `build_deps` that itself has `runtime_deps` (transitive `runtime_deps`) will also be
@@ -170,6 +195,24 @@ The program to run to complete the build is declared using the `cmd` field, and 
 an adjacent shell script `./build.sh`. Theres also a `build_args` field to pass values across from
 the config into this invocation as environment variables: each key/value entry shows up as an env var
 `MINIMAL_ARG_<KEY>` where key is uppercase.
+
+The usual pattern is to bind `version` at the top of `build.ncl` and forward it through `build_args` so
+`build.sh` can refer to it as `$MINIMAL_ARG_VERSION` rather than hardcoding the value. This keeps version
+bumps to a single edit in `build.ncl`:
+
+```ncl
+let version = "5.3" in
+{
+  # ...
+  build_args = { include version },
+}
+```
+
+```bash
+cd bash-$MINIMAL_ARG_VERSION
+```
+
+See `packages/bash/build.ncl` and `packages/bash/build.sh` for a complete example.
 
 All files to be captured from the build must be stored in `$OUTPUT_DIR`, i.e. `make DESTDIR=$OUTPUT_DIR install`.
 
@@ -208,7 +251,24 @@ of the build. You can also have the system unpack the tarball into the working d
 
 Note that unpacking is supported for: `.tar.gz`, `.tgz`, `.tar.xz`, `.tar.zst`, `.tar.bz2`, `.tar`.
 
-If you encounter any errors in the automatic unpacking of the tarball, turn off extraction and use the tar command instead.
+If you encounter any errors in the automatic unpacking of the tarball, turn off extraction, add `tar` to `build_deps`, and extract manually in `build.sh`:
+
+```ncl
+build_deps = [
+  { file = "build.sh" } | Local,
+  { url = "...", sha256 = "..." } | Source,
+  tar,
+  ...
+],
+```
+
+```bash
+tar -xf source-tarball-$MINIMAL_ARG_VERSION.tar.gz
+cd source-dir-$MINIMAL_ARG_VERSION
+```
+
+(Forwarding `version` via `build_args = { include version }` — see "Build steps/script" above — lets
+`build.sh` stay untouched across version bumps.)
 
 
 ### Outputs
@@ -274,7 +334,22 @@ Omit it if its not one of these variants.
 
 ### Other fields
 
-Not shown/described: `needs`, `prebuilt`.
+#### `needs`
+
+Declares sandbox capabilities the build requires. Most packages don't need this, but builds that fetch dependencies over the network (Go modules, cargo crates, npm packages) must opt in:
+
+```ncl
+needs = {
+  dns = {},
+  internet = {},
+},
+```
+
+#### `prebuilt`
+
+Declares the package's output as a checked-in prebuilt binary rather than something built from source during the pipeline. Typically used for toolchain-bootstrap packages that need a working binary before the toolchain itself can compile anything — see `packages/bash-bootstrap/build.ncl` as an example.
+
+The source tarball for a `prebuilt = true` package must already match the on-disk layout that the package emits — there's no build step to move files around. For example, a prebuilt `bash` package needs its tarball to contain the binary at `usr/bin/bash` so it lands where the `OutputBin` glob expects it.
 
 
 
@@ -571,7 +646,7 @@ If the build fails:
 min check --packages <name>
 ```
 
-Some validation checkers run on the compiled output, and show up as skipped when a package hasnt been built yet.
+Some validation checkers run on the compiled output, and show up as skipped when a package hasn't been built yet.
 
 Run `min check` again to make sure these checkers are run, and iterate by fixing issues, running `patched-pkg`, and then
 running `min check` until all addressed.
