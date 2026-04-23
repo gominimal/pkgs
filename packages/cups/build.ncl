@@ -8,14 +8,14 @@ let openssl = import "../openssl/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.4.13" in
+let version = "2.4.18" in
 {
   name = "cups",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/cups-%{version}-source.tar.gz",
-      sha256 = "8255ecf037be72660de24a73bcada042fc5bf509fc87bc8ad16cd0675735c1a8",
+      sha256 = "8fe23bf4905f8889f4bd5ebf375e81916e84754bfc59eccc88cfd7b1e97a741b",
       extract = true,
       strip_prefix = "cups-%{version}",
     } | Source,
@@ -40,6 +40,7 @@ let version = "2.4.13" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Apache-2.0",
       source_provenance = {
         category = 'GithubRepo,
         owner = "OpenPrinting",
