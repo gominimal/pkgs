@@ -33,7 +33,7 @@ The repo-level config lives at `minimal.toml` (declares the minimum `stdlib` ver
 
 ### Harnesses
 
-A harness describes a reusable build environment for a class of project (e.g. a Go module, a Rust crate, a CMake project). Each harness declares the packages it needs, a default build command, and a set of project-detection rules — `min` uses these rules to auto-select the right harness for a source tree.
+A harness describes a reusable build environment for a class of project (e.g. a Go module, a Rust crate, a CMake project). Each harness declares the packages it needs, a default build command, and a set of project-detection rules — `minimal init` uses these rules to auto-select the right harness for a source tree.
 
 Example (`harnesses/go/harness.ncl`):
 
@@ -196,6 +196,24 @@ an adjacent shell script `./build.sh`. Theres also a `build_args` field to pass 
 the config into this invocation as environment variables: each key/value entry shows up as an env var
 `MINIMAL_ARG_<KEY>` where key is uppercase.
 
+The usual pattern is to bind `version` at the top of `build.ncl` and forward it through `build_args` so
+`build.sh` can refer to it as `$MINIMAL_ARG_VERSION` rather than hardcoding the value. This keeps version
+bumps to a single edit in `build.ncl`:
+
+```ncl
+let version = "5.3" in
+{
+  # ...
+  build_args = { include version },
+}
+```
+
+```bash
+cd bash-$MINIMAL_ARG_VERSION
+```
+
+See `packages/bash/build.ncl` and `packages/bash/build.sh` for a complete example.
+
 All files to be captured from the build must be stored in `$OUTPUT_DIR`, i.e. `make DESTDIR=$OUTPUT_DIR install`.
 
 In addition to creating the executable `./build.sh` script, you need to declare it as a build dependency, so
@@ -245,9 +263,12 @@ build_deps = [
 ```
 
 ```bash
-tar -xf source-tarball.tar.gz
-cd source-dir
+tar -xf source-tarball-$MINIMAL_ARG_VERSION.tar.gz
+cd source-dir-$MINIMAL_ARG_VERSION
 ```
+
+(Forwarding `version` via `build_args = { include version }` — see "Build steps/script" above — lets
+`build.sh` stay untouched across version bumps.)
 
 
 ### Outputs
@@ -327,6 +348,8 @@ needs = {
 #### `prebuilt`
 
 Declares the package's output as a checked-in prebuilt binary rather than something built from source during the pipeline. Typically used for toolchain-bootstrap packages that need a working binary before the toolchain itself can compile anything — see `packages/bash-bootstrap/build.ncl` as an example.
+
+The source tarball for a `prebuilt = true` package must already match the on-disk layout that the package emits — there's no build step to move files around. For example, a prebuilt `bash` package needs its tarball to contain the binary at `usr/bin/bash` so it lands where the `OutputBin` glob expects it.
 
 
 
