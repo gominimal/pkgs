@@ -320,6 +320,21 @@ At minimum, a build spec needs:
    curl -sL <url> | sha256sum
    ```
 
+**Verify the canonical upstream repo before using it.** GitHub projects get renamed, transferred, or forked — a repo you find via search or an older link may be stale and silently redirect. Before locking in a URL:
+
+- Resolve the repo with `curl -sIL https://github.com/<owner>/<repo> | grep -i '^location:'` (or open it in a browser) and check whether it redirects. If it does, use the new canonical owner/repo in both the `url` and `source_provenance`.
+- Cross-check the project's own README, homepage, or package registry page (npm, crates.io, PyPI) to confirm you have the current canonical source.
+
+Getting this wrong means future version bumps chase a dead repo and `source_provenance` lies about where the code came from.
+
+**Build from source — do not package prebuilt release binaries.** When the upstream project's toolchain is available in pkgs (bun, go, rust, cargo, node, etc.), the package must build from the source tarball rather than downloading a prebuilt binary from the release page. Reasons:
+
+- Prebuilt artifacts can be mutated after the fact; source builds give us a real supply-chain guarantee.
+- Source builds let us tweak flags for reproducibility and patch issues without waiting on upstream.
+- The toolchain is already there — there's no meaningful cost saving from shipping the prebuilt.
+
+Only fall back to a prebuilt binary if the required toolchain genuinely isn't packaged yet, and call that out explicitly in the package.
+
 #### Example: C library (autotools)
 
 ```nickel

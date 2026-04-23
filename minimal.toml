@@ -10,3 +10,8 @@ exec = "bash --noprofile -l"
 interactive = true
 packages = ["base", "bash", "claude-code", "curl"]
 exec = "claude --dangerously-skip-permissions"
+
+[tasks.opencode]
+interactive = true
+packages = ["base", "bash", "opencode", "curl"]
+exec = "opencode"
