@@ -4,7 +4,6 @@ let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.93.1" in
 {
   name = "rust-arm-embedded",
   build_deps = [
@@ -31,7 +30,7 @@ let version = "1.93.1" in
 
   attrs =
     {
-      upstream_version = version,
+      upstream_version = rust.attrs.upstream_version,
       source_provenance = {
         category = 'GithubRepo,
         owner = "rust-lang",
