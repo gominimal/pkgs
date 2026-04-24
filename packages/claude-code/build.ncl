@@ -5,7 +5,9 @@ let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let findutils = import "../findutils/build.ncl" in
 let curl = import "../curl/build.ncl" in
+let git = import "../git/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let openssh = import "../openssh/build.ncl" in
 let ripgrep = import "../ripgrep/build.ncl" in
 
 let { version, amd64_sha256, arm64_sha256, gcs_bucket } = {
@@ -44,8 +46,10 @@ in
     coreutils,
     findutils,
     curl,
+    git,
     glibc,
     ripgrep,
+    openssh,
   ],
 
   cmd = "./build.sh",
