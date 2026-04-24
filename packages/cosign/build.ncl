@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "3.0.4" in
+let version = "3.0.6" in
 {
   name = "cosign",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/sigstore/cosign/v%{version}.tar.gz",
-      sha256 = "8096c07e9a3ae21fa600c19cc8ff8c6f15b027184858d0bc0edde5f74589a01a",
+      sha256 = "ea2f4094d944d79671784ba3d7601d7fdf78c15b0d92cdc4ca31b4d5cff3cd89",
       extract = true,
       strip_prefix = "cosign-%{version}",
     } | Source,
@@ -42,6 +42,7 @@ let version = "3.0.4" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Apache-2.0",
       repology_project = "cosign",
       source_provenance = {
         category = 'GithubRepo,
