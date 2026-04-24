@@ -1,5 +1,5 @@
 [stdlib]
-minimum_version = "0.0.9"
+minimum_version = "0.0.11"
 
 [tasks.shell]
 interactive = true
