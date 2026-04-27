@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let alsa-lib = import "../alsa-lib/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -6,14 +7,30 @@ let zlib = import "../zlib/build.ncl" in
 
 let version = "21.0.10" in
 let build_num = "7" in
+let dl_base = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-%{version}+%{build_num}" in
+
+let { amd64_sha256, arm64_sha256 } = {
+  amd64_sha256 = "ea3b9bd464d6dd253e9a7accf59f7ccd2a36e4aa69640b7251e3370caef896a4",
+  arm64_sha256 = "357fee29fb0d5c079f6730db98b28942df13a6eed426f6c61cd4ad703ab27b9a",
+}
+in
+
 {
   name = "jdk",
   build_deps = [
     { file = "build.sh" } | Local,
-    {
-      url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-%{version}+%{build_num}/OpenJDK21U-jdk_x64_linux_hotspot_%{version}_%{build_num}.tar.gz",
-      sha256 = "ea3b9bd464d6dd253e9a7accf59f7ccd2a36e4aa69640b7251e3370caef896a4",
-    } | Source,
+    match {
+      { arch = 'Amd64, .. } =>
+        {
+          url = "%{dl_base}/OpenJDK21U-jdk_x64_linux_hotspot_%{version}_%{build_num}.tar.gz",
+          sha256 = amd64_sha256,
+        } | Source,
+      { arch = 'Arm64, .. } =>
+        {
+          url = "%{dl_base}/OpenJDK21U-jdk_aarch64_linux_hotspot_%{version}_%{build_num}.tar.gz",
+          sha256 = arm64_sha256,
+        } | Source,
+    } target,
     base,
   ],
   runtime_deps = [
