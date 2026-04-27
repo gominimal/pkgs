@@ -9,14 +9,14 @@ let freetype = import "../freetype/build.ncl" in
 let glib = import "../glib/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "14.1.0" in
+let version = "14.2.0" in
 {
   name = "harfbuzz",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/harfbuzz-%{version}.tar.xz",
-      sha256 = "ee0eb3a1da2c5a28147f12dff55f6c7d60aeeeb29ac7ef334eabe84c8476c105",
+      sha256 = "94017020f96d025bb66ae91574e4cf334bcad23e8175a8a40565b3721bc2eaff",
       extract = true,
       strip_prefix = "harfbuzz-%{version}",
     } | Source,
@@ -42,6 +42,7 @@ let version = "14.1.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT-Modern-Variant",
       source_provenance = {
         category = 'GithubRepo,
         owner = "harfbuzz",
