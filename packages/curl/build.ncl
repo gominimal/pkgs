@@ -8,14 +8,14 @@ let perl = import "../perl/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "8.17.0" in
+let version = "8.19.0" in
 {
   name = "curl",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/curl-%{version}.tar.xz",
-      sha256 = "955f6e729ad6b3566260e8fef68620e76ba3c31acf0a18524416a185acf77992",
+      sha256 = "4eb41489790d19e190d7ac7e18e82857cdd68af8f4e66b292ced562d333f11df",
       extract = true,
       strip_prefix = "curl-%{version}",
     } | Source,
@@ -53,6 +53,7 @@ let version = "8.17.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "curl",
       repology_project = "curl",
       source_provenance = {
         category = 'GithubRepo,
