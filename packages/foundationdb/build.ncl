@@ -88,10 +88,10 @@ let version = "7.3.69" in
             set -euo pipefail
 
             # Create a minimal FDB cluster file
-            TMPDIR=$(mktemp -d)
-            CLUSTER_FILE="$TMPDIR/fdb.cluster"
-            DATA_DIR="$TMPDIR/data"
-            LOG_DIR="$TMPDIR/logs"
+            BASE=$(pwd)
+            CLUSTER_FILE="$BASE/fdb.cluster"
+            DATA_DIR="$BASE/data"
+            LOG_DIR="$BASE/logs"
             mkdir -p "$DATA_DIR" "$LOG_DIR"
 
             echo "test:testid@127.0.0.1:4500" > "$CLUSTER_FILE"
