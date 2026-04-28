@@ -45,7 +45,13 @@ sed -i 's/cmake_minimum_required (VERSION 2\.8\.10)/cmake_minimum_required (VERS
   --with-monotouch=no \
   --with-xammac=no
 
-make -j$(nproc)
+# Cap parallelism to nproc/4 (matches packages/foundationdb). Mono's
+# bootstrap (byacc + jay + corlib + the runtime) is memory-greedy at
+# -j32 and OOMs the whole build.
+JOBS=$(( $(nproc) / 4 ))
+[ "$JOBS" -lt 1 ] && JOBS=1
+
+make -j"$JOBS"
 make DESTDIR=$OUTPUT_DIR install
 
 # Remove .la files for reproducibility
