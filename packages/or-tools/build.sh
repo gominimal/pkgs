@@ -40,6 +40,12 @@ cmake -G Ninja \
 # protoc and other build-time tools need to find their shared libs
 export LD_LIBRARY_PATH="$(pwd)/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
-ninja -j$(nproc)
+# Cap parallelism to nproc/4 (matches packages/foundationdb). or-tools'
+# inline-built deps (protobuf, abseil, HiGHS, eigen) link together at peak
+# and explode memory at -j32, OOMing the whole build.
+JOBS=$(( $(nproc) / 4 ))
+[ "$JOBS" -lt 1 ] && JOBS=1
+
+ninja -j"$JOBS"
 
 DESTDIR="$OUTPUT_DIR" ninja install
