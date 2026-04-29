@@ -1,7 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
-let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let findutils = import "../findutils/build.ncl" in
 let curl = import "../curl/build.ncl" in
@@ -39,10 +38,9 @@ in
           sha256 = arm64_sha256,
         } | Source,
     } target,
-    base,
   ],
   runtime_deps = [
-    bash,
+    base,
     coreutils,
     findutils,
     curl,
