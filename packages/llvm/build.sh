@@ -16,10 +16,11 @@ tar -xof libunwind-21.1.8.src.tar.xz
 mv libunwind-21.1.8.src libunwind
 tar -xof compiler-rt-21.1.8.src.tar.xz
 mv compiler-rt-21.1.8.src compiler-rt
+mkdir -p llvm-21.1.8.src/runtimes
 tar -xof libcxx-21.1.8.src.tar.xz
-mv libcxx-21.1.8.src libcxx
+mv libcxx-21.1.8.src llvm-21.1.8.src/runtimes/libcxx
 tar -xof libcxxabi-21.1.8.src.tar.xz
-mv libcxxabi-21.1.8.src libcxxabi
+mv libcxxabi-21.1.8.src llvm-21.1.8.src/runtimes/libcxxabi
 tar -xof openmp-21.1.8.src.tar.xz
 mv openmp-21.1.8.src openmp
 
