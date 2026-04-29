@@ -48,18 +48,6 @@ let version = "21.1.8" in
       url = "gs://minimal-staging-archives/third-party-%{version}.src.tar.xz",
       sha256 = "7fe99424384aea529ffaeec9cc9dfb8b451fd1852c03fc109e426fe208a1f1a7"
     } | Source,
-    {
-      url = "gs://minimal-staging-archives/libcxx-%{version}.src.tar.xz",
-      sha256 = "6422a58a5c29b7f4fda224cfdc07842be8a208a61301bbba7a219116e3351809"
-    } | Source,
-    {
-      url = "gs://minimal-staging-archives/libcxxabi-%{version}.src.tar.xz",
-      sha256 = "709c9a63bde1e36a80d8675becc38073b85f0fa1b4111e34542b885c9e1239da"
-    } | Source,
-    {
-      url = "gs://minimal-staging-archives/openmp-%{version}.src.tar.xz",
-      sha256 = "856b023748b41ac7b2c83fd8e9f765ff48a4df2fe6777d2811ef7c7ed8f2f977"
-    } | Source,
     base,
     cmake,
     llvm-bootstrap,
@@ -82,8 +70,6 @@ let version = "21.1.8" in
     clangd = { glob = "usr/bin/clangd" } | OutputBin,
 
     libllvm = { glob = "usr/lib/*LLVM*.{so*,a}" } | OutputLib,
-    libcxx_runtime = { glob = "usr/lib/libc++*.{so*,a}" } | OutputLib,
-    libomp = { glob = "usr/lib/libomp*.{so*,a}" } | OutputLib,
     libear = { glob = "usr/lib/libear/**", allow_data = true } | OutputLib,
     liblto = { glob = "usr/lib/libLTO.so*" } | OutputLib,
     libremarks = { glob = "usr/lib/libRemarks.so*" } | OutputLib,

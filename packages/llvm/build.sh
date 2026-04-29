@@ -19,14 +19,6 @@ mv "libunwind-${LLVM_VERSION}.src" libunwind
 tar -xof "compiler-rt-${LLVM_VERSION}.src.tar.xz"
 mv "compiler-rt-${LLVM_VERSION}.src" compiler-rt
 
-mkdir -p "llvm-${LLVM_VERSION}.src/runtimes"
-tar -xof "libcxx-${LLVM_VERSION}.src.tar.xz"
-mv "libcxx-${LLVM_VERSION}.src" "llvm-${LLVM_VERSION}.src/runtimes/libcxx"
-tar -xof "libcxxabi-${LLVM_VERSION}.src.tar.xz"
-mv "libcxxabi-${LLVM_VERSION}.src" "llvm-${LLVM_VERSION}.src/runtimes/libcxxabi"
-tar -xof "openmp-${LLVM_VERSION}.src.tar.xz"
-mv "openmp-${LLVM_VERSION}.src" "llvm-${LLVM_VERSION}.src/runtimes/openmp"
-
 sed 's/utility/tool/' -i "llvm-${LLVM_VERSION}.src/utils/FileCheck/CMakeLists.txt"
 
 mkdir "llvm-${LLVM_VERSION}.src/build"
@@ -58,7 +50,6 @@ cmake \
 	-D LLVM_LINK_LLVM_DYLIB=ON \
 	-D LLVM_USE_LINKER=lld \
 	-D LLVM_ENABLE_PROJECTS="clang;clang-tools-extra;compiler-rt;lld" \
-	-D LLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;openmp" \
 	-D LLVM_TARGETS_TO_BUILD="X86;AArch64;WebAssembly;ARM;RISCV" \
 	-D LLVM_PARALLEL_LINK_JOBS=2 \
 	-W no-dev -G Ninja ..
