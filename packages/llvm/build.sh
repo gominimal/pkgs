@@ -16,6 +16,12 @@ tar -xof libunwind-21.1.8.src.tar.xz
 mv libunwind-21.1.8.src libunwind
 tar -xof compiler-rt-21.1.8.src.tar.xz
 mv compiler-rt-21.1.8.src compiler-rt
+tar -xof libcxx-21.1.8.src.tar.xz
+mv libcxx-21.1.8.src libcxx
+tar -xof libcxxabi-21.1.8.src.tar.xz
+mv libcxxabi-21.1.8.src libcxxabi
+tar -xof openmp-21.1.8.src.tar.xz
+mv openmp-21.1.8.src openmp
 
 sed 's/utility/tool/' -i llvm-21.1.8.src/utils/FileCheck/CMakeLists.txt
 
@@ -47,8 +53,9 @@ cmake \
 	-D LLVM_INCLUDE_BENCHMARKS=OFF \
 	-D LLVM_LINK_LLVM_DYLIB=ON \
 	-D LLVM_USE_LINKER=lld \
-	-D LLVM_ENABLE_PROJECTS="clang;clang-tools-extra;compiler-rt;lld" \
-	-D LLVM_TARGETS_TO_BUILD="all" \
+	-D LLVM_ENABLE_PROJECTS="clang;clang-tools-extra;compiler-rt;lld;libcxx;libcxxabi;openmp" \
+	-D LLVM_TARGETS_TO_BUILD="X86;AArch64;WebAssembly;ARM;RISCV" \
+	-D LLVM_PARALLEL_LINK_JOBS=2 \
 	-W no-dev -G Ninja ..
 
 ninja
