@@ -53,7 +53,8 @@ cmake \
 	-D LLVM_INCLUDE_BENCHMARKS=OFF \
 	-D LLVM_LINK_LLVM_DYLIB=ON \
 	-D LLVM_USE_LINKER=lld \
-	-D LLVM_ENABLE_PROJECTS="clang;clang-tools-extra;compiler-rt;lld;libcxx;libcxxabi;openmp" \
+	-D LLVM_ENABLE_PROJECTS="clang;clang-tools-extra;compiler-rt;lld;openmp" \
+	-D LLVM_ENABLE_RUNTIMES="libcxx;libcxxabi" \
 	-D LLVM_TARGETS_TO_BUILD="X86;AArch64;WebAssembly;ARM;RISCV" \
 	-D LLVM_PARALLEL_LINK_JOBS=2 \
 	-W no-dev -G Ninja ..
