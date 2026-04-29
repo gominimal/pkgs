@@ -5,14 +5,14 @@ let toolchain = import "../toolchain/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.1.1" in
+let version = "2.1.2" in
 {
   name = "glow",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/charmbracelet/glow/v%{version}.tar.gz",
-      sha256 = "f13e1d6be1ab4baf725a7fedc4cd240fc7e5c7276af2d92f199e590e1ef33967",
+      sha256 = "1b933139da1d08647bf5b3f112cab9548fdc2b40c056c7fa3d84d8706de5265a",
       extract = true,
       strip_prefix = "glow-%{version}",
     } | Source,
@@ -32,6 +32,7 @@ let version = "2.1.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT",
       source_provenance = {
         category = 'GithubRepo,
         owner = "charmbracelet",
