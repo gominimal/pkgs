@@ -12,7 +12,7 @@ let zlib = import "../zlib/build.ncl" in
 # See:
 #  - https://docs.opencv.org/4.x/db/d05/tutorial_config_reference.html
 #  - https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html
-let version = "4.12.0" in
+let version = "4.13.0" in
 {
   name = "opencv",
   build_deps = [
@@ -20,7 +20,7 @@ let version = "4.12.0" in
     {
       # https://github.com/opencv/opencv/archive/refs/tags/4.12.0.tar.gz
       url = "gs://minimal-staging-archives/opencv-%{version}.tar.gz",
-      sha256 = "44c106d5bb47efec04e531fd93008b3fcd1d27138985c5baf4eafac0e1ec9e9d",
+      sha256 = "1d40ca017ea51c533cf9fd5cbde5b5fe7ae248291ddf2af99d4c17cf8e13017d",
       extract = true,
     } | Source,
     base,
