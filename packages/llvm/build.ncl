@@ -76,11 +76,14 @@ let version = "21.1.8" in
   ],
 
   cmd = "./build.sh",
+  build_args = { include version },
   outputs = {
     bins = { glob = "usr/bin/*" } | OutputBin,
     clangd = { glob = "usr/bin/clangd" } | OutputBin,
 
     libllvm = { glob = "usr/lib/*LLVM*.{so*,a}" } | OutputLib,
+    libcxx_runtime = { glob = "usr/lib/libc++*.{so*,a}" } | OutputLib,
+    libomp = { glob = "usr/lib/libomp*.{so*,a}" } | OutputLib,
     libear = { glob = "usr/lib/libear/**", allow_data = true } | OutputLib,
     liblto = { glob = "usr/lib/libLTO.so*" } | OutputLib,
     libremarks = { glob = "usr/lib/libRemarks.so*" } | OutputLib,

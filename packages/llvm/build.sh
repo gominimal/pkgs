@@ -1,33 +1,36 @@
 #!/bin/sh
 set -ex
 
-tar -xof llvm-21.1.8.src.tar.xz
-tar -xof cmake-21.1.8.src.tar.xz
-mv cmake-21.1.8.src cmake
-tar -xof third-party-21.1.8.src.tar.xz
-mv third-party-21.1.8.src third-party
-tar -xof clang-21.1.8.src.tar.xz
-mv clang-21.1.8.src clang
-tar -xof clang-tools-extra-21.1.8.src.tar.xz
-mv clang-tools-extra-21.1.8.src clang-tools-extra
-tar -xof lld-21.1.8.src.tar.xz
-mv lld-21.1.8.src lld
-tar -xof libunwind-21.1.8.src.tar.xz
-mv libunwind-21.1.8.src libunwind
-tar -xof compiler-rt-21.1.8.src.tar.xz
-mv compiler-rt-21.1.8.src compiler-rt
-mkdir -p llvm-21.1.8.src/runtimes
-tar -xof libcxx-21.1.8.src.tar.xz
-mv libcxx-21.1.8.src llvm-21.1.8.src/runtimes/libcxx
-tar -xof libcxxabi-21.1.8.src.tar.xz
-mv libcxxabi-21.1.8.src llvm-21.1.8.src/runtimes/libcxxabi
-tar -xof openmp-21.1.8.src.tar.xz
-mv openmp-21.1.8.src openmp
+LLVM_VERSION="${MINIMAL_ARG_VERSION}"
 
-sed 's/utility/tool/' -i llvm-21.1.8.src/utils/FileCheck/CMakeLists.txt
+tar -xof "llvm-${LLVM_VERSION}.src.tar.xz"
+tar -xof "cmake-${LLVM_VERSION}.src.tar.xz"
+mv "cmake-${LLVM_VERSION}.src" cmake
+tar -xof "third-party-${LLVM_VERSION}.src.tar.xz"
+mv "third-party-${LLVM_VERSION}.src" third-party
+tar -xof "clang-${LLVM_VERSION}.src.tar.xz"
+mv "clang-${LLVM_VERSION}.src" clang
+tar -xof "clang-tools-extra-${LLVM_VERSION}.src.tar.xz"
+mv "clang-tools-extra-${LLVM_VERSION}.src" clang-tools-extra
+tar -xof "lld-${LLVM_VERSION}.src.tar.xz"
+mv "lld-${LLVM_VERSION}.src" lld
+tar -xof "libunwind-${LLVM_VERSION}.src.tar.xz"
+mv "libunwind-${LLVM_VERSION}.src" libunwind
+tar -xof "compiler-rt-${LLVM_VERSION}.src.tar.xz"
+mv "compiler-rt-${LLVM_VERSION}.src" compiler-rt
 
-mkdir llvm-21.1.8.src/build
-cd llvm-21.1.8.src/build
+mkdir -p "llvm-${LLVM_VERSION}.src/runtimes"
+tar -xof "libcxx-${LLVM_VERSION}.src.tar.xz"
+mv "libcxx-${LLVM_VERSION}.src" "llvm-${LLVM_VERSION}.src/runtimes/libcxx"
+tar -xof "libcxxabi-${LLVM_VERSION}.src.tar.xz"
+mv "libcxxabi-${LLVM_VERSION}.src" "llvm-${LLVM_VERSION}.src/runtimes/libcxxabi"
+tar -xof "openmp-${LLVM_VERSION}.src.tar.xz"
+mv "openmp-${LLVM_VERSION}.src" "llvm-${LLVM_VERSION}.src/runtimes/openmp"
+
+sed 's/utility/tool/' -i "llvm-${LLVM_VERSION}.src/utils/FileCheck/CMakeLists.txt"
+
+mkdir "llvm-${LLVM_VERSION}.src/build"
+cd "llvm-${LLVM_VERSION}.src/build"
 
 export CC=clang
 export CXX=clang++
@@ -54,8 +57,8 @@ cmake \
 	-D LLVM_INCLUDE_BENCHMARKS=OFF \
 	-D LLVM_LINK_LLVM_DYLIB=ON \
 	-D LLVM_USE_LINKER=lld \
-	-D LLVM_ENABLE_PROJECTS="clang;clang-tools-extra;compiler-rt;lld;openmp" \
-	-D LLVM_ENABLE_RUNTIMES="libcxx;libcxxabi" \
+	-D LLVM_ENABLE_PROJECTS="clang;clang-tools-extra;compiler-rt;lld" \
+	-D LLVM_ENABLE_RUNTIMES="libcxx;libcxxabi;openmp" \
 	-D LLVM_TARGETS_TO_BUILD="X86;AArch64;WebAssembly;ARM;RISCV" \
 	-D LLVM_PARALLEL_LINK_JOBS=2 \
 	-W no-dev -G Ninja ..
