@@ -9,14 +9,14 @@ let xz = import "../xz/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.89.0" in
+let version = "1.91.0-1" in
 {
   name = "boost",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/boost-%{version}-b2-nodocs.tar.xz",
-      sha256 = "875cc413afa6b86922b6df3b2ad23dec4511c8a741753e57c1129e7fa753d700",
+      sha256 = "7334bb672b9c7aa135da88bcc3111a64a198be9a7d44eb5151d9248e7cfd43ef",
     } | Source,
     base,
     python,
@@ -52,6 +52,7 @@ let version = "1.89.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSL-1.0",
       source_provenance = {
         category = 'GithubRepo,
         owner = "boostorg",
