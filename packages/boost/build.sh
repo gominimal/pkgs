@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof boost-1.89.0-b2-nodocs.tar.xz
-cd boost-1.89.0
+tar -xof boost-1.91.0-1-b2-nodocs.tar.xz
+cd boost-1.91.0-1
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
