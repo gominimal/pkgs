@@ -9,10 +9,7 @@ harness {
     "/bin/bash",
     "-c",
     m%"
-    # Run pnpm install if no packages are installed (first start)
-    if [ -z "$(pnpm list 2>/dev/null)" ]; then
-      [ -f pnpm-lock.yaml ] && echo '/bin/pnpm install --frozen-lockfile' || echo '/bin/pnpm install'
-    fi
+    [ -f pnpm-lock.yaml ] && echo '/bin/pnpm install --frozen-lockfile' || echo '/bin/pnpm install'
     echo '/bin/pnpm build'
   "%
   ],
@@ -21,7 +18,6 @@ harness {
     {
       file_regexes = {
         "pnpm-lock.yaml" = "*",
-        "pnpm-workspace.yaml" = "*",
       },
     }
   ],
