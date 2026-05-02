@@ -4,14 +4,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 
-let version = "1.4.6" in
+let version = "1.4.7" in
 {
   name = "btop",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/aristocratos/btop/v%{version}.tar.gz",
-      sha256 = "4beb90172c6acaac08c1b4a5112fb616772e214a7ef992bcbd461453295a58be",
+      sha256 = "933de2e4d1b2211a638be463eb6e8616891bfba73aef5d38060bd8319baeefc6",
       extract = true,
     } | Source,
     base,
@@ -27,6 +27,7 @@ let version = "1.4.6" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Apache-2.0",
       source_provenance = {
         category = 'GithubRepo,
         owner = "aristocratos",
