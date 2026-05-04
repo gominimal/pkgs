@@ -11,7 +11,7 @@ let libffi = import "../libffi/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "1.93.1" in
+let version = "1.95.0" in
 {
   name = "rust",
   build_deps = [
@@ -19,7 +19,7 @@ let version = "1.93.1" in
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/rustc-%{version}-src.tar.xz",
-      sha256 = "848c9171212c998c069e6979a205a1a44fa3235a463696d62e24701c83596ce0",
+      sha256 = "62b67230754da642a264ca0cb9fc08820c54e2ed7b3baba0289876d4cdb48c08",
       extract = true,
       strip_prefix = "rustc-%{version}-src",
     } | Source,
@@ -50,11 +50,7 @@ let version = "1.93.1" in
     bins = { glob = "usr/bin/*", allow_missing_interpreter = true } | OutputBin,
 
     librustc_driver = { glob = "usr/lib/librustc_driver*.so" } | OutputLib,
-    rustlib_src = { glob = "usr/lib/rustlib/src/**" } | OutputData,
-    rustlib_etc = { glob = "usr/lib/rustlib/etc/**" } | OutputData,
-    rustlib_bins = { glob = "usr/lib/rustlib/*/bin/**" } | OutputBin,
-    rustlib_libs = { glob = "usr/lib/rustlib/*/lib/*.{so*,rlib}" } | OutputLib,
-
+    rustlib = { glob = "usr/lib/rustlib/**", allow_executable = true } | OutputData,
     rust-analyzer-proc-macro-srv = { glob = "usr/libexec/rust-analyzer-proc-macro-srv" } | OutputBin,
 
     mans = { glob = "usr/share/man/**" } | OutputData,
@@ -63,6 +59,7 @@ let version = "1.93.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT OR Apache-2.0",
       source_provenance = {
         category = 'GithubRepo,
         owner = "rust-lang",
