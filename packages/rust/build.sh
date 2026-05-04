@@ -12,16 +12,23 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
-# Force cargo to use the source tree's vendored deps (vendor/) rather
-# than reaching out to crates.io. The source ships a `.cargo/config.toml`
-# that already configures vendored sources, but the persistent
-# CARGO_HOME (env_state_wiring with prefix=cargo in build.ncl) can carry
-# over a config from a previous build that re-registers crates.io.
-# Without this, rust 1.95 picked up bytemuck-1.25.0 from crates.io
-# instead of the vendored bytemuck-1.13.1, and the newer bytemuck failed
-# to build under the bootstrap rustc. CARGO_NET_OFFLINE only affects
-# cargo subprocesses; x.py's stage0 download (separate HTTP fetch) is
-# unaffected.
+# Isolate cargo state to a fresh per-build directory. The build.ncl
+# env_state_wiring persists CARGO_HOME across builds with prefix=cargo,
+# which means a stale config / registry index / Cargo.lock from a
+# previous build can override the source's `.cargo/config.toml`. That's
+# how rust 1.95 picked up bytemuck-1.25.0 from crates.io instead of the
+# vendored bytemuck-1.13.1: the vendored-sources mapping was being
+# clobbered by the persistent CARGO_HOME's own config.
+#
+# Override CARGO_HOME locally to a fresh tmpdir so the source's
+# `.cargo/config.toml` is authoritative and cargo has no prior state to
+# fall back on. CARGO_NET_OFFLINE is belt-and-suspenders — with an
+# isolated CARGO_HOME and vendor/ properly configured, network shouldn't
+# be reached anyway. x.py's stage0 download is a separate HTTP fetch
+# (not via cargo), so neither setting affects it.
+CARGO_HOME_TMPDIR="$(mktemp -d)"
+trap 'rm -rf "$CARGO_HOME_TMPDIR"' EXIT
+export CARGO_HOME="$CARGO_HOME_TMPDIR"
 export CARGO_NET_OFFLINE=true
 
 ./x.py build
