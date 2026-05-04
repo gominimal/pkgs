@@ -69,10 +69,16 @@ let version = "1.95.0" in
         owner = "rust-lang",
         repo = "rust",
       },
-      env_state_wiring = {
-        env_var = "CARGO_HOME",
-        prefix = "cargo",
-      },
+      # Note: no env_state_wiring for CARGO_HOME. The other state-wired
+      # packages in this repo (go GOCACHE, node NPM_CONFIG_CACHE, uv
+      # UV_CACHE_DIR, bun BUN_INSTALL_CACHE_DIR) wire dirs that are
+      # write-only caches. CARGO_HOME conflates config with cache —
+      # persisting it across builds let a stale registry index +
+      # source cache override the source tree's `.cargo/config.toml`,
+      # causing cargo to use bytemuck-1.25.0 from the persistent
+      # registry instead of the vendored bytemuck-1.13.1. The build
+      # uses vendored sources so the registry cache buys nothing
+      # anyway.
       build_cost_multiple = 3,
     } | Attrs,
 } | BuildSpec
