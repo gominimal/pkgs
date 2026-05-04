@@ -8,14 +8,14 @@ let perl = import "../perl/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "8.19.0" in
+let version = "8.20.0" in
 {
   name = "curl",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/curl-%{version}.tar.xz",
-      sha256 = "4eb41489790d19e190d7ac7e18e82857cdd68af8f4e66b292ced562d333f11df",
+      sha256 = "63fe2dc148ba0ceae89922ef838f7e5c946272c2e78b7c59fab4b79d3ce2b896",
       extract = true,
       strip_prefix = "curl-%{version}",
     } | Source,
