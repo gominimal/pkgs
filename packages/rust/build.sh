@@ -12,24 +12,43 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
-# Isolate cargo state to a fresh per-build directory. The build.ncl
-# env_state_wiring persists CARGO_HOME across builds with prefix=cargo,
-# which means a stale config / registry index / Cargo.lock from a
-# previous build can override the source's `.cargo/config.toml`. That's
-# how rust 1.95 picked up bytemuck-1.25.0 from crates.io instead of the
-# vendored bytemuck-1.13.1: the vendored-sources mapping was being
-# clobbered by the persistent CARGO_HOME's own config.
+# --- Cargo state isolation + diagnostics ---
 #
-# Override CARGO_HOME locally to a fresh tmpdir so the source's
-# `.cargo/config.toml` is authoritative and cargo has no prior state to
-# fall back on. CARGO_NET_OFFLINE is belt-and-suspenders — with an
-# isolated CARGO_HOME and vendor/ properly configured, network shouldn't
-# be reached anyway. x.py's stage0 download is a separate HTTP fetch
-# (not via cargo), so neither setting affects it.
-CARGO_HOME_TMPDIR="$(mktemp -d)"
-trap 'rm -rf "$CARGO_HOME_TMPDIR"' EXIT
-export CARGO_HOME="$CARGO_HOME_TMPDIR"
+# Background: rust 1.95 builds kept failing on bytemuck-1.25.0 errors
+# even though the source vendors bytemuck-1.13.1. The error path
+# (`/state/home/.cargo/registry/src/index.crates.io-*/bytemuck-1.25.0/`)
+# pointed at a poisoned persistent CARGO_HOME (state-wired in
+# build.ncl with prefix=cargo). Two prior attempts didn't fix it:
+# `CARGO_NET_OFFLINE=true` alone (doesn't bypass cached registry
+# entries) and `CARGO_HOME=$(mktemp -d)` (didn't take effect — error
+# path stayed at /state/home, suggesting either x.py overrides
+# CARGO_HOME or the sandbox bind-mounts /state/home so the path
+# persists regardless of our env).
+#
+# Defensive layered approach:
+#   1. Wipe the persistent registry cache outright. If the sandbox
+#      really does bind-mount /state/home, this clears the poison
+#      from the source rather than redirecting around it.
+#   2. Pin CARGO_HOME inside the source tree (always writable in
+#      the sandbox, no $TMPDIR ambiguity) — gives cargo a fresh,
+#      writable state dir guaranteed to be ours.
+#   3. Diagnostics: log env state so we can see what cargo sees.
+echo "--- pre-build cargo env ---"
+echo "HOME=$HOME"
+echo "TMPDIR=${TMPDIR:-<unset>}"
+echo "CARGO_HOME (incoming)=${CARGO_HOME:-<unset>}"
+echo "PWD=$PWD"
+if [ -d "$HOME/.cargo/registry/src" ]; then
+  echo "wiping persistent $HOME/.cargo/registry/src to clear poisoned bytemuck-1.25.0"
+  rm -rf "$HOME/.cargo/registry/src" "$HOME/.cargo/registry/cache" || true
+fi
+
+CARGO_HOME_LOCAL="$PWD/.cargo-home-fresh"
+mkdir -p "$CARGO_HOME_LOCAL"
+export CARGO_HOME="$CARGO_HOME_LOCAL"
 export CARGO_NET_OFFLINE=true
+echo "CARGO_HOME (effective)=$CARGO_HOME"
+echo "--- /pre-build cargo env ---"
 
 ./x.py build
 
