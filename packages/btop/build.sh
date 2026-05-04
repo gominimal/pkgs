@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
-cd btop-1.4.6
+cd btop-1.4.7
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
