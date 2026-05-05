@@ -10,7 +10,7 @@ let version = "4.21.0" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://ftpmirror.gnu.org/libtasn1/libtasn1-%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/libtasn1-%{version}.tar.gz",
       sha256 = "1d8a444a223cc5464240777346e125de51d8e6abf0b8bac742ac84609167dc87",
       extract = true,
       strip_prefix = "libtasn1-%{version}",
