@@ -21,6 +21,7 @@ export CXXFLAGS="${CFLAGS}"
             --with-cxx-shared       \
             --enable-pc-files       \
             --enable-symlinks       \
+            --enable-mixed-case=no  \
             --with-pkg-config-libdir=/usr/lib/pkgconfig
 
 make -j$(nproc)
@@ -28,5 +29,4 @@ make DESTDIR="$OUTPUT_DIR" install
 
 # Ghostty terminal sets TERM=xterm-ghostty but ncurses upstream only ships
 # a 'ghostty' entry. Add xterm-ghostty as a symlink so programs find a match.
-mkdir -p "$OUTPUT_DIR/usr/share/terminfo/x"
-ln -sf ../g/ghostty "$OUTPUT_DIR/usr/share/terminfo/x/xterm-ghostty"
+ln -sf ../67/ghostty "$OUTPUT_DIR/usr/share/terminfo/78/xterm-ghostty"
