@@ -43,11 +43,21 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # linux-arm64 — which Google does not publish under CfT — Playwright builds
 # its own from chromium source and hosts on Microsoft's CDN. We pin both.
 #
-# The two zips also use different top-level directory names:
-#   amd64 → chrome-linux64/   (CfT-style)
-#   arm64 → chrome-linux/     (Playwright's own-build convention)
-# which is why build.sh detects the arch and installs into the matching path —
-# Playwright's `@playwright/test` registry expects exactly those names.
+# Playwright treats `chromium` (full browser, used in headed mode) and
+# `chromium-headless-shell` (stripped headless build, used by chromium.launch()
+# in default headless mode) as TWO separate browser installs — see
+# packages/playwright-core/browsers.json upstream — so we ship both. Without
+# the headless-shell binary, `chromium.launch()` fails with "Executable
+# doesn't exist at .../chromium_headless_shell-<rev>/...".
+#
+# The four zips use different top-level directory names per (arch × variant):
+#   chromium      amd64 → chrome-linux64/                   (CfT-style)
+#   chromium      arm64 → chrome-linux/                     (Playwright's own)
+#   shell         amd64 → chrome-headless-shell-linux64/    (CfT-style)
+#   shell         arm64 → chrome-linux/                     (Playwright's own)
+# which is why build.sh extracts each zip into a separate scratch dir before
+# installing — Playwright's `@playwright/test` registry expects exactly those
+# directory names under chromium-<rev>/ and chromium_headless_shell-<rev>/.
 #
 # `revision` is the Playwright browser-revision number from
 # packages/playwright-core/browsers.json. Revision 1200 ↔ Chrome 143.0.7499.4
@@ -58,6 +68,7 @@ let browser_version = "143.0.7499.4" in
   name = "playwright-chromium",
   build_deps = [
     { file = "build.sh" } | Local,
+    # Full chromium browser (used in headed mode)
     match {
       { arch = 'Amd64, .. } =>
         {
@@ -68,6 +79,19 @@ let browser_version = "143.0.7499.4" in
         {
           url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-linux-arm64.zip",
           sha256 = "e73eeb680312e96d4f8fbca589ad42e3fb719178b4bdd8707f9fe796123bf48b",
+        } | Source,
+    } target,
+    # Chromium headless-shell (used by chromium.launch() default-headless mode)
+    match {
+      { arch = 'Amd64, .. } =>
+        {
+          url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-headless-shell-linux.zip",
+          sha256 = "a9a525cb3832d59a810f78f8ba6c5ed3592a6a488984627f5d827c2a365c8a5a",
+        } | Source,
+      { arch = 'Arm64, .. } =>
+        {
+          url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-headless-shell-linux-arm64.zip",
+          sha256 = "2321e3d1d497b21b79aa822d6c9e13c5b155249a9df7cf028f009f1159907c75",
         } | Source,
     } target,
     base,
@@ -122,7 +146,7 @@ let browser_version = "143.0.7499.4" in
   attrs =
     {
       upstream_version = browser_version,
-      build_cost_multiple = 2,
+      build_cost_multiple = 3,
     } | Attrs,
 
   tests = {
