@@ -9,37 +9,30 @@ let pnpm = import "../pnpm/build.ncl" in
 
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
 
-let alsa-lib = import "../alsa-lib/build.ncl" in
-let cairo = import "../cairo/build.ncl" in
-let cups = import "../cups/build.ncl" in
-let dbus = import "../dbus/build.ncl" in
-let expat = import "../expat/build.ncl" in
-let fontconfig = import "../fontconfig/build.ncl" in
-let freetype = import "../freetype/build.ncl" in
-let fribidi = import "../fribidi/build.ncl" in
-let glib = import "../glib/build.ncl" in
-let harfbuzz = import "../harfbuzz/build.ncl" in
-let libdrm = import "../libdrm/build.ncl" in
-let libx11 = import "../libx11/build.ncl" in
-let libxcb = import "../libxcb/build.ncl" in
-let libxcomposite = import "../libxcomposite/build.ncl" in
-let libxdamage = import "../libxdamage/build.ncl" in
-let libxext = import "../libxext/build.ncl" in
-let libxfixes = import "../libxfixes/build.ncl" in
-let libxkbcommon = import "../libxkbcommon/build.ncl" in
-let libxrandr = import "../libxrandr/build.ncl" in
-let libxrender = import "../libxrender/build.ncl" in
-let libxshmfence = import "../libxshmfence/build.ncl" in
-let mesa = import "../mesa/build.ncl" in
-let nss = import "../nss/build.ncl" in
-let nspr = import "../nspr/build.ncl" in
-let pango = import "../pango/build.ncl" in
-let atk = import "../atk/build.ncl" in
-let at-spi2-core = import "../at-spi2-core/build.ncl" in
-let eudev = import "../eudev/build.ncl" in
-let liberation-fonts = import "../liberation-fonts/build.ncl" in
+# Why playwright-chromium and not chrome-for-testing:
+#
+# Upstream agent-browser is built around Chrome for Testing (Google's official
+# automation channel), and that would be the natural pkg to depend on here.
+# Problem: as of 2026-05-06 Google does not publish a linux-arm64 CfT build —
+# the JSON manifest at googlechromelabs.github.io/chrome-for-testing/ has only
+# linux64, mac-arm64, mac-x64, win32, win64. The Chromium team announced ARM64
+# Linux Chrome for Q2 2026 (we're mid-Q2 now) but the CfT publishing pipeline
+# hasn't shipped arm64 zips yet.
+#
+# Playwright builds and self-hosts a linux-arm64 chromium of its own (its CDN
+# redirects x86_64 requests to Google's CfT bucket but routes arm64 requests
+# to playwright.download.prss.microsoft.com). So `playwright-chromium` is the
+# only pinnable chromium source that works on both arches today.
+#
+# When CfT starts publishing linux-arm64, flip this back to chrome-for-testing
+# (per-arch dispatch, or unconditional once the lag is gone). Tracked in the
+# Notion follow-up sub-task on the chromium pkg-extract ticket.
+#
+# playwright-chromium also brings the full chromium system-lib closure
+# (alsa-lib, cairo, cups, nss, mesa, the X11 stack, eudev, liberation-fonts,
+# etc.) transitively, so we only declare the pkg directly.
+let playwright-chromium = import "../playwright-chromium/build.ncl" in
 
 let version = "0.15.1" in
 {
@@ -64,36 +57,7 @@ let version = "0.15.1" in
     bash,
     node,
     glibc,
-    gcc,
-    alsa-lib,
-    cairo,
-    cups,
-    dbus,
-    expat,
-    fontconfig,
-    freetype,
-    fribidi,
-    glib,
-    harfbuzz,
-    libdrm,
-    libx11,
-    libxcb,
-    libxcomposite,
-    libxdamage,
-    libxext,
-    libxfixes,
-    libxkbcommon,
-    libxrandr,
-    libxrender,
-    libxshmfence,
-    mesa,
-    nss,
-    nspr,
-    pango,
-    atk,
-    at-spi2-core,
-    eudev, # provides libudev.so.1, required by Chromium at runtime
-    liberation-fonts, # Chromium renders boxes without a fallback font available
+    playwright-chromium,
   ],
 
   cmd = "./build.sh",
@@ -101,7 +65,6 @@ let version = "0.15.1" in
   outputs = {
     bin = { glob = "usr/bin/agent-browser" } | OutputBin,
     libexec = { glob = "usr/libexec/agent-browser/**", allow_executable = true } | OutputData,
-    browsers = { glob = "usr/share/agent-browser/browsers/**", allow_executable = true } | OutputData,
   },
   attrs =
     {

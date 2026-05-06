@@ -27,22 +27,19 @@ esac
 mkdir -p bin
 cp cli/target/release/agent-browser bin/agent-browser-${PLATFORM}
 
-# Install Chromium via Playwright
-export PLAYWRIGHT_BROWSERS_PATH="$(pwd)/browsers"
-npx playwright-core install chromium
+# Chromium is provided by the playwright-chromium pkg as a runtime dep
+# (see build.ncl for why playwright-chromium and not chrome-for-testing).
+# We pass its binary to the daemon via --executable-path; no need to ship
+# our own copy or run `npx playwright install`.
 
-# Install layout
 install -d $OUTPUT_DIR/usr/bin
 install -d $OUTPUT_DIR/usr/libexec/agent-browser
-install -d $OUTPUT_DIR/usr/share/agent-browser
 
 cp -R dist bin node_modules package.json $OUTPUT_DIR/usr/libexec/agent-browser/
-cp -R browsers $OUTPUT_DIR/usr/share/agent-browser/browsers
 
-# Create wrapper script
 cat > $OUTPUT_DIR/usr/bin/agent-browser << EOF
 #!/bin/bash
-export PLAYWRIGHT_BROWSERS_PATH=/usr/share/agent-browser/browsers
-exec /usr/libexec/agent-browser/bin/agent-browser-${PLATFORM} "\$@"
+exec /usr/libexec/agent-browser/bin/agent-browser-${PLATFORM} \\
+  --executable-path /usr/bin/playwright-chromium "\$@"
 EOF
 chmod +x $OUTPUT_DIR/usr/bin/agent-browser
