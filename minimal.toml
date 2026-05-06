@@ -15,3 +15,17 @@ exec = "claude --dangerously-skip-permissions"
 interactive = true
 packages = ["base", "bash", "opencode", "curl"]
 exec = "opencode"
+
+# Temporary: verifies `@playwright/test` can be pointed at the
+# playwright-chromium pkg via PLAYWRIGHT_BROWSERS_PATH, skipping the
+# usual `npx playwright install chromium` step. Spins up a throwaway
+# npm project, installs playwright-core at the version that matches our
+# pinned browser revision (1200), and tries to launch chromium. If the
+# pkg's on-disk layout matches Playwright's registry expectations,
+# launch() returns the chromium version and we exit 0.
+#
+# Requires network access (npm install). Remove this task once the
+# integration is verified and the chromium PR is merged.
+[tasks.temp-test-playwright-integration]
+packages = ["base", "node-lts", "playwright-chromium", "curl"]
+exec = "bash -c 'set -eu; T=$(mktemp -d); cd $T; npm init -y >/dev/null; echo \"Installing playwright-core@1.57.0...\"; npm install --silent playwright-core@1.57.0; export PLAYWRIGHT_BROWSERS_PATH=/usr/share/playwright-chromium; echo \"Resolved executablePath:\"; node -e \"console.log(require(\\\"playwright-core\\\").chromium.executablePath())\"; echo \"Launching chromium via @playwright/test...\"; node -e \"const { chromium } = require(\\\"playwright-core\\\"); (async () => { const b = await chromium.launch(); const v = await b.version(); await b.close(); console.log(\\\"Launched:\\\", v); })().catch(e => { console.error(e); process.exit(1); })\"; echo OK'"
