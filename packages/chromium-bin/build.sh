@@ -31,8 +31,16 @@ sole_entry() {
 FULL_INNER=$(sole_entry _full)
 SHELL_INNER=$(sole_entry _shell)
 
+# Inner dirs differ by arch *and* variant:
+#   chromium  amd64 → chrome-linux64/chrome
+#   chromium  arm64 → chrome-linux/chrome
+#   shell     amd64 → chrome-headless-shell-linux64/chrome-headless-shell
+#   shell     arm64 → chrome-linux/headless_shell
+SHELL_BIN=headless_shell
+[ -x "_shell/$SHELL_INNER/chrome-headless-shell" ] && SHELL_BIN=chrome-headless-shell
+
 REV="${MINIMAL_ARG_REVISION}"
-SHARE="$OUTPUT_DIR/usr/share/playwright-chromium"
+SHARE="$OUTPUT_DIR/usr/share/chromium-bin"
 FULL_DEST="$SHARE/chromium-${REV}"
 SHELL_DEST="$SHARE/chromium_headless_shell-${REV}"
 
@@ -46,12 +54,25 @@ cp -R "_shell/$SHELL_INNER" "$SHELL_DEST/$SHELL_INNER"
 touch "$FULL_DEST/INSTALLATION_COMPLETE"
 touch "$SHELL_DEST/INSTALLATION_COMPLETE"
 
-# Stable wrapper for non-Playwright consumers (e.g. agent-browser).
-# Points at the full chrome binary; the headless-shell variant is for
-# @playwright/test's internal use.
+# Stable wrappers so consumers don't need to know per-arch dirs/binaries.
+# /usr/bin/chromium                → full browser (used by agent-browser)
+# /usr/bin/chromium-headless-shell → headless-shell variant (used by
+#                                    Puppeteer/Playwright default headless)
+#
+# Note for Playwright users: setting
+# PLAYWRIGHT_BROWSERS_PATH=/usr/share/chromium-bin lets @playwright/test
+# discover both binaries via its registry layout without involving these
+# wrappers.
 install -d "$OUTPUT_DIR/usr/bin"
-cat > "$OUTPUT_DIR/usr/bin/playwright-chromium" <<EOF
+
+cat > "$OUTPUT_DIR/usr/bin/chromium" <<EOF
 #!/bin/bash
-exec /usr/share/playwright-chromium/chromium-${REV}/$FULL_INNER/chrome "\$@"
+exec /usr/share/chromium-bin/chromium-${REV}/$FULL_INNER/chrome "\$@"
 EOF
-chmod +x "$OUTPUT_DIR/usr/bin/playwright-chromium"
+chmod +x "$OUTPUT_DIR/usr/bin/chromium"
+
+cat > "$OUTPUT_DIR/usr/bin/chromium-headless-shell" <<EOF
+#!/bin/bash
+exec /usr/share/chromium-bin/chromium_headless_shell-${REV}/$SHELL_INNER/$SHELL_BIN "\$@"
+EOF
+chmod +x "$OUTPUT_DIR/usr/bin/chromium-headless-shell"

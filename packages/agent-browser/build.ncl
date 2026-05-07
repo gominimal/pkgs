@@ -10,29 +10,12 @@ let pnpm = import "../pnpm/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-# Why playwright-chromium and not chrome-for-testing:
-#
-# Upstream agent-browser is built around Chrome for Testing (Google's official
-# automation channel), and that would be the natural pkg to depend on here.
-# Problem: as of 2026-05-06 Google does not publish a linux-arm64 CfT build —
-# the JSON manifest at googlechromelabs.github.io/chrome-for-testing/ has only
-# linux64, mac-arm64, mac-x64, win32, win64. The Chromium team announced ARM64
-# Linux Chrome for Q2 2026 (we're mid-Q2 now) but the CfT publishing pipeline
-# hasn't shipped arm64 zips yet.
-#
-# Playwright builds and self-hosts a linux-arm64 chromium of its own (its CDN
-# redirects x86_64 requests to Google's CfT bucket but routes arm64 requests
-# to playwright.download.prss.microsoft.com). So `playwright-chromium` is the
-# only pinnable chromium source that works on both arches today.
-#
-# When CfT starts publishing linux-arm64, flip this back to chrome-for-testing
-# (per-arch dispatch, or unconditional once the lag is gone). Tracked in the
-# Notion follow-up sub-task on the chromium pkg-extract ticket.
-#
-# playwright-chromium also brings the full chromium system-lib closure
-# (alsa-lib, cairo, cups, nss, mesa, the X11 stack, eudev, liberation-fonts,
-# etc.) transitively, so we only declare the pkg directly.
-let playwright-chromium = import "../playwright-chromium/build.ncl" in
+# chromium-bin is the Playwright-revisioned prebuilt chromium pkg; see
+# its build.ncl for why a prebuilt and the amd64/arm64 source story.
+# It also brings the full chromium system-lib closure (alsa-lib, cairo,
+# cups, nss, mesa, the X11 stack, eudev, liberation-fonts, etc.) as
+# transitive runtime_deps, so we only declare the pkg directly.
+let chromium-bin = import "../chromium-bin/build.ncl" in
 
 let version = "0.15.1" in
 {
@@ -57,7 +40,7 @@ let version = "0.15.1" in
     bash,
     node,
     glibc,
-    playwright-chromium,
+    chromium-bin,
   ],
 
   cmd = "./build.sh",

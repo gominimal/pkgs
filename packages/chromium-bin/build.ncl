@@ -37,11 +37,19 @@ let at-spi2-core = import "../at-spi2-core/build.ncl" in
 let eudev = import "../eudev/build.ncl" in
 let liberation-fonts = import "../liberation-fonts/build.ncl" in
 
-# Prebuilt: same Chromium-from-source caveat as chrome-for-testing.
-# Playwright redirects x86_64 download requests to Google's Chrome for Testing
-# bucket (so the amd64 binary is the same artifact as CfT linux64), but for
-# linux-arm64 — which Google does not publish under CfT — Playwright builds
-# its own from chromium source and hosts on Microsoft's CDN. We pin both.
+# Prebuilt blob, named with the Gentoo/AUR `-bin` convention. Building
+# chromium from source needs depot_tools, a hermetic clang toolchain, a
+# ~30 GB git checkout, and 4-8 hours of build time — none of which is
+# packaged. CLAUDE.md's "build from source" rule has an explicit carve-out
+# for this case. The bare `chromium` name is intentionally left available
+# for a future source-built pkg.
+#
+# Source mix: Playwright redirects x86_64 download requests to Google's
+# Chrome for Testing bucket (so the amd64 binary is the same artifact as
+# CfT linux64), but for linux-arm64 — which Google does not yet publish
+# under CfT — Playwright builds its own from chromium source and hosts on
+# Microsoft's CDN. We pin both. The same Playwright revision identifies
+# matching builds across both arches.
 #
 # Playwright treats `chromium` (full browser, used in headed mode) and
 # `chromium-headless-shell` (stripped headless build, used by chromium.launch()
@@ -65,7 +73,7 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 let revision = "1200" in
 let browser_version = "143.0.7499.4" in
 {
-  name = "playwright-chromium",
+  name = "chromium-bin",
   build_deps = [
     { file = "build.sh" } | Local,
     # Full chromium browser (used in headed mode)
@@ -139,8 +147,11 @@ let browser_version = "143.0.7499.4" in
   },
 
   outputs = {
-    bin = { glob = "usr/bin/playwright-chromium" } | OutputBin,
-    data = { glob = "usr/share/playwright-chromium/**", allow_executable = true } | OutputData,
+    # /usr/bin/chromium               → full chromium browser (headed)
+    # /usr/bin/chromium-headless-shell → headless-shell variant (used by
+    #                                    Puppeteer/@playwright/test default headless)
+    bins = { glob = "usr/bin/chromium*" } | OutputBin,
+    data = { glob = "usr/share/chromium-bin/**", allow_executable = true } | OutputData,
   },
 
   attrs =
@@ -155,6 +166,7 @@ let browser_version = "143.0.7499.4" in
     } | Attrs,
 
   tests = {
-    smoketest = standaloneTest "/bin/playwright-chromium --version",
+    smoketest = standaloneTest "/bin/chromium --version",
+    headless_shell_smoketest = standaloneTest "/bin/chromium-headless-shell --version",
   },
 } | BuildSpec
