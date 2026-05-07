@@ -1,18 +1,20 @@
 # chromium-bin
 
-Prebuilt Chromium browser binaries. amd64 comes from Google's Chrome for
-Testing bucket; arm64 comes from Playwright's own arm64 build hosted on
-Microsoft's CDN (Google does not publish arm64 under CfT).
+Prebuilt full Chromium browser binary, used in headed mode. amd64 comes
+from Google's Chrome for Testing bucket; arm64 comes from Playwright's
+own arm64 build hosted on Microsoft's CDN (Google does not publish
+arm64 under CfT).
 
-Ships two binaries:
+Sibling package: [`chromium-headless-shell-bin`](../chromium-headless-shell-bin/)
+ships the stripped headless-shell variant used by Playwright/Puppeteer
+in default headless mode. Each pkg fetches and installs only its own
+zip, so consumers that need only one variant don't pay for both.
 
-- `/bin/chromium` — full browser, used for headed mode
-- `/bin/chromium-headless-shell` — stripped headless build, used by
-  `chromium.launch()` in default headless mode
+Provides:
 
-Files are also laid out under `/usr/share/chromium-bin/` in Playwright's
-registry layout (`chromium-<rev>/` and `chromium_headless_shell-<rev>/`),
-which makes the package usable as a drop-in browser source for Playwright.
+- `/bin/chromium` — full browser
+- `/usr/share/playwright-browsers/chromium-<rev>/...` — Playwright's
+  registry layout, shared with `chromium-headless-shell-bin`
 
 ## Using with Playwright
 
@@ -21,21 +23,21 @@ Playwright.
 
 ### Route A: `PLAYWRIGHT_BROWSERS_PATH` (drop-in, revision must match)
 
-If the project's installed `playwright-core` revision matches the revision
-shipped here (currently **1217 ↔ Chrome 147.0.7727.15 ↔ playwright-core
-^1.58.0**), point Playwright at the on-disk layout and you're done — no
-launch options, no `npx playwright install`, no browser cache:
+Install both `chromium-bin` and `chromium-headless-shell-bin` (or just
+the one variant your tests actually need), then:
 
 ```sh
-export PLAYWRIGHT_BROWSERS_PATH=/usr/share/chromium-bin
+export PLAYWRIGHT_BROWSERS_PATH=/usr/share/playwright-browsers
 npx playwright test
 ```
 
-This works for both `playwright-core` and `@playwright/test`. Playwright's
-registry walks `$PLAYWRIGHT_BROWSERS_PATH/chromium{,_headless_shell}-<rev>/`
-with `<rev>` hardcoded by the installed `playwright-core` version — so if
-your `playwright-core` is on a different revision than chromium-bin ships,
-Playwright will not find the binary and Route B is required.
+This works for both `playwright-core` and `@playwright/test`. The two
+pkgs share the `playwright-browsers` directory and Playwright's
+registry walks it for `chromium{,_headless_shell}-<rev>/`. The
+revision shipped here (currently **1217 ↔ Chrome 147.0.7727.15 ↔
+playwright-core ^1.58.0**) must match the installed `playwright-core`
+version — there is no `*_EXECUTABLE_PATH` env override for browsers,
+so revision drift can't be papered over with env vars alone.
 
 ### Route B: `executablePath` (works regardless of revision)
 
@@ -46,7 +48,7 @@ entirely, so revision drift doesn't matter:
 // playwright-core
 import { chromium } from 'playwright-core';
 const browser = await chromium.launch({
-  executablePath: '/bin/chromium-headless-shell', // or '/bin/chromium' for headed
+  executablePath: '/bin/chromium', // headed; or '/bin/chromium-headless-shell' from the sibling pkg
 });
 ```
 
@@ -62,6 +64,6 @@ export default {
 ## Why prebuilt?
 
 Building Chromium from source requires depot_tools, a hermetic clang
-toolchain, a ~30 GB git checkout, and 4–8 hours of build time — none of
-which is packaged in pkgs today. The bare `chromium` name is intentionally
-left available for a future source-built package.
+toolchain, a ~30 GB git checkout, and 4–8 hours of build time — none
+of which is packaged in pkgs today. The bare `chromium` name is
+intentionally left available for a future source-built package.

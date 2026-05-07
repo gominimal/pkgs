@@ -4,12 +4,13 @@ let curl = import "../curl/build.ncl" in
 let gh = import "../gh/build.ncl" in
 let node = import "../node/build.ncl" in
 
-# chromium-bin provides both the headless-shell binary (which Puppeteer
-# drives in mermaid's "headless: shell" mode) and its full system-lib
-# closure (cairo, fontconfig, freetype, harfbuzz, the X11 stack, mesa,
-# nss, etc.) transitively, so we declare it directly and skip the
-# previous per-system-lib runtime_dep list.
-let chromium-bin = import "../chromium-bin/build.ncl" in
+# chromium-headless-shell-bin provides the headless-shell binary (which
+# Puppeteer drives in mermaid's "headless: shell" mode) and its full
+# system-lib closure (cairo, fontconfig, freetype, harfbuzz, the X11
+# stack, mesa, nss, etc.) transitively, so we declare it directly and
+# skip the previous per-system-lib runtime_dep list. We don't need the
+# full headed chromium browser.
+let chromium-headless-shell-bin = import "../chromium-headless-shell-bin/build.ncl" in
 
 let version = "11.12.0" in
 {
@@ -27,7 +28,7 @@ let version = "11.12.0" in
   ],
   runtime_deps = [
     base,
-    chromium-bin,
+    chromium-headless-shell-bin,
     node,
   ],
   needs =
