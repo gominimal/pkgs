@@ -36,8 +36,14 @@ SHELL_INNER=$(sole_entry _shell)
 #   chromium  arm64 → chrome-linux/chrome                    (Playwright arm64)
 #   shell     amd64 → chrome-headless-shell-linux64/chrome-headless-shell (CfT direct)
 #   shell     arm64 → chrome-linux/headless_shell            (Playwright arm64)
-SHELL_BIN=headless_shell
-[ -x "_shell/$SHELL_INNER/chrome-headless-shell" ] && SHELL_BIN=chrome-headless-shell
+if [ -x "_shell/$SHELL_INNER/chrome-headless-shell" ]; then
+  SHELL_BIN=chrome-headless-shell
+elif [ -x "_shell/$SHELL_INNER/headless_shell" ]; then
+  SHELL_BIN=headless_shell
+else
+  echo "unexpected headless-shell layout under _shell/$SHELL_INNER" >&2
+  exit 1
+fi
 
 REV="${MINIMAL_ARG_REVISION}"
 SHARE="$OUTPUT_DIR/usr/share/chromium-bin"
