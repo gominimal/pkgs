@@ -16,9 +16,20 @@ extract_into chromium-linux*.zip _full
 extract_into chromium-headless-shell-linux*.zip _shell
 
 # Pick the top-level dir each zip created; matches what Playwright's
-# registry expects on disk per arch.
-FULL_INNER=$(ls _full)
-SHELL_INNER=$(ls _shell)
+# registry expects on disk per arch. Each zip is expected to extract to
+# exactly one top-level directory — fail loudly if that ever changes.
+sole_entry() {
+  local dir="$1"
+  local entries=("$dir"/*)
+  if [ "${#entries[@]}" -ne 1 ] || [ ! -d "${entries[0]}" ]; then
+    echo "expected exactly one top-level directory in $dir, got: ${entries[*]}" >&2
+    exit 1
+  fi
+  basename "${entries[0]}"
+}
+
+FULL_INNER=$(sole_entry _full)
+SHELL_INNER=$(sole_entry _shell)
 
 REV="${MINIMAL_ARG_REVISION}"
 SHARE="$OUTPUT_DIR/usr/share/playwright-chromium"

@@ -146,6 +146,11 @@ let browser_version = "143.0.7499.4" in
   attrs =
     {
       upstream_version = browser_version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "microsoft",
+        repo = "playwright",
+      },
       build_cost_multiple = 3,
     } | Attrs,
 
