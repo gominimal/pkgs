@@ -44,12 +44,14 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # for this case. The bare `chromium` name is intentionally left available
 # for a future source-built pkg.
 #
-# Source mix: Playwright redirects x86_64 download requests to Google's
-# Chrome for Testing bucket (so the amd64 binary is the same artifact as
-# CfT linux64), but for linux-arm64 — which Google does not yet publish
-# under CfT — Playwright builds its own from chromium source and hosts on
-# Microsoft's CDN. We pin both. The same Playwright revision identifies
-# matching builds across both arches.
+# Source mix: amd64 comes straight from Google's Chrome for Testing
+# bucket (Playwright's own cdn.playwright.dev URL just redirects there for
+# amd64, and that redirect is unreliable on newer revisions — MS's CDN
+# doesn't host amd64 zips). For linux-arm64 — which Google does not
+# publish under CfT — we use Playwright's own arm64 build hosted on
+# Microsoft's CDN via cdn.playwright.dev. The same Playwright revision
+# identifies matching builds across both arches; the corresponding Chrome
+# version (used to address the CfT bucket) lives in `browser_version`.
 #
 # Playwright treats `chromium` (full browser, used in headed mode) and
 # `chromium-headless-shell` (stripped headless build, used by chromium.launch()
@@ -68,10 +70,20 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # directory names under chromium-<rev>/ and chromium_headless_shell-<rev>/.
 #
 # `revision` is the Playwright browser-revision number from
-# packages/playwright-core/browsers.json. Revision 1200 ↔ Chrome 143.0.7499.4
-# ↔ playwright-core ^1.57.0. `browser_version` is recorded for humans only.
-let revision = "1200" in
-let browser_version = "143.0.7499.4" in
+# packages/playwright-core/browsers.json. Revision 1217 ↔ Chrome 147.0.7727.15
+# ↔ playwright-core ^1.58.0. `browser_version` is recorded for humans only and
+# is also used to address the Chrome-for-Testing bucket on amd64.
+#
+# Consumer note (Playwright): files are laid out under /usr/share/chromium-bin
+# in Playwright's registry layout (chromium-<rev>/, chromium_headless_shell-<rev>/),
+# so setting `PLAYWRIGHT_BROWSERS_PATH=/usr/share/chromium-bin` lets
+# @playwright/test discover both binaries with zero further config — provided
+# the installed playwright-core revision matches `revision` above. If it
+# doesn't, pass `executablePath: '/bin/chromium-headless-shell'` (or
+# '/bin/chromium' for headed) to bypass the registry lookup. See
+# packages/chromium-bin/README.md.
+let revision = "1217" in
+let browser_version = "147.0.7727.15" in
 {
   name = "chromium-bin",
   build_deps = [
@@ -80,26 +92,26 @@ let browser_version = "143.0.7499.4" in
     match {
       { arch = 'Amd64, .. } =>
         {
-          url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-linux.zip",
-          sha256 = "ab56b2a7955c2961f74348e2349f1e907489283da23dba37c730b624e4d670bb",
+          url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chrome-linux64.zip",
+          sha256 = "04883e331b31448d6255fa058f0e1c7e8657c004da1f8a1c04eb28855a37ec6c",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-linux-arm64.zip",
-          sha256 = "e73eeb680312e96d4f8fbca589ad42e3fb719178b4bdd8707f9fe796123bf48b",
+          sha256 = "563d09cb67274c26eeba36c67032cbc22dc44534259c15ea469dd818725b1139",
         } | Source,
     } target,
     # Chromium headless-shell (used by chromium.launch() default-headless mode)
     match {
       { arch = 'Amd64, .. } =>
         {
-          url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-headless-shell-linux.zip",
-          sha256 = "a9a525cb3832d59a810f78f8ba6c5ed3592a6a488984627f5d827c2a365c8a5a",
+          url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chrome-headless-shell-linux64.zip",
+          sha256 = "cf779cd5486f3fc5a18bea4ac606026a1667ae16efaee15af51bd3ad3ae01092",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-headless-shell-linux-arm64.zip",
-          sha256 = "2321e3d1d497b21b79aa822d6c9e13c5b155249a9df7cf028f009f1159907c75",
+          sha256 = "6db7041d8a273093b8f2c7a7338766c6d12abb06cd0253fc91feebb71ecd4635",
         } | Source,
     } target,
     base,

@@ -32,10 +32,10 @@ FULL_INNER=$(sole_entry _full)
 SHELL_INNER=$(sole_entry _shell)
 
 # Inner dirs differ by arch *and* variant:
-#   chromium  amd64 → chrome-linux64/chrome
-#   chromium  arm64 → chrome-linux/chrome
-#   shell     amd64 → chrome-headless-shell-linux64/chrome-headless-shell
-#   shell     arm64 → chrome-linux/headless_shell
+#   chromium  amd64 → chrome-linux64/chrome                  (CfT direct)
+#   chromium  arm64 → chrome-linux/chrome                    (Playwright arm64)
+#   shell     amd64 → chrome-headless-shell-linux64/chrome-headless-shell (CfT direct)
+#   shell     arm64 → chrome-linux/headless_shell            (Playwright arm64)
 SHELL_BIN=headless_shell
 [ -x "_shell/$SHELL_INNER/chrome-headless-shell" ] && SHELL_BIN=chrome-headless-shell
 
