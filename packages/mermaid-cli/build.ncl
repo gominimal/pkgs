@@ -71,5 +71,12 @@ let version = "11.12.0" in
           ["/bin/bash", "-c", "/bin/mmdc --help | grep -q 'mermaid'"],
         ],
       } | Test,
+    # End-to-end render verification (mmdc -i x.mmd -o x.svg) is a manual
+    # smoketest tracked in the PR test plan rather than a standalone test
+    # — puppeteer launches don't reliably succeed inside `min check`'s
+    # test sandbox even though the same invocation works in a normal
+    # session env. The chromium-headless-shell-bin pkg has its own
+    # launch_check that proves the headless engine renders end-to-end,
+    # and install_check above verifies mmdc resolves to that binary.
   },
 } | BuildSpec

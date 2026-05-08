@@ -1,4 +1,4 @@
-let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -62,5 +62,18 @@ let version = "0.15.1" in
 
   tests = {
     smoketest = standaloneTest "/bin/agent-browser --version",
+    chromium_available =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          # /bin/chromium is the wrapper agent-browser passes to its
+          # daemon via --executable-path; verify it's both present and
+          # actually launches in the runtime closure brought in via the
+          # chromium-bin runtime_dep.
+          ["/bin/bash", "-c", "test -x /bin/chromium"],
+          ["/bin/bash", "-c", "/bin/chromium --headless --no-sandbox --disable-gpu --disable-dev-shm-usage --dump-dom 'data:text/html,<title>agent-browser-chromium-ok</title>' | grep -q agent-browser-chromium-ok"],
+        ],
+      } | Test,
   },
 } | BuildSpec
