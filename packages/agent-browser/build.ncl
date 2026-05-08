@@ -62,17 +62,17 @@ let version = "0.15.1" in
 
   tests = {
     smoketest = standaloneTest "/bin/agent-browser --version",
-    chromium_available =
+    open_check =
       {
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          # /bin/chromium is the wrapper agent-browser passes to its
-          # daemon via --executable-path; verify it's both present and
-          # actually launches in the runtime closure brought in via the
-          # chromium-bin runtime_dep.
-          ["/bin/bash", "-c", "test -x /bin/chromium"],
-          ["/bin/bash", "-c", "/bin/chromium --headless --no-sandbox --disable-gpu --disable-dev-shm-usage --dump-dom 'data:text/html,<title>agent-browser-chromium-ok</title>' | grep -q agent-browser-chromium-ok"],
+          # End-to-end: drive `agent-browser open` against a data: URL
+          # and assert the page title appears in stdout. This exercises
+          # the full path — Rust CLI launches the TS daemon, daemon
+          # spawns chromium via /bin/chromium, navigates, returns
+          # title.
+          ["/bin/bash", "-c", "/bin/agent-browser open 'data:text/html,<title>agent-browser-open-ok</title>' | grep -q agent-browser-open-ok"],
         ],
       } | Test,
   },
