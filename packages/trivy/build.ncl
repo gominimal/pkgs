@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.69.1" in
+let version = "0.70.0" in
 {
   name = "trivy",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/aquasecurity/trivy/v%{version}.tar.gz",
-      sha256 = "997f7b744e93bd2faa9f0c2f86345ab142d50d42a6ed2b3a35dc8b65676355ee",
+      sha256 = "ff9ac06468aab89802388f16d1d179f4680db714afbf6a8132a417d288aa008e",
       extract = true,
       strip_prefix = "trivy-%{version}",
     } | Source,
@@ -42,6 +42,7 @@ let version = "0.69.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Apache-2.0",
       repology_project = "trivy",
       source_provenance = {
         category = 'GithubRepo,
