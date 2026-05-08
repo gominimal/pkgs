@@ -1,4 +1,4 @@
-let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -9,37 +9,13 @@ let pnpm = import "../pnpm/build.ncl" in
 
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
 
-let alsa-lib = import "../alsa-lib/build.ncl" in
-let cairo = import "../cairo/build.ncl" in
-let cups = import "../cups/build.ncl" in
-let dbus = import "../dbus/build.ncl" in
-let expat = import "../expat/build.ncl" in
-let fontconfig = import "../fontconfig/build.ncl" in
-let freetype = import "../freetype/build.ncl" in
-let fribidi = import "../fribidi/build.ncl" in
-let glib = import "../glib/build.ncl" in
-let harfbuzz = import "../harfbuzz/build.ncl" in
-let libdrm = import "../libdrm/build.ncl" in
-let libx11 = import "../libx11/build.ncl" in
-let libxcb = import "../libxcb/build.ncl" in
-let libxcomposite = import "../libxcomposite/build.ncl" in
-let libxdamage = import "../libxdamage/build.ncl" in
-let libxext = import "../libxext/build.ncl" in
-let libxfixes = import "../libxfixes/build.ncl" in
-let libxkbcommon = import "../libxkbcommon/build.ncl" in
-let libxrandr = import "../libxrandr/build.ncl" in
-let libxrender = import "../libxrender/build.ncl" in
-let libxshmfence = import "../libxshmfence/build.ncl" in
-let mesa = import "../mesa/build.ncl" in
-let nss = import "../nss/build.ncl" in
-let nspr = import "../nspr/build.ncl" in
-let pango = import "../pango/build.ncl" in
-let atk = import "../atk/build.ncl" in
-let at-spi2-core = import "../at-spi2-core/build.ncl" in
-let eudev = import "../eudev/build.ncl" in
-let liberation-fonts = import "../liberation-fonts/build.ncl" in
+# chromium-bin is the Playwright-revisioned prebuilt chromium pkg; see
+# its build.ncl for why a prebuilt and the amd64/arm64 source story.
+# It also brings the full chromium system-lib closure (alsa-lib, cairo,
+# cups, nss, mesa, the X11 stack, eudev, liberation-fonts, etc.) as
+# transitive runtime_deps, so we only declare the pkg directly.
+let chromium-bin = import "../chromium-bin/build.ncl" in
 
 let version = "0.15.1" in
 {
@@ -64,36 +40,7 @@ let version = "0.15.1" in
     bash,
     node,
     glibc,
-    gcc,
-    alsa-lib,
-    cairo,
-    cups,
-    dbus,
-    expat,
-    fontconfig,
-    freetype,
-    fribidi,
-    glib,
-    harfbuzz,
-    libdrm,
-    libx11,
-    libxcb,
-    libxcomposite,
-    libxdamage,
-    libxext,
-    libxfixes,
-    libxkbcommon,
-    libxrandr,
-    libxrender,
-    libxshmfence,
-    mesa,
-    nss,
-    nspr,
-    pango,
-    atk,
-    at-spi2-core,
-    eudev, # provides libudev.so.1, required by Chromium at runtime
-    liberation-fonts, # Chromium renders boxes without a fallback font available
+    chromium-bin,
   ],
 
   cmd = "./build.sh",
@@ -101,7 +48,6 @@ let version = "0.15.1" in
   outputs = {
     bin = { glob = "usr/bin/agent-browser" } | OutputBin,
     libexec = { glob = "usr/libexec/agent-browser/**", allow_executable = true } | OutputData,
-    browsers = { glob = "usr/share/agent-browser/browsers/**", allow_executable = true } | OutputData,
   },
   attrs =
     {
@@ -116,5 +62,18 @@ let version = "0.15.1" in
 
   tests = {
     smoketest = standaloneTest "/bin/agent-browser --version",
+    open_check =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          # End-to-end: drive `agent-browser open` against a data: URL
+          # and assert the page title appears in stdout. This exercises
+          # the full path — Rust CLI launches the TS daemon, daemon
+          # spawns chromium via /bin/chromium, navigates, returns
+          # title.
+          ["/bin/bash", "-c", "/bin/agent-browser open 'data:text/html,<title>agent-browser-open-ok</title>' | grep -q agent-browser-open-ok"],
+        ],
+      } | Test,
   },
 } | BuildSpec
