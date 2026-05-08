@@ -71,12 +71,15 @@ let version = "11.12.0" in
           ["/bin/bash", "-c", "/bin/mmdc --help | grep -q 'mermaid'"],
         ],
       } | Test,
-    # End-to-end render verification (mmdc -i x.mmd -o x.svg) is a manual
-    # smoketest tracked in the PR test plan rather than a standalone test
-    # — puppeteer launches don't reliably succeed inside `min check`'s
-    # test sandbox even though the same invocation works in a normal
-    # session env. The chromium-headless-shell-bin pkg has its own
-    # launch_check that proves the headless engine renders end-to-end,
-    # and install_check above verifies mmdc resolves to that binary.
+    # End-to-end mmdc render is a manual smoketest (PR test plan), not a
+    # standalone test — `mmdc -i ... -o ...` fails inside `min check`'s
+    # test sandbox even though `agent-browser open` (same playwright →
+    # chromium path, different sandbox-internal behavior) passes there
+    # and mmdc itself works in a normal session env. The runner
+    # swallows stdout/stderr on failing tests so the actual error is
+    # uninspectable. The chromium-headless-shell-bin launch_check
+    # already proves the headless engine renders end-to-end in that
+    # same sandbox, and install_check verifies mmdc's wrapper resolves
+    # to that working binary.
   },
 } | BuildSpec
