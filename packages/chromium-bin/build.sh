@@ -4,7 +4,10 @@ set -euo pipefail
 # One zip arrives in the cwd. Extract into a scratch dir so we can
 # discover its (arch-dependent) top-level directory name.
 mkdir -p _full
-unzip -q chromium-linux*.zip -d _full
+# amd64 zip from CfT is named chrome-linux64.zip; arm64 zip from
+# Playwright's CDN is chromium-linux-arm64.zip. Each build fetches
+# exactly one zip into the cwd, so a broad glob is fine.
+unzip -q chrom*-linux*.zip -d _full
 
 # The zip is expected to extract to exactly one top-level directory —
 # fail loudly if that ever changes.
