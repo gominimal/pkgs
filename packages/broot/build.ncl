@@ -12,7 +12,7 @@ let version = "1.56.2" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/Canop/broot/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/Canop/broot/v%{version}.tar.gz",
       sha256 = "3e7be4252c76565f6d71b34bd07d26e1444b9ac2e1c8271c724f6e866fe75565",
       extract = true,
       strip_prefix = "broot-%{version}",
