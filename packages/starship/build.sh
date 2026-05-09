@@ -1,7 +1,8 @@
 #!/bin/sh
 set -ex
 
-cd starship-${MINIMAL_ARG_VERSION}
+# Source unpacks into cwd via `extract = true` + `strip_prefix` in
+# build.ncl — no explicit `cd` needed (mirrors delta/codex pattern).
 
 export CC=gcc
 export LD=gcc
