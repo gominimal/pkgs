@@ -16,14 +16,14 @@ let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let xz = import "../xz/build.ncl" in
 
-let version = "3.14.4" in
+let version = "3.14.5" in
 {
   name = "python",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/Python-%{version}.tar.xz",
-      sha256 = "d923c51303e38e249136fc1bdf3568d56ecb03214efdef48516176d3d7faaef8"
+      sha256 = "7e32597b99e5d9a39abed35de4693fa169df3e5850d4c334337ffd6a19a36db6"
     } | Source,
     base,
     make,
@@ -72,6 +72,7 @@ let version = "3.14.4" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Python-2.0.1",
       source_provenance = {
         category = 'GithubRepo,
         owner = "python",
