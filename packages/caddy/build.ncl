@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.11.2" in
+let version = "2.11.3" in
 {
   name = "caddy",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/caddyserver/caddy/v%{version}.tar.gz",
-      sha256 = "ee12f7b5f97308708de5067deebb3d3322fc24f6d54f906a47a0a4e8db799122",
+      sha256 = "de751e6b7ca769f0dc1f9b0a1949c7b149c115efde3aaf53182da2bf6a94c825",
       extract = true,
       strip_prefix = "caddy-%{version}",
     } | Source,
@@ -42,6 +42,7 @@ let version = "2.11.2" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Apache-2.0",
       repology_project = "caddy",
       source_provenance = {
         category = 'GithubRepo,
