@@ -1,5 +1,5 @@
 #!/bin/sh
-set -ex
+set -euo pipefail
 
 # Generate configure script
 ./boot
@@ -8,7 +8,6 @@ set -ex
 ./configure --prefix=/usr \
             --disable-split-objs \
             --enable-shared \
-            --with-integer-simple
 
 # Build using hadrian (default for GHC 9.x)
 ./hadrian/build -j$(nproc) --flavour=quickest
