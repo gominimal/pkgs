@@ -14,7 +14,11 @@ let version = "1.8.1.1" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "http://www.dest-unreach.org/socat/download/socat-%{version}.tar.gz",
+      # Mirrored from http://www.dest-unreach.org/socat/download/socat-%{version}.tar.gz
+      # (upstream is HTTP-only; we mirror to gominimal GCS so the
+      # PR-update fetch has the same HTTPS integrity story as every
+      # other package — see gominimal/pkgs#172).
+      url = "gs://minimal-staging-archives/socat-%{version}.tar.gz",
       sha256 = "f68b602c80e94b4b7498d74ec408785536fe33534b39467977a82ab2f7f01ddb",
       extract = true,
       strip_prefix = "socat-%{version}",
