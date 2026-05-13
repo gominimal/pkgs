@@ -1,5 +1,5 @@
 #!/bin/sh
-set -ex
+set -euo pipefail
 
 # Build cabal from source using the bundled GHC
 cabal build

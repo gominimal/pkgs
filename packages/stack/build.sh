@@ -1,5 +1,5 @@
 #!/bin/sh
-set -ex
+set -euo pipefail
 
 # Build stack from source using cabal
 cabal build
