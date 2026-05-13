@@ -5,7 +5,7 @@ let python = import "../python/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 
-let version = "559.0.0" in
+let version = "568.0.0" in
 let dl_base = "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads" in
 
 let { amd64_sha256, arm64_sha256 } = {
@@ -22,12 +22,12 @@ in
       { arch = 'Amd64, .. } =>
         {
           url = "%{dl_base}/google-cloud-cli-%{version}-linux-x86_64.tar.gz",
-          sha256 = amd64_sha256,
+          sha256 = "ee39a260f5d30486c654be018b0e99f396a9c061617d206becaca4456e84ff94",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "%{dl_base}/google-cloud-cli-%{version}-linux-arm.tar.gz",
-          sha256 = arm64_sha256,
+          sha256 = "0b31153517665f12a664675b48571938f0beeec46450485e966a4dce7b125cf6",
         } | Source,
     } target,
     base,
@@ -67,6 +67,7 @@ in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND MIT AND MIT-0 AND Pixar AND Python-2.0.1)",
       env_dir_mappings = [{ read_only = false, path = "~/.config/gcloud", class = 'Credential }],
     } | Attrs,
 } | BuildSpec
