@@ -19,7 +19,7 @@ cmake -D CMAKE_INSTALL_PREFIX=/usr        \
       -D CMAKE_INSTALL_DEFAULT_LIBDIR=lib \
       -D CMAKE_POLICY_VERSION_MINIMUM=3.5 \
       -D CMAKE_SKIP_INSTALL_RPATH=ON      \
-      -D CMAKE_INSTALL_DOCDIR=/usr/share/doc/libjpeg-turbo-3.0.1 \
+      -D CMAKE_INSTALL_DOCDIR=/usr/share/doc/libjpeg-turbo-3.1.4.1 \
       ..
 make -j$(nproc)
 
