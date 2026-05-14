@@ -9,10 +9,7 @@ cd ghc-$MINIMAL_ARG_VERSION
 # Remove nofib benchmark suite before any build steps
 rm -rf nofib
 
-# Generate configure script
-./boot
-
-# Configure GHC
+# Configure GHC (configure script is included in the source tarball)
 ./configure --prefix=/usr \
             --disable-split-objs \
             --enable-shared \
