@@ -9,6 +9,7 @@ let xz = import "../xz/build.ncl" in
 let tar = import "../tar/build.ncl" in
 
 let version = "9.10.1" in
+let ghc = import "../ghc/build.ncl" in
 {
   name = "ghc",
   build_deps = [
@@ -25,6 +26,8 @@ let version = "9.10.1" in
     gmp,
     xz,
     tar,
+    # Self-dependency triggers replace_on_cycle to provide bootstrap GHC
+    ghc,
   ],
   runtime_deps = [
     gmp,
