@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -euo pipefail
 
 # Extract source tarball manually to avoid RES staging symlinks in nofib
