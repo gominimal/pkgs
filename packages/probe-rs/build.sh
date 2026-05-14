@@ -5,7 +5,23 @@ export CC=gcc
 export LD=gcc
 export RUSTFLAGS="-C linker=gcc"
 
-cargo build --release -p probe-rs-tools
+# Hermetic build path: when /cargo-vendor exists (mounted by a SLSA-grade
+# builder that has pre-staged every crate from Cargo.lock as a sha-verified
+# vendor tree), redirect crates.io to it and build offline. Otherwise fall
+# back to the normal online build for dev iteration.
+if [ -d /cargo-vendor ]; then
+    mkdir -p .cargo
+    cat > .cargo/config.toml <<'EOF'
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "/cargo-vendor"
+EOF
+    cargo build --offline --frozen --release -p probe-rs-tools
+else
+    cargo build --release -p probe-rs-tools
+fi
 
 mkdir -p $OUTPUT_DIR/usr/bin
 cp target/release/probe-rs $OUTPUT_DIR/usr/bin/
