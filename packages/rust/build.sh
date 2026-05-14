@@ -12,6 +12,22 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
+# Hermetic build path: when a SLSA-grade builder has pre-staged the
+# stage 0 bootstrap tarballs (sha-verified against the rust source's
+# src/stage0 manifest), copy them into x.py's expected cache location
+# so it doesn't try to curl static.rust-lang.org. The pre-stage layout
+# is /rust-stage0/<date>/<basename>, where <date> matches the rust
+# source's compiler_date.
+if [ -d /rust-stage0 ]; then
+    # x.py reads its date from src/stage0; whichever date dir we
+    # find at /rust-stage0/, mirror it under build/cache/.
+    for date_dir in /rust-stage0/*/; do
+        date_basename=$(basename "$date_dir")
+        mkdir -p "build/cache/$date_basename"
+        cp -v "$date_dir"*.tar.xz "build/cache/$date_basename/"
+    done
+fi
+
 ./x.py build
 
 DESTDIR=$OUTPUT_DIR ./x.py install
