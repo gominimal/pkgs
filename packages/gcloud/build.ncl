@@ -6,18 +6,18 @@ let glibc = import "../glibc/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 
 let version = "568.0.0" in
-# Google's immutable per-version GCS bucket. The previous rapid-
-# channel URL (`dl.google.com/dl/cloudsdk/channels/rapid/downloads`)
-# serves moving content under the same filename — bytes that hash
-# to one SHA today can hash to a different SHA tomorrow when Google
-# republishes a build fix. cloud-sdk-release is content-stable
-# (verified via `last-modified` + `etag` headers); each upload
-# pins the version forever.
+# Google's per-version GCS bucket; explicit per-version path. The
+# previous rapid-channel URL
+# (dl.google.com/dl/cloudsdk/channels/rapid/downloads) has the
+# version in the filename but is technically a release-channel
+# pointer; cloud-sdk-release exposes the same content under an
+# explicit storage path with stable etag metadata. Use this for
+# clearer attribution + better resistance to channel rotation.
 let dl_base = "https://storage.googleapis.com/cloud-sdk-release" in
 
 let { amd64_sha256, arm64_sha256 } = {
-  amd64_sha256 = "b788b7f752b49f802c0682ba7f2e3d37f20fca73e67fad354deb70186b2838b8",
-  arm64_sha256 = "632a0bf414670b991e06385fc4b8d393e9c6a1968ae3852c608a277809ceb985",
+  amd64_sha256 = "ee39a260f5d30486c654be018b0e99f396a9c061617d206becaca4456e84ff94",
+  arm64_sha256 = "0b31153517665f12a664675b48571938f0beeec46450485e966a4dce7b125cf6",
 }
 in
 
@@ -74,7 +74,14 @@ in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "(Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND MIT AND MIT-0 AND Pixar AND Python-2.0.1)",
+      # `Pixar` + `Python-2.0.1` from auto-scan were false positives:
+      # `Pixar` matched a docstring in pygments' USD lexer (the file
+      # itself is BSD-licensed; "Pixar" is the format it parses), and
+      # `Python-2.0.1` matched a literal in packaging's SPDX-IDs
+      # database file (data table, not licensed code). The
+      # `Python-2.0` here is the bundled CPython interpreter's real
+      # license. Tracked at pkgmgr-rs#129.
+      license_spdx = "(Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND MIT AND MIT-0 AND Python-2.0)",
       env_dir_mappings = [{ read_only = false, path = "~/.config/gcloud", class = 'Credential }],
     } | Attrs,
 } | BuildSpec
