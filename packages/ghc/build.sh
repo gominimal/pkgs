@@ -1,12 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-# Extract source tarball manually to avoid RES staging symlinks in nofib
-# (the nofib benchmark suite uses symlinks that break remote execution staging)
-tar -xof ghc-$MINIMAL_ARG_VERSION-src.tar.xz
-cd ghc-$MINIMAL_ARG_VERSION
+# cd into extracted source directory
+cd ghc-%{version}
 
-# Remove nofib benchmark suite before any build steps
+# Remove nofib benchmark suite (contains hardlink entries that can cause staging issues)
 rm -rf nofib
 
 # Configure GHC (configure script is included in the source tarball)
