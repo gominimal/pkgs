@@ -68,12 +68,14 @@ let version = "9.10.1" in
               url = "https://downloads.haskell.org/~ghc/%{version}/ghc-%{version}-x86_64-deb12-linux.tar.xz",
               sha256 = "330c43eea88434e2de3480e05a5ea5cf7664090ef12245602dfe8463ac5dc496",
               extract = true,
+              strip_prefix = "ghc-%{version}-x86_64-unknown-linux",
             } | Source,
           { arch = 'Arm64, .. } =>
             {
               url = "https://downloads.haskell.org/~ghc/%{version}/ghc-%{version}-aarch64-deb11-linux.tar.xz",
               sha256 = "1db449c445d34779d4deaba22341576f7b512a05b6c2b5cb64f3846d1509714e",
               extract = true,
+              strip_prefix = "ghc-%{version}-aarch64-unknown-linux",
             } | Source,
         } target,
       ],
@@ -81,11 +83,9 @@ let version = "9.10.1" in
         gmp,
       ],
       outputs = {
-        bins = { glob = "usr/bin/*" } | OutputBin,
-        libghc = { glob = "usr/lib/ghc/**" } | OutputData,
-        libs = { glob = "usr/lib/**/*.so*" } | OutputLib,
-        mans = { glob = "usr/share/man/**" } | OutputData,
-        docs = { glob = "usr/share/doc/**" } | OutputData,
+        bins = { glob = "bin/*" } | OutputBin,
+        libghc = { glob = "lib/ghc/**" } | OutputData,
+        libs = { glob = "lib/**/*.so*" } | OutputLib,
       },
     } | BuildSpec,
 } | BuildSpec
