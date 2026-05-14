@@ -16,8 +16,7 @@ let version = "9.10.1" in
     {
       url = "https://downloads.haskell.org/~ghc/%{version}/ghc-%{version}-src.tar.xz",
       sha256 = "bf386a302d4ee054791ffd51748900f15d71760fd199157922d120cc1f89e2f7",
-      extract = true,
-      strip_prefix = "ghc-%{version}",
+      extract = false,
     } | Source,
     base,
     toolchain,
