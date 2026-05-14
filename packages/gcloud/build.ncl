@@ -6,11 +6,18 @@ let glibc = import "../glibc/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 
 let version = "568.0.0" in
-let dl_base = "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads" in
+# Google's immutable per-version GCS bucket. The previous rapid-
+# channel URL (`dl.google.com/dl/cloudsdk/channels/rapid/downloads`)
+# serves moving content under the same filename — bytes that hash
+# to one SHA today can hash to a different SHA tomorrow when Google
+# republishes a build fix. cloud-sdk-release is content-stable
+# (verified via `last-modified` + `etag` headers); each upload
+# pins the version forever.
+let dl_base = "https://storage.googleapis.com/cloud-sdk-release" in
 
 let { amd64_sha256, arm64_sha256 } = {
-  amd64_sha256 = "e80517d8f1d690ade1920b600db2594cb5f18e0a61cb5c579f60a9fd8112cc1f",
-  arm64_sha256 = "02a91349f72c35d65ba33b5dd7d1ccf44fa2c40a358207c50017465ab9eea5cd",
+  amd64_sha256 = "b788b7f752b49f802c0682ba7f2e3d37f20fca73e67fad354deb70186b2838b8",
+  arm64_sha256 = "632a0bf414670b991e06385fc4b8d393e9c6a1968ae3852c608a277809ceb985",
 }
 in
 
@@ -22,12 +29,12 @@ in
       { arch = 'Amd64, .. } =>
         {
           url = "%{dl_base}/google-cloud-cli-%{version}-linux-x86_64.tar.gz",
-          sha256 = "ee39a260f5d30486c654be018b0e99f396a9c061617d206becaca4456e84ff94",
+          sha256 = amd64_sha256,
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "%{dl_base}/google-cloud-cli-%{version}-linux-arm.tar.gz",
-          sha256 = "0b31153517665f12a664675b48571938f0beeec46450485e966a4dce7b125cf6",
+          sha256 = arm64_sha256,
         } | Source,
     } target,
     base,
