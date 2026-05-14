@@ -6,9 +6,7 @@ cabal build
 
 # Install stack binary
 mkdir -p "$OUTPUT_DIR"/usr/bin
-cp -v dist-newstyle/build/*/x86_64-linux/stack/*/build/stack "$OUTPUT_DIR"/usr/bin/ 2>/dev/null || \
-cp -v dist-newstyle/build/*/aarch64-linux/stack/*/build/stack "$OUTPUT_DIR"/usr/bin/ 2>/dev/null || \
-cp -v dist-newstyle/build/*/*/stack/*/build/stack "$OUTPUT_DIR"/usr/bin/
+cp -v "$(cabal list-bin stack)" "$OUTPUT_DIR"/usr/bin/
 
 # Install man pages
 mkdir -p "$OUTPUT_DIR"/usr/share/man/man1
