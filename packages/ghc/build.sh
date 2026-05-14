@@ -10,13 +10,10 @@ cd ghc-$MINIMAL_ARG_VERSION
 rm -rf nofib
 
 # Configure GHC (configure script is included in the source tarball)
-./configure --prefix=/usr \
-            --disable-split-objs \
-            --enable-shared \
-            --disable-tests \
+./configure --prefix=/usr
 
 # Build using hadrian (default for GHC 9.x)
-./hadrian/build -j$(nproc) --flavour=quickest
+./hadrian/build -j$(nproc) --flavour=quickest --disable-split-objs --enable-shared
 
 # Install to output directory
 ./hadrian/build install --root=$OUTPUT_DIR
