@@ -1,7 +1,6 @@
 let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let uv = import "../uv/build.ncl" in
 let python = import "../python/build.ncl" in
 let version = "306" in
 {
@@ -14,7 +13,7 @@ let version = "306" in
     } | Source,
     base,
     toolchain,
-    uv,
+    python,
   ],
   runtime_deps = [
     python,
