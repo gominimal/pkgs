@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let node = import "../node/build.ncl" in
@@ -15,11 +15,6 @@ let version = "5.4.3" in
     coreutils,
     node,
   ],
-  needs =
-    {
-      dns = {},
-      internet = {},
-    } | Needs,
 
   cmd = "./build.sh",
   build_args = {
