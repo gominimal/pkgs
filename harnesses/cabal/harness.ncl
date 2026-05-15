@@ -11,5 +11,8 @@ harness {
     {
       file_regexes."cabal.project" = "*",
     },
+    {
+      file_regexes."*.cabal" = "*",
+    },
   ],
 }

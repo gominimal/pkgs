@@ -2,10 +2,10 @@
 set -euo pipefail
 
 # Extract source tarball manually (avoids staging issues with hardlink entries in tarball)
-tar -xof ghc-$MINIMAL_ARG_VERSION-src.tar.xz
+tar -xof "ghc-${MINIMAL_ARG_VERSION}-src.tar.xz"
 
 # cd into extracted source directory
-cd ghc-$MINIMAL_ARG_VERSION
+cd "ghc-${MINIMAL_ARG_VERSION}"
 
 # Remove nofib benchmark suite (contains hardlink entries that can cause staging issues)
 rm -rf nofib
