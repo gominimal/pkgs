@@ -14,6 +14,11 @@ set -e
 # $OUTPUT_DIR/usr/local/bin — the longstanding "TODO does not
 # produce /usr/bin/diffoscope" bug).
 if [ -d /pip-wheels ]; then
+    # Pass diffoscope only via -r requirements.txt (which carries the
+    # --hash=sha256:... pin). Passing it ALSO on the command line with
+    # no --hash fails --require-hashes ("hashes are required... missing
+    # from some requirements"), since CLI-specified requirements bypass
+    # the file-level hash assertion.
     pip3 install \
         --no-index \
         --no-build-isolation \
@@ -23,8 +28,7 @@ if [ -d /pip-wheels ]; then
         --prefix=/usr \
         --root="$OUTPUT_DIR" \
         --no-warn-script-location \
-        --no-compile \
-        diffoscope==306
+        --no-compile
 else
     tar -xof diffoscope-306.tar.gz
     cd diffoscope-306
