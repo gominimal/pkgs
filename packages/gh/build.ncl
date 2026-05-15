@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.90.0" in
+let version = "2.92.0" in
 {
   name = "gh",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/cli/cli/v%{version}.tar.gz",
-      sha256 = "87a6a3b3df1155e9d253ec6ae273d9e018773498b7ce7570f896a7cb75b64e39",
+      sha256 = "ad18928ce4e2695d7fc1adefa0f5e0496e570a430016cee4c22d7bf87e5d9c1d",
       extract = true,
       strip_prefix = "cli-%{version}",
     } | Source,
@@ -42,6 +42,7 @@ let version = "2.90.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT",
       repology_project = "gh",
       source_provenance = {
         category = 'GithubRepo,
