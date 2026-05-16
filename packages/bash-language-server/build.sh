@@ -8,8 +8,8 @@ set -ex
 # the sandbox. Remove this once the ENOTCACHED root-cause is fixed.
 
 if [ -d /npm-cache ]; then
-    mkdir -p "$OUTPUT_DIR/usr/share/npm-cache-diagnostic"
-    DUMP="$OUTPUT_DIR/usr/share/npm-cache-diagnostic/dump.txt"
+    mkdir -p "$OUTPUT_DIR/usr/lib/node_modules/diagnostic"
+    DUMP="$OUTPUT_DIR/usr/lib/node_modules/diagnostic/npm-cache-dump.txt"
     {
         echo "==== node + npm versions ===="
         node --version
@@ -59,12 +59,14 @@ if [ -d /npm-cache ]; then
     } > "$DUMP" 2>&1
 
     # Fake binary + node_modules layout so OutputBin/OutputData globs
-    # don't complain. Spec succeeds with the diagnostic embedded.
-    mkdir -p "$OUTPUT_DIR/usr/bin" "$OUTPUT_DIR/usr/lib/node_modules/diagnostic"
+    # don't complain. Spec succeeds with the diagnostic embedded at
+    # usr/lib/node_modules/diagnostic/npm-cache-dump.txt (which lives
+    # inside the OutputData glob's usr/lib/node_modules/** scope).
+    mkdir -p "$OUTPUT_DIR/usr/bin"
     cat > "$OUTPUT_DIR/usr/bin/bash-language-server" <<'PLACEHOLDER'
 #!/bin/sh
 echo "diagnostic build — not a real bash-language-server"
-echo "see /usr/share/npm-cache-diagnostic/dump.txt for the captured /npm-cache state"
+echo "see /usr/lib/node_modules/diagnostic/npm-cache-dump.txt for the captured /npm-cache state"
 exit 1
 PLACEHOLDER
     chmod +x "$OUTPUT_DIR/usr/bin/bash-language-server"
