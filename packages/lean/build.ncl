@@ -32,13 +32,13 @@ let version = "4.28.0" in
       url = "https://github.com/libuv/libuv/archive/refs/tags/v1.48.0.tar.gz",
       sha256 = "8c253adb0f800926a6cbd1c6576abae0bc8eb86a4f891049b72f9e5b7dc58f33",
     } | Source,
-    # mimalloc uses the /tarball/<tag> github api endpoint; the release-
-    # archive form returns 404 for this repo. Tarball extracts to a
-    # sha-prefixed dir (microsoft-mimalloc-<short-sha>/) — deterministic
-    # for the same tarball content. build.sh resolves the dir name with
-    # a wildcard glob to avoid hardcoding the hash.
+    # mimalloc release-archive (returns same content as api/tarball but
+    # the basename ends in .tar.gz which minimal's extractor needs).
+    # Tarball extracts to a sha-prefixed dir (microsoft-mimalloc-<short-
+    # sha>/) — deterministic for the same content. build.sh resolves the
+    # dir name with a wildcard glob to avoid hardcoding the hash.
     {
-      url = "https://api.github.com/repos/microsoft/mimalloc/tarball/v2.2.3",
+      url = "https://github.com/microsoft/mimalloc/archive/refs/tags/v2.2.3.tar.gz",
       sha256 = "4d28e5fcac94089979e4016cf6454ebb4558a87378372cbd982e8a9b7c7ae56b",
     } | Source,
     base,
