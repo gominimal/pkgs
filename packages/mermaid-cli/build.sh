@@ -14,7 +14,20 @@ fi
 # postinstall from fetching its own chromium — we provide it via the
 # chromium-bin pkg as a runtime dep.
 export PUPPETEER_SKIP_DOWNLOAD=true
-npm install -g --prefix=$OUTPUT_DIR/usr @mermaid-js/mermaid-cli@$MINIMAL_ARG_VERSION
+# Hermetic build path: when /npm-cache exists (pre-staged npm cacache),
+# install offline. Otherwise fall back to online install for dev. Same
+# pattern as bash-language-server / typescript-language-server.
+if [ -d /npm-cache ]; then
+    NPM_CACHE_RW=/tmp/npm-cache
+    cp -r /npm-cache "$NPM_CACHE_RW"
+    npm install -g \
+        --offline \
+        --cache="$NPM_CACHE_RW" \
+        --prefix="$OUTPUT_DIR/usr" \
+        @mermaid-js/mermaid-cli@$MINIMAL_ARG_VERSION
+else
+    npm install -g --prefix=$OUTPUT_DIR/usr @mermaid-js/mermaid-cli@$MINIMAL_ARG_VERSION
+fi
 
 # Puppeteer config: use headless shell mode, and add --no-sandbox when root.
 mkdir -p $OUTPUT_DIR/usr/share/mermaid-cli
