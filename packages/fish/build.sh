@@ -1,6 +1,22 @@
 #!/bin/sh
 set -e
 
+# Hermetic build path: when /cargo-vendor exists, configure cargo to
+# resolve crates from there before invoking cmake (which transitively
+# runs cargo). The config lives in the source root (one level up from
+# the cmake build dir) so cargo finds it when cmake calls it.
+if [ -d /cargo-vendor ]; then
+    mkdir -p .cargo
+    cat > .cargo/config.toml <<'EOF'
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "/cargo-vendor"
+EOF
+    export CARGO_NET_OFFLINE=true
+fi
+
 mkdir build && cd build
 
 case $(uname -m) in
