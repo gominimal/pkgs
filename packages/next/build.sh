@@ -5,9 +5,27 @@ set -euo pipefail
 export CC=gcc
 export CXX=g++
 
-# Install all dependencies using the repo's pnpm-lock.yaml for reproducibility.
-# The lockfile pins exact versions of every transitive dependency used during the build.
-pnpm install --frozen-lockfile
+# Hermetic build: when /pnpm-store exists (mounted by a SLSA-grade
+# builder that has pre-staged the deps via `pnpm fetch` against this
+# pkg's lockfile), redirect pnpm to that store and run offline.
+# Otherwise fall back to the normal online install for dev iteration.
+#
+# Two tricks:
+# 1. Disable corepack version-pinning. next's package.json says
+#    "packageManager": "pnpm@9.6.0" — corepack would try to download
+#    that specific version. COREPACK_ENABLE_DOWNLOAD_PROMPT=0 +
+#    COREPACK_ENABLE_NETWORK=0 keep it offline.
+# 2. Rewrite packageManager pin to match whatever pnpm version is
+#    installed in the builder image (cf opencode's bun trick).
+if [ -d /pnpm-store ]; then
+    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+    export COREPACK_ENABLE_NETWORK=0
+    pnpm_version="$(pnpm --version)"
+    sed -i "s/\"packageManager\": \"pnpm@[^\"]*\"/\"packageManager\": \"pnpm@${pnpm_version}\"/" package.json || true
+    pnpm install --offline --frozen-lockfile --store-dir=/pnpm-store
+else
+    pnpm install --frozen-lockfile
+fi
 
 # Build next and all its workspace dependencies (e.g. @next/env)
 pnpm exec turbo run build --filter=next...
