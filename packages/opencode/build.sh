@@ -12,8 +12,16 @@ cd "opencode-${MINIMAL_ARG_VERSION}"
 bun_version="$(bun --version)"
 sed -i "s/\"packageManager\": \"bun@[^\"]*\"/\"packageManager\": \"bun@${bun_version}\"/" package.json
 
-# Install monorepo dependencies (requires network access).
-bun install --frozen-lockfile --ignore-scripts
+# Hermetic build: when /bun-cache exists (mounted by a SLSA-grade
+# builder that has pre-staged bun's install cache via `bun install` on
+# the staging host), point bun at it and install offline. Otherwise
+# fall back to the normal online install for dev iteration.
+if [ -d /bun-cache ]; then
+    export BUN_INSTALL_CACHE_DIR=/bun-cache
+    bun install --frozen-lockfile --ignore-scripts --no-progress
+else
+    bun install --frozen-lockfile --ignore-scripts
+fi
 
 # The build script consults git for a channel name when these are unset;
 # set them explicitly so it doesn't shell out to git in the sandbox.
