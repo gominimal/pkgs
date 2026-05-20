@@ -16,7 +16,19 @@ pnpm install --ignore-scripts --config.node-linker=hoisted
 pnpm build
 
 # Build Rust CLI
-cargo build --release --manifest-path cli/Cargo.toml
+if [ -d /cargo-vendor ]; then
+    mkdir -p .cargo
+    cat > .cargo/config.toml <<'EOF'
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "/cargo-vendor"
+EOF
+    cargo build --offline --frozen --release --manifest-path cli/Cargo.toml
+else
+    cargo build --release --manifest-path cli/Cargo.toml
+fi
 
 # Determine platform
 case $(uname -m) in

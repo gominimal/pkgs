@@ -14,7 +14,19 @@ if [ "$(uname -m)" = "x86_64" ]; then
   FEATURES="${FEATURES},tdx"
 fi
 
-cargo build --release --features "$FEATURES"
+if [ -d /cargo-vendor ]; then
+    mkdir -p .cargo
+    cat > .cargo/config.toml <<'EOF'
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "/cargo-vendor"
+EOF
+    cargo build --offline --frozen --release --features "$FEATURES"
+else
+    cargo build --release --features "$FEATURES"
+fi
 
 mkdir -p $OUTPUT_DIR/usr/bin
 cp target/release/cloud-hypervisor $OUTPUT_DIR/usr/bin/

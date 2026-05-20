@@ -14,7 +14,19 @@ export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-pat
 export CARGO_INCREMENTAL=0
 
 # sd is a cargo workspace; the binary lives in the sd-cli member.
-cargo build --release -p sd-cli
+if [ -d /cargo-vendor ]; then
+    mkdir -p .cargo
+    cat > .cargo/config.toml <<'EOF'
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "/cargo-vendor"
+EOF
+    cargo build --offline --frozen --release -p sd-cli
+else
+    cargo build --release -p sd-cli
+fi
 
 install -D -m 0755 target/release/sd "$OUTPUT_DIR/usr/bin/sd"
 

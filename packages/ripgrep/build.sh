@@ -4,7 +4,19 @@ export CC=gcc
 export LD=gcc
 export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 
-cargo build --release
+if [ -d /cargo-vendor ]; then
+    mkdir -p .cargo
+    cat > .cargo/config.toml <<'EOF'
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "/cargo-vendor"
+EOF
+    cargo build --offline --frozen --release
+else
+    cargo build --release
+fi
 
 mkdir -p $OUTPUT_DIR/usr/bin
 cp target/release/rg $OUTPUT_DIR/usr/bin

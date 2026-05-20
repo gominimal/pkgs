@@ -7,7 +7,19 @@ export RUSTFLAGS="-C linker=gcc"
 export HELIX_DEFAULT_RUNTIME=/usr/lib/helix/runtime
 export HELIX_DISABLE_AUTO_GRAMMAR_BUILD=1
 
-cargo build --release --locked
+if [ -d /cargo-vendor ]; then
+    mkdir -p .cargo
+    cat > .cargo/config.toml <<'EOF'
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "/cargo-vendor"
+EOF
+    cargo build --offline --frozen --release --locked
+else
+    cargo build --release --locked
+fi
 
 mkdir -p "$OUTPUT_DIR/usr/bin"
 install -m 755 target/release/hx "$OUTPUT_DIR/usr/bin/hx"
