@@ -25,6 +25,30 @@ let version = "7.3.69" in
       extract = true,
       strip_prefix = "foundationdb-%{version}",
     } | Source,
+    # cmake submodules discovered via `orch discover-cmake foundationdb`.
+    # FDB's cmake unconditionally pulls these at configure time via
+    # FetchContent_Declare / ExternalProject_add. Without local sources
+    # the build hits crates/github at configure → fails in CS offline mode.
+    # build.sh sed-patches the cmake files to use SOURCE_DIR /extracted-dir
+    # instead of the network fetch.
+    {
+      url = "https://github.com/facebook/zstd/archive/refs/tags/v1.5.2.tar.gz",
+      sha256 = "f7de13462f7a82c29ab865820149e778cbfe01087b3a55b5332707abf9db4a6e",
+      extract = true,
+      strip_prefix = "zstd-1.5.2",
+    } | Source,
+    {
+      url = "https://github.com/ToruNiina/toml11/archive/v3.4.0.tar.gz",
+      sha256 = "bc6d733efd9216af8c119d8ac64a805578c79cc82b813e4d1d880ca128bd154d",
+      extract = true,
+      strip_prefix = "toml11-3.4.0",
+    } | Source,
+    {
+      url = "https://github.com/msgpack/msgpack-c/releases/download/cpp-3.3.0/msgpack-3.3.0.tar.gz",
+      sha256 = "6e114d12a5ddb8cb11f669f83f32246e484a8addd0ce93f274996f1941c1f07b",
+      extract = true,
+      strip_prefix = "msgpack-3.3.0",
+    } | Source,
     base,
     boost,
     cmake,

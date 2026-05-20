@@ -19,14 +19,27 @@ sed -i '/add_subdirectory(flowbench/s/^/#/' CMakeLists.txt
 # Fix toml11 compatibility with CMake 4.x (old cmake_minimum_required)
 sed -i '/-Dtoml11_BUILD_TEST/a\      -DCMAKE_POLICY_VERSION_MINIMUM:STRING=3.5' cmake/FDBComponents.cmake
 
+# Hermetic build: redirect cmake submodule fetches to pre-extracted
+# source trees mounted at /. Sources come from build.ncl Source deps
+# (sha-pinned, content-addressed in mirror). See `orch discover-cmake
+# foundationdb` for how the urls/shas were obtained.
+# toml11: ExternalProject_add URL form -> SOURCE_DIR
+sed -i '/ExternalProject_add(toml11Project/,/BUILD_ALWAYS ON)/{s|URL "https://github.com/ToruNiina/toml11/archive/v3.4.0.tar.gz"|SOURCE_DIR /toml11-3.4.0|;/URL_HASH/d;}' cmake/FDBComponents.cmake
+# msgpack: ExternalProject_add URL form -> SOURCE_DIR
+sed -i '/ExternalProject_add(msgpackProject/,/INSTALL_COMMAND/{s|URL "https://github.com/msgpack/msgpack-c/releases/download/cpp-3.3.0/msgpack-3.3.0.tar.gz"|SOURCE_DIR /msgpack-3.3.0|;/URL_HASH/d;}' cmake/GetMsgpack.cmake
+# ZSTD: FetchContent_Declare GIT form -> SOURCE_DIR
+sed -i '/FetchContent_Declare(ZSTD/,/)/{s|GIT_REPOSITORY https://github.com/facebook/zstd.git|SOURCE_DIR /zstd-1.5.2|;/GIT_TAG /d;}' cmake/CompileZstd.cmake
+
 cmake -B build -G Ninja \
   -DCMAKE_INSTALL_PREFIX=/usr \
   -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_POLICY_DEFAULT_CMP0175=OLD \
   -DBUILD_DOCUMENTATION=OFF \
   -DBUILD_PYTHON_BINDING=OFF \
   -DBUILD_JAVA_BINDING=OFF \
   -DBUILD_GO_BINDING=OFF \
   -DBUILD_RUBY_BINDING=OFF \
+  -DBUILD_AZURE_BACKUP=OFF \
   -DSSD_ROCKSDB_EXPERIMENTAL=OFF \
   -DBUILD_AWS_BACKUP=OFF \
   -DBUILD_TESTING=OFF \
