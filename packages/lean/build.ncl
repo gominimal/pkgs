@@ -27,10 +27,12 @@ let version = "4.28.0" in
     {
       url = "https://github.com/arminbiere/cadical/archive/refs/tags/rel-2.1.2.tar.gz",
       sha256 = "292c2bb8d712d6d05fce3d3df63b922b8fa45e03974a79f7bae5bf68c284f131",
+      extract = true,
     } | Source,
     {
       url = "https://github.com/libuv/libuv/archive/refs/tags/v1.48.0.tar.gz",
       sha256 = "8c253adb0f800926a6cbd1c6576abae0bc8eb86a4f891049b72f9e5b7dc58f33",
+      extract = true,
     } | Source,
     # mimalloc release-archive (returns same content as api/tarball but
     # the basename ends in .tar.gz which minimal's extractor needs).
@@ -40,6 +42,7 @@ let version = "4.28.0" in
     {
       url = "https://github.com/microsoft/mimalloc/archive/refs/tags/v2.2.3.tar.gz",
       sha256 = "4d28e5fcac94089979e4016cf6454ebb4558a87378372cbd982e8a9b7c7ae56b",
+      extract = true,
     } | Source,
     base,
     toolchain,
