@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -euo pipefail
 
 # Extract source tarball manually (avoids staging issues with hardlink entries in tarball)
