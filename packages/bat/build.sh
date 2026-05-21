@@ -5,6 +5,12 @@ export LD=gcc
 export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 
 if [ -d /cargo-vendor ]; then
+    # macOS AppleDouble files (._*) get embedded when the vendor tarball
+    # is created on a Mac. They break libgit2-sys's build.rs which tries
+    # to compile them as C (gcc errors on "._realpath.c" etc).
+    # Cheap fix: strip them before cargo starts. Long-term: re-vendor with
+    # COPYFILE_DISABLE=1 on the staging host (see orch task #91/#93).
+    find /cargo-vendor -name '._*' -delete 2>/dev/null || true
     mkdir -p .cargo
     cat > .cargo/config.toml <<'EOF'
 [source.crates-io]
