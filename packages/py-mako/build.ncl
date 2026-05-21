@@ -32,10 +32,11 @@ let version = "1.3.12" in
 
   # Wheel layout (verified via unzip -l):
   #   mako/                          # main module
-  #   Mako-1.3.12.dist-info/         # WHEEL metadata (canonical case)
+  #   mako-1.3.12.dist-info/         # WHEEL metadata (LOWERCASE — wheel
+  #                                  # standard uses normalized form)
   outputs = {
     python_site_package = { glob = "usr/lib/python*/site-packages/mako/**" } | OutputData,
-    python_dist_info = { glob = "usr/lib/python*/site-packages/Mako-*.dist-info/**" } | OutputData,
+    python_dist_info = { glob = "usr/lib/python*/site-packages/mako-*.dist-info/**" } | OutputData,
   },
 
   attrs =
