@@ -72,23 +72,11 @@ let version = "9.10.1" in
 
     libghc = { glob = "usr/lib/ghc*/**" } | OutputData,
     libs = { glob = "usr/lib/**/*.so*" } | OutputLib,
-
-    docs = { glob = "usr/share/doc/**" } | OutputData,
-  },
-
-  needs = {
-    dns = {},
-    internet = {},
   },
 
   attrs =
     {
       upstream_version = version,
-      source_provenance = {
-        category = 'GithubRepo,
-        owner = "ghc",
-        repo = "ghc",
-      },
       build_cost_multiple = 6,
     } | Attrs,
 } | BuildSpec
