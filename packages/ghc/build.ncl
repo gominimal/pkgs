@@ -1,17 +1,24 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
-let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash = import "../bash/build.ncl" in
+let binutils = import "../binutils/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let python = import "../python/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let xz = import "../xz/build.ncl" in
 let tar = import "../tar/build.ncl" in
+let autoconf = import "../autoconf/build.ncl" in
+let automake = import "../automake/build.ncl" in
+let m4 = import "../m4/build.ncl" in
+let curl = import "../curl/build.ncl" in
+let make = import "../make/build.ncl" in
 
 let version = "9.10.1" in
-let ghc = import "../ghc/build.ncl" in
+
 {
   name = "ghc",
+
   build_deps = [
     { file = "build.sh" } | Local,
     {
@@ -19,16 +26,37 @@ let ghc = import "../ghc/build.ncl" in
       sha256 = "bf386a302d4ee054791ffd51748900f15d71760fd199157922d120cc1f89e2f7",
       extract = false,
     } | Source,
+    {
+      url = "https://downloads.haskell.org/~ghc/9.8.2/ghc-9.8.2-x86_64-deb11-linux.tar.xz",
+      sha256 = "ee9d424c614dd4b92b0104e812fb92016bf3d3ffd5e51a8af544634b9d817028",
+      extract = false,
+    } | Source,
+    {
+      url = "https://hackage.haskell.org/package/alex-3.5.1.0/alex-3.5.1.0.tar.gz",
+      sha256 = "c92efe86f8eb959ee03be6c04ee57ebc7e4abc75a6c4b26551215d7443e92a07",
+      extract = false,
+    } | Source,
+    {
+      url = "https://hackage.haskell.org/package/happy-1.20.1.1/happy-1.20.1.1.tar.gz",
+      sha256 = "8b4e7dc5a6c5fd666f8f7163232931ab28746d0d17da8fa1cbd68be9e878881b",
+      extract = false,
+    } | Source,
     base,
+    bash,
+    binutils,
     toolchain,
     perl,
     python,
     gmp,
     xz,
     tar,
-    # Self-dependency triggers replace_on_cycle to provide bootstrap GHC
-    ghc,
+    curl,
+    make,
+    autoconf,
+    automake,
+    m4,
   ],
+
   runtime_deps = [
     gmp,
   ],
@@ -42,11 +70,15 @@ let ghc = import "../ghc/build.ncl" in
   outputs = {
     bins = { glob = "usr/bin/*" } | OutputBin,
 
-    libghc = { glob = "usr/lib/ghc/**" } | OutputData,
+    libghc = { glob = "usr/lib/ghc*/**" } | OutputData,
     libs = { glob = "usr/lib/**/*.so*" } | OutputLib,
 
-    mans = { glob = "usr/share/man/**" } | OutputData,
     docs = { glob = "usr/share/doc/**" } | OutputData,
+  },
+
+  needs = {
+    dns = {},
+    internet = {},
   },
 
   attrs =
@@ -59,36 +91,4 @@ let ghc = import "../ghc/build.ncl" in
       },
       build_cost_multiple = 6,
     } | Attrs,
-
-  replace_on_cycle =
-    {
-      name = "ghc (prebuilt)",
-      prebuilt = true,
-      build_deps = [
-        match {
-          { arch = 'Amd64, .. } =>
-            {
-              url = "https://downloads.haskell.org/~ghc/%{version}/ghc-%{version}-x86_64-deb12-linux.tar.xz",
-              sha256 = "330c43eea88434e2de3480e05a5ea5cf7664090ef12245602dfe8463ac5dc496",
-              extract = true,
-              strip_prefix = "ghc-%{version}-x86_64-unknown-linux",
-            } | Source,
-          { arch = 'Arm64, .. } =>
-            {
-              url = "https://downloads.haskell.org/~ghc/%{version}/ghc-%{version}-aarch64-deb11-linux.tar.xz",
-              sha256 = "1db449c445d34779d4deaba22341576f7b512a05b6c2b5cb64f3846d1509714e",
-              extract = true,
-              strip_prefix = "ghc-%{version}-aarch64-unknown-linux",
-            } | Source,
-        } target,
-      ],
-      runtime_deps = [
-        gmp,
-      ],
-      outputs = {
-        bins = { glob = "bin/*" } | OutputBin,
-        libghc = { glob = "lib/ghc/**" } | OutputData,
-        libs = { glob = "lib/**/*.so*" } | OutputLib,
-      },
-    } | BuildSpec,
 } | BuildSpec
