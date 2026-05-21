@@ -27,10 +27,15 @@ let version = "6.0.3" in
     "pip3 install --no-index --no-deps --no-user --root /build/output ./pyyaml-%{version}-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
   ],
 
+  # Wheel layout (verified via unzip -l):
+  #   yaml/                                  # main module
+  #   yaml/_yaml.cpython-314-x86_64-linux-gnu.so  # C extension (lives inside yaml/)
+  #   _yaml/                                  # sub-namespace pkg
+  #   pyyaml-6.0.3.dist-info/                 # LOWERCASE (not PyYAML-6.0.3)
   outputs = {
     python_site_package = { glob = "usr/lib/python*/site-packages/yaml/**" } | OutputData,
-    python_so = { glob = "usr/lib/python*/site-packages/_yaml*.so" } | OutputData,
-    python_dist_info = { glob = "usr/lib/python*/site-packages/PyYAML-*.dist-info/**" } | OutputData,
+    python_yaml_ns = { glob = "usr/lib/python*/site-packages/_yaml/**" } | OutputData,
+    python_dist_info = { glob = "usr/lib/python*/site-packages/pyyaml-*.dist-info/**" } | OutputData,
   },
 
   attrs =
