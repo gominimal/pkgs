@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Extract source
-tar -xof ghc-$MINIMAL_ARG_VERSION-src.tar.xz
-cd ghc-$MINIMAL_ARG_VERSION
+tar -xof "ghc-${MINIMAL_ARG_VERSION}-src.tar.xz"
+cd "ghc-${MINIMAL_ARG_VERSION}"
 
 # Patch hp2ps/Utilities.c for GCC 15 / C23 compatibility
 sed -i 's/extern void\* malloc();/extern void\* malloc(long unsigned int);/' utils/hp2ps/Utilities.c
@@ -99,8 +99,7 @@ fi
 
 # Now we can run the build!
 # GHC 9.10.1 uses Hadrian to build.
-_build/bin/hadrian -j$(nproc) --flavour=quickest --docs=none
+_build/bin/hadrian -j"$(nproc)" --flavour=quickest --docs=none
 
 # And install!
-export DESTDIR="$OUTPUT_DIR"
 _build/bin/hadrian install --prefix=/usr --docs=none
