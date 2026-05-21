@@ -7,6 +7,8 @@ let ninja = import "../ninja/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let python = import "../python/build.ncl" in
 let py-packaging = import "../py-packaging/build.ncl" in
+let py-mako = import "../py-mako/build.ncl" in
+let py-pyyaml = import "../py-pyyaml/build.ncl" in
 let bison = import "../bison/build.ncl" in
 let flex = import "../flex/build.ncl" in
 let m4 = import "../m4/build.ncl" in
@@ -44,6 +46,12 @@ let version = "25.3.5" in
     # meson.build:966 requires. Without this, build fails with
     # "One of Python (3.x) packaging or distutils module is required".
     py-packaging,
+    # py-mako: required by meson.build:964 ("mako >= 0.8.0 required").
+    # py-pyyaml: read by various mesa generator scripts at build time.
+    # The pip3 install fallback in build.sh is silently a no-op in the
+    # hermetic sandbox (no network), so these MUST come in as build_deps.
+    py-mako,
+    py-pyyaml,
     bison,
     flex,
     m4,
