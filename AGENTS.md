@@ -16,7 +16,7 @@ goals. These tools are all subcommands of the `min` command.
     use the CLI tools it encapsulates. If you aren't sure of the right package name, you can use
     `min search <term>` to help find it.
  * `min check [--packages] [--profiles] [--harnesses] [--fix] [<name 1>[, <name N>]]` - Runs linters and static checks on the packages/profiles/harnesses with the given names, or all if names are not specified. If none of --profiles, --harnesses, and --packages are set, then checks are run for all three object kinds.
- * `min patched-pkg <package name>` - Runs the build for the named package. Unlike a full build, a patched build will wire dependencies to the most recent available version of the package with the same name, so you won't have long rebuilds when editing packages which are circularly dependent on a lot of other packages.
+ * `min patched-build <package name>` - Runs the build for the named package. Unlike a full build, a patched build will wire dependencies to the most recent available version of the package with the same name, so you won't have long rebuilds when editing packages which are circularly dependent on a lot of other packages.
 
 
 
