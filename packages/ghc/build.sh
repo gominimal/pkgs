@@ -102,4 +102,4 @@ fi
 _build/bin/hadrian -j"$(nproc)" --flavour=quickest --docs=none
 
 # And install!
-_build/bin/hadrian install --prefix=/usr --docs=none
+DESTDIR=$OUTPUT_DIR _build/bin/hadrian install --prefix=/usr --docs=none
