@@ -643,7 +643,7 @@ This validates that the Nickel spec parses correctly and conforms to the schema.
 ### Step 5: Build
 
 ```bash
-min patched-pkg <name>
+min patched-build <name>
 ```
 
 If the build fails:
@@ -652,7 +652,7 @@ If the build fails:
 - Check that `build.sh` installs to `$OUTPUT_DIR` (not `/usr/` directly)
 - Check the source URL and SHA256
 - Check that output globs match what `build.sh` actually installs
-- And keep iterating running the `patched-pkg` and `check` commands.
+- And keep iterating running the `patched-build` and `check` commands.
 
 
 ### Step 6: Validate again
@@ -663,7 +663,7 @@ min check --packages <name>
 
 Some validation checkers run on the compiled output, and show up as skipped when a package hasn't been built yet.
 
-Run `min check` again to make sure these checkers are run, and iterate by fixing issues, running `patched-pkg`, and then
+Run `min check` again to make sure these checkers are run, and iterate by fixing issues, running `patched-build`, and then
 running `min check` until all addressed.
 
 
@@ -672,10 +672,10 @@ running `min check` until all addressed.
 
 ### error: other: resolving dep '<package name>' by name: not found
 
-When using `min patched-pkg`, you can get an error if a package is not available locally, that looks
+When using `min patched-build`, you can get an error if a package is not available locally, that looks
 like this:
 
-```
+```text
 error: other: resolving dep '<package>' by name: not found
 ```
 
@@ -684,7 +684,7 @@ To fix this, you need to make the package available locally, typically by forcin
 `min add <package>`
 
 If the package thats not found is one that you are presently trying to package, `min add` will fail
-because it does not yet exist upstream. Instead, you should get it building with `min patched-pkg` first,
+because it does not yet exist upstream. Instead, you should get it building with `min patched-build` first,
 so the completed build populates the package locally, and only then move on to packages that depend on it.
 
 ### Rust build errors, `cc` not found
