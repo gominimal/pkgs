@@ -23,6 +23,31 @@ let version = "1.95.0" in
       extract = true,
       strip_prefix = "rustc-%{version}-src",
     } | Source,
+    # rust stage0 bootstrap toolchain (rustc/cargo/rust-std 1.94.0 — the
+    # previous stable that bootstraps 1.95.0). Declared as `extract =
+    # false` Sources so minimal's normal source hydration drops the
+    # tarballs into the build CWD; build.sh then moves them into
+    # build/cache/<date>/ where x.py's bootstrap looks, instead of
+    # curling static.rust-lang.org (no network egress in Confidential
+    # Space). shas must match the rust source's own src/stage0 manifest.
+    # amd64-only for now — an arm64 target needs the aarch64 stage0
+    # tarballs (tracked under #16). Bumping rust = update these three
+    # URLs/shas + the date fallback in build.sh together.
+    {
+      url = "gs://minimalmertic-hermetic-mirror/rust-stage0/2026-03-05/rustc-1.94.0-x86_64-unknown-linux-gnu.tar.xz",
+      sha256 = "31a0d3ac9383dfdeb4fce86eeed5ade3230131c635264c0eab7252dbf235f28e",
+      extract = false,
+    } | Source,
+    {
+      url = "gs://minimalmertic-hermetic-mirror/rust-stage0/2026-03-05/cargo-1.94.0-x86_64-unknown-linux-gnu.tar.xz",
+      sha256 = "8e17624f3de39e079845bfb25ed15a042f4b50ceca78e37c56c4b9b15949b9f7",
+      extract = false,
+    } | Source,
+    {
+      url = "gs://minimalmertic-hermetic-mirror/rust-stage0/2026-03-05/rust-std-1.94.0-x86_64-unknown-linux-gnu.tar.xz",
+      sha256 = "dd33653107c36e040082050d9e547e64dac5b456ba74069430d838c00c189a05",
+      extract = false,
+    } | Source,
     base,
     cmake,
     curl,
