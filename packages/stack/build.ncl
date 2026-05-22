@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let cabal = import "../cabal/build.ncl" in
 let base = import "../base/build.ncl" in
 let ghc = import "../ghc/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
@@ -15,6 +16,7 @@ let version = "3.9.3" in
       strip_prefix = "stack-%{version}",
     } | Source,
     base,
+    cabal,
     ghc,
     gmp,
   ],
