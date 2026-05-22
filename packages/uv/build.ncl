@@ -6,14 +6,14 @@ let make = import "../make/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "0.11.6" in
+let version = "0.11.15" in
 {
   name = "uv",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/uv-%{version}.tar.gz",
-      sha256 = "31b318f3174efa8f8c6179433a9ddfbedfa895ab2b9fb1cabb1bd7ce5fe8490a"
+      sha256 = "78d3070b6add2d8f5a28d5781c938b75d2e861736cfe6bf7a88757c395f10a2e"
     } | Source,
     base,
     make,
@@ -41,6 +41,7 @@ let version = "0.11.6" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT OR Apache-2.0",
       env_state_wiring = {
         env_var = "UV_CACHE_DIR",
         prefix = "uv-cache",
