@@ -69,6 +69,17 @@ tar -xof ../happy-1.20.1.1.tar.gz -C ../happy-src --strip-components=1
   ./Setup install
 )
 
+# Extract and build cabal-install (needed by hadrian bootstrap and ./configure)
+mkdir -p ../cabal-src
+tar -xof ../cabal-install-3.10.3.0.tar.gz -C ../cabal-src --strip-components=1
+(
+  cd ../cabal-src
+  "$BOOTSTRAP_DIR/bin/ghc" --make Setup.hs
+  ./Setup configure --prefix="$BOOTSTRAP_DIR"
+  ./Setup build
+  ./Setup install
+)
+
 # Create a sphinx-build stub so configure detects it (required by Hadrian's build system)
 # but skip actual doc generation
 mkdir -p "$BOOTSTRAP_DIR/bin"
