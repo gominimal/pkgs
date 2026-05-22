@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# Exclude the verbatim legal documents (ICLA / CCLA) from CodeRabbit review.
+# These files are legal text reproduced verbatim from the canonical source —
+# they are not code and are not subject to code review. Everything else in
+# the repository is still reviewed normally.
+reviews:
+  path_filters:
+    - "!legal/**"
