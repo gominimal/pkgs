@@ -9,9 +9,17 @@ cd "ghc-${MINIMAL_ARG_VERSION}"
 sed -i 's/extern void\* malloc();/extern void\* malloc(long unsigned int);/' utils/hp2ps/Utilities.c
 sed -i 's/extern void \*realloc();/extern void \*realloc(void \*, long unsigned int);/' utils/hp2ps/Utilities.c
 
+# Detect architecture for bootstrap binary selection
+BOOTSTRAP_ARCH="$(uname -m)"
+case "$BOOTSTRAP_ARCH" in
+  x86_64) BOOTSTRAP_TAR="ghc-9.8.2-x86_64-deb11-linux.tar.xz"; BOOTSTRAP_LIB_ARCH="x86_64-linux-ghc-9.8.2" ;;
+  aarch64) BOOTSTRAP_TAR="ghc-9.8.2-aarch64-deb11-linux.tar.xz"; BOOTSTRAP_LIB_ARCH="aarch64-linux-ghc-9.8.2" ;;
+  *) echo "Unsupported architecture: $BOOTSTRAP_ARCH"; exit 1 ;;
+esac
+
 # Extract bootstrap GHC source and install it properly
 mkdir -p ../bootstrap-src
-tar -xof ../ghc-9.8.2-x86_64-deb11-linux.tar.xz -C ../bootstrap-src --strip-components=1
+tar -xof "../${BOOTSTRAP_TAR}" -C ../bootstrap-src --strip-components=1
 export BOOTSTRAP_DIR="$PWD/../bootstrap"
 mkdir -p "$BOOTSTRAP_DIR"
 
@@ -23,7 +31,7 @@ mkdir -p "$BOOTSTRAP_DIR"
 )
 
 # To run the bootstrap GHC, we need to set LD_LIBRARY_PATH so it can find its own libraries
-export LD_LIBRARY_PATH="$BOOTSTRAP_DIR/lib/x86_64-linux-ghc-9.8.2"
+export LD_LIBRARY_PATH="$BOOTSTRAP_DIR/lib/${BOOTSTRAP_LIB_ARCH}"
 
 # Ensure the bootstrap GHC and the build-produced tools (like alex/happy) are in PATH
 export PATH="$BOOTSTRAP_DIR/bin:$PWD/_build/bin:$PATH"

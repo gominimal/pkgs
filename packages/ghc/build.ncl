@@ -31,6 +31,11 @@ let version = "9.10.1" in
       extract = false,
     } | Source,
     {
+      url = "https://downloads.haskell.org/~ghc/9.8.2/ghc-9.8.2-aarch64-deb11-linux.tar.xz",
+      sha256 = "b7f27d53cf20645833bcff2fa6308b221c39eeac1de3fe074598090731848672",
+      extract = false,
+    } | Source,
+    {
       url = "https://hackage.haskell.org/package/alex-3.5.1.0/alex-3.5.1.0.tar.gz",
       sha256 = "c92efe86f8eb959ee03be6c04ee57ebc7e4abc75a6c4b26551215d7443e92a07",
       extract = false,
