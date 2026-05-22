@@ -120,3 +120,9 @@ _build/bin/hadrian -j"$(nproc)" --flavour=quickest --docs=none
 
 # And install!
 DESTDIR=$OUTPUT_DIR _build/bin/hadrian install --prefix=/usr --docs=none
+
+# Refresh the package database cache so downstream builds don't see stale cache warnings
+GHC_PKG="$(find "$OUTPUT_DIR" -name ghc-pkg -type f | head -1)"
+if [ -n "$GHC_PKG" ]; then
+    "$GHC_PKG" recache
+fi

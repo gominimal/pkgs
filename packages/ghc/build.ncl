@@ -69,6 +69,7 @@ let version = "9.10.1" in
     gmp,
     libffi,
     linux_headers,
+    toolchain,
   ],
 
   needs =
