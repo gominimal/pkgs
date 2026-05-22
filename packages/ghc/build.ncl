@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
@@ -15,7 +15,6 @@ let curl = import "../curl/build.ncl" in
 let make = import "../make/build.ncl" in
 
 let version = "9.10.1" in
-
 {
   name = "ghc",
 
@@ -58,8 +57,15 @@ let version = "9.10.1" in
   ],
 
   runtime_deps = [
+    base,
     gmp,
   ],
+
+  needs =
+    {
+      dns = {},
+      internet = {},
+    } | Needs,
 
   cmd = "./build.sh",
 
@@ -79,4 +85,13 @@ let version = "9.10.1" in
       upstream_version = version,
       build_cost_multiple = 6,
     } | Attrs,
+
+  tests = {
+    version_check =
+      {
+        class = 'Standalone,
+        test_deps = [],
+        cmds = [["ghc", "--version"]],
+      } | Test,
+  },
 } | BuildSpec
