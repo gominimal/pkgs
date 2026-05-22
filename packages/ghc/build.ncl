@@ -49,8 +49,6 @@ let version = "9.10.1" in
     } | Source,
     base,
     bash,
-    binutils,
-    toolchain,
     perl,
     python,
     gmp,

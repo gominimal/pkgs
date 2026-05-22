@@ -18,7 +18,6 @@ let version = "3.12.1.0" in
     } | Source,
     base,
     ghc,
-    gmp,
     python,
   ],
   runtime_deps = [
