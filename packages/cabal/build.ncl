@@ -2,21 +2,24 @@ let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = impo
 let base = import "../base/build.ncl" in
 let ghc = import "../ghc/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
+let python = import "../python/build.ncl" in
 
-let version = "3.16.1.0" in
+let version = "3.12.1.0" in
 {
   name = "cabal",
   build_deps = [
     { file = "build.sh" } | Local,
+    { file = "update_bootstrap_json.py" } | Local,
     {
       url = "https://github.com/haskell/cabal/archive/refs/tags/cabal-install-v%{version}.tar.gz",
-      sha256 = "d06558ebc56e75e713698b00e2079809f846f06f31cd58401309886a2b84390b",
+      sha256 = "84e883989cf44341dada05f866ec2b0256ac1f3bd111fcf80e7b6a7b77942af3",
       extract = true,
       strip_prefix = "cabal-cabal-install-v%{version}",
     } | Source,
     base,
     ghc,
     gmp,
+    python,
   ],
   runtime_deps = [
     gmp,
@@ -35,9 +38,7 @@ let version = "3.16.1.0" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
-
-    mans = { glob = "usr/share/man/**" } | OutputData,
+    cabal = { glob = "usr/bin/cabal" } | OutputBin,
     docs = { glob = "usr/share/doc/**" } | OutputData,
   },
 

@@ -6,6 +6,8 @@ let toolchain = import "../toolchain/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let python = import "../python/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
+let libffi = import "../libffi/build.ncl" in
+let linux_headers = import "../linux_headers/build.ncl" in
 let xz = import "../xz/build.ncl" in
 let tar = import "../tar/build.ncl" in
 let autoconf = import "../autoconf/build.ncl" in
@@ -63,7 +65,10 @@ let version = "9.10.1" in
 
   runtime_deps = [
     base,
+    binutils,
     gmp,
+    libffi,
+    linux_headers,
   ],
 
   needs =
