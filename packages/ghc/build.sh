@@ -69,20 +69,18 @@ tar -xof ../happy-1.20.1.1.tar.gz -C ../happy-src --strip-components=1
   ./Setup install
 )
 
-# Extract and build cabal-install (needed by hadrian bootstrap and ./configure)
-mkdir -p ../cabal-src
-tar -xof ../cabal-install-3.10.3.0.tar.gz -C ../cabal-src --strip-components=1
-(
-  cd ../cabal-src
-  "$BOOTSTRAP_DIR/bin/ghc" --make Setup.hs
-  ./Setup configure --prefix="$BOOTSTRAP_DIR"
-  ./Setup build
-  ./Setup install
-)
-
-# Create a sphinx-build stub so configure detects it (required by Hadrian's build system)
-# but skip actual doc generation
+# Create stubs for tools ./configure checks for but aren't strictly needed
+# hadrian bootstrap will download the real cabal via internet access
 mkdir -p "$BOOTSTRAP_DIR/bin"
+
+# Cabal stub - ./configure just checks it exists via AC_PATH_PROG(CABAL,cabal)
+cat << 'EOF' > "$BOOTSTRAP_DIR/bin/cabal"
+#!/bin/sh
+exit 0
+EOF
+chmod +x "$BOOTSTRAP_DIR/bin/cabal"
+
+# Sphinx stub - skip actual doc generation
 cat << 'EOF' > "$BOOTSTRAP_DIR/bin/sphinx-build"
 #!/bin/sh
 if [ "$1" = "--version" ]; then

@@ -41,11 +41,6 @@ let version = "9.10.1" in
       sha256 = "8b4e7dc5a6c5fd666f8f7163232931ab28746d0d17da8fa1cbd68be9e878881b",
       extract = false,
     } | Source,
-    {
-      url = "https://hackage.haskell.org/package/cabal-install-3.10.3.0/cabal-install-3.10.3.0.tar.gz",
-      sha256 = "a8e706f0cf30cd91e006ae8b38137aecf65983346f44d0cba4d7a60bbfa3da9e",
-      extract = false,
-    } | Source,
     base,
     bash,
     binutils,
