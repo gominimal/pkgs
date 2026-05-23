@@ -100,7 +100,9 @@ EOF
 chmod +x "$BOOTSTRAP_DIR/bin/sphinx-build"
 
 # Bootstrap Hadrian
-python3 hadrian/bootstrap/bootstrap.py -w "$BOOTSTRAP_DIR/bin/ghc"
+# We must explicitly pass the bootstrap GHC path and also pass --bootstrap-sources to force
+# the bootstrap.py script to use the local offline tarballs instead of downloading them.
+python3 hadrian/bootstrap/bootstrap.py -w "$BOOTSTRAP_DIR/bin/ghc" --bootstrap-sources ../hadrian-bootstrap-sources-9.8.1.tar.gz
 
 # Add pseudostore lib dirs to LD_LIBRARY_PATH so bootstrapped tools (like alex/happy) can find their dependencies
 PSEUDO_LIBS="$(find _build/pseudostore -name "*.so*" -exec dirname {} \; | sort -u | paste -sd : || true)"
