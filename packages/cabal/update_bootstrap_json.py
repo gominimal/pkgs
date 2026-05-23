@@ -28,7 +28,7 @@ for entry in data.get('builtin', []):
 
 data['builtin'] = new_builtin
 
-# Update specific dependencies that are too old for GHC 9.10.1.
+# Update specific dependencies that are too old for GHC 9.10.3.
 # Each entry maps a package name to new version, revision, source hash, and .cabal hash.
 # All hashes are from Hackage and verified at packaging time.
 dep_updates = {

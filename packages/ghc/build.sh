@@ -115,7 +115,7 @@ fi
   GHC="$BOOTSTRAP_DIR/bin/ghc"
 
 # Now we can run the build!
-# GHC 9.10.1 uses Hadrian to build.
+# GHC 9.10.3 uses Hadrian to build.
 _build/bin/hadrian -j"$(nproc)" --flavour=quickest --docs=none
 
 # And install!

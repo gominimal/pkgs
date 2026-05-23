@@ -16,7 +16,7 @@ let m4 = import "../m4/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let make = import "../make/build.ncl" in
 
-let version = "9.10.1" in
+let version = "9.10.3" in
 {
   name = "ghc",
 
@@ -24,7 +24,7 @@ let version = "9.10.1" in
     { file = "build.sh" } | Local,
     {
       url = "https://downloads.haskell.org/~ghc/%{version}/ghc-%{version}-src.tar.xz",
-      sha256 = "bf386a302d4ee054791ffd51748900f15d71760fd199157922d120cc1f89e2f7",
+      sha256 = "d266864b9e0b7b741abe8c9d6a790d7c01c21cf43a1419839119255878ebc59a",
       extract = false,
     } | Source,
     {
