@@ -52,6 +52,16 @@ let version = "5.3" in
   },
 
   replace_on_cycle =
+    # Phase D cycle 2 (2026-05-25): the amd64 cycle-breaker URL +
+    # sha point at our own CS-attested bash-bootstrap instead of
+    # gominimal's prebuilt. The CS build of cycle 1 produced sha
+    # 1d99e33f and proved bit-reproducible across rebuilds; using
+    # 1d99e33f here closes the trust loop — if cycle 2's output
+    # is also 1d99e33f, bash-bootstrap is a fixed point and can
+    # graduate out of trust-config bootstrap_artifacts entirely
+    # (its sha appears in declaredSources via this very Source).
+    # Arm64 still points at gominimal's prebuilt because we don't
+    # have a CS-attested arm64 build yet.
     {
       name = "bash-bootstrap (prebuilt)",
       prebuilt = true,
@@ -59,8 +69,8 @@ let version = "5.3" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/bash-bootstrap/amd64-linux-gnu/bash-bootstrap_5.3_amd64-linux-gnu_prebuilt_363e67d.tar.zst",
-              sha256 = "cd6e5b8af486a82aa5e9b6cffda572105860afe81407e5d7b509bff7f5ece578",
+              url = "gs://minimalmertic-release-channel-stable/bash-bootstrap-5.3/bash-bootstrap-5.3.tar.zst",
+              sha256 = "1d99e33f904e3e079b64844979bcb52b94ca38e57857e96d3578fc6d47b4582a",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
