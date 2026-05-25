@@ -16,6 +16,9 @@ export CARGO_INCREMENTAL=0
 # sd is a cargo workspace; the binary lives in the sd-cli member.
 if [ -d /cargo-vendor ]; then
     mkdir -p .cargo
+    if [ -f /cargo-vendor/.cargo-config.toml ]; then
+        cp /cargo-vendor/.cargo-config.toml .cargo/config.toml
+    else
     cat > .cargo/config.toml <<'EOF'
 [source.crates-io]
 replace-with = "vendored-sources"
@@ -23,6 +26,7 @@ replace-with = "vendored-sources"
 [source.vendored-sources]
 directory = "/cargo-vendor"
 EOF
+    fi
     cargo build --offline --frozen --release -p sd-cli
 else
     cargo build --release -p sd-cli

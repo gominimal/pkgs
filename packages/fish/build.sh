@@ -14,6 +14,9 @@ if [ -d /cargo-vendor ]; then
     # them. Without this, the build fails with: "can't checkout from
     # 'https://github.com/fish-shell/rust-pcre2': offline mode".
     mkdir -p .cargo
+    if [ -f /cargo-vendor/.cargo-config.toml ]; then
+        cp /cargo-vendor/.cargo-config.toml .cargo/config.toml
+    else
     cat > .cargo/config.toml <<'EOF'
 [source.crates-io]
 replace-with = "vendored-sources"
@@ -26,6 +29,7 @@ replace-with = "vendored-sources"
 [source.vendored-sources]
 directory = "/cargo-vendor"
 EOF
+    fi
     export CARGO_NET_OFFLINE=true
 fi
 

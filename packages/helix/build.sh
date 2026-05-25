@@ -9,6 +9,9 @@ export HELIX_DISABLE_AUTO_GRAMMAR_BUILD=1
 
 if [ -d /cargo-vendor ]; then
     mkdir -p .cargo
+    if [ -f /cargo-vendor/.cargo-config.toml ]; then
+        cp /cargo-vendor/.cargo-config.toml .cargo/config.toml
+    else
     cat > .cargo/config.toml <<'EOF'
 [source.crates-io]
 replace-with = "vendored-sources"
@@ -16,6 +19,7 @@ replace-with = "vendored-sources"
 [source.vendored-sources]
 directory = "/cargo-vendor"
 EOF
+    fi
     cargo build --offline --frozen --release --locked
 else
     cargo build --release --locked
