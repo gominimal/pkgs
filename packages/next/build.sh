@@ -10,18 +10,25 @@ export CXX=g++
 # pkg's lockfile), redirect pnpm to that store and run offline.
 # Otherwise fall back to the normal online install for dev iteration.
 #
-# Two tricks:
-# 1. Disable corepack version-pinning. next's package.json says
-#    "packageManager": "pnpm@9.6.0" — corepack would try to download
-#    that specific version. COREPACK_ENABLE_DOWNLOAD_PROMPT=0 +
-#    COREPACK_ENABLE_NETWORK=0 keep it offline.
-# 2. Rewrite packageManager pin to match whatever pnpm version is
-#    installed in the builder image (cf opencode's bun trick).
+# Corepack auto-pin trap: next's package.json declares
+# `"packageManager": "pnpm@9.6.0"`. The FIRST `pnpm` invocation
+# triggers corepack to try installing that exact version via
+# `pnpm add pnpm@9.6.0 --config.bin=bin …`, which looks in
+# /pnpm-store, fails (the store is for next's lockfile deps,
+# not for pnpm itself), and with COREPACK_ENABLE_NETWORK=0 there's
+# no fallback. Result: `pnpm --version` exits 1 BEFORE we even
+# get to the sed-fixup. Caught 2026-05-26.
+#
+# Fix: strip the packageManager field from package.json FIRST so
+# corepack has nothing to auto-pin against; the builder-image-
+# resident pnpm handles the install. Same shape as opencode's
+# bun-version-pin removal trick.
 if [ -d /pnpm-store ]; then
     export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
     export COREPACK_ENABLE_NETWORK=0
-    pnpm_version="$(pnpm --version)"
-    sed -i "s/\"packageManager\": \"pnpm@[^\"]*\"/\"packageManager\": \"pnpm@${pnpm_version}\"/" package.json || true
+    # Drop the entire packageManager line (with trailing comma if
+    # present) BEFORE any pnpm call. Idempotent + non-fatal.
+    sed -i 's/^\s*"packageManager":\s*"pnpm@[^"]*",\?\s*$//' package.json || true
     pnpm install --offline --frozen-lockfile --store-dir=/pnpm-store
 else
     pnpm install --frozen-lockfile
