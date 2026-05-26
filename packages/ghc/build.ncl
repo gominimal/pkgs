@@ -90,7 +90,7 @@ let version = "9.10.3" in
   outputs = {
     bins = { glob = "usr/bin/*" } | OutputBin,
 
-    libghc = { glob = "usr/lib/ghc*/**" } | OutputData,
+    libghc = { glob = "usr/lib/ghc*/**", allow_executable = true } | OutputData,
     libs = { glob = "usr/lib/**/*.so*" } | OutputLib,
   },
 
