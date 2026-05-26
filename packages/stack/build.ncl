@@ -37,9 +37,8 @@ let version = "3.9.3" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    stack = { glob = "usr/bin/stack" } | OutputBin,
 
-    mans = { glob = "usr/share/man/**" } | OutputData,
     docs = { glob = "usr/share/doc/**" } | OutputData,
   },
 

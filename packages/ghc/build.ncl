@@ -28,13 +28,18 @@ let version = "9.10.3" in
       extract = false,
     } | Source,
     {
-      url = "https://downloads.haskell.org/~ghc/9.8.2/ghc-9.8.2-x86_64-deb11-linux.tar.xz",
-      sha256 = "ee9d424c614dd4b92b0104e812fb92016bf3d3ffd5e51a8af544634b9d817028",
+      url = "https://downloads.haskell.org/~ghc/9.8.1/ghc-9.8.1-x86_64-deb11-linux.tar.xz",
+      sha256 = "ca4dde3a6f34f1fe6d0783767671f02e862f1b0222ef2dc2c5c68cc2abc1abae",
       extract = false,
     } | Source,
     {
-      url = "https://downloads.haskell.org/~ghc/9.8.2/ghc-9.8.2-aarch64-deb11-linux.tar.xz",
-      sha256 = "b7f27d53cf20645833bcff2fa6308b221c39eeac1de3fe074598090731848672",
+      url = "https://downloads.haskell.org/~ghc/9.8.1/ghc-9.8.1-aarch64-deb10-linux.tar.xz",
+      sha256 = "aab7af72614f8bf9ca624407aa4dbc69bc009c2b4cc1a0f3c062008db81bdb95",
+      extract = false,
+    } | Source,
+    {
+      url = "https://downloads.haskell.org/~ghc/%{version}/hadrian-bootstrap-sources/hadrian-bootstrap-sources-9.8.1.tar.gz",
+      sha256 = "eec7233763bc31801fcbc996edc9c1f5abae707c1661deb8b22f0a7c2780b5e9",
       extract = false,
     } | Source,
     {

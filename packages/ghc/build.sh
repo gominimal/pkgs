@@ -12,8 +12,8 @@ sed -i 's/extern void \*realloc();/extern void \*realloc(void \*, long unsigned 
 # Detect architecture for bootstrap binary selection
 BOOTSTRAP_ARCH="$(uname -m)"
 case "$BOOTSTRAP_ARCH" in
-  x86_64) BOOTSTRAP_TAR="ghc-9.8.2-x86_64-deb11-linux.tar.xz"; BOOTSTRAP_LIB_ARCH="x86_64-linux-ghc-9.8.2" ;;
-  aarch64) BOOTSTRAP_TAR="ghc-9.8.2-aarch64-deb11-linux.tar.xz"; BOOTSTRAP_LIB_ARCH="aarch64-linux-ghc-9.8.2" ;;
+  x86_64) BOOTSTRAP_TAR="ghc-9.8.1-x86_64-deb11-linux.tar.xz"; BOOTSTRAP_LIB_ARCH="x86_64-linux-ghc-9.8.1" ;;
+  aarch64) BOOTSTRAP_TAR="ghc-9.8.1-aarch64-deb10-linux.tar.xz"; BOOTSTRAP_LIB_ARCH="aarch64-linux-ghc-9.8.1" ;;
   *) echo "Unsupported architecture: $BOOTSTRAP_ARCH"; exit 1 ;;
 esac
 

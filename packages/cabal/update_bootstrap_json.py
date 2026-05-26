@@ -99,6 +99,11 @@ dep_updates = {
         'cabal_sha256': 'd6696f2b55ab4a50b8de57947abca308604eb7cf8287c40bf69cfa26133e24d3',
         'flags': ['-bundled-c-zlib', '+non-blocking-ffi', '-pkg-config'],
     },
+    'ed25519': {
+        'version': '0.0.5.0',
+        'revision': 9,
+        'cabal_sha256': 'f1550ddbe3b53f1087a035667364011460896cc2b1ff328b521c05ed5973bb78',
+    },
 }
 new_deps = []
 for dep in data.get('dependencies', []):
