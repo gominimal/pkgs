@@ -11,7 +11,13 @@ case $(uname -m) in
   aarch64) MARCH="-march=armv8-a" ;;
   *)       MARCH="" ;;
 esac
-export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
+# GCC 15+ defaults to -std=gnu23 (C23). Perl 5.42.0's Configure has
+# probe programs with K&R-style declarations + implicit function
+# declarations (the "unixish.h:128 implicit declaration of fstat" +
+# "S_IFDIR undeclared" failures the trust-config rationale notes).
+# Force C17 mode so probes compile cleanly. Same pattern used by gmp
+# (see packages/gmp/build.sh:23-26).
+export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -std=gnu17 -ffile-prefix-map=$(pwd)=/builddir"
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
