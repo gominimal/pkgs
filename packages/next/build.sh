@@ -23,15 +23,24 @@ export CXX=g++
 # corepack has nothing to auto-pin against; the builder-image-
 # resident pnpm handles the install. Same shape as opencode's
 # bun-version-pin removal trick.
+#
+# Engines.pnpm trap (second layer, caught 2026-05-26 after the
+# corepack fix unmasked it): even with packageManager stripped, pnpm
+# itself does an ERR_PNPM_UNSUPPORTED_ENGINE check against the
+# package.json `engines.pnpm` field. next's package.json pins
+# `"engines": { "pnpm": "9.6.0" }`; the builder image's pnpm is
+# 10.x. Fix is to also pass --config.engine-strict=false to bypass
+# the check. (Stripping the engines field too would also work but is
+# more invasive to upstream package.json structure.)
 if [ -d /pnpm-store ]; then
     export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
     export COREPACK_ENABLE_NETWORK=0
     # Drop the entire packageManager line (with trailing comma if
     # present) BEFORE any pnpm call. Idempotent + non-fatal.
     sed -i 's/^\s*"packageManager":\s*"pnpm@[^"]*",\?\s*$//' package.json || true
-    pnpm install --offline --frozen-lockfile --store-dir=/pnpm-store
+    pnpm install --offline --frozen-lockfile --store-dir=/pnpm-store --config.engine-strict=false
 else
-    pnpm install --frozen-lockfile
+    pnpm install --frozen-lockfile --config.engine-strict=false
 fi
 
 # Build next and all its workspace dependencies (e.g. @next/env)
