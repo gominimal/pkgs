@@ -10,7 +10,19 @@ export RUSTFLAGS="-C linker=gcc"
 # tree — pnpm's default symlinked layout into .pnpm/ doesn't survive
 # being copied into $OUTPUT_DIR and causes runtime ERR_MODULE_NOT_FOUND
 # on transitive deps (e.g. jszip).
-pnpm install --ignore-scripts --config.node-linker=hoisted
+#
+# Hermetic build path: when /pnpm-store exists (mounted by a SLSA-grade
+# builder that has pre-staged the deps via `pnpm fetch` against this
+# pkg's lockfile), redirect pnpm to that store and run offline.
+# Otherwise fall back to the normal online install for dev iteration.
+# Mirrors the if-then-else pattern next/build.sh + the cargo branch
+# below already use.
+if [ -d /pnpm-store ]; then
+    pnpm install --offline --frozen-lockfile --store-dir=/pnpm-store \
+                 --ignore-scripts --config.node-linker=hoisted
+else
+    pnpm install --ignore-scripts --config.node-linker=hoisted
+fi
 
 # Build TypeScript daemon
 pnpm build
