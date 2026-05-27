@@ -1,0 +1,111 @@
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let base = import "../base/build.ncl" in
+let bash = import "../bash/build.ncl" in
+let binutils = import "../binutils/build.ncl" in
+let toolchain = import "../toolchain/build.ncl" in
+let perl = import "../perl/build.ncl" in
+let python = import "../python/build.ncl" in
+let gmp = import "../gmp/build.ncl" in
+let libffi = import "../libffi/build.ncl" in
+let linux_headers = import "../linux_headers/build.ncl" in
+let xz = import "../xz/build.ncl" in
+let tar = import "../tar/build.ncl" in
+let autoconf = import "../autoconf/build.ncl" in
+let automake = import "../automake/build.ncl" in
+let m4 = import "../m4/build.ncl" in
+let curl = import "../curl/build.ncl" in
+let make = import "../make/build.ncl" in
+
+let version = "9.10.3" in
+{
+  name = "ghc",
+
+  build_deps = [
+    { file = "build.sh" } | Local,
+    {
+      url = "https://downloads.haskell.org/~ghc/%{version}/ghc-%{version}-src.tar.xz",
+      sha256 = "d266864b9e0b7b741abe8c9d6a790d7c01c21cf43a1419839119255878ebc59a",
+      extract = false,
+    } | Source,
+    {
+      url = "https://downloads.haskell.org/~ghc/9.8.1/ghc-9.8.1-x86_64-deb11-linux.tar.xz",
+      sha256 = "ca4dde3a6f34f1fe6d0783767671f02e862f1b0222ef2dc2c5c68cc2abc1abae",
+      extract = false,
+    } | Source,
+    {
+      url = "https://downloads.haskell.org/~ghc/9.8.1/ghc-9.8.1-aarch64-deb10-linux.tar.xz",
+      sha256 = "aab7af72614f8bf9ca624407aa4dbc69bc009c2b4cc1a0f3c062008db81bdb95",
+      extract = false,
+    } | Source,
+    {
+      url = "https://downloads.haskell.org/~ghc/%{version}/hadrian-bootstrap-sources/hadrian-bootstrap-sources-9.8.1.tar.gz",
+      sha256 = "eec7233763bc31801fcbc996edc9c1f5abae707c1661deb8b22f0a7c2780b5e9",
+      extract = false,
+    } | Source,
+    {
+      url = "https://hackage.haskell.org/package/alex-3.5.1.0/alex-3.5.1.0.tar.gz",
+      sha256 = "c92efe86f8eb959ee03be6c04ee57ebc7e4abc75a6c4b26551215d7443e92a07",
+      extract = false,
+    } | Source,
+    {
+      url = "https://hackage.haskell.org/package/happy-1.20.1.1/happy-1.20.1.1.tar.gz",
+      sha256 = "8b4e7dc5a6c5fd666f8f7163232931ab28746d0d17da8fa1cbd68be9e878881b",
+      extract = false,
+    } | Source,
+    base,
+    bash,
+    perl,
+    python,
+    gmp,
+    xz,
+    tar,
+    curl,
+    make,
+    autoconf,
+    automake,
+    m4,
+  ],
+
+  runtime_deps = [
+    base,
+    binutils,
+    gmp,
+    libffi,
+    linux_headers,
+    toolchain,
+  ],
+
+  needs =
+    {
+      dns = {},
+      internet = {},
+    } | Needs,
+
+  cmd = "./build.sh",
+
+  build_args = {
+    include version,
+  },
+
+  outputs = {
+    bins = { glob = "usr/bin/*" } | OutputBin,
+
+    libghc = { glob = "usr/lib/ghc*/**", allow_executable = true } | OutputData,
+    libs = { glob = "usr/lib/**/*.so*" } | OutputLib,
+  },
+
+  attrs =
+    {
+      upstream_version = version,
+      build_cost_multiple = 6,
+    } | Attrs,
+
+  tests = {
+    version_check =
+      {
+        class = 'Standalone,
+        test_deps = [],
+        cmds = [["ghc", "--version"]],
+      } | Test,
+  },
+} | BuildSpec
