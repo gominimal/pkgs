@@ -1,22 +1,34 @@
 ---
 name: Minimal Package Update / Fix Request
-about: Request an update or fix to an existing Minimal package.
-title: ''
-labels: ''
-assignees: ''
+about: Request an update or fix to an existing Minimal package
+title: "[PkgFix] <package name>"
+labels: pkgfix, triage
 
 ---
 
-**Package Name**
+Thanks for the report! If you'd like to send the update or fix yourself as a pull request, see [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md) — PRs are welcome.
+
+**Package name**
 
 
-**Current Version**
+**Current version**
+<!-- From `min search <name>` or `packages/<name>/build.ncl` (`upstream_version`). -->
+
+**Requested version** (for update requests)
 
 
-**Requested Version**
+**Upstream project URL**
 
 
-**Upstream Project URL**
+**What's the problem?**
+<!-- For a fix: describe the bug, what you expected, what happened, and steps to reproduce.
+     For an update: anything notable in the new release we should know about (breaking changes, new dependencies, build flag changes). -->
 
+**Logs / error output** (if applicable)
 
-**Problem with package**
+```
+<paste here>
+```
+
+**Environment**
+<!-- Optional but helpful: OS, architecture, how you invoked the package. -->
