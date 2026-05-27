@@ -24,8 +24,8 @@ Thanks for the contribution! A few quick notes:
 
 ## Checklist
 
-- [ ] I've read [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md).
-- [ ] I've accepted the [ICLA](../blob/main/legal/ICLA.md) (and CCLA if contributing on my employer's time). CLA Assistant will prompt me on this PR if I haven't already.
+- [ ] I've read [CONTRIBUTING.md](https://github.com/gominimal/pkgs/blob/main/CONTRIBUTING.md).
+- [ ] I've accepted the [ICLA](https://github.com/gominimal/pkgs/blob/main/legal/ICLA.md) (and CCLA if contributing on my employer's time). CLA Assistant will prompt me on this PR if I haven't already.
 - [ ] `min check` passes for the affected packages/harnesses.
 - [ ] `min patched-build <name>` succeeds for any package I added or modified.
 - [ ] For new packages: `source_provenance` points to the canonical upstream and the source builds from source (not a prebuilt release binary) where the required toolchain is available.

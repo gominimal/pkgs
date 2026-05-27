@@ -6,7 +6,7 @@ labels: pkgfix, triage
 
 ---
 
-Thanks for the report! If you'd like to send the update or fix yourself as a pull request, see [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md) — PRs are welcome.
+Thanks for the report! If you'd like to send the update or fix yourself as a pull request, see [CONTRIBUTING.md](https://github.com/gominimal/pkgs/blob/main/CONTRIBUTING.md) — PRs are welcome.
 
 **Package name**
 
