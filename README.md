@@ -6,7 +6,7 @@ helpers for development and working in CLI environments.
 
 ## Current Status
 
-We have many common toolchains, shells, agents, dev tools available and more are being added.
+We have many common toolchains, shells, agents, and dev tools available and more are being added.
 
 Thank you for your interest.
 
