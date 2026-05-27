@@ -10,18 +10,20 @@ export RUSTFLAGS="-C linker=gcc"
 # back to the normal online build for dev iteration. Matches probe-rs's
 # build.sh pattern verbatim.
 if [ -d /cargo-vendor ]; then
-    # DEBUG (2026-05-21): trace the source of the phantom common.rs
-    # that rustc reports as duplicating sysinfo/src/common/mod.rs (E0761).
-    # Our cargo vendor tarball ONLY contains common/ (no common.rs),
-    # but the build sees both — list everything to see where it
-    # materializes. Remove this block once #88 is root-caused.
-    echo "=== DEBUG #88: sysinfo dir contents ==="
-    find /cargo-vendor/sysinfo -name 'common*' -ls 2>&1 || true
-    echo "=== DEBUG #88: ls -la sysinfo/src/ ==="
-    ls -la /cargo-vendor/sysinfo/src/ 2>&1 || true
-    echo "=== DEBUG #88: cargo registry caches? ==="
-    find /root/.cargo /root/.rustup -name "sysinfo*" 2>/dev/null | head -10 || true
-    echo "=== DEBUG #88: end ==="
+    # Root cause for #88 (root-caused 2026-05-27, see memory
+    # cs-mirror-cache-persists-dirty-files): the cs-mirror /cargo-vendor
+    # mount is a hardlink farm into /root/.cache/minimal/cs-mirror, which
+    # is *persistent across builds*. An old cargo-vendor tarball (pre
+    # fetcher-VM migration #13) was extracted there with macOS
+    # AppleDouble `._*` files; current tarballs are clean but the cached
+    # `._*` files are still there and trigger rustc E0761 on sysinfo
+    # (`._common` filename pattern shows up alongside real
+    # `common.rs` / `common/`).
+    #
+    # Cheap, idempotent fix: strip them before cargo starts. Same idiom
+    # as bat's build.sh. The proper fix is a one-time builder-side
+    # cache cleanup, tracked as a follow-up.
+    find /cargo-vendor -name '._*' -delete 2>/dev/null || true
 
     mkdir -p .cargo
     if [ -f /cargo-vendor/.cargo-config.toml ]; then
