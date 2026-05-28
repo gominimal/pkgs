@@ -42,7 +42,11 @@ python3 hadrian/bootstrap/bootstrap.py -w "$(command -v ghc)" --bootstrap-source
 # Add pseudostore lib dirs to LD_LIBRARY_PATH so bootstrapped tools can find their dependencies
 PSEUDO_LIBS="$(find _build/pseudostore -name "*.so*" -exec dirname {} \; | sort -u | paste -sd : || true)"
 if [ -n "$PSEUDO_LIBS" ]; then
-  export LD_LIBRARY_PATH="$PSEUDO_LIBS:${LD_LIBRARY_PATH:-}"
+  if [ -n "${LD_LIBRARY_PATH:-}" ]; then
+    export LD_LIBRARY_PATH="$PSEUDO_LIBS:$LD_LIBRARY_PATH"
+  else
+    export LD_LIBRARY_PATH="$PSEUDO_LIBS"
+  fi
 fi
 
 # Now we can configure GHC.

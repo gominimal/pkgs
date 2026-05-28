@@ -15,7 +15,6 @@ let version = "3.5.1.0" in
       url = "https://hackage.haskell.org/package/alex-%{version}/alex-%{version}.tar.gz",
       sha256 = "c92efe86f8eb959ee03be6c04ee57ebc7e4abc75a6c4b26551215d7443e92a07",
       extract = true,
-      strip_prefix = "alex-%{version}",
     } | Source,
     base,
     bash,

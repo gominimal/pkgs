@@ -15,7 +15,6 @@ let version = "1.20.1.1" in
       url = "https://hackage.haskell.org/package/happy-%{version}/happy-%{version}.tar.gz",
       sha256 = "8b4e7dc5a6c5fd666f8f7163232931ab28746d0d17da8fa1cbd68be9e878881b",
       extract = true,
-      strip_prefix = "happy-%{version}",
     } | Source,
     base,
     bash,

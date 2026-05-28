@@ -4,6 +4,7 @@ let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let make = import "../make/build.ncl" in
+let ncurses = import "../ncurses/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let tar = import "../tar/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -33,6 +34,7 @@ let version = "9.8.1" in
     bash,
     gmp,
     make,
+    ncurses,
     perl,
     tar,
     toolchain,
@@ -42,6 +44,7 @@ let version = "9.8.1" in
   runtime_deps = [
     base,
     gmp,
+    ncurses,
   ],
 
   cmd = "./build.sh",
