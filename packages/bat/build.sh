@@ -11,26 +11,6 @@ if [ -d /cargo-vendor ]; then
     # Cheap fix: strip them before cargo starts. Long-term: re-vendor with
     # COPYFILE_DISABLE=1 on the staging host (see orch task #91/#93).
     find /cargo-vendor -name '._*' -delete 2>/dev/null || true
-
-    # DIAGNOSTIC 2026-05-28 (orch known-broken: bat AppleDouble persists).
-    # find -delete runs successfully (visible above in set -x trace) and
-    # the tarball has 0 ._* files, yet gcc still receives ._realpath.c
-    # at compile time. Hypothesis: cargo copies the vendored crate to a
-    # build-local dir (e.g. cargo's registry/src cache) that the find
-    # doesn't reach. These echoes will reveal the actual on-disk paths.
-    # Remove once the root cause is fixed.
-    echo "=== bat diagnostic: post find-delete state ==="
-    echo "--- ._* still in /cargo-vendor? ---"
-    find /cargo-vendor -name '._*' 2>/dev/null | head -20 || true
-    echo "--- libgit2-sys unix dir contents ---"
-    ls -la /cargo-vendor/libgit2-sys/libgit2/src/util/unix/ 2>/dev/null | head -20 || true
-    echo "--- where else does ._realpath.c live on the whole rootfs? ---"
-    find / -name '._realpath.c' 2>/dev/null | head -20 || true
-    echo "--- cargo registry / build dir state ---"
-    ls -la /root/.cargo 2>/dev/null | head || true
-    ls -la /state/home/.cargo 2>/dev/null | head || true
-    echo "=== end diagnostic ==="
-
     mkdir -p .cargo
     if [ -f /cargo-vendor/.cargo-config.toml ]; then
         cp /cargo-vendor/.cargo-config.toml .cargo/config.toml
