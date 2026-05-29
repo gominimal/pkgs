@@ -43,6 +43,7 @@ let version = "6.12.43" in
 
   outputs = {
     vmlinuz = { glob = "usr/share/virtio-linux/vmlinuz" } | OutputData,
+    vmlinuz_efi = { glob = "usr/share/virtio-linux/vmlinuz-efi" } | OutputData,
     config = { glob = "usr/share/virtio-linux/config" } | OutputData,
     system_map = { glob = "usr/share/virtio-linux/System.map" } | OutputData,
   },

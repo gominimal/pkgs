@@ -14,6 +14,10 @@ case "$(uname -m)" in
     # means the inner compression is gzip — no external wrap needed.
     KERNEL_TARGET=bzImage
     KERNEL_ARTIFACT=arch/x86/boot/bzImage
+    # bzImage already carries the EFI stub, so the EFI artifact is the same
+    # self-extracting image — no uncompressed variant needed on x86.
+    KERNEL_EFI_TARGET=bzImage
+    KERNEL_EFI_ARTIFACT=arch/x86/boot/bzImage
     HAS_KVM_GUEST_FRAGMENT=1
     ;;
   aarch64)
@@ -21,6 +25,10 @@ case "$(uname -m)" in
     # that qemu/cloud-hypervisor/firecracker all accept.
     KERNEL_TARGET=Image.gz
     KERNEL_ARTIFACT=arch/arm64/boot/Image.gz
+    # EFI firmware (e.g. OVMF) loads the kernel as a PE/COFF application and
+    # cannot unwrap the gzip, so the EFI artifact is the uncompressed Image.
+    KERNEL_EFI_TARGET=Image
+    KERNEL_EFI_ARTIFACT=arch/arm64/boot/Image
     HAS_KVM_GUEST_FRAGMENT=0
     ;;
   *)
@@ -135,10 +143,25 @@ $CFG --enable KVM_AMD
 $CFG --enable KVM_XFER_TO_GUEST_WORK
 $CFG --enable KVM_GENERIC_DIRTYLOG_READ_PROTECT
 
+# --- EFI boot ----------------------------------------------------------------
+# Make the kernel directly bootable by EFI firmware (e.g. OVMF, as used by
+# libkrun-efi / krunkit). Purely additive: an EFI-capable kernel still boots
+# the existing direct-kernel-load VMMs (qemu/cloud-hypervisor/firecracker)
+# unchanged — this only adds the PE/COFF EFI stub entry point. ACPI/DMI are
+# enabled because EFI firmware hands the guest ACPI tables rather than a DT.
+$CFG --enable EFI
+$CFG --enable EFI_STUB
+$CFG --enable ACPI
+$CFG --enable DMI
+$CFG --enable EFIVAR_FS
+
 # Resolve any new dependencies / silently drop options renamed upstream.
 make olddefconfig
 
-make -j"$JOBS" "$KERNEL_TARGET"
+# Build the standard artifact plus the EFI one. On x86 these are the same
+# bzImage; on arm64 the EFI target is the uncompressed `Image` (firmware
+# cannot unwrap the gzip in Image.gz). make de-dupes identical targets.
+make -j"$JOBS" "$KERNEL_TARGET" "$KERNEL_EFI_TARGET"
 
 OUT=$OUTPUT_DIR/usr/share/virtio-linux
 mkdir -p "$OUT"
@@ -146,5 +169,10 @@ mkdir -p "$OUT"
 # per-arch (bzImage on x86, Image.gz on arm64) but the path is uniform so
 # consumers don't need to care.
 cp "$KERNEL_ARTIFACT" "$OUT/vmlinuz"
+# `vmlinuz-efi` is the EFI-firmware-bootable form (uncompressed PE/COFF on
+# arm64; identical bzImage on x86). EFI consumers must still supply a kernel
+# cmdline (via their bootloader / UKI / a built-in cmdline) — this kernel
+# bakes none, staying substrate-agnostic.
+cp "$KERNEL_EFI_ARTIFACT" "$OUT/vmlinuz-efi"
 cp .config "$OUT/config"
 cp System.map "$OUT/System.map"
