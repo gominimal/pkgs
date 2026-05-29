@@ -27,7 +27,6 @@ let version = "4.2" in
   },
 
   outputs = {
-    mkfs_fat = { glob = "usr/sbin/mkfs.fat" } | OutputBin,
     sbins = { glob = "usr/sbin/*" } | OutputBin,
 
     mans = { glob = "usr/share/man/**/*" } | OutputData,
