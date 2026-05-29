@@ -155,6 +155,21 @@ $CFG --enable ACPI
 $CFG --enable DMI
 $CFG --enable EFIVAR_FS
 
+# --- built-in kernel cmdline -------------------------------------------------
+# This is a purpose-built microVM kernel for the Minimal VM image, whose disk
+# convention is a GPT { p1=ESP, p2=ext4 root } on the first virtio-blk device
+# (/dev/vda). EFI firmware (OVMF) launches the EFI-stub kernel with *empty*
+# LoadOptions, so without a built-in cmdline the kernel has no root= and panics
+# ("Unable to mount root fs"). CMDLINE_FORCE overrides the empty bootloader
+# cmdline rather than the default *_FROM_BOOTLOADER (which would defer to the
+# empty one).
+#
+# init=/sbin/stub-init is the current boot-verification entrypoint; it becomes
+# the in-VM agent (/sbin/init) in a later iteration.
+$CFG --enable CMDLINE_BOOL
+$CFG --set-str CMDLINE "console=hvc0 root=/dev/vda2 rootfstype=ext4 ro init=/sbin/stub-init"
+$CFG --enable CMDLINE_FORCE
+
 # Resolve any new dependencies / silently drop options renamed upstream.
 make olddefconfig
 
