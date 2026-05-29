@@ -3,6 +3,7 @@ let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let bash = import "../bash/build.ncl" in
 
 let version = "1.47.4" in
 {
@@ -19,6 +20,7 @@ let version = "1.47.4" in
   ],
   runtime_deps = [
     glibc,
+    bash,
   ],
 
   cmd = "./build.sh",
@@ -27,7 +29,11 @@ let version = "1.47.4" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    chattr = { glob = "usr/bin/chattr" } | OutputBin,
+    lsattr = { glob = "usr/bin/lsattr" } | OutputBin,
+    uuidgen = { glob = "usr/bin/uuidgen" } | OutputBin,
+    compile_et = { glob = "usr/bin/compile_et" } | OutputBin,
+    mk_cmds = { glob = "usr/bin/mk_cmds" } | OutputBin,
     sbins = { glob = "usr/sbin/*" } | OutputBin,
 
     libext2fs = { glob = "usr/lib/libext2fs*.so*" } | OutputLib,
