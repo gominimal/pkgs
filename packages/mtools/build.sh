@@ -19,5 +19,5 @@ export CXXFLAGS="${CFLAGS}"
             --disable-floppyd \
             --without-x
 
-make -j$(nproc)
-make DESTDIR=$OUTPUT_DIR install
+make -j"$(nproc)"
+make DESTDIR="$OUTPUT_DIR" install
