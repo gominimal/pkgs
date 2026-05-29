@@ -12,11 +12,22 @@ mkdir -p "$OUTPUT_DIR"
 #    build graph). The arch suffix is globbed so build.sh stays arch-agnostic.
 tar -xzf alpine-minirootfs-"$MINIMAL_ARG_VERSION"-*.tar.gz -C "$OUTPUT_DIR"
 
-# 2. socat overlay. apk is a gzip tarball; extract to scratch and copy only the
-#    payload (usr/), leaving the .apk metadata dotfiles out of the rootfs.
+# 2. socat overlay + its transitive shared libs (readline -> ncurses-libs).
+#    apks are gzip tarballs; extract to scratch and copy only the payload
+#    (usr/), leaving the .apk metadata dotfiles out of the rootfs. Without
+#    libreadline.so.8 / libncursesw.so.6, socat (guest pid-1) fails to load
+#    with exit 127 and the VM panics on init.
 mkdir -p socat-extract
 tar -xzf socat-"$MINIMAL_ARG_SOCAT_VERSION".apk -C socat-extract
 cp -a socat-extract/usr/. "$OUTPUT_DIR/usr/"
+
+mkdir -p readline-extract
+tar -xzf readline-"$MINIMAL_ARG_READLINE_VERSION".apk -C readline-extract
+cp -a readline-extract/usr/. "$OUTPUT_DIR/usr/"
+
+mkdir -p libncursesw-extract
+tar -xzf libncursesw-"$MINIMAL_ARG_LIBNCURSESW_VERSION".apk -C libncursesw-extract
+cp -a libncursesw-extract/usr/. "$OUTPUT_DIR/usr/"
 
 # 3. Stub guest workload for VM boot verification. Both vsock ports LISTEN
 #    inside the guest; the host is expected to connect inward.

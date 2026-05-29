@@ -12,6 +12,9 @@ let tar = import "../tar/build.ncl" in
 let version = "3.21.7" in
 let major_minor = "3.21" in
 let socat_version = "1.8.0.3-r0" in
+# socat's transitive shared-lib deps (see the socat Source comment below).
+let readline_version = "8.2.13-r0" in
+let libncursesw_version = "6.5_p20241006-r3" in
 
 let releases = "https://dl-cdn.alpinelinux.org/alpine/v%{major_minor}/releases" in
 let main_repo = "https://dl-cdn.alpinelinux.org/alpine/v%{major_minor}/main" in
@@ -36,8 +39,11 @@ let main_repo = "https://dl-cdn.alpinelinux.org/alpine/v%{major_minor}/main" in
         } | Source,
     } target,
 
-    # socat (vsock-capable, 1.8.0.x). Single .apk: per APKINDEX it depends only
-    # on so:libc.musl, already provided by the base minirootfs.
+    # socat (vsock-capable, 1.8.0.x). socat1 links libreadline.so.8,
+    # libssl.so.3 and libcrypto.so.3; ssl/crypto ship in the base minirootfs,
+    # but readline (and its libncursesw.so.6) do not — so they are pinned below
+    # and overlaid alongside socat. Without them the guest init dies with a
+    # missing-.so exit 127.
     match {
       { arch = 'Amd64, .. } =>
         {
@@ -48,6 +54,35 @@ let main_repo = "https://dl-cdn.alpinelinux.org/alpine/v%{major_minor}/main" in
         {
           url = "%{main_repo}/aarch64/socat-%{socat_version}.apk",
           sha256 = "7cc3f5bade7fba9cd828b94560ce9f35de61246e19ecb595098110e81cf1c9ae",
+        } | Source,
+    } target,
+
+    # readline — socat's libreadline.so.8 (and headers-free runtime).
+    match {
+      { arch = 'Amd64, .. } =>
+        {
+          url = "%{main_repo}/x86_64/readline-%{readline_version}.apk",
+          sha256 = "fa4ff2347886f5516d021b9064a00259b29fc6e2608eac5588a339de244acf12",
+        } | Source,
+      { arch = 'Arm64, .. } =>
+        {
+          url = "%{main_repo}/aarch64/readline-%{readline_version}.apk",
+          sha256 = "7dad49f83ecbcfa00c5c7df044a5566b928ac1995651cfff219e1df1c2b93871",
+        } | Source,
+    } target,
+
+    # libncursesw — readline's libncursesw.so.6 (the `ncurses-libs` package is
+    # an empty metapackage at this version; the .so lives in `libncursesw`).
+    match {
+      { arch = 'Amd64, .. } =>
+        {
+          url = "%{main_repo}/x86_64/libncursesw-%{libncursesw_version}.apk",
+          sha256 = "3919cf673e841d91865213799ccfd5f77a48f5f9f5402723167470295ee32a49",
+        } | Source,
+      { arch = 'Arm64, .. } =>
+        {
+          url = "%{main_repo}/aarch64/libncursesw-%{libncursesw_version}.apk",
+          sha256 = "c1a5a3a552ad4d44c94454555f38de71b151dc2d608ea2246d92b3bd845b7f3a",
         } | Source,
     } target,
     base,
@@ -62,6 +97,8 @@ let main_repo = "https://dl-cdn.alpinelinux.org/alpine/v%{major_minor}/main" in
   build_args = {
     include version,
     include socat_version,
+    include readline_version,
+    include libncursesw_version,
   },
 
   # The whole guest root tree is the output. allow_executable keeps busybox,
