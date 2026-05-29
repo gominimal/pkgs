@@ -17,6 +17,13 @@ replace-with = "vendored-sources"
 directory = "/cargo-vendor"
 EOF
     fi
+    # Restore the lockfile resolved at vendor time when the upstream
+    # source ships none (tiny crates often don't commit Cargo.lock).
+    # It pins exactly the vendored crate versions, so --frozen stays
+    # reproducible. No-op when the source already has a Cargo.lock.
+    if [ -f /cargo-vendor/Cargo.lock ] && [ ! -f Cargo.lock ]; then
+        cp /cargo-vendor/Cargo.lock Cargo.lock
+    fi
     cargo build --offline --frozen --release
 else
     cargo build --release
