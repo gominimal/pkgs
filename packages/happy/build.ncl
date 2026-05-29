@@ -33,7 +33,7 @@ let version = "1.20.1.1" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    happy = { glob = "usr/bin/happy" } | OutputBin,
   },
 
   attrs = {
