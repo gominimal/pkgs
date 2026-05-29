@@ -1,5 +1,6 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
+let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -10,7 +11,7 @@ let version = "4.0.49" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://ftp.gnu.org/gnu/mtools/mtools-%{version}.tar.gz",
+      url = "https://mirrors.kernel.org/gnu/mtools/mtools-%{version}.tar.gz",
       sha256 = "10cd1111da87bf2400a380c1639a6cba8bfb937a24f9c51f5f88d393ae5f6f76"
     } | Source,
     base-bootstrap,
@@ -18,6 +19,7 @@ let version = "4.0.49" in
     toolchain,
   ],
   runtime_deps = [
+    bash, # several bundled helpers (mcomp, uz/lz, mxtar, tgz, mcheck, amuFormat.sh) are /bin/sh scripts
     glibc,
   ],
 
