@@ -20,5 +20,5 @@ export CXXFLAGS="${CFLAGS}"
             --disable-defrag        \
             --without-libintl-prefix
 
-make -j$(nproc)
-make DESTDIR=$OUTPUT_DIR install
+make -j"$(nproc)"
+make DESTDIR="$OUTPUT_DIR" install
