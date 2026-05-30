@@ -58,7 +58,10 @@ seed_bun_prebuilt_tar() {
   dest=$1 identity=$2 src=$3; shift 3
   if [ ! -f "$src" ]; then echo "WARN: bun prebuilt source missing: /build/$src" >&2; return; fi
   rm -rf "$dest"; mkdir -p "$dest"
-  tar -xzf "$src" -C "$dest" --strip-components=1
+  # --no-same-owner: the unprivileged sandbox forbids chown, so tar's
+  # default ownership-restore fails ("Cannot change ownership ...
+  # Invalid argument"). Same idiom ca-certificates uses.
+  tar --no-same-owner -xzf "$src" -C "$dest" --strip-components=1
   for rmp in "$@"; do rm -rf "$dest/$rmp"; done
   printf '%s\n' "$identity" > "$dest/.identity"
 }
