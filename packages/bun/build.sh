@@ -69,12 +69,15 @@ seed_bun_prebuilt_tar "$BUN_BUILD_CACHE/nodejs-headers-24.3.0" "24.3.0" \
   node-v24.3.0-headers.tar.gz \
   include/node/openssl include/node/uv include/node/uv.h
 
-# WebKit: dest=<cache>/webkit-<commit[:16]><suffix>, identity=<commit><suffix>.
-# build.ncl stages the -lto variant, so seed the -lto dest+identity.
+# WebKit: bun's build:release uses the NON-LTO cache key (confirmed from
+# the build log 2026-05-30): dest=<cache>/webkit-<commit[:16]> (no
+# suffix), identity=<full commit> (no suffix), source
+# bun-webkit-linux-amd64.tar.gz. build.ncl must stage the NON-LTO tarball
+# to match this basename + provide the right libs.
 seed_bun_prebuilt_tar \
-  "$BUN_BUILD_CACHE/webkit-4d5e75ebd84a14ed-lto" \
-  "4d5e75ebd84a14edbc7ae264245dcd77fe597c10-lto" \
-  bun-webkit-linux-amd64-lto.tar.gz
+  "$BUN_BUILD_CACHE/webkit-4d5e75ebd84a14ed" \
+  "4d5e75ebd84a14edbc7ae264245dcd77fe597c10" \
+  bun-webkit-linux-amd64.tar.gz
 
 # zig: dest=<bun-src>/vendor/zig, stamp=.zig-commit=<commit>. It's a
 # .zip with a single top-level dir to hoist; must yield ./zig + ./lib.
