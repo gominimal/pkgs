@@ -153,8 +153,12 @@ in
       extract = false,
     } | Source,
     {
-      url = "https://github.com/oven-sh/WebKit/releases/download/autobuild-4d5e75ebd84a14edbc7ae264245dcd77fe597c10/bun-webkit-linux-amd64-lto.tar.gz",
-      sha256 = "dee609f45f694921b042f808a6625990646499e6ca526b12428984f05d20529e",
+      # NON-LTO: bun build:release fetches bun-webkit-linux-amd64.tar.gz
+      # (cache key webkit-<commit[:16]>, no -lto suffix) — confirmed from
+      # the build log 2026-05-30. discover-bun previously picked -lto;
+      # build.sh seeds this into the non-lto dest+identity.
+      url = "https://github.com/oven-sh/WebKit/releases/download/autobuild-4d5e75ebd84a14edbc7ae264245dcd77fe597c10/bun-webkit-linux-amd64.tar.gz",
+      sha256 = "14c6f7c7feaf007a492f186d8c1fc6a05193390c6aa5eddc2833997ae29c7ee1",
       extract = false,
     } | Source,
     {
