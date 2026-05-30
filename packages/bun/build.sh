@@ -39,14 +39,60 @@ seed_bun_dep cares          3ac47ee46edd8ea40370222f91613fc16c434853.tar.gz 4e43
 seed_bun_dep hdrhistogram   be60a9987ee48d0abf0d7b6a175bad8d6c1585d1.tar.gz 97084f213075a65e
 seed_bun_dep libarchive     ded82291ab41d5e355831b96b0e1ff49e24d8939.tar.gz 4296b191210d6b1b
 
-# nodejs-headers, webkit, zig use bun's `prebuilt` and `zig` fetch kinds
-# rather than `dep` — different cache semantics (.identity stamp inside
-# dest dir, not a tarball-in-cache). If the build fails on these, the
-# follow-up is to write the .identity stamps directly. Leaving for a
-# next pass since the dep-kind seeding gets us through ~15 of 18 fetches
-# and is the dominant cost. Source build_deps for these 3 are still in
-# build.ncl (sha-pinned in CAS) so they're hermetically available even
-# if we have to write a different consume-path.
+# ─── Seed bun's PREBUILT cache (nodejs headers, WebKit, zig) ─────────
+# Unlike the dep-kind tarballs above, the prebuilt/zig fetch kinds cache
+# an EXTRACTED directory + a stamp file. Reverse-engineered from bun
+# 1.3.13 scripts/build/{download,nodejs-headers,webkit,zig}.ts:
+#   - extract the archive, HOIST the single top-level dir into <dest>
+#     (== tar --strip-components=1)
+#   - write <dest>/.identity = "<identity>\n"   (zig: <dest>/.zig-commit)
+#   - bun skips the network fetch when readFile(stamp).trim()==identity
+# The prebuilt cache lives under bun's build-cache (env-wired), the same
+# root the tarballs/ dir above sits in. If the build log STILL shows a
+# `fetching <name>` line for any of these, it prints the exact dest +
+# identity it wants — match it here (likely suspects: the WebKit suffix
+# -lto vs none, or a zig `-safe` stamp suffix, depending on build mode).
+BUN_BUILD_CACHE=/state/home/.bun/build-cache
+
+seed_bun_prebuilt_tar() {
+  dest=$1 identity=$2 src=$3; shift 3
+  if [ ! -f "$src" ]; then echo "WARN: bun prebuilt source missing: /build/$src" >&2; return; fi
+  rm -rf "$dest"; mkdir -p "$dest"
+  tar -xzf "$src" -C "$dest" --strip-components=1
+  for rmp in "$@"; do rm -rf "$dest/$rmp"; done
+  printf '%s\n' "$identity" > "$dest/.identity"
+}
+
+# nodejs headers: dest=<cache>/nodejs-headers-<ver>, identity=<ver>;
+# bun deletes the bundled openssl/uv headers post-extract.
+seed_bun_prebuilt_tar "$BUN_BUILD_CACHE/nodejs-headers-24.3.0" "24.3.0" \
+  node-v24.3.0-headers.tar.gz \
+  include/node/openssl include/node/uv include/node/uv.h
+
+# WebKit: dest=<cache>/webkit-<commit[:16]><suffix>, identity=<commit><suffix>.
+# build.ncl stages the -lto variant, so seed the -lto dest+identity.
+seed_bun_prebuilt_tar \
+  "$BUN_BUILD_CACHE/webkit-4d5e75ebd84a14ed-lto" \
+  "4d5e75ebd84a14edbc7ae264245dcd77fe597c10-lto" \
+  bun-webkit-linux-amd64-lto.tar.gz
+
+# zig: dest=<bun-src>/vendor/zig, stamp=.zig-commit=<commit>. It's a
+# .zip with a single top-level dir to hoist; must yield ./zig + ./lib.
+if [ -f bootstrap-x86_64-linux-musl.zip ]; then
+  rm -rf vendor/zig _zigtmp
+  mkdir -p _zigtmp vendor
+  unzip -q -o bootstrap-x86_64-linux-musl.zip -d _zigtmp
+  ztop=$(ls _zigtmp)
+  if [ "$(printf '%s\n' "$ztop" | wc -l)" -eq 1 ] && [ -d "_zigtmp/$ztop" ]; then
+    mv "_zigtmp/$ztop" vendor/zig
+  else
+    mv _zigtmp vendor/zig
+  fi
+  rm -rf _zigtmp
+  printf '%s\n' "365343af4fc5a1a632e6b54aadd0b87be30edd81" > vendor/zig/.zig-commit
+else
+  echo "WARN: bun zig bootstrap zip missing: /build/bootstrap-x86_64-linux-musl.zip" >&2
+fi
 
 # Extract and set up bootstrap bun binary
 case $(uname -m) in
