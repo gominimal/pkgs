@@ -27,7 +27,7 @@ seed_bun_dep libdeflate     c8c56a20f8f621e6a966b716b31f1dedab6a41e3.tar.gz ce0e
 seed_bun_dep picohttpparser 066d2b1e9ab820703db0837a7255d92d30f0c9f5.tar.gz fad59b16ad4752cc
 seed_bun_dep zstd           f8745da6ff1ad1e7bab384bd1f9d742439278e99.tar.gz e010993a24072468
 seed_bun_dep lshpack        8905c024b6d052f083a3d11d0a169b3c2735c8a1.tar.gz 73e0c55d12ea4fc2
-seed_bun_dep brotli         v1.1.0.tar.gz                                   16cc1f51604073f5
+seed_bun_dep brotli         v1.1.0.tar.gz                                   723494d4c3a9902a
 seed_bun_dep lolhtml        77127cd2b8545998756e8d64e36ee2313c4bb312.tar.gz 929339b1d898e66b
 seed_bun_dep highway        ac0d5d297b13ab1b89f48484fc7911082d76a93f.tar.gz a10c8937e1b920ad
 seed_bun_dep libuv          f3ce527ea940d926c40878ba5de219640c362811.tar.gz 79859fcef81beb7f
