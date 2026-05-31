@@ -166,6 +166,15 @@ in
       sha256 = "05a7adbb958116a014c7faadbdfb1e990a5ce8941124a91c548f45d2bf0d0d38",
       extract = false,
     } | Source,
+    # lolhtml's c-api builds via cargo. Its 43-crate dep set (encoding_rs,
+    # …) `cargo vendor`-ed from c-api/Cargo.lock @77127cd2, mirrored to
+    # CAS. build.sh extracts it + redirects crates.io to it (offline) so
+    # the cargo build needs no network. The ONLY cargo sub-crate in bun.
+    {
+      url = "https://storage.googleapis.com/minimalmertic-hermetic-mirror/sha256/3654cc353be6a67a194ee437f5a0f335604d3259c5d3c3255c968b2cd2bf3672/lolhtml-capi-vendor.tar.zst",
+      sha256 = "3654cc353be6a67a194ee437f5a0f335604d3259c5d3c3255c968b2cd2bf3672",
+      extract = false,
+    } | Source,
   ],
   runtime_deps = [
     glibc,

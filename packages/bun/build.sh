@@ -137,6 +137,30 @@ rm -f rust-toolchain.toml
 git init -q
 git -c user.email=build@local -c user.name=build commit -q -m "v${MINIMAL_ARG_VERSION}" --allow-empty
 
+# lolhtml's c-api is the one dep bun builds via cargo (it needs
+# encoding_rs + 42 transitive crates). Stage those offline: extract the
+# pre-vendored crate set, point crates.io at it via a global cargo
+# config, and force CARGO_NET_OFFLINE so the cargo build never reaches
+# the network. lolhtml is the only cargo build in bun, so a global
+# redirect is safe.
+if [ -f lolhtml-capi-vendor.tar.zst ]; then
+  LOLHTML_VENDOR=/build/lolhtml-capi-vendor
+  mkdir -p "$LOLHTML_VENDOR"
+  tar --no-same-owner -I 'zstd -d' -xf lolhtml-capi-vendor.tar.zst -C "$LOLHTML_VENDOR" --strip-components=1
+  export CARGO_NET_OFFLINE=true
+  export CARGO_HOME=/build/.cargo
+  mkdir -p "$CARGO_HOME"
+  cat > "$CARGO_HOME/config.toml" <<EOF
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "$LOLHTML_VENDOR"
+EOF
+else
+  echo "WARN: lolhtml cargo-vendor tarball missing at /build/lolhtml-capi-vendor.tar.zst" >&2
+fi
+
 # Build via bun's own build orchestration (handles bun install, codegen, cmake
 # deps, zig, linking, and strip). Outputs the stripped binary at build/release/bun.
 bun run build:release
