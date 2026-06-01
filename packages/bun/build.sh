@@ -114,6 +114,29 @@ bun --version
 export CC=clang
 export CXX=clang++
 
+# ZigGeneratedClasses.cpp — bun's single largest generated C++ TU — hangs
+# clang's optimizer for hours at the release opt level on our toolchain
+# (confirmed: 15h stuck at [656/669] with the full 128G VM, no sandbox
+# cap). Force JUST that one file to -O1 via a CXX wrapper (clang takes the
+# LAST -O on the line, so the appended -O1 overrides the release -O3),
+# sidestepping the pathological high-opt pass without patching bun's build
+# scripts or de-optimizing any other TU. Resolve the real clang++ BEFORE
+# shadowing it; the wrapper calls it by absolute path (no recursion).
+REAL_CXX="$(command -v clang++)"
+mkdir -p /build/ccwrap
+cat > /build/ccwrap/clang++ <<WRAP
+#!/bin/sh
+for a in "\$@"; do
+  case "\$a" in
+    *ZigGeneratedClasses.cpp) exec "$REAL_CXX" "\$@" -O1 ;;
+  esac
+done
+exec "$REAL_CXX" "\$@"
+WRAP
+chmod +x /build/ccwrap/clang++
+export CXX=/build/ccwrap/clang++
+export PATH="/build/ccwrap:$PATH"
+
 # Ensure Cargo/Rust can find the C compiler and linker
 # (Cargo looks for "cc" by default which may not exist)
 export "CARGO_TARGET_$(echo $CARGO_TARGET | tr 'a-z-' 'A-Z_')_LINKER=clang"
