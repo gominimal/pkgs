@@ -114,28 +114,21 @@ bun --version
 export CC=clang
 export CXX=clang++
 
-# ZigGeneratedClasses.cpp — bun's single largest generated C++ TU — hangs
-# clang's optimizer for hours at the release opt level on our toolchain
-# (confirmed: 15h stuck at [656/669] with the full 128G VM, no sandbox
-# cap). Force JUST that one file to -O1 via a CXX wrapper (clang takes the
-# LAST -O on the line, so the appended -O1 overrides the release -O3),
-# sidestepping the pathological high-opt pass without patching bun's build
-# scripts or de-optimizing any other TU. Resolve the real clang++ BEFORE
-# shadowing it; the wrapper calls it by absolute path (no recursion).
-REAL_CXX="$(command -v clang++)"
-mkdir -p /build/ccwrap
-cat > /build/ccwrap/clang++ <<WRAP
-#!/bin/sh
-for a in "\$@"; do
-  case "\$a" in
-    *ZigGeneratedClasses.cpp) exec "$REAL_CXX" "\$@" -O1 ;;
-  esac
-done
-exec "$REAL_CXX" "\$@"
-WRAP
-chmod +x /build/ccwrap/clang++
-export CXX=/build/ccwrap/clang++
-export PATH="/build/ccwrap:$PATH"
+# ZigGeneratedClasses.cpp — bun's largest generated C++ TU — hangs clang's
+# optimizer for hours at the release -O3 on our toolchain (confirmed: 15h
+# stuck at [656/669], full 128G VM, no sandbox cap). bun IGNORES env
+# CC/CXX (it finds clang++ via its own LLVM toolchain search — tools.ts),
+# so a CXX wrapper is silently bypassed. The reliable lever is bun's OWN
+# per-file flag hook: extraFlagsFor() (scripts/build/flags.ts) appends
+# per-file flags AFTER the global -O3, and the last -O wins. Force -O1 for
+# just that file by injecting an early return into extraFlagsFor. Patch
+# the bun source before build:release; idempotent + fail-loud so it can
+# never silently fall back to the hanging -O3.
+if ! grep -q 'ZigGeneratedClasses.cpp")) return' scripts/build/flags.ts; then
+  perl -pi -e 's/^(export function extraFlagsFor\(cfg: Config, srcRelPath: string\): string\[\] \{)$/$1\n  if (srcRelPath.endsWith("ZigGeneratedClasses.cpp")) return ["-O1"];/' scripts/build/flags.ts
+fi
+grep -q 'ZigGeneratedClasses.cpp")) return' scripts/build/flags.ts \
+  || { echo "FATAL: ZigGeneratedClasses -O1 patch did not apply (bun flags.ts extraFlagsFor signature changed?)" >&2; exit 1; }
 
 # Ensure Cargo/Rust can find the C compiler and linker
 # (Cargo looks for "cc" by default which may not exist)
