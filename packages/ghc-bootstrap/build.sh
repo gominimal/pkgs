@@ -58,7 +58,7 @@ fi
 if [ -z "$NCURSES_PATH" ]; then
   if command -v ldconfig >/dev/null 2>&1; then
     for libname in libncursesw.so.6 libncurses.so.6; do
-      LDCONFIG_PATH="$(ldconfig -p | grep "$libname" | head -n1 | awk '{print $NF}')"
+      LDCONFIG_PATH="$(ldconfig -p | awk -v lib="$libname" '$0 ~ lib {print $NF; exit}')"
       if [ -f "$LDCONFIG_PATH" ]; then
         NCURSES_PATH="$LDCONFIG_PATH"
         break
