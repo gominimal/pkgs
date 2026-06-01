@@ -114,21 +114,19 @@ bun --version
 export CC=clang
 export CXX=clang++
 
-# ZigGeneratedClasses.cpp — bun's largest generated C++ TU — hangs clang's
-# optimizer for hours at the release -O3 on our toolchain (confirmed: 15h
-# stuck at [656/669], full 128G VM, no sandbox cap). bun IGNORES env
-# CC/CXX (it finds clang++ via its own LLVM toolchain search — tools.ts),
-# so a CXX wrapper is silently bypassed. The reliable lever is bun's OWN
-# per-file flag hook: extraFlagsFor() (scripts/build/flags.ts) appends
-# per-file flags AFTER the global -O3, and the last -O wins. Force -O1 for
-# just that file by injecting an early return into extraFlagsFor. Patch
-# the bun source before build:release; idempotent + fail-loud so it can
-# never silently fall back to the hanging -O3.
-if ! grep -q 'ZigGeneratedClasses.cpp")) return' scripts/build/flags.ts; then
-  perl -pi -e 's/^(export function extraFlagsFor\(cfg: Config, srcRelPath: string\): string\[\] \{)$/$1\n  if (srcRelPath.endsWith("ZigGeneratedClasses.cpp")) return ["-O1"];/' scripts/build/flags.ts
-fi
-grep -q 'ZigGeneratedClasses.cpp")) return' scripts/build/flags.ts \
-  || { echo "FATAL: ZigGeneratedClasses -O1 patch did not apply (bun flags.ts extraFlagsFor signature changed?)" >&2; exit 1; }
+# ZigGeneratedClasses.cpp — bun's largest generated C++ TU — hangs clang
+# for HOURS at [656/669] on our toolchain (15h+, full 128G VM, no sandbox
+# cap). Per-file -O1 (via extraFlagsFor) was applied but did NOT clear it,
+# so the hang is almost certainly opt-INDEPENDENT (a clang frontend/sema
+# blowup), not the -O3 optimizer. DECISIVE probe: drop the GLOBAL release
+# opt -O3 -> -O0 in flags.ts (no per-file override, so EVERY core TU incl.
+# ZigGeneratedClasses compiles at -O0). Builds → it was optimization after
+# all (tune back up later); still hangs at -O0 → definitively frontend,
+# opt-tuning is a dead end. Fail-loud if the -O3 entry is gone/renamed so
+# we never silently build the hanging -O3.
+perl -pi -e 's/flag: "-O3"/flag: "-O0"/' scripts/build/flags.ts
+! grep -q 'flag: "-O3"' scripts/build/flags.ts \
+  || { echo "FATAL: global -O3->-O0 patch did not apply (bun flags.ts release -O3 entry changed?)" >&2; exit 1; }
 
 # Ensure Cargo/Rust can find the C compiler and linker
 # (Cargo looks for "cc" by default which may not exist)
