@@ -117,16 +117,20 @@ export CXX=clang++
 # ZigGeneratedClasses.cpp — bun's largest generated C++ TU — hangs clang
 # for HOURS at [656/669] on our toolchain (15h+, full 128G VM, no sandbox
 # cap). Per-file -O1 (via extraFlagsFor) was applied but did NOT clear it,
-# so the hang is almost certainly opt-INDEPENDENT (a clang frontend/sema
-# blowup), not the -O3 optimizer. DECISIVE probe: drop the GLOBAL release
-# opt -O3 -> -O0 in flags.ts (no per-file override, so EVERY core TU incl.
-# ZigGeneratedClasses compiles at -O0). Builds → it was optimization after
-# all (tune back up later); still hangs at -O0 → definitively frontend,
-# opt-tuning is a dead end. Fail-loud if the -O3 entry is gone/renamed so
-# we never silently build the hanging -O3.
-perl -pi -e 's/flag: "-O3"/flag: "-O0"/' scripts/build/flags.ts
+# so the hang is likely opt-INDEPENDENT (a clang frontend/sema blowup).
+# CONCLUSIVE probe: drop the GLOBAL release opt -O3 -> -O0 (every core TU,
+# incl. ZigGeneratedClasses, at -O0). A bare -O0 trips WebKit's prebuilt
+# wtf/Compiler.h:125 `#error "Building release without compiler
+# optimizations ... Set -DRELEASE_WITHOUT_OPTIMIZATIONS if this is
+# intended."` (fails fast at step ~99), so also pass that define — the
+# flag value is space-joined into $cxxflags (compile.ts), so a two-token
+# value reaches clang. Outcome is definitive: BUILDS → the hang was the
+# optimizer (tune opt back up later); STILL HANGS at 656 → definitively a
+# frontend pathology, opt-tuning is dead (split the file / different
+# clang / upstream). Fail-loud if the -O3 entry is gone/renamed.
+perl -pi -e 's/flag: "-O3"/flag: "-O0 -DRELEASE_WITHOUT_OPTIMIZATIONS"/' scripts/build/flags.ts
 ! grep -q 'flag: "-O3"' scripts/build/flags.ts \
-  || { echo "FATAL: global -O3->-O0 patch did not apply (bun flags.ts release -O3 entry changed?)" >&2; exit 1; }
+  || { echo "FATAL: global -O3 opt patch did not apply (bun flags.ts release -O3 entry changed?)" >&2; exit 1; }
 
 # Ensure Cargo/Rust can find the C compiler and linker
 # (Cargo looks for "cc" by default which may not exist)
