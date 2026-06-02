@@ -19,16 +19,19 @@ sed -i '/add_subdirectory(flowbench/s/^/#/' CMakeLists.txt
 # Fix toml11 compatibility with CMake 4.x (old cmake_minimum_required)
 sed -i '/-Dtoml11_BUILD_TEST/a\      -DCMAKE_POLICY_VERSION_MINIMUM:STRING=3.5' cmake/FDBComponents.cmake
 
-# Hermetic build: redirect cmake submodule fetches to pre-extracted
-# source trees mounted at /. Sources come from build.ncl Source deps
-# (sha-pinned, content-addressed in mirror). See `orch discover-cmake
-# foundationdb` for how the urls/shas were obtained.
+# Hermetic build: redirect cmake submodule fetches to the source trees
+# the builder extracts from build.ncl Source{extract=true} deps. Those
+# land in the build working dir at /build/<archive-top-dir>, NOT at / —
+# minimal hardlinks build_deps (working_inputs) into base_dir/build, the
+# sandbox CWD /build (same root bun/cargo build.sh use for /build/.cargo).
+# Sources are sha-pinned + content-addressed in the mirror. See
+# `orch discover-cmake foundationdb` for how the urls/shas were obtained.
 # toml11: ExternalProject_add URL form -> SOURCE_DIR
-sed -i '/ExternalProject_add(toml11Project/,/BUILD_ALWAYS ON)/{s|URL "https://github.com/ToruNiina/toml11/archive/v3.4.0.tar.gz"|SOURCE_DIR /toml11-3.4.0|;/URL_HASH/d;}' cmake/FDBComponents.cmake
+sed -i '/ExternalProject_add(toml11Project/,/BUILD_ALWAYS ON)/{s|URL "https://github.com/ToruNiina/toml11/archive/v3.4.0.tar.gz"|SOURCE_DIR /build/toml11-3.4.0|;/URL_HASH/d;}' cmake/FDBComponents.cmake
 # msgpack: ExternalProject_add URL form -> SOURCE_DIR
-sed -i '/ExternalProject_add(msgpackProject/,/INSTALL_COMMAND/{s|URL "https://github.com/msgpack/msgpack-c/releases/download/cpp-3.3.0/msgpack-3.3.0.tar.gz"|SOURCE_DIR /msgpack-3.3.0|;/URL_HASH/d;}' cmake/GetMsgpack.cmake
+sed -i '/ExternalProject_add(msgpackProject/,/INSTALL_COMMAND/{s|URL "https://github.com/msgpack/msgpack-c/releases/download/cpp-3.3.0/msgpack-3.3.0.tar.gz"|SOURCE_DIR /build/msgpack-3.3.0|;/URL_HASH/d;}' cmake/GetMsgpack.cmake
 # ZSTD: FetchContent_Declare GIT form -> SOURCE_DIR
-sed -i '/FetchContent_Declare(ZSTD/,/)/{s|GIT_REPOSITORY https://github.com/facebook/zstd.git|SOURCE_DIR /zstd-1.5.2|;/GIT_TAG /d;}' cmake/CompileZstd.cmake
+sed -i '/FetchContent_Declare(ZSTD/,/)/{s|GIT_REPOSITORY https://github.com/facebook/zstd.git|SOURCE_DIR /build/zstd-1.5.2|;/GIT_TAG /d;}' cmake/CompileZstd.cmake
 
 cmake -B build -G Ninja \
   -DCMAKE_INSTALL_PREFIX=/usr \

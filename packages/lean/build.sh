@@ -6,26 +6,21 @@ cd "lean4-${MINIMAL_ARG_VERSION}"
 
 # Hermetic build: lean's CMakeLists.txt uses ExternalProject_add with
 # GIT_REPOSITORY for cadical, libuv, mimalloc. In CS we have no egress,
-# so those three are pre-staged as Source build_deps in build.ncl. Each
-# extracts to a sibling dir of lean4-*/ in the sandbox rootfs; we sed-
-# patch the CMakeLists to use SOURCE_DIR instead. mimalloc's dir name
-# is sha-prefixed by github's tarball API; resolve with a glob.
-MIMALLOC_DIR=$(ls -d /microsoft-mimalloc-* 2>/dev/null | head -1)
-if [ -n "$MIMALLOC_DIR" ]; then
+# so those three are pre-staged as Source{extract=true} deps in build.ncl.
+# The builder hardlinks build_deps (working_inputs) into the build CWD, so
+# they land at /build/<archive-top-dir> — siblings of the extracted
+# lean4-*/ — NOT at /. github tarball dir names vary (<repo>-<tag> vs
+# <owner>-<repo>-<sha>), so discover each by glob under /build.
+CADICAL_DIR=$(ls -d /build/cadical-* 2>/dev/null | head -1)
+MIMALLOC_DIR=$(ls -d /build/*mimalloc-* 2>/dev/null | head -1)
+LIBUV_DIR=$(ls -d /build/libuv-* 2>/dev/null | head -1)
+if [ -n "$CADICAL_DIR" ] && [ -n "$MIMALLOC_DIR" ] && [ -n "$LIBUV_DIR" ]; then
     # cadical: replace GIT_REPOSITORY + GIT_TAG with SOURCE_DIR
     sed -i \
-        -e '/ExternalProject_add(cadical/,/GIT_TAG/{
+        -e "/ExternalProject_add(cadical/,/GIT_TAG/{
             /GIT_REPOSITORY/d
-            s|GIT_TAG rel-2.1.2|SOURCE_DIR /cadical-rel-2.1.2|
-        }' \
-        ../CMakeLists.txt 2>/dev/null || true
-    # The CMakeLists is inside the cwd; the path adjusts inside cd later.
-    # Re-apply for the actual file (cwd is now lean4-*).
-    sed -i \
-        -e '/ExternalProject_add(cadical/,/GIT_TAG/{
-            /GIT_REPOSITORY/d
-            s|GIT_TAG rel-2.1.2|SOURCE_DIR /cadical-rel-2.1.2|
-        }' \
+            s|GIT_TAG rel-2.1.2|SOURCE_DIR ${CADICAL_DIR}|
+        }" \
         CMakeLists.txt
 
     # mimalloc
@@ -40,17 +35,22 @@ if [ -n "$MIMALLOC_DIR" ]; then
     # uses the same block when stage0 rebuilds)
     for f in src/CMakeLists.txt stage0/src/CMakeLists.txt; do
         sed -i \
-            -e '/ExternalProject_add(libuv/,/GIT_TAG/{
+            -e "/ExternalProject_add(libuv/,/GIT_TAG/{
                 /GIT_REPOSITORY/d
                 /Sync version with flake.nix/d
-                s|GIT_TAG v1.48.0|SOURCE_DIR /libuv-1.48.0|
-            }' \
+                s|GIT_TAG v1.48.0|SOURCE_DIR ${LIBUV_DIR}|
+            }" \
             "$f"
     done
 
-    echo "[lean build.sh] Hermetic submodule patches applied."
+    echo "[lean build.sh] Hermetic submodule patches applied (cadical=$CADICAL_DIR mimalloc=$MIMALLOC_DIR libuv=$LIBUV_DIR)."
 else
-    echo "[lean build.sh] WARN: /microsoft-mimalloc-* not found, falling back to online build" >&2
+    # Fail loud rather than silently fall through to a doomed offline git
+    # clone — print what IS under /build so the next attempt can adjust.
+    echo "[lean build.sh] FATAL: submodule sources not found under /build (cadical=$CADICAL_DIR mimalloc=$MIMALLOC_DIR libuv=$LIBUV_DIR)" >&2
+    echo "[lean build.sh] /build contains:" >&2
+    ls -d /build/*/ >&2 2>/dev/null || true
+    exit 1
 fi
 
 case $(uname -m) in

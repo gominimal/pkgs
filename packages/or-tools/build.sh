@@ -4,8 +4,9 @@ set -euo pipefail
 # Hermetic build: or-tools' cmake/dependencies/CMakeLists.txt uses
 # FetchContent_Declare(GIT_REPOSITORY ...) for ~22 deps. In CS we have
 # no egress, so the github-hosted ones are pre-staged as Source
-# build_deps (see build.ncl). Each extracts to a sibling dir of
-# or-tools-*/ at sandbox root, e.g. /abseil-cpp-20250814.1.
+# build_deps (see build.ncl). The builder hardlinks build_deps
+# (working_inputs) into the build CWD, so each lands at
+# /build/<archive-top-dir>, e.g. /build/abseil-cpp-20250814.1 — NOT at /.
 #
 # Override mechanism: cmake 3.24+ honours FETCHCONTENT_SOURCE_DIR_<NAME>
 # (UPPERCASE) to redirect a fetch to a local dir; or-tools requires 3.24
@@ -27,10 +28,13 @@ set -euo pipefail
 resolve_dir() {
     local pattern="$1"
     local matched
-    matched=$(ls -d "$pattern" 2>/dev/null | head -1)
+    # Sources land in the build CWD at /build/<dir> (working_inputs), not
+    # at /. Glob under /build; the callers pass "/NAME" patterns unchanged.
+    matched=$(ls -d "/build${pattern}" 2>/dev/null | head -1)
     if [ -z "$matched" ]; then
-        echo "FAIL: no extracted dir matches $pattern" >&2
-        ls -1d /*-* 2>/dev/null | head -30 >&2
+        echo "FAIL: no extracted dir matches /build${pattern}" >&2
+        echo "/build contains:" >&2
+        ls -1d /build/*-* 2>/dev/null | head -40 >&2
         exit 1
     fi
     echo "$matched"
