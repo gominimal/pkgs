@@ -68,7 +68,17 @@ echo '{"private":true}' > package.json
 
 # Install sharp without scripts (skip prebuilt download), then compile native addon.
 # Use npm here (not pnpm) so node_modules is flat, avoiding pnpm symlinks in the output.
-npm install --ignore-scripts sharp node-addon-api node-gyp
+# Hermetic: when an npm cache is mounted (pre-staged sharp + node-addon-api +
+# node-gyp), install offline. /npm-cache is read-only and npm's cacache writes
+# bookkeeping even on --offline reads, so copy to a writable scratch dir first
+# (same idiom as typescript-language-server). Falls back to online for dev.
+if [ -d /npm-cache ]; then
+    NPM_CACHE_RW=/tmp/sharp-npm-cache
+    cp -r /npm-cache "$NPM_CACHE_RW"
+    npm install --ignore-scripts --offline --cache="$NPM_CACHE_RW" sharp node-addon-api node-gyp
+else
+    npm install --ignore-scripts sharp node-addon-api node-gyp
+fi
 export PATH="$SHARP_STAGING/node_modules/.bin:$PATH"
 cd node_modules/sharp
 node install/build.js
