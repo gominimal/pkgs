@@ -23,7 +23,13 @@ replace-with = "vendored-sources"
 directory = "/cargo-vendor"
 EOF
     fi
-    cargo build --offline --frozen --release -p codex-cli
+    # --frozen requires the committed codex-rs/Cargo.lock to match the
+    # vendored set exactly; with the git-source deps (tungstenite fork)
+    # redirected to /cargo-vendor via .cargo-config.toml, cargo wants to
+    # rewrite the lock's source entries, which --frozen forbids. Drop
+    # --frozen: --offline alone stays hermetic (resolves purely from the
+    # vendored crates, no network) and lets cargo reconcile the lock.
+    cargo build --offline --release -p codex-cli
 else
     cargo build --release -p codex-cli
 fi
