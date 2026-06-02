@@ -38,6 +38,12 @@ if [ -d /pnpm-store ]; then
     # Drop the entire packageManager line (with trailing comma if
     # present) BEFORE any pnpm call. Idempotent + non-fatal.
     sed -i 's/^\s*"packageManager":\s*"pnpm@[^"]*",\?\s*$//' package.json || true
+    # pnpm 10.x STILL enforces engines.pnpm even with engine-strict=false
+    # (ERR_PNPM_UNSUPPORTED_ENGINE: expected 9.6.0, got 10.x — caught
+    # 2026-06-01). Strip the engines.pnpm pin too. Use node for a safe
+    # JSON edit (no dangling-comma risk a sed would have). Idempotent +
+    # non-fatal; node is on PATH (it's next's runtime).
+    node -e 'const fs=require("fs"),p=JSON.parse(fs.readFileSync("package.json"));if(p.engines)delete p.engines.pnpm;fs.writeFileSync("package.json",JSON.stringify(p,null,2))' || true
     pnpm install --offline --frozen-lockfile --store-dir=/pnpm-store --config.engine-strict=false
 else
     pnpm install --frozen-lockfile --config.engine-strict=false
