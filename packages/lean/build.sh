@@ -30,11 +30,15 @@ if [ -n "$CADICAL_DIR" ] && [ -n "$MIMALLOC_DIR" ] && [ -n "$LIBUV_DIR" ]; then
         }" \
         CMakeLists.txt
 
-    # mimalloc
+    # mimalloc: lean's CMakeLists.txt:581 `file COPY`s mimalloc.h from the
+    # DEFAULT ExternalProject path (<prefix>/src/mimalloc/include/), so
+    # relocating SOURCE_DIR makes that COPY fail "No such file". Same fix as
+    # cadical above: copy_directory the staged source INTO <SOURCE_DIR> (the
+    # default path) rather than pointing the build elsewhere.
     sed -i \
         -e "/ExternalProject_add(mimalloc/,/GIT_TAG/{
             /GIT_REPOSITORY/d
-            s|GIT_TAG v2.2.3|SOURCE_DIR ${MIMALLOC_DIR}|
+            s|GIT_TAG v2.2.3|DOWNLOAD_COMMAND \${CMAKE_COMMAND} -E copy_directory ${MIMALLOC_DIR} <SOURCE_DIR>|
         }" \
         CMakeLists.txt
 
