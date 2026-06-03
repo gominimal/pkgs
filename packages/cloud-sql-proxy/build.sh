@@ -2,6 +2,8 @@
 set -ex
 
 export GOROOT=/usr/go
+export GONOSUMCHECK=*
+export GONOSUMDB=*
 
 go build -trimpath -ldflags "-buildid= -w -s -X 'github.com/GoogleCloudPlatform/cloud-sql-proxy/v2/cmd.versionString=${MINIMAL_ARG_VERSION}'" -o cloud-sql-proxy .
 
