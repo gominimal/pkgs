@@ -15,11 +15,18 @@ CADICAL_DIR=$(ls -d /build/cadical-* 2>/dev/null | head -1)
 MIMALLOC_DIR=$(ls -d /build/*mimalloc-* 2>/dev/null | head -1)
 LIBUV_DIR=$(ls -d /build/libuv-* 2>/dev/null | head -1)
 if [ -n "$CADICAL_DIR" ] && [ -n "$MIMALLOC_DIR" ] && [ -n "$LIBUV_DIR" ]; then
-    # cadical: replace GIT_REPOSITORY + GIT_TAG with SOURCE_DIR
+    # cadical: BUILD_IN_SOURCE is ON and src/cadical.mk links the binary to
+    # the RELATIVE path ../../cadical, which lean then expects at
+    # <prefix>/cadical (CMAKE_BINARY_DIR/cadical). Overriding SOURCE_DIR to
+    # /build/cadical-rel-2.1.2 sent ../../cadical to /cadical (rootfs root,
+    # read-only) AND misplaced the binary. So do NOT relocate SOURCE_DIR —
+    # keep the default (<prefix>/src/cadical) and replace the git download
+    # with a copy of the pre-staged source into it. Then ../../cadical lands
+    # at <prefix>/cadical exactly where lean looks, on a writable path.
     sed -i \
         -e "/ExternalProject_add(cadical/,/GIT_TAG/{
             /GIT_REPOSITORY/d
-            s|GIT_TAG rel-2.1.2|SOURCE_DIR ${CADICAL_DIR}|
+            s|GIT_TAG rel-2.1.2|DOWNLOAD_COMMAND \${CMAKE_COMMAND} -E copy_directory ${CADICAL_DIR} <SOURCE_DIR>|
         }" \
         CMakeLists.txt
 
