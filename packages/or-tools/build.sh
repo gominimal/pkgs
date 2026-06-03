@@ -40,7 +40,7 @@ resolve_dir() {
     echo "$matched"
 }
 
-ZLIB_DIR=$(resolve_dir "/ZLIB-1.3.1")
+ZLIB_DIR=$(resolve_dir "/zlib-1.3.1")
 ABSL_DIR=$(resolve_dir "/abseil-cpp-20250814.1")
 PROTOBUF_DIR=$(resolve_dir "/protobuf-33.1")
 RE2_DIR=$(resolve_dir "/re2-2025-08-12")
