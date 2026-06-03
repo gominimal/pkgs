@@ -19,9 +19,9 @@ if [ -d /npm-cache ]; then
         --cache="$NPM_CACHE_RW" \
         --prefix="$OUTPUT_DIR/usr" \
         typescript-language-server@$MINIMAL_ARG_VERSION \
-        typescript
+        typescript@6.0.3
 else
     npm install -g --prefix=$OUTPUT_DIR/usr \
         typescript-language-server@$MINIMAL_ARG_VERSION \
-        typescript
+        typescript@6.0.3
 fi
