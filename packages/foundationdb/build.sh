@@ -32,6 +32,10 @@ sed -i '/ExternalProject_add(toml11Project/,/BUILD_ALWAYS ON)/{s|URL "https://gi
 sed -i '/ExternalProject_add(msgpackProject/,/INSTALL_COMMAND/{s|URL "https://github.com/msgpack/msgpack-c/releases/download/cpp-3.3.0/msgpack-3.3.0.tar.gz"|SOURCE_DIR /build/msgpack-3.3.0|;/URL_HASH/d;}' cmake/GetMsgpack.cmake
 # ZSTD: FetchContent_Declare GIT form -> SOURCE_DIR
 sed -i '/FetchContent_Declare(ZSTD/,/)/{s|GIT_REPOSITORY https://github.com/facebook/zstd.git|SOURCE_DIR /build/zstd-1.5.2|;/GIT_TAG /d;}' cmake/CompileZstd.cmake
+# boost: cmake/CompileBoost.cmake ExternalProject_add URL form -> SOURCE_DIR.
+# Its URL line is space-aligned (URL<pad>"..."), so match [[:space:]]*; drop
+# the URL_HASH line. boost_1_78_0.tar.bz2 extracts to /build/boost_1_78_0.
+sed -i 's|URL[[:space:]]*"https://archives.boost.io/release/1.78.0/source/boost_1_78_0.tar.bz2"|SOURCE_DIR /build/boost_1_78_0|; /URL_HASH/d' cmake/CompileBoost.cmake
 
 cmake -B build -G Ninja \
   -DCMAKE_INSTALL_PREFIX=/usr \

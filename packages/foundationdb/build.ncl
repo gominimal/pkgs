@@ -46,6 +46,15 @@ let version = "7.3.69" in
       sha256 = "6e114d12a5ddb8cb11f669f83f32246e484a8addd0ce93f274996f1941c1f07b",
       extract = true,
     } | Source,
+    # boost 1.78.0: cmake/CompileBoost.cmake ExternalProject downloads it
+    # from archives.boost.io (blocked in CS — surfaced once toml11/msgpack/
+    # zstd were redirected). Pre-stage; build.sh redirects URL -> SOURCE_DIR.
+    # sha is CompileBoost.cmake's own URL_HASH; minimal extracts .tar.bz2.
+    {
+      url = "https://archives.boost.io/release/1.78.0/source/boost_1_78_0.tar.bz2",
+      sha256 = "8681f175d4bdb26c52222665793eef08490d7758529330f98d3b29dd0735bccc",
+      extract = true,
+    } | Source,
     base,
     boost,
     cmake,
