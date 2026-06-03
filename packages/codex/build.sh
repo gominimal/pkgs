@@ -10,6 +10,18 @@ export RUSTFLAGS="-C linker=gcc"
 # Needed for crates that use bindgen / libclang
 export LIBCLANG_PATH="$(dirname $(find /usr/lib -name 'libclang*.so' | head -1))"
 
+# rusty_v8: the v8 crate's build.rs downloads a prebuilt static lib from
+# github (denoland/rusty_v8) at build time — blocked in CS (the bindings are
+# already vendored; only the .a is fetched). Pre-staged as a Source{extract
+# =false} that hydrates to /build; gunzip it and point RUSTY_V8_ARCHIVE at
+# the .a so build.rs uses it instead of downloading. Absolute /build path
+# because we cd'd into codex-rs above.
+RV8_GZ=/build/librusty_v8_release_x86_64-unknown-linux-gnu.a.gz
+if [ -f "$RV8_GZ" ]; then
+    gunzip -kf "$RV8_GZ"
+    export RUSTY_V8_ARCHIVE="${RV8_GZ%.gz}"
+fi
+
 if [ -d /cargo-vendor ]; then
     mkdir -p .cargo
     if [ -f /cargo-vendor/.cargo-config.toml ]; then

@@ -23,6 +23,16 @@ let version = "0.130.0" in
       extract = true,
       strip_prefix = "codex-rust-v%{version}",
     } | Source,
+    # rusty_v8 prebuilt static lib — the v8 crate's build.rs downloads it
+    # from github at build time (blocked in CS; the bindings are already in
+    # the cargo vendor). extract=false: it's a gzipped .a, not a tarball, so
+    # it hydrates to /build/<basename> and build.sh gunzips it + points
+    # RUSTY_V8_ARCHIVE at the .a.
+    {
+      url = "https://github.com/denoland/rusty_v8/releases/download/v146.4.0/librusty_v8_release_x86_64-unknown-linux-gnu.a.gz",
+      sha256 = "e64b4d99e4ae293a2e846244a89b80178ba10382c13fb591c1fa6968f5291153",
+      extract = false,
+    } | Source,
     base,
     rust,
     toolchain,
