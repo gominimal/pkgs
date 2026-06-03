@@ -44,7 +44,10 @@ if [ -d /pnpm-store ]; then
     # JSON edit (no dangling-comma risk a sed would have). Idempotent +
     # non-fatal; node is on PATH (it's next's runtime).
     node -e 'const fs=require("fs"),p=JSON.parse(fs.readFileSync("package.json"));if(p.engines)delete p.engines.pnpm;fs.writeFileSync("package.json",JSON.stringify(p,null,2))' || true
-    pnpm install --offline --frozen-lockfile --store-dir=/pnpm-store --config.engine-strict=false
+    # Copy the RO cs-mirror store to writable scratch: pnpm symlinks the
+    # project into <store>/<v>/projects/ on install → EROFS on the RO mount.
+    PNPM_STORE_RW=/tmp/pnpm-store-rw; cp -r /pnpm-store "$PNPM_STORE_RW"
+    pnpm install --offline --frozen-lockfile --store-dir="$PNPM_STORE_RW" --config.engine-strict=false
 else
     pnpm install --frozen-lockfile --config.engine-strict=false
 fi

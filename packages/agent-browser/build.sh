@@ -18,7 +18,13 @@ export RUSTFLAGS="-C linker=gcc"
 # Mirrors the if-then-else pattern next/build.sh + the cargo branch
 # below already use.
 if [ -d /pnpm-store ]; then
-    pnpm install --offline --frozen-lockfile --store-dir=/pnpm-store \
+    # pnpm registers the project by symlinking into <store>/<v>/projects/,
+    # which fails EROFS when the store is the read-only cs-mirror mount.
+    # Copy to a writable scratch dir first (same pattern as the npm cache
+    # in ts-ls / bash-language-server).
+    PNPM_STORE_RW=/tmp/pnpm-store-rw
+    cp -r /pnpm-store "$PNPM_STORE_RW"
+    pnpm install --offline --frozen-lockfile --store-dir="$PNPM_STORE_RW" \
                  --ignore-scripts --config.node-linker=hoisted
 else
     pnpm install --ignore-scripts --config.node-linker=hoisted
