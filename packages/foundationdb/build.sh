@@ -36,6 +36,11 @@ sed -i '/FetchContent_Declare(ZSTD/,/)/{s|GIT_REPOSITORY https://github.com/face
 # Its URL line is space-aligned (URL<pad>"..."), so match [[:space:]]*; drop
 # the URL_HASH line. boost_1_78_0.tar.bz2 extracts to /build/boost_1_78_0.
 sed -i 's|URL[[:space:]]*"https://archives.boost.io/release/1.78.0/source/boost_1_78_0.tar.bz2"|SOURCE_DIR /build/boost_1_78_0|; /URL_HASH/d' cmake/CompileBoost.cmake
+# doctest: bindings/c/test/unit/third_party/CMakeLists.txt ExternalProject_Add
+# GIT form -> SOURCE_DIR. Pulled unconditionally by bindings/c/CMakeLists.txt
+# add_subdirectory(test/unit/third_party) even with BUILD_TESTING=OFF. doctest
+# v2.4.8 (onqtam/doctest, tag 7b988513) extracts to /build/doctest-2.4.8.
+sed -i '/ExternalProject_Add(/,/)/{s|GIT_REPOSITORY https://github.com/onqtam/doctest.git|SOURCE_DIR /build/doctest-2.4.8|;/GIT_TAG /d;}' bindings/c/test/unit/third_party/CMakeLists.txt
 
 cmake -B build -G Ninja \
   -DCMAKE_INSTALL_PREFIX=/usr \

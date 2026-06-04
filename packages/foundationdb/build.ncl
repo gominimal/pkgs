@@ -55,6 +55,16 @@ let version = "7.3.69" in
       sha256 = "8681f175d4bdb26c52222665793eef08490d7758529330f98d3b29dd0735bccc",
       extract = true,
     } | Source,
+    # doctest v2.4.8: bindings/c/test/unit/third_party/CMakeLists.txt does an
+    # ExternalProject_Add git-clone (github.com/onqtam/doctest) at configure
+    # time — pulled unconditionally via bindings/c/CMakeLists.txt
+    # add_subdirectory(test/unit/third_party) even with BUILD_TESTING=OFF, so
+    # it fails offline. Pre-stage; build.sh redirects GIT_* -> SOURCE_DIR.
+    {
+      url = "https://github.com/doctest/doctest/archive/refs/tags/v2.4.8.tar.gz",
+      sha256 = "f52763630aa17bd9772b54e14b6cdd632c87adf0169455a86a49bd94abf2cd83",
+      extract = true,
+    } | Source,
     base,
     boost,
     cmake,
