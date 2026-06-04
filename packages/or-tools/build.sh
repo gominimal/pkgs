@@ -59,6 +59,10 @@ CBC_DIR=$(resolve_dir "/Cbc-cmake-2.10.12")
 GOOGLETEST_DIR=$(resolve_dir "/googletest-1.17.0")
 PROTOBUF_MATCHERS_DIR=$(resolve_dir "/protobuf-matchers-0.1.1")
 BENCHMARK_DIR=$(resolve_dir "/benchmark-1.9.2")
+# bzip2: BUILD_DEPS=ON force-builds it (despite -DBUILD_BZip2=OFF), so it must
+# be staged like the rest. Pinned to gitlab master commit 66c46b8, which
+# extracts to /build/bzip2-<commit> (glob it — the dir is commit-named).
+BZIP2_DIR=$(resolve_dir "/bzip2-*")
 
 mkdir build
 cd build
@@ -98,6 +102,7 @@ cmake -G Ninja \
   -DUSE_XPRESS=OFF \
   -DCMAKE_EXE_LINKER_FLAGS="-Wl,--unresolved-symbols=ignore-in-shared-libs" \
   -DFETCHCONTENT_SOURCE_DIR_ZLIB="${ZLIB_DIR}" \
+  -DFETCHCONTENT_SOURCE_DIR_BZIP2="${BZIP2_DIR}" \
   -DFETCHCONTENT_SOURCE_DIR_ABSL="${ABSL_DIR}" \
   -DFETCHCONTENT_SOURCE_DIR_PROTOBUF="${PROTOBUF_DIR}" \
   -DFETCHCONTENT_SOURCE_DIR_RE2="${RE2_DIR}" \
