@@ -30,7 +30,8 @@ resolve_dir() {
     local matched
     # Sources land in the build CWD at /build/<dir> (working_inputs), not
     # at /. Glob under /build; the callers pass "/NAME" patterns unchanged.
-    matched=$(ls -d "/build${pattern}" 2>/dev/null | head -1)
+    # shellcheck disable=SC2086  # $pattern can be a glob (bzip2-*) — keep unquoted so it expands
+    matched=$(ls -d /build${pattern} 2>/dev/null | head -1)
     if [ -z "$matched" ]; then
         echo "FAIL: no extracted dir matches /build${pattern}" >&2
         echo "/build contains:" >&2
