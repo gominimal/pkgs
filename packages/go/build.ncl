@@ -6,13 +6,13 @@ let toolchain = import "../toolchain/build.ncl" in
 let version = "1.26.4" in
 let variants = {
   amd64_url = "https://go.dev/dl/go%{version}.linux-amd64.tar.gz",
-  amd64_sha256 = "990e6b4bbba816dc3ee129eaeaf4b42f17c2800b88a2166c265ac1a200262282",
+  amd64_sha256 = "1153d3d50e0ac764b447adfe05c2bcf08e889d42a02e0fe0259bd47f6733ad7f",
 
   arm64_url = "https://go.dev/dl/go%{version}.linux-arm64.tar.gz",
-  arm64_sha256 = "c958a1fe1b361391db163a485e21f5f228142d6f8b584f6bef89b26f66dc5b23",
+  arm64_sha256 = "ef758ae7c6cf9267c9c0ef080b8965f453d89ab2d25d9eb22de4405925238768",
 
   source_url = "https://go.dev/dl/go%{version}.src.tar.gz",
-  source_sha256 = "2e91ebb6947a96e9436fb2b3926a8802efe63a6d375dffec4f82aa9dbd6fd43b",
+  source_sha256 = "4f668a32fbfc1132e6a881fb968c2f1dada631492a339211735fbb255a42602d",
 }
 in
 {
@@ -23,12 +23,12 @@ in
       { arch = 'Amd64, .. } =>
         {
           url = variants.amd64_url,
-          sha256 = "1153d3d50e0ac764b447adfe05c2bcf08e889d42a02e0fe0259bd47f6733ad7f",
+          sha256 = variants.amd64_sha256,
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = variants.arm64_url,
-          sha256 = "ef758ae7c6cf9267c9c0ef080b8965f453d89ab2d25d9eb22de4405925238768",
+          sha256 = variants.arm64_sha256,
         } | Source,
     } target,
     {
