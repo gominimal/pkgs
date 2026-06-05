@@ -3,7 +3,7 @@ let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.26.2" in
+let version = "1.26.4" in
 let variants = {
   amd64_url = "https://go.dev/dl/go%{version}.linux-amd64.tar.gz",
   amd64_sha256 = "990e6b4bbba816dc3ee129eaeaf4b42f17c2800b88a2166c265ac1a200262282",
@@ -23,12 +23,12 @@ in
       { arch = 'Amd64, .. } =>
         {
           url = variants.amd64_url,
-          sha256 = variants.amd64_sha256,
+          sha256 = "1153d3d50e0ac764b447adfe05c2bcf08e889d42a02e0fe0259bd47f6733ad7f",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = variants.arm64_url,
-          sha256 = variants.arm64_sha256,
+          sha256 = "ef758ae7c6cf9267c9c0ef080b8965f453d89ab2d25d9eb22de4405925238768",
         } | Source,
     } target,
     {
@@ -74,6 +74,7 @@ in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-3-Clause",
       repology_project = "go",
 
       # When Go is used in a task environment, a `gocache` directory is created
