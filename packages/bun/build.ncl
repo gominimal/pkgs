@@ -19,11 +19,11 @@ let libtool = import "../libtool/build.ncl" in
 let unzip = import "../unzip/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.3.13" in
+let version = "1.3.14" in
 let dl_base = "https://github.com/oven-sh/bun/releases/download/bun-v%{version}" in
 let { amd64_sha256, arm64_sha256 } = {
-  amd64_sha256 = "79c0771fa8b92c33aae41e15a0e0d307ea99d0e2f00317c71c6c53237a78e25a",
-  arm64_sha256 = "70bae41b3908b0a120e1e58c5c8af30e74afae3b8d11b0d3fdd8e787ddfb4b22",
+  amd64_sha256 = "951ee2aee855f08595aeec6225226a298d3fea83a3dcd6465c09cbccdf7e848f",
+  arm64_sha256 = "a27ffb63a8310375836e0d6f668ae17fa8d8d18b88c37c821c65331973a19a3b",
 }
 in
 {
@@ -32,7 +32,7 @@ in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/oven-sh/bun/archive/refs/tags/bun-v%{version}.tar.gz",
-      sha256 = "8cd7b2fd45df28546155f921541c35d2df265a591483853c7c54961ddfbcef7c",
+      sha256 = "112a5915992807f04b183854d360c2bf87ac7c1587fb5da3c560bdbb75b8c92e",
       extract = true,
       strip_prefix = "bun-bun-v%{version}",
     } | Source,
