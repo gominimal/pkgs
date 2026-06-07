@@ -1,25 +1,34 @@
-let { BuildSpec, Local, OutputData, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, .. } = import "minimal.ncl" in
+let base = import "../base/build.ncl" in
 let virtio-linux = import "../virtio-linux/build.ncl" in
-let gzip = import "../gzip/build.ncl" in
-let bash = import "../bash/build.ncl" in
-let coreutils = import "../coreutils/build.ncl" in
+
+# Tracks the virtio-linux kernel version; this package only decompresses it.
+let version = "6.12.43" in
 {
   name = "virtio-kernel-raw",
 
-  # Decompress the virtio-linux kernel (Image.gz) to a raw Image. libkrun can
-  # load a raw aarch64 Image via KRUN_KERNEL_FORMAT_RAW, skipping its in-VMM
-  # gzip decompress for a faster microVM boot.
+  # Produce a raw, directly-loadable kernel Image from the virtio-linux kernel.
+  # On aarch64 that is a gzip-compressed Image (Image.gz); decompress it so
+  # libkrun can load it via KRUN_KERNEL_FORMAT_RAW, skipping its in-VMM gzip
+  # decompress for a faster microVM boot. On x86_64 it is already a bzImage and
+  # passes through unchanged. base provides gzip + sh at build time.
   build_deps = [
     { file = "build.sh" } | Local,
+    base,
     virtio-linux,
-    gzip,
-    bash,
-    coreutils,
   ],
 
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
 
   outputs = {
     image = { glob = "usr/share/virtio-linux/Image" } | OutputData,
   },
+
+  attrs =
+    {
+      upstream_version = version,
+    } | Attrs,
 } | BuildSpec
