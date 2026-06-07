@@ -1,14 +1,13 @@
 #!/bin/bash
-# Assemble the minvmd guest rootfs as an ext4 image.
+# Assemble a libkrun microVM guest rootfs as a read-only ext4 image.
 #
-# The minimal build sandbox hardlinks this package's build_deps and their
-# runtime closure (socat, bash, coreutils, e2fsprogs + glibc/readline/ncurses/
-# openssl) into the sandbox root at standard paths. We snapshot that userland
-# into a staging tree, drop in the bring-up init + contract manifest, and pack
-# it with mke2fs. minvmd loads the result via krun_add_disk2 with a
-# `root=/dev/vda rootfstype=ext4` cmdline (block root has no /init.krun, so the
-# kernel runs init=/sbin/minvmd-stub-init directly; devtmpfs auto-mounts /dev,
-# giving the stub /dev/vsock).
+# The build sandbox hardlinks this package's build_deps and their runtime
+# closure (socat, bash, coreutils, e2fsprogs + glibc/readline/ncurses/openssl)
+# into the sandbox root at standard paths. We snapshot that userland into a
+# staging tree, drop in a small bring-up init, and pack it with mke2fs. The
+# image is loaded as a virtio-blk block device (e.g. root=/dev/vda); a block
+# root has no overlaid init, so the kernel runs the init below directly.
+# devtmpfs auto-mounts /dev, giving the init /dev/vsock.
 set -euo pipefail
 
 STAGE="$(pwd)/stage"
@@ -22,11 +21,11 @@ for d in usr bin sbin lib lib64 etc; do
   fi
 done
 
-mkdir -p "$STAGE/bin" "$STAGE/sbin" "$STAGE/etc/minvmd"
+mkdir -p "$STAGE/bin" "$STAGE/sbin" "$STAGE/etc/microvm"
 
 # Kernel mountpoints. devtmpfs auto-mounts on /dev at boot (CONFIG_DEVTMPFS_MOUNT)
 # — without the directory it fails with "devtmpfs: error mounting -2" and the
-# guest has no /dev/vsock node. /proc and /sys are needed by minimald.
+# guest has no /dev/vsock node. /proc and /sys are conventional mountpoints.
 mkdir -p "$STAGE/dev" "$STAGE/proc" "$STAGE/sys" "$STAGE/run" "$STAGE/tmp"
 chmod 1777 "$STAGE/tmp"
 
@@ -39,10 +38,11 @@ if [ ! -e "$STAGE/bin/sh" ]; then
   fi
 fi
 
-# Bring-up workload: write the READY marker on vsock 7350 (guest connects out to
-# host CID 2), then serve the echo bridge on vsock 2222. Retry the marker
-# briefly in case the vsock device is not live the instant init starts.
-cat > "$STAGE/sbin/minvmd-stub-init" <<'STUB'
+# Bring-up init: signal readiness by connecting out to the host (vsock CID 2)
+# port 7350 and writing "READY\n", then serve an echo on vsock port 2222 for
+# host<->guest connectivity checks. Retry the marker briefly in case the vsock
+# device is not live the instant init starts.
+cat > "$STAGE/sbin/microvm-init" <<'INIT'
 #!/bin/sh
 i=0
 while [ "$i" -lt 50 ]; do
@@ -51,18 +51,17 @@ while [ "$i" -lt 50 ]; do
     sleep 0.1
 done
 exec socat VSOCK-LISTEN:2222,fork EXEC:cat
-STUB
-chmod +x "$STAGE/sbin/minvmd-stub-init"
+INIT
+chmod +x "$STAGE/sbin/microvm-init"
 
-# Guest rootfs contract (machine-readable record of the boot contract).
-cat > "$STAGE/etc/minvmd/manifest" <<'MANIFEST'
-# minvmd guest rootfs contract
-# format=krun_add_disk2-ext4
-# exec_target_production=/sbin/minimald   (absent here; bring-up stub only)
-# exec_target_bringup=/sbin/minvmd-stub-init
+# Machine-readable record of the bring-up contract.
+cat > "$STAGE/etc/microvm/manifest" <<'MANIFEST'
+# microvm guest rootfs contract
+# format=ext4-block-image
+# init=/sbin/microvm-init
 # vsock_port_ready=7350    guest CONNECTs out (host listen=false); writes "READY\n" once
-# vsock_port_bridge=2222   guest LISTENs (host listen=true); echoes per connection
-# net=none   init=kernel-cmdline (no /init.krun on a block-device root)
+# vsock_port_echo=2222     guest LISTENs (host listen=true); echoes per connection
+# net=none
 MANIFEST
 
 # Prune build-time-only bulk the guest never needs: headers, static libs,
@@ -85,7 +84,7 @@ command -v mke2fs >/dev/null || {
 # Size = tree + 10% + 8 MiB headroom, in 1 KiB blocks. The headroom must cover
 # ext4 metadata (inode tables) that `du` does not account for, or `mke2fs -d`
 # can fail to fit the tree.
-OUT="$OUTPUT_DIR/usr/share/minvmd-rootfs"
+OUT="$OUTPUT_DIR/usr/share/microvm-rootfs"
 mkdir -p "$OUT"
 KB="$(du -sk "$STAGE" | cut -f1)"
 BLOCKS=$(( KB + KB / 10 + 8192 ))

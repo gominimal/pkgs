@@ -6,9 +6,9 @@ let coreutils = import "../coreutils/build.ncl" in
 {
   name = "virtio-kernel-raw",
 
-  # Decompress the virtio-linux kernel (Image.gz) to a raw Image. libkrun loads
-  # a raw aarch64 Image via KRUN_KERNEL_FORMAT_RAW, skipping the in-VMM gzip
-  # decompress that dominated minvmd's boot-to-READY (~77 ms of ~146 ms).
+  # Decompress the virtio-linux kernel (Image.gz) to a raw Image. libkrun can
+  # load a raw aarch64 Image via KRUN_KERNEL_FORMAT_RAW, skipping its in-VMM
+  # gzip decompress for a faster microVM boot.
   build_deps = [
     { file = "build.sh" } | Local,
     virtio-linux,
