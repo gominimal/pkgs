@@ -1,6 +1,14 @@
 #!/bin/sh
 set -ex
 
+# CS-builder offline path: hermetic-builder-rs hydrates the goproxy
+# mirror at /goproxy. Outside CS this dir doesn't exist; the build
+# falls back to the default GOPROXY.
+if [ -d /goproxy ]; then
+    export GOPROXY="file:///goproxy"
+    export GOSUMDB=off
+fi
+
 export GOROOT=/usr/go
 export GONOSUMCHECK=*
 export GONOSUMDB=*
