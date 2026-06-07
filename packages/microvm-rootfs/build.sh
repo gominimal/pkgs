@@ -1,13 +1,13 @@
 #!/bin/bash
 # Assemble a libkrun microVM guest rootfs as a read-only ext4 image.
 #
-# The build sandbox hardlinks this package's build_deps and their runtime
-# closure (socat, bash, coreutils, e2fsprogs + glibc/readline/ncurses/openssl)
-# into the sandbox root at standard paths. We snapshot that userland into a
-# staging tree, drop in a small bring-up init, and pack it with mke2fs. The
-# image is loaded as a virtio-blk block device (e.g. root=/dev/vda); a block
-# root has no overlaid init, so the kernel runs the init below directly.
-# devtmpfs auto-mounts /dev, giving the init /dev/vsock.
+# The build sandbox hardlinks this package's runtime closure (base + socat +
+# their libs) and its build-only deps (e2fsprogs, for mke2fs) into the sandbox
+# root at standard paths. We snapshot the userland into a staging tree, drop the
+# build-only e2fsprogs files, add a small bring-up init, prune bulk, and pack an
+# ext4 image with mke2fs. The image is loaded as a virtio-blk block device (e.g.
+# root=/dev/vda); a block root has no overlaid init, so the kernel runs the init
+# below directly. devtmpfs auto-mounts /dev, giving the init /dev/vsock.
 set -euo pipefail
 
 STAGE="$(pwd)/stage"
@@ -20,6 +20,18 @@ for d in usr bin sbin lib lib64 etc; do
     cp -a "/$d" "$STAGE/"
   fi
 done
+
+# e2fsprogs is a build-only dependency: it provides mke2fs to pack the image
+# below (invoked from the build sandbox PATH, not from $STAGE), but the guest
+# never needs it at runtime. Drop its staged files so the runtime image carries
+# only the runtime closure. Done before the init is created, so nothing we ship
+# is at risk. The symlink guard skips a usr-merged /usr/sbin.
+if [ -d "$STAGE/usr/sbin" ] && [ ! -L "$STAGE/usr/sbin" ]; then
+  rm -rf "$STAGE/usr/sbin"
+fi
+rm -f "$STAGE"/usr/bin/chattr "$STAGE"/usr/bin/lsattr "$STAGE"/usr/bin/uuidgen \
+      "$STAGE"/usr/bin/compile_et "$STAGE"/usr/bin/mk_cmds
+rm -f "$STAGE"/usr/lib/libext2fs*.so* "$STAGE"/usr/lib/libe2p*.so* "$STAGE"/usr/lib/libss*.so*
 
 mkdir -p "$STAGE/bin" "$STAGE/sbin" "$STAGE/etc/microvm"
 
@@ -50,6 +62,12 @@ while [ "$i" -lt 50 ]; do
     i=$((i + 1))
     sleep 0.1
 done
+# Fail loudly if the READY handshake never succeeded, rather than starting the
+# listener anyway and turning a boot failure into a downstream timeout.
+[ "$i" -lt 50 ] || {
+    echo "microvm-init: failed to publish READY on vsock 7350" >&2
+    exit 1
+}
 exec socat VSOCK-LISTEN:2222,fork EXEC:cat
 INIT
 chmod +x "$STAGE/sbin/microvm-init"
@@ -67,12 +85,14 @@ MANIFEST
 # Prune build-time-only bulk the guest never needs: headers, static libs,
 # docs/man, and especially glibc's locale archive (the bulk of the closure).
 # The bring-up workload is sh + socat; the C locale fallback is sufficient.
+# `|| true` is scoped to `find` only — a failure in `cd` or `rm -rf` must still
+# fail the build (set -euo pipefail), while `find`'s noncritical errors are ok.
 ( cd "$STAGE" && \
   rm -rf usr/include usr/share/man usr/share/doc usr/share/info \
          usr/share/locale usr/share/i18n usr/lib/locale usr/lib/pkgconfig \
          usr/share/aclocal usr/share/gtk-doc usr/share/bash-completion \
          usr/share/gdb && \
-  find . \( -name '*.a' -o -name '*.la' -o -name '*.o' \) -delete 2>/dev/null || true )
+  { find . \( -name '*.a' -o -name '*.la' -o -name '*.o' \) -delete 2>/dev/null || true; } )
 
 # Fail loudly (not silently with an empty output) if the image tool is absent.
 command -v mke2fs >/dev/null || {
