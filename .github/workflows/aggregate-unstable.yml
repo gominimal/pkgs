@@ -54,6 +54,7 @@ jobs:
           # Green = open, MERGEABLE, targeting main, and every rollup entry is
           # SUCCESS/SKIPPED/NEUTRAL (handles both check-runs `.conclusion` and
           # status-contexts `.state`). No-check PRs count as green.
+          # shellcheck disable=SC2016  # `$s` is a jq variable, not a shell one
           prs=$(gh pr list --base main --state open --limit 300 \
             --json number,headRefOid,mergeable,statusCheckRollup \
             --jq '[ .[]
