@@ -14,11 +14,14 @@ for cabal_file in \
     fi
 done
 
-# Generate a bootstrap JSON that matches the actual GHC in the sandbox
-python3 update_bootstrap_json.py bootstrap/linux-9.8.2.json > bootstrap/linux-actual.json
-
-# Run the bootstrap script with the generated JSON
-python3 bootstrap/bootstrap.py -w "$(command -v ghc)" -d bootstrap/linux-actual.json
+# Offline bootstrap: use the pre-fetched hackage deps bundled at packaging
+# time (cabal's own `bootstrap.py fetch` vs GHC 9.10.3, each dep sha-verified).
+# The archive is a Source build_dep that hydrates next to the build dir;
+# bootstrap.py unpacks its plan-bootstrap.json + tarballs and compiles
+# cabal-install with ZERO network egress. (#51 Option B regenerates this on
+# the fetcher so it never touches local bandwidth.)
+BSRC=$(ls cabal-bootstrap-sources.tar.gz ../cabal-bootstrap-sources.tar.gz 2>/dev/null | head -1)
+python3 bootstrap/bootstrap.py -w "$(command -v ghc)" -s "$BSRC"
 
 # The bootstrap script compiles cabal-install and installs to _build/bin
 mkdir -p "$OUTPUT_DIR"/usr/bin
