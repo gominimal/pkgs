@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let alex = import "../alex/build.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
@@ -15,6 +16,8 @@ let automake = import "../automake/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let make = import "../make/build.ncl" in
+let ghc-bootstrap = import "../ghc-bootstrap/build.ncl" in
+let happy = import "../happy/build.ncl" in
 
 let version = "9.10.3" in
 {
@@ -28,32 +31,15 @@ let version = "9.10.3" in
       extract = false,
     } | Source,
     {
-      url = "https://downloads.haskell.org/~ghc/9.8.1/ghc-9.8.1-x86_64-deb11-linux.tar.xz",
-      sha256 = "ca4dde3a6f34f1fe6d0783767671f02e862f1b0222ef2dc2c5c68cc2abc1abae",
-      extract = false,
-    } | Source,
-    {
-      url = "https://downloads.haskell.org/~ghc/9.8.1/ghc-9.8.1-aarch64-deb10-linux.tar.xz",
-      sha256 = "aab7af72614f8bf9ca624407aa4dbc69bc009c2b4cc1a0f3c062008db81bdb95",
-      extract = false,
-    } | Source,
-    {
       url = "https://downloads.haskell.org/~ghc/%{version}/hadrian-bootstrap-sources/hadrian-bootstrap-sources-9.8.1.tar.gz",
       sha256 = "eec7233763bc31801fcbc996edc9c1f5abae707c1661deb8b22f0a7c2780b5e9",
       extract = false,
     } | Source,
-    {
-      url = "https://hackage.haskell.org/package/alex-3.5.1.0/alex-3.5.1.0.tar.gz",
-      sha256 = "c92efe86f8eb959ee03be6c04ee57ebc7e4abc75a6c4b26551215d7443e92a07",
-      extract = false,
-    } | Source,
-    {
-      url = "https://hackage.haskell.org/package/happy-1.20.1.1/happy-1.20.1.1.tar.gz",
-      sha256 = "8b4e7dc5a6c5fd666f8f7163232931ab28746d0d17da8fa1cbd68be9e878881b",
-      extract = false,
-    } | Source,
+    alex,
     base,
     bash,
+    ghc-bootstrap,
+    happy,
     perl,
     python,
     gmp,
