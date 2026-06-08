@@ -9,6 +9,7 @@ let ninja = import "../ninja/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+let python = import "../python/build.ncl" in
 
 let version = "9.15" in
 {
@@ -143,6 +144,13 @@ let version = "9.15" in
     git,
     make,
     ninja,
+    # bzip2's bundled CMakeLists runs find_package(Python3 REQUIRED) (for its
+    # docs/manpage tooling). BUILD_DEPS=ON force-builds bzip2 even with
+    # -DBUILD_BZip2=OFF, so the probe always runs; without Python3 on PATH the
+    # or-tools configure dies "Could NOT find Python3 (missing:
+    # Python3_EXECUTABLE Interpreter)". python supplies the interpreter — we
+    # still don't build or-tools' own Python bindings (BUILD_PYTHON=OFF).
+    python,
     toolchain,
     zlib,
   ],
