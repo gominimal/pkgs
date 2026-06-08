@@ -64,6 +64,23 @@ else
     exit 1
 fi
 
+# Lake install detection fails in the CS sandbox: stage0/bin/lake builds stage1's
+# stdlib and dies "could not detect the configuration of the Lake installation"
+# (unknownLakeInstall) — its IO.appPath joint-home probe returns none in-sandbox,
+# and the fallbacks can't find the toolchain-layout install. Two-part fix:
+#
+# (1) Patch src/lake so the JOINT-home detector also honors LEAN_SYSROOT, appended
+#     AFTER the appPath probe so appPath still wins when it works (stage-correct).
+#     This covers any lake BUILT from src — i.e. stage1's lake building stage2, if
+#     the bootstrap goes that far. (The stage0 lake is from the committed C
+#     snapshot, NOT src/lake, so this alone does NOT fix the failing stage0 lake —
+#     see part (2) below.) Portable sed (@ delim avoids the |> conflict).
+sed -i 's@^        return appDir.parent$@        return appDir.parent\
+  if let some sr ← IO.getEnv "LEAN_SYSROOT" then\
+    if (← ((sr : FilePath) / "bin" / "lean" |>.addExtension FilePath.exeExtension).pathExists) then\
+      return some (sr : FilePath)@' \
+    src/lake/Lake/Config/InstallPath.lean
+
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
   aarch64) MARCH="-march=armv8-a" ;;
@@ -75,6 +92,23 @@ export ARFLAGS=Drc
 export CXXFLAGS="${CFLAGS}"
 
 cmake --preset release
+
+# (2) The lake that actually FAILS is stage0/bin/lake (committed C snapshot, not
+#     the src patched above). Route it through the env fallbacks its findInstall?
+#     else-branch already supports: LEAN_SYSROOT -> findLeanInstall?, and LAKE_HOME
+#     -> findLakeInstall?. LakeInstall under LAKE_HOME expects its lib/bin at
+#     <home>/.lake/build/{lib,bin}, but stage0's toolchain layout puts them at
+#     <home>/{lib/lean,bin}; symlink the .lake/build paths onto the real ones so
+#     lake loads Lake.olean from the toolchain tree. Created dangling pre-build;
+#     they resolve once `make` populates stage0/. (If a CS build still fails here:
+#     olean-not-found => the ExternalProject wiped the symlinks; still
+#     unknownLakeInstall => stage0 lake ignores these env vars.)
+S0="$(pwd)/build/release/stage0"
+mkdir -p "$S0/.lake/build"
+ln -sfn ../../bin "$S0/.lake/build/bin"
+ln -sfn ../../lib/lean "$S0/.lake/build/lib"
+export LEAN_SYSROOT="$S0"
+export LAKE_HOME="$S0"
 
 make -C build/release -j$(nproc)
 
