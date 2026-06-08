@@ -10,14 +10,14 @@ let autoconf = import "../autoconf/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.52.0" in
+let version = "1.52.1" in
 {
   name = "libuv",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libuv/libuv/v%{version}.tar.gz",
-      sha256 = "eee139c05f7c868f5ae7a54b1e155fd5b6ed13a22329958d2ba711faad016353",
+      sha256 = "478baf2599bfbc882c355288c9cb6f92e0e7dda435fa04031fa5b607cf3f414c",
       extract = true,
       strip_prefix = "libuv-%{version}",
     } | Source,
