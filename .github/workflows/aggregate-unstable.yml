@@ -54,19 +54,27 @@ jobs:
           git fetch origin unstable -q 2>/dev/null || true
           git switch -C unstable "$base"        # start fresh from main HEAD
 
-          # Green = open, MERGEABLE, targeting main, and every rollup entry is
-          # SUCCESS/SKIPPED/NEUTRAL (handles both check-runs `.conclusion` and
-          # status-contexts `.state`). No-check PRs count as green.
+          # Enumerate open PRs up to a generous cap; warn loudly (never silently
+          # truncate) if the cap is ever hit, so `unstable` doesn't quietly stop
+          # meaning "main + EVERY green PR" (pkgs#232 review).
+          cap=1000
+          raw=$(gh pr list --base main --state open --limit "$cap" \
+            --json number,headRefOid,mergeable,statusCheckRollup)
+          if [ "$(jq 'length' <<<"$raw")" -ge "$cap" ]; then
+            echo "⚠️ open-PR count hit the ${cap} enumeration cap — \`unstable\` may be truncated; raise \`cap\` or paginate." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # Green = MERGEABLE and every rollup entry is SUCCESS/SKIPPED/NEUTRAL
+          # (handles both check-runs `.conclusion` and status-contexts `.state`).
+          # No-check PRs count as green.
           # shellcheck disable=SC2016  # `$s` is a jq variable, not a shell one
-          prs=$(gh pr list --base main --state open --limit 300 \
-            --json number,headRefOid,mergeable,statusCheckRollup \
-            --jq '[ .[]
-                    | select(.mergeable=="MERGEABLE")
-                    | select( (.statusCheckRollup|length)==0
-                              or all(.statusCheckRollup[];
-                                     (.conclusion // .state) as $s
-                                     | $s=="SUCCESS" or $s=="SKIPPED" or $s=="NEUTRAL") )
-                  ] | sort_by(.number) | .[] | "\(.number)"')
+          prs=$(jq -r '[ .[]
+                  | select(.mergeable=="MERGEABLE")
+                  | select( (.statusCheckRollup|length)==0
+                            or all(.statusCheckRollup[];
+                                   (.conclusion // .state) as $s
+                                   | $s=="SUCCESS" or $s=="SKIPPED" or $s=="NEUTRAL") )
+                ] | sort_by(.number) | .[] | "\(.number)"' <<<"$raw")
 
           agg=(); skip=()
           while read -r num; do
