@@ -39,6 +39,11 @@ let version = "0.6.1" in
   attrs =
     {
       upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "capysc",
+        repo = "capy-cli",
+      },
       # 1a shared-session model: pinhole the host ~/.capy into the box so in-box
       # capy reuses the developer's existing login (no key transport). rw because
       # capy refreshes its session and writes caches. Exposes the full host
