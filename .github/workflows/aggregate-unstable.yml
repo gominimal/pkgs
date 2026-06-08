@@ -34,7 +34,10 @@ jobs:
   aggregate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      # Pinned to a commit SHA: this job has contents:write and force-pushes
+      # `unstable`, so a hijacked floating tag is higher-stakes here than on
+      # the read-only CI checks. (zizmor unpinned-uses / CodeRabbit, pkgs#232.)
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: main
           fetch-depth: 0
