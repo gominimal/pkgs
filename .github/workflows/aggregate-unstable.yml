@@ -1,0 +1,129 @@
+name: aggregate-unstable
+
+# Rebuilds the bot-owned `unstable` branch = main HEAD + every currently-green,
+# mergeable, open PR merged together. Answers "what happens if all green PRs
+# land at once?" — which the merge queue (one PR at a time) can't. `unstable`
+# is the internal experimental surface: ungated, unsupervised, force-pushed.
+#
+# Sub-issue: gominimal/inbox#184 (umbrella gominimal/inbox#21).
+#
+# SAFETY (first version): triggers on manual + hourly cron only. The
+# event-driven triggers (pull_request / check_suite) are below, commented —
+# enable them once you've validated a manual run looks right. Conflicting PRs
+# are reported in the run summary, NOT commented on (avoids per-run PR spam).
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 * * * *" # hourly fallback / freshness
+  # --- enable after validating a manual dispatch ---
+  # pull_request:
+  #   types: [opened, synchronize, reopened, closed]
+  # check_suite:
+  #   types: [completed]
+
+permissions:
+  contents: write # force-push the unstable branch
+  pull-requests: read
+
+concurrency:
+  group: aggregate-unstable
+  cancel-in-progress: false # serialize runs; never interrupt a force-push
+
+jobs:
+  aggregate:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned to a commit SHA: this job has contents:write and force-pushes
+      # `unstable`, so a hijacked floating tag is higher-stakes here than on
+      # the read-only CI checks. (zizmor unpinned-uses / CodeRabbit, pkgs#232.)
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Rebuild unstable from green PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          git config user.name  "unstable-aggregator[bot]"
+          git config user.email "unstable-aggregator[bot]@users.noreply.github.com"
+
+          base=$(git rev-parse HEAD)            # main HEAD
+          # Does `unstable` exist remotely? Drives the push guard below:
+          # `--force-with-lease` needs a remote-tracking ref to anchor on, so on
+          # the first run (or after a deletion) we plain-create it instead.
+          if git fetch origin unstable -q 2>/dev/null; then
+            unstable_existed=1
+          else
+            unstable_existed=0
+          fi
+          git switch -C unstable "$base"        # start fresh from main HEAD
+
+          # Enumerate open PRs up to a generous cap; warn loudly (never silently
+          # truncate) if the cap is ever hit, so `unstable` doesn't quietly stop
+          # meaning "main + EVERY green PR" (pkgs#232 review).
+          cap=1000
+          # Guard the enumeration: with `set -uo pipefail` (no -e) a failed gh
+          # call would leave `raw` empty and the downstream jq error opaquely.
+          # Fail loudly instead — and crucially, do NOT force-push a half-built
+          # `unstable` if we couldn't even list the PRs (Norrie, pkgs#232).
+          if ! raw=$(gh pr list --base main --state open --limit "$cap" \
+            --json number,headRefOid,mergeable,statusCheckRollup); then
+            echo "::error::failed to list open PRs (gh/API error) — aborting; unstable left untouched"
+            exit 1
+          fi
+          if ! jq -e 'type == "array"' <<<"$raw" >/dev/null 2>&1; then
+            echo "::error::unexpected \`gh pr list\` output — aborting; unstable left untouched"
+            exit 1
+          fi
+          if [ "$(jq 'length' <<<"$raw")" -ge "$cap" ]; then
+            echo "⚠️ open-PR count hit the ${cap} enumeration cap — \`unstable\` may be truncated; raise \`cap\` or paginate." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # Green = MERGEABLE and every rollup entry is SUCCESS/SKIPPED/NEUTRAL
+          # (handles both check-runs `.conclusion` and status-contexts `.state`).
+          # No-check PRs count as green.
+          # shellcheck disable=SC2016  # `$s` is a jq variable, not a shell one
+          prs=$(jq -r '[ .[]
+                  | select(.mergeable=="MERGEABLE")
+                  | select( (.statusCheckRollup|length)==0
+                            or all(.statusCheckRollup[];
+                                   (.conclusion // .state) as $s
+                                   | $s=="SUCCESS" or $s=="SKIPPED" or $s=="NEUTRAL") )
+                ] | sort_by(.number) | .[] | "\(.number)"' <<<"$raw")
+
+          agg=(); skip=()
+          while read -r num; do
+            [ -z "$num" ] && continue
+            if ! git fetch origin "pull/$num/head" -q 2>/dev/null; then
+              skip+=("#$num(fetch)"); continue
+            fi
+            if git merge --no-edit --no-ff FETCH_HEAD >/dev/null 2>&1; then
+              agg+=("#$num")
+            else
+              git merge --abort 2>/dev/null || true
+              skip+=("#$num(conflict)")
+            fi
+          done <<< "$prs"
+
+          # `--force-with-lease` once `unstable` exists (guards a concurrent
+          # clobber); a plain create on the first run / after a deletion, where
+          # there's no remote-tracking ref to anchor the lease and nothing to
+          # clobber anyway. `concurrency:` already serializes runs. (Norrie, pkgs#232.)
+          if [ "$unstable_existed" = 1 ]; then
+            git push --force-with-lease origin unstable
+          else
+            git push origin unstable
+          fi
+
+          {
+            echo "## unstable aggregation"
+            echo ""
+            echo "base: \`main@${base:0:10}\`"
+            echo ""
+            echo "**Aggregated (${#agg[@]}):** ${agg[*]:-none}"
+            echo ""
+            echo "**Skipped (${#skip[@]}):** ${skip[*]:-none}"
+          } >> "$GITHUB_STEP_SUMMARY"
