@@ -5,7 +5,26 @@ export CC=gcc
 export LD=gcc
 export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 
-cargo build --release
+if [ -d /cargo-vendor ]; then
+    mkdir -p .cargo
+    if [ -f /cargo-vendor/.cargo-config.toml ]; then
+        cp /cargo-vendor/.cargo-config.toml .cargo/config.toml
+    else
+        cat > .cargo/config.toml <<'EOF'
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "/cargo-vendor"
+EOF
+    fi
+    if [ -f /cargo-vendor/Cargo.lock ] && [ ! -f Cargo.lock ]; then
+        cp /cargo-vendor/Cargo.lock Cargo.lock
+    fi
+    cargo build --offline --frozen --release
+else
+    cargo build --release
+fi
 
 install -D -m 0755 target/release/broot "$OUTPUT_DIR/usr/bin/broot"
 

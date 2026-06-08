@@ -13,10 +13,11 @@ let version = "1.1.4" in
       url = "https://github.com/golang/vuln/archive/refs/tags/v%{version}.tar.gz",
       sha256 = "da1a7f3224cf874325814dd198eaa42897143fc871226a04944583cb121a15c9",
       extract = true,
-      # repo is golang/vuln, so the archive extracts to vuln-<version>, not
-      # govulncheck-<version>. Explicit so orch go-staging doesn't fall back to
-      # the <pkg>-<version> guess (which broke the fetcher's go.sum walk).
-      strip_prefix = "vuln-%{version}",
+      # No strip_prefix here: minimal preserves the archive's top dir
+      # (vuln-<version>) so build.sh can `cd vuln-<version>`. The fetcher's
+      # manifest strip_prefix is derived from the repo by orch
+      # (derive_strip_prefix → github archive is <repo>-<version>). Adding it
+      # HERE makes minimal STRIP the dir and breaks the build.sh cd (#50).
     } | Source,
     base,
     go,
