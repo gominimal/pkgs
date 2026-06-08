@@ -51,15 +51,33 @@ jobs:
           git config user.email "unstable-aggregator[bot]@users.noreply.github.com"
 
           base=$(git rev-parse HEAD)            # main HEAD
-          git fetch origin unstable -q 2>/dev/null || true
+          # Does `unstable` exist remotely? Drives the push guard below:
+          # `--force-with-lease` needs a remote-tracking ref to anchor on, so on
+          # the first run (or after a deletion) we plain-create it instead.
+          if git fetch origin unstable -q 2>/dev/null; then
+            unstable_existed=1
+          else
+            unstable_existed=0
+          fi
           git switch -C unstable "$base"        # start fresh from main HEAD
 
           # Enumerate open PRs up to a generous cap; warn loudly (never silently
           # truncate) if the cap is ever hit, so `unstable` doesn't quietly stop
           # meaning "main + EVERY green PR" (pkgs#232 review).
           cap=1000
-          raw=$(gh pr list --base main --state open --limit "$cap" \
-            --json number,headRefOid,mergeable,statusCheckRollup)
+          # Guard the enumeration: with `set -uo pipefail` (no -e) a failed gh
+          # call would leave `raw` empty and the downstream jq error opaquely.
+          # Fail loudly instead — and crucially, do NOT force-push a half-built
+          # `unstable` if we couldn't even list the PRs (Norrie, pkgs#232).
+          if ! raw=$(gh pr list --base main --state open --limit "$cap" \
+            --json number,headRefOid,mergeable,statusCheckRollup); then
+            echo "::error::failed to list open PRs (gh/API error) — aborting; unstable left untouched"
+            exit 1
+          fi
+          if ! jq -e 'type == "array"' <<<"$raw" >/dev/null 2>&1; then
+            echo "::error::unexpected \`gh pr list\` output — aborting; unstable left untouched"
+            exit 1
+          fi
           if [ "$(jq 'length' <<<"$raw")" -ge "$cap" ]; then
             echo "⚠️ open-PR count hit the ${cap} enumeration cap — \`unstable\` may be truncated; raise \`cap\` or paginate." >> "$GITHUB_STEP_SUMMARY"
           fi
@@ -90,7 +108,15 @@ jobs:
             fi
           done <<< "$prs"
 
-          git push --force-with-lease origin unstable
+          # `--force-with-lease` once `unstable` exists (guards a concurrent
+          # clobber); a plain create on the first run / after a deletion, where
+          # there's no remote-tracking ref to anchor the lease and nothing to
+          # clobber anyway. `concurrency:` already serializes runs. (Norrie, pkgs#232.)
+          if [ "$unstable_existed" = 1 ]; then
+            git push --force-with-lease origin unstable
+          else
+            git push origin unstable
+          fi
 
           {
             echo "## unstable aggregation"
