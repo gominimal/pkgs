@@ -31,7 +31,9 @@ if [ -d "$STAGE/usr/sbin" ] && [ ! -L "$STAGE/usr/sbin" ]; then
 fi
 rm -f "$STAGE"/usr/bin/chattr "$STAGE"/usr/bin/lsattr "$STAGE"/usr/bin/uuidgen \
       "$STAGE"/usr/bin/compile_et "$STAGE"/usr/bin/mk_cmds
-rm -f "$STAGE"/usr/lib/libext2fs*.so* "$STAGE"/usr/lib/libe2p*.so* "$STAGE"/usr/lib/libss*.so*
+# Note: `libss.so*` (not `libss*.so*`) — the latter also matches openssl's
+# libssl.so, which socat needs at runtime.
+rm -f "$STAGE"/usr/lib/libext2fs.so* "$STAGE"/usr/lib/libe2p.so* "$STAGE"/usr/lib/libss.so*
 
 mkdir -p "$STAGE/bin" "$STAGE/sbin" "$STAGE/etc/microvm"
 
