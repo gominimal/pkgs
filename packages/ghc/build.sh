@@ -1,6 +1,15 @@
 #!/bin/bash
 set -euo pipefail
 
+# tar runs as root in the CS sandbox, where restoring an archive's recorded
+# ownership (uid/gid 1000 in the bundled libffi-tarballs/libffi-3.4.6.tar.gz)
+# fails "Cannot change ownership ... Invalid argument" — that uid isn't mapped
+# in the build's user namespace, so tar exits 2 and Hadrian's stage1 build dies.
+# build.sh's own extractions pass `-o` (--no-same-owner), but Hadrian's INTERNAL
+# `tar -x` of the libffi tarball doesn't. TAR_OPTIONS applies --no-same-owner to
+# EVERY tar in the build (GNU tar honors it), including Hadrian's subprocess.
+export TAR_OPTIONS="--no-same-owner"
+
 # Extract source
 tar -xof "ghc-${MINIMAL_ARG_VERSION}-src.tar.xz"
 cd "ghc-${MINIMAL_ARG_VERSION}"
