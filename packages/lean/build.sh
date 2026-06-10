@@ -4,6 +4,31 @@ set -e
 tar -xof "v${MINIMAL_ARG_VERSION}.tar.gz"
 cd "lean4-${MINIMAL_ARG_VERSION}"
 
+# Self-location fix (CS sandbox). lean's Linux app_path/get_exe_location build the
+# LITERAL path /proc/<getpid()>/exe (src/runtime/io.cpp:1384, src/util/path.cpp:84),
+# then readlink it. Our CS sandbox unshares the PID namespace (hakoniwa default) but
+# bind-mounts the OUTER /proc (the anti-unmask workaround), so the inner getpid() is
+# absent from that procfs -> readlink fails -> stage0/bin/lean dies at startup with
+# "error: failed to locate application" (shell.cpp:315, before arg parse) while building
+# stage1's stdlib. The kernel magic symlink /proc/self/exe resolves against the procfs
+# mount's (outer) namespace = the real running binary, so it works against the existing
+# bind-mount with NO sandbox change. (Empirically reproduced both the failure and the fix
+# in a container: under `unshare --pid --fork` + bind-outer-/proc, /proc/<inner-pid>/exe
+# reads the wrong binary while /proc/self/exe reads the real one.) Patch BOTH src/ AND
+# stage0/ copies: the FAILING binary is stage0/bin/lean, compiled from stage0/src via
+# ExternalProject_add(stage0). LEAN_SYSROOT can't help — getBuildDir reads no env and runs
+# before getopt; it only fixed the earlier Lake unknownLakeInstall. Upstreamable (the
+# getpid() form is a latent bug for any PID-ns-unsharing sandbox; nixpkgs/Guix dodge it
+# with a fresh procfs).
+for f in src/runtime/io.cpp stage0/src/runtime/io.cpp src/util/path.cpp stage0/src/util/path.cpp; do
+    sed -i 's#snprintf(path, PATH_MAX, "/proc/%d/exe", pid);#snprintf(path, PATH_MAX, "/proc/self/exe");#' "$f"
+done
+if [ "$(grep -l '/proc/%d/exe' src/runtime/io.cpp stage0/src/runtime/io.cpp src/util/path.cpp stage0/src/util/path.cpp 2>/dev/null | wc -l)" -ne 0 ]; then
+    echo "[lean build.sh] FATAL: /proc/self/exe self-location patch did not apply to all 4 files" >&2
+    exit 1
+fi
+echo "[lean build.sh] self-location patched to /proc/self/exe (4 files)."
+
 # Hermetic build: lean's CMakeLists.txt uses ExternalProject_add with
 # GIT_REPOSITORY for cadical, libuv, mimalloc. In CS we have no egress,
 # so those three are pre-staged as Source{extract=true} deps in build.ncl.
