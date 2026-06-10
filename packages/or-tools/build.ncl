@@ -49,6 +49,17 @@ let version = "9.15" in
       sha256 = "3a4cff5f9d197e9e6c6138660afa6b1f9370df0bed135bd949243f6dfc83b3e1",
       extract = true,
     } | Source,
+    # Eigen3: or-tools pins tag 3.4.0 via FetchContent(GIT_REPOSITORY gitlab).
+    # CMAKE_DEPENDENT_OPTION force-enables BUILD_Eigen3 under BUILD_DEPS=ON
+    # (despite -DBUILD_Eigen3=OFF — same trap as bzip2), so it MUST be staged.
+    # gitlab archive shas drift, so this is pinned to our CAS copy. cmake
+    # applies or-tools' patches/eigen3-3.4.0.patch via PATCH_COMMAND under the
+    # FETCHCONTENT_SOURCE_DIR override (same as the other patched deps).
+    {
+      url = "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz",
+      sha256 = "8586084f71f9bde545ee7fa6d00288b264a2b7ac3607b974e54d13e7162c1c72",
+      extract = true,
+    } | Source,
     {
       url = "https://github.com/abseil/abseil-cpp/archive/refs/tags/20250814.1.tar.gz",
       sha256 = "1692f77d1739bacf3f94337188b78583cf09bab7e420d2dc6c5605a4f86785a1",

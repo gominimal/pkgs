@@ -14,10 +14,11 @@ set -euo pipefail
 # the names (protobuf-matchers) contains a hyphen, which bash refuses
 # in env-var names but cmake's variable system accepts.
 #
-# The 3 non-staged ones are disabled at configure time:
-#   BZip2  (gitlab, branch ref)        -> -DBUILD_BZip2=OFF
-#   Eigen3 (gitlab)                    -> -DBUILD_Eigen3=OFF
-#   pybind11 / pybind11_abseil /       -> indirectly: BUILD_PYTHON=OFF
+# BZip2 + Eigen3 (both gitlab) are staged like the github ones — under
+# BUILD_DEPS=ON, CMAKE_DEPENDENT_OPTION force-enables BUILD_BZip2/BUILD_Eigen3,
+# so -DBUILD_*=OFF is ignored and cmake fetches them regardless. Both are
+# pre-staged + redirected via FETCHCONTENT_SOURCE_DIR below.
+#   pybind11 / pybind11_abseil /       -> disabled indirectly: BUILD_PYTHON=OFF
 #     pybind11_protobuf                   (pybind11* are gated on it)
 # BUILD_ZLIB is OFF too — we use the system zlib build_dep instead.
 
@@ -64,6 +65,10 @@ BENCHMARK_DIR=$(resolve_dir "/benchmark-1.9.2")
 # be staged like the rest. Pinned to gitlab master commit 66c46b8, which
 # extracts to /build/bzip2-<commit> (glob it — the dir is commit-named).
 BZIP2_DIR=$(resolve_dir "/bzip2-*")
+# eigen3: same force-build trap as bzip2. or-tools pins tag 3.4.0 (gitlab),
+# staged to our CAS; extracts to /build/eigen-3.4.0. cmake applies or-tools'
+# patches/eigen3-3.4.0.patch via PATCH_COMMAND under the SOURCE_DIR override.
+EIGEN3_DIR=$(resolve_dir "/eigen-3.4.0")
 
 mkdir build
 cd build
@@ -104,6 +109,7 @@ cmake -G Ninja \
   -DCMAKE_EXE_LINKER_FLAGS="-Wl,--unresolved-symbols=ignore-in-shared-libs" \
   -DFETCHCONTENT_SOURCE_DIR_ZLIB="${ZLIB_DIR}" \
   -DFETCHCONTENT_SOURCE_DIR_BZIP2="${BZIP2_DIR}" \
+  -DFETCHCONTENT_SOURCE_DIR_EIGEN3="${EIGEN3_DIR}" \
   -DFETCHCONTENT_SOURCE_DIR_ABSL="${ABSL_DIR}" \
   -DFETCHCONTENT_SOURCE_DIR_PROTOBUF="${PROTOBUF_DIR}" \
   -DFETCHCONTENT_SOURCE_DIR_RE2="${RE2_DIR}" \
