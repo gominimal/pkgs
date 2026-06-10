@@ -172,30 +172,31 @@ else
   echo "WARN: lolhtml cargo-vendor tarball missing at /build/lolhtml-capi-vendor.tar.zst" >&2
 fi
 
-# ─── ZigGeneratedClasses.cpp.o hang (task #47) — best-evidence fix + probe ───
-# VERIFIED (2 ultracode workflows, bun v1.3.13 + minimal source): bun IGNORES env
-# CXXFLAGS/CFLAGS/CC/CXX entirely (flags computed in scripts/build/flags.ts, baked into
-# the ninja $cxxflags var) and minimal injects NO compiler wrapper — so our CXXFLAGS is
-# INERT for bun's own TUs, the "CXXFLAGS displaces the PCH" theory is FALSE, and the old
-# global -O0 probe never even reached this TU. The ONE controllable divergence from
-# bun-CI's NON-hanging full build is PCH: our `build:release` (ci=false) sets usePch=TRUE
-# (scripts/build/bun.ts), bun-CI's ci-release full build sets usePch=FALSE — i.e. WE
-# compile ZigGeneratedClasses WITH the JSC PCH (deserializing the whole JSC/WebKit AST
-# into this one TU, hammering clang's constexpr/Sema evaluator — opt-independent,
-# consistent with -O0 also hanging) and bun-CI does NOT. FIX = force usePch=false.
-# UNVALIDATED without a builder cycle, so we also PROBE the real argv → a miss is still
-# diagnostic by morning (would point at the clang BINARY: our self-built -march=x86-64-v3
-# dylib clang vs bun-CI's prebuilt — the next increment, NOT bundled here).
+# ─── ZigGeneratedClasses.cpp.o hang (task #47) — per-file PCH exclusion ───
+# ROOT CAUSE CONFIRMED (2 ultracode workflows + overnight 2026-06-10 on image
+# f415508c): the hang is the JSC PCH. bun IGNORES env CXXFLAGS (flags baked into the
+# ninja $cxxflags via flags.ts; minimal has no compiler wrapper) — so the old global
+# -O0 probe never even reached this TU. Forcing usePch=false GLOBALLY PROVED it (the
+# build compiled clean PAST ZigGeneratedClasses — the 2-day [656/669] wall is gone),
+# but global no-PCH is NOT shippable: PCH is load-bearing for SPEED (no-PCH re-parses
+# the whole JSC/WebKit header set per-TU → glacial, only 175/667 in 13h) AND it
+# exposes -Werror=undefined-var-template in other TUs (JSBuffer.cpp: JSC s_info).
+# FIX: keep the PCH for all 666 fast TUs, exclude ONLY the one generated TU that hangs
+# with it. bun routes a file to the cxx_pch rule iff opts.pch is set (compile.ts:195);
+# gate that on the source NOT being ZigGeneratedClasses. The else-branch already wires
+# the correct no-PCH dep tracking (implicitInputs=depHeaderSignal, orderOnlyInputs=
+# codegenOrderOnly). usePch stays its normal TRUE → only ZigGeneratedClasses compiles
+# PCH-free (clean, ~minutes), sidestepping both the slowness and the -Werror cascade.
 
-# (1) FIX: force usePch=false (match bun-CI ci-release full build). HARD-FAIL on drift.
+# (1) FIX: per-file PCH exclusion for ZigGeneratedClasses. HARD-FAIL on drift.
 python3 - scripts/build/bun.ts <<'PY'
 import sys
 f = sys.argv[1]; s = open(f).read()
-old = '  const usePch = !cfg.windows && (!cfg.ci || cfg.mode === "cpp-only");'
-new = '  const usePch = false; // hermetic: match bun-CI no-PCH full build (ZigGeneratedClasses constexpr wedge, task #47)'
-assert old in s, "usePch anchor not found in scripts/build/bun.ts — bun version drift, re-derive the patch"
+old = '    if (pchOut !== undefined) {'
+new = '    if (pchOut !== undefined && !relSrc.includes("ZigGeneratedClasses")) {'
+assert s.count(old) == 1, "pchOut gate anchor not found/unique in scripts/build/bun.ts — bun version drift, re-derive"
 open(f, "w").write(s.replace(old, new, 1))
-print("[bun build.sh] usePch forced false", file=sys.stderr)
+print("[bun build.sh] per-file PCH exclusion: ZigGeneratedClasses -> no-PCH cxx rule", file=sys.stderr)
 PY
 
 # (2) PROBE (no compile): configure-only writes build/release/{build.ninja,
