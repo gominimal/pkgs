@@ -70,6 +70,14 @@ BZIP2_DIR=$(resolve_dir "/bzip2-*")
 # patches/eigen3-3.4.0.patch via PATCH_COMMAND under the SOURCE_DIR override.
 EIGEN3_DIR=$(resolve_dir "/eigen-3.4.0")
 
+# soplex (SCIP's force-built LP solver) runs its OWN find_package(Boost) then
+#   if(NOT Boost_VERSION_MACRO) set(Boost_VERSION_MACRO ${Boost_VERSION}) endif()
+#   if(${Boost_VERSION_MACRO} LESS "107000") ...   (CMakeLists.txt:179-182)
+# or-tools' FetchContent'd Boost 1.87 satisfies Boost_FOUND but leaves the LEGACY
+# vars (Boost_VERSION / Boost_VERSION_MACRO) EMPTY -> soplex's if() becomes the
+# malformed `if(<empty> LESS 107000)` -> "Configuring incomplete". Pre-seed the
+# integer macro (1.87.0 = 1*100000 + 87*100 + 0 = 108700, which is >= 107000 so
+# soplex keeps multiprecision and needs no GMP) via -D below so line 179 sees it set.
 mkdir build
 cd build
 
@@ -100,6 +108,7 @@ cmake -G Ninja \
   -DBUILD_Eigen3=OFF \
   -DBUILD_ZLIB=OFF \
   -DENABLE_APP=OFF \
+  -DBoost_VERSION_MACRO=108700 \
   -DUSE_SCIP=ON \
   -DUSE_HIGHS=ON \
   -DUSE_COINOR=ON \
