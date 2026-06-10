@@ -50,7 +50,7 @@ PYBIND11_ABSEIL_DIR=$(resolve_dir "/pybind11_abseil-202402.0")
 PYBIND11_PROTOBUF_DIR=$(resolve_dir "/pybind11_protobuf-f02a2b7653bc50eb5119d125842a3870db95d251")
 GLPK_DIR=$(resolve_dir "/GLPK-5.0.1")
 HIGHS_DIR=$(resolve_dir "/HiGHS-1.12.0")
-BOOST_DIR=$(resolve_dir "/boost-boost-1.87.0")
+BOOST_DIR=$(resolve_dir "/boost-1.87.0")  # full -cmake release tarball extracts to boost-1.87.0/ (has submodules)
 SOPLEX_DIR=$(resolve_dir "/soplex-8.0.0")
 SCIP_DIR=$(resolve_dir "/scip-10.0.0")
 COINUTILS_DIR=$(resolve_dir "/CoinUtils-cmake-2.11.12")
@@ -99,6 +99,7 @@ cmake -G Ninja \
   -DBUILD_BZip2=OFF \
   -DBUILD_Eigen3=OFF \
   -DBUILD_ZLIB=OFF \
+  -DENABLE_APP=OFF \
   -DUSE_SCIP=ON \
   -DUSE_HIGHS=ON \
   -DUSE_COINOR=ON \

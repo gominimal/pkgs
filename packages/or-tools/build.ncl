@@ -96,8 +96,13 @@ let version = "9.15" in
       extract = true,
     } | Source,
     {
-      url = "https://github.com/boostorg/boost/archive/refs/tags/boost-1.87.0.tar.gz",
-      sha256 = "c3ee7c763212db96a65dd5392b7ac0f2970f8e5567b0dcc12d8dc53ff8dbb770",
+      # FULL-source release tarball, NOT the github archive: or-tools fetches boost
+      # with GIT_SUBMODULES_RECURSE TRUE (needs libs/* + tools/cmake/BoostRoot.cmake).
+      # The github /archive/ tarball is the super-project with EMPTY submodule dirs →
+      # `include(BoostRoot)` fails + Boost_VERSION never sets (cascades to soplex's
+      # malformed `if(LESS 107000)`). The -cmake release asset bundles all submodules.
+      url = "https://github.com/boostorg/boost/releases/download/boost-1.87.0/boost-1.87.0-cmake.tar.gz",
+      sha256 = "78fbf579e3caf0f47517d3fb4d9301852c3154bfecdc5eeebd9b2b0292366f5b",
       extract = true,
     } | Source,
     {
