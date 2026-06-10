@@ -45,6 +45,7 @@ let version = "2.1.12-stable" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-3-Clause",
       source_provenance = {
         category = 'GithubRepo,
         owner = "libevent",

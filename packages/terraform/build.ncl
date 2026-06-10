@@ -42,6 +42,7 @@ let version = "1.14.5" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BUSL-1.1",
       repology_project = "terraform",
       source_provenance = {
         category = 'GithubRepo,

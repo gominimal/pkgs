@@ -43,6 +43,7 @@ let version = "10.3p1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "SSH-OpenSSH AND BSD-2-Clause AND BSD-3-Clause",
       repology_project = "openssh",
       source_provenance = {
         category = 'GithubRepo,

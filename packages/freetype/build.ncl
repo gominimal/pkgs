@@ -42,4 +42,5 @@ let version = "2.14.1" in
     includes = { glob = "usr/include/**" } | OutputData,
   },
   attrs.upstream_version = version,
+  attrs.license_spdx = "FTL OR GPL-2.0-or-later",
 } | BuildSpec

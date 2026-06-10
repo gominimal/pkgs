@@ -36,5 +36,6 @@ let version = "2.0.3" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "FDK-AAC",
     } | Attrs,
 } | BuildSpec

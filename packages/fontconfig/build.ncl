@@ -52,4 +52,5 @@ let version = "2.17.1" in
     fc-data = { glob = "{etc,usr/share/fontconfig}/**" } | OutputData,
   },
   attrs.upstream_version = version,
+  attrs.license_spdx = "HPND-sell-variant",
 } | BuildSpec

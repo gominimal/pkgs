@@ -45,5 +45,5 @@ let version = "1.18.4" in
     includes = { glob = "usr/include/**" } | OutputData,
   },
   attrs.upstream_version = version,
-  attrs.license_spdx = "(LGPL-2.1-only AND MPL-1.1)",
+  attrs.license_spdx = "LGPL-2.1-only OR MPL-1.1",
 } | BuildSpec

@@ -33,5 +33,6 @@ let version = "4.38.2" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MPL-2.0",
     } | Attrs,
 } | BuildSpec

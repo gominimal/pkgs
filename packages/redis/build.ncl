@@ -49,6 +49,7 @@ let version = "8.6.4" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "AGPL-3.0-only OR SSPL-1.0",
       repology_project = "redis",
       source_provenance = {
         category = 'GithubRepo,
