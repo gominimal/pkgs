@@ -172,6 +172,48 @@ else
   echo "WARN: lolhtml cargo-vendor tarball missing at /build/lolhtml-capi-vendor.tar.zst" >&2
 fi
 
+# ─── ZigGeneratedClasses.cpp.o hang (task #47) — best-evidence fix + probe ───
+# VERIFIED (2 ultracode workflows, bun v1.3.13 + minimal source): bun IGNORES env
+# CXXFLAGS/CFLAGS/CC/CXX entirely (flags computed in scripts/build/flags.ts, baked into
+# the ninja $cxxflags var) and minimal injects NO compiler wrapper — so our CXXFLAGS is
+# INERT for bun's own TUs, the "CXXFLAGS displaces the PCH" theory is FALSE, and the old
+# global -O0 probe never even reached this TU. The ONE controllable divergence from
+# bun-CI's NON-hanging full build is PCH: our `build:release` (ci=false) sets usePch=TRUE
+# (scripts/build/bun.ts), bun-CI's ci-release full build sets usePch=FALSE — i.e. WE
+# compile ZigGeneratedClasses WITH the JSC PCH (deserializing the whole JSC/WebKit AST
+# into this one TU, hammering clang's constexpr/Sema evaluator — opt-independent,
+# consistent with -O0 also hanging) and bun-CI does NOT. FIX = force usePch=false.
+# UNVALIDATED without a builder cycle, so we also PROBE the real argv → a miss is still
+# diagnostic by morning (would point at the clang BINARY: our self-built -march=x86-64-v3
+# dylib clang vs bun-CI's prebuilt — the next increment, NOT bundled here).
+
+# (1) FIX: force usePch=false (match bun-CI ci-release full build). HARD-FAIL on drift.
+python3 - scripts/build/bun.ts <<'PY'
+import sys
+f = sys.argv[1]; s = open(f).read()
+old = '  const usePch = !cfg.windows && (!cfg.ci || cfg.mode === "cpp-only");'
+new = '  const usePch = false; // hermetic: match bun-CI no-PCH full build (ZigGeneratedClasses constexpr wedge, task #47)'
+assert old in s, "usePch anchor not found in scripts/build/bun.ts — bun version drift, re-derive the patch"
+open(f, "w").write(s.replace(old, new, 1))
+print("[bun build.sh] usePch forced false", file=sys.stderr)
+PY
+
+# (2) PROBE (no compile): configure-only writes build/release/{build.ninja,
+#     compile_commands.json}; log the REAL ZigGeneratedClasses clang argv + cxxflags so
+#     by morning we know PCH-absent / -fconstexpr-steps / -march / -g even if the fix misses.
+bun scripts/build.ts --profile=release --configure-only || true
+python3 - >&2 <<'PY' || true
+import json
+try: cc = json.load(open("build/release/compile_commands.json"))
+except Exception as e:
+    print("PROBE: no compile_commands.json:", e); raise SystemExit(0)
+hits = [e for e in cc if "ZigGeneratedClasses" in e.get("file", "")]
+if not hits: print("PROBE: no ZigGeneratedClasses entry in compile_commands.json")
+for e in hits:
+    print("PROBE ZigGeneratedClasses ARGV:", e.get("command") or " ".join(e.get("arguments", [])))
+PY
+grep -m1 -E '^ *cxxflags =' build/release/build.ninja >&2 || true
+
 # Build via bun's own build orchestration (handles bun install, codegen, cmake
 # deps, zig, linking, and strip). Outputs the stripped binary at build/release/bun.
 bun run build:release
