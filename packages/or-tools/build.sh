@@ -100,6 +100,14 @@ apply_ortools_patch "$OSI_DIR"       osi-0.108.patch
 apply_ortools_patch "$CLP_DIR"       clp-1.17.patch
 apply_ortools_patch "$CGL_DIR"       cgl-0.60.patch
 apply_ortools_patch "$CBC_DIR"       cbc-2.10.patch
+# ZLIB + bzip2: or-tools' check_deps.cmake requires the namespaced targets
+# ZLIB::ZLIB / BZip2::BZip2 at the TOP level — created ONLY by building these
+# deps or-tools' way (BUILD_ZLIB=ON above; bzip2 is force-built by BUILD_DEPS)
+# with their alias patches applied (ZLIB-v1.3.1.patch adds
+# `add_library(ZLIB::ZLIB ALIAS ZLIB)`). The unpatched system-zlib path leaves
+# check_deps with no top-level ZLIB::ZLIB and aborts ("Target ... not available").
+apply_ortools_patch "$ZLIB_DIR"      ZLIB-v1.3.1.patch
+apply_ortools_patch "$BZIP2_DIR"     bzip2.patch
 
 # soplex (SCIP's force-built LP solver) runs its OWN find_package(Boost) then
 #   if(NOT Boost_VERSION_MACRO) set(Boost_VERSION_MACRO ${Boost_VERSION}) endif()
@@ -137,7 +145,7 @@ cmake -G Ninja \
   -DBUILD_TESTING=OFF \
   -DBUILD_BZip2=OFF \
   -DBUILD_Eigen3=OFF \
-  -DBUILD_ZLIB=OFF \
+  -DBUILD_ZLIB=ON \
   -DENABLE_APP=OFF \
   -DBoost_VERSION_MACRO=108700 \
   -DUSE_SCIP=ON \
