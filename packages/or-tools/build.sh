@@ -70,6 +70,37 @@ BZIP2_DIR=$(resolve_dir "/bzip2-*")
 # patches/eigen3-3.4.0.patch via PATCH_COMMAND under the SOURCE_DIR override.
 EIGEN3_DIR=$(resolve_dir "/eigen-3.4.0")
 
+# ─── Re-apply or-tools' OWN FetchContent dep patches ─────────────────────
+# or-tools patches most of its deps via PATCH_COMMAND (target-based linking,
+# build-tree config export, dropping the find_package(CONFIG)/Boost_VERSION
+# code paths that don't work when the dep is an in-tree FetchContent
+# subproject). FETCHCONTENT_SOURCE_DIR_<NAME> makes cmake use our staged dir
+# directly and SKIPS PATCH_COMMAND entirely — so without re-applying them
+# here, scip falls back to the unpatched `find_package(SOPLEX REQUIRED
+# CONFIG)` and dies at scip/CMakeLists.txt:520 ("Configuring incomplete"),
+# and the CoinOR stack (Osi/Clp/Cgl/Cbc -> CoinUtils) has the same config-find
+# chain. The patches live in or-tools' own source tree (the primary Source,
+# hoisted to /build), so they're at /build/patches/.
+apply_ortools_patch() {
+    local dir="$1" patch="/build/patches/$2"
+    [ -d "$dir" ] || return 0                  # dep not staged (disabled feature) — skip
+    [ -f "$patch" ] || { echo "WARN: or-tools patch missing: $patch" >&2; return 0; }
+    if (cd "$dir" && git apply --ignore-whitespace -p1 "$patch" 2>/dev/null); then
+        echo "[or-tools build.sh] applied $2"
+    elif (cd "$dir" && patch -p1 --forward < "$patch" >/dev/null 2>&1); then
+        echo "[or-tools build.sh] applied $2 (via patch)"
+    else
+        echo "[or-tools build.sh] WARN: could not apply $2 to $dir" >&2
+    fi
+}
+apply_ortools_patch "$SOPLEX_DIR"    soplex-v8.0.0.patch
+apply_ortools_patch "$SCIP_DIR"      scip-v10.0.0.patch
+apply_ortools_patch "$COINUTILS_DIR" coinutils-2.11.patch
+apply_ortools_patch "$OSI_DIR"       osi-0.108.patch
+apply_ortools_patch "$CLP_DIR"       clp-1.17.patch
+apply_ortools_patch "$CGL_DIR"       cgl-0.60.patch
+apply_ortools_patch "$CBC_DIR"       cbc-2.10.patch
+
 # soplex (SCIP's force-built LP solver) runs its OWN find_package(Boost) then
 #   if(NOT Boost_VERSION_MACRO) set(Boost_VERSION_MACRO ${Boost_VERSION}) endif()
 #   if(${Boost_VERSION_MACRO} LESS "107000") ...   (CMakeLists.txt:179-182)
