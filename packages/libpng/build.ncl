@@ -38,7 +38,7 @@ let version = "1.6.58" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "libpng-1.6.35",
+      license_spdx = "libpng-2.0",
       repology_project = "libpng",
       source_provenance = {
         category = 'GithubRepo,

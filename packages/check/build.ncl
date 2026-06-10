@@ -47,7 +47,7 @@ let version = "0.15.2" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "LGPL-2.1",
+      license_spdx = "LGPL-2.1-or-later",
       source_provenance = {
         category = 'GithubRepo,
         owner = "libcheck",

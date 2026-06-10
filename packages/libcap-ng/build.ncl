@@ -53,7 +53,7 @@ let version = "0.9.3" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "GPL-2.0",
+      license_spdx = "GPL-2.0-or-later AND LGPL-2.1-or-later",
       source_provenance = {
         category = 'GithubRepo,
         owner = "stevegrubb",

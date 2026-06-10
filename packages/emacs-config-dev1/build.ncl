@@ -188,6 +188,6 @@ let typescript-language-server = import "../typescript-language-server/build.ncl
 
   attrs =
     {
-      license_spdx = "GPL-3.0",
+      license_spdx = "GPL-3.0-or-later",
     } | Attrs,
 } | BuildSpec

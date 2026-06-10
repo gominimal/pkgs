@@ -48,7 +48,7 @@ let version = "1.5.3" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "LGPL-3.0",
+      license_spdx = "LGPL-3.0-only",
       repology_project = "bzip3",
       source_provenance = {
         category = 'GithubRepo,

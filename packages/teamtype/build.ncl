@@ -35,7 +35,7 @@ let version = "0.9.1" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "AGPL-3.0",
+      license_spdx = "AGPL-3.0-or-later",
       source_provenance = {
         category = 'GithubRepo,
         owner = "teamtype",

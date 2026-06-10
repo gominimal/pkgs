@@ -33,7 +33,7 @@ let version = "2.73" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "GPL-3.0-or-later WITH Autoconf-exception-generic-3.0",
+      license_spdx = "GPL-3.0-or-later WITH Autoconf-exception-3.0",
       source_provenance = {
         category = 'GnuProject,
         name = "autoconf",
