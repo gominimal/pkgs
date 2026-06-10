@@ -114,16 +114,11 @@ bun --version
 export CC=clang
 export CXX=clang++
 
-# ZigGeneratedClasses.cpp — bun's largest generated C++ TU — hangs clang
-# for HOURS at [655-656/669] on our toolchain. CONCLUSIVE 2026-06-02: a
-# global -O0 -DRELEASE_WITHOUT_OPTIMIZATIONS probe ALSO wedged ~148m at the
-# same TU, so the hang is opt-INDEPENDENT — a clang frontend/sema blowup,
-# NOT the optimizer (opt-tuning, incl. per-file -O1, is dead). No opt patch
-# here; bun uses its default release -O3. bun is HELD until a real fix lands:
-# split ZigGeneratedClasses.cpp into smaller TUs (patch bun's codegen) / try
-# a different clang / carry an upstream patch. See memory
-# bun_o0_verdict_frontend for the full analysis + the ninja [N/669]-is-a-
-# START-line lesson.
+# NOTE: bun's two JSC "touch-every-generated-class" TUs (ZigGeneratedClasses.cpp +
+# ZigGlobalObject.cpp) hang clang for HOURS at ~[656/669] when the JSC PCH is layered
+# on. Root-caused 2026-06-10 to the PCH (NOT the optimizer — a global -O0 probe also
+# wedged ~148m). Fixed below by a per-file PCH exclusion (search "per-file PCH
+# exclusion"). See memory bun_o0_verdict_frontend for the full analysis.
 
 # Ensure Cargo/Rust can find the C compiler and linker
 # (Cargo looks for "cc" by default which may not exist)
@@ -181,39 +176,31 @@ fi
 # but global no-PCH is NOT shippable: PCH is load-bearing for SPEED (no-PCH re-parses
 # the whole JSC/WebKit header set per-TU → glacial, only 175/667 in 13h) AND it
 # exposes -Werror=undefined-var-template in other TUs (JSBuffer.cpp: JSC s_info).
-# FIX: keep the PCH for all 666 fast TUs, exclude ONLY the one generated TU that hangs
-# with it. bun routes a file to the cxx_pch rule iff opts.pch is set (compile.ts:195);
-# gate that on the source NOT being ZigGeneratedClasses. The else-branch already wires
-# the correct no-PCH dep tracking (implicitInputs=depHeaderSignal, orderOnlyInputs=
-# codegenOrderOnly). usePch stays its normal TRUE → only ZigGeneratedClasses compiles
-# PCH-free (clean, ~minutes), sidestepping both the slowness and the -Werror cascade.
+# FIX: keep the PCH for every other TU, exclude ONLY the two TUs that instantiate the
+# ENTIRE generated-class set at once — ZigGeneratedClasses.cpp (DEFINES all generated
+# classes, the 3.3MB monster) and ZigGlobalObject.cpp (wires EVERY lazy structure +
+# DOM-isolated-subspace into the global object). ~80 other webcore/JS*.cpp pull in the
+# same subspace headers but instantiate ONE class each → they compile fine WITH the PCH
+# (all landed in [1..655]). Only these two "touch-everything" hubs blow up clang's
+# sema/constexpr when the PCH (built with -fpch-instantiate-templates) is layered on.
+# Confirmed empirically 2026-06-10: excluding ZigGeneratedClasses alone got the build to
+# [656/669] = ZigGlobalObject, which then wedged ~35m+ identically → second hub, same fix.
+# bun routes a file to cxx_pch iff opts.pch is set (compile.ts:195); gate that on the
+# source NOT being either hub. The else-branch already wires the correct no-PCH dep
+# tracking (implicitInputs=depHeaderSignal, orderOnlyInputs=codegenOrderOnly). usePch
+# stays its normal TRUE → only the two hubs compile PCH-free (clean, ~minutes each),
+# sidestepping both the slowness and the JSBuffer -Werror=undefined-var-template cascade.
 
-# (1) FIX: per-file PCH exclusion for ZigGeneratedClasses. HARD-FAIL on drift.
+# FIX: per-file PCH exclusion for the two JSC hub TUs. HARD-FAIL on drift.
 python3 - scripts/build/bun.ts <<'PY'
 import sys
 f = sys.argv[1]; s = open(f).read()
 old = '    if (pchOut !== undefined) {'
-new = '    if (pchOut !== undefined && !relSrc.includes("ZigGeneratedClasses")) {'
+new = '    if (pchOut !== undefined && !relSrc.includes("ZigGeneratedClasses") && !relSrc.includes("ZigGlobalObject")) {'
 assert s.count(old) == 1, "pchOut gate anchor not found/unique in scripts/build/bun.ts — bun version drift, re-derive"
 open(f, "w").write(s.replace(old, new, 1))
-print("[bun build.sh] per-file PCH exclusion: ZigGeneratedClasses -> no-PCH cxx rule", file=sys.stderr)
+print("[bun build.sh] per-file PCH exclusion: ZigGeneratedClasses + ZigGlobalObject -> no-PCH cxx rule", file=sys.stderr)
 PY
-
-# (2) PROBE (no compile): configure-only writes build/release/{build.ninja,
-#     compile_commands.json}; log the REAL ZigGeneratedClasses clang argv + cxxflags so
-#     by morning we know PCH-absent / -fconstexpr-steps / -march / -g even if the fix misses.
-bun scripts/build.ts --profile=release --configure-only || true
-python3 - >&2 <<'PY' || true
-import json
-try: cc = json.load(open("build/release/compile_commands.json"))
-except Exception as e:
-    print("PROBE: no compile_commands.json:", e); raise SystemExit(0)
-hits = [e for e in cc if "ZigGeneratedClasses" in e.get("file", "")]
-if not hits: print("PROBE: no ZigGeneratedClasses entry in compile_commands.json")
-for e in hits:
-    print("PROBE ZigGeneratedClasses ARGV:", e.get("command") or " ".join(e.get("arguments", [])))
-PY
-grep -m1 -E '^ *cxxflags =' build/release/build.ninja >&2 || true
 
 # Build via bun's own build orchestration (handles bun install, codegen, cmake
 # deps, zig, linking, and strip). Outputs the stripped binary at build/release/bun.
