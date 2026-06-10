@@ -20,7 +20,19 @@ done
 # bootstrap.py unpacks its plan-bootstrap.json + tarballs and compiles
 # cabal-install with ZERO network egress. (#51 Option B regenerates this on
 # the fetcher so it never touches local bandwidth.)
-BSRC=$(ls cabal-bootstrap-sources.tar.gz ../cabal-bootstrap-sources.tar.gz 2>/dev/null | head -1)
+# Locate the hydrated bootstrap-sources tarball ROBUSTLY. The old narrow `ls
+# cabal-bootstrap-sources.tar.gz ../...` assumed it sat in cwd or the parent;
+# minimal actually hardlinks Source build_deps to /build, and the path varies.
+# Worse, under `set -o pipefail` an empty `ls` exited 2 with NO output → opaque
+# "build.sh exited code 2, stderr empty" failure (2026-06-09). Search /build +
+# the tree, and fail LOUD so a real miss is diagnosable.
+BSRC=$(find /build . -maxdepth 4 -name 'cabal-bootstrap-sources.tar.gz' 2>/dev/null | head -1)
+if [ -z "$BSRC" ]; then
+  echo "FATAL: cabal-bootstrap-sources.tar.gz not found under /build or cwd" >&2
+  echo "/build contents:" >&2; ls -la /build 2>/dev/null >&2
+  exit 1
+fi
+echo "[cabal build.sh] bootstrap-sources: $BSRC"
 python3 bootstrap/bootstrap.py -w "$(command -v ghc)" -s "$BSRC"
 
 # The bootstrap script compiles cabal-install and installs to _build/bin
