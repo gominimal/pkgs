@@ -6,6 +6,7 @@ let cmake = import "../cmake/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
+let m4 = import "../m4/build.ncl" in
 let make = import "../make/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -13,20 +14,27 @@ let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "6.12.0.199" in
+let version = "6.12.0.206" in
 {
   name = "mono",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://download.mono-project.com/sources/mono/mono-%{version}.tar.xz",
-      sha256 = "c0850d545353a6ba2238d45f0914490c6a14a0017f151d3905b558f033478ef5",
+      # Sourced from the GitHub tag `mono-%{version}` (commit 0cbf0e2),
+      # mirrored to our archive bucket. The mono/mono GitHub repo has no
+      # release asset, and download.mono-project.com is Microsoft-archived
+      # infra (last touched 2024) that may disappear; this is a prepared
+      # `git archive --recurse-submodules` of the tag (source + the
+      # external/ submodules bundled, autotools generated at build time).
+      url = "gs://minimal-staging-archives/mono/mono/mono-%{version}.tar.gz",
+      sha256 = "c4074f319f801711f23aad8e52c8d8752405b2966d2566bccd2ab23e326ff146",
     } | Source,
     autoconf,
     automake,
     base,
     cmake,
     libtool,
+    m4,
     make,
     perl,
     pkgconf,
