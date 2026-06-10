@@ -33,6 +33,7 @@ let glibc = import "../glibc/build.ncl" in
   },
   attrs =
     {
+      license_spdx = "GPL-3.0",
       source_provenance = {
         category = 'GithubRepo,
         owner = "NixOS",

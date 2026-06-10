@@ -41,6 +41,7 @@ let version = "3.0.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-2-Clause-Patent",
       source_provenance = {
         category = 'GithubRepo,
         owner = "Netflix",

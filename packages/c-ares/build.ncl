@@ -37,6 +37,7 @@ let version = "1.34.6" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT",
       source_provenance = {
         category = 'GithubRepo,
         owner = "c-ares",

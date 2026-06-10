@@ -102,6 +102,7 @@ let version = "1.5.7" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(BSD-3-Clause AND GPL-2.0-only)",
       source_provenance = {
         category = 'GithubRepo,
         owner = "facebook",

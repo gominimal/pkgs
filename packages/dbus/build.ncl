@@ -51,5 +51,6 @@ let version = "1.16.2" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(BSD-3-Clause-HP AND FSFULLRWD)",
     } | Attrs,
 } | BuildSpec

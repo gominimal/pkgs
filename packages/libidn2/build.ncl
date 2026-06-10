@@ -36,6 +36,7 @@ let version = "2.3.8" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(GPL-2.0-only AND GPL-3.0-only)",
       source_provenance = {
         category = 'GnuProject,
         name = "libidn2",

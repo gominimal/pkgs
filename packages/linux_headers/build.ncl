@@ -69,6 +69,7 @@ let version = "6.12.43" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-2.0 WITH Linux-syscall-note",
       source_provenance = {
         category = 'GithubRepo,
         owner = "torvalds",

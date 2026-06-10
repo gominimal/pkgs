@@ -50,6 +50,7 @@ let version = "2.78" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-3-Clause OR GPL-2.0-only",
       repology_project = "libcap",
     } | Attrs,
 

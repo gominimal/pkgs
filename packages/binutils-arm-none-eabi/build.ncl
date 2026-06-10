@@ -41,6 +41,7 @@ let version = "2.43.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(GPL-2.0-only AND GPL-3.0-only AND LGPL-2.0-only)",
       source_provenance = {
         category = 'GnuProject,
         name = "binutils",

@@ -44,6 +44,7 @@ let version = "8.7" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(GFDL-1.2-invariants-only AND GPL-3.0-only)",
       repology_project = "nano",
       source_provenance = {
         category = 'GnuProject,

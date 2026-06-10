@@ -38,6 +38,7 @@ let version = "8.6.16" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(SMLNJ AND TCL)",
       source_provenance = {
         category = 'GithubRepo,
         owner = "tcltk",

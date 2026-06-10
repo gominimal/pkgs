@@ -58,6 +58,7 @@ let version = "5.3" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-3.0-only",
       repology_project = "bash",
       source_provenance = {
         category = 'GnuProject,

@@ -52,6 +52,7 @@ let version = "0.194" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(GFDL-1.3-invariants-only AND GPL-2.0-only AND GPL-3.0-only)",
       repology_project = "elfutils",
     } | Attrs,
 

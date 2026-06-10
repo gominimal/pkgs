@@ -36,6 +36,7 @@ let version = "692" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(BSD-2-Clause AND GPL-3.0-only)",
       # Home page: https://www.greenwoodsoftware.com/less/
     } | Attrs,
 } | BuildSpec

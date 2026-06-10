@@ -83,6 +83,7 @@ let version = "9.10.3" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-3-Clause",
       build_cost_multiple = 6,
     } | Attrs,
 

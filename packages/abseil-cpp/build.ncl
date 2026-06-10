@@ -41,6 +41,7 @@ let version = "20250814.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Apache-2.0",
       source_provenance = {
         category = 'GithubRepo,
         owner = "abseil",

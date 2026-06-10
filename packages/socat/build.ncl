@@ -47,6 +47,7 @@ let version = "1.8.1.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(GPL-2.0-only AND OpenSSL)",
     } | Attrs,
 
   tests.smoketest =
