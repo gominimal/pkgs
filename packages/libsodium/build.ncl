@@ -46,6 +46,7 @@ let version = "1.0.21" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "ISC",
       repology_project = "libsodium",
       source_provenance = {
         category = 'GithubRepo,

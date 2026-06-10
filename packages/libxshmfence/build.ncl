@@ -39,5 +39,6 @@ let version = "1.3.3" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "HPND-sell-variant",
     } | Attrs,
 } | BuildSpec

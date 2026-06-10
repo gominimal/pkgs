@@ -66,6 +66,7 @@ let version = "5.42.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Artistic-1.0-Perl OR GPL-1.0-or-later",
       source_provenance = {
         category = 'GithubRepo,
         owner = "Perl",

@@ -43,6 +43,7 @@ let version = "1.2.15.3" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "LGPL-2.1-only",
       repology_project = "alsa-lib",
     } | Attrs,
 } | BuildSpec

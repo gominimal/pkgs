@@ -30,6 +30,7 @@ let version = "1.10.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Apache-2.0",
       repology_project = "meson",
       source_provenance = {
         category = 'GithubRepo,

@@ -42,6 +42,7 @@ let version = "2.0.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSL-1.0",
       repology_project = "clipper2",
       source_provenance = {
         category = 'GithubRepo,

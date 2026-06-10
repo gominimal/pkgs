@@ -37,6 +37,7 @@ let version = "4.30.2" in
       # Wire up Railway's global state directory.
       env_dir_mappings = [{ read_only = false, path = "~/.railway", class = 'State }],
       upstream_version = version,
+      license_spdx = "MIT",
       source_provenance = {
         category = 'GithubRepo,
         owner = "railwayapp",

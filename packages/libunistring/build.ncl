@@ -32,6 +32,7 @@ let version = "1.4.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-3.0-only",
       repology_project = "libunistring",
       source_provenance = {
         category = 'GnuProject,

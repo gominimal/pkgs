@@ -34,5 +34,6 @@ let version = "2026_01_20.386b5f5" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-2.0-or-later",
     } | Attrs,
 } | BuildSpec

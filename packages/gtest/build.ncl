@@ -41,6 +41,7 @@ let version = "1.17.0" in
   },
   attrs = {
     upstream_version = version,
+    license_spdx = "BSD-3-Clause",
     source_provenance = {
       category = 'GithubRepo,
       owner = "google",

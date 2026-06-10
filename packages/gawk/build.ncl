@@ -48,6 +48,7 @@ let version = "5.4.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-3.0-only",
       repology_project = "gawk",
       source_provenance = {
         category = 'GnuProject,

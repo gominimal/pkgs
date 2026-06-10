@@ -44,6 +44,7 @@ let version = "6.18.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-2.0-only",
       repology_project = "iproute2",
     } | Attrs,
 } | BuildSpec

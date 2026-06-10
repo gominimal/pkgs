@@ -52,6 +52,7 @@ let version = "10.06.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "AGPL-3.0-only",
       source_provenance = {
         category = 'GithubRepo,
         owner = "ArtifexSoftware",

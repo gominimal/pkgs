@@ -99,6 +99,7 @@ let version = "1.4.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "LGPL-3.0-or-later",
       source_provenance = {
         category = 'GnuProject,
         name = "mpc",

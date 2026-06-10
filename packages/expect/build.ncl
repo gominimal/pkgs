@@ -40,5 +40,6 @@ let version = "5.45.4" in
   },
   attrs = {
     upstream_version = version,
+    license_spdx = "NIST-PD",
   },
 } | BuildSpec

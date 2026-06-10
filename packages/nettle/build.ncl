@@ -43,6 +43,7 @@ let version = "3.10.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-2.0-or-later OR LGPL-3.0-or-later",
       source_provenance = {
         category = 'GnuProject,
         name = "nettle",

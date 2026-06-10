@@ -41,6 +41,7 @@ let version = "0.16.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT",
       env_state_wiring = [
         {
           env_var = "ZIG_LOCAL_CACHE_DIR",

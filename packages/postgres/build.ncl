@@ -54,6 +54,7 @@ let version = "18.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "PostgreSQL",
       source_provenance = {
         category = 'GithubRepo,
         owner = "postgres",

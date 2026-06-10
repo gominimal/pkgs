@@ -40,6 +40,7 @@ let version = "1.0.16" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "LGPL-2.1-or-later",
       source_provenance = {
         category = 'GithubRepo,
         owner = "fribidi",

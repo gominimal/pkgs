@@ -37,6 +37,7 @@ let version = "2.12.2" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-3.0-only",
       source_provenance = {
         category = 'GithubRepo,
         owner = "golangci",

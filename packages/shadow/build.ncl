@@ -44,6 +44,7 @@ let version = "4.18.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-3-Clause",
       source_provenance = {
         category = 'GithubRepo,
         owner = "shadow-maint",
