@@ -199,7 +199,7 @@ python3 - scripts/build/bun.ts <<'PY'
 import sys
 f = sys.argv[1]; s = open(f).read()
 old = '    if (pchOut !== undefined) {'
-new = '    if (pchOut !== undefined && !relSrc.includes("codegen") && !relSrc.includes("ZigGlobalObject")) {'
+new = '    if (pchOut !== undefined && !relSrc.includes("codegen") && !relSrc.includes("ZigGlobalObject") && !relSrc.includes("webcrypto")) {'
 assert s.count(old) == 1, "pchOut gate anchor not found/unique in scripts/build/bun.ts — bun version drift, re-derive"
 open(f, "w").write(s.replace(old, new, 1))
 print("[bun build.sh] per-file PCH exclusion: ALL codegen/*.cpp + ZigGlobalObject -> no-PCH cxx rule", file=sys.stderr)
