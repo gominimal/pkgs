@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof inetutils-2.6.tar.xz
-cd inetutils-2.6
+tar -xof inetutils-2.8.tar.xz
+cd inetutils-2.8
 
 ./configure --prefix=/usr        \
             --bindir=/usr/bin    \
