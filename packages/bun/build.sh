@@ -176,8 +176,11 @@ fi
 # but global no-PCH is NOT shippable: PCH is load-bearing for SPEED (no-PCH re-parses
 # the whole JSC/WebKit header set per-TU → glacial, only 175/667 in 13h) AND it
 # exposes -Werror=undefined-var-template in other TUs (JSBuffer.cpp: JSC s_info).
-# FIX: keep the PCH for every other TU, exclude ONLY the two TUs that instantiate the
-# ENTIRE generated-class set at once — ZigGeneratedClasses.cpp (DEFINES all generated
+# FIX: keep the PCH for non-codegen TUs; exclude ALL codegen/*.cpp + ZigGlobalObject.cpp.
+# (2026-06-11: started as "just the 2 hubs", but a THIRD codegen TU — GeneratedSSLConfig.cpp
+# — wedged identically at [656/669] AFTER both hubs compiled clean. Rather than whack-a-mole
+# each generated TU, exclude the whole codegen/ output dir: no-PCH is correct, just slower.)
+# The original two hubs: ZigGeneratedClasses.cpp (DEFINES all generated
 # classes, the 3.3MB monster) and ZigGlobalObject.cpp (wires EVERY lazy structure +
 # DOM-isolated-subspace into the global object). ~80 other webcore/JS*.cpp pull in the
 # same subspace headers but instantiate ONE class each → they compile fine WITH the PCH
@@ -196,10 +199,10 @@ python3 - scripts/build/bun.ts <<'PY'
 import sys
 f = sys.argv[1]; s = open(f).read()
 old = '    if (pchOut !== undefined) {'
-new = '    if (pchOut !== undefined && !relSrc.includes("ZigGeneratedClasses") && !relSrc.includes("ZigGlobalObject")) {'
+new = '    if (pchOut !== undefined && !relSrc.includes("codegen") && !relSrc.includes("ZigGlobalObject")) {'
 assert s.count(old) == 1, "pchOut gate anchor not found/unique in scripts/build/bun.ts — bun version drift, re-derive"
 open(f, "w").write(s.replace(old, new, 1))
-print("[bun build.sh] per-file PCH exclusion: ZigGeneratedClasses + ZigGlobalObject -> no-PCH cxx rule", file=sys.stderr)
+print("[bun build.sh] per-file PCH exclusion: ALL codegen/*.cpp + ZigGlobalObject -> no-PCH cxx rule", file=sys.stderr)
 PY
 
 # Build via bun's own build orchestration (handles bun install, codegen, cmake
