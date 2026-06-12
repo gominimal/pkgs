@@ -205,9 +205,33 @@ open(f, "w").write(s.replace(old, new, 1))
 print("[bun build.sh] per-file PCH exclusion: ALL codegen/*.cpp + ZigGlobalObject -> no-PCH cxx rule", file=sys.stderr)
 PY
 
+# DIAGNOSTIC (#47): ZigGeneratedClasses.cpp.o wedges at [656/669]. VERIFIED 2026-06-12
+# it is NOT the PCH — its source is cfg.codegenDir (=buildDir/codegen, codegen.ts:547 +
+# config.ts:439), so the existing `!relSrc.includes("codegen")` gate ALREADY routes it
+# no-PCH (ZigGlobalObject, excluded by name, compiled fine just before it). A global
+# usePch=false compiled PAST it on an earlier image, so the live suspect is the
+# self-built -march=x86-64-v3 clang OR glacial no-PCH header re-parsing of the 3.3MB
+# monster TU. Heartbeat the hub-TU clang every 2min — CPU ticks (rising => computing,
+# not hung), RSS (rising => memory→OOM), wchan (what it's blocked on) — to finally
+# settle slow-vs-hung-vs-OOM at the wall. (Remove once bun builds.)
+( while true; do
+    sleep 120
+    for tu in ZigGeneratedClasses ZigGlobalObject; do
+      pid=$(pgrep -f "${tu}\.cpp" 2>/dev/null | head -1)
+      [ -z "$pid" ] && continue
+      ut=$(awk '{print $14+$15}' "/proc/$pid/stat" 2>/dev/null)
+      rss=$(awk '/VmRSS/{print $2$3}' "/proc/$pid/status" 2>/dev/null)
+      wch=$(cat "/proc/$pid/wchan" 2>/dev/null)
+      echo "=[bun-diag]= ${tu} pid=${pid} cpu_ticks=${ut} rss=${rss} wchan=${wch:-running}"
+    done
+  done ) &
+BUN_DIAG_PID=$!
+
 # Build via bun's own build orchestration (handles bun install, codegen, cmake
 # deps, zig, linking, and strip). Outputs the stripped binary at build/release/bun.
 bun run build:release
+
+kill "$BUN_DIAG_PID" 2>/dev/null || true
 
 # Install
 mkdir -p "$OUTPUT_DIR/usr/bin"
