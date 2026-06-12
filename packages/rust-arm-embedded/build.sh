@@ -23,6 +23,17 @@ export CARGO_NET_OFFLINE=true
 SYSROOT=$(rustc --print sysroot)
 ls "${SYSROOT}/lib/rustlib/src/rust/library/core/Cargo.toml"
 
+# DIAGNOSTIC (-Zbuild-std offline): `cargo build -Zbuild-std=core,alloc` resolves
+# std's OWN deps (cfg-if, hashbrown, libc, compiler_builtins, …) from crates.io,
+# which is unavailable offline → "no matching package named cfg-if". Reveal
+# whether the sysroot ships a vendor dir (→ point cargo at it via .cargo/config)
+# or only library/Cargo.lock (→ we must vendor the std deps). Settles the fix.
+echo "=[rustarm-diag]= sysroot: $SYSROOT"
+echo "=[rustarm-diag]= rust-src vendor dir?:"; ls -d "$SYSROOT/lib/rustlib/src/rust/vendor" 2>&1
+echo "=[rustarm-diag]= library/std Cargo.lock?:"; ls -la "$SYSROOT/lib/rustlib/src/rust/library/Cargo.lock" "$SYSROOT/lib/rustlib/src/rust/Cargo.lock" 2>&1
+echo "=[rustarm-diag]= cfg-if in rust-src?:"; find "$SYSROOT/lib/rustlib/src/rust" -maxdepth 4 -iname "cfg-if*" 2>/dev/null | head
+echo "=[rustarm-diag]= vendor dirs in sysroot?:"; find "$SYSROOT" -maxdepth 5 -type d -name vendor 2>/dev/null | head
+
 # Create a minimal no_std project to drive the build
 mkdir -p driver/src
 cat > driver/Cargo.toml << 'EOF'
