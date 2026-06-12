@@ -52,6 +52,16 @@ if [ -d /cabal-cache ]; then
   if [ -f "$CABAL_DIR/config" ]; then
     sed -i "s#/cabal-home#$CABAL_DIR#g" "$CABAL_DIR/config"
   fi
+  # DIAGNOSTIC (#51): cabal --offline refuses tarballs that ARE present
+  # (vector 0.13.2.0 is in the cache, yet "refusing to download"). This is the
+  # cabal-v2 offline-recognition wall, not missing files. Dump the cabal
+  # version, the relocated config's repo paths, and whether a known dep's
+  # tarball + the index live exactly where cabal looks — one data point should
+  # settle path-vs-format. (Remove once stack offline build works.)
+  echo "=[stack-diag]= $(cabal --version 2>&1 | head -1)"
+  echo "=[stack-diag]= config repo/cache lines:"; grep -niE "repo|cache|world|active|index" "$CABAL_DIR/config" 2>&1 | head -20
+  echo "=[stack-diag]= vector tarball where cabal looks:"; ls -la "$CABAL_DIR/packages/hackage.haskell.org/vector/0.13.2.0/" 2>&1
+  echo "=[stack-diag]= repo top + index files:"; ls -la "$CABAL_DIR/packages/hackage.haskell.org/" 2>&1 | head -25
   cabal build --offline -j4
 else
   cabal update
