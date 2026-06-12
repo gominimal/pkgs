@@ -13,6 +13,12 @@ export PATH="$(pwd)/.local/bin:$PATH"
 # Allow -Zbuild-std on stable channel
 export RUSTC_BOOTSTRAP=1
 
+# Offline: the driver has no external deps and -Zbuild-std resolves core/alloc
+# from the rust-src sysroot (locked), so cargo never needs crates.io — but it
+# tries to update the index at startup. CARGO_NET_OFFLINE skips that (the
+# offline_cache_miss_cargo failure was the index fetch, not a real dep).
+export CARGO_NET_OFFLINE=true
+
 # Verify rust-src is available in the sysroot
 SYSROOT=$(rustc --print sysroot)
 ls "${SYSROOT}/lib/rustlib/src/rust/library/core/Cargo.toml"
