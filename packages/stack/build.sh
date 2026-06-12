@@ -23,7 +23,12 @@ if [ -f Setup.hs ]; then
 fi
 
 if [ -f stack.cabal ]; then
-  sed -i 's/Cabal >=3.14 \&\& <3.18/Cabal >=3.12 \&\& <3.18/g' stack.cabal
+  # stack 3.9.3 pins `Cabal >=3.14 && <3.17` (+ Cabal-syntax) on some components,
+  # but ghc 9.10's boot Cabal is 3.12.1.0 and cabal CANNOT reinstall Cabal (it's
+  # the Setup library), so stack must ACCEPT the boot version → widen the bound.
+  # (The previous sed targeted `<3.18`, a bound this stack version doesn't have,
+  # so it silently no-op'd and the offline solve rejected boot Cabal-3.12.)
+  sed -i 's/Cabal >=3.14 \&\& <3.17/Cabal >=3.12 \&\& <3.18/g; s/Cabal-syntax >=3.14 \&\& <3.17/Cabal-syntax >=3.12 \&\& <3.18/g' stack.cabal
 fi
 
 if [ -f cabal.config ]; then
@@ -32,37 +37,27 @@ if [ -f cabal.config ]; then
   sed -i '/Cabal-syntax ==/d' cabal.config
 fi
 
-# Hermetic offline path: the builder hydrates the cabal cache (hackage index
-# + stack's full dep-closure source tarballs) at /cabal-cache. Copy it to a
-# writable CABAL_DIR (cabal writes its config/package-db/logs), skip the live
-# `cabal update` (the index is already present), and build offline. Outside CS
-# (no /cabal-cache) fall back to the normal online path for dev iteration.
-# -j4 caps parallel package builds: a few Haskell deps (cborg, …) are very
-# memory-hungry to compile; -j4 keeps peak RAM in check on the build VM.
+# Hermetic offline path. cabal-v2 `--offline` does NOT consume source tarballs
+# from a remote-repo-cache (it refuses present tarballs); the offline mechanism
+# is a `file+noindex` local repository. The builder hydrates /cabal-cache as a
+# FLAT repo: <pkg>-<ver>.tar.gz + the hackage-REVISED <pkg>-<ver>.cabal for
+# stack's COMPLETE plan — the 183 build deps PLUS the ~43 test/benchmark/build-
+# tool deps the solver needs *available* (e.g. vector's internal benchmarks-O2
+# lib pulls tasty). That set is captured via `cabal freeze` against full hackage
+# (cabal does the version-solving), then downloaded; they are never compiled.
+# Point a sole file+noindex repo at a writable copy, `cabal update` (offline dir
+# scan → noindex.cache), then build. Outside CS (no /cabal-cache) fall back
+# online. --disable-tests/-benchmarks so the solver prunes them; -j4 caps peak
+# RAM (cborg et al. are memory-hungry to compile).
 if [ -d /cabal-cache ]; then
+  REPO=/tmp/cabal-local-repo
+  mkdir -p "$REPO"
+  cp /cabal-cache/*.tar.gz /cabal-cache/*.cabal "$REPO"/ 2>/dev/null || cp -r /cabal-cache/* "$REPO"/
   export CABAL_DIR=/tmp/cabal-home
-  cp -r /cabal-cache "$CABAL_DIR"
-  # The cached `config` bakes build-time-absolute /cabal-home paths
-  # (remote-repo-cache, logs-dir, build-summary, installdir). At runtime
-  # /cabal-home lives on the read-only CS rootfs, so cabal's first
-  # createDirectory there fails ("Read-only file system"). Rewrite every
-  # /cabal-home occurrence to the writable runtime CABAL_DIR (= /tmp/cabal-home).
-  # store-dir is left at its CABAL_DIR-relative default, which now resolves to
-  # the copied $CABAL_DIR/store holding the prebuilt ghc-9.10 dep closure.
-  if [ -f "$CABAL_DIR/config" ]; then
-    sed -i "s#/cabal-home#$CABAL_DIR#g" "$CABAL_DIR/config"
-  fi
-  # DIAGNOSTIC (#51): cabal --offline refuses tarballs that ARE present
-  # (vector 0.13.2.0 is in the cache, yet "refusing to download"). This is the
-  # cabal-v2 offline-recognition wall, not missing files. Dump the cabal
-  # version, the relocated config's repo paths, and whether a known dep's
-  # tarball + the index live exactly where cabal looks — one data point should
-  # settle path-vs-format. (Remove once stack offline build works.)
-  echo "=[stack-diag]= $(cabal --version 2>&1 | head -1)"
-  echo "=[stack-diag]= config repo/cache lines:"; grep -niE "repo|cache|world|active|index" "$CABAL_DIR/config" 2>&1 | head -20
-  echo "=[stack-diag]= vector tarball where cabal looks:"; ls -la "$CABAL_DIR/packages/hackage.haskell.org/vector/0.13.2.0/" 2>&1
-  echo "=[stack-diag]= repo top + index files:"; ls -la "$CABAL_DIR/packages/hackage.haskell.org/" 2>&1 | head -25
-  cabal build --offline -j4
+  mkdir -p "$CABAL_DIR"
+  printf 'repository local-cache\n  url: file+noindex://%s\n' "$REPO" > "$CABAL_DIR/config"
+  cabal update
+  cabal build --disable-tests --disable-benchmarks -j4
 else
   cabal update
   cabal build
