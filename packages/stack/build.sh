@@ -42,6 +42,16 @@ fi
 if [ -d /cabal-cache ]; then
   export CABAL_DIR=/tmp/cabal-home
   cp -r /cabal-cache "$CABAL_DIR"
+  # The cached `config` bakes build-time-absolute /cabal-home paths
+  # (remote-repo-cache, logs-dir, build-summary, installdir). At runtime
+  # /cabal-home lives on the read-only CS rootfs, so cabal's first
+  # createDirectory there fails ("Read-only file system"). Rewrite every
+  # /cabal-home occurrence to the writable runtime CABAL_DIR (= /tmp/cabal-home).
+  # store-dir is left at its CABAL_DIR-relative default, which now resolves to
+  # the copied $CABAL_DIR/store holding the prebuilt ghc-9.10 dep closure.
+  if [ -f "$CABAL_DIR/config" ]; then
+    sed -i "s#/cabal-home#$CABAL_DIR#g" "$CABAL_DIR/config"
+  fi
   cabal build --offline -j4
 else
   cabal update
