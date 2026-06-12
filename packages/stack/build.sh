@@ -32,8 +32,21 @@ if [ -f cabal.config ]; then
   sed -i '/Cabal-syntax ==/d' cabal.config
 fi
 
-cabal update
-cabal build
+# Hermetic offline path: the builder hydrates the cabal cache (hackage index
+# + stack's full dep-closure source tarballs) at /cabal-cache. Copy it to a
+# writable CABAL_DIR (cabal writes its config/package-db/logs), skip the live
+# `cabal update` (the index is already present), and build offline. Outside CS
+# (no /cabal-cache) fall back to the normal online path for dev iteration.
+# -j4 caps parallel package builds: a few Haskell deps (cborg, …) are very
+# memory-hungry to compile; -j4 keeps peak RAM in check on the build VM.
+if [ -d /cabal-cache ]; then
+  export CABAL_DIR=/tmp/cabal-home
+  cp -r /cabal-cache "$CABAL_DIR"
+  cabal build --offline -j4
+else
+  cabal update
+  cabal build
+fi
 
 # Install stack binary
 mkdir -p "$OUTPUT_DIR"/usr/bin
