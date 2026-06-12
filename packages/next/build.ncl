@@ -1,6 +1,7 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
+let glib = import "../glib/build.ncl" in
 let libvips = import "../libvips/build.ncl" in
 let make = import "../make/build.ncl" in
 let node = import "../node/build.ncl" in
@@ -21,6 +22,7 @@ let version = "16.2.6" in
       strip_prefix = "next.js-%{version}",
     } | Source,
     base,
+    glib,
     make,
     node,
     pkgconf,
@@ -30,6 +32,7 @@ let version = "16.2.6" in
   ],
   runtime_deps = [
     coreutils,
+    glib,
     libvips,
     node,
   ],

@@ -31,6 +31,26 @@ echo '{"private":true}' > package.json
 npm install --ignore-scripts sharp node-addon-api node-gyp
 export PATH="$SHARP_STAGING/node_modules/.bin:$PATH"
 cd node_modules/sharp
+
+# sharp discovers our system libvips via `pkg-config vips-cpp`, but libvips's public
+# header <vips/vips8> #includes <glib-object.h> while vips-cpp.pc lists glib only under
+# Requires.private. A non-static `pkg-config --cflags/--libs vips-cpp` (what sharp's
+# node-gyp build uses) does not expand private requires, so glib's include/link paths
+# are never passed and the addon FTBFS on "glib-object.h: No such file". Surface glib's
+# include/lib dirs explicitly. CPATH/LIBRARY_PATH are read by gcc directly (independent
+# of node-gyp's Makefile flag handling); CXXFLAGS/LDFLAGS cover the conventional path.
+glib_inc=""
+for i in $(pkg-config --cflags-only-I glib-2.0 gobject-2.0); do
+  glib_inc="${glib_inc:+$glib_inc:}${i#-I}"
+done
+export CPATH="${glib_inc}${CPATH:+:$CPATH}"
+export LIBRARY_PATH="/usr/lib${LIBRARY_PATH:+:$LIBRARY_PATH}"
+glib_cflags="$(pkg-config --cflags glib-2.0 gobject-2.0)"
+glib_libs="$(pkg-config --libs glib-2.0 gobject-2.0)"
+export CFLAGS="${CFLAGS:-} ${glib_cflags}"
+export CXXFLAGS="${CXXFLAGS:-} ${glib_cflags}"
+export LDFLAGS="${LDFLAGS:-} ${glib_libs}"
+
 node install/build.js
 
 # Clean up native build artifacts, keeping only the final .node addon
