@@ -13,29 +13,23 @@ export PATH="$(pwd)/.local/bin:$PATH"
 # Allow -Zbuild-std on stable channel
 export RUSTC_BOOTSTRAP=1
 
-# Offline: the driver has no external deps and -Zbuild-std resolves core/alloc
-# from the rust-src sysroot (locked), so cargo never needs crates.io — but it
-# tries to update the index at startup. CARGO_NET_OFFLINE skips that (the
-# offline_cache_miss_cargo failure was the index fetch, not a real dep).
+# Offline -Zbuild-std: cargo resolves std's OWN external deps (cfg-if, libc,
+# hashbrown, compiler_builtins, …) from the locked rust-src library/Cargo.lock.
+# crates.io is unavailable in CS, so the cargo_vendor input ships those deps
+# pre-vendored (`cargo vendor` of rustc-1.95.0-src/library, sha-matched to the
+# builder's rust-src lock) and the builder hydrates them to /cargo-vendor. Point
+# cargo there via a source replacement. CARGO_NET_OFFLINE stops the index fetch.
+# (#55: rust-src ships only library/Cargo.lock, NO vendor dir — verified.)
+# Mechanism validated locally end-to-end: offline -Zbuild-std=core,alloc for
+# thumbv7em-none-eabi compiles compiler_builtins+core+alloc from the vendor.
 export CARGO_NET_OFFLINE=true
 
 # Verify rust-src is available in the sysroot
 SYSROOT=$(rustc --print sysroot)
 ls "${SYSROOT}/lib/rustlib/src/rust/library/core/Cargo.toml"
 
-# DIAGNOSTIC (-Zbuild-std offline): `cargo build -Zbuild-std=core,alloc` resolves
-# std's OWN deps (cfg-if, hashbrown, libc, compiler_builtins, …) from crates.io,
-# which is unavailable offline → "no matching package named cfg-if". Reveal
-# whether the sysroot ships a vendor dir (→ point cargo at it via .cargo/config)
-# or only library/Cargo.lock (→ we must vendor the std deps). Settles the fix.
-echo "=[rustarm-diag]= sysroot: $SYSROOT"
-echo "=[rustarm-diag]= rust-src vendor dir?:"; ls -d "$SYSROOT/lib/rustlib/src/rust/vendor" 2>&1
-echo "=[rustarm-diag]= library/std Cargo.lock?:"; ls -la "$SYSROOT/lib/rustlib/src/rust/library/Cargo.lock" "$SYSROOT/lib/rustlib/src/rust/Cargo.lock" 2>&1
-echo "=[rustarm-diag]= cfg-if in rust-src?:"; find "$SYSROOT/lib/rustlib/src/rust" -maxdepth 4 -iname "cfg-if*" 2>/dev/null | head
-echo "=[rustarm-diag]= vendor dirs in sysroot?:"; find "$SYSROOT" -maxdepth 5 -type d -name vendor 2>/dev/null | head
-
 # Create a minimal no_std project to drive the build
-mkdir -p driver/src
+mkdir -p driver/src driver/.cargo
 cat > driver/Cargo.toml << 'EOF'
 [package]
 name = "driver"
@@ -43,6 +37,19 @@ version = "0.0.0"
 edition = "2021"
 EOF
 echo '#![no_std] #![no_main]' > driver/src/lib.rs
+
+# Redirect crates-io to the vendored std deps (offline CS path). Outside CS
+# there's no /cargo-vendor, so the default registry is left in place.
+if [ -d /cargo-vendor ]; then
+  echo "=[rustarm]= vendored std deps: /cargo-vendor ($(ls /cargo-vendor 2>/dev/null | wc -l) crates)"
+  cat > driver/.cargo/config.toml << 'EOF'
+[source.crates-io]
+replace-with = "vendored-std"
+
+[source.vendored-std]
+directory = "/cargo-vendor"
+EOF
+fi
 
 cd driver
 
