@@ -30,7 +30,11 @@ if [ -d /npm-cache ]; then
     if [ -n "$PYTGZ" ]; then
         echo "=[pyright]= installing tarball directly: $PYTGZ"
         cp "$PYTGZ" ./_pyright-install.tgz
-        npm install -g --offline --cache=/npm-cache \
+        # NB: /npm-cache is hydrated READ-ONLY, and npm writes tmp/ into its
+        # --cache dir (EROFS otherwise). The tarball is self-contained, so point
+        # --cache at a fresh writable dir — we don't need the read-only cache here.
+        NPMCACHE="$(pwd)/.npmcache"; mkdir -p "$NPMCACHE"
+        npm install -g --offline --cache="$NPMCACHE" \
             --prefix=$OUTPUT_DIR/usr ./_pyright-install.tgz
     else
         # Fallback: the packument path (will likely ENOTCACHE, but keep the
