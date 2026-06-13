@@ -6,7 +6,7 @@ let ca-certificates = import "../ca-certificates/build.ncl" in
 let git = import "../git/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 
-let version = "0.6.1" in
+let version = "0.7.0" in
 {
   name = "capy",
   build_deps = [
