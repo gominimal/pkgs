@@ -22,14 +22,22 @@ if [ -f Setup.hs ]; then
   mv Setup.hs.tmp Setup.hs
 fi
 
-# NB: do NOT widen stack.cabal's Cabal bounds. stack 3.9.3's own code uses Cabal >=3.14
-# APIs (Stack.Types.Component etc.), so building against ghc-9.10's boot Cabal-3.12.1.0
-# fails to COMPILE with GHC-61689 (it got to [162 of 215] before dying). Widening the
-# bound to accept 3.12 was the wrong lever. Instead the cabal cache ships a reinstallable
-# Cabal-3.14.2.0 + Cabal-syntax-3.14.2.0 as library deps; the ORIGINAL `>=3.14` bound
-# forces the solve onto 3.14.x. 3.14.2.0 is the unique sweet spot — it satisfies stack's
-# `>=3.14 && <3.17` library need AND cabal-install's "<3.16 max Cabal for Setup.hs" cap
-# (3.16 is rejected for setup, 3.12 fails stack's code). So: no stack.cabal edit needed.
+if [ -f stack.cabal ]; then
+  # SPLIT Cabal handling — stack 3.9.3 has two distinct Cabal goals on the builder:
+  #   * setup.Cabal (custom-setup, build-type:Custom): the builder's cabal-install caps
+  #     "max Cabal for Setup.hs" at <3.14, so the setup MUST use ghc-9.10's boot Cabal-
+  #     3.12.1.0. stack pins setup-depends `Cabal >=3.14 && <3.18`, which rejects 3.12 →
+  #     widen ONLY that bound to >=3.12. The custom Setup.hs is made 3.12-compatible by
+  #     the CPP shim above (interpretSymbolicPathCWD = id for !MIN_VERSION_Cabal(3,14,0)).
+  #   * library Cabal: stack's OWN code uses Cabal >=3.14 APIs (Stack.Types.Component →
+  #     GHC-61689 against 3.12), so it needs a reinstallable Cabal-3.14.x. The cabal cache
+  #     ships Cabal-3.14.2.0 + Cabal-syntax-3.14.2.0; the library's `>=3.14 && <3.17` bound
+  #     is left ALONE so the solve picks 3.14.2.0 for it.
+  # The sed targets only `<3.18` (the setup stanza); the library's `<3.17` is untouched.
+  # Verified end-to-end with the builder's cap simulated (--constraint "setup.Cabal <3.14"):
+  # setup→3.12.1.0/installed, Cabal-3.14.2.0 (lib) (requires build), stack-3.9.3 (first run).
+  sed -i 's/Cabal >=3.14 && <3.18/Cabal >=3.12 \&\& <3.18/g' stack.cabal
+fi
 
 if [ -f cabal.config ]; then
   sed -i '/unix ==/d' cabal.config
