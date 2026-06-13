@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -11,7 +11,16 @@ let version = "0.7.0" in
   name = "capy",
   build_deps = [
     { file = "build.sh" } | Local,
-    node-lts, # node + npm to install the package
+    # @capysc/cli source, hash-pinned and built from source (not the prebuilt
+    # npm artifact). Referenced by url+sha256 — the source is never vendored
+    # into this registry.
+    {
+      url = "https://github.com/capysc/capy-cli/archive/refs/tags/v%{version}.tar.gz",
+      sha256 = "d2efcb436c58061662e9546d61e6b8cc1e650ae235236a89c7fe6a00265392ca",
+      extract = true,
+      strip_prefix = "capy-cli-%{version}",
+    } | Source,
+    node-lts, # node + npm to build (tsc) and stage the CLI
   ],
   runtime_deps = [
     base,
@@ -27,9 +36,10 @@ let version = "0.7.0" in
     include version,
   },
 
-  # npm fetches @capysc/cli + its deps from the registry during the build.
-  # Follow-up: vendor the tarball + transitive deps as hash-pinned Sources for a
-  # fully hermetic / SLSA build.
+  # build.sh compiles the pinned source tarball above (tsc), then `npm install`
+  # pulls the CLI's runtime deps from the registry — dns+internet cover that
+  # dependency fetch. Follow-up: vendor the transitive npm deps as hash-pinned
+  # Sources for a fully hermetic / SLSA build.
   needs = { dns = {}, internet = {} },
 
   outputs = {
