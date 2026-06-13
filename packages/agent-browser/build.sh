@@ -1,6 +1,19 @@
 #!/bin/sh
 set -e
 
+# [orch:corepack-neutralize] Upstream package.json may pin
+# `packageManager: pnpm@X` / `engines.pnpm`, which makes corepack try to
+# self-provision that exact pnpm — fatal offline (no network in the CS
+# builder). Strip both + disable corepack's project-spec so the builder-
+# resident pnpm is used regardless of what upstream pins. Idempotent +
+# non-fatal; node is on PATH (it's the pkg's runtime).
+export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+export COREPACK_ENABLE_NETWORK=0
+export COREPACK_ENABLE_PROJECT_SPEC=0
+if [ -f package.json ] && command -v node >/dev/null 2>&1; then
+    node -e 'const f="package.json",fs=require("fs"),p=JSON.parse(fs.readFileSync(f));delete p.packageManager;if(p.engines)delete p.engines.pnpm;fs.writeFileSync(f,JSON.stringify(p,null,2))' || true
+fi
+
 export CC=gcc
 export LD=gcc
 export RUSTFLAGS="-C linker=gcc"
