@@ -22,15 +22,14 @@ if [ -f Setup.hs ]; then
   mv Setup.hs.tmp Setup.hs
 fi
 
-if [ -f stack.cabal ]; then
-  # stack 3.9.3 pins Cabal/Cabal-syntax on MULTIPLE components: the library uses
-  # `>=3.14 && <3.17`, the custom-setup (`setup-depends`) uses `>=3.14 && <3.18`.
-  # ghc 9.10's boot Cabal is 3.12.1.0 and cabal CANNOT reinstall Cabal (it's the
-  # Setup library), so EVERY bound must accept the boot version. Widen all of them
-  # in one shot — the earlier targeted seds each missed one (a <3.17-only sed left
-  # `stack:setup.Cabal>=3.14 && <3.18` rejecting boot Cabal-3.12 at solve time).
-  sed -i -E 's/(Cabal(-syntax)?) >=3\.14 && <3\.1[78]/\1 >=3.12 \&\& <3.18/g' stack.cabal
-fi
+# NB: do NOT widen stack.cabal's Cabal bounds. stack 3.9.3's own code uses Cabal >=3.14
+# APIs (Stack.Types.Component etc.), so building against ghc-9.10's boot Cabal-3.12.1.0
+# fails to COMPILE with GHC-61689 (it got to [162 of 215] before dying). Widening the
+# bound to accept 3.12 was the wrong lever. Instead the cabal cache ships a reinstallable
+# Cabal-3.14.2.0 + Cabal-syntax-3.14.2.0 as library deps; the ORIGINAL `>=3.14` bound
+# forces the solve onto 3.14.x. 3.14.2.0 is the unique sweet spot — it satisfies stack's
+# `>=3.14 && <3.17` library need AND cabal-install's "<3.16 max Cabal for Setup.hs" cap
+# (3.16 is rejected for setup, 3.12 fails stack's code). So: no stack.cabal edit needed.
 
 if [ -f cabal.config ]; then
   sed -i '/unix ==/d' cabal.config
