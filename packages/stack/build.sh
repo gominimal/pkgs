@@ -23,12 +23,13 @@ if [ -f Setup.hs ]; then
 fi
 
 if [ -f stack.cabal ]; then
-  # stack 3.9.3 pins `Cabal >=3.14 && <3.17` (+ Cabal-syntax) on some components,
-  # but ghc 9.10's boot Cabal is 3.12.1.0 and cabal CANNOT reinstall Cabal (it's
-  # the Setup library), so stack must ACCEPT the boot version → widen the bound.
-  # (The previous sed targeted `<3.18`, a bound this stack version doesn't have,
-  # so it silently no-op'd and the offline solve rejected boot Cabal-3.12.)
-  sed -i 's/Cabal >=3.14 \&\& <3.17/Cabal >=3.12 \&\& <3.18/g; s/Cabal-syntax >=3.14 \&\& <3.17/Cabal-syntax >=3.12 \&\& <3.18/g' stack.cabal
+  # stack 3.9.3 pins Cabal/Cabal-syntax on MULTIPLE components: the library uses
+  # `>=3.14 && <3.17`, the custom-setup (`setup-depends`) uses `>=3.14 && <3.18`.
+  # ghc 9.10's boot Cabal is 3.12.1.0 and cabal CANNOT reinstall Cabal (it's the
+  # Setup library), so EVERY bound must accept the boot version. Widen all of them
+  # in one shot — the earlier targeted seds each missed one (a <3.17-only sed left
+  # `stack:setup.Cabal>=3.14 && <3.18` rejecting boot Cabal-3.12 at solve time).
+  sed -i -E 's/(Cabal(-syntax)?) >=3\.14 && <3\.1[78]/\1 >=3.12 \&\& <3.18/g' stack.cabal
 fi
 
 if [ -f cabal.config ]; then
