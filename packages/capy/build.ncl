@@ -26,7 +26,7 @@ let version = "0.7.0" in
     base,
     glibc,
     coreutils, # `capy` shebang resolves node via /usr/bin/env
-    ca-certificates, # HTTPS to the Capy API (sync / co-decrypt)
+    ca-certificates, # HTTPS to the Capy API (sync, decryption)
     git, # capy shells out to git for repo/branch detection
     node-lts, # capy is a Node CLI (#!/usr/bin/env node)
   ],
@@ -54,10 +54,10 @@ let version = "0.7.0" in
         owner = "capysc",
         repo = "capy-cli",
       },
-      # 1a shared-session model: pinhole the host ~/.capy into the box so in-box
-      # capy reuses the developer's existing login (no key transport). rw because
-      # capy refreshes its session and writes caches. Exposes the full host
-      # session to the box: trusted dev shells only, never untrusted agent tasks.
+      # Maps the developer's ~/.capy into the box so in-box capy reuses the
+      # existing login instead of transporting keys. Mounted read-write so capy
+      # can refresh its session and update its local cache. For trusted
+      # developer shells.
       env_dir_mappings = [{ read_only = false, path = "~/.capy", class = 'Credential }],
     } | Attrs,
 
