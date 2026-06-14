@@ -72,6 +72,18 @@ in
     # extract=false: bun's own fetch-cli does the extract — we just need
     # the tarball at a path build.sh can find (it copies to bun's tarball
     # cache so bun short-circuits its download).
+    #
+    # #47 ROOT-CAUSE FIX: bun's npm INSTALL cache (distinct from the C-dep fetch
+    # cache) covering ALL 3 bun_install ninja edges (root + packages/bun-error +
+    # src/node-fallbacks). Without it the offline build's `bun install` issues a
+    # blackholed registry connect() -> do_epoll_wait hang forever. Built by bun
+    # 1.3.13 + validated offline (3/3 edges, --no-dns 2026-06-14). build.sh
+    # extracts it into BUN_INSTALL_CACHE_DIR (=/state/bun-cache). extract=false.
+    {
+      url = "https://minimal.dev/generated/bun-install-cache-%{version}.tar.gz",
+      sha256 = "0337827fb8792146b0aef151083a50da81b97ed9aba5f4fa13bb3d75eec09147",
+      extract = false,
+    } | Source,
     {
       url = "https://github.com/ebiggers/libdeflate/archive/c8c56a20f8f621e6a966b716b31f1dedab6a41e3.tar.gz",
       sha256 = "1e5cc06bdbf3e1245d8b89c9e3588f507e3c8bc53fe8b8229770a9e8661dea81",

@@ -205,25 +205,27 @@ open(f, "w").write(s.replace(old, new, 1))
 print("[bun build.sh] per-file PCH exclusion: ALL codegen/*.cpp + ZigGlobalObject -> no-PCH cxx rule", file=sys.stderr)
 PY
 
-# FIX (#47, ROOT CAUSE): the build-time `bun install` ninja edge (codegen.ts
-# bun_install rule, `cd $dir && bun install --frozen-lockfile && touch $stamp`)
-# HANGS in the CS offline sandbox. The v2 /proc-walk probe caught it at the
-# [656]->[657] boundary: `bun install --frozen-lockfile` parked in do_epoll_wait
-# with FLAT cpu — bun does a registry STALENESS CHECK that the offline sandbox
-# blackholes (connect never returns). This (NOT ZGC/PCH/OOM/clang/zig) is the
-# real wedge — the zig step never even started (bun-zig.o absent). The early
-# install above works only because it uses --ignore-scripts. Make the edge
-# offline too: --prefer-offline (skip the staleness network check, resolve from
-# /bun-cache on disk) + --ignore-scripts (match the working early install).
-# HARD-FAIL on drift so a bun version bump can't silently un-patch it.
+# FIX (#47, ROOT CAUSE — v2, PROVEN): the 3 build-time `bun install` ninja edges
+# (codegen.ts bun_install rule -> root /build, packages/bun-error,
+# src/node-fallbacks) HANG in the CS offline sandbox on a COLD npm install cache.
+# bun gates network purely on cache presence (no offline flag helps), so a MISS
+# issues a blackholed registry connect() and the HTTP thread parks in
+# do_epoll_wait forever (proven 2026-06-14 with the real linux bun: cold cache +
+# no net = hang; full cache + no net = offline install). --prefer-offline was
+# REMOVED — ZERO readers under bun's src/install/ (Arguments.zig:105 is
+# RUNTIME-only) so fix attempt #1 was a no-op. REAL fix = pre-seed the cache (the
+# extract block below). This patch is the GUARDRAIL: --ignore-scripts (match the
+# proven install) + `timeout 300` so any FUTURE cache miss fails LOUD in 5min
+# instead of a multi-hour silent wedge (the per-recipe form of #57's fail-closed
+# cache guard). HARD-FAIL on drift so a bun version bump can't silently un-patch.
 python3 - scripts/build/codegen.ts <<'PY'
 import sys
 f = sys.argv[1]; s = open(f).read()
-old = "install --frozen-lockfile && "
-new = "install --frozen-lockfile --prefer-offline --ignore-scripts && "
+old = "${bun} install --frozen-lockfile && "
+new = "timeout 300 ${bun} install --frozen-lockfile --ignore-scripts && "
 assert s.count(old) == 2, f"bun_install edge anchor count={s.count(old)} != 2 in codegen.ts — bun drift, re-derive"
 open(f, "w").write(s.replace(old, new))
-print("[bun build.sh] bun_install edge -> --prefer-offline --ignore-scripts (offline; no staleness-check hang)", file=sys.stderr)
+print("[bun build.sh] bun_install edge -> --ignore-scripts + timeout 300 (cache pre-seeded; loud-fail on miss)", file=sys.stderr)
 PY
 
 # DIAGNOSTIC (#47) v2 — name-AGNOSTIC. The crack-bun ultracode workflow (2026-06-13)
@@ -260,6 +262,22 @@ PY
     echo "=[bun-diag]= bun-zig.o=$(ls -l $BD/bun-zig.o 2>/dev/null | awk '{print $5}' || echo absent) zigcache=$(du -sh $BD/.zig-cache 2>/dev/null | cut -f1)"
   done ) &
 BUN_DIAG_PID=$!
+
+# #47 ROOT-CAUSE FIX: pre-seed bun's npm INSTALL cache so the 3 bun_install ninja
+# edges resolve OFFLINE instead of hanging on a blackholed registry connect. The
+# bun-install-cache Source (extract=false) landed at /build/<basename>; extract it
+# into BUN_INSTALL_CACHE_DIR (=/state/bun-cache via the recipe's env_state_wiring).
+# Sentinel-check the two non-root edges' marker pkgs (preact=bun-error edge,
+# esbuild@0.25.12=node-fallbacks edge) so a stale/incomplete cache fails LOUD HERE,
+# not as a mid-build wedge. Validated offline 3/3 (2026-06-14, --no-dns).
+CACHE_DST="${BUN_INSTALL_CACHE_DIR:-/state/bun-cache}"
+CACHE_TAR="$(ls /build/bun-install-cache-*.tar.gz 2>/dev/null | head -1)"
+[ -n "$CACHE_TAR" ] || { echo "FATAL #47: bun install-cache tarball missing in /build" >&2; exit 1; }
+mkdir -p "$CACHE_DST"
+tar -xzf "$CACHE_TAR" -C "$CACHE_DST"
+echo "[bun build.sh] extracted $(basename "$CACHE_TAR") -> $CACHE_DST"
+ls -d "$CACHE_DST"/preact@* >/dev/null 2>&1 || { echo "FATAL #47: preact (bun-error edge) missing from install-cache — re-stage the union cache" >&2; exit 1; }
+ls -d "$CACHE_DST"/esbuild@0.25.12* >/dev/null 2>&1 || { echo "FATAL #47: esbuild@0.25.12 (node-fallbacks edge) missing from install-cache" >&2; exit 1; }
 
 # Build via bun's own build orchestration (handles bun install, codegen, cmake deps,
 # zig, linking, strip). `build:release` is exactly `bun scripts/build.ts
