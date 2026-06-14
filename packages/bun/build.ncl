@@ -84,6 +84,17 @@ in
       sha256 = "0337827fb8792146b0aef151083a50da81b97ed9aba5f4fa13bb3d75eec09147",
       extract = false,
     } | Source,
+    # #47 (root edge): the ROOT lockfile has a github/codeload dep
+    # (bun-tracestrings) that bun RE-FETCHES on a cold `bun install` even from the
+    # cache -> blackholed connect -> timeout. Pre-materialize the whole root
+    # node_modules so the root install is a no-op verify (proven offline path).
+    # Built by bun 1.3.13 (232 pkgs incl bun-tracestrings). build.sh extracts into
+    # /build. extract=false.
+    {
+      url = "https://minimal.dev/generated/bun-root-nm-%{version}.tar.gz",
+      sha256 = "349352394bdc86e1922d152944a707588be907ab227a4a7c564934b9599d592a",
+      extract = false,
+    } | Source,
     {
       url = "https://github.com/ebiggers/libdeflate/archive/c8c56a20f8f621e6a966b716b31f1dedab6a41e3.tar.gz",
       sha256 = "1e5cc06bdbf3e1245d8b89c9e3588f507e3c8bc53fe8b8229770a9e8661dea81",

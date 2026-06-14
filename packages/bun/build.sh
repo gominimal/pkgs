@@ -282,6 +282,18 @@ echo "[bun build.sh] extracted $(basename "$CACHE_TAR") -> $CACHE_DST"
 ls -d "$CACHE_DST"/preact@* >/dev/null 2>&1 || { echo "FATAL #47: preact (bun-error edge) missing from install-cache — re-stage the union cache" >&2; exit 1; }
 ls -d "$CACHE_DST"/esbuild@0.25.12* >/dev/null 2>&1 || { echo "FATAL #47: esbuild@0.25.12 (node-fallbacks edge) missing from install-cache" >&2; exit 1; }
 
+# #47 (root edge): pre-materialize the ROOT node_modules so the root `bun install
+# --frozen-lockfile` ninja edge is a NO-OP verify ("Checked ... no changes") instead
+# of re-fetching the github/codeload dep (bun-tracestrings) — which bun does on a cold
+# install even from the cache -> blackholed connect -> timeout 300 -> code 124. The
+# bun-error + node-fallbacks edges are registry-only and populate fine from the cache
+# above; only the root carries the URL dep. extract=false Source -> /build/<basename>.
+NM_TAR="$(ls /build/bun-root-nm-*.tar.gz 2>/dev/null | head -1)"
+[ -n "$NM_TAR" ] || { echo "FATAL #47: bun root node_modules tarball missing in /build" >&2; exit 1; }
+tar --no-same-owner -xzf "$NM_TAR" -C /build
+ls -d /build/node_modules/bun-tracestrings >/dev/null 2>&1 || { echo "FATAL #47: bun-tracestrings missing from pre-staged node_modules" >&2; exit 1; }
+echo "[bun build.sh] pre-materialized root node_modules ($(ls /build/node_modules 2>/dev/null | wc -l) entries)"
+
 # Build via bun's own build orchestration (handles bun install, codegen, cmake deps,
 # zig, linking, strip). `build:release` is exactly `bun scripts/build.ts
 # --profile=release` (package.json); the trailing `-v` forwards through build.ts:12-16
