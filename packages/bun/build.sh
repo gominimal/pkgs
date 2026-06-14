@@ -274,7 +274,10 @@ CACHE_DST="${BUN_INSTALL_CACHE_DIR:-/state/bun-cache}"
 CACHE_TAR="$(ls /build/bun-install-cache-*.tar.gz 2>/dev/null | head -1)"
 [ -n "$CACHE_TAR" ] || { echo "FATAL #47: bun install-cache tarball missing in /build" >&2; exit 1; }
 mkdir -p "$CACHE_DST"
-tar -xzf "$CACHE_TAR" -C "$CACHE_DST"
+# --no-same-owner: the tarball embeds the staging uid (501), which is unmapped in
+# the CS user namespace -> chown EINVAL -> tar exits non-zero -> set -e aborts.
+# Extract as the build user instead (ownership is irrelevant; bun only reads it).
+tar --no-same-owner -xzf "$CACHE_TAR" -C "$CACHE_DST"
 echo "[bun build.sh] extracted $(basename "$CACHE_TAR") -> $CACHE_DST"
 ls -d "$CACHE_DST"/preact@* >/dev/null 2>&1 || { echo "FATAL #47: preact (bun-error edge) missing from install-cache — re-stage the union cache" >&2; exit 1; }
 ls -d "$CACHE_DST"/esbuild@0.25.12* >/dev/null 2>&1 || { echo "FATAL #47: esbuild@0.25.12 (node-fallbacks edge) missing from install-cache" >&2; exit 1; }
