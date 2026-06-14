@@ -14,7 +14,7 @@ export CXXFLAGS="${CFLAGS}"
 pip3 install packaging mako pyyaml 2>/dev/null || pip install packaging mako pyyaml 2>/dev/null || true
 
 mkdir build && cd build
-meson setup --prefix=/usr --buildtype=release \
+meson setup --wrap-mode=nodownload --prefix=/usr --buildtype=release \
   -Dplatforms=x11 \
   -Dgallium-drivers=softpipe \
   -Dvulkan-drivers='' \

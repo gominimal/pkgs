@@ -13,7 +13,7 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
-meson setup --prefix=/usr --buildtype=release -Dintrospection=disabled -Dx11=disabled -Dsystemd_user_dir=/tmp ..
+meson setup --wrap-mode=nodownload --prefix=/usr --buildtype=release -Dintrospection=disabled -Dx11=disabled -Dsystemd_user_dir=/tmp ..
 ninja
 
 DESTDIR="$OUTPUT_DIR" ninja install

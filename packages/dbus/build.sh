@@ -11,7 +11,7 @@ export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
 mkdir build && cd build
-meson setup --prefix=/usr --buildtype=release \
+meson setup --wrap-mode=nodownload --prefix=/usr --buildtype=release \
   -Dsystemd=disabled \
   -Dapparmor=disabled \
   -Dselinux=disabled \

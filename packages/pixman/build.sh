@@ -12,7 +12,7 @@ esac
 export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
-meson setup --prefix=/usr --buildtype=release ..
+meson setup --wrap-mode=nodownload --prefix=/usr --buildtype=release ..
 ninja
 
 DESTDIR="$OUTPUT_DIR" ninja install

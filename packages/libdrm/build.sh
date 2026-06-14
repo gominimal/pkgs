@@ -11,6 +11,6 @@ export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
 mkdir build && cd build
-meson setup --prefix=/usr --buildtype=release -Dudev=false -Dvalgrind=disabled -Dtests=false ..
+meson setup --wrap-mode=nodownload --prefix=/usr --buildtype=release -Dudev=false -Dvalgrind=disabled -Dtests=false ..
 ninja
 DESTDIR="$OUTPUT_DIR" ninja install
