@@ -5,7 +5,7 @@ cd codex-rs
 
 export CC=gcc
 export LD=gcc
-export RUSTFLAGS="-C linker=gcc"
+export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 
 # Needed for crates that use bindgen / libclang
 export LIBCLANG_PATH="$(dirname $(find /usr/lib -name 'libclang*.so' | head -1))"

@@ -15,4 +15,4 @@ export GONOSUMDB=*
 
 cd gopls
 
-go build -ldflags="-buildid=" -o $OUTPUT_DIR/usr/bin/gopls .
+go build -trimpath -ldflags="-buildid=" -o $OUTPUT_DIR/usr/bin/gopls .

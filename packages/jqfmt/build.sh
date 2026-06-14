@@ -11,5 +11,5 @@ fi
 
 export GOROOT=/usr/go
 
-go build -ldflags="-buildid=" -o jqfmt ./cmd/jqfmt
+go build -trimpath -ldflags="-buildid=" -o jqfmt ./cmd/jqfmt
 install -D -m 0755 jqfmt "$OUTPUT_DIR/usr/bin/jqfmt"

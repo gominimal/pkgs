@@ -2,7 +2,7 @@
 set -ex
 export CC=gcc
 export LD=gcc
-export RUSTFLAGS="-C linker=gcc"
+export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 export OPENSSL_DIR=/usr
 export OPENSSL_NO_VENDOR=1
 

@@ -3,7 +3,7 @@ set -euo pipefail
 
 export CC=gcc
 export LD=gcc
-export RUSTFLAGS="-C linker=gcc"
+export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 export HELIX_DEFAULT_RUNTIME=/usr/lib/helix/runtime
 export HELIX_DISABLE_AUTO_GRAMMAR_BUILD=1
 

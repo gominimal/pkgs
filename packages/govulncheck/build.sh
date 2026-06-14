@@ -16,4 +16,4 @@ export CGO_ENABLED=0
 
 cd vuln-$MINIMAL_ARG_VERSION
 
-go build -ldflags="-s -w -buildid=" -o $OUTPUT_DIR/usr/bin/govulncheck ./cmd/govulncheck
+go build -trimpath -ldflags="-s -w -buildid=" -o $OUTPUT_DIR/usr/bin/govulncheck ./cmd/govulncheck

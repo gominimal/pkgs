@@ -11,5 +11,5 @@ fi
 
 export GOROOT=/usr/go
 
-go build -ldflags="-buildid=" -o mermaid-ascii ./
+go build -trimpath -ldflags="-buildid=" -o mermaid-ascii ./
 install -D -m 0755 mermaid-ascii "$OUTPUT_DIR/usr/bin/mermaid-ascii"

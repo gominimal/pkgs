@@ -3,7 +3,7 @@ set -euo pipefail
 
 export CC=gcc
 export LD=gcc
-export RUSTFLAGS="-C linker=gcc"
+export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 
 # Hermetic build path: when /cargo-vendor exists (mounted by a SLSA-grade
 # builder that has pre-staged every crate from Cargo.lock as a sha-verified

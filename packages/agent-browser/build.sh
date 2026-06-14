@@ -16,7 +16,7 @@ fi
 
 export CC=gcc
 export LD=gcc
-export RUSTFLAGS="-C linker=gcc"
+export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 
 # Install JS deps (skip postinstall which downloads pre-built binary).
 # Use the hoisted node-linker so node_modules is a flat, self-contained

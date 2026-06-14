@@ -6,7 +6,11 @@ set -euo pipefail
 REPO="mermaid-js/mermaid-cli"
 TARBALL="${MINIMAL_ARG_VERSION}.tar.gz"
 DIGEST=$(sha256sum "$TARBALL" | cut -d' ' -f1)
-if curl -sf "https://api.github.com/repos/${REPO}/attestations/sha256:${DIGEST}" | grep -q '"bundle"'; then
+# #57: --connect-timeout/--max-time so this fails FAST offline instead of hanging
+# forever on the CS sandbox's blackholed connect() (the bun-class offline-hang). In
+# the offline build the check is skipped — fine: the source is a sha-pinned CAS
+# Source, so integrity is already guaranteed. Online (dev) it still verifies.
+if curl -sf --connect-timeout 5 --max-time 10 "https://api.github.com/repos/${REPO}/attestations/sha256:${DIGEST}" | grep -q '"bundle"'; then
   gh attestation verify "$TARBALL" --repo "$REPO"
 fi
 
