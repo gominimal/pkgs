@@ -205,31 +205,47 @@ open(f, "w").write(s.replace(old, new, 1))
 print("[bun build.sh] per-file PCH exclusion: ALL codegen/*.cpp + ZigGlobalObject -> no-PCH cxx rule", file=sys.stderr)
 PY
 
-# DIAGNOSTIC (#47): ZigGeneratedClasses.cpp.o wedges at [656/669]. VERIFIED 2026-06-12
-# it is NOT the PCH — its source is cfg.codegenDir (=buildDir/codegen, codegen.ts:547 +
-# config.ts:439), so the existing `!relSrc.includes("codegen")` gate ALREADY routes it
-# no-PCH (ZigGlobalObject, excluded by name, compiled fine just before it). A global
-# usePch=false compiled PAST it on an earlier image, so the live suspect is the
-# self-built -march=x86-64-v3 clang OR glacial no-PCH header re-parsing of the 3.3MB
-# monster TU. Heartbeat the hub-TU clang every 2min — CPU ticks (rising => computing,
-# not hung), RSS (rising => memory→OOM), wchan (what it's blocked on) — to finally
-# settle slow-vs-hung-vs-OOM at the wall. (Remove once bun builds.)
-( while true; do
-    sleep 120
-    for tu in ZigGeneratedClasses ZigGlobalObject; do
-      pid=$(pgrep -f "${tu}\.cpp" 2>/dev/null | head -1)
-      [ -z "$pid" ] && continue
-      ut=$(awk '{print $14+$15}' "/proc/$pid/stat" 2>/dev/null)
-      rss=$(awk '/VmRSS/{print $2$3}' "/proc/$pid/status" 2>/dev/null)
-      wch=$(cat "/proc/$pid/wchan" 2>/dev/null)
-      echo "=[bun-diag]= ${tu} pid=${pid} cpu_ticks=${ut} rss=${rss} wchan=${wch:-running}"
+# DIAGNOSTIC (#47) v2 — name-AGNOSTIC. The crack-bun ultracode workflow (2026-06-13)
+# PROVED the [656/669] "wedge" was a MISREAD: ninja's [N/M] on a piped non-tty is a
+# FINISHED-edges counter, so [656] ZigGeneratedClasses = COMPILED OK (all 557 cxx + 26
+# cc edges finished; corroborated by the global-no-PCH run reaching a downstream JSBuffer
+# -Werror). v1's pgrep name-pinned ZGC/ZigGlobalObject (already finished at [655]/[656])
+# so it watched corpses and emitted nothing. The real long-pole is the downstream
+# console-pool zig_build edge producing bun-zig.o (the whole Zig codebase via
+# single-threaded LLVM codegen, zig.ts:407), which emits no ninja line (console pool +
+# non-tty) and blocks the final lld link. clang/the toolchain are EXONERATED — do NOT
+# rebuild llvm. This walks /proc every 90s for EVERY compiler/zig/link/wrapper proc:
+# state, cpu ticks (rising=>busy), rss, threads, wchan+syscall (what it's blocked on),
+# per-thread wchan for zig, plus bun-zig.o size + zig-cache growth — settles
+# slow-vs-hung-vs-ninja-idle at the wall. Paired with `-v` so ninja names the stuck edge.
+( BD=build/release
+  while true; do
+    sleep 90
+    echo "=[bun-diag]= $(date +%T) snapshot"; any=0
+    for d in /proc/[0-9]*; do
+      c=$(cat "$d/comm" 2>/dev/null) || continue
+      case "$c" in zig|clang*|clang++|cc1*|*lld*|ld.lld|ninja|bun|node|stream|sh) ;; *) continue ;; esac
+      any=1; p=${d#/proc/}
+      st=$(awk '{print $3}' "$d/stat" 2>/dev/null)
+      cpu=$(awk '{print $14+$15+$16+$17}' "$d/stat" 2>/dev/null)
+      rss=$(awk '/VmRSS/{print $2}' "$d/status" 2>/dev/null)
+      thr=$(awk '/Threads/{print $2}' "$d/status" 2>/dev/null)
+      wch=$(cat "$d/wchan" 2>/dev/null); sc=$(cut -d' ' -f1 "$d/syscall" 2>/dev/null)
+      arg=$(tr '\0' ' ' <"$d/cmdline" 2>/dev/null | cut -c1-160)
+      echo "=[bun-diag]= pid=$p comm=$c st=$st cpu=$cpu rssKB=${rss:-?} thr=${thr:-?} wchan=${wch:-run} sys=${sc:-?} :: $arg"
+      if [ "$c" = zig ]; then for t in "$d"/task/*/wchan; do [ -e "$t" ] && echo "=[bun-diag]=   thr $(basename "$(dirname "$t")") wchan=$(cat "$t" 2>/dev/null)"; done; fi
     done
+    [ "$any" = 0 ] && echo "=[bun-diag]= NO compiler/zig/link/ninja proc alive (ninja-idle / between edges)"
+    echo "=[bun-diag]= bun-zig.o=$(ls -l $BD/bun-zig.o 2>/dev/null | awk '{print $5}' || echo absent) zigcache=$(du -sh $BD/.zig-cache 2>/dev/null | cut -f1)"
   done ) &
 BUN_DIAG_PID=$!
 
-# Build via bun's own build orchestration (handles bun install, codegen, cmake
-# deps, zig, linking, and strip). Outputs the stripped binary at build/release/bun.
-bun run build:release
+# Build via bun's own build orchestration (handles bun install, codegen, cmake deps,
+# zig, linking, strip). `build:release` is exactly `bun scripts/build.ts
+# --profile=release` (package.json); the trailing `-v` forwards through build.ts:12-16
+# to ninja so the stuck edge prints its full command in ninja's own voice. Outputs the
+# stripped binary at build/release/bun.
+bun scripts/build.ts --profile=release -v
 
 kill "$BUN_DIAG_PID" 2>/dev/null || true
 
