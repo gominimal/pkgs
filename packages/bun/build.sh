@@ -205,6 +205,27 @@ open(f, "w").write(s.replace(old, new, 1))
 print("[bun build.sh] per-file PCH exclusion: ALL codegen/*.cpp + ZigGlobalObject -> no-PCH cxx rule", file=sys.stderr)
 PY
 
+# FIX (#47, ROOT CAUSE): the build-time `bun install` ninja edge (codegen.ts
+# bun_install rule, `cd $dir && bun install --frozen-lockfile && touch $stamp`)
+# HANGS in the CS offline sandbox. The v2 /proc-walk probe caught it at the
+# [656]->[657] boundary: `bun install --frozen-lockfile` parked in do_epoll_wait
+# with FLAT cpu — bun does a registry STALENESS CHECK that the offline sandbox
+# blackholes (connect never returns). This (NOT ZGC/PCH/OOM/clang/zig) is the
+# real wedge — the zig step never even started (bun-zig.o absent). The early
+# install above works only because it uses --ignore-scripts. Make the edge
+# offline too: --prefer-offline (skip the staleness network check, resolve from
+# /bun-cache on disk) + --ignore-scripts (match the working early install).
+# HARD-FAIL on drift so a bun version bump can't silently un-patch it.
+python3 - scripts/build/codegen.ts <<'PY'
+import sys
+f = sys.argv[1]; s = open(f).read()
+old = "install --frozen-lockfile && "
+new = "install --frozen-lockfile --prefer-offline --ignore-scripts && "
+assert s.count(old) == 2, f"bun_install edge anchor count={s.count(old)} != 2 in codegen.ts — bun drift, re-derive"
+open(f, "w").write(s.replace(old, new))
+print("[bun build.sh] bun_install edge -> --prefer-offline --ignore-scripts (offline; no staleness-check hang)", file=sys.stderr)
+PY
+
 # DIAGNOSTIC (#47) v2 — name-AGNOSTIC. The crack-bun ultracode workflow (2026-06-13)
 # PROVED the [656/669] "wedge" was a MISREAD: ninja's [N/M] on a piped non-tty is a
 # FINISHED-edges counter, so [656] ZigGeneratedClasses = COMPILED OK (all 557 cxx + 26
