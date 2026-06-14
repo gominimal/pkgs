@@ -43,6 +43,7 @@ let version = "6.5-20250830" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "X11-distribute-modifications-variant",
       source_provenance = {
         category = 'GnuProject,
         name = "ncurses",

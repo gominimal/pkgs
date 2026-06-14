@@ -53,6 +53,7 @@ let version = "1.30.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-2-Clause",
       repology_project = "nginx",
       source_provenance = {
         category = 'GithubRepo,

@@ -39,6 +39,7 @@ let version = "6.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Info-ZIP",
       repology_project = "unzip",
     } | Attrs,
 

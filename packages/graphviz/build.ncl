@@ -75,6 +75,7 @@ let version = "14.1.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "EPL-1.0",
       repology_project = "graphviz",
     } | Attrs,
 } | BuildSpec

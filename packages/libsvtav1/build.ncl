@@ -41,6 +41,7 @@ let version = "4.0.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(BSD-2-Clause AND BSD-3-Clause-Clear)",
       source_provenance = {
         category = 'GithubRepo,
         owner = "AOMediaCodec",

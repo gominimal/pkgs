@@ -61,6 +61,7 @@ let newlib_version = "4.4.0.20231231" in
   attrs =
     {
       upstream_version = gcc_version,
+      license_spdx = "(GPL-2.0-only AND GPL-3.0-only AND LGPL-2.1-only)",
       source_provenance = {
         category = 'GnuProject,
         name = "gcc",

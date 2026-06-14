@@ -57,6 +57,7 @@ let version = "4.2.3" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-3-Clause",
       repology_project = "cmake",
       source_provenance = {
         category = 'GithubRepo,

@@ -49,6 +49,7 @@ let version = "5.3" in
 
   attrs = {
     upstream_version = version,
+    license_spdx = "GPL-3.0-only",
   },
 
   replace_on_cycle =

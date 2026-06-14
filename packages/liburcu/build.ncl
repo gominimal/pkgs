@@ -43,6 +43,7 @@ let version = "0.15.5" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "LGPL-2.1-or-later AND LGPL-2.1-only AND MIT AND Boehm-GC",
       source_provenance = {
         category = 'GithubRepo,
         owner = "urcu",

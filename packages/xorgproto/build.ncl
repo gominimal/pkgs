@@ -31,5 +31,6 @@ let version = "2025.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-2-Clause AND HPND AND HPND-sell-variant AND ICU AND MIT AND MIT-open-group AND SGI-B-2.0 AND SMLNJ AND X11 AND X11-distribute-modifications-variant",
     } | Attrs,
 } | BuildSpec

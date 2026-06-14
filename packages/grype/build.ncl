@@ -42,6 +42,7 @@ let version = "0.108.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Apache-2.0",
       repology_project = "grype",
       source_provenance = {
         category = 'GithubRepo,

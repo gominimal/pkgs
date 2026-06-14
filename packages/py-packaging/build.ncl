@@ -35,6 +35,7 @@ let version = "25.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Apache-2.0 OR BSD-2-Clause",
       source_provenance = {
         category = 'GithubRepo,
         owner = "pypa",

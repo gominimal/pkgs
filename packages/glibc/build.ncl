@@ -92,6 +92,7 @@ let version = "2.42" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(GPL-2.0-only AND LGPL-2.1-only)",
       repology_project = "glibc",
       source_provenance = {
         category = 'GnuProject,

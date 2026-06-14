@@ -45,6 +45,7 @@ let version = "3.239.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Apache-2.0",
       repology_project = "pulumi",
       source_provenance = {
         category = 'GithubRepo,

@@ -30,6 +30,7 @@ let version = "1.9" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-3.0-only",
       source_provenance = {
         category = 'GnuProject,
         name = "time",

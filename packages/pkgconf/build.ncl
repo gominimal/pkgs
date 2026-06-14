@@ -38,6 +38,7 @@ let version = "2.5.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "pkgconf",
       source_provenance = {
         category = 'GithubRepo,
         owner = "pkgconf",

@@ -46,6 +46,7 @@ let version = "46" in
 
   attrs = {
     upstream_version = version,
+    license_spdx = "BSD-3-Clause",
     source_provenance = {
       category = 'GithubRepo,
       owner = "ngspice",

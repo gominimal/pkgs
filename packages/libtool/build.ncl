@@ -46,6 +46,7 @@ let version = "2.5.4" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-2.0-only",
       source_provenance = {
         category = 'GnuProject,
         name = "libtool",

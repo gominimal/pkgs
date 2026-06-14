@@ -53,6 +53,7 @@ let version = "3.6a" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "ISC",
       source_provenance = {
         category = 'GithubRepo,
         owner = "tmux",

@@ -29,9 +29,16 @@ export CFLAGS="$MARCH -O3 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
-# Remove rust-toolchain.toml to avoid rustup nightly requirement;
-# our stable rust is sufficient for lol-html
+# bun pins a nightly toolchain via rust-toolchain.toml; remove it so the build
+# uses minimal's stable rust. As of 1.3.14 that alone isn't enough — the release
+# lol-html build opts into -Zbuild-std + -Cpanic=immediate-abort (nightly-only,
+# to shave ~230KB). Route lol-html to bun's existing stable -Cpanic=abort path
+# (precompiled std) instead; the verify-grep makes a future bun build-script
+# change fail loudly rather than silently revert to the broken nightly path.
+# See gominimal/pkgs#228.
 rm -f rust-toolchain.toml
+sed -i 's|if (cfg.release && canBuildStdImmediateAbort) {|if (false) { // minimal: stable rust, no -Zbuild-std (pkgs#228)|' scripts/build/deps/lolhtml.ts
+grep -q 'no -Zbuild-std (pkgs#228)' scripts/build/deps/lolhtml.ts || { echo "ERROR: lol-html stable-build patch did not apply — bun's build scripts changed; revisit gominimal/pkgs#228." >&2; exit 1; }
 
 # Initialize a git repo so nested dep version generation works
 # (it runs "git rev-parse HEAD" to get version strings for bundled packages)

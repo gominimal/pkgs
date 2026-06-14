@@ -50,5 +50,6 @@ let version = "2.86.4" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "LGPL-2.1-or-later",
     } | Attrs,
 } | BuildSpec
