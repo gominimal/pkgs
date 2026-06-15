@@ -25,7 +25,17 @@ NM_TAR="$(ls /build/opencode-allnm-*.tar.gz 2>/dev/null | head -1)"
 tar --no-same-owner -xzf "$NM_TAR" -C .
 echo "[opencode build.sh] pre-materialized node_modules ($(ls node_modules 2>/dev/null | wc -l) entries)"
 
-bun install --frozen-lockfile --ignore-scripts --no-progress
+# --filter=opencode: scope the install to the CLI workspace + its deps only.
+# WITHOUT this, the root workspace install resolves packages/app, whose
+# `ghostty-web: github:...#main` BRANCH dep bun re-validates over the network
+# on every install (even --frozen-lockfile, even with node_modules present, even
+# though the lockfile pins the commit) -> blackholed connect() -> hang at
+# "Resolving dependencies". opencode (the CLI) doesn't depend on packages/app or
+# the web apps' pkg.pr.new dep, so --filter excludes them entirely -> no
+# git/url re-validation -> the pre-materialized node_modules makes it a no-op
+# verify with zero network. (Proven locally: --filter=opencode leaves
+# ghostty-web + @solidjs/start unresolved and doesn't trip --frozen-lockfile.)
+bun install --frozen-lockfile --ignore-scripts --no-progress --filter=opencode
 
 # The build script consults git for a channel name when these are unset;
 # set them explicitly so it doesn't shell out to git in the sandbox.
