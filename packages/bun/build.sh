@@ -282,17 +282,23 @@ echo "[bun build.sh] extracted $(basename "$CACHE_TAR") -> $CACHE_DST"
 ls -d "$CACHE_DST"/preact@* >/dev/null 2>&1 || { echo "FATAL #47: preact (bun-error edge) missing from install-cache — re-stage the union cache" >&2; exit 1; }
 ls -d "$CACHE_DST"/esbuild@0.25.12* >/dev/null 2>&1 || { echo "FATAL #47: esbuild@0.25.12 (node-fallbacks edge) missing from install-cache" >&2; exit 1; }
 
-# #47 (root edge): pre-materialize the ROOT node_modules so the root `bun install
-# --frozen-lockfile` ninja edge is a NO-OP verify ("Checked ... no changes") instead
-# of re-fetching the github/codeload dep (bun-tracestrings) — which bun does on a cold
-# install even from the cache -> blackholed connect -> timeout 300 -> code 124. The
-# bun-error + node-fallbacks edges are registry-only and populate fine from the cache
-# above; only the root carries the URL dep. extract=false Source -> /build/<basename>.
-NM_TAR="$(ls /build/bun-root-nm-*.tar.gz 2>/dev/null | head -1)"
-[ -n "$NM_TAR" ] || { echo "FATAL #47: bun root node_modules tarball missing in /build" >&2; exit 1; }
+# #47 (ALL 3 install edges): pre-materialize node_modules for EVERY bun_install
+# ninja edge — root + packages/bun-error + src/node-fallbacks — so each `bun install
+# --frozen-lockfile` is a NO-OP verify ("Checked ... no changes") with ZERO network.
+# Run #5 (image 386b0316) PROVED the root fix (root no-op'd) AND proved the cache is
+# insufficient: a COLD `bun install` ALWAYS contacts the registry for metadata even
+# with BUN_INSTALL_CACHE_DIR populated, so the bun-error edge still hung (do_epoll_wait,
+# code 124) at [643/669]. The only thing that makes the install touch no network is a
+# pre-existing, lockfile-matching node_modules. The bun-allnm tarball carries all three
+# (root 232 pkgs incl bun-tracestrings, bun-error 1 pkg=preact, node-fallbacks 121 pkgs);
+# extract relative to /build places each under its source dir. extract=false -> /build/<basename>.
+NM_TAR="$(ls /build/bun-allnm-*.tar.gz 2>/dev/null | head -1)"
+[ -n "$NM_TAR" ] || { echo "FATAL #47: bun all-node_modules tarball (bun-allnm-*) missing in /build" >&2; exit 1; }
 tar --no-same-owner -xzf "$NM_TAR" -C /build
-ls -d /build/node_modules/bun-tracestrings >/dev/null 2>&1 || { echo "FATAL #47: bun-tracestrings missing from pre-staged node_modules" >&2; exit 1; }
-echo "[bun build.sh] pre-materialized root node_modules ($(ls /build/node_modules 2>/dev/null | wc -l) entries)"
+ls -d /build/node_modules/bun-tracestrings >/dev/null 2>&1 || { echo "FATAL #47: root node_modules (bun-tracestrings) missing from bun-allnm" >&2; exit 1; }
+ls -d /build/packages/bun-error/node_modules/preact >/dev/null 2>&1 || { echo "FATAL #47: bun-error node_modules (preact) missing from bun-allnm" >&2; exit 1; }
+ls -d /build/src/node-fallbacks/node_modules/esbuild >/dev/null 2>&1 || { echo "FATAL #47: node-fallbacks node_modules (esbuild) missing from bun-allnm" >&2; exit 1; }
+echo "[bun build.sh] pre-materialized 3 node_modules: root=$(ls /build/node_modules 2>/dev/null | wc -l) bun-error=$(ls /build/packages/bun-error/node_modules 2>/dev/null | wc -l) node-fallbacks=$(ls /build/src/node-fallbacks/node_modules 2>/dev/null | wc -l)"
 
 # Build via bun's own build orchestration (handles bun install, codegen, cmake deps,
 # zig, linking, strip). `build:release` is exactly `bun scripts/build.ts

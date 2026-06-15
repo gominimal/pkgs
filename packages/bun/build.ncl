@@ -84,15 +84,18 @@ in
       sha256 = "0337827fb8792146b0aef151083a50da81b97ed9aba5f4fa13bb3d75eec09147",
       extract = false,
     } | Source,
-    # #47 (root edge): the ROOT lockfile has a github/codeload dep
-    # (bun-tracestrings) that bun RE-FETCHES on a cold `bun install` even from the
-    # cache -> blackholed connect -> timeout. Pre-materialize the whole root
-    # node_modules so the root install is a no-op verify (proven offline path).
-    # Built by bun 1.3.13 (232 pkgs incl bun-tracestrings). build.sh extracts into
-    # /build. extract=false.
+    # #47 (ALL 3 install edges): a COLD `bun install --frozen-lockfile` ALWAYS
+    # contacts the registry for metadata even with BUN_INSTALL_CACHE_DIR populated
+    # (proven by run #5/image 386b0316: root no-op'd from its pre-staged node_modules,
+    # but the bun-error edge still hung at [643/669] despite the cache). The ONLY way
+    # an install touches no network is a pre-existing, lockfile-matching node_modules.
+    # This tarball carries ALL THREE: root (232 pkgs incl the github/codeload dep
+    # bun-tracestrings) + packages/bun-error (preact) + src/node-fallbacks (esbuild …).
+    # Built by bun 1.3.13; build.sh extracts relative to /build so each lands under its
+    # source dir, making every bun_install edge a no-op verify. extract=false.
     {
-      url = "https://minimal.dev/generated/bun-root-nm-%{version}.tar.gz",
-      sha256 = "349352394bdc86e1922d152944a707588be907ab227a4a7c564934b9599d592a",
+      url = "https://minimal.dev/generated/bun-allnm-%{version}.tar.gz",
+      sha256 = "afbea83c7519928318206976b19f03233495342d83da293f72474f91536f7161",
       extract = false,
     } | Source,
     {
