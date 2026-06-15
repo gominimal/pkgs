@@ -12,16 +12,20 @@ cd "opencode-${MINIMAL_ARG_VERSION}"
 bun_version="$(bun --version)"
 sed -i "s/\"packageManager\": \"bun@[^\"]*\"/\"packageManager\": \"bun@${bun_version}\"/" package.json
 
-# Hermetic build: when /bun-cache exists (mounted by a SLSA-grade
-# builder that has pre-staged bun's install cache via `bun install` on
-# the staging host), point bun at it and install offline. Otherwise
-# fall back to the normal online install for dev iteration.
-if [ -d /bun-cache ]; then
-    export BUN_INSTALL_CACHE_DIR=/bun-cache
-    bun install --frozen-lockfile --ignore-scripts --no-progress
-else
-    bun install --frozen-lockfile --ignore-scripts
-fi
+# #47: extract the pre-materialized node_modules (staged via
+# `orch stage bun opencode --node-modules --use-fetcher`) so the install
+# below is a NO-OP verify with ZERO network. A cold `bun install` always
+# contacts the registry for metadata even with a populated cache ->
+# blackholed connect() -> hang; only a lockfile-matching node_modules is
+# offline-safe. opencode is a workspace monorepo, so the tarball carries
+# the whole workspace tree (root + every packages/*/node_modules). We're
+# cd'd into opencode-${VERSION}, so extract here with -C . (not /build).
+NM_TAR="$(ls /build/opencode-allnm-*.tar.gz 2>/dev/null | head -1)"
+[ -n "$NM_TAR" ] || { echo "FATAL #47: opencode node_modules tarball missing in /build" >&2; exit 1; }
+tar --no-same-owner -xzf "$NM_TAR" -C .
+echo "[opencode build.sh] pre-materialized node_modules ($(ls node_modules 2>/dev/null | wc -l) entries)"
+
+bun install --frozen-lockfile --ignore-scripts --no-progress
 
 # The build script consults git for a channel name when these are unset;
 # set them explicitly so it doesn't shell out to git in the sandbox.

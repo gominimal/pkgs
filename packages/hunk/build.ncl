@@ -16,6 +16,18 @@ let version = "0.14.0" in
       extract = true,
       strip_prefix = "hunk-%{version}",
     } | Source,
+    # #47: pre-materialized node_modules so the offline `bun install
+    # --frozen-lockfile` is a NO-OP verify (zero network). A cold bun install
+    # always contacts the registry for metadata even with a populated cache,
+    # so the offline build would hang on the blackholed connect(); only a
+    # lockfile-matching node_modules avoids the network. Staged via
+    # `orch stage bun hunk --node-modules`. build.sh extracts it into /build.
+    # extract=false.
+    {
+      url = "https://minimal.dev/generated/hunk-allnm-%{version}.tar.gz",
+      sha256 = "c8d3d7c542d2fec31435c001af3e12b2def7dc6d25334227c2d653cfdad9c292",
+      extract = false,
+    } | Source,
     base,
     bun,
   ],
@@ -25,10 +37,12 @@ let version = "0.14.0" in
     git,
   ],
 
+  # Hermetic: node_modules is pre-materialized (above), so the build needs
+  # no network. internet dropped (#47) — any network attempt now fails loud
+  # instead of silently falling back to an online install.
   needs =
     {
       dns = {},
-      internet = {},
     } | Needs,
 
   cmd = "./build.sh",

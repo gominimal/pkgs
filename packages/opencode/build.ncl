@@ -14,6 +14,19 @@ let version = "1.14.20" in
       url = "https://github.com/anomalyco/opencode/archive/refs/tags/v%{version}.tar.gz",
       sha256 = "cfa02650be42398be8b8f813ac4736a25d4a8d8a5f92b035bd98b66b4afcd34a",
     } | Source,
+    # #47: pre-materialized node_modules for the WHOLE workspace monorepo so
+    # the offline `bun install --frozen-lockfile` is a NO-OP verify (zero
+    # network). A cold bun install always hits the registry for metadata even
+    # with a populated cache; only a lockfile-matching node_modules avoids it.
+    # The root install verifies the entire workspace, so this carries the full
+    # tree (root + every packages/*/node_modules). Staged via
+    # `orch stage bun opencode --node-modules --use-fetcher` (built on the
+    # fetcher VM, ~700M). build.sh extracts it into the source dir. extract=false.
+    {
+      url = "https://minimal.dev/generated/opencode-allnm-%{version}.tar.gz",
+      sha256 = "39602d883db82ea0d7fde1de1efa8ac90d5a67a56ce79d04a194e1dc927b5024",
+      extract = false,
+    } | Source,
     base,
     bun,
   ],
@@ -24,10 +37,12 @@ let version = "1.14.20" in
     ripgrep,
   ],
 
+  # Hermetic: node_modules is pre-materialized (the bun-allnm Source above),
+  # so the build needs no network. internet dropped (#47) — any network
+  # attempt now fails loud instead of silently falling back to online.
   needs =
     {
       dns = {},
-      internet = {},
     } | Needs,
 
   cmd = "./build.sh",
