@@ -24,7 +24,7 @@ let version = "1.14.20" in
     # fetcher VM, ~700M). build.sh extracts it into the source dir. extract=false.
     {
       url = "https://minimal.dev/generated/opencode-allnm-%{version}.tar.gz",
-      sha256 = "39602d883db82ea0d7fde1de1efa8ac90d5a67a56ce79d04a194e1dc927b5024",
+      sha256 = "06a2ca8f1fee73deb617d87f2f812952f7c8f8a42d607f853195f53e76a89038",
       extract = false,
     } | Source,
     base,
