@@ -7,14 +7,14 @@ let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 
-let version = "0.43.1" in
+let version = "0.44.3" in
 {
   name = "zellij",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/zellij-org/zellij/v%{version}.tar.gz",
-      sha256 = "e9fd24190869be6e9e8d731df2ccd0b3b1dd368ae9dbb9d620ec905b83e325ec",
+      sha256 = "33ae61fc802b59462fed49b424893596d3aa819646bdce53d5602f714c1264fe",
       extract = true,
       strip_prefix = "zellij-%{version}",
     } | Source,
