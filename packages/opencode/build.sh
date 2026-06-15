@@ -12,6 +12,16 @@ cd "opencode-${MINIMAL_ARG_VERSION}"
 bun_version="$(bun --version)"
 sed -i "s/\"packageManager\": \"bun@[^\"]*\"/\"packageManager\": \"bun@${bun_version}\"/" package.json
 
+# #47: pin packages/app's `ghostty-web: github:...#main` BRANCH ref to the
+# lockfile-resolved COMMIT (#20bd361). bun re-resolves a branch ref's HEAD over
+# the network on every install (even --frozen-lockfile, even with the commit
+# pinned in bun.lock and node_modules present) -> blackholed connect() -> hang
+# at "Resolving dependencies". A commit ref is immutable, so bun trusts the
+# lockfile entry (no network). The commit matches bun.lock's resolved
+# `ghostty-web@github:anomalyco/ghostty-web#20bd361` so --frozen stays happy.
+sed -i 's|github:anomalyco/ghostty-web#main|github:anomalyco/ghostty-web#20bd361|' packages/app/package.json
+grep -q 'ghostty-web#20bd361' packages/app/package.json || { echo "FATAL #47: ghostty-web branch pin failed" >&2; exit 1; }
+
 # #47: extract the pre-materialized node_modules (staged via
 # `orch stage bun opencode --node-modules --use-fetcher`) so the install
 # below is a NO-OP verify with ZERO network. A cold `bun install` always
