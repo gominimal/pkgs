@@ -4,14 +4,14 @@ let sed = import "../sed/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "2.6" in
+let version = "2.8" in
 {
   name = "inetutils",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/inetutils-%{version}.tar.xz",
-      sha256 = "68bedbfeaf73f7d86be2a7d99bcfbd4093d829f52770893919ae174c0b2357ca"
+      url = "gs://minimal-staging-archives/inetutils-%{version}.tar.gz",
+      sha256 = "57b3cf4f77555992881e5ba2a09a63b05aa2c56342a60ed4305b5f45938390b5"
     } | Source,
     base,
     make,
