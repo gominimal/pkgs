@@ -25,16 +25,20 @@ NM_TAR="$(ls /build/opencode-allnm-*.tar.gz 2>/dev/null | head -1)"
 tar --no-same-owner -xzf "$NM_TAR" -C .
 echo "[opencode build.sh] pre-materialized node_modules ($(ls node_modules 2>/dev/null | wc -l) entries)"
 
-# --filter=opencode: scope the install to the CLI workspace + its deps only.
-# WITHOUT this, the root workspace install resolves packages/app, whose
-# `ghostty-web: github:...#main` BRANCH dep bun re-validates over the network
-# on every install (even --frozen-lockfile, even with node_modules present, even
-# though the lockfile pins the commit) -> blackholed connect() -> hang at
-# "Resolving dependencies". opencode (the CLI) doesn't depend on packages/app or
-# the web apps' pkg.pr.new dep, so --filter excludes them entirely -> no
-# git/url re-validation -> the pre-materialized node_modules makes it a no-op
-# verify with zero network. (Proven locally: --filter=opencode leaves
-# ghostty-web + @solidjs/start unresolved and doesn't trip --frozen-lockfile.)
+# The tarball ALSO carries bun's install cache (.bun-install-cache: registry
+# manifests + git/url dep tarballs) — point bun at it. node_modules ALONE is
+# insufficient for this workspace: it has a `catalog` (ulid, drizzle-orm, …) and
+# git/url deps (ghostty-web#main, @solidjs/start@pkg.pr.new), and bun re-fetches
+# the catalog MANIFESTS + git/url TARBALLS during "Resolving dependencies" on
+# every install — even --frozen-lockfile, even with node_modules present (proven
+# via `container run --network none`). The cache supplies them OFFLINE.
+export BUN_INSTALL_CACHE_DIR="$PWD/.bun-install-cache"
+[ -d "$BUN_INSTALL_CACHE_DIR" ] || { echo "FATAL #47: opencode .bun-install-cache missing in tarball" >&2; exit 1; }
+echo "[opencode build.sh] bun install cache: $(du -sh "$BUN_INSTALL_CACHE_DIR" 2>/dev/null | cut -f1)"
+
+# --filter=opencode scopes the install to the CLI subtree (opencode doesn't need
+# packages/app or the web apps). Kept as defense-in-depth; the cache above is the
+# actual offline fix. (Doesn't trip --frozen-lockfile — scoping ≠ workspaces edit.)
 bun install --frozen-lockfile --ignore-scripts --no-progress --filter=opencode
 
 # The build script consults git for a channel name when these are unset;
