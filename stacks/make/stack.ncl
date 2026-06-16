@@ -13,8 +13,13 @@ stack {
     # ecosystem-wide wave (openssl, libxcrypt, grub, ...), not a one-off, so
     # downgrade ONLY that one warning fleet-wide for every make/autotools
     # build. It lands after each package's own -Werror on the compile line, so
-    # the later flag wins. Interim: gcc-16 fixes this upstream (clean follow-up
-    # is a gcc-16 bump, after which this can be dropped).
+    # the later flag wins. This is DURABLE, not interim: a gcc-16 bump only
+    # fixes gcc's OWN source (its libgomp), so it retires packages/gcc/build.sh
+    # — it does NOT help the rest of the fleet, which still trips the same break
+    # under any gcc against glibc 2.43. This lever stays until either the
+    # ecosystem adopts C23-compatible source or we move it to -std=gnu17 (which
+    # restores the C17 prototypes so strchr returns `char *` — no warning at
+    # all, but a broader language-standard change).
     # Ref: https://lists.gnu.org/archive/html/info-gnu/2026-01/msg00005.html
     CFLAGS = "-O2 -pipe -gno-record-gcc-switches -Wno-error=discarded-qualifiers",
   },
