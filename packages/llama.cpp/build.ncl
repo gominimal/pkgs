@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
@@ -52,4 +52,13 @@ let version = "b8941" in
       },
       build_cost_multiple = 3,
     } | Attrs,
+
+  # Smoke test: provision the built artifact in a clean room and run the
+  # binary — this is what catches the "builds+signs but won't RUN" class
+  # (the libllama-common.so.0 lib-glob bug shipped precisely because there
+  # was no test exercising the binary). NOTE: only runs under `minimal check`
+  # — the queue builder does not yet run the tests phase (a queue_mode.rs gate).
+  tests = {
+    smoketest = standaloneTest "/bin/llama-cli --version",
+  },
 } | BuildSpec
