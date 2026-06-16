@@ -1,0 +1,24 @@
+let { stack, .. } = import "minimal.ncl" in
+stack {
+  name = "meson",
+
+  build_packages = ["meson", "ninja", "gcc", "binutils", "pkgconf", "linux_headers", "python", "base"],
+  build_env_vars = {
+    CC = "gcc",
+    CXX = "g++",
+  },
+
+  build_cmds_cmd = [
+    "/bin/bash",
+    "-c",
+    m%"
+    echo '/bin/bash -c "set -ex; meson setup build --buildtype=release; ninja -C build"'
+    "%
+  ],
+
+  matches_project_if_any = [
+    {
+      file_regexes."meson.build" = "*",
+    },
+  ],
+}
