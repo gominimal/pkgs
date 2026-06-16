@@ -21,7 +21,7 @@ let version = "18.4" in
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/postgresql-%{version}.tar.gz",
-      sha256 = "9b4f86dd2ac00b914582e9893d1bad1f54bc9be7108fa794318b8184f921ec08",
+      sha256 = "450aa8f2da06c46f8221916e82ae06b04fb1040f8f00643dbf8b7d663caac0b9",
     } | Source,
     base,
     make,
