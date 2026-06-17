@@ -567,6 +567,10 @@ let bash = import "../bash/build.ncl" in
 
 The build script must install everything to `$OUTPUT_DIR`.
 
+**Every package must be reproducible** — layer the determinism flags from
+[Reproducibility (required)](#reproducibility-required) below onto whichever pattern you
+use. The patterns below show the minimal shape; they are not complete without those flags.
+
 #### Autotools pattern
 
 ```bash
@@ -629,6 +633,32 @@ cargo build --release
 mkdir -p $OUTPUT_DIR/usr/bin
 cp target/release/my-tool $OUTPUT_DIR/usr/bin/
 ```
+
+
+### Reproducibility (required)
+
+Two builds of the same source must produce **byte-identical** output — the build cache is
+content-addressed and can't trust non-reproducible artifacts. The sandbox does **not** pin
+the clock or inject flags for you; determinism is `build.sh`'s responsibility. Apply the
+recipe for your build system on top of the pattern above. Background and the full taxonomy
+of non-determinism: <https://reproducible-builds.org/>.
+
+- **C / C++:** `CFLAGS="… -ffile-prefix-map=$(pwd)=/builddir -gno-record-gcc-switches"`,
+  `CXXFLAGS="$CFLAGS"`, `LDFLAGS="-Wl,--build-id=none"`, `export ARFLAGS=Drc`
+  (autotools: also pass `--enable-deterministic-archives` to `./configure`).
+- **Go:** every `go build`/`go install`: `-trimpath -ldflags "-buildid="`
+  (add `-buildvcs=false` if the source tree contains a `.git` directory).
+- **Rust:** `RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"`;
+  if the binary still differs in `.text`/`.rodata`, also add `-C codegen-units=1` and
+  `export CONST_RANDOM_SEED=0`.
+- **Linux kernel:** `export KBUILD_BUILD_TIMESTAMP=@0 KBUILD_BUILD_USER=builder KBUILD_BUILD_HOST=minimal`.
+- **Embedded timestamps** (configure scripts, generated docs, `__DATE__`/`__TIME__`):
+  `export SOURCE_DATE_EPOCH=0` (and `PYTHONHASHSEED=0` for Python-based build steps).
+- **Post-install:** drop libtool archives — `find "$OUTPUT_DIR" -name '*.la' -delete`.
+
+**Verify:** build the package twice and compare the two `$OUTPUT_DIR` trees — they must be
+byte-for-byte identical. When they differ, the diff points at the cause (a timestamp, a
+build path, a random build-id) and the recipe above has the fix.
 
 
 ### Step 4: Validate
