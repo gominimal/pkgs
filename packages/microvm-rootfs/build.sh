@@ -1,13 +1,13 @@
 #!/bin/bash
-# Assemble a libkrun microVM guest rootfs as a read-only ext4 image.
+# Assemble a libkrun microVM guest userland as a read-only ext4 image.
 #
-# The build sandbox hardlinks this package's runtime closure (base + socat +
-# their libs) and its build-only deps (e2fsprogs, for mke2fs) into the sandbox
-# root at standard paths. We snapshot the userland into a staging tree, drop the
-# build-only e2fsprogs files, add a small bring-up init, prune bulk, and pack an
-# ext4 image with mke2fs. The image is loaded as a virtio-blk block device (e.g.
-# root=/dev/vda); a block root has no overlaid init, so the kernel runs the init
-# below directly. devtmpfs auto-mounts /dev, giving the init /dev/vsock.
+# The build sandbox hardlinks this package's runtime closure (base + git + their
+# libs) and its build-only deps (e2fsprogs, for mke2fs) into the sandbox root at
+# standard paths. We snapshot the userland into a staging tree, drop the
+# build-only e2fsprogs files, prune bulk, and pack an ext4 image with mke2fs. The
+# image is loaded as a virtio-blk block device (/dev/vda); the guest minimald
+# ships as the initramfs pid-1, mounts this image, and chroots into it, so the
+# image itself carries no standalone init.
 set -euo pipefail
 
 STAGE="$(pwd)/stage"
@@ -24,18 +24,17 @@ done
 # e2fsprogs is a build-only dependency: it provides mke2fs to pack the image
 # below (invoked from the build sandbox PATH, not from $STAGE), but the guest
 # never needs it at runtime. Drop its staged files so the runtime image carries
-# only the runtime closure. Done before the init is created, so nothing we ship
-# is at risk. The symlink guard skips a usr-merged /usr/sbin.
+# only the runtime closure. The symlink guard skips a usr-merged /usr/sbin.
 if [ -d "$STAGE/usr/sbin" ] && [ ! -L "$STAGE/usr/sbin" ]; then
   rm -rf "$STAGE/usr/sbin"
 fi
 rm -f "$STAGE"/usr/bin/chattr "$STAGE"/usr/bin/lsattr "$STAGE"/usr/bin/uuidgen \
       "$STAGE"/usr/bin/compile_et "$STAGE"/usr/bin/mk_cmds
 # Note: `libss.so*` (not `libss*.so*`) — the latter also matches openssl's
-# libssl.so, which socat needs at runtime.
+# libssl.so, which the git runtime closure (curl, openssl) needs at runtime.
 rm -f "$STAGE"/usr/lib/libext2fs.so* "$STAGE"/usr/lib/libe2p.so* "$STAGE"/usr/lib/libss.so*
 
-mkdir -p "$STAGE/bin" "$STAGE/sbin" "$STAGE/etc/microvm"
+mkdir -p "$STAGE/bin" "$STAGE/sbin"
 
 # Kernel mountpoints. devtmpfs auto-mounts on /dev at boot (CONFIG_DEVTMPFS_MOUNT)
 # — without the directory it fails with "devtmpfs: error mounting -2" and the
@@ -43,7 +42,8 @@ mkdir -p "$STAGE/bin" "$STAGE/sbin" "$STAGE/etc/microvm"
 mkdir -p "$STAGE/dev" "$STAGE/proc" "$STAGE/sys" "$STAGE/run" "$STAGE/tmp"
 chmod 1777 "$STAGE/tmp"
 
-# Guarantee /bin/sh for the init script's shebang.
+# Guarantee /bin/sh: the in-guest minimald chroots in and runs /bin/bash, but a
+# /bin/sh is conventional for any script the session shells out to.
 if [ ! -e "$STAGE/bin/sh" ]; then
   if [ -e "$STAGE/bin/bash" ]; then
     ln -sf bash "$STAGE/bin/sh"
@@ -52,41 +52,9 @@ if [ ! -e "$STAGE/bin/sh" ]; then
   fi
 fi
 
-# Bring-up init: signal readiness by connecting out to the host (vsock CID 2)
-# port 7350 and writing "READY\n", then serve an echo on vsock port 2222 for
-# host<->guest connectivity checks. Retry the marker briefly in case the vsock
-# device is not live the instant init starts.
-cat > "$STAGE/sbin/microvm-init" <<'INIT'
-#!/bin/sh
-i=0
-while [ "$i" -lt 50 ]; do
-    printf 'READY\n' | socat -t2 - VSOCK-CONNECT:2:7350 && break
-    i=$((i + 1))
-    sleep 0.1
-done
-# Fail loudly if the READY handshake never succeeded, rather than starting the
-# listener anyway and turning a boot failure into a downstream timeout.
-[ "$i" -lt 50 ] || {
-    echo "microvm-init: failed to publish READY on vsock 7350" >&2
-    exit 1
-}
-exec socat VSOCK-LISTEN:2222,fork EXEC:cat
-INIT
-chmod +x "$STAGE/sbin/microvm-init"
-
-# Machine-readable record of the bring-up contract.
-cat > "$STAGE/etc/microvm/manifest" <<'MANIFEST'
-# microvm guest rootfs contract
-# format=ext4-block-image
-# init=/sbin/microvm-init
-# vsock_port_ready=7350    guest CONNECTs out (host listen=false); writes "READY\n" once
-# vsock_port_echo=2222     guest LISTENs (host listen=true); echoes per connection
-# net=none
-MANIFEST
-
 # Prune build-time-only bulk the guest never needs: headers, static libs,
 # docs/man, and especially glibc's locale archive (the bulk of the closure).
-# The bring-up workload is sh + socat; the C locale fallback is sufficient.
+# The C locale fallback is sufficient for the guest workload.
 # `|| true` is scoped to `find` only — a failure in `cd` or `rm -rf` must still
 # fail the build (set -euo pipefail), while `find`'s noncritical errors are ok.
 ( cd "$STAGE" && \
