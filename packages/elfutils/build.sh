@@ -9,19 +9,18 @@ case $(uname -m) in
   aarch64) MARCH="-march=armv8-a" ;;
   *)       MARCH="" ;;
 esac
-export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -Wl,--build-id=none -ffile-prefix-map=$(pwd)=/builddir"
+# -Wno-error=discarded-qualifiers: glibc 2.43's ISO C23 const-preserving
+# bsearch/strchr-family return const for const args; elfutils assigns those to
+# plain pointers (libcpu/riscv_disasm.c known_csrs bsearch) under its default-on
+# -Werror. elfutils' configure has no --disable-werror in this version, but
+# automake emits `$(AM_CFLAGS) $(CFLAGS)`, so a CFLAGS flag lands after
+# elfutils' AM_CFLAGS -Werror and wins. Same glibc-2.43 C23 FTBFS class as #238.
+export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -Wl,--build-id=none -ffile-prefix-map=$(pwd)=/builddir -Wno-error=discarded-qualifiers"
 export LDFLAGS="-Wl,--build-id=none"
 export ARFLAGS=Drc
 export CXXFLAGS="${CFLAGS}"
 
-# --disable-werror: glibc 2.43's ISO C23 const-preserving lookups (bsearch over
-# a const table in libcpu/riscv_disasm.c, etc.) discard const into plain
-# pointers, tripping elfutils' default-on -Werror. elfutils trips several
-# distinct -Werror warnings across toolchain bumps (it's why distros disable
-# werror for it), so we use its own off-switch rather than chase each warning
-# with a -Wno-error=... flag. Same glibc-2.43 C23 FTBFS class as #238.
 ./configure --prefix=/usr                \
-            --disable-werror             \
             --disable-debuginfod         \
             --enable-libdebuginfod=dummy
 
