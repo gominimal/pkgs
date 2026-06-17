@@ -14,9 +14,8 @@ export CXXFLAGS="${CFLAGS}"
 # string (config/now.c -> _BUILD_TIME, and `date` -> _BUILD_STRING) and ignores
 # SOURCE_DATE_EPOCH. Override the two make vars the version header is built from:
 # SH_NOW="" omits _BUILD_TIME (defaults to 0 in prvrsion.c); SH_DATE is pinned
-# from SOURCE_DATE_EPOCH.
-export SOURCE_DATE_EPOCH=0
-BUILD_DATE="$(date -u -d "@${SOURCE_DATE_EPOCH}" '+%Y-%m-%d %T')"
+# from SOURCE_DATE_EPOCH (set by the build sandbox).
+BUILD_DATE="$(LC_ALL=C TZ=UTC date -u -d "@${SOURCE_DATE_EPOCH:-0}" '+%Y-%m-%d %T' 2>/dev/null || echo '1970-01-01 00:00:00')"
 
 cd nspr
 ./configure --prefix=/usr --disable-static --enable-64bit
