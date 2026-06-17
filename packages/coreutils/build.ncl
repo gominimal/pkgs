@@ -26,14 +26,14 @@ let attr = import "../attr/build.ncl" in
 let libcap = import "../libcap/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 
-let version = "9.10" in
+let version = "9.11" in
 {
   name = "coreutils",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/coreutils-%{version}.tar.xz",
-      sha256 = "16535a9adf0b10037364e2d612aad3d9f4eca3a344949ced74d12faf4bd51d25"
+      sha256 = "394024eda0a5955217ceda9cd1201e65dc8fa3aa29c2951135a49521d57c3cc3"
     } | Source,
     # base
     bash-bootstrap,
@@ -114,6 +114,7 @@ let version = "9.10" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-3.0-only",
       repology_project = "coreutils",
       source_provenance = {
         category = 'GnuProject,

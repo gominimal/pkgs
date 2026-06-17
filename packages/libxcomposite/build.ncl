@@ -43,5 +43,6 @@ let version = "0.4.6" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT",
     } | Attrs,
 } | BuildSpec

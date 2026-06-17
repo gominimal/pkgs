@@ -67,6 +67,7 @@ in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT",
       env_state_wiring = {
         env_var = "RUNNER_HOME",
         prefix = "actions-runner",

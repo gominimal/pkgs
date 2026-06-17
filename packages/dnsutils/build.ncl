@@ -58,6 +58,7 @@ let version = "9.20.20" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MPL-2.0",
     } | Attrs,
 
   tests = {

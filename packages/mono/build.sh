@@ -1,8 +1,14 @@
 #!/bin/sh
 set -e
 
-tar -xof "mono-${MINIMAL_ARG_VERSION}.tar.xz"
+tar -xof "mono-${MINIMAL_ARG_VERSION}.tar.gz"
 cd "mono-${MINIMAL_ARG_VERSION}"
+
+# The prepared tarball was archived on macOS, which scatters AppleDouble
+# "._*" sidecar files through the tree. mono's C# build globs `*.cs` and
+# feeds these binary sidecars to the compiler (CS1056 "unexpected character"
+# on e.g. external/cecil/Mono.Cecil.PE/._TextMap.cs). Strip them all.
+find . -name '._*' -type f -delete
 
 # Provide a 'which' shim (not present in the sandbox, needed by BTLS Makefile)
 mkdir -p shims
@@ -34,6 +40,10 @@ sed -i 's/cmake_minimum_required (VERSION 2\.8\.10)/cmake_minimum_required (VERS
   mono/btls/CMakeLists.txt \
   external/boringssl/CMakeLists.txt
 
+# The GitHub-sourced tarball ships the raw tag tree (no generated
+# `configure`), so regenerate the autotools build system first. mono's
+# autogen.sh runs autoreconf and then invokes ./configure with "$@".
+NOCONFIGURE=1 ./autogen.sh
 ./configure \
   --prefix=/usr \
   --sysconfdir=/usr/etc \

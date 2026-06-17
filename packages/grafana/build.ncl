@@ -51,6 +51,7 @@ let arm64_sha256 = "825e31eb0aafcf026d7f04dd540042eedef42cb81a3d2832c296b27dacf7
   attrs =
     {
       upstream_version = version,
+      license_spdx = "AGPL-3.0-only",
       source_provenance = {
         category = 'GithubRepo,
         owner = "grafana",

@@ -19,6 +19,7 @@ let openssl = import "../openssl/build.ncl" in
 
   attrs =
     {
+      license_spdx = "MPL-2.0",
       needed_for_internet = {},
     } | Attrs,
 } | BuildSpec

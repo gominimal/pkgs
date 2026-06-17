@@ -38,6 +38,7 @@ let version = "26.1.22" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT",
       repology_project = "yazi",
       source_provenance = {
         category = 'GithubRepo,

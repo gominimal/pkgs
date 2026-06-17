@@ -1,0 +1,28 @@
+let { stack, .. } = import "minimal.ncl" in
+stack {
+  name = "make",
+
+  build_packages = ["make", "gcc", "binutils", "autoconf", "automake", "libtool", "m4", "pkgconf", "linux_headers", "base"],
+  build_env_vars = {
+    CC = "gcc",
+    CXX = "g++",
+    CFLAGS = "-O2 -pipe -gno-record-gcc-switches",
+  },
+
+  build_cmds_cmd = [
+    "/bin/bash",
+    "-c",
+    m%"
+    echo '/bin/bash -c "set -ex; if [ -f configure ]; then ./configure; fi; make -j$(nproc)"'
+    "%
+  ],
+
+  matches_project_if_any = [
+    {
+      file_regexes."Makefile" = "*",
+    },
+    {
+      file_regexes."GNUmakefile" = "*",
+    },
+  ],
+}

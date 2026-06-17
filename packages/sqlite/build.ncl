@@ -36,6 +36,7 @@ let version = "3.50.4" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "blessing",
       source_provenance = {
         category = 'GithubRepo,
         owner = "sqlite",

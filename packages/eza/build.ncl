@@ -37,6 +37,7 @@ let version = "0.23.4" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "EUPL-1.2",
       source_provenance = {
         category = 'GithubRepo,
         owner = "eza-community",

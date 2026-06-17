@@ -141,6 +141,7 @@ let browser_version = "147.0.7727.15" in
   attrs =
     {
       upstream_version = browser_version,
+      license_spdx = "BSD-3-Clause",
       source_provenance = {
         category = 'GithubRepo,
         owner = "microsoft",

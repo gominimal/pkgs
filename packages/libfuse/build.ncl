@@ -43,6 +43,7 @@ let version = "3.18.2" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "LGPL-2.1-only AND GPL-2.0-only",
       repology_project = "libfuse",
       source_provenance = {
         category = 'GithubRepo,

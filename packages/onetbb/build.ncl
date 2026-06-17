@@ -42,6 +42,7 @@ let version = "2022.3.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Apache-2.0",
       repology_project = "onetbb",
       source_provenance = {
         category = 'GithubRepo,

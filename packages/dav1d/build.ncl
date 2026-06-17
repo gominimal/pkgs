@@ -39,5 +39,6 @@ let version = "1.5.3" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-2-Clause",
     } | Attrs,
 } | BuildSpec

@@ -53,6 +53,7 @@ let version = "4.9" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-3.0-only",
       source_provenance = {
         category = 'GnuProject,
         name = "sed",

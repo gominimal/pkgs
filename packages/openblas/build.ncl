@@ -38,6 +38,7 @@ let version = "0.3.31" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-3-Clause",
       repology_project = "openblas",
       source_provenance = {
         category = 'GithubRepo,

@@ -60,5 +60,6 @@ let version = "9.8.1" in
 
   attrs = {
     upstream_version = version,
+    license_spdx = "BSD-3-Clause",
   },
 } | BuildSpec

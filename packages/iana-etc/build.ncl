@@ -20,6 +20,7 @@ let version = "20260424" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT",
       source_provenance = {
         category = 'GithubRepo,
         owner = "Mic92",

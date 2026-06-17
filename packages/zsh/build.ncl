@@ -17,7 +17,7 @@ let version = "5.9" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://www.zsh.org/pub/zsh-%{version}.tar.xz",
+      url = "https://www.zsh.org/pub/old/zsh-%{version}.tar.xz",
       sha256 = "9b8d1ecedd5b5e81fbf1918e876752a7dd948e05c1a0dba10ab863842d45acd5",
       extract = true,
       strip_prefix = "zsh-%{version}",

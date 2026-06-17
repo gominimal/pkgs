@@ -33,5 +33,6 @@ let version = "1.5.8" in
   },
   attrs = {
     upstream_version = version,
+    license_spdx = "GPL-3.0-only",
   },
 } | BuildSpec
