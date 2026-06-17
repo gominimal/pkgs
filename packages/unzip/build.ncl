@@ -4,10 +4,12 @@ let glibc = import "../glibc/build.ncl" in
 let libarchive = import "../libarchive/build.ncl" in
 
 # `unzip` is now a thin compatibility shim: it installs a `/usr/bin/unzip`
-# symlink to libarchive's `bsdunzip`, the maintained successor to the EOL
-# Info-ZIP unzip (frozen since 2009, carrying unfixed CVE-2014-8139/8140/8141 +
-# CVE-2018-1000035). bsdunzip is a drop-in for the flags our consumers use
-# (`-o`/`-q`/`-d`/`-p`); existing callers (bun, chromium-bin,
+# wrapper script that execs libarchive's `bsdunzip`, the maintained successor to
+# the EOL Info-ZIP unzip (frozen since 2009, carrying unfixed
+# CVE-2014-8139/8140/8141 + CVE-2018-1000035). A wrapper, not a symlink — the
+# sandbox rejects symlinks pointing outside a package's own output, and bsdunzip
+# lives in libarchive's output. bsdunzip is a drop-in for the flags our
+# consumers use (`-o`/`-q`/`-d`/`-p`); existing callers (bun, chromium-bin,
 # chromium-headless-shell-bin) keep invoking `unzip` unchanged. Version-tracking
 # follows libarchive (this also un-darkens it for `pkgmgr check`).
 {
@@ -24,8 +26,9 @@ let libarchive = import "../libarchive/build.ncl" in
   cmd = "./build.sh",
 
   outputs = {
-    # A symlink to bsdunzip (provided by the libarchive runtime dep); no
-    # interpreter of its own.
+    # A /bin/sh wrapper that execs bsdunzip (provided by the libarchive runtime
+    # dep). allow_missing_interpreter: the /bin/sh shebang is satisfied by the
+    # base system at runtime, same as xz's script bins.
     unzip = { glob = "usr/bin/unzip", allow_missing_interpreter = true } | OutputBin,
   },
 
