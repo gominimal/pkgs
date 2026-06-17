@@ -9,7 +9,11 @@ case $(uname -m) in
   aarch64) MARCH="-march=armv8-a" ;;
   *)       MARCH="" ;;
 esac
-export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
+# -Wno-error=discarded-qualifiers: glibc 2.43's ISO C23 const-preserving bsearch
+# returns const for a const arg; strace's ioctl.c assigns it to a plain pointer
+# (iop = bsearch(..., ioctlent, ...)) under its default-on -Werror. Lands after
+# strace's -Werror on the compile line so the later flag wins. glibc-2.43 class, #238.
+export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir -Wno-error=discarded-qualifiers"
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
