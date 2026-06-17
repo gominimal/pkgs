@@ -15,6 +15,11 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
+# Perl's Configure bakes the wall-clock build time into Config (cf_time/cf_by),
+# which makes the build non-reproducible. Pin both deterministically.
+export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-0}"
+CF_TIME="$(LC_ALL=C TZ=UTC date -u -d "@$SOURCE_DATE_EPOCH" 2>/dev/null || echo 'Thu Jan  1 00:00:00 UTC 1970')"
+
 sh Configure  -des                                          \
              -D cc=gcc                                     \
              -D prefix=/usr                                 \
@@ -29,7 +34,9 @@ sh Configure  -des                                          \
              -D man3dir=/usr/share/man/man3                \
              -D pager="/usr/bin/less -isR"                 \
              -D useshrplib                                 \
-             -D usethreads
+             -D usethreads                                  \
+             -D cf_time="$CF_TIME"                          \
+             -D cf_by=builder
 
 make -j$(nproc)
 # TEST_JOBS=$(nproc) make test_harness # TODO there are failures
