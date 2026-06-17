@@ -1,57 +1,58 @@
-let { Attrs, BuildSpec, Local, OutputBin, Test, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let make = import "../make/build.ncl" in
+let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let libarchive = import "../libarchive/build.ncl" in
 
-# `unzip` is now a thin compatibility shim: it installs a `/usr/bin/unzip`
-# wrapper script that execs libarchive's `bsdunzip`, the maintained successor to
-# the EOL Info-ZIP unzip (frozen since 2009, carrying unfixed
-# CVE-2014-8139/8140/8141 + CVE-2018-1000035). A wrapper, not a symlink — the
-# sandbox rejects symlinks pointing outside a package's own output, and bsdunzip
-# lives in libarchive's output. bsdunzip is a drop-in for the flags our
-# consumers use (`-o`/`-q`/`-d`/`-p`); existing callers (bun, chromium-bin,
-# chromium-headless-shell-bin) keep invoking `unzip` unchanged. Version-tracking
-# follows libarchive (this also un-darkens it for `pkgmgr check`).
+let version = "6.0" in
 {
   name = "unzip",
   build_deps = [
     { file = "build.sh" } | Local,
+    {
+      url = "http://http.debian.net/debian/pool/main/u/unzip/unzip_6.0.orig.tar.gz",
+      sha256 = "036d96991646d0449ed0aa952e4fbe21b476ce994abc276e49d30e686708bd37",
+      extract = true,
+      strip_prefix = "unzip60",
+    } | Source,
     base,
+    make,
+    toolchain,
   ],
   runtime_deps = [
     glibc,
-    libarchive,
   ],
 
   cmd = "./build.sh",
+  build_args = { include version },
 
   outputs = {
-    # A /bin/sh wrapper that execs bsdunzip (provided by the libarchive runtime
-    # dep). allow_missing_interpreter: the /bin/sh shebang is satisfied by the
-    # base system at runtime, same as xz's script bins.
-    unzip = { glob = "usr/bin/unzip", allow_missing_interpreter = true } | OutputBin,
+    funzip = { glob = "usr/bin/funzip" } | OutputBin,
+    unzip = { glob = "usr/bin/unzip" } | OutputBin,
+    unzipsfx = { glob = "usr/bin/unzipsfx" } | OutputBin,
+    zipgrep = { glob = "usr/bin/zipgrep", allow_missing_interpreter = true } | OutputBin,
+    zipinfo = { glob = "usr/bin/zipinfo" } | OutputBin,
+
+    mans = { glob = "usr/share/man/man1/*.1" } | OutputData,
   },
 
   attrs =
     {
-      upstream_version = "3.8.7",
-      license_spdx = "BSD-2-Clause",
-      repology_project = "libarchive",
-      source_provenance = {
-        category = 'GithubRepo,
-        owner = "libarchive",
-        repo = "libarchive",
-      },
+      upstream_version = version,
+      license_spdx = "Info-ZIP",
+      repology_project = "unzip",
     } | Attrs,
 
   tests = {
+    smoketest = standaloneTest "/bin/unzip -v",
+
     roundtrip =
       {
         class = 'Standalone,
-        test_deps = [base, libarchive],
+        test_deps = [base],
         cmds = [
-          # Extract a tiny zip built inline (one file "hello" containing
-          # "hello\n") through the unzip->bsdunzip symlink.
+          # The package can extract a tiny zip archive built into this test:
+          # just the bytes for a one-file zip containing "hello\n".
           [
             "/bin/bash",
             "-c",
