@@ -55,5 +55,12 @@ let version = "3.8.9" in
     {
       upstream_version = version,
       license_spdx = "(GPL-3.0-only AND LGPL-2.1-only)",
+      # Vuln-scan identity. GnuProject → pkg:generic/gnu/gnutls, which the
+      # cpe_remap maps to NVD's gnu:gnutls — without this, gnutls is "dark"
+      # (no provenance → never queried → reported 0/0/0 despite real CVEs).
+      source_provenance = {
+        category = 'GnuProject,
+        name = "gnutls",
+      },
     } | Attrs,
 } | BuildSpec
