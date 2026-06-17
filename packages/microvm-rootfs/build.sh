@@ -112,7 +112,16 @@ KB="$(du -sk "$STAGE" | cut -f1)"
 BLOCKS=$(( KB + KB / 10 + 8192 ))
 # No journal (`-O ^has_journal`): the root mounts read-only, so the journal is
 # pure overhead and its ~4 MiB+ reservation can overflow a tight image.
-mke2fs -q -t ext4 -O ^has_journal -d "$STAGE" -b 1024 -F "$OUT/rootfs.img" "$BLOCKS"
+#
+# Reproducibility: mke2fs otherwise randomizes the filesystem UUID and the
+# directory hash seed and stamps the current time on every inode. Pin all three
+# (fixed UUID + hash seed; SOURCE_DATE_EPOCH for inode/superblock times) so the
+# image is byte-identical across builds.
+export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-0}"
+ROOTFS_UUID=00112233-4455-6677-8899-aabbccddeeff
+mke2fs -q -t ext4 -O ^has_journal \
+  -U "$ROOTFS_UUID" -E hash_seed="$ROOTFS_UUID" \
+  -d "$STAGE" -b 1024 -F "$OUT/rootfs.img" "$BLOCKS"
 
 # Assert the output exists so a silent mke2fs failure surfaces here rather than
 # downstream as a missing materialize output.
