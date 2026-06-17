@@ -3,7 +3,8 @@ set -e
 
 export CC=gcc
 export LD=gcc
-export RUSTFLAGS="-C linker=gcc"
+export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo -C codegen-units=1"
+export CONST_RANDOM_SEED=0   # pin ahash/const-random compile-time seed
 
 # Install JS deps (skip postinstall which downloads pre-built binary).
 # Use the hoisted node-linker so node_modules is a flat, self-contained
@@ -34,6 +35,10 @@ cp cli/target/release/agent-browser bin/agent-browser-${PLATFORM}
 install -d $OUTPUT_DIR/usr/bin
 install -d $OUTPUT_DIR/usr/libexec/agent-browser
 
+# pnpm bakes wall-clock timestamps into its node_modules state files
+# (.modules.yaml `prunedAt`, .pnpm-workspace-state-v1.json `lastValidatedTimestamp`)
+# — non-deterministic and not needed at runtime. Drop them before packaging.
+rm -f node_modules/.modules.yaml node_modules/.pnpm-workspace-state-v1.json
 cp -R dist bin node_modules package.json $OUTPUT_DIR/usr/libexec/agent-browser/
 
 cat > $OUTPUT_DIR/usr/bin/agent-browser << EOF
