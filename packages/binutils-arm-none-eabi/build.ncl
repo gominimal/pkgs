@@ -7,14 +7,14 @@ let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "2.43.1" in
+let version = "2.46.1" in
 {
   name = "binutils-arm-none-eabi",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://mirrors.kernel.org/gnu/binutils/binutils-%{version}.tar.xz",
-      sha256 = "13f74202a3c4c51118b797a39ea4200d3f6cfbe224da6d1d95bb938480132dfd"
+      sha256 = "e127a709cba24c76de8936cb7083dd768f28cd37eb010492e2f19b71eb1294e4"
     } | Source,
     base-bootstrap,
     make,
