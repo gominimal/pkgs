@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -19,11 +19,7 @@ let version = "1.31" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/acmel/dwarves/archive/refs/tags/v%{version}.tar.gz",
-      # TODO(detonation): dwarves v1.31 has no GitHub *release* asset, so this
-      # sha could not be fetched in the authoring sandbox (curl-to-github was
-      # blocked). Verify before the first build:
-      #   curl -sL https://github.com/acmel/dwarves/archive/refs/tags/v1.31.tar.gz | sha256sum
-      sha256 = "0000000000000000000000000000000000000000000000000000000000000000",
+      sha256 = "2b6511691bda2b3ae328987092902d30fd073ef7c8754894f4a69271a66686f2",
       extract = true,
       strip_prefix = "dwarves-%{version}",
     } | Source,
@@ -33,6 +29,13 @@ let version = "1.31" in
     ninja,
     pkgconf,
     toolchain,
+    # dwarves' CMake (LIBBPF_EMBEDDED=OFF) resolves these at BUILD time:
+    #   pkg_check_modules(libbpf), find_package(DWARF)=libdw/elfutils,
+    #   find_package(ZLIB), and argp/obstack from glibc.
+    elfutils,
+    glibc,
+    libbpf,
+    zlib,
   ],
 
   runtime_deps = [

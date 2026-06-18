@@ -47,6 +47,11 @@ let version = "0.195" in
     libs = { glob = "usr/lib/*.{a,so*}" } | OutputLib,
 
     includes = { glob = "usr/include/**" } | OutputData,
+
+    # libelf.pc / libdw.pc — installed by `make install` but previously
+    # uncaptured, so any pkg-config consumer (e.g. libbpf's
+    # `Requires.private: libelf`, resolved by dwarves) failed to find them.
+    pkgconfigs = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
   },
 
   attrs =

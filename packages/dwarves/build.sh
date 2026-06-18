@@ -1,8 +1,6 @@
 #!/bin/sh
 set -e
 
-cd dwarves-$MINIMAL_ARG_VERSION
-
 mkdir build &&
 cd    build
 
@@ -11,10 +9,9 @@ case $(uname -m) in
   aarch64) MARCH="-march=armv8-a" ;;
   *)       MARCH="" ;;
 esac
+export CC=gcc
 export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
 export LDFLAGS="-Wl,--build-id=none"
-export CXXFLAGS="$CFLAGS"
-export SOURCE_DATE_EPOCH=0
 
 # Build pahole against the SYSTEM libbpf (the libbpf pkgs package) instead of the
 # vendored git submodule — the GitHub archive tarball does not include submodules,

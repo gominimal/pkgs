@@ -24,6 +24,10 @@ let version = "1.7.0" in
     make,
     pkgconf,
     toolchain,
+    # libbpf links libelf (elfutils) and zlib at build time; pkg-config must
+    # find libelf.pc and the headers must be present in the build sandbox.
+    elfutils,
+    zlib,
   ],
 
   runtime_deps = [
