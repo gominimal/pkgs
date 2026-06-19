@@ -31,6 +31,10 @@ sed -i 's/let preload1 = nonDetKeysUniqMap (filterUniqMap (isJust . uv_explicit)
 ghc_pkg_main=utils/ghc-pkg/Main.hs
 grep -q 'confs = map (path </>) $ filter (".conf" `isSuffixOf`) fs' "$ghc_pkg_main" \
   || { echo "ERROR: ghc-pkg package.cache patch target not found in $ghc_pkg_main — GHC source changed." >&2; exit 1; }
+# The `sort $` below needs `sort` in scope; 9.10.3's Main.hs imports it (line 78),
+# but guard it so a future GHC import reorg fails here, not deep in the build.
+grep -qE 'import Data.List \(.*\bsort\b' "$ghc_pkg_main" \
+  || { echo "ERROR: 'sort' not imported in $ghc_pkg_main — patch (2) requires it (add a sort import)." >&2; exit 1; }
 sed -i 's#confs = map (path </>) $ filter (".conf" `isSuffixOf`) fs#confs = map (path </>) $ sort $ filter (".conf" `isSuffixOf`) fs#' "$ghc_pkg_main"
 
 # Create stubs for tools ./configure / bootstrap.py checks for but aren't strictly needed
