@@ -30,7 +30,7 @@ let coreutils = import "../coreutils/build.ncl" in
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/stage0-posix-1.9.1.tar.zst",
-      sha256 = "<RECORD-AT-PIN-TIME source tarball sha>",
+      sha256 = "33108c8c1271a12c3eae9509dff4c10c55b7475548cf5d370778eaf7138194df",
       extract = true,
     } | Source,
     hex0, # Build dep -> seed hardlinked into rootfs at /usr/bin/hex0
