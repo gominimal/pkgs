@@ -204,6 +204,12 @@ def main() -> int:
     if args.changed is not None:
         seeds += [s for s in changed_packages(args.changed) if s not in seeds]
     if not seeds:
+        # --changed with no changed packages (or any --no-fail run) is normal,
+        # not an error: there is simply nothing to check. Exit 0 so the
+        # report-only workflow stays green on PRs that touch no packages.
+        if args.changed is not None or args.no_fail:
+            print("no seed packages (no packages/* changed) -- nothing to check.")
+            return 0
         eprint("error: no seed packages (pass names or --changed).")
         return 2
 
