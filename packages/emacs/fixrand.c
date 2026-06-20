@@ -81,5 +81,6 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp) {
         tp->tv_nsec = 0;
         return 0;
     }
+    if (!real_clock_gettime) { errno = ENOSYS; return -1; }
     return real_clock_gettime(clk_id, tp);
 }
