@@ -28,6 +28,20 @@
 
 static uint32_t seed = 0x12345678;
 
+/* Resolve real symbols once at library load time via a constructor.  Doing this
+ * inside the interposed function itself is unsafe for clock_gettime: on some
+ * glibc versions dlsym(RTLD_NEXT, ...) takes dl_load_lock and may internally
+ * call clock_gettime (e.g. for CLOCK_MONOTONIC profiling / adaptive locking),
+ * causing deadlock or infinite recursion on the very first call. */
+static ssize_t (*real_read)(int, void *, size_t) = NULL;
+static int (*real_clock_gettime)(clockid_t, struct timespec *) = NULL;
+
+__attribute__((constructor))
+static void fixrand_init(void) {
+    real_read = dlsym(RTLD_NEXT, "read");
+    real_clock_gettime = dlsym(RTLD_NEXT, "clock_gettime");
+}
+
 static uint32_t next_rand(void) {
     seed = seed * 1103515245 + 12345;
     return seed;
@@ -46,10 +60,6 @@ ssize_t getrandom(void *buf, size_t buflen, unsigned int flags) {
 }
 
 ssize_t read(int fd, void *buf, size_t count) {
-    static ssize_t (*real_read)(int, void *, size_t) = NULL;
-    if (!real_read)
-        real_read = dlsym(RTLD_NEXT, "read");
-
     char proc_path[64];
     char target[256];
     snprintf(proc_path, sizeof(proc_path), "/proc/self/fd/%d", fd);
@@ -63,6 +73,10 @@ ssize_t read(int fd, void *buf, size_t count) {
             return (ssize_t)count;
         }
     }
+    if (!real_read) {
+        errno = EIO;
+        return -1;
+    }
     return real_read(fd, buf, count);
 }
 
@@ -72,9 +86,6 @@ ssize_t read(int fd, void *buf, size_t count) {
    sandbox-exported SOURCE_DATE_EPOCH); CLOCK_MONOTONIC and others pass through
    so timeouts / progress loops are unaffected. */
 int clock_gettime(clockid_t clk_id, struct timespec *tp) {
-    static int (*real_clock_gettime)(clockid_t, struct timespec *) = NULL;
-    if (!real_clock_gettime)
-        real_clock_gettime = dlsym(RTLD_NEXT, "clock_gettime");
     if (clk_id == CLOCK_REALTIME && tp) {
         const char *e = getenv("SOURCE_DATE_EPOCH");
         tp->tv_sec = e ? (time_t)strtoll(e, NULL, 10) : 0;
