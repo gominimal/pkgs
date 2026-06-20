@@ -102,9 +102,21 @@ def source_ext(pkg: dict) -> str | None:
 
 
 def source_url(pkg: dict) -> str | None:
-    """The package's primary source URL (first `source` dep carrying a url)."""
+    """The package's primary source URL (first `source` dep carrying a url).
+
+    A source dep carries its fetch spec under `from` (a dict shaped like
+    {"type": "web", "url": ..., "sha256": ...}); tolerate an older flat shape
+    where `url` sits directly on the dep. NOTE: most catalog sources resolve to
+    a `gs://minimal-staging-archives/...` mirror, which has no HTTP Last-Modified
+    oracle -- only the http(s) sources (a minority) yield a date via this tier.
+    """
     for d in pkg.get("build_deps", []):
-        if isinstance(d, dict) and d.get("type") == "source" and d.get("url"):
+        if not (isinstance(d, dict) and d.get("type") == "source"):
+            continue
+        frm = d.get("from")
+        if isinstance(frm, dict) and frm.get("url"):
+            return frm["url"]
+        if d.get("url"):
             return d["url"]
     return None
 
@@ -147,9 +159,17 @@ def github_date(owner: str, repo: str, version: str) -> tuple[str | None, str]:
             return d, f"github release (tag {t})"
     # 2) tags-only repos: resolve the tag to a commit/annotated-tag date.
     for t in candidate_tags(version, repo):
-        ref = gh_json(f"repos/{owner}/{repo}/git/refs/tags/{t}")
+        # Singular `git/ref/...` returns one object; the plural `git/refs/...`
+        # returns a LIST of all prefix-matching refs (which broke `.get`). Guard
+        # against a list anyway and accept only an exact `refs/tags/{t}` match.
+        ref = gh_json(f"repos/{owner}/{repo}/git/ref/tags/{t}")
         if not ref:
             continue
+        if isinstance(ref, list):
+            ref = next((r for r in ref if isinstance(r, dict)
+                        and r.get("ref") == f"refs/tags/{t}"), None)
+            if not ref:
+                continue
         obj = ref.get("object", {})
         sha, kind = obj.get("sha"), obj.get("type")
         if kind == "tag":  # annotated
