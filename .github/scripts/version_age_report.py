@@ -11,12 +11,17 @@ Date resolution precedence, per package:
   1. attrs.released_at            -- explicit maintainer declaration (override)
   2. GithubRepo  -> GitHub API    -- releases-by-tag, else tag's commit date
   3. GnuProject  -> ftp.gnu.org   -- Last-Modified of the release tarball
-  4. otherwise   -> UNKNOWN       -- "needs attrs.released_at"
+  4. any source  -> source-URL    -- HEAD the package's own source for its
+                                     Last-Modified ("date on the file"); catches
+                                     no-provenance packages + tiers 2/3 misses
+  5. otherwise   -> UNKNOWN       -- "needs attrs.released_at" (non-http source)
 
-The honest gap: ~219 GithubRepo + ~43 GnuProject are auto-derivable; the
-remaining ~82 have NO source_provenance (toolchains, X11 libs, pinned binaries)
-and are the real target of the attrs.released_at convention. Until a maintainer
-backfills released_at, those land in UNKNOWN.
+Tier 4 shrinks the UNKNOWN set: most no-provenance packages (toolchains, X11
+libs, pinned binaries) still have an http(s) source tarball whose Last-Modified
+is a usable availability date. The genuine residue is sources with no http(s)
+date (gs:// mirrors, git), which still need attrs.released_at. (Note: Last-
+Modified is the artifact's availability/upload time, not strictly the upstream
+release date -- close enough for a soak gate, and dwell backstops it.)
 
 SECURITY: `name`/`owner`/`repo`/`version` come from untrusted build.ncl. They are
 validated against a strict charset before being composed into any URL or passed
@@ -93,6 +98,14 @@ def source_ext(pkg: dict) -> str | None:
             m = re.search(r"\.tar\.([A-Za-z0-9]+)$", d.get("url", ""))
             if m:
                 return m.group(1)
+    return None
+
+
+def source_url(pkg: dict) -> str | None:
+    """The package's primary source URL (first `source` dep carrying a url)."""
+    for d in pkg.get("build_deps", []):
+        if isinstance(d, dict) and d.get("type") == "source" and d.get("url"):
+            return d["url"]
     return None
 
 
@@ -178,6 +191,44 @@ def gnu_date(name: str, version: str, ext: str | None) -> tuple[str | None, str]
     return None, "ftp.gnu.org HEAD failed"
 
 
+# ---- generic source-URL date (the "date on the file" fallback) -------------
+
+def url_last_modified(url: str) -> tuple[str | None, str]:
+    """HEAD the package's own source URL and read its Last-Modified date.
+
+    The URL is taken WHOLE from the spec (the exact one the sandboxed build
+    fetches), not composed from identifiers, so there's no SSRF-via-version risk
+    here; restricted to http(s) and follows redirects (release assets often 30x
+    to a CDN). NOTE: on a fork PR the URL is attacker-influenceable, but this is
+    a read-only HEAD on an ephemeral runner with no secrets, fetching the same
+    URL the build already does -- if that surface is unwanted, gate this tier to
+    same-repo PRs (reviewer's call).
+
+    Last-Modified is the artifact's availability/upload time, not strictly the
+    upstream release date -- usually close, and arguably the more correct signal
+    for a soak gate. Dwell (git time in main) backstops it, so a package is never
+    ungated even when this returns None.
+    """
+    if not url.lower().startswith(("http://", "https://")):
+        return None, "non-http(s) source (no Last-Modified oracle)"
+    p = subprocess.run(["curl", "-sIL", "--max-time", "20", url],
+                       capture_output=True, text=True)
+    if p.returncode != 0 or not p.stdout:
+        return None, "source-url HEAD failed"
+    # Across redirect hops take the last Last-Modified (the final response's).
+    last_mod = None
+    for ln in p.stdout.splitlines():
+        if ln.lower().startswith("last-modified:"):
+            last_mod = ln.split(":", 1)[1].strip()
+    if last_mod:
+        try:
+            dt = parsedate_to_datetime(last_mod).astimezone(timezone.utc)
+            return dt.date().isoformat(), "source-url Last-Modified"
+        except (TypeError, ValueError):
+            pass
+    return None, "source-url has no Last-Modified header"
+
+
 # ---- per-package resolution ------------------------------------------------
 
 def resolve(pkg: dict) -> tuple[str, str | None, str, str]:
@@ -191,19 +242,30 @@ def resolve(pkg: dict) -> tuple[str, str | None, str, str]:
     if declared:
         return version, declared, src_type, "attrs.released_at"
 
+    # Provenance-specific oracles first (most accurate: the real upstream
+    # release date). Fall THROUGH to the generic source-URL fallback if they
+    # don't resolve (unmatched tag, unsafe identifier), rather than giving up.
     if prov and prov["category"] == "GithubRepo" and prov["owner"] and prov["repo"]:
-        if not (safe_token(prov["owner"]) and safe_token(prov["repo"]) and safe_token(version)):
-            return version, None, src_type, "unsafe identifier; needs released_at"
-        d, detail = github_date(prov["owner"], prov["repo"], version)
-        return version, d, src_type, detail
+        if safe_token(prov["owner"]) and safe_token(prov["repo"]) and safe_token(version):
+            d, detail = github_date(prov["owner"], prov["repo"], version)
+            if d:
+                return version, d, src_type, detail
+    elif prov and prov["category"] == "GnuProject" and prov["name"]:
+        if safe_token(prov["name"]) and safe_token(version):
+            d, detail = gnu_date(prov["name"], version, source_ext(pkg))
+            if d:
+                return version, d, src_type, detail
 
-    if prov and prov["category"] == "GnuProject" and prov["name"]:
-        if not (safe_token(prov["name"]) and safe_token(version)):
-            return version, None, src_type, "unsafe identifier; needs released_at"
-        d, detail = gnu_date(prov["name"], version, source_ext(pkg))
-        return version, d, src_type, detail
+    # Generic fallback: the source artifact's own Last-Modified ("date on the
+    # file"). Catches no-provenance packages AND tier-2/3 misses. This is what
+    # shrinks the UNKNOWN set.
+    surl = source_url(pkg)
+    if surl:
+        d, detail = url_last_modified(surl)
+        if d:
+            return version, d, src_type, detail
 
-    return version, None, src_type, "no GitHub/GNU source and no attrs.released_at"
+    return version, None, src_type, "no derivable date; needs attrs.released_at"
 
 
 def classify(date_str: str | None, min_age: int) -> tuple[int | None, str]:
