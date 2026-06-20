@@ -1,0 +1,21 @@
+# Driven by the just-built kaem-0. kaem aborts HARD on any non-zero child, so each line is
+# also an assertion. No env expansion, no cd, no PATH search: /build and /build/output are
+# minimal's fixed paths and every tool is named by absolute path.
+
+# Phase-0 (bedrock fixed point, re-asserted UNDER kaem): self-reproduce hex0 from source.
+/usr/bin/hex0 stage0-posix-1.9.1/AMD64/hex0_AMD64.hex0 /build/hex0.built
+/usr/bin/chmod 0755 /build/hex0.built
+
+# Phase-0b: assemble hex1 from source, driven by kaem, using the just-reproduced hex0.
+/build/hex0.built stage0-posix-1.9.1/AMD64/hex1_AMD64.hex0 /build/hex1.built
+/usr/bin/chmod 0755 /build/hex1.built
+
+# Byte-identity gate for all three derived artifacts (sha256sum -c returns 1 on any mismatch
+# -> kaem ABORTS HARD). Preserves B1's fixed-point assertion without bash.
+/usr/bin/sha256sum -c stage0.answers
+
+# Stage outputs into minimal's fixed OUTPUT_DIR (=/build/output).
+/usr/bin/mkdir -p /build/output/usr/bin
+/usr/bin/cp /build/kaem-0 /build/output/usr/bin/kaem
+/usr/bin/cp /build/hex0.built /build/output/usr/bin/hex0
+/usr/bin/cp /build/hex1.built /build/output/usr/bin/hex1
