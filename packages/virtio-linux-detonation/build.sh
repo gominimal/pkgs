@@ -151,6 +151,14 @@ $CFG --enable PERF_EVENTS
 $CFG --enable KPROBE_EVENTS
 $CFG --enable UPROBE_EVENTS
 $CFG --enable BPF_EVENTS
+# FUNCTION_TRACER -> DYNAMIC_FTRACE -> DYNAMIC_FTRACE_WITH_ARGS (arm64 selects it
+# when GCC_SUPPORTS_DYNAMIC_FTRACE_WITH_ARGS). This is what provides BPF
+# TRAMPOLINES, which BPF-LSM/fentry programs attach through. Without it,
+# attaching an LSM program fails at runtime with bpf_raw_tracepoint_open
+# ENOTSUPP (os err 524) even though BPF_LSM is active — the FTRACE menu alone is
+# NOT enough; the function tracer itself must be on.
+$CFG --enable FUNCTION_TRACER
+$CFG --enable DYNAMIC_FTRACE
 
 # BPF core + LSM. BPF_LSM depends on BPF_EVENTS && BPF_SYSCALL && SECURITY && BPF_JIT.
 $CFG --enable BPF
@@ -204,7 +212,7 @@ make olddefconfig
 # olddefconfig (e.g. an unmet dependency silently turned one off). Without
 # these the kernel boots fine but is observability-blind, which would be a
 # silent, confusing failure downstream.
-for sym in CONFIG_BPF_LSM CONFIG_DEBUG_INFO_BTF CONFIG_AUDIT; do
+for sym in CONFIG_BPF_LSM CONFIG_DEBUG_INFO_BTF CONFIG_AUDIT CONFIG_DYNAMIC_FTRACE_WITH_ARGS; do
   if ! grep -q "^${sym}=y" .config; then
     echo "FATAL: ${sym}=y did not survive olddefconfig" >&2
     echo "--- dependency-chain state in .config (find the unmet link) ---" >&2
