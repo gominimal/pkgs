@@ -9,19 +9,22 @@ programming error, which the workflow downgrades to a warning.
 
 Date resolution precedence, per package:
   1. attrs.released_at            -- explicit maintainer declaration (override)
-  2. GithubRepo  -> GitHub API    -- releases-by-tag, else tag's commit date
-  3. GnuProject  -> ftp.gnu.org   -- Last-Modified of the release tarball
-  4. any source  -> source-URL    -- HEAD the package's own source for its
+  2. self-dated version           -- trailing YYYYMMDD in the version (ncurses &
+                                     other dated snapshots); pure, no network
+  3. GithubRepo  -> GitHub API    -- releases-by-tag, else tag's commit date
+  4. GnuProject  -> ftp.gnu.org   -- Last-Modified of the tarball (flat / nested
+                                     per-version dir / aliased project dir)
+  5. any source  -> source-URL    -- HEAD the package's own https source for its
                                      Last-Modified ("date on the file"); catches
-                                     no-provenance packages + tiers 2/3 misses
-  5. otherwise   -> UNKNOWN       -- "needs attrs.released_at" (non-http source)
+                                     no-provenance packages + tier 3/4 misses
+  6. otherwise   -> UNKNOWN       -- "needs attrs.released_at"
 
-Tier 4 shrinks the UNKNOWN set: most no-provenance packages (toolchains, X11
-libs, pinned binaries) still have an http(s) source tarball whose Last-Modified
-is a usable availability date. The genuine residue is sources with no http(s)
-date (gs:// mirrors, git), which still need attrs.released_at. (Note: Last-
-Modified is the artifact's availability/upload time, not strictly the upstream
-release date -- close enough for a soak gate, and dwell backstops it.)
+A full-catalog census (2026-06-20) put tier coverage at 280/373: most sources
+are a `gs://minimal-staging-archives/` mirror (no HTTP Last-Modified oracle), so
+tier 5 helps only the https-sourced minority -- the no-provenance residue (~90
+toolchains/prebuilts/X11 libs) genuinely needs attrs.released_at or exemption.
+(Last-Modified is the artifact's availability/upload time, not strictly the
+upstream release date -- close enough for a soak gate, and dwell backstops it.)
 
 SECURITY: `name`/`owner`/`repo`/`version` come from untrusted build.ncl. They are
 validated against a strict charset before being composed into any URL or passed
@@ -93,11 +96,17 @@ def provenance(attrs: dict) -> dict | None:
 
 
 def source_ext(pkg: dict) -> str | None:
+    # Read the URL the same way source_url does (nested `from.url`, else flat
+    # `url`) and match on the path only, ignoring any ?query/#fragment.
     for d in pkg.get("build_deps", []):
-        if isinstance(d, dict) and d.get("type") == "source":
-            m = re.search(r"\.tar\.([A-Za-z0-9]+)$", d.get("url", ""))
-            if m:
-                return m.group(1)
+        if not (isinstance(d, dict) and d.get("type") == "source"):
+            continue
+        frm = d.get("from")
+        url = (frm.get("url") if isinstance(frm, dict) else None) or d.get("url") or ""
+        path = url.split("?", 1)[0].split("#", 1)[0]
+        m = re.search(r"\.tar\.([A-Za-z0-9]+)$", path)
+        if m:
+            return m.group(1)
     return None
 
 
@@ -124,12 +133,54 @@ def source_url(pkg: dict) -> str | None:
 # ---- GitHub date resolution ------------------------------------------------
 
 def candidate_tags(version: str, repo: str) -> list[str]:
-    """Bounded, ordered tag guesses covering observed formats: bare
-    (ripgrep 15.1.0), v-prefixed (bat v0.26.1), name-prefixed + dots->underscores
-    (curl curl-8_20_0)."""
-    vu = version.replace(".", "_")
-    cands = [version, f"v{version}", f"{repo}-{version}", f"{repo}-{vu}",
-             f"{repo}_{version}", f"{repo}_{vu}", vu, f"v{vu}"]
+    """Bounded, ordered, de-duplicated tag guesses for a GitHub repo.
+
+    Two layers, cheapest/most-likely first:
+      (A) generic forms from the bare version + repo name. The first eight entries
+          are the historical order (bare, v-prefixed, repo-dashed, dots->under-
+          scores) -- unchanged so no existing format regresses -- plus repo-derived
+          families that plausibly recur: repo+'-v' (bun-v1.3.14), repo+'@'
+          (varlock@0.2.3, monorepo per-pkg) and lib-stripped (libfuse->fuse-3.18.2,
+          libxkbcommon->xkbcommon-1.13.1).
+      (B) bespoke per-repo schemes, keyed on the repo name, each justified by a
+          probed upstream tag. Emitted ONLY for their own repo so they don't
+          pollute every lookup or risk a cross-repo false hit.
+
+    Pure (no network); <=~14 candidates for any input.
+    """
+    vu = version.replace(".", "_")     # 8.20.0 -> 8_20_0  (curl, expat, postgres)
+    vd = version.replace(".", "-")     # 8.6.16 -> 8-6-16  (tcl core-)
+    # openssh-portable: 10.3p1 -> V_10_3_P1 (dots->'_', portable 'p'->'_P', upper)
+    v_ssh = ("V_" + version.lower().replace(".", "_").replace("p", "_P")).upper()
+
+    cands = [
+        version, f"v{version}",
+        f"{repo}-{version}", f"{repo}-{vu}",
+        f"{repo}_{version}", f"{repo}_{vu}",
+        vu, f"v{vu}",
+        f"{repo}-v{version}",          # bun-v1.3.14
+        f"{repo}@{version}",           # varlock@0.2.3 (monorepo per-pkg tag)
+    ]
+    if repo.lower().startswith("lib") and len(repo) > 3:
+        base = repo[3:]                # libfuse->fuse, libxkbcommon->xkbcommon
+        cands += [f"{base}-{version}", f"{base}-v{version}"]
+
+    # Bespoke schemes keyed on the provenance repo name (value = exact candidate).
+    overrides = {
+        "libexpat":         [f"R_{vu}"],                   # R_2_7_5
+        "postgres":         [f"REL_{vu}"],                 # REL_18_4 (v10+, 2-part)
+        "tcl":              [f"core-{vd}"],                # core-8-6-16
+        "openssh":          [v_ssh],                       # V_10_3_P1
+        "openssh-portable": [v_ssh],                       # V_10_3_P1 (repo alias)
+        "llvm-project":     [f"llvmorg-{version}"],        # llvmorg-21.1.8
+        "sqlite":           [f"version-{version}"],        # version-3.50.4
+        "codex":            [f"rust-v{version}"],          # rust-v0.130.0 (monorepo)
+        "tools":            [f"gopls/v{version}"],         # gopls/v0.21.1 (golang/tools)
+        "cabal":            [f"cabal-install-v{version}"], # cabal-install-v3.12.1.0
+        "Little-CMS":       [f"lcms{version}"],            # lcms2.17
+    }
+    cands += overrides.get(repo, [])
+
     seen, out = set(), []
     for c in cands:
         if c not in seen:
@@ -139,7 +190,15 @@ def candidate_tags(version: str, repo: str) -> list[str]:
 
 
 def gh_json(path: str) -> dict | None:
-    p = subprocess.run(["gh", "api", path], capture_output=True, text=True)
+    # NOTE: every non-zero exit (404, but also 403 rate-limit / 5xx / network /
+    # timeout) collapses to None, which callers read as "no such tag". Fine for
+    # the report-only check over a handful of changed packages; a full-catalog
+    # sweep should distinguish 403-rate-limit from 404 and bulk-fetch tags.
+    try:
+        p = subprocess.run(["gh", "api", path], capture_output=True,
+                           text=True, timeout=30)
+    except subprocess.TimeoutExpired:
+        return None
     if p.returncode != 0:
         return None
     try:
@@ -185,71 +244,133 @@ def github_date(owner: str, repo: str, version: str) -> tuple[str | None, str]:
     return None, f"no github release/tag matched {version}"
 
 
+# ---- HTTPS HEAD date helper (shared by the GNU + source-URL tiers) ----------
+
+def _curl_head_date(url: str) -> str | None:
+    """HEAD an https URL (following https-only redirects) and return the FINAL
+    response's Last-Modified as an ISO date, else None.
+
+    Hardening: https-only with `--proto/--proto-redir =https` and bounded
+    redirects closes the SSRF / protocol-downgrade surface on attacker-influenced
+    (fork-PR) URLs; validating that the FINAL hop is 2xx stops an error page that
+    happens to carry a stale Last-Modified from yielding a bogus (often old)
+    'release date'. A naive RFC822 datetime is treated as UTC.
+    """
+    if not url.lower().startswith("https://"):
+        return None
+    try:
+        p = subprocess.run(
+            ["curl", "-sIL", "--proto", "=https", "--proto-redir", "=https",
+             "--max-redirs", "5", "--max-time", "20", url],
+            capture_output=True, text=True, timeout=30)
+    except subprocess.TimeoutExpired:
+        return None
+    if p.returncode != 0 or not p.stdout:
+        return None
+    # Walk hops; the accepted Last-Modified must belong to the final (2xx) block.
+    final_ok, last_mod = False, None
+    for ln in p.stdout.splitlines():
+        s = ln.strip()
+        if s.upper().startswith("HTTP/"):
+            parts = s.split()
+            final_ok = len(parts) > 1 and parts[1].startswith("2")
+            last_mod = None
+        elif s.lower().startswith("last-modified:"):
+            last_mod = s.split(":", 1)[1].strip()
+    if not (final_ok and last_mod):
+        return None
+    try:
+        dt = parsedate_to_datetime(last_mod)
+    except (TypeError, ValueError):
+        return None
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc).date().isoformat()
+
+
 # ---- GNU date resolution ---------------------------------------------------
+
+# gnu_name -> actual /gnu/<dir> for projects whose tarballs live under a
+# different (aliased) project directory than their package name.
+_GNU_DIR_ALIASES = {"libidn2": "libidn"}   # /gnu/libidn/libidn2-2.3.8.tar.gz
+
 
 def gnu_date(name: str, version: str, ext: str | None) -> tuple[str | None, str]:
     exts = [ext] if ext else []
-    for e in ("xz", "gz", "bz2", "lz"):
+    for e in ("xz", "gz", "bz2", "lz", "zst"):
         if e not in exts:
             exts.append(e)
-    for e in exts:
-        url = f"https://ftp.gnu.org/gnu/{name}/{name}-{version}.tar.{e}"
-        p = subprocess.run(["curl", "-sI", "--max-time", "20", url],
-                           capture_output=True, text=True)
-        if p.returncode != 0 or not p.stdout:
-            continue
-        status_ok = " 200" in p.stdout.splitlines()[0]
-        last_mod = next((ln.split(":", 1)[1].strip()
-                         for ln in p.stdout.splitlines()
-                         if ln.lower().startswith("last-modified:")), None)
-        if status_ok and last_mod:
-            try:
-                dt = parsedate_to_datetime(last_mod).astimezone(timezone.utc)
-                return dt.date().isoformat(), f"ftp.gnu.org (.tar.{e})"
-            except (TypeError, ValueError):
-                pass
-    return None, "ftp.gnu.org HEAD failed"
+
+    base = f"{name}-{version}"
+    # Candidate project dirs, most-likely first: the name, an explicit alias, and
+    # a trailing-digit-stripped alias (libidn2 -> libidn) as a generic fallback.
+    dirs = [name]
+    alias = _GNU_DIR_ALIASES.get(name)
+    if alias and alias not in dirs:
+        dirs.append(alias)
+    stripped = re.sub(r"\d+$", "", name)
+    if stripped and stripped != name and stripped not in dirs:
+        dirs.append(stripped)
+
+    # Per dir, try the flat layout then the per-version nested subdir (gcc).
+    stems, seen = [], set()
+    for d in dirs:
+        for s in (f"{d}/{base}", f"{d}/{base}/{base}"):
+            if s not in seen:
+                seen.add(s)
+                stems.append(s)
+
+    for stem in stems:
+        for e in exts:
+            d = _curl_head_date(f"https://ftp.gnu.org/gnu/{stem}.tar.{e}")
+            if d:
+                return d, f"ftp.gnu.org (.tar.{e})"
+    return None, "ftp.gnu.org HEAD failed (flat/nested/alias dirs)"
 
 
 # ---- generic source-URL date (the "date on the file" fallback) -------------
 
 def url_last_modified(url: str) -> tuple[str | None, str]:
-    """HEAD the package's own source URL and read its Last-Modified date.
+    """HEAD the package's own source URL for its Last-Modified date.
 
-    The URL is taken WHOLE from the spec (the exact one the sandboxed build
-    fetches), not composed from identifiers, so there's no SSRF-via-version risk
-    here; restricted to http(s) and follows redirects (release assets often 30x
-    to a CDN). NOTE: on a fork PR the URL is attacker-influenceable, but this is
-    a read-only HEAD on an ephemeral runner with no secrets, fetching the same
-    URL the build already does -- if that surface is unwanted, gate this tier to
-    same-repo PRs (reviewer's call).
+    https-only (an http:// or non-http source has no usable oracle here) with
+    https-only redirects and final-2xx validation -- see _curl_head_date for the
+    SSRF / bogus-date hardening. The URL is taken WHOLE from the spec (the exact
+    one the build fetches). NOTE: on a fork PR the URL is attacker-influenceable;
+    this is a read-only HEAD on an ephemeral runner with no secrets, but if the
+    internal-network reach is unwanted, gate this tier to same-repo PRs -- a
+    workflow-level decision this script can't make.
 
     Last-Modified is the artifact's availability/upload time, not strictly the
-    upstream release date -- usually close, and arguably the more correct signal
-    for a soak gate. Dwell (git time in main) backstops it, so a package is never
-    ungated even when this returns None.
+    upstream release date -- close enough for a soak gate, and dwell backstops it.
     """
-    if not url.lower().startswith(("http://", "https://")):
-        return None, "non-http(s) source (no Last-Modified oracle)"
-    p = subprocess.run(["curl", "-sIL", "--max-time", "20", url],
-                       capture_output=True, text=True)
-    if p.returncode != 0 or not p.stdout:
-        return None, "source-url HEAD failed"
-    # Across redirect hops take the last Last-Modified (the final response's).
-    last_mod = None
-    for ln in p.stdout.splitlines():
-        if ln.lower().startswith("last-modified:"):
-            last_mod = ln.split(":", 1)[1].strip()
-    if last_mod:
-        try:
-            dt = parsedate_to_datetime(last_mod).astimezone(timezone.utc)
-            return dt.date().isoformat(), "source-url Last-Modified"
-        except (TypeError, ValueError):
-            pass
-    return None, "source-url has no Last-Modified header"
+    if not url.lower().startswith("https://"):
+        return None, "non-https source (no Last-Modified oracle)"
+    d = _curl_head_date(url)
+    if d:
+        return d, "source-url Last-Modified"
+    return None, "source-url: no usable Last-Modified (non-2xx or absent)"
 
 
 # ---- per-package resolution ------------------------------------------------
+
+def self_dated_version(version: str) -> str | None:
+    """Some projects encode the release date in the version as a trailing
+    YYYYMMDD (ncurses weekly snapshots; other Thomas Dickey projects --
+    xterm/lynx/dialog/vile). That suffix IS the release date: parse it directly,
+    no network and no upstream archive needed (the dated tarball is often GC'd
+    upstream once superseded). Requires a separator before the 8 digits so a
+    normal dotted version can't false-match."""
+    m = re.search(r"(?:^|[-_.])(\d{8})$", version)
+    if not m:
+        return None
+    try:
+        return datetime.strptime(m.group(1), "%Y%m%d").date().isoformat()
+    except ValueError:
+        return None
+
 
 def resolve(pkg: dict) -> tuple[str, str | None, str, str]:
     """Return (version, date|None, source_type, date_source_detail)."""
@@ -261,6 +382,12 @@ def resolve(pkg: dict) -> tuple[str, str | None, str, str]:
 
     if declared:
         return version, declared, src_type, "attrs.released_at"
+
+    # Self-dating snapshot versions (e.g. ncurses 6.5-20250830) carry their date
+    # in the version string -- resolve with zero network before any other tier.
+    sd = self_dated_version(version)
+    if sd:
+        return version, sd, src_type, "self-dated snapshot (version suffix)"
 
     # Provenance-specific oracles first (most accurate: the real upstream
     # release date). Fall THROUGH to the generic source-URL fallback if they
@@ -305,6 +432,14 @@ def classify(date_str: str | None, min_age: int) -> tuple[int | None, str]:
 
 # ---- summary emit ----------------------------------------------------------
 
+def md_cell(s: str) -> str:
+    """Escape an untrusted build.ncl value for one Markdown table cell / code
+    span: neutralize column-splitting `|`, row-splitting newlines, and backticks
+    (backslash first, so the escapes we add aren't themselves doubled)."""
+    return (str(s).replace("\\", "\\\\").replace("|", "\\|")
+            .replace("`", "\\`").replace("\r", " ").replace("\n", " "))
+
+
 def emit(markdown: str) -> None:
     path = os.environ.get("GITHUB_STEP_SUMMARY")
     if path:
@@ -339,7 +474,8 @@ def main() -> int:
              "Non-blocking.\n")
         return 0
 
-    by_name = {p["name"]: p for p in catalog if isinstance(p, dict) and "name" in p}
+    by_name = {p["name"]: p for p in catalog
+               if isinstance(p, dict) and isinstance(p.get("name"), str)}
 
     with open(args.packages_file) as f:
         changed = [ln.strip() for ln in f if ln.strip()]
@@ -369,7 +505,7 @@ def main() -> int:
            "| package | version | source | release date | age (days) | vs reference |",
            "| --- | --- | --- | --- | ---: | --- |"]
     for r in rows:
-        out.append("| " + " | ".join(r) + " |")
+        out.append("| " + " | ".join(md_cell(c) for c in r) + " |")
     out += ["",
             "> This check never blocks merge and is intentionally excluded from "
             "branch-protection required checks. ⏳ = too fresh to promote "
@@ -379,7 +515,7 @@ def main() -> int:
                 "These packages have no GitHub/GNU source to derive a date from "
                 "(or an unsafe identifier). Backfill a verified UTC date:", "",
                 "```nickel", 'attrs.released_at = "YYYY-MM-DD",', "```", "",
-                *[f"- `{n}`" for n in unknown]]
+                *[f"- `{md_cell(n)}`" for n in unknown]]
 
     emit("\n".join(out) + "\n")
     return 0  # report-only: success regardless of verdicts
