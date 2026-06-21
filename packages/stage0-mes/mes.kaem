@@ -76,7 +76,9 @@ GUILE_LOAD_PATH=/build/mes-0.27.1/mes/module:/build/mes-0.27.1/module:/build/nya
 ############################################################
 # Set mes-m2's link base address to 0x8048000 (pass1.kaem applies this on every arch; the
 # amd64 mes-m2 checksum 672f2d71… is the post-replace value).  sed = attested `replace`.
-/usr/bin/sed -i 's|0x1000000|0x8048000|g' /build/mes-0.27.1/kaem.run
+# kaem passes single-quotes LITERALLY (kaem.c has a `"` case, NO `'` case) → bare token (no
+# spaces in the s|x|y|g expr so it tokenizes as one arg).
+/usr/bin/sed -i s|0x1000000|0x8048000|g /build/mes-0.27.1/kaem.run
 
 # Drop in the (empty-ish) mes config.h (Local file lands in /build).
 /usr/bin/cp /build/config.h /build/mes-0.27.1/include/mes/config.h
@@ -85,7 +87,10 @@ GUILE_LOAD_PATH=/build/mes-0.27.1/mes/module:/build/mes-0.27.1/module:/build/nya
 # after the rusage line.  sed append, keyed on the unique rusage line.  EXACT bytes matter:
 # the inserted line is two-spaces + `*long_status_ptr = 0;` — wait4.c feeds libc.a, whose
 # checksum (bfaf0e3d…) is in mes.answers, so a botched patch fails the gate LOUDLY.
-/usr/bin/sed -i '/  long long_rusage = cast_voidp_to_long (rusage);/a\  *long_status_ptr = 0;' /build/mes-0.27.1/lib/linux/wait4.c
+# kaem fix: this expr has SPACES so it needs kaem's `"` quoting (not bare); the sed append's
+# `a\` backslash is escaped `\\` so kaem's handle_escape emits a single `\` (gate catches a
+# botched patch LOUDLY via libc.a's sha, so a wrong escape fails-shut, never ships).
+/usr/bin/sed -i "/  long long_rusage = cast_voidp_to_long (rusage);/a\\  *long_status_ptr = 0;" /build/mes-0.27.1/lib/linux/wait4.c
 
 cd /build/mes-0.27.1
 # F1 fix (playbook EDIT 1): the tarball ships no include/arch/ (upstream pass1.kaem mkdir's it,
@@ -136,10 +141,11 @@ cd /build/mes-0.27.1
 # @prefix@ -> /usr (PREFIX_RT, the RUNTIME prefix) so the  #
 # mescc.scm checksum 20655e4e… matches.                    #
 ############################################################
-/usr/bin/sed -i 's|@prefix@|/usr|g' scripts/mescc.scm.in
-/usr/bin/sed -i 's|@VERSION@|0.27.1|g' scripts/mescc.scm.in
-/usr/bin/sed -i 's|@mes_cpu@|x86_64|g' scripts/mescc.scm.in
-/usr/bin/sed -i 's|@mes_kernel@|linux|g' scripts/mescc.scm.in
+# kaem fix: bare tokens (no spaces in s|x|y|g; single-quotes would pass to sed literally).
+/usr/bin/sed -i s|@prefix@|/usr|g scripts/mescc.scm.in
+/usr/bin/sed -i s|@VERSION@|0.27.1|g scripts/mescc.scm.in
+/usr/bin/sed -i s|@mes_cpu@|x86_64|g scripts/mescc.scm.in
+/usr/bin/sed -i s|@mes_kernel@|linux|g scripts/mescc.scm.in
 /usr/bin/cp scripts/mescc.scm.in /build/output/usr/bin/mescc.scm
 /usr/bin/chmod 755 /build/output/usr/bin/mescc.scm
 
