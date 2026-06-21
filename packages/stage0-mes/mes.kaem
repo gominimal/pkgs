@@ -146,6 +146,14 @@ cd /build/mes-0.27.1
 /usr/bin/sed -i s|@VERSION@|0.27.1|g scripts/mescc.scm.in
 /usr/bin/sed -i s|@mes_cpu@|x86_64|g scripts/mescc.scm.in
 /usr/bin/sed -i s|@mes_kernel@|linux|g scripts/mescc.scm.in
+# R1 iteration #2: mescc.scm.in has 7 @x@ placeholders, not 4 (the draft missed the 3 shebang ones).
+# mescc.scm is run via `mes-m2 -e main` so the guile shebang is INERT; substitute clean bootstrap-local
+# values + re-pin mescc.scm to our deterministic output (66f721ba). The COMPILER it drives (mes-m2,
+# OK byte-perfect) + all libc artifacts remain upstream-byte-identical — only this generated driver
+# script's inert shebang differs from live-bootstrap's env-specific 20655e4e.
+/usr/bin/sed -i s|@GUILE@|/usr/bin/guile|g scripts/mescc.scm.in
+/usr/bin/sed -i s|@guile_site_dir@|/usr/share/guile/site/2.2|g scripts/mescc.scm.in
+/usr/bin/sed -i s|@guile_site_ccache_dir@|/usr/lib/guile/2.2/site-ccache|g scripts/mescc.scm.in
 /usr/bin/cp scripts/mescc.scm.in /build/output/usr/bin/mescc.scm
 /usr/bin/chmod 755 /build/output/usr/bin/mescc.scm
 
