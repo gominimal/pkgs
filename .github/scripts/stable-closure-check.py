@@ -22,7 +22,10 @@ Mechanism (no minimal source changes):
     (basenames; basename == package `name` for all packages today). Or, with
     --stable-worktree, dump a stable checkout for name-exact enumeration.
 
-Exit codes: 0 = PASS (closed) or --no-fail; 1 = NOT CLOSED; 2 = operational error.
+Exit codes: 0 = PASS (closed) or any --no-fail run; 1 = NOT CLOSED; 2 = UNVERIFIED
+/ operational error (unknown seed, empty dump, missing stable ref). Under
+--no-fail every failure returns 0 but prints an explicit UNVERIFIED verdict, so a
+green run is never mistaken for a verified PASS.
 """
 from __future__ import annotations
 
@@ -38,6 +41,22 @@ def eprint(*a: object) -> None:
     print(*a, file=sys.stderr)
 
 
+# Set from --no-fail at the top of main(). Report-only building-block use must
+# never block a merge, so under --no-fail every operational/integrity failure
+# returns 0 -- but it emits an explicit UNVERIFIED verdict so a green run is
+# never mistaken for a verified PASS (the only safe fail-open semantics).
+NO_FAIL = False
+
+
+def fail(msg: str, code: int = 2):
+    eprint(f"error: {msg}")
+    if NO_FAIL:
+        print(f"VERDICT: UNVERIFIED — could not complete the closure check "
+              f"({msg}). Non-blocking (--no-fail).")
+        sys.exit(0)
+    sys.exit(code)
+
+
 def run(cmd: list[str], cwd: str | None = None, env: dict | None = None) -> str:
     try:
         res = subprocess.run(
@@ -45,11 +64,9 @@ def run(cmd: list[str], cwd: str | None = None, env: dict | None = None) -> str:
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
         )
     except FileNotFoundError:
-        eprint(f"error: command not found: {cmd[0]!r}")
-        sys.exit(2)
+        fail(f"command not found: {cmd[0]!r}")
     except subprocess.CalledProcessError as e:
-        eprint(f"error: command failed ({' '.join(cmd)}):\n{e.stderr.strip()}")
-        sys.exit(2)
+        fail(f"command failed ({' '.join(cmd)}):\n{e.stderr.strip()}")
     return res.stdout
 
 
@@ -73,11 +90,9 @@ def dump_packages(minimal_bin: str, cwd: str, arch: str) -> list[dict]:
     try:
         data = json.loads(out)
     except json.JSONDecodeError as e:
-        eprint(f"error: could not parse `minimal dump` JSON for arch {arch}: {e}")
-        sys.exit(2)
+        fail(f"could not parse `minimal dump` JSON for arch {arch}: {e}")
     if not isinstance(data, list):
-        eprint(f"error: unexpected dump shape for arch {arch} (expected a list)")
-        sys.exit(2)
+        fail(f"unexpected dump shape for arch {arch} (expected a list)")
     return data
 
 
@@ -111,6 +126,12 @@ def build_runtime_map(minimal_bin: str, cwd: str, arches: list[str]):
                 internet_providers.add(name)
             if "internet" in (pkg.get("needs") or {}):
                 needs_internet.add(name)
+    if not catalog:
+        # An empty-but-valid dump (wrong --repo, a package-less dir, or a future
+        # dump-format change) would otherwise make every closure == its seeds and
+        # PASS vacuously. Refuse to verify against an empty catalog.
+        fail(f"dumped catalog is empty for {cwd!r} (arches {', '.join(arches)}); "
+             f"nothing to check against -- wrong --repo or `minimal dump` change?")
     return runtime, catalog, needs_internet, internet_providers
 
 
@@ -140,13 +161,20 @@ def runtime_closure(seeds: Iterable[str], runtime: dict[str, set[str]],
 
 # ----- stable's package set --------------------------------------------------
 
-def stable_set_lstree(ref: str) -> set[str]:
-    out = run(["git", "ls-tree", "-d", "--name-only", ref, "packages/"])
+def stable_set_lstree(ref: str, cwd: str | None = None) -> set[str]:
+    # A CI checkout often lacks origin/stable; verify the ref resolves first so
+    # the failure is actionable (the fetch hint) rather than a raw git error.
+    chk = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"],
+        cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if chk.returncode != 0:
+        fail(f"stable ref {ref!r} not found. Fetch it first: "
+             f"git fetch origin stable:refs/remotes/origin/stable")
+    out = run(["git", "ls-tree", "-d", "--name-only", ref, "packages/"], cwd=cwd)
     names = {line.rsplit("/", 1)[-1] for line in out.splitlines() if line.strip()}
     if not names:
-        eprint(f"error: `git ls-tree {ref} packages/` returned nothing. "
-               f"Fetch it first: git fetch origin stable:refs/remotes/origin/stable")
-        sys.exit(2)
+        fail(f"`git ls-tree {ref} packages/` returned nothing. "
+             f"Fetch it first: git fetch origin stable:refs/remotes/origin/stable")
     return names
 
 
@@ -160,8 +188,9 @@ def stable_set_worktree(minimal_bin: str, worktree: str, arches: list[str]) -> s
 
 # ----- changed-package detection (PR mode) -----------------------------------
 
-def changed_packages(base: str) -> list[str]:
-    out = run(["git", "diff", "--name-only", f"{base}...HEAD", "--", "packages/"])
+def changed_packages(base: str, cwd: str | None = None) -> list[str]:
+    out = run(["git", "diff", "--name-only", f"{base}...HEAD", "--", "packages/"],
+              cwd=cwd)
     names: list[str] = []
     seen: set[str] = set()
     for path in out.splitlines():
@@ -198,11 +227,14 @@ def main() -> int:
                     help="always exit 0 (report-only / non-blocking building-block use).")
     args = ap.parse_args()
 
+    global NO_FAIL
+    NO_FAIL = args.no_fail
     arches = args.arches or ["amd64", "arm64"]
 
     seeds: list[str] = list(args.packages)
     if args.changed is not None:
-        seeds += [s for s in changed_packages(args.changed) if s not in seeds]
+        seeds += [s for s in changed_packages(args.changed, args.repo)
+                  if s not in seeds]
     if not seeds:
         # --changed with no changed packages (or any --no-fail run) is normal,
         # not an error: there is simply nothing to check. Exit 0 so the
@@ -216,10 +248,13 @@ def main() -> int:
     runtime, catalog, needs_internet, internet_providers = \
         build_runtime_map(args.minimal_bin, args.repo, arches)
 
-    unknown = [s for s in seeds if s not in catalog]
+    unknown = sorted(s for s in seeds if s not in catalog)
     if unknown:
-        eprint(f"warning: seed(s) not in dumped catalog (typo? not a package?): "
-               f"{', '.join(sorted(unknown))}")
+        # A seed absent from the catalog contributes only {itself} to the closure
+        # and is then subtracted by the seed-set, so it is silently NOT verified.
+        # Never report PASS in that state -- the run is UNVERIFIED (see below).
+        eprint(f"warning: seed(s) not in dumped catalog (typo? renamed? dir!=name?): "
+               f"{', '.join(unknown)}")
 
     closure = runtime_closure(seeds, runtime, needs_internet, internet_providers)
 
@@ -227,29 +262,42 @@ def main() -> int:
         stable = stable_set_worktree(args.minimal_bin, args.stable_worktree, arches)
         stable_src = f"dump of worktree {args.stable_worktree}"
     else:
-        stable = stable_set_lstree(args.stable_ref)
+        stable = stable_set_lstree(args.stable_ref, args.repo)
         stable_src = f"git ls-tree {args.stable_ref} packages/"
 
     seed_set = set(seeds)
     missing = sorted((closure - stable - seed_set))
     on_stable = sorted((closure & stable) - seed_set)
-    closed = not missing
+
+    # An unknown seed means the closure for that package was never really
+    # computed, so we cannot honestly claim PASS -- the run is UNVERIFIED even if
+    # `missing` happens to be empty. Order of precedence: UNVERIFIED > NOT CLOSED.
+    if unknown:
+        verdict = "UNVERIFIED"
+    elif missing:
+        verdict = "NOT CLOSED"
+    else:
+        verdict = "PASS"
 
     if args.format == "json":
         print(json.dumps({
             "seeds": sorted(seed_set),
+            "unknown_seeds": unknown,
             "arches": arches,
             "stable_source": stable_src,
             "closure": sorted(closure),
             "on_stable": on_stable,
             "missing": missing,
-            "closed": closed,
+            "verdict": verdict,
+            "closed": verdict == "PASS",
         }, indent=2))
     else:
         print("=== stable runtime-closure check ===")
         print(f"seeds (promotion set): {', '.join(sorted(seed_set))}")
         print(f"arches: {', '.join(arches)}   catalog packages: {len(catalog)}")
         print(f"stable set via: {stable_src}  ({len(stable)} packages)")
+        if unknown:
+            print(f"UNKNOWN seeds (not in catalog -- NOT verified): {', '.join(unknown)}")
         print()
         print(f"transitive RUNTIME closure ({len(closure)}):")
         print("  " + ", ".join(sorted(closure)))
@@ -260,14 +308,20 @@ def main() -> int:
         print(f"MISSING from stable ({len(missing)}) — must be promoted alongside:")
         print("  " + (", ".join(missing) or "(none)"))
         print()
-        if closed:
+        if verdict == "PASS":
             print("VERDICT: PASS — `stable` already satisfies the runtime closure.")
-        else:
+        elif verdict == "NOT CLOSED":
             print(f"VERDICT: NOT CLOSED — {len(missing)} runtime dep(s) absent from `stable`.")
+        else:
+            print(f"VERDICT: UNVERIFIED — {len(unknown)} seed(s) not in the catalog; "
+                  f"cannot confirm closure. Fix the seed name(s).")
 
-    if closed or args.no_fail:
+    # Report-only contract: --no-fail never blocks (exit 0), but the printed
+    # verdict still tells the truth. Blocking mode: 0 = PASS, 1 = NOT CLOSED,
+    # 2 = UNVERIFIED (integrity: a seed we could not actually check).
+    if args.no_fail or verdict == "PASS":
         return 0
-    return 1
+    return 1 if verdict == "NOT CLOSED" else 2
 
 
 if __name__ == "__main__":
