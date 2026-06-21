@@ -1,0 +1,27 @@
+# R1 stage0-mes byte-identity pins.  Checked by `/usr/bin/sha256sum -c mes.answers`
+# (kaem aborts HARD on a non-zero return -> build fails).  These 13 values are the
+# CANONICAL upstream checksums from live-bootstrap steps/mes-0.27.1/mes-0.27.1.amd64.checksums
+# (read verbatim 2026-06-20).  Live-bootstrap publishes paths under /usr/...; we install to
+# the staging root DESTDIR=/build/output, so the gate paths are /build/output/usr/... .
+#
+# PINNABLE NOW (high confidence): mes-m2 is produced by M2-Planet/M1/hex2/blood-elf (R0,
+# byte-gated against amd64.answers) from the sha-pinned mes source, so it should reproduce
+# bit-for-bit.  The libc .a/.s and mescc.scm are produced by mes-m2 + MesCC and depend on the
+# baked prefix string being /usr (see mes.kaem: @prefix@ -> /usr, NOT the staging path) and on
+# the relative-path mescc invocations matching live-bootstrap.  If the first cloud build
+# mismatches, the divergence is environmental (prefix string, M2libc copy, tool determinism),
+# NOT a trust hole — re-pin from the green build and investigate.  mes-m2 mismatching WOULD be
+# a real R0 reproduction problem.
+672f2d71836765c4a478017cdd3aa12d3d40da7ebe2dd80af9b53b516e9abfc1  /build/output/usr/bin/mes-m2
+20655e4ec935bdb63099eaf48e89b24010413a444cbcdc3f21a1cd12a5c62ddc  /build/output/usr/bin/mescc.scm
+c66de1ba72b8019eee113271638e4e30543aa7d34f45c9cc751346dba0d8817c  /build/output/usr/lib/x86_64-mes/crt1.s
+d0a80b94228deb99bda15244f0ed3736badd0632c78a3379195ba24a78f68a75  /build/output/usr/lib/x86_64-mes/crt1.o
+d0f691ad803ed00530297456086e8b820cda4faec3e7dbde767b4558e71a1b47  /build/output/usr/lib/x86_64-mes/x86_64.M1
+28d887a7d5ec5d4f2a147911a74a989ae1062cdaad935bc2640fd63fe2958ab2  /build/output/usr/lib/x86_64-mes/libmescc.s
+0e42cdfc62f242c9a6ff29c056f36cbfb5a905a32f82f4e1aa8446b876395391  /build/output/usr/lib/x86_64-mes/libc+tcc.s
+cd6c08dc72c5f608f15e6a6c9bcf98b1f15d90a9cf26c608ac7d61af4c0d4eb8  /build/output/usr/lib/x86_64-mes/libc.s
+1d105ea8e36d72fced1daee118e5733cd628981a6eb03870ade7775e5ff40b6b  /build/output/usr/lib/x86_64-mes/libmescc.a
+6627c572ccbf256c1878b045cad0d18503afc535046141610767c4092885a8b3  /build/output/usr/lib/x86_64-mes/libc+tcc.a
+bfaf0e3d603f0d17c5155c5c53f393cac4bcfa56efca54ae5844a3e465e903b6  /build/output/usr/lib/x86_64-mes/libc.a
+48c57492e80a99bf16eeba55e242b60b9e759992482b651d1b512f07ddd9a65a  /build/output/usr/lib/linux/x86_64-mes/elf64-header.hex2
+94c796cb34a6e581491d0cf609e7fad01715c84a17b8b2017178a36568a80e48  /build/output/usr/lib/linux/x86_64-mes/elf64-footer-single-main.hex2

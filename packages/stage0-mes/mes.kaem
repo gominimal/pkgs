@@ -1,0 +1,444 @@
+# stage0-mes / mes.kaem  — R1 rung driver (DRAFT).  Faithful port of live-bootstrap
+# steps/mes-0.27.1/pass1.kaem (read verbatim 2026-06-20), driven by the ATTESTED full C
+# kaem from R0 (/usr/bin/kaem, 6364de59…).  kaem aborts HARD on any non-zero child, so each
+# line is also an assertion.  kaem builtins used: variable assignment, ${var:-default}
+# (verified in mescc-tools Kaem/variable.c), if/then/fi (n/a here — arch inlined), cd, alias,
+# exec, PATH.  No bash: the only shell is this attested kaem.  The inner `kaem --file
+# kaem.x86_64` (-> kaem.run) is M2-Planet's compile of mes-m2.
+#
+# ADAPTATIONS vs upstream pass1.kaem (every one is annotated [ADAPT]):
+#   * arch `if match` block -> inlined (we are amd64 / x86_64 / 64-bit).            [ADAPT]
+#   * checksum-transcriber + sha256sum -c sources.SHA256SUM -> DROPPED; minimal's
+#     Source{sha256=…} pin already gates tarball integrity before extract.          [ADAPT]
+#   * ungz/untar/mkdir build/cd build -> DROPPED; Source{extract=true} already put
+#     mes-0.27.1, nyacc-1.00.2 and stage0-posix-1.9.1 under /build.                 [ADAPT]
+#   * mescc-tools-extra `replace`  -> /usr/bin/sed -i 's|…|…|g' (attested).         [ADAPT]
+#   * live-bootstrap `simple-patch`-> /usr/bin/sed append (attested).               [ADAPT]
+#   * file utils (mkdir/cp/rm/chmod/sha256sum) -> attested coreutils.               [ADAPT]
+#   * catm -> /usr/bin/catm from R0 (genuinely needed; kaem has no redirection).
+#   * install root -> DESTDIR=/build/output (minimal's OUTPUT_DIR); /usr is RO at build.
+#     The baked runtime prefix string stays /usr (PREFIX_RT) so mescc.scm byte-matches.[ADAPT]
+#   * UPDATE_CHECKSUMS if/else -> a single `sha256sum -c mes.answers` gate.          [ADAPT]
+
+############################################################
+# Environment.  PATH must include /usr/bin so the inner    #
+# kaem.run finds M2-Planet/M1/hex2/blood-elf (bare names). #
+############################################################
+PATH=/usr/bin
+ARCH=amd64
+MES_ARCH=x86_64
+ARCH_BITS=64
+# kaem.run / kaem.x86_64 inner-build knobs (kaem.x86_64 sets these; we set them too so the
+# environment is explicit and the inner kaem inherits them):
+cc_cpu=x86_64
+mes_cpu=x86_64
+stage0_cpu=amd64
+blood_elf_flag=--64
+# M2libc for the M2-Planet build of mes-m2 (mes 0.27.1 does not ship it).  CONFIRM the
+# extracted tree path at build (stage0-posix-1.9.1/M2libc is referenced as-is by R0).
+M2LIBC_PATH=/build/stage0-posix-1.9.1/M2libc
+# mes interpreter arena/stack (from pass1.kaem; bumped for gen-c99-files below).
+MES_ARENA=20000000
+MES_MAX_ARENA=20000000
+MES_STACK=6000000
+MES_VERSION=0.27.1
+NYACC_PKG=nyacc-1.00.2
+MES_PKG=mes-0.27.1
+# Source trees (Source{extract=true} dropped them under /build).  CONFIRM NYACC_DIR name
+# at build — could be /build/nyacc-1.00.2-lb1 (the tarball is …-lb1.tar.gz).
+MES_PREFIX=/build/mes-0.27.1
+NYACC_DIR=/build/nyacc-1.00.2
+# Install (staging) tree = minimal OUTPUT_DIR; baked runtime prefix string = /usr.
+DESTDIR=/build/output
+PREFIX=/build/output/usr
+PREFIX_RT=/usr
+BINDIR=/build/output/usr/bin
+INCDIR=/build/output/usr/include
+# Build-tree intermediate libdir (mescc writes lib/x86_64-mes/* here; CWD=MES_PREFIX).
+LIBDIR=/build/mes-0.27.1/lib
+# mes-m2 runtime module search (pass1 relies on seed.kaem for this).
+MES=/build/output/usr/bin/mes-m2
+GUILE_LOAD_PATH=/build/mes-0.27.1/mes/module:/build/mes-0.27.1/module:/build/nyacc-1.00.2/module
+
+############################################################
+# Staging dirs (seed.kaem mkdir's BINDIR upstream; we must)#
+############################################################
+/usr/bin/mkdir -p /build/output/usr/bin
+/usr/bin/mkdir -p /build/output/usr/lib/x86_64-mes
+/usr/bin/mkdir -p /build/output/usr/lib/linux/x86_64-mes
+/usr/bin/mkdir -p /build/output/usr/include/mes
+/usr/bin/mkdir -p /build/output/usr/include/sys
+/usr/bin/mkdir -p /build/output/usr/include/linux/x86_64
+/usr/bin/mkdir -p /build/output/usr/include/arch
+
+############################################################
+# Prepare the mes source tree (pass1.kaem lines 42-63)     #
+############################################################
+# Set mes-m2's link base address to 0x8048000 (pass1.kaem applies this on every arch; the
+# amd64 mes-m2 checksum 672f2d71… is the post-replace value).  sed = attested `replace`.
+/usr/bin/sed -i 's|0x1000000|0x8048000|g' /build/mes-0.27.1/kaem.run
+
+# Drop in the (empty-ish) mes config.h (Local file lands in /build).
+/usr/bin/cp /build/config.h /build/mes-0.27.1/include/mes/config.h
+
+# wait4 patch (upstreamed after 0.27.1).  simple-patch appended `  *long_status_ptr = 0;`
+# after the rusage line.  sed append, keyed on the unique rusage line.  EXACT bytes matter:
+# the inserted line is two-spaces + `*long_status_ptr = 0;` — wait4.c feeds libc.a, whose
+# checksum (bfaf0e3d…) is in mes.answers, so a botched patch fails the gate LOUDLY.
+/usr/bin/sed -i '/  long long_rusage = cast_voidp_to_long (rusage);/a\  *long_status_ptr = 0;' /build/mes-0.27.1/lib/linux/wait4.c
+
+cd /build/mes-0.27.1
+# Arch header copies (pass1.kaem lines 53-56).
+/usr/bin/cp include/linux/x86_64/kernel-stat.h include/arch/kernel-stat.h
+/usr/bin/cp include/linux/x86_64/signal.h include/arch/signal.h
+/usr/bin/cp include/linux/x86_64/syscall.h include/arch/syscall.h
+
+# Remove pregenerated files so mes-m2 regenerates them from source (psyntax bootstrap).
+/usr/bin/rm mes/module/mes/psyntax.pp mes/module/mes/psyntax.pp.header
+
+# These are symlinks in the tarball; replace with real copies (deterministic).
+/usr/bin/cp mes/module/srfi/srfi-9-struct.mes mes/module/srfi/srfi-9.mes
+/usr/bin/cp mes/module/srfi/srfi-9/gnu-struct.mes mes/module/srfi/srfi-9/gnu.mes
+
+############################################################
+# Build mes-m2 (M2-Planet -> M1 -> hex2; pass1 lines 66-68)#
+# kaem.x86_64 sets cc/mes/stage0 cpu + blood_elf_flag, then#
+# runs kaem.run (the actual M2-Planet compile of mes.c).   #
+############################################################
+/usr/bin/kaem --verbose --strict --file kaem.x86_64
+/usr/bin/cp bin/mes-m2 /build/output/usr/bin/mes-m2
+/usr/bin/chmod 755 /build/output/usr/bin/mes-m2
+
+############################################################
+# Regenerate nyacc parser tables with mes-m2 (pass1 71-82) #
+############################################################
+cd /build/nyacc-1.00.2
+/usr/bin/rm module/nyacc/lang/c99/mach.d/c99-act.scm module/nyacc/lang/c99/mach.d/c99-tab.scm \
+    module/nyacc/lang/c99/mach.d/c99cx-act.scm module/nyacc/lang/c99/mach.d/c99cx-tab.scm \
+    module/nyacc/lang/c99/mach.d/c99x-act.scm module/nyacc/lang/c99/mach.d/c99x-tab.scm \
+    module/nyacc/lang/c99/mach.d/cpp-act.scm module/nyacc/lang/c99/mach.d/cpp-tab.scm
+/build/output/usr/bin/mes-m2 -L module gen-cpp-files.scm
+# gen-c99-files needs a bigger arena:
+MES_ARENA=32000000
+/build/output/usr/bin/mes-m2 -L module gen-c99-files.scm
+MES_ARENA=20000000
+/build/output/usr/bin/mes-m2 -L module gen-c99cx-files.scm
+cd /build/mes-0.27.1
+
+############################################################
+# Create mescc.scm (pass1.kaem lines 85-93)                #
+# @prefix@ -> /usr (PREFIX_RT, the RUNTIME prefix) so the  #
+# mescc.scm checksum 20655e4e… matches.                    #
+############################################################
+/usr/bin/sed -i 's|@prefix@|/usr|g' scripts/mescc.scm.in
+/usr/bin/sed -i 's|@VERSION@|0.27.1|g' scripts/mescc.scm.in
+/usr/bin/sed -i 's|@mes_cpu@|x86_64|g' scripts/mescc.scm.in
+/usr/bin/sed -i 's|@mes_kernel@|linux|g' scripts/mescc.scm.in
+/usr/bin/cp scripts/mescc.scm.in /build/output/usr/bin/mescc.scm
+/usr/bin/chmod 755 /build/output/usr/bin/mescc.scm
+
+############################################################
+# Recompile mes-libc with mes-m2 + MesCC (pass1 97-285).   #
+# `mescc` is a kaem alias (verified kaem builtin).         #
+############################################################
+alias mescc="/build/output/usr/bin/mes-m2 -e main /build/output/usr/bin/mescc.scm -D HAVE_CONFIG_H=1 -I include -I include/linux/x86_64 -c"
+
+# crt1.o
+mescc lib/linux/x86_64-mes-mescc/crt1.c -o lib/x86_64-mes/crt1.o
+
+# libc-mini.a
+/usr/bin/catm libc-mini.c \
+ lib/mes/__init_io.c \
+ lib/mes/eputs.c \
+ lib/mes/oputs.c \
+ lib/mes/globals.c \
+ lib/stdlib/exit.c \
+ lib/linux/x86_64-mes-mescc/_exit.c \
+ lib/linux/x86_64-mes-mescc/_write.c \
+ lib/stdlib/puts.c \
+ lib/string/strlen.c
+mescc libc-mini.c
+/usr/bin/cp libc-mini.o /build/mes-0.27.1/lib/x86_64-mes/libc-mini.a
+/usr/bin/cp libc-mini.s /build/mes-0.27.1/lib/x86_64-mes/libc-mini.s
+
+# libmescc.a
+/usr/bin/catm libmescc.c \
+ lib/mes/globals.c \
+ lib/linux/x86_64-mes-mescc/syscall-internal.c
+mescc libmescc.c
+/usr/bin/cp libmescc.o /build/mes-0.27.1/lib/x86_64-mes/libmescc.a
+/usr/bin/cp libmescc.s /build/mes-0.27.1/lib/x86_64-mes/libmescc.s
+
+# libc.a
+/usr/bin/catm libc.c \
+ lib/ctype/isnumber.c \
+ lib/mes/abtol.c \
+ lib/mes/cast.c \
+ lib/mes/eputc.c \
+ lib/mes/fdgetc.c \
+ lib/mes/fdputc.c \
+ lib/mes/fdputs.c \
+ lib/mes/fdungetc.c \
+ lib/mes/itoa.c \
+ lib/mes/ltoa.c \
+ lib/mes/ltoab.c \
+ lib/mes/mes_open.c \
+ lib/mes/ntoab.c \
+ lib/mes/oputc.c \
+ lib/mes/ultoa.c \
+ lib/mes/utoa.c \
+ lib/ctype/isdigit.c \
+ lib/ctype/isspace.c \
+ lib/ctype/isxdigit.c \
+ lib/mes/assert_msg.c \
+ lib/posix/write.c \
+ lib/stdlib/atoi.c \
+ lib/linux/lseek.c \
+ lib/mes/__assert_fail.c \
+ lib/mes/__buffered_read.c \
+ lib/mes/__mes_debug.c \
+ lib/posix/execv.c \
+ lib/posix/getcwd.c \
+ lib/posix/getenv.c \
+ lib/posix/isatty.c \
+ lib/posix/open.c \
+ lib/posix/buffered-read.c \
+ lib/posix/setenv.c \
+ lib/posix/wait.c \
+ lib/dirent/closedir.c \
+ lib/dirent/opendir.c \
+ lib/stdio/fgetc.c \
+ lib/stdio/fputc.c \
+ lib/stdio/fputs.c \
+ lib/stdio/getc.c \
+ lib/stdio/getchar.c \
+ lib/stdio/putc.c \
+ lib/stdio/putchar.c \
+ lib/stdio/ungetc.c \
+ lib/stdlib/calloc.c \
+ lib/stdlib/free.c \
+ lib/stdlib/realloc.c \
+ lib/string/memchr.c \
+ lib/string/memcmp.c \
+ lib/string/memcpy.c \
+ lib/string/memmove.c \
+ lib/string/memset.c \
+ lib/string/strcmp.c \
+ lib/string/strcpy.c \
+ lib/string/strncmp.c \
+ lib/posix/raise.c \
+ lib/linux/access.c \
+ lib/linux/brk.c \
+ lib/linux/chdir.c \
+ lib/linux/chmod.c \
+ lib/linux/clock_gettime.c \
+ lib/linux/dup.c \
+ lib/linux/dup2.c \
+ lib/linux/execve.c \
+ lib/linux/fork.c \
+ lib/linux/fsync.c \
+ lib/linux/_getcwd.c \
+ lib/linux/gettimeofday.c \
+ lib/linux/ioctl3.c \
+ lib/linux/malloc.c \
+ lib/linux/_open3.c \
+ lib/linux/_read.c \
+ lib/linux/readdir.c \
+ lib/linux/rename.c \
+ lib/linux/time.c \
+ lib/linux/umask.c \
+ lib/linux/uname.c \
+ lib/linux/unlink.c \
+ lib/linux/utimensat.c \
+ lib/linux/wait4.c \
+ lib/linux/waitpid.c \
+ lib/linux/x86_64-mes-mescc/syscall.c \
+ lib/linux/getpid.c \
+ lib/linux/kill.c \
+ lib/linux/pipe.c \
+ lib/linux/stat.c \
+ lib/linux/lstat.c \
+ lib/linux/mkdir.c \
+ lib/linux/rmdir.c \
+ lib/linux/link.c \
+ lib/linux/symlink.c \
+ lib/linux/close.c \
+ lib/linux/nanosleep.c \
+ lib/linux/fcntl.c \
+ lib/linux/fstat.c \
+ lib/linux/getdents.c
+mescc libc.c
+/usr/bin/catm /build/mes-0.27.1/lib/x86_64-mes/libc.a /build/mes-0.27.1/lib/x86_64-mes/libc-mini.a libc.o
+/usr/bin/catm /build/mes-0.27.1/lib/x86_64-mes/libc.s /build/mes-0.27.1/lib/x86_64-mes/libc-mini.s libc.s
+
+# libc+tcc.a
+/usr/bin/catm libc+tcc.c \
+ lib/ctype/islower.c \
+ lib/ctype/isupper.c \
+ lib/ctype/tolower.c \
+ lib/ctype/toupper.c \
+ lib/mes/abtod.c \
+ lib/mes/dtoab.c \
+ lib/mes/search-path.c \
+ lib/posix/execvp.c \
+ lib/stdio/fclose.c \
+ lib/stdio/fdopen.c \
+ lib/stdio/ferror.c \
+ lib/stdio/fflush.c \
+ lib/stdio/fopen.c \
+ lib/stdio/fprintf.c \
+ lib/stdio/fread.c \
+ lib/stdio/fseek.c \
+ lib/stdio/ftell.c \
+ lib/stdio/fwrite.c \
+ lib/stdio/printf.c \
+ lib/stdio/remove.c \
+ lib/stdio/snprintf.c \
+ lib/stdio/sprintf.c \
+ lib/stdio/sscanf.c \
+ lib/stdio/vfprintf.c \
+ lib/stdio/vprintf.c \
+ lib/stdio/vsnprintf.c \
+ lib/stdio/vsprintf.c \
+ lib/stdio/vsscanf.c \
+ lib/stdlib/abort.c \
+ lib/stdlib/qsort.c \
+ lib/stdlib/strtod.c \
+ lib/stdlib/strtof.c \
+ lib/stdlib/strtol.c \
+ lib/stdlib/strtold.c \
+ lib/stdlib/strtoll.c \
+ lib/stdlib/strtoul.c \
+ lib/stdlib/strtoull.c \
+ lib/string/memmem.c \
+ lib/string/strcat.c \
+ lib/string/strchr.c \
+ lib/string/strlwr.c \
+ lib/string/strncpy.c \
+ lib/string/strrchr.c \
+ lib/string/strstr.c \
+ lib/string/strupr.c \
+ lib/stub/sigaction.c \
+ lib/stub/ldexp.c \
+ lib/stub/mprotect.c \
+ lib/stub/localtime.c \
+ lib/stub/sigemptyset.c \
+ lib/x86_64-mes-mescc/setjmp.c \
+ lib/linux/close.c \
+ lib/linux/rmdir.c \
+ lib/linux/stat.c
+mescc libc+tcc.c
+/usr/bin/catm /build/mes-0.27.1/lib/x86_64-mes/libc+tcc.a /build/mes-0.27.1/lib/x86_64-mes/libc.a libc+tcc.o
+/usr/bin/catm /build/mes-0.27.1/lib/x86_64-mes/libc+tcc.s /build/mes-0.27.1/lib/x86_64-mes/libc.s libc+tcc.s
+
+############################################################
+# Install into the staging tree (pass1.kaem lines 287-374).#
+# ${PREFIX} -> /build/output/usr ; ${INCDIR} -> …/include  #
+############################################################
+# Install libraries
+/usr/bin/cp /build/mes-0.27.1/lib/x86_64-mes/libc.a /build/output/usr/lib/x86_64-mes/
+/usr/bin/cp /build/mes-0.27.1/lib/x86_64-mes/libc+tcc.a /build/output/usr/lib/x86_64-mes/
+/usr/bin/cp /build/mes-0.27.1/lib/x86_64-mes/libmescc.a /build/output/usr/lib/x86_64-mes/
+/usr/bin/cp /build/mes-0.27.1/lib/x86_64-mes/libc.s /build/output/usr/lib/x86_64-mes/
+/usr/bin/cp /build/mes-0.27.1/lib/x86_64-mes/libc+tcc.s /build/output/usr/lib/x86_64-mes/
+/usr/bin/cp /build/mes-0.27.1/lib/x86_64-mes/libmescc.s /build/output/usr/lib/x86_64-mes/
+/usr/bin/cp /build/mes-0.27.1/lib/x86_64-mes/x86_64.M1 /build/output/usr/lib/x86_64-mes/
+/usr/bin/cp /build/mes-0.27.1/lib/x86_64-mes/crt1.o /build/output/usr/lib/x86_64-mes/
+/usr/bin/cp /build/mes-0.27.1/lib/x86_64-mes/crt1.s /build/output/usr/lib/x86_64-mes/
+/usr/bin/cp /build/mes-0.27.1/lib/linux/x86_64-mes/elf64-footer-single-main.hex2 /build/output/usr/lib/linux/x86_64-mes/
+/usr/bin/cp /build/mes-0.27.1/lib/linux/x86_64-mes/elf64-header.hex2 /build/output/usr/lib/linux/x86_64-mes/
+
+# Install headers (top-level)
+/usr/bin/cp include/alloca.h /build/output/usr/include/alloca.h
+/usr/bin/cp include/argz.h /build/output/usr/include/argz.h
+/usr/bin/cp include/ar.h /build/output/usr/include/ar.h
+/usr/bin/cp include/assert.h /build/output/usr/include/assert.h
+/usr/bin/cp include/ctype.h /build/output/usr/include/ctype.h
+/usr/bin/cp include/dirent.h /build/output/usr/include/dirent.h
+/usr/bin/cp include/dirstream.h /build/output/usr/include/dirstream.h
+/usr/bin/cp include/dlfcn.h /build/output/usr/include/dlfcn.h
+/usr/bin/cp include/endian.h /build/output/usr/include/endian.h
+/usr/bin/cp include/errno.h /build/output/usr/include/errno.h
+/usr/bin/cp include/fcntl.h /build/output/usr/include/fcntl.h
+/usr/bin/cp include/features.h /build/output/usr/include/features.h
+/usr/bin/cp include/float.h /build/output/usr/include/float.h
+/usr/bin/cp include/getopt.h /build/output/usr/include/getopt.h
+/usr/bin/cp include/grp.h /build/output/usr/include/grp.h
+/usr/bin/cp include/inttypes.h /build/output/usr/include/inttypes.h
+/usr/bin/cp include/libgen.h /build/output/usr/include/libgen.h
+/usr/bin/cp include/limits.h /build/output/usr/include/limits.h
+/usr/bin/cp include/locale.h /build/output/usr/include/locale.h
+/usr/bin/cp include/math.h /build/output/usr/include/math.h
+/usr/bin/cp include/memory.h /build/output/usr/include/memory.h
+/usr/bin/cp include/pwd.h /build/output/usr/include/pwd.h
+/usr/bin/cp include/setjmp.h /build/output/usr/include/setjmp.h
+/usr/bin/cp include/signal.h /build/output/usr/include/signal.h
+/usr/bin/cp include/stdarg.h /build/output/usr/include/stdarg.h
+/usr/bin/cp include/linux/x86_64/signal.h /build/output/usr/include/arch/signal.h
+/usr/bin/cp include/stdbool.h /build/output/usr/include/stdbool.h
+/usr/bin/cp include/stddef.h /build/output/usr/include/stddef.h
+/usr/bin/cp include/stdint.h /build/output/usr/include/stdint.h
+/usr/bin/cp include/stdio.h /build/output/usr/include/stdio.h
+/usr/bin/cp include/stdlib.h /build/output/usr/include/stdlib.h
+/usr/bin/cp include/stdnoreturn.h /build/output/usr/include/stdnoreturn.h
+/usr/bin/cp include/string.h /build/output/usr/include/string.h
+/usr/bin/cp include/strings.h /build/output/usr/include/strings.h
+/usr/bin/cp include/termio.h /build/output/usr/include/termio.h
+/usr/bin/cp include/time.h /build/output/usr/include/time.h
+/usr/bin/cp include/unistd.h /build/output/usr/include/unistd.h
+
+/usr/bin/cp include/arch/kernel-stat.h /build/output/usr/include/arch/kernel-stat.h
+/usr/bin/cp include/arch/syscall.h /build/output/usr/include/arch/syscall.h
+
+/usr/bin/cp include/linux/syscall.h /build/output/usr/include/linux/syscall.h
+/usr/bin/cp include/linux/x86_64/syscall.h /build/output/usr/include/linux/x86_64/syscall.h
+
+/usr/bin/cp include/mes/builtins.h /build/output/usr/include/mes/builtins.h
+/usr/bin/cp include/mes/cc.h /build/output/usr/include/mes/cc.h
+# pass1.kaem: `catm ${INCDIR}/mes/config.h` -> create an EMPTY installed config.h (1 arg = 0 inputs).
+/usr/bin/catm /build/output/usr/include/mes/config.h
+/usr/bin/cp include/mes/constants.h /build/output/usr/include/mes/constants.h
+/usr/bin/cp include/mes/lib.h /build/output/usr/include/mes/lib.h
+/usr/bin/cp include/mes/lib-cc.h /build/output/usr/include/mes/lib-cc.h
+/usr/bin/cp include/mes/lib-mini.h /build/output/usr/include/mes/lib-mini.h
+/usr/bin/cp include/mes/mes.h /build/output/usr/include/mes/mes.h
+/usr/bin/cp include/mes/symbols.h /build/output/usr/include/mes/symbols.h
+
+/usr/bin/cp include/sys/cdefs.h /build/output/usr/include/sys/cdefs.h
+/usr/bin/cp include/sys/dir.h /build/output/usr/include/sys/dir.h
+/usr/bin/cp include/sys/file.h /build/output/usr/include/sys/file.h
+/usr/bin/cp include/sys/ioctl.h /build/output/usr/include/sys/ioctl.h
+/usr/bin/cp include/sys/mman.h /build/output/usr/include/sys/mman.h
+/usr/bin/cp include/sys/param.h /build/output/usr/include/sys/param.h
+/usr/bin/cp include/sys/resource.h /build/output/usr/include/sys/resource.h
+/usr/bin/cp include/sys/select.h /build/output/usr/include/sys/select.h
+/usr/bin/cp include/sys/stat.h /build/output/usr/include/sys/stat.h
+/usr/bin/cp include/sys/timeb.h /build/output/usr/include/sys/timeb.h
+/usr/bin/cp include/sys/time.h /build/output/usr/include/sys/time.h
+/usr/bin/cp include/sys/times.h /build/output/usr/include/sys/times.h
+/usr/bin/cp include/sys/types.h /build/output/usr/include/sys/types.h
+/usr/bin/cp include/sys/ucontext.h /build/output/usr/include/sys/ucontext.h
+/usr/bin/cp include/sys/user.h /build/output/usr/include/sys/user.h
+/usr/bin/cp include/sys/wait.h /build/output/usr/include/sys/wait.h
+
+############################################################
+# [ADAPT — hermetic-model ADDITION, NOT in pass1.kaem]     #
+# Export the Scheme module trees so R2's MesCC can find    #
+# them.  live-bootstrap keeps these in the persistent      #
+# build tree (GUILE_LOAD_PATH points there); minimal       #
+# discards the build tree, so we must ship them.  Mirrors  #
+# seed.kaem's three GUILE_LOAD_PATH roots.  Includes the   #
+# mes-m2-regenerated nyacc c99 tables + psyntax.            #
+############################################################
+/usr/bin/mkdir -p /build/output/usr/share/mes/mes
+/usr/bin/mkdir -p /build/output/usr/share/nyacc
+/usr/bin/cp -r /build/mes-0.27.1/mes/module /build/output/usr/share/mes/mes/module
+/usr/bin/cp -r /build/mes-0.27.1/module /build/output/usr/share/mes/module
+/usr/bin/cp -r /build/nyacc-1.00.2/module /build/output/usr/share/nyacc/module
+
+############################################################
+# BYTE-IDENTITY GATE — sha256sum -c returns !=0 on any     #
+# mismatch -> kaem ABORTS the build.  13 upstream pins.    #
+############################################################
+# Local files land in the build CWD (/build); CWD here is /build/mes-0.27.1, so use abs path.
+/usr/bin/sha256sum -c /build/mes.answers
