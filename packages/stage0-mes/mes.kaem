@@ -88,6 +88,9 @@ GUILE_LOAD_PATH=/build/mes-0.27.1/mes/module:/build/mes-0.27.1/module:/build/nya
 /usr/bin/sed -i '/  long long_rusage = cast_voidp_to_long (rusage);/a\  *long_status_ptr = 0;' /build/mes-0.27.1/lib/linux/wait4.c
 
 cd /build/mes-0.27.1
+# F1 fix (playbook EDIT 1): the tarball ships no include/arch/ (upstream pass1.kaem mkdir's it,
+# line 53); minimal's extract=true does not create it, so the arch-header cp's below abort. Create it.
+/usr/bin/mkdir -p include/arch
 # Arch header copies (pass1.kaem lines 53-56).
 /usr/bin/cp include/linux/x86_64/kernel-stat.h include/arch/kernel-stat.h
 /usr/bin/cp include/linux/x86_64/signal.h include/arch/signal.h
@@ -97,6 +100,9 @@ cd /build/mes-0.27.1
 /usr/bin/rm mes/module/mes/psyntax.pp mes/module/mes/psyntax.pp.header
 
 # These are symlinks in the tarball; replace with real copies (deterministic).
+# F2 fix (playbook EDIT 2): minimal's extract=true MATERIALIZES the srfi symlinks (upstream
+# untar --non-strict skips them), so `cp src dst` is a same-file error. Remove them first.
+/usr/bin/rm -f mes/module/srfi/srfi-9.mes mes/module/srfi/srfi-9/gnu.mes
 /usr/bin/cp mes/module/srfi/srfi-9-struct.mes mes/module/srfi/srfi-9.mes
 /usr/bin/cp mes/module/srfi/srfi-9/gnu-struct.mes mes/module/srfi/srfi-9/gnu.mes
 

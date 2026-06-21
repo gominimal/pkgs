@@ -61,10 +61,12 @@ let sed = import "../sed/build.ncl" in
     sed, # /usr/bin/sed   (replace + simple-patch replacement)
   ],
   cmds = [
-    # Single handoff to the attested full kaem (same form as R0/B1.5).  PATH/env/cd/control
-    # flow all live inside mes.kaem; the inner kaem.x86_64 -> kaem.run M2-Planet build of
-    # mes-m2 is invoked from there.
-    ["/usr/bin/kaem", "mes.kaem"],
+    # Single handoff to the attested FULL C kaem (6364de59, from R0.5). Unlike kaem-minimal
+    # (which took a positional script in R0/B1.5), the full kaem requires -f/--file for the
+    # script — a bare positional is `UNKNOWN ARGUMENT -> exit(FAILURE)` (playbook F0; parity
+    # with R0.5/R2 + mes.kaem's own inner kaem.x86_64 call). PATH/env/cd/control flow all live
+    # inside mes.kaem; the inner kaem.x86_64 -> kaem.run M2-Planet build of mes-m2 runs from there.
+    ["/usr/bin/kaem", "--strict", "--verbose", "--file", "mes.kaem"],
   ],
   outputs = {
     # The from-source subset-C Mes interpreter (static ELF: M2-Planet/hex2 output, no .interp).
