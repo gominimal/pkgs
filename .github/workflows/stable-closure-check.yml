@@ -1,0 +1,39 @@
+name: stable-closure-check
+
+# REPORT-ONLY building block (gominimal/inbox#21). Reports whether the runtime
+# closure of the PR's changed packages is already satisfied by `stable`. Until
+# #20 turns this into a gate it must stay OFF branch-protection required checks.
+on:
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read   # read-only: dumps + git, never writes
+
+concurrency:
+  group: stable-closure-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  closure:
+    runs-on: ubuntu-latest
+    continue-on-error: true   # building block: informs, never blocks (keep off required checks)
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0       # need merge-base with origin/main and origin/stable
+      - run: git fetch origin stable:refs/remotes/origin/stable
+      - uses: ./.github/actions/setup-minimal   # puts `minimal` on PATH
+      - name: Runtime-closure vs stable
+        run: |
+          set -uo pipefail
+          python3 .github/scripts/stable-closure-check.py \
+            --changed origin/main --format text --no-fail \
+            | tee closure.txt
+          {
+            echo "## stable runtime-closure check"
+            echo '```'
+            cat closure.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
