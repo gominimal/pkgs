@@ -1,0 +1,49 @@
+# R2 stage0-tcc-0.9.26 byte-identity pins.  Checked from /build (CWD) by `sha256sum -c`.
+# kaem --strict ABORTS HARD on any mismatch -> a build-failing byte-identity gate.
+#
+# !! RECORD-AT-PIN-TIME (amd64) !!  Unlike R0/R1, there is NO upstream amd64 fixed point
+# for tcc-0.9.26: live-bootstrap ships ONLY x86 + riscv64 checksums (steps/tcc-0.9.26/
+# *.{x86,riscv64}.checksums) because its canonical, fully-exercised bootstrap path is
+# 32-bit x86 (rootfs.py default --arch x86; stage0_arch_map only maps amd64->AMD64).
+# mes-0.27.1 HAS an amd64 fixed point, but tcc-0.9.26 amd64 was never pinned upstream.
+# => Capture these eight sha256 values AFTER the first green amd64 CS build and paste
+#    them in below.
+#
+# PATHS = the §D STAGING paths /build/output/usr/...  (CONTRACTS §D: the build writes
+# BINDIR=/build/output/usr/bin + LIBDIR=/build/output/usr/lib/mes — NEVER /usr, which is
+# read-only — and the gate runs BEFORE nothing-needs-copying, so the files are already
+# at /build/output).  Absolute paths => the check is CWD-independent.
+#
+# CAVEAT (CONTRACTS §D self-referential refinement): tcc-mes/tcc-boot0/tcc-boot1 bake the
+# STAGING libdir (/build/output/usr/lib/mes) — see tcc.kaem §LIBDIR — so their bytes also
+# differ from any writable-/usr build; the DELIVERABLE tcc bakes the CONSUMER /usr/lib/mes.
+# All are reproducible (OUTPUT_DIR is the fixed /build/output) and all are record-at-pin-time.
+#
+# FILL AT PIN TIME (uncomment + paste the amd64 shas):
+# <sha>  /build/output/usr/bin/tcc-mes
+# <sha>  /build/output/usr/bin/tcc-boot0
+# <sha>  /build/output/usr/bin/tcc-boot1
+# <sha>  /build/output/usr/bin/tcc
+# <sha>  /build/output/usr/lib/mes/libc.a
+# <sha>  /build/output/usr/lib/mes/libgetopt.a
+# <sha>  /build/output/usr/lib/mes/crt1.o
+# <sha>  /build/output/usr/lib/mes/tcc/libtcc1.a
+#
+# NOTE: crtn.o/crti.o are EMPTY on amd64 (catm with no inputs — the x86-only branch is
+# not taken), so they are not pinned (the x86 reference lists them only because the x86
+# arm builds them).  tcc-0.9.26 is byte-identical to tcc (cp) so it is not separately pinned.
+#
+# ---------------------------------------------------------------------------------------
+# UPSTREAM x86 REFERENCE VALUES (provenance only; these are 32-bit binaries with a DIFFERENT
+# baked libdir and will NOT match amd64 — do NOT use as the amd64 gate).  From live-bootstrap
+# steps/tcc-0.9.26/tcc-0.9.26.x86.checksums @ master 2026-06-20:
+#   b879b9101c837c77d0d51e6f5040bdc5f20964fe1f9f3506f77d49445967cef7  /usr/bin/tcc-mes
+#   25698c9689995cad9dcf3dd834526e7ef97fba27cef6367c0e618b9ad6c0657d  /usr/bin/tcc-boot0
+#   7121fee2d9b1b05a6dec06d193b8ddc61504c27a3eef251fc8a271b5001a7702  /usr/bin/tcc-boot1
+#   ae0293afce365667f6beacca537354e01925a5ae3f7c5428209bfc9894b864a1  /usr/bin/tcc
+#   bd63add2eb451854baf1a39cfc4780e86ae46128cd3d5b44c54b8a18aedb3c6d  /usr/lib/mes/libc.a
+#   12c07ae103e7e3b390150a79e5c600d88de14e9bb73a066f6342582729ef5a3f  /usr/lib/mes/libgetopt.a
+#   76d280e0733f2c84aad180968167d789a825ac56526bddba4f100d6d74851027  /usr/lib/mes/crt1.o
+#   09d4f9821a2566f7e56381a19259c41bd97f3c5ed83f490705acbfd1139a7736  /usr/lib/mes/crti.o
+#   461ca1494737fab86fe1c1d3addeaf9d0ece413e353abcdea8674db3f700cda3  /usr/lib/mes/crtn.o
+#   136f97c356445ef95c35ae1b6fb2f7a0546e3cf47b45cb4ee79d0a8f29cd04b4  /usr/lib/mes/tcc/libtcc1.a
