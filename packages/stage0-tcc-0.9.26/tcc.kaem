@@ -58,9 +58,14 @@ PATH=/build/output/usr/bin:/usr/bin
 # (psyntax.pp + nyacc c99 tables are regenerated DURING R1 and are NOT in a pristine tarball).
 MES_PREFIX=/usr
 GUILE_LOAD_PATH=/usr/share/mes/mes/module:/usr/share/mes/module:/usr/share/nyacc/module
-MES_STACK=15000000
-MES_ARENA=30000000
-MES_MAX_ARENA=30000000
+# Arena bumped 2026-06-22: 30M was BORDERLINE for parsing tcc.c under mes-m2 -> the
+# expr->register/size_t parse "wall" is non-deterministic arena corruption (passed at 30M on
+# one builder image, fails on another; VM w/ default ~20M arena SIGSEGV'd). MES_MAX_ARENA==
+# MES_ARENA also gave no GC growth headroom. Generous values (builder has 122GB; ~24B/cell ->
+# 100M=~2.3GB start, 300M=~7GB grow ceiling) put the parse well clear of the corruption edge.
+MES_STACK=40000000
+MES_ARENA=100000000
+MES_MAX_ARENA=300000000
 MES=/usr/bin/mes-m2
 TCC_TAR=tcc-0.9.26
 TCC_PKG=tcc-0.9.26-1147-gee75a10c
