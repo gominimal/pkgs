@@ -13,14 +13,14 @@ let xz = import "../xz/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "0.194" in
+let version = "0.195" in
 {
   name = "elfutils",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/elfutils-%{version}.tar.bz2",
-      sha256 = "09e2ff033d39baa8b388a2d7fbc5390bfde99ae3b7c67c7daaf7433fbcf0f01e",
+      sha256 = "37629fdf7f1f3dc2818e138fca2b8094177d6c2d0f701d3bb650a561218dc026",
     } | Source,
     base,
     m4,
