@@ -6,15 +6,15 @@ let make = import "../make/build.ncl" in
 let libpng = import "../libpng/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.14.1" in
+let version = "2.14.3" in
 {
   name = "freetype",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://downloads.sourceforge.net/freetype/freetype-2.14.1.tar.xz
+      # https://downloads.sourceforge.net/freetype/freetype-2.14.3.tar.xz
       url = "gs://minimal-staging-archives/freetype-%{version}.tar.xz",
-      sha256 = "32427e8c471ac095853212a37aef816c60b42052d4d9e48230bab3bdf2936ccc",
+      sha256 = "36bc4f1cc413335368ee656c42afca65c5a3987e8768cc28cf11ba775e785a5f",
       extract = true,
       strip_prefix = "freetype-%{version}",
     } | Source,
