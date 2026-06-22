@@ -58,14 +58,17 @@ PATH=/build/output/usr/bin:/usr/bin
 # (psyntax.pp + nyacc c99 tables are regenerated DURING R1 and are NOT in a pristine tarball).
 MES_PREFIX=/usr
 GUILE_LOAD_PATH=/usr/share/mes/mes/module:/usr/share/mes/module:/usr/share/nyacc/module
-# Arena bumped 2026-06-22: 30M was BORDERLINE for parsing tcc.c under mes-m2 -> the
-# expr->register/size_t parse "wall" is non-deterministic arena corruption (passed at 30M on
-# one builder image, fails on another; VM w/ default ~20M arena SIGSEGV'd). MES_MAX_ARENA==
-# MES_ARENA also gave no GC growth headroom. Generous values (builder has 122GB; ~24B/cell ->
-# 100M=~2.3GB start, 300M=~7GB grow ceiling) put the parse well clear of the corruption edge.
-MES_STACK=40000000
-MES_ARENA=100000000
-MES_MAX_ARENA=300000000
+# Arena: MES_ARENA == MES_MAX_ARENA (NO GROWTH) is MANDATORY. The 2026-06-22 mes-m2-stability-sweep
+# workflow proved (gc.c source + 3-build evidence) that the prior 100M/300M GROWTH config (ARENA <
+# MAX_ARENA) ARMED gc_up_arena() — a realloc + pointer-relocating memcpy that does NOT rebase
+# g_news/g_free and (under M2-Planet's 32-bit size_t) overflows the arena-byte multiply on doubling
+# -> that was the SIGSEGV, NOT a too-small arena. Upstream live-bootstrap uses 30M/30M no-growth for
+# tcc on 32-bit; amd64 cells are ~2x bytes (no upstream amd64 reference exists), so 50M no-growth
+# gives GC copy-headroom while staying well under BOTH the ~80M (signed) and ~162M (unsigned) 32-bit
+# overflow ceilings. NEVER set MES_MAX_ARENA > MES_ARENA. (mes-stability-sweep refines the value.)
+MES_STACK=15000000
+MES_ARENA=50000000
+MES_MAX_ARENA=50000000
 MES=/usr/bin/mes-m2
 TCC_TAR=tcc-0.9.26
 TCC_PKG=tcc-0.9.26-1147-gee75a10c
