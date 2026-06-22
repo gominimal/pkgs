@@ -450,10 +450,15 @@ mescc libc+tcc.c
 # seed.kaem's three GUILE_LOAD_PATH roots.  Includes the   #
 # mes-m2-regenerated nyacc c99 tables + psyntax.            #
 ############################################################
-/usr/bin/mkdir -p /build/output/usr/share/mes/mes
+/usr/bin/mkdir -p /build/output/usr/share/mes/module
 /usr/bin/mkdir -p /build/output/usr/share/nyacc
-/usr/bin/cp -r /build/mes-0.27.1/mes/module /build/output/usr/share/mes/mes/module
-/usr/bin/cp -r /build/mes-0.27.1/module /build/output/usr/share/mes/module
+# R2 iteration #1 fix (the boot-5.scm failure): mes install.sh.in merges BOTH top-level `module/`
+# AND `mes/module/` into $prefix/share/mes/module/ (install.sh.in:106-110), and mes-m2's boot loads
+# MES_PREFIX/share/mes/module/mes/boot-5.scm (mes.c:147-150) — i.e. the canonical moduledir is
+# /usr/share/mes/module, NOT /usr/share/mes/mes/module (the old extra-level path made mes-m2's boot
+# fail "no such file: boot-5.scm"). Merge both source dirs into the one canonical dir with cp -rT.
+/usr/bin/cp -rT /build/mes-0.27.1/module /build/output/usr/share/mes/module
+/usr/bin/cp -rT /build/mes-0.27.1/mes/module /build/output/usr/share/mes/module
 /usr/bin/cp -r /build/nyacc-1.00.2/module /build/output/usr/share/nyacc/module
 
 ############################################################
