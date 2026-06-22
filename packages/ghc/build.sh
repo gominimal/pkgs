@@ -9,6 +9,34 @@ cd "ghc-${MINIMAL_ARG_VERSION}"
 sed -i 's/extern void\* malloc();/extern void\* malloc(long unsigned int);/' utils/hp2ps/Utilities.c
 sed -i 's/extern void \*realloc();/extern void \*realloc(void \*, long unsigned int);/' utils/hp2ps/Utilities.c
 
+# Reproducibility: GHC iterates package/UnitId collections in hash-set order,
+# making the linker arg / DT_NEEDED / .dynstr order in every binary AND the
+# ghc-pkg package.cache non-deterministic. Code (.text/.rodata) is already
+# byte-identical; this is pure ORDERING. Sort the two collections.
+#
+# (1) Link order — backport of upstream GHC #26838 / MR !15453 (merged for
+#     10.0.1; NOT in 9.10.x; Debian ships this exact patch for 9.10.3). Restores
+#     the sorted-by-UnitId order GHC <= 9.6 had.
+ghc_state=compiler/GHC/Unit/State.hs
+grep -q 'import Data.List ( intersperse, partition, sortBy, isSuffixOf, sortOn )' "$ghc_state" \
+  && grep -q 'let preload1 = nonDetKeysUniqMap (filterUniqMap (isJust . uv_explicit) vis_map)' "$ghc_state" \
+  || { echo "ERROR: GHC link-order patch targets not found in $ghc_state — GHC source changed; revisit the #26838 backport." >&2; exit 1; }
+sed -i 's/import Data.List ( intersperse, partition, sortBy, isSuffixOf, sortOn )/import Data.List ( intersperse, partition, sortBy, isSuffixOf, sortOn, sort )/' "$ghc_state"
+sed -i 's/let preload1 = nonDetKeysUniqMap (filterUniqMap (isJust . uv_explicit) vis_map)/let preload1 = sort $ nonDetKeysUniqMap (filterUniqMap (isJust . uv_explicit) vis_map)/' "$ghc_state"
+
+# (2) ghc-pkg package.cache — sort the .conf list before it is read + serialized
+#     so the post-build `ghc-pkg recache` emits a byte-identical cache regardless
+#     of filesystem readdir order. (No upstream fix exists; `sort` already
+#     imported in Main.hs.)
+ghc_pkg_main=utils/ghc-pkg/Main.hs
+grep -q 'confs = map (path </>) $ filter (".conf" `isSuffixOf`) fs' "$ghc_pkg_main" \
+  || { echo "ERROR: ghc-pkg package.cache patch target not found in $ghc_pkg_main — GHC source changed." >&2; exit 1; }
+# The `sort $` below needs `sort` in scope; 9.10.3's Main.hs imports it (line 78),
+# but guard it so a future GHC import reorg fails here, not deep in the build.
+grep -qE 'import Data.List \(.*\bsort\b' "$ghc_pkg_main" \
+  || { echo "ERROR: 'sort' not imported in $ghc_pkg_main — patch (2) requires it (add a sort import)." >&2; exit 1; }
+sed -i 's#confs = map (path </>) $ filter (".conf" `isSuffixOf`) fs#confs = map (path </>) $ sort $ filter (".conf" `isSuffixOf`) fs#' "$ghc_pkg_main"
+
 # Create stubs for tools ./configure / bootstrap.py checks for but aren't strictly needed
 STUB_DIR="$PWD/../stub-bin"
 mkdir -p "$STUB_DIR"
