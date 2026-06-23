@@ -403,6 +403,37 @@ int main(int ac,char**av,char**ep){
 }
 EOF
 build_and_run "$TCCMES" "$WORK/cb-malloc.c" 7 "CB-cb-malloc"
+# ── MINIMAL VARIADIC reproducer (cb-vsum): a TINY user variadic fn — its prologue (reg-save-area)
+#    + a single va_arg are ~20 instructions, trivially objdump-readable, and isolate the SysV
+#    variadic ABI from snprintf/vfprintf's 35KB complexity. Saves vsum.o (small!) + vsum.bin. ──
+cat > "$WORK/cb-vsum.c" <<'EOF'
+#include <stdarg.h>
+int vsum (int n, ...)
+{
+  va_list ap;
+  va_start (ap, n);
+  int s = 0;
+  int i;
+  for (i = 0; i < n; i = i + 1)
+    s = s + va_arg (ap, int);
+  va_end (ap);
+  return s;
+}
+int main (int ac, char **av, char **ep) { return vsum (3, 2, 2, 3); }
+EOF
+VAI="-I /build/$MES_PKG/include -I /usr/include -I /usr/include/mes"
+timeout "$UNIT_TIMEOUT" "$TCCMES" -c $VAI -o "$OUTROOT/vsum.o" "$WORK/cb-vsum.c" >/dev/null 2>&1 \
+  && emit "DIAG-INFO saved vsum.o (minimal variadic — caller+callee prologue+va_arg)" || emit "DIAG-INFO vsum.o save failed"
+timeout "$UNIT_TIMEOUT" "$TCCMES" -static $VAI -o "$OUTROOT/vsum.bin" -L . -L "$LIBDIR" "$WORK/cb-vsum.c" >"$WORK/vsum.cc" 2>&1
+vcrc=$?
+if [ "$vcrc" = "0" ] && [ -s "$OUTROOT/vsum.bin" ]; then
+  /usr/bin/chmod 755 "$OUTROOT/vsum.bin"
+  timeout "$RUN_TIMEOUT" "$OUTROOT/vsum.bin" >/dev/null 2>"$WORK/vsum.run.err"; vrrc=$?
+  [ "$vrrc" = "7" ] && emit "DIAG-RESULT CB-cb-vsum RUN-OK rc=$vrrc (minimal user-variadic WORKS — bug is snprintf-specific?!)" \
+                    || emit "DIAG-RESULT CB-cb-vsum RUN-WRONG rc=$vrrc (expected 7 — MINIMAL variadic ABI broken; tiny vsum.o/.bin saved for objdump)"
+else
+  emit "DIAG-RESULT CB-cb-vsum COMPILE-FAIL rc=$vcrc >>> $(tail -2 "$WORK/vsum.cc" 2>/dev/null | tr '\n' '|')"
+fi
 # ── LOCATOR: WHERE in the compile does tcc-boot0 die? (phase bisection + verbose) ──
 if [ "$BOOT0_OK" = "1" ]; then
   printf 'int x;\n' > "$WORK/glob.c"; : > "$WORK/empty.c"
