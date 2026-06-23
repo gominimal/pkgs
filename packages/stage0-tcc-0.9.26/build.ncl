@@ -66,6 +66,9 @@ let coreutils = import "../coreutils/build.ncl" in # /usr/bin/{cp,chmod,mkdir,rm
     { file = "fix-plt.after" } | Local,
     { file = "fix-mul.before" } | Local,
     { file = "fix-mul.after" } | Local,
+    # BUG5: mes-libc setjmp basic-asm rewrite (extended-asm output operand miscompiled by tcc-mes).
+    { file = "fix-setjmp.before" } | Local,
+    { file = "fix-setjmp.after" } | Local,
     # NOTE (§simple-patch): simple-patch.c is shipped too but is INERT by default — the PRIMARY
     # plan (CONTRACTS §B) consumes /usr/bin/simple-patch from R0.5. It is kept only for the
     # self-contained fallback (compile here via M2-Mesoplanet + the reused stage0-posix M2libc).

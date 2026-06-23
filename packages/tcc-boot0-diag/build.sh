@@ -169,6 +169,11 @@ mkdir -p include/arch
 /usr/bin/cp "include/linux/$MES_ARCH/kernel-stat.h" include/arch/kernel-stat.h
 /usr/bin/cp "include/linux/$MES_ARCH/signal.h"      include/arch/signal.h
 /usr/bin/cp "include/linux/$MES_ARCH/syscall.h"     include/arch/syscall.h
+# BUG (5th): mes-libc setjmp uses EXTENDED-asm output operand which tcc-mes miscompiles -> tcc-boot0
+# crashes at libtcc.c:638 setjmp on every compile. Rewrite setjmp.c to pure BASIC asm before catm.
+simple-patch "lib/$MES_ARCH-mes-gcc/setjmp.c" /build/fix-setjmp.before /build/fix-setjmp.after \
+  && emit "DIAG-INFO applied fix-setjmp (basic-asm setjmp, mes-libc)" \
+  || emit "FATAL fix-setjmp patch FAILED (before-pattern not found)"
 ( cd lib && /usr/bin/cat $LIBC_FILES > ../unified-libc.c ) \
   && emit "DIAG-INFO unified-libc.c assembled ($(/usr/bin/wc -l < unified-libc.c) lines)" \
   || emit "FATAL could not assemble unified-libc.c"
@@ -358,7 +363,11 @@ cat > "$WORK/cb-globalarr.c"   <<'EOF'
 int g[4] = { 1, 2, 3, 1 };
 int main(int ac,char**av,char**ep){ return g[0] + g[1] + g[2] + g[3]; }
 EOF
-for cb in cb-structarg cb-structret cb-structasn cb-funcptr cb-switch cb-llmul cb-llshift cb-arridx cb-recur cb-cmpbool cb-nestloop cb-subword cb-ternary cb-ptrstruct cb-globalarr; do
+# EXTENDED inline-asm output operand — the suspected 5th-bug mechanism (setjmp.c uses this form).
+cat > "$WORK/cb-extasm.c"      <<'EOF'
+int main(int ac,char**av,char**ep){ int x; asm ("mov $7,%0" : "=r" (x) : ); return x; }
+EOF
+for cb in cb-structarg cb-structret cb-structasn cb-funcptr cb-switch cb-llmul cb-llshift cb-arridx cb-recur cb-cmpbool cb-nestloop cb-subword cb-ternary cb-ptrstruct cb-globalarr cb-extasm; do
   build_and_run "$TCCMES" "$WORK/$cb.c" 7 "CB-$cb"
 done
 # compile-vs-link disambiguation: does tcc-boot0 crash COMPILING (no link, no asm)?  hello.c is header-free.

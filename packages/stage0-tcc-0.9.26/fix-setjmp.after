@@ -1,0 +1,19 @@
+int
+setjmp (jmp_buf env)
+{
+  /* amd64 mescc/tcc-mes-safe rewrite (workflow wf_9d59a528 follow-up): the upstream
+     asm("mov %%rbp,%0":"=r"(p)) EXTENDED-asm OUTPUT OPERAND is miscompiled by the amd64
+     mes-built tcc (basic asm works; the output-operand register binding does not), which
+     crashed tcc-boot0 at libtcc.c:638 setjmp on every compile. Pure BASIC asm instead:
+     env is tcc's spilled arg0 at -0x8(%rbp); read rbp + [rbp]/[rbp+8] directly. */
+  asm (
+       "mov    -0x8(%rbp),%rax\n\t"
+       "mov    %rbp,%rcx\n\t"
+       "mov    %rcx,0x00(%rax)\n\t"
+       "mov    0x08(%rcx),%rdx\n\t"
+       "mov    %rdx,0x08(%rax)\n\t"
+       "mov    0x00(%rcx),%rdx\n\t"
+       "mov    %rdx,0x10(%rax)\n\t"
+       );
+  return 0;
+}

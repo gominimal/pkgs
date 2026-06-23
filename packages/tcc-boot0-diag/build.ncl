@@ -61,6 +61,9 @@ let gzip = import "../gzip/build.ncl" in # compress the dumped asm
     { file = "fix-plt.after" } | Local,
     { file = "fix-mul.before" } | Local,
     { file = "fix-mul.after" } | Local,
+    # BUG5: mes-libc setjmp basic-asm rewrite (extended-asm output operand miscompiled by tcc-mes).
+    { file = "fix-setjmp.before" } | Local,
+    { file = "fix-setjmp.after" } | Local,
     {
       # janneke's tcc-0.9.26 fork — the SAME Source R2 compiles. Extracts to /build/<TCC_PKG>/.
       url = "gs://minimal-staging-archives/tcc-0.9.26-1147-gee75a10c.tar.gz",
