@@ -294,6 +294,78 @@ for L in argc3c argc4c argc5c argc6c argc7c argc5v; do
 done
 # best-effort tcc-mes -S (don't depend on it for output globs)
 timeout "$UNIT_TIMEOUT" "$TCCMES" -S -o "$OUTROOT/argc5c.tccmes.s" "$WORK/argc5c.c" >/dev/null 2>&1 && emit "DIAG-INFO tcc-mes -S produced argc5c.tccmes.s" || emit "DIAG-INFO tcc-mes -S unsupported"
+
+# ── CONSTRUCT BATTERY: enumerate WHICH C-construct classes tcc-mes miscompiles ────────────────
+# tcc-boot0 (=tcc.c compiled by tcc-mes) crashes compiling everything, so tcc-mes still miscompiles
+# >=1 construct that tcc.c uses but const4arg doesn't. Each tiny program below isolates ONE class
+# (header-free; returns 7 iff the construct compiles correctly). FAIL count = is-the-bug-set-FINITE?
+# (CONSTRUCT-RESULT <name> OK/WRONG/COMPILE-FAIL). Reuses build_and_run (tcc-mes compiles+links+runs).
+emit "DIAG-INFO ===== CONSTRUCT BATTERY (which classes does tcc-mes miscompile?) ====="
+cat > "$WORK/cb-structarg.c"   <<'EOF'
+struct S { int a; int b; int c; };
+int f(struct S s){ return s.a + s.b + s.c; }
+int main(int ac,char**av,char**ep){ struct S s; s.a=1; s.b=2; s.c=4; return f(s); }
+EOF
+cat > "$WORK/cb-structret.c"   <<'EOF'
+struct S { int a; int b; };
+struct S mk(int x){ struct S s; s.a=x; s.b=x+1; return s; }
+int main(int ac,char**av,char**ep){ struct S s = mk(3); return s.a + s.b; }
+EOF
+cat > "$WORK/cb-structasn.c"   <<'EOF'
+struct S { int a; int b; int c; int d; };
+int main(int ac,char**av,char**ep){ struct S x; x.a=1; x.b=2; x.c=0; x.d=4; struct S y; y=x; return y.a+y.b+y.c+y.d; }
+EOF
+cat > "$WORK/cb-funcptr.c"     <<'EOF'
+int add(int a,int b){ return a+b; }
+int main(int ac,char**av,char**ep){ int (*fp)(int,int) = add; return fp(3,4); }
+EOF
+cat > "$WORK/cb-switch.c"      <<'EOF'
+int f(int x){ switch(x){ case 0: return 1; case 1: return 7; case 2: return 3; default: return 0; } }
+int main(int ac,char**av,char**ep){ return f(1); }
+EOF
+cat > "$WORK/cb-llmul.c"       <<'EOF'
+int main(int ac,char**av,char**ep){ long long a=200000LL; long long b=300000LL; long long c=a*b; if (c == 60000000000LL) return 7; return 1; }
+EOF
+cat > "$WORK/cb-llshift.c"     <<'EOF'
+int main(int ac,char**av,char**ep){ long long a=1LL; long long b=a<<34; if (b == 17179869184LL) return 7; return 1; }
+EOF
+cat > "$WORK/cb-arridx.c"      <<'EOF'
+int main(int ac,char**av,char**ep){ int a[5]; a[0]=1;a[1]=2;a[2]=3;a[3]=4;a[4]=5; int i=3; return a[i] + a[i-1]; }
+EOF
+cat > "$WORK/cb-recur.c"       <<'EOF'
+int fib(int n){ if (n < 2) return n; return fib(n-1) + fib(n-2); }
+int main(int ac,char**av,char**ep){ return fib(6) - 1; }
+EOF
+cat > "$WORK/cb-cmpbool.c"     <<'EOF'
+int f(int a,int b,int c){ if (a > 0 && b > 0 && c == 0) return 7; return 0; }
+int main(int ac,char**av,char**ep){ return f(1,2,0); }
+EOF
+cat > "$WORK/cb-nestloop.c"    <<'EOF'
+int main(int ac,char**av,char**ep){ int s=0; int i; int j; for(i=0;i<7;i++){ for(j=0;j<1;j++){ s=s+1; } } return s; }
+EOF
+cat > "$WORK/cb-subword.c"     <<'EOF'
+int main(int ac,char**av,char**ep){ short s=1000; s = s + 2000; char c=7; if (s == 3000) return c; return 0; }
+EOF
+cat > "$WORK/cb-ternary.c"     <<'EOF'
+int main(int ac,char**av,char**ep){ int x=5; int y=2; int z = (x > y) ? (x + y) : (x - y); return z; }
+EOF
+cat > "$WORK/cb-ptrstruct.c"   <<'EOF'
+struct S { int a; int b; };
+void set(struct S *p, int v){ p->a = v; p->b = v + 1; }
+int main(int ac,char**av,char**ep){ struct S s; set(&s, 3); return s.a + s.b; }
+EOF
+cat > "$WORK/cb-globalarr.c"   <<'EOF'
+int g[4] = { 1, 2, 3, 1 };
+int main(int ac,char**av,char**ep){ return g[0] + g[1] + g[2] + g[3]; }
+EOF
+for cb in cb-structarg cb-structret cb-structasn cb-funcptr cb-switch cb-llmul cb-llshift cb-arridx cb-recur cb-cmpbool cb-nestloop cb-subword cb-ternary cb-ptrstruct cb-globalarr; do
+  build_and_run "$TCCMES" "$WORK/$cb.c" 7 "CB-$cb"
+done
+# compile-vs-link disambiguation: does tcc-boot0 crash COMPILING (no link, no asm)?  hello.c is header-free.
+if [ "$BOOT0_OK" = "1" ]; then
+  timeout "$UNIT_TIMEOUT" "$TCCBOOT0" -c -o "$WORK/d6.o" "$WORK/hello.c" >"$WORK/D6.out" 2>"$WORK/D6.err"; d6=$?
+  emit "DIAG-RESULT D6-boot0-c-hello rc=$d6 ($([ -s "$WORK/d6.o" ] && echo OBJ-OK || echo NO-OBJ)) — compile-only, no asm, no link"
+fi
 # GUARANTEE every output glob matches >=1 file: copy logs as *.log (objects/.bin from bisection; tcc-* from tcc-mes).
 for f in "$WORK"/mescc.err "$WORK"/rows.txt "$WORK"/tccmes-version.out "$WORK"/boot0-build.err; do
   [ -f "$f" ] && /usr/bin/cp "$f" "$OUTROOT/$(/usr/bin/basename "$f").log"
