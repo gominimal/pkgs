@@ -159,6 +159,11 @@ $CFG --enable BPF_EVENTS
 # NOT enough; the function tracer itself must be on.
 $CFG --enable FUNCTION_TRACER
 $CFG --enable DYNAMIC_FTRACE
+# CONFIG_FTRACE_SYSCALLS creates the tracefs syscalls/ event tree
+# (/sys/kernel/tracing/events/syscalls/sys_enter_execve/id) the in-VM observer's
+# execve tracepoint attaches through for race-free env capture. arm64 has
+# HAVE_SYSCALL_TRACEPOINTS=y but the feature itself is off in defconfig.
+$CFG --enable FTRACE_SYSCALLS
 
 # BPF core + LSM. BPF_LSM depends on BPF_EVENTS && BPF_SYSCALL && SECURITY && BPF_JIT.
 $CFG --enable BPF
@@ -212,11 +217,11 @@ make olddefconfig
 # olddefconfig (e.g. an unmet dependency silently turned one off). Without
 # these the kernel boots fine but is observability-blind, which would be a
 # silent, confusing failure downstream.
-for sym in CONFIG_BPF_LSM CONFIG_DEBUG_INFO_BTF CONFIG_AUDIT CONFIG_DYNAMIC_FTRACE_WITH_ARGS; do
+for sym in CONFIG_BPF_LSM CONFIG_DEBUG_INFO_BTF CONFIG_AUDIT CONFIG_DYNAMIC_FTRACE_WITH_ARGS CONFIG_FTRACE_SYSCALLS; do
   if ! grep -q "^${sym}=y" .config; then
     echo "FATAL: ${sym}=y did not survive olddefconfig" >&2
     echo "--- dependency-chain state in .config (find the unmet link) ---" >&2
-    for d in FTRACE KPROBES PERF_EVENTS KPROBE_EVENTS UPROBE_EVENTS \
+    for d in FTRACE FTRACE_SYSCALLS KPROBES PERF_EVENTS KPROBE_EVENTS UPROBE_EVENTS \
              BPF BPF_SYSCALL BPF_JIT BPF_EVENTS BPF_LSM SECURITY \
              DEBUG_INFO DEBUG_INFO_DWARF5 DEBUG_INFO_BTF PAHOLE_VERSION \
              AUDIT AUDITSYSCALL; do
