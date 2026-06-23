@@ -375,6 +375,29 @@ if [ "$BOOT0_OK" = "1" ]; then
   timeout "$UNIT_TIMEOUT" "$TCCBOOT0" -c -o "$WORK/d6.o" "$WORK/hello.c" >"$WORK/D6.out" 2>"$WORK/D6.err"; d6=$?
   emit "DIAG-RESULT D6-boot0-c-hello rc=$d6 ($([ -s "$WORK/d6.o" ] && echo OBJ-OK || echo NO-OBJ)) — compile-only, no asm, no link"
 fi
+# ── LIBC-STRESS (cb-malloc): the compile path mallocs heavily from instruction 1; the battery never
+#    allocates. If tcc-mes miscompiled mes-libc malloc, THIS crashes while everything else passes. ──
+cat > "$WORK/cb-malloc.c" <<'EOF'
+void *malloc(unsigned long n);
+void free(void *p);
+int main(int ac,char**av,char**ep){
+  int *a = malloc(100 * sizeof(int)); if (!a) return 1;
+  int i; int s = 0;
+  for (i = 0; i < 100; i++) a[i] = i;
+  for (i = 0; i < 100; i++) s = s + a[i];
+  free(a);
+  return (s == 4950) ? 7 : 2;
+}
+EOF
+build_and_run "$TCCMES" "$WORK/cb-malloc.c" 7 "CB-cb-malloc"
+# ── LOCATOR: WHERE in the compile does tcc-boot0 die? (phase bisection + verbose) ──
+if [ "$BOOT0_OK" = "1" ]; then
+  printf 'int x;\n' > "$WORK/glob.c"; : > "$WORK/empty.c"
+  timeout "$UNIT_TIMEOUT" "$TCCBOOT0" -E "$WORK/hello.c"        >"$WORK/locE.out"   2>"$WORK/locE.err";   emit "DIAG-RESULT LOC-boot0-E-preprocess rc=$? ($(/usr/bin/wc -l < "$WORK/locE.out" 2>/dev/null) lines out)"
+  timeout "$UNIT_TIMEOUT" "$TCCBOOT0" -c -o "$WORK/e.o" "$WORK/empty.c" >"$WORK/locEm.out" 2>"$WORK/locEm.err"; emit "DIAG-RESULT LOC-boot0-c-empty rc=$? ($([ -s "$WORK/e.o" ] && echo OBJ-OK || echo NO-OBJ))"
+  timeout "$UNIT_TIMEOUT" "$TCCBOOT0" -c -o "$WORK/g.o" "$WORK/glob.c"  >"$WORK/locG.out" 2>"$WORK/locG.err"; emit "DIAG-RESULT LOC-boot0-c-globalonly rc=$? ($([ -s "$WORK/g.o" ] && echo OBJ-OK || echo NO-OBJ))"
+  timeout "$UNIT_TIMEOUT" "$TCCBOOT0" -vv -c -o "$WORK/v.o" "$WORK/hello.c" >"$WORK/locV.out" 2>"$WORK/locV.err"; emit "DIAG-RESULT LOC-boot0-vv-c-hello rc=$? — stderr-tail >>> $(tail -3 "$WORK/locV.err" 2>/dev/null | tr '\n' '|')  stdout-tail >>> $(tail -3 "$WORK/locV.out" 2>/dev/null | tr '\n' '|')"
+fi
 # GUARANTEE every output glob matches >=1 file: copy logs as *.log (objects/.bin from bisection; tcc-* from tcc-mes).
 for f in "$WORK"/mescc.err "$WORK"/rows.txt "$WORK"/tccmes-version.out "$WORK"/boot0-build.err; do
   [ -f "$f" ] && /usr/bin/cp "$f" "$OUTROOT/$(/usr/bin/basename "$f").log"
