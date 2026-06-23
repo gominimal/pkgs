@@ -100,6 +100,17 @@ mkdir -p ${LIBDIR}
 simple-patch ${TCC_PKG}/tcctools.c remove-fileopen.before remove-fileopen.after
 simple-patch ${TCC_PKG}/tcctools.c addback-fileopen.before addback-fileopen.after
 
+# amd64 mes-tcc gfunc_call fix (2026-06-22): mescc miscompiles the negative-index SValue access
+# `vtop[-i]` at i>=3 -> the freshly-built tcc-mes corrupts the 4th+ call argument's TYPE -> SIGSEGV
+# (assert at x86_64-gen.c:1318) on EVERY >=4-arg call (probe-pinned: 27/258 libc files crash, tip
+# execve.c = a bare _sys_call3 4-arg call). Cache `vtop - i` into a local SValue* at each of the 5
+# access sites so mescc emits stable addressing. Patches sha-pinned to the byte-exact source.
+simple-patch ${TCC_PKG}/x86_64-gen.c gf-count.before gf-count.after
+simple-patch ${TCC_PKG}/x86_64-gen.c gf-clf.before gf-clf.after
+simple-patch ${TCC_PKG}/x86_64-gen.c gf-swapf.before gf-swapf.after
+simple-patch ${TCC_PKG}/x86_64-gen.c gf-swapb.before gf-swapb.after
+simple-patch ${TCC_PKG}/x86_64-gen.c gf-trail.before gf-trail.after
+
 # empty config.h for both trees (upstream: BOOTSTRAP defines arrive via -D, not config.h)
 catm ${TCC_PKG}/config.h
 catm ${MES_PKG}/include/mes/config.h

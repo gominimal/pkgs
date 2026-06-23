@@ -1,0 +1,6 @@
+            SValue tmp = vtop[0];
+            int arg_stored = 1;
+            SValue *pvi = vtop - i;
+
+            vtop[0] = *pvi;
+            *pvi = tmp;
