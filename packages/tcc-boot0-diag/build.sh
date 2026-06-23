@@ -177,6 +177,11 @@ mkdir -p include/arch
 simple-patch "lib/$MES_ARCH-mes-gcc/setjmp.c" /build/fix-setjmp.before /build/fix-setjmp.after \
   && emit "DIAG-INFO applied fix-setjmp (basic-asm setjmp, mes-libc)" \
   || emit "FATAL fix-setjmp patch FAILED (before-pattern not found)"
+# THE varargs ROOT CAUSE: mes amd64 stdarg.h uses a STACK-based va_list incompatible with tcc-mes's
+# SysV register-passing -> use tcc's __builtin_va_* under __TINYC__ (mescc keeps the stack version).
+simple-patch "include/stdarg.h" /build/fix-stdarg.before /build/fix-stdarg.after \
+  && emit "DIAG-INFO applied fix-stdarg (SysV __builtin_va_* for tcc-mes)" \
+  || emit "FATAL fix-stdarg patch FAILED (before-pattern not found)"
 ( cd lib && /usr/bin/cat $LIBC_FILES > ../unified-libc.c ) \
   && emit "DIAG-INFO unified-libc.c assembled ($(/usr/bin/wc -l < unified-libc.c) lines)" \
   || emit "FATAL could not assemble unified-libc.c"

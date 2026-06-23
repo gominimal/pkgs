@@ -208,6 +208,13 @@ cp include/linux/${MES_ARCH}/syscall.h include/arch/syscall.h
 # construct battery proved tcc-mes compiles all common constructs correctly EXCEPT this. Rewrite
 # setjmp.c to pure BASIC asm (env = tcc's spilled arg0 at -0x8(%rbp); read rbp/[rbp]/[rbp+8]).
 simple-patch lib/${MES_ARCH}-mes-gcc/setjmp.c fix-setjmp.before fix-setjmp.after
+# BUG (THE varargs ROOT CAUSE): mes-libc's amd64 stdarg.h uses a STACK-based va_list (char*, &last+8)
+# — the mescc/i386 convention where all varargs sit contiguous on the stack. But tcc-mes emits the
+# SysV amd64 ABI (varargs in registers rdi-r9, then stack), so tcc-mes-compiled vfprintf/snprintf
+# read phantom stack slots -> garbage-ptr crash -> tcc-boot0 died on every compile (it snprintf's the
+# output path). Make stdarg.h use tcc's SysV-correct __builtin_va_* under __TINYC__ (mescc keeps the
+# stack version, so R1 is unaffected). NOT a codegen miscompile — a calling-convention mismatch.
+simple-patch include/stdarg.h fix-stdarg.before fix-stdarg.after
 
 # Create unified libc file
 cd lib

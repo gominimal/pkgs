@@ -72,6 +72,9 @@ let coreutils = import "../coreutils/build.ncl" in # /usr/bin/{cp,chmod,mkdir,rm
     # BUG6: variadic-call %al setup (x86_64-gen.c) — mescc miscompiles the chained deref + ternary.
     { file = "fix-vararg.before" } | Local,
     { file = "fix-vararg.after" } | Local,
+    # BUG6-ROOT: mes amd64 stdarg.h stack-based va_list incompatible with tcc-mes SysV -> __builtin_va_*.
+    { file = "fix-stdarg.before" } | Local,
+    { file = "fix-stdarg.after" } | Local,
     # NOTE (§simple-patch): simple-patch.c is shipped too but is INERT by default — the PRIMARY
     # plan (CONTRACTS §B) consumes /usr/bin/simple-patch from R0.5. It is kept only for the
     # self-contained fallback (compile here via M2-Mesoplanet + the reused stage0-posix M2libc).

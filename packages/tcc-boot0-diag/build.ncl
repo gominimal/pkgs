@@ -67,6 +67,9 @@ let gzip = import "../gzip/build.ncl" in # compress the dumped asm
     # BUG6: variadic-call %al setup (x86_64-gen.c) — mescc miscompiles the chained deref + ternary.
     { file = "fix-vararg.before" } | Local,
     { file = "fix-vararg.after" } | Local,
+    # BUG6-ROOT: mes amd64 stdarg.h stack-based va_list incompatible with tcc-mes SysV -> __builtin_va_*.
+    { file = "fix-stdarg.before" } | Local,
+    { file = "fix-stdarg.after" } | Local,
     {
       # janneke's tcc-0.9.26 fork — the SAME Source R2 compiles. Extracts to /build/<TCC_PKG>/.
       url = "gs://minimal-staging-archives/tcc-0.9.26-1147-gee75a10c.tar.gz",

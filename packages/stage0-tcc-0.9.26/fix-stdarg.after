@@ -1,0 +1,21 @@
+#if __TINYC__
+/* amd64 fix: tcc-mes emits the SysV ABI -- variadic args go in registers (rdi-r9), then stack.
+   mes's stack-based va_list (char*, &last+8) assumes ALL varargs are contiguous on the stack (the
+   mescc/i386 convention), so tcc-mes-compiled vfprintf/snprintf read phantom stack slots for args
+   that are actually in registers -> garbage-pointer crash. Use tcc's SysV-correct builtins. mescc
+   does NOT define __TINYC__, so it keeps the stack-based version below (R1 unaffected). */
+typedef __builtin_va_list va_list;
+#define va_start(v, l)     __builtin_va_start (v, l)
+#define va_arg(v, l)       __builtin_va_arg (v, l)
+#define va_arg8(ap, type)  va_arg (ap, type)
+#define va_end(v)          __builtin_va_end (v)
+#define va_copy(d, s)      __builtin_va_copy (d, s)
+#else
+typedef char *va_list;
+#define va_start(ap, last) (void)((ap) = (char*)(&(last)) + sizeof (void*))
+#define va_arg(ap, type) (type)(((long*)((ap) = ((ap) + sizeof (void*))))[-1])
+#define va_align(ap, alignment) ((char*)((((unsigned long) (ap)) + (alignment) - 1) &~ ((alignment) - 1)))
+#define va_arg8(ap, type) (type)(((double*)((ap) = (va_align((ap), 8) + sizeof(double))))[-1])
+#define va_end(ap) (void)((ap) = 0)
+#define va_copy(dest, src) dest = src
+#endif
