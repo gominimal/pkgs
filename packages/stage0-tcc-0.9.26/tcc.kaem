@@ -228,6 +228,13 @@ tcc-mes -ar cr ${LIBDIR}/libgetopt.a getopt.o
 cd ../${TCC_PKG}
 
 # boot0 (ref comments here for all boot*)
+# amd64 header-path fix (2026-06-22): R1/stage0-mes installs the mes libc headers (stdlib.h,
+# stdio.h, string.h, … — 65 of them) to ${PREFIX}/include (top-level), with only 9 mes-INTERNAL
+# headers under ${PREFIX}/include/mes.  The mescc step above resolves <stdlib.h> via mes's builtin
+# MES_PREFIX=/usr search (${PREFIX}/include); tcc-mes has NO such builtin and only searches its -I
+# + SYSINCLUDEPATHS, so `tcc.h:27: #include <stdlib.h>` -> "not found" -> abort.  Add the top-level
+# ${PREFIX}/include to every tcc.c self-compile's -I (boot0/1/2 + deliverable); purely additive, so
+# the `.` then mes-internal search order is preserved.  (SYSINCLUDEPATHS left as-is: R3 passes -I.)
 # compile
 tcc-mes \
     -g \
@@ -240,6 +247,7 @@ tcc-mes \
     -D HAVE_LONG_LONG=1 \
     -D HAVE_SETJMP=1 \
     -I . \
+    -I ${PREFIX}/include \
     -I ${PREFIX}/include/mes \
     -D TCC_TARGET_${TCC_TARGET_ARCH}=1 \
     -D CONFIG_TCCDIR=\"${LIBDIR}/tcc\" \
@@ -295,6 +303,7 @@ tcc-boot0 \
     -D HAVE_LONG_LONG=1 \
     -D HAVE_SETJMP=1 \
     -I . \
+    -I ${PREFIX}/include \
     -I ${PREFIX}/include/mes \
     -D TCC_TARGET_${TCC_TARGET_ARCH}=1 \
     -D CONFIG_TCCDIR=\"${LIBDIR}/tcc\" \
@@ -348,6 +357,7 @@ tcc-boot1 \
     -D HAVE_LONG_LONG=1 \
     -D HAVE_SETJMP=1 \
     -I . \
+    -I ${PREFIX}/include \
     -I ${PREFIX}/include/mes \
     -D TCC_TARGET_${TCC_TARGET_ARCH}=1 \
     -D CONFIG_TCCDIR=\"${LIBDIR}/tcc\" \
@@ -409,6 +419,7 @@ tcc-boot2 \
     -D HAVE_LONG_LONG=1 \
     -D HAVE_SETJMP=1 \
     -I . \
+    -I ${PREFIX}/include \
     -I ${PREFIX}/include/mes \
     -D TCC_TARGET_${TCC_TARGET_ARCH}=1 \
     -D CONFIG_TCCDIR=\"/usr/lib/mes/tcc\" \
