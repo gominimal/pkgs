@@ -1,4 +1,0 @@
-        while (i < nb_args) {
-            /* Rotate argument to top since it will always be popped */
-            SValue *psv = vtop - i;
-            mode = classify_x86_64_arg(&psv->type, NULL, &size, &align, &reg_count);

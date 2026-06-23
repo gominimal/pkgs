@@ -1,2 +1,0 @@
-    for(i = 0; i < nb_args; i++) {
-        mode = classify_x86_64_arg(&vtop[-i].type, NULL, &size, &align, &reg_count);

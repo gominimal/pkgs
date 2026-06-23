@@ -1,3 +1,0 @@
-        while (i < nb_args) {
-            /* Rotate argument to top since it will always be popped */
-            mode = classify_x86_64_arg(&vtop[-i].type, NULL, &size, &align, &reg_count);

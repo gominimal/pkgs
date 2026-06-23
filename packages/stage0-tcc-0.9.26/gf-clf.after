@@ -1,3 +1,0 @@
-        for(i = run_start; (i < nb_args) && (run_end == nb_args); i++) {
-            SValue *psv = vtop - i;
-            mode = classify_x86_64_arg(&psv->type, NULL, &size, &align, &reg_count);

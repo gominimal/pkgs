@@ -54,17 +54,12 @@ let coreutils = import "../coreutils/build.ncl" in # /usr/bin/{cp,chmod,mkdir,rm
     { file = "remove-fileopen.after" } | Local,
     { file = "addback-fileopen.before" } | Local,
     { file = "addback-fileopen.after" } | Local,
-    # amd64 gfunc_call fix — cache `vtop - i` so mescc stops corrupting the 4th+ arg type (5 sites)
-    { file = "gf-count.before" } | Local,
-    { file = "gf-count.after" } | Local,
-    { file = "gf-clf.before" } | Local,
-    { file = "gf-clf.after" } | Local,
-    { file = "gf-swapf.before" } | Local,
-    { file = "gf-swapf.after" } | Local,
-    { file = "gf-swapb.before" } | Local,
-    { file = "gf-swapb.after" } | Local,
-    { file = "gf-trail.before" } | Local,
-    { file = "gf-trail.after" } | Local,
+    # amd64 gfunc_call fix (asm-probe-confirmed) — per-field SValue swap dodges mescc's broken
+    # whole-struct copy that corrupted the 4th+ arg type.t. All 4 crashers compile clean with this.
+    { file = "fix-swapf.before" } | Local,
+    { file = "fix-swapf.after" } | Local,
+    { file = "fix-swapb.before" } | Local,
+    { file = "fix-swapb.after" } | Local,
     # NOTE (§simple-patch): simple-patch.c is shipped too but is INERT by default — the PRIMARY
     # plan (CONTRACTS §B) consumes /usr/bin/simple-patch from R0.5. It is kept only for the
     # self-contained fallback (compile here via M2-Mesoplanet + the reused stage0-posix M2libc).
