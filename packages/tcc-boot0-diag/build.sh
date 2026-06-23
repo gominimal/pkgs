@@ -118,7 +118,16 @@ for p in fix-swapf fix-swapb; do
     && emit "DIAG-INFO applied $p (field-by-field swap)" \
     || { emit "FATAL swap patch $p FAILED (before-pattern not found)"; SWAP_OK=0; }
 done
-[ "$SWAP_OK" = "1" ] || { echo "FATAL: swap patch did not apply — aborting (see rows)"; cp "$WORK/rows.txt" "$MANIFEST" 2>/dev/null; exit 0; }
+# BUG1 (static-PLT crash, genuine tcc -static defect): build_got_entries -> convert PLT32/PC32 to
+# direct PC32 for defined syms in static link (no PLT). BUG2 (mescc miscompiles the log2 loop):
+# rewrite the strength-reduction shift-count loop mescc-safe. (workflow wf_9d59a528, gcc-verified BUG1.)
+simple-patch "/build/$TCC_PKG/tccelf.c" /build/fix-plt.before /build/fix-plt.after \
+  && emit "DIAG-INFO applied fix-plt (static-PLT->PC32, tccelf.c)" \
+  || { emit "FATAL fix-plt patch FAILED (before-pattern not found)"; SWAP_OK=0; }
+simple-patch "/build/$TCC_PKG/tccgen.c" /build/fix-mul.before /build/fix-mul.after \
+  && emit "DIAG-INFO applied fix-mul (strength-reduction log2, tccgen.c)" \
+  || { emit "FATAL fix-mul patch FAILED (before-pattern not found)"; SWAP_OK=0; }
+[ "$SWAP_OK" = "1" ] || { echo "FATAL: a patch did not apply — aborting (see rows)"; cp "$WORK/rows.txt" "$MANIFEST" 2>/dev/null; exit 0; }
 
 # ── PHASE 2: build tcc-mes (mescc compiles tcc.c -> tcc.s -> link). The arena-lottery long pole. ──
 cd "/build/$TCC_PKG" || { echo "FATAL cd tcc"; exit 0; }

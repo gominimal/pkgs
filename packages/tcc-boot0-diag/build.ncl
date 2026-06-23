@@ -56,6 +56,11 @@ let gzip = import "../gzip/build.ncl" in # compress the dumped asm
     { file = "fix-swapf.after" } | Local,
     { file = "fix-swapb.before" } | Local,
     { file = "fix-swapb.after" } | Local,
+    # BUG1 (static-PLT crash, tccelf.c) + BUG2 (strength-reduction log2, tccgen.c) — workflow wf_9d59a528.
+    { file = "fix-plt.before" } | Local,
+    { file = "fix-plt.after" } | Local,
+    { file = "fix-mul.before" } | Local,
+    { file = "fix-mul.after" } | Local,
     {
       # janneke's tcc-0.9.26 fork — the SAME Source R2 compiles. Extracts to /build/<TCC_PKG>/.
       url = "gs://minimal-staging-archives/tcc-0.9.26-1147-gee75a10c.tar.gz",

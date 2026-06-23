@@ -1,0 +1,7 @@
+                int n = 0;
+                uint64_t pw = l2;
+                while (pw > 1) {
+                    pw = pw >> 1;
+                    n = n + 1;
+                }
+                vtop->c.i = n;

@@ -60,6 +60,12 @@ let coreutils = import "../coreutils/build.ncl" in # /usr/bin/{cp,chmod,mkdir,rm
     { file = "fix-swapf.after" } | Local,
     { file = "fix-swapb.before" } | Local,
     { file = "fix-swapb.after" } | Local,
+    # amd64 BUG1 static-PLT crash (tccelf.c, gcc-verified genuine tcc -static defect) + BUG2
+    # strength-reduction log2 miscompile (tccgen.c). workflow wf_9d59a528, byte-exact + unique.
+    { file = "fix-plt.before" } | Local,
+    { file = "fix-plt.after" } | Local,
+    { file = "fix-mul.before" } | Local,
+    { file = "fix-mul.after" } | Local,
     # NOTE (§simple-patch): simple-patch.c is shipped too but is INERT by default — the PRIMARY
     # plan (CONTRACTS §B) consumes /usr/bin/simple-patch from R0.5. It is kept only for the
     # self-contained fallback (compile here via M2-Mesoplanet + the reused stage0-posix M2libc).

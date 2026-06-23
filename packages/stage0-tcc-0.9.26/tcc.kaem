@@ -108,6 +108,14 @@ simple-patch ${TCC_PKG}/tcctools.c addback-fileopen.before addback-fileopen.afte
 # (execve/fcntl/wait4/snprintf) compile CLEAN with this. (The earlier vtop-i addressing-cache failed.)
 simple-patch ${TCC_PKG}/x86_64-gen.c fix-swapf.before fix-swapf.after
 simple-patch ${TCC_PKG}/x86_64-gen.c fix-swapb.before fix-swapb.after
+# BUG1 (the tcc-boot0 first-use SIGSEGV): a GENUINE tcc -static defect (gcc-reproduced, NOT a mescc
+# miscompile) — gotplt_entry_type returns ALWAYS_GOTPLT for R_X86_64_PLT32 + relocate_plt is skipped
+# for static links, so a defined fn's call goes through an unpatched lazy PLT stub -> jump to garbage.
+# Fix: build_got_entries converts PLT32/PC32 -> direct PC32 for defined syms in a static link (no PLT).
+simple-patch ${TCC_PKG}/tccelf.c fix-plt.before fix-plt.after
+# BUG2 (wrong value): mescc miscompiles the power-of-two strength-reduction log2 loop (b*2 -> shll $0).
+# Rewrite the loop mescc-safe (fresh var, explicit compare, no compound-assign-in-condition).
+simple-patch ${TCC_PKG}/tccgen.c fix-mul.before fix-mul.after
 
 # empty config.h for both trees (upstream: BOOTSTRAP defines arrive via -D, not config.h)
 catm ${TCC_PKG}/config.h

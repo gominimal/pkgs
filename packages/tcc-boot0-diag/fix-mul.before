@@ -1,0 +1,6 @@
+                int n = -1;
+                while (l2) {
+                    l2 >>= 1;
+                    n++;
+                }
+                vtop->c.i = n;
