@@ -79,11 +79,14 @@ let gzip = import "../gzip/build.ncl" in # compress the dumped asm
   cmds = [
     ["/usr/bin/bash", "build.sh"],
   ],
+  # NOTE: every OutputData glob MUST match >=1 file or minimal marks the build FAILED (and skips
+  # publish) — the first run's `*.s`/`*.log` globs matched nothing. These are all guaranteed on a
+  # full run: MANIFEST.txt + copied *.log + bisection *.o/*.bin + tcc-mes.patched (tcc-*).
   outputs = {
     manifest = { glob = "usr/share/tcc-boot0-diag/MANIFEST.txt" } | OutputData,
     logs = { glob = "usr/share/tcc-boot0-diag/*.log" } | OutputData,
-    asm = { glob = "usr/share/tcc-boot0-diag/*.s" } | OutputData,
-    gz = { glob = "usr/share/tcc-boot0-diag/*.gz" } | OutputData,
+    objects = { glob = "usr/share/tcc-boot0-diag/*.o" } | OutputData,
+    bins = { glob = "usr/share/tcc-boot0-diag/*.bin" } | OutputData,
     binaries = { glob = "usr/share/tcc-boot0-diag/tcc-*" } | OutputData,
   },
 } | BuildSpec

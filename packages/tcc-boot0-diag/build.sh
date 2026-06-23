@@ -231,16 +231,64 @@ else
   emit "DIAG-RESULT D1/D3/D4 SKIPPED — tcc-boot0 did not build"
 fi
 
-# D5: dump tcc-mes asm for the asm-path + >=4-arg programs (best-effort; tcc -S may be unsupported).
+# ── D5: ARG-COUNT BISECTION + SAVE objects/binaries for local objdump ─────────────────────────
+# Pin WHICH arg count first miscompiles (3 fits rdi/rsi/rdx; 4 adds rcx; 5 r8; 6 r9; 7 spills to
+# stack) and whether it's CONSTANT-specific. Each f returns sum_{k} k*a_k; called with 1..N.
+# const: f3=14 f4=30 f5=55 f6=91 f7=140 ; var (volatile, defeats const-fold): f5v=55.
 cd "/build/$TCC_PKG" || true
-for t in asmtest const4arg; do
-  if timeout "$UNIT_TIMEOUT" "$TCCMES" -S -o "$OUTROOT/$t.tccmes.s" "$WORK/$t.c" >"$WORK/$t-S.out" 2>&1 && [ -s "$OUTROOT/$t.tccmes.s" ]; then
-    emit "DIAG-INFO tcc-mes -S $t.c -> $t.tccmes.s ($(/usr/bin/wc -l < "$OUTROOT/$t.tccmes.s") lines)"
-  else
-    emit "DIAG-INFO tcc-mes -S $t.c unsupported/failed (skipped)"
+cat > "$WORK/argc3c.c"  <<'EOF'
+int f3(int a,int b,int c){return a+b*2+c*3;}
+int main(int ac,char**av,char**ep){return f3(1,2,3);}
+EOF
+cat > "$WORK/argc4c.c"  <<'EOF'
+int f4(int a,int b,int c,int d){return a+b*2+c*3+d*4;}
+int main(int ac,char**av,char**ep){return f4(1,2,3,4);}
+EOF
+cat > "$WORK/argc5c.c"  <<'EOF'
+int f5(int a,int b,int c,int d,int e){return a+b*2+c*3+d*4+e*5;}
+int main(int ac,char**av,char**ep){return f5(1,2,3,4,5);}
+EOF
+cat > "$WORK/argc6c.c"  <<'EOF'
+int f6(int a,int b,int c,int d,int e,int f){return a+b*2+c*3+d*4+e*5+f*6;}
+int main(int ac,char**av,char**ep){return f6(1,2,3,4,5,6);}
+EOF
+cat > "$WORK/argc7c.c"  <<'EOF'
+int f7(int a,int b,int c,int d,int e,int f,int g){return a+b*2+c*3+d*4+e*5+f*6+g*7;}
+int main(int ac,char**av,char**ep){return f7(1,2,3,4,5,6,7);}
+EOF
+cat > "$WORK/argc5v.c"  <<'EOF'
+int f5(int a,int b,int c,int d,int e){return a+b*2+c*3+d*4+e*5;}
+int main(int ac,char**av,char**ep){volatile int a=1,b=2,c=3,d=4,e=5;return f5(a,b,c,d,e);}
+EOF
+bis() {  # $1=label $2=expected_rc
+  local lab="$1" exp="$2" src="$WORK/$1.c"
+  # save the OBJECT (for local objdump of the wrong call/prologue)
+  timeout "$UNIT_TIMEOUT" "$TCCMES" -c -o "$OUTROOT/$lab.o" "$src" >"$WORK/$lab.cc.out" 2>"$WORK/$lab.cc.err"
+  local crc=$?
+  # link + run
+  timeout "$UNIT_TIMEOUT" "$TCCMES" -static -o "$OUTROOT/$lab.bin" -L . -L "$LIBDIR" "$src" >>"$WORK/$lab.cc.out" 2>>"$WORK/$lab.cc.err"
+  local lrc=$?
+  if [ "$lrc" != "0" ] || [ ! -s "$OUTROOT/$lab.bin" ]; then
+    emit "DIAG-RESULT BISECT-$lab COMPILE/LINK-FAIL crc=$crc lrc=$lrc >>> $(tail -1 "$WORK/$lab.cc.err" 2>/dev/null)"
+    return
   fi
+  /usr/bin/chmod 755 "$OUTROOT/$lab.bin"
+  timeout "$RUN_TIMEOUT" "$OUTROOT/$lab.bin" >/dev/null 2>"$WORK/$lab.run.err"
+  local rrc=$?
+  [ "$rrc" = "$exp" ] && emit "DIAG-RESULT BISECT-$lab RUN-OK rc=$rrc (expected $exp)" \
+                      || emit "DIAG-RESULT BISECT-$lab RUN-WRONG rc=$rrc (expected $exp) — miscompiled"
+}
+emit "DIAG-INFO ===== ARG-COUNT BISECTION (objects saved for objdump) ====="
+for L in argc3c argc4c argc5c argc6c argc7c argc5v; do
+  case "$L" in argc3c) e=14;; argc4c) e=30;; argc5c) e=55;; argc6c) e=91;; argc7c) e=140;; argc5v) e=55;; esac
+  bis "$L" "$e"
 done
-/usr/bin/gzip -c "$WORK/mescc.err" > "$OUTROOT/mescc.err.gz" 2>/dev/null
+# best-effort tcc-mes -S (don't depend on it for output globs)
+timeout "$UNIT_TIMEOUT" "$TCCMES" -S -o "$OUTROOT/argc5c.tccmes.s" "$WORK/argc5c.c" >/dev/null 2>&1 && emit "DIAG-INFO tcc-mes -S produced argc5c.tccmes.s" || emit "DIAG-INFO tcc-mes -S unsupported"
+# GUARANTEE every output glob matches >=1 file: copy logs as *.log (objects/.bin from bisection; tcc-* from tcc-mes).
+for f in "$WORK"/mescc.err "$WORK"/rows.txt "$WORK"/tccmes-version.out "$WORK"/boot0-build.err; do
+  [ -f "$f" ] && /usr/bin/cp "$f" "$OUTROOT/$(/usr/bin/basename "$f").log"
+done
 
 # ── MANIFEST + VERDICT ────────────────────────────────────────────────────────────────────────
 {
