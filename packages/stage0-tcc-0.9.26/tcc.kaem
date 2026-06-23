@@ -116,6 +116,11 @@ simple-patch ${TCC_PKG}/tccelf.c fix-plt.before fix-plt.after
 # BUG2 (wrong value): mescc miscompiles the power-of-two strength-reduction log2 loop (b*2 -> shll $0).
 # Rewrite the loop mescc-safe (fresh var, explicit compare, no compound-assign-in-condition).
 simple-patch ${TCC_PKG}/tccgen.c fix-mul.before fix-mul.after
+# BUG (6th): tcc-mes miscompiles VARIADIC calls — gfunc_call's %al (SysV variadic SSE-arg count)
+# setup uses a chained deref `vtop->type.ref->c` + a ternary that mescc mis-emits, so variadic
+# callees (snprintf, fprintf — which tcc uses to build the output path) read phantom SSE regs and
+# crash. tcc-boot0 died on EVERY compile because of this. Decompose the %al setup mescc-safe.
+simple-patch ${TCC_PKG}/x86_64-gen.c fix-vararg.before fix-vararg.after
 
 # empty config.h for both trees (upstream: BOOTSTRAP defines arrive via -D, not config.h)
 catm ${TCC_PKG}/config.h

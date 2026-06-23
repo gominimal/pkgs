@@ -64,6 +64,9 @@ let gzip = import "../gzip/build.ncl" in # compress the dumped asm
     # BUG5: mes-libc setjmp basic-asm rewrite (extended-asm output operand miscompiled by tcc-mes).
     { file = "fix-setjmp.before" } | Local,
     { file = "fix-setjmp.after" } | Local,
+    # BUG6: variadic-call %al setup (x86_64-gen.c) — mescc miscompiles the chained deref + ternary.
+    { file = "fix-vararg.before" } | Local,
+    { file = "fix-vararg.after" } | Local,
     {
       # janneke's tcc-0.9.26 fork — the SAME Source R2 compiles. Extracts to /build/<TCC_PKG>/.
       url = "gs://minimal-staging-archives/tcc-0.9.26-1147-gee75a10c.tar.gz",

@@ -127,6 +127,9 @@ simple-patch "/build/$TCC_PKG/tccelf.c" /build/fix-plt.before /build/fix-plt.aft
 simple-patch "/build/$TCC_PKG/tccgen.c" /build/fix-mul.before /build/fix-mul.after \
   && emit "DIAG-INFO applied fix-mul (strength-reduction log2, tccgen.c)" \
   || { emit "FATAL fix-mul patch FAILED (before-pattern not found)"; SWAP_OK=0; }
+simple-patch "$XGEN" /build/fix-vararg.before /build/fix-vararg.after \
+  && emit "DIAG-INFO applied fix-vararg (variadic %al setup, x86_64-gen.c)" \
+  || { emit "FATAL fix-vararg patch FAILED (before-pattern not found)"; SWAP_OK=0; }
 [ "$SWAP_OK" = "1" ] || { echo "FATAL: a patch did not apply — aborting (see rows)"; cp "$WORK/rows.txt" "$MANIFEST" 2>/dev/null; exit 0; }
 
 # ── PHASE 2: build tcc-mes (mescc compiles tcc.c -> tcc.s -> link). The arena-lottery long pole. ──
