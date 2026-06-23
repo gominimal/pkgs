@@ -375,6 +375,16 @@ if [ "$BOOT0_OK" = "1" ]; then
   timeout "$UNIT_TIMEOUT" "$TCCBOOT0" -c -o "$WORK/d6.o" "$WORK/hello.c" >"$WORK/D6.out" 2>"$WORK/D6.err"; d6=$?
   emit "DIAG-RESULT D6-boot0-c-hello rc=$d6 ($([ -s "$WORK/d6.o" ] && echo OBJ-OK || echo NO-OBJ)) — compile-only, no asm, no link"
 fi
+cat > "$WORK/cb-snpbasic.c" <<'EOF'
+int snprintf(char *s, unsigned long n, const char *fmt, ...);
+int main(int ac,char**av,char**ep){ char b[32]; snprintf(b,32,"%s%d","x",5); if(b[0]=='x'&&b[1]=='5'&&b[2]==0) return 7; return 1; }
+EOF
+cat > "$WORK/cb-snpstar.c" <<'EOF'
+int snprintf(char *s, unsigned long n, const char *fmt, ...);
+int main(int ac,char**av,char**ep){ char b[32]; snprintf(b,32,"%*d",3,5); if(b[0]==' '&&b[1]==' '&&b[2]=='5'&&b[3]==0) return 7; return 1; }
+EOF
+build_and_run "$TCCMES" "$WORK/cb-snpbasic.c" 7 "CB-cb-snpbasic"
+build_and_run "$TCCMES" "$WORK/cb-snpstar.c"  7 "CB-cb-snpstar"
 # ── LIBC-STRESS (cb-malloc): the compile path mallocs heavily from instruction 1; the battery never
 #    allocates. If tcc-mes miscompiled mes-libc malloc, THIS crashes while everything else passes. ──
 cat > "$WORK/cb-malloc.c" <<'EOF'
