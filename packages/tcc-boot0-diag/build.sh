@@ -166,6 +166,11 @@ mkdir -p include/arch
 LC="-c -D HAVE_CONFIG_H=1 -I include -I include/linux/$MES_ARCH"
 timeout "$UNIT_TIMEOUT" "$TCCMES" $LC -o "$LIBDIR/crt1.o" "lib/linux/$MES_ARCH-mes-gcc/crt1.c" >"$WORK/crt1.out" 2>&1
 emit "DIAG-INFO tcc-mes -c crt1.c rc=$? ($([ -s "$LIBDIR/crt1.o" ] && echo OBJ-OK || echo NO-OBJ))"
+# amd64: crti.o/crtn.o are EMPTY placeholders (R2 kaem `catm ${LIBDIR}/crt{i,n}.o`); tcc auto-adds
+# crt1.o+crti.o+crtn.o from CRTPREFIX at every link, so the FILES must exist (x86 compiles real ones).
+: > "$LIBDIR/crti.o"
+: > "$LIBDIR/crtn.o"
+emit "DIAG-INFO created empty crti.o/crtn.o placeholders (amd64; needed by every tcc link)"
 timeout "$UNIT_TIMEOUT" "$TCCMES" $LC -o unified-libc.o unified-libc.c >"$WORK/ulibc.out" 2>&1
 emit "DIAG-INFO tcc-mes -c unified-libc.c rc=$? ($([ -s unified-libc.o ] && echo OBJ-OK || echo NO-OBJ))"
 "$TCCMES" -ar cr "$LIBDIR/libc.a" unified-libc.o >>"$WORK/ulibc.out" 2>&1
