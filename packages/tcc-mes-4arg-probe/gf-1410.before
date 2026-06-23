@@ -1,0 +1,1 @@
+assert(sse_reg <= 8);

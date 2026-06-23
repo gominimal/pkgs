@@ -1,0 +1,1 @@
+assert((vtop->type.t == tmp.type.t) && (vtop->r == tmp.r));

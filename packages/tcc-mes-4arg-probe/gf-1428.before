@@ -1,0 +1,1 @@
+assert(reg_count == 1);

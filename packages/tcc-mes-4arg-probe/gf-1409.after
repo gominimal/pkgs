@@ -1,0 +1,1 @@
+if (!(gen_reg <= REGN)) { write (2, "GF1409\n", 7); _exit (9); }

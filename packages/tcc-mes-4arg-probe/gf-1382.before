@@ -1,0 +1,1 @@
+assert(mode == x86_64_mode_memory);

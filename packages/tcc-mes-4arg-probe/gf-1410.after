@@ -1,0 +1,1 @@
+if (!(sse_reg <= 8)) { write (2, "GF1410\n", 7); _exit (10); }

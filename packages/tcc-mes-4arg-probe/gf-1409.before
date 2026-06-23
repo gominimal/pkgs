@@ -1,0 +1,1 @@
+assert(gen_reg <= REGN);
