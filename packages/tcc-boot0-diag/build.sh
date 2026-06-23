@@ -411,6 +411,17 @@ if [ "$BOOT0_OK" = "1" ]; then
   timeout "$UNIT_TIMEOUT" "$TCCBOOT0" -c -o "$WORK/g.o" "$WORK/glob.c"  >"$WORK/locG.out" 2>"$WORK/locG.err"; emit "DIAG-RESULT LOC-boot0-c-globalonly rc=$? ($([ -s "$WORK/g.o" ] && echo OBJ-OK || echo NO-OBJ))"
   timeout "$UNIT_TIMEOUT" "$TCCBOOT0" -vv -c -o "$WORK/v.o" "$WORK/hello.c" >"$WORK/locV.out" 2>"$WORK/locV.err"; emit "DIAG-RESULT LOC-boot0-vv-c-hello rc=$? — stderr-tail >>> $(tail -3 "$WORK/locV.err" 2>/dev/null | tr '\n' '|')  stdout-tail >>> $(tail -3 "$WORK/locV.out" 2>/dev/null | tr '\n' '|')"
 fi
+# ── VARARG FORENSICS: save the actual machine code of a variadic call (both sides) for objdump ──
+# snpbasic.o = the CALLER (main's snprintf call: %al setup + arg marshalling, compiled by tcc-mes).
+# unified-libc.o = the CALLEE (snprintf/vfprintf va_arg handling, compiled by tcc-mes). objdump -dr
+# both locally to SEE whether the bug is the call setup (%al/args) or the libc va_arg side.
+cd "/build/$TCC_PKG" 2>/dev/null || true
+timeout "$UNIT_TIMEOUT" "$TCCMES" -c -o "$OUTROOT/snpbasic.o" "$WORK/cb-snpbasic.c" >/dev/null 2>&1 \
+  && emit "DIAG-INFO saved snpbasic.o (caller-side variadic call)" || emit "DIAG-INFO snpbasic.o save failed"
+[ -f "$WORK/CB-cb-snpbasic.bin" ] && /usr/bin/cp "$WORK/CB-cb-snpbasic.bin" "$OUTROOT/snpbasic.bin"
+[ -f "/build/$MES_PKG/unified-libc.o" ] && /usr/bin/cp "/build/$MES_PKG/unified-libc.o" "$OUTROOT/unified-libc.o" \
+  && emit "DIAG-INFO saved unified-libc.o (callee-side snprintf/vfprintf, $(/usr/bin/wc -c < "$OUTROOT/unified-libc.o") bytes)"
+
 # GUARANTEE every output glob matches >=1 file: copy logs as *.log (objects/.bin from bisection; tcc-* from tcc-mes).
 for f in "$WORK"/mescc.err "$WORK"/rows.txt "$WORK"/tccmes-version.out "$WORK"/boot0-build.err; do
   [ -f "$f" ] && /usr/bin/cp "$f" "$OUTROOT/$(/usr/bin/basename "$f").log"
