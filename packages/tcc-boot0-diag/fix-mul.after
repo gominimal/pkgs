@@ -1,7 +1,1 @@
-                int n = 0;
-                uint64_t pw = l2;
-                while (pw > 1) {
-                    pw = pw >> 1;
-                    n = n + 1;
-                }
-                vtop->c.i = n;
+            if (0) { /* power-of-2 strength reduction DISABLED: mescc miscompiles the log2 shift-count loop (n stays 0, b*2 -> shll 0); route multiply and divide through the correct imull/idiv general_case */
