@@ -304,25 +304,23 @@ int main(int ac,char**av,char**ev){
   if(pid==0){ L tm=sc(101,0,0,0,0); ws("TRACEME="); wn(tm); /* 0 if ptrace allowed, -1/EPERM if blocked */
     sc(59,(L)av[1],(L)&av[1],(L)ev,0); ws("EXECVE-FAILED\n"); sc(60,127,0,0,0); }
   ws("pid="); wn(pid);
-  int st; L regs[40]; int k;
-  for(;;){
-    L w=sc(61,pid,(L)&st,0,0); ws("wait w="); wn(w); ws("st="); wn((L)st);   /* wait4 */
-    if(w<0){ ws("WAIT<0\n"); break; }
-    if((st&0x7f)==0){ ws("CHILD-EXIT code="); wn((st>>8)&0xff); break; }       /* WIFEXITED */
-    if((st&0x7f)!=0x7f){ ws("CHILD-KILLED-BY-SIG="); wn(st&0x7f); break; }      /* WIFSIGNALED */
-    int sig=(st>>8)&0xff;                                                       /* WIFSTOPPED -> WSTOPSIG */
-    if(sig==11||sig==4||sig==7){                                                /* SIGSEGV/SIGILL/SIGBUS */
-      sc(101,12,pid,0,(L)regs);                                                     /* PTRACE_GETREGS */
-      ws("CRASH sig="); wn(sig); ws("rip="); wn(regs[16]); ws("rbp="); wn(regs[4]); ws("rsp="); wn(regs[19]);
-      ws("BACKTRACE:\n"); L rbp=regs[4];
-      for(k=0;k<20 && rbp>0x1000;k++){ L ret=0,nxt=0;
-        if(sc(101,2,pid,rbp+8,(L)&ret)!=0)break;
-        if(sc(101,2,pid,rbp,(L)&nxt)!=0)break;
-        wn(ret); rbp=nxt; }
-      break;
-    }
-    sc(101,7,pid,0,sig==5?0:sig);                                                   /* CONT: swallow initial SIGTRAP, redeliver others */
-  }
+  int st; L regs[40]; int k; L ts[2];
+  sc(61,pid,(L)&st,0,0); ws("stop1 st="); wn((L)st);          /* exec-stop (SIGTRAP) */
+  sc(101,7,pid,0,0);                                          /* PTRACE_CONT — let tcc-boot0 run */
+  ts[0]=3; ts[1]=0; sc(35,(L)ts,0,0,0);                       /* nanosleep 3s: it crashes OR hangs */
+  sc(62,pid,19,0,0);                                          /* kill(pid,SIGSTOP) — force-stop a HANG */
+  L w=sc(61,pid,(L)&st,0,0); ws("stop2 w="); wn(w); ws("st="); wn((L)st);
+  if(w<0){ ws("WAIT<0\n"); return 0; }
+  if((st&0x7f)==0){ ws("EXITED code="); wn((st>>8)&0xff); return 0; }
+  if((st&0x7f)!=0x7f){ ws("KILLED-SIG="); wn(st&0x7f); return 0; }
+  int sig=(st>>8)&0xff;                                       /* 11=SIGSEGV (crashed); 19=SIGSTOP (was hanging) */
+  sc(101,12,pid,0,(L)regs);                                   /* PTRACE_GETREGS */
+  ws("STOPPED sig="); wn(sig); ws("rip="); wn(regs[16]); ws("rbp="); wn(regs[4]); ws("rsp="); wn(regs[19]);
+  ws("BACKTRACE:\n"); L rbp=regs[4];
+  for(k=0;k<24 && rbp>0x1000;k++){ L ret=0,nxt=0;
+    if(sc(101,2,pid,rbp+8,(L)&ret)!=0)break;
+    if(sc(101,2,pid,rbp,(L)&nxt)!=0)break;
+    wn(ret); rbp=nxt; }
   return 0;
 }
 TRACE_EOF
