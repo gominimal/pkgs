@@ -287,33 +287,44 @@ if [ "$BOOT0_OK" = "1" ]; then
   # (4) DEFINITIVE: ptrace tracer (compiled by tcc-mes — extended asm works) catches tcc-boot0's SIGSEGV
   #     and prints rip + the rbp-chain return addresses. Map locally with objdump on tcc-boot0.patched.
   cat > "$WORK/trace.c" <<'TRACE_EOF'
+/* robust tracer: mes-libc fork/execve/waitpid (proven), raw ptrace ONLY via memory-operand asm. */
 typedef long L;
-static L s1(L n,L a){L r;__asm__ volatile("syscall":"=a"(r):"a"(n),"D"(a):"rcx","r11","memory");return r;}
-static L s3(L n,L a,L b,L c){L r;__asm__ volatile("syscall":"=a"(r):"a"(n),"D"(a),"S"(b),"d"(c):"rcx","r11","memory");return r;}
-static L s4(L n,L a,L b,L c,L d){L r;register L r10 __asm__("r10")=d;__asm__ volatile("syscall":"=a"(r):"a"(n),"D"(a),"S"(b),"d"(c),"r"(r10):"rcx","r11","memory");return r;}
-static void wr(char*s,int n){s3(1,1,(L)s,n);}
-static void hx(char*tag,L v){char b[80];int i=0;while(tag[i]){b[i]=tag[i];i++;}b[i++]='0';b[i++]='x';int j;for(j=0;j<16;j++){int d=(v>>((15-j)*4))&0xf;b[i++]=d<10?('0'+d):('a'+d-10);}b[i++]='\n';wr(b,i);}
+extern int fork(void);
+extern int execve(const char*, char**, char**);
+extern int waitpid(int, int*, int);
+extern long write(int, const void*, unsigned long);
+static L pt(L req,L pid,L addr,L data){
+  L ret;
+  __asm__ volatile(
+    "movq %1,%%rax\n\t movq %2,%%rdi\n\t movq %3,%%rsi\n\t movq %4,%%rdx\n\t movq %5,%%r10\n\t syscall\n\t movq %%rax,%0\n\t"
+    : "=m"(ret) : "m"(req),"m"(pid),"m"(addr),"m"(data)
+    : "rax","rdi","rsi","rdx","r10","rcx","r11","memory");
+  return ret;
+}
+static void ws(const char*s){ int n=0; while(s[n])n++; write(2,s,n); }
+static void wn(L v){ char b[19]; b[0]='0'; b[1]='x'; int i; for(i=0;i<16;i++){int d=(v>>((15-i)*4))&0xf; b[2+i]=d<10?('0'+d):('a'+d-10);} b[18]='\n'; write(2,b,19); }
 int main(int ac,char**av,char**ev){
-  L pid=s1(57,0); /* fork */
-  if(pid==0){ s4(101,0,0,0,0); /* PTRACE_TRACEME */ s3(59,(L)av[1],(L)&av[1],(L)ev); s1(60,127); }
-  L st; L regs[40];
+  int pid=fork();
+  if(pid==0){ pt(0,0,0,0); /* PTRACE_TRACEME */ execve(av[1],&av[1],ev); ws("EXECVE-FAILED\n"); return 127; }
+  ws("child-pid="); wn(pid);
+  int st; L regs[40]; int k;
   for(;;){
-    s4(61,pid,(L)&st,0,0); /* wait4 */
-    if((st&0x7f)==0){ wr("CHILD-EXIT\n",11); break; }          /* WIFEXITED */
-    if((st&0xff)==0x7f){                                        /* WIFSTOPPED */
-      int sig=(st>>8)&0xff;
-      if(sig==11||sig==4||sig==7){                             /* SIGSEGV/SIGILL/SIGBUS */
-        s4(101,12,pid,0,(L)regs);                              /* PTRACE_GETREGS */
-        hx("sig=",sig); hx("rip=",regs[16]); hx("rbp=",regs[4]); hx("rsp=",regs[19]);
-        L rbp=regs[4]; int k; wr("BT:\n",4);
-        for(k=0;k<16&&rbp;k++){ L ret=0,nxt=0;
-          if(s4(101,2,pid,rbp+8,(L)&ret)!=0)break;
-          if(s4(101,2,pid,rbp,(L)&nxt)!=0)break;
-          hx("  ",ret); rbp=nxt; }
-        break;
-      }
-      s4(101,7,pid,0,sig);                                     /* PTRACE_CONT, deliver other sigs */
+    int w=waitpid(pid,&st,0);
+    if(w<0){ ws("WAITPID<0\n"); break; }
+    if((st&0x7f)==0){ ws("CHILD-EXIT code="); wn((st>>8)&0xff); break; }       /* WIFEXITED */
+    if((st&0x7f)!=0x7f){ ws("CHILD-KILLED-BY-SIG="); wn(st&0x7f); break; }      /* WIFSIGNALED */
+    int sig=(st>>8)&0xff;                                                       /* WIFSTOPPED -> WSTOPSIG */
+    if(sig==11||sig==4||sig==7){                                                /* SIGSEGV/SIGILL/SIGBUS */
+      pt(12,pid,0,(L)regs);                                                     /* PTRACE_GETREGS */
+      ws("CRASH sig="); wn(sig); ws("rip="); wn(regs[16]); ws("rbp="); wn(regs[4]); ws("rsp="); wn(regs[19]);
+      ws("BACKTRACE:\n"); L rbp=regs[4];
+      for(k=0;k<20 && rbp>0x1000;k++){ L ret=0,nxt=0;
+        if(pt(2,pid,rbp+8,(L)&ret)!=0)break;
+        if(pt(2,pid,rbp,(L)&nxt)!=0)break;
+        wn(ret); rbp=nxt; }
+      break;
     }
+    pt(7,pid,0,sig==5?0:sig);                                                   /* CONT: swallow initial SIGTRAP, redeliver others */
   }
   return 0;
 }
