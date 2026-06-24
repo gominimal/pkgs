@@ -104,6 +104,10 @@ build_and_run() {
 
 # ════════════════════════════════════════════════════════════════════════════════════════════
 emit "DIAG-INFO begin: tcc-boot0-diag (mes-m2: $($MES --version 2>&1 | head -1 || true))"
+# DIAG: is the sandbox's ADDR_NO_RANDOMIZE (MINIMAL_SANDBOX_NO_ASLR) actually reaching this process?
+# /proc/self/personality with the 0x0040000 bit set == ADDR_NO_RANDOMIZE active (inherited by mes child).
+# If '?', /proc isn't mounted in the sandbox (then the personality lever is unobservable here).
+emit "DIAG-ASLR personality=$(/usr/bin/cat /proc/self/personality 2>/dev/null || echo '?') randomize_va_space=$(/usr/bin/cat /proc/sys/kernel/randomize_va_space 2>/dev/null || echo '?') (0x40000 personality bit => NO_RANDOMIZE active)"
 [ -f "$XGEN" ] || { echo "FATAL: $XGEN missing"; echo "FATAL: $XGEN missing" > "$MANIFEST"; exit 0; }
 command -v simple-patch >/dev/null 2>&1 || { echo "FATAL: simple-patch missing" | tee "$MANIFEST"; exit 0; }
 write_test_programs
@@ -195,10 +199,17 @@ emit "DIAG-INFO tcc-mes -c crt1.c rc=$? ($([ -s "$LIBDIR/crt1.o" ] && echo OBJ-O
 emit "DIAG-INFO created empty crti.o/crtn.o placeholders (amd64; needed by every tcc link)"
 timeout "$UNIT_TIMEOUT" "$TCCMES" $LC -o unified-libc.o unified-libc.c >"$WORK/ulibc.out" 2>&1
 emit "DIAG-INFO tcc-mes -c unified-libc.c rc=$? ($([ -s unified-libc.o ] && echo OBJ-OK || echo NO-OBJ))"
-"$TCCMES" -ar cr "$LIBDIR/libc.a" unified-libc.o >>"$WORK/ulibc.out" 2>&1
+# THE missing object: tcc-0.9.26's amd64 SysV varargs runtime (__va_start/__va_arg) lives in
+# lib/va_list.c. The real tcc Makefile builds it into libtcc1.a (OBJ-x86_64 = ... va_list.o ...);
+# lib/libtcc1.c does NOT contain it. Without va_list.o, EVERY link of unified-libc.o (vfprintf et al,
+# now compiled with the SysV struct stdarg.h) fails: undefined symbol '__va_start'/'__va_arg'.
+# __SIZE_TYPE__ is predefined by tcc (libtcc.c) so va_list.c compiles standalone; guard is TCC_TARGET_X86_64.
+timeout "$UNIT_TIMEOUT" "$TCCMES" -c -D TCC_TARGET_X86_64=1 -o va_list.o "/build/$TCC_PKG/lib/va_list.c" >"$WORK/valist.out" 2>&1
+emit "DIAG-INFO tcc-mes -c va_list.c rc=$? ($([ -s va_list.o ] && echo OBJ-OK || echo NO-OBJ)) >>> $(tail -2 "$WORK/valist.out" 2>/dev/null | tr '\n' '|')"
+"$TCCMES" -ar cr "$LIBDIR/libc.a" unified-libc.o va_list.o >>"$WORK/ulibc.out" 2>&1
 mkdir -p "$LIBDIR/tcc"
 timeout "$UNIT_TIMEOUT" "$TCCMES" -c -D HAVE_CONFIG_H=1 -D HAVE_LONG_LONG=1 -D HAVE_FLOAT=1 -I include -I "include/linux/$MES_ARCH" -o libtcc1.o lib/libtcc1.c >"$WORK/libtcc1.out" 2>&1
-"$TCCMES" -ar cr "$LIBDIR/tcc/libtcc1.a" libtcc1.o >>"$WORK/libtcc1.out" 2>&1
+"$TCCMES" -ar cr "$LIBDIR/tcc/libtcc1.a" libtcc1.o va_list.o >>"$WORK/libtcc1.out" 2>&1
 timeout "$UNIT_TIMEOUT" "$TCCMES" $LC lib/posix/getopt.c >"$WORK/getopt.out" 2>&1
 "$TCCMES" -ar cr "$LIBDIR/libgetopt.a" getopt.o >>"$WORK/getopt.out" 2>&1
 emit "DIAG-INFO libc.a=$([ -s "$LIBDIR/libc.a" ] && echo ok || echo MISSING) libtcc1.a=$([ -s "$LIBDIR/tcc/libtcc1.a" ] && echo ok || echo MISSING) libgetopt.a=$([ -s "$LIBDIR/libgetopt.a" ] && echo ok || echo MISSING)"
