@@ -134,6 +134,14 @@ simple-patch "/build/$TCC_PKG/tccgen.c" /build/fix-mul.before /build/fix-mul.aft
 simple-patch "$XGEN" /build/fix-vararg.before /build/fix-vararg.after \
   && emit "DIAG-INFO applied fix-vararg (variadic %al setup, x86_64-gen.c)" \
   || { emit "FATAL fix-vararg patch FAILED (before-pattern not found)"; SWAP_OK=0; }
+# THE ROOT BUG: mescc miscompiles gen_opi's constant shift-count emit `g(vtop->c.i & (ll?63:31))`
+# -> the count collapses to 0, so tcc-mes emits `shr/shl $0` for EVERY `x>>N`/`x<<N`. That makes o()'s
+# `c=c>>8` an infinite loop (tcc-boot0 hangs emitting any fn body) + gen_le16/32/64 emit wrong immediate
+# bytes. Decompose the ternary/AND/union-read into simple statements so mescc compiles it correctly.
+# (Same root fix-mul only band-aided: "n stays 0, b*2 -> shll 0".)
+simple-patch "$XGEN" /build/fix-shift.before /build/fix-shift.after \
+  && emit "DIAG-INFO applied fix-shift (constant shift-count -> decomposed; kills shr/shl \$0, x86_64-gen.c)" \
+  || { emit "FATAL fix-shift patch FAILED (before-pattern not found)"; SWAP_OK=0; }
 [ "$SWAP_OK" = "1" ] || { echo "FATAL: a patch did not apply — aborting (see rows)"; cp "$WORK/rows.txt" "$MANIFEST" 2>/dev/null; exit 0; }
 
 # ── PHASE 2: build tcc-mes (mescc compiles tcc.c -> tcc.s -> link). The arena-lottery long pole. ──

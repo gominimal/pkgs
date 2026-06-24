@@ -67,6 +67,10 @@ let gzip = import "../gzip/build.ncl" in # compress the dumped asm
     # BUG6: variadic-call %al setup (x86_64-gen.c) — mescc miscompiles the chained deref + ternary.
     { file = "fix-vararg.before" } | Local,
     { file = "fix-vararg.after" } | Local,
+    # ROOT: mescc miscompiles gen_opi's constant shift-count emit -> shr/shl $0 (o() infinite-loops,
+    # gen_le* emit wrong bytes). Decompose the ternary/AND so the count survives. (See fix-mul comment.)
+    { file = "fix-shift.before" } | Local,
+    { file = "fix-shift.after" } | Local,
     # BUG6-ROOT: mes amd64 stdarg.h stack-based va_list incompatible with tcc-mes SysV -> __builtin_va_*.
     { file = "fix-stdarg.before" } | Local,
     { file = "fix-stdarg.after" } | Local,
