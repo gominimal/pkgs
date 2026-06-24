@@ -263,6 +263,19 @@ if [ "$BOOT0_OK" = "1" ]; then
   R[D4-boot0-crt1]="rc=$d4rc"
   emit "DIAG-RESULT D4-boot0-crt1.c rc=$d4rc ($([ -s "$WORK/crt1-boot0.o" ] && echo OBJ-OK || echo NO-OBJ)) >>> $(tail -3 "$WORK/D4-crt1.err" 2>/dev/null | tr '\n' '|')"
   cd "/build/$TCC_PKG" || true
+  # ── BACKTRACE FORENSICS: name the fn that hands strlen the non-canonical ptr (no SSH; builder IS amd64) ──
+  # (1) bisect the pipeline. -E = preprocess only (no codegen). /dev/null = empty file = compile-INIT only
+  #     (preprocess_start / predefined macros). This splits compile-init vs file-content vs codegen.
+  emit "DIAG-CORE core_pattern=$(/usr/bin/cat /proc/sys/kernel/core_pattern 2>/dev/null || echo '?')"
+  timeout "$UNIT_TIMEOUT" "$TCCBOOT0" -E /dev/null >"$WORK/bt-Edevnull.out" 2>"$WORK/bt-Edevnull.err"
+  emit "DIAG-BT E-devnull (preprocess EMPTY = compile-init only) rc=$? >>> $(tail -2 "$WORK/bt-Edevnull.err" 2>/dev/null | tr '\n' '|')"
+  timeout "$UNIT_TIMEOUT" "$TCCBOOT0" -E "$WORK/hello.c" >"$WORK/bt-Ehello.out" 2>"$WORK/bt-Ehello.err"
+  emit "DIAG-BT E-hello (preprocess trivial file) rc=$? >>> $(tail -2 "$WORK/bt-Ehello.err" 2>/dev/null | tr '\n' '|')"
+  # (2) capture a core for LOCAL stack-walk (I have the unstripped binary + objdump). Publishes as tcc-boot0.core.
+  ( ulimit -c unlimited 2>/dev/null; cd "$WORK"; timeout "$UNIT_TIMEOUT" "$TCCBOOT0" -c -o "$WORK/cd.o" "$WORK/hello.c" >/dev/null 2>&1 )
+  CORE=""; for c in "$WORK"/core "$WORK"/core.* /build/"$MES_PKG"/core; do [ -s "$c" ] && CORE="$c" && break; done
+  if [ -n "$CORE" ]; then /usr/bin/cp "$CORE" "$OUTROOT/tcc-boot0.core"; emit "DIAG-CORE captured $(/usr/bin/wc -c < "$CORE") bytes -> tcc-boot0.core"; \
+  else emit "DIAG-CORE no core file (RLIMIT_CORE=0 or core_pattern is a pipe) — ptrace fallback needed"; fi
 else
   emit "DIAG-RESULT D1/D3/D4 SKIPPED — tcc-boot0 did not build"
 fi
