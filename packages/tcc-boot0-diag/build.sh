@@ -276,6 +276,56 @@ if [ "$BOOT0_OK" = "1" ]; then
   CORE=""; for c in "$WORK"/core "$WORK"/core.* /build/"$MES_PKG"/core; do [ -s "$c" ] && CORE="$c" && break; done
   if [ -n "$CORE" ]; then /usr/bin/cp "$CORE" "$OUTROOT/tcc-boot0.core"; emit "DIAG-CORE captured $(/usr/bin/wc -c < "$CORE") bytes -> tcc-boot0.core"; \
   else emit "DIAG-CORE no core file (RLIMIT_CORE=0 or core_pattern is a pipe) — ptrace fallback needed"; fi
+  # (3) FINER bisection: -c on empty / global-only / empty-func — splits ELF-emit vs codegen.
+  printf '/* empty */\n'            > "$WORK/empty.c"
+  printf 'int g;\n'                 > "$WORK/global.c"
+  printf 'void f(void){}\n'         > "$WORK/voidfunc.c"
+  for src in empty global voidfunc; do
+    timeout "$UNIT_TIMEOUT" "$TCCBOOT0" -c -o "$WORK/$src.o" "$WORK/$src.c" >"$WORK/cb2-$src.out" 2>"$WORK/cb2-$src.err"
+    emit "DIAG-BT2 -c $src.c rc=$? ($([ -s "$WORK/$src.o" ] && echo OBJ-OK || echo NO-OBJ)) >>> $(tail -1 "$WORK/$src.err" 2>/dev/null | tr '\n' '|')"
+  done
+  # (4) DEFINITIVE: ptrace tracer (compiled by tcc-mes — extended asm works) catches tcc-boot0's SIGSEGV
+  #     and prints rip + the rbp-chain return addresses. Map locally with objdump on tcc-boot0.patched.
+  cat > "$WORK/trace.c" <<'TRACE_EOF'
+typedef long L;
+static L s1(L n,L a){L r;__asm__ volatile("syscall":"=a"(r):"a"(n),"D"(a):"rcx","r11","memory");return r;}
+static L s3(L n,L a,L b,L c){L r;__asm__ volatile("syscall":"=a"(r):"a"(n),"D"(a),"S"(b),"d"(c):"rcx","r11","memory");return r;}
+static L s4(L n,L a,L b,L c,L d){L r;register L r10 __asm__("r10")=d;__asm__ volatile("syscall":"=a"(r):"a"(n),"D"(a),"S"(b),"d"(c),"r"(r10):"rcx","r11","memory");return r;}
+static void wr(char*s,int n){s3(1,1,(L)s,n);}
+static void hx(char*tag,L v){char b[80];int i=0;while(tag[i]){b[i]=tag[i];i++;}b[i++]='0';b[i++]='x';int j;for(j=0;j<16;j++){int d=(v>>((15-j)*4))&0xf;b[i++]=d<10?('0'+d):('a'+d-10);}b[i++]='\n';wr(b,i);}
+int main(int ac,char**av,char**ev){
+  L pid=s1(57,0); /* fork */
+  if(pid==0){ s4(101,0,0,0,0); /* PTRACE_TRACEME */ s3(59,(L)av[1],(L)&av[1],(L)ev); s1(60,127); }
+  L st; L regs[40];
+  for(;;){
+    s4(61,pid,(L)&st,0,0); /* wait4 */
+    if((st&0x7f)==0){ wr("CHILD-EXIT\n",11); break; }          /* WIFEXITED */
+    if((st&0xff)==0x7f){                                        /* WIFSTOPPED */
+      int sig=(st>>8)&0xff;
+      if(sig==11||sig==4||sig==7){                             /* SIGSEGV/SIGILL/SIGBUS */
+        s4(101,12,pid,0,(L)regs);                              /* PTRACE_GETREGS */
+        hx("sig=",sig); hx("rip=",regs[16]); hx("rbp=",regs[4]); hx("rsp=",regs[19]);
+        L rbp=regs[4]; int k; wr("BT:\n",4);
+        for(k=0;k<16&&rbp;k++){ L ret=0,nxt=0;
+          if(s4(101,2,pid,rbp+8,(L)&ret)!=0)break;
+          if(s4(101,2,pid,rbp,(L)&nxt)!=0)break;
+          hx("  ",ret); rbp=nxt; }
+        break;
+      }
+      s4(101,7,pid,0,sig);                                     /* PTRACE_CONT, deliver other sigs */
+    }
+  }
+  return 0;
+}
+TRACE_EOF
+  if timeout "$UNIT_TIMEOUT" "$TCCMES" -static -o "$WORK/trace" -L . -L "$LIBDIR" "$WORK/trace.c" >"$WORK/trace-build.err" 2>&1 && [ -s "$WORK/trace" ]; then
+    /usr/bin/chmod 755 "$WORK/trace"
+    emit "DIAG-TRACE tracer built; running on tcc-boot0 -c hello.c ..."
+    timeout "$UNIT_TIMEOUT" "$WORK/trace" "$TCCBOOT0" -c -o "$WORK/tr.o" "$WORK/hello.c" >"$WORK/trace.out" 2>&1
+    while IFS= read -r ln; do emit "DIAG-TRACE $ln"; done < "$WORK/trace.out"
+  else
+    emit "DIAG-TRACE tracer BUILD FAILED >>> $(tail -3 "$WORK/trace-build.err" 2>/dev/null | tr '\n' '|')"
+  fi
 else
   emit "DIAG-RESULT D1/D3/D4 SKIPPED — tcc-boot0 did not build"
 fi
