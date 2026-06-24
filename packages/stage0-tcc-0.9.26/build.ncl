@@ -72,6 +72,11 @@ let coreutils = import "../coreutils/build.ncl" in # /usr/bin/{cp,chmod,mkdir,rm
     # BUG6: variadic-call %al setup (x86_64-gen.c) — mescc miscompiles the chained deref + ternary.
     { file = "fix-vararg.before" } | Local,
     { file = "fix-vararg.after" } | Local,
+    # ROOT: mescc miscompiles gen_opi constant shift-count -> shr/shl $0 (o() infinite-loops, gen_le*
+    # emit wrong bytes, parser corrupts). Decompose so the count survives. THE fix that makes tcc-boot0
+    # compile fn bodies (D3a hello=42, D4 crt1=0 verified in tcc-boot0-diag). (Same root fix-mul band-aided.)
+    { file = "fix-shift.before" } | Local,
+    { file = "fix-shift.after" } | Local,
     # BUG6-ROOT: mes amd64 stdarg.h stack-based va_list incompatible with tcc-mes SysV -> __builtin_va_*.
     { file = "fix-stdarg.before" } | Local,
     { file = "fix-stdarg.after" } | Local,
