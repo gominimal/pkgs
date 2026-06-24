@@ -241,11 +241,17 @@ tcc-mes -ar cr ${LIBDIR}/libc.a unified-libc.o
 # libtcc1.a
 mkdir ${LIBDIR}/tcc
 tcc-mes -c -D HAVE_CONFIG_H=1 -D HAVE_LONG_LONG=1 -D HAVE_FLOAT=1 -I include -I include/linux/${MES_ARCH} -o libtcc1.o lib/libtcc1.c
+# BUG6-RUNTIME: tcc-0.9.26's amd64 SysV stdarg.h (struct va_list) calls __va_start/__va_arg, which live
+# in lib/va_list.c.  lib/libtcc1.c does NOT contain them; the real tcc Makefile builds va_list.o into
+# libtcc1.a (OBJ-x86_64 = ... va_list.o ...).  Without it, every link of unified-libc.o (vfprintf et al)
+# fails "undefined symbol __va_start".  Put it in libtcc1.a ONLY (auto-linked) — adding to libc.a too
+# makes tcc pull it twice -> "'__va_start' defined twice".  __SIZE_TYPE__ is predefined by tcc.
+tcc-mes -c -D TCC_TARGET_${TCC_TARGET_ARCH}=1 -o va_list.o ../${TCC_PKG}/lib/va_list.c
 if match ${ARCH} riscv64; then
     tcc-mes -c -D HAVE_CONFIG_H=1 -D HAVE_LONG_LONG=1 -D HAVE_FLOAT=1 -I include -I include/linux/${MES_ARCH} -o lib-arm64.o ../${TCC_PKG}/lib/lib-arm64.c
-    tcc-mes -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o lib-arm64.o
+    tcc-mes -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o lib-arm64.o va_list.o
 else
-    tcc-mes -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o
+    tcc-mes -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o va_list.o
 fi
 
 # libgetopt.a
@@ -304,11 +310,13 @@ if match ${ARCH} x86; then
 fi
 
 tcc-boot0 -c -D HAVE_CONFIG_H=1 -D HAVE_LONG_LONG=1 -D HAVE_FLOAT=1 -I include -I include/linux/${MES_ARCH} -o libtcc1.o lib/libtcc1.c
+# va_list.o into libtcc1.a (see tcc-mes libc build above for rationale).
+tcc-boot0 -c -D TCC_TARGET_${TCC_TARGET_ARCH}=1 -o va_list.o ../${TCC_PKG}/lib/va_list.c
 if match ${ARCH} riscv64; then
     tcc-boot0 -c -D HAVE_CONFIG_H=1 -D HAVE_LONG_LONG=1 -D HAVE_FLOAT=1 -I include -I include/linux/${MES_ARCH} -o lib-arm64.o ../${TCC_PKG}/lib/lib-arm64.c
-    tcc-boot0 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o lib-arm64.o
+    tcc-boot0 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o lib-arm64.o va_list.o
 else
-    tcc-boot0 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o
+    tcc-boot0 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o va_list.o
 fi
 
 tcc-boot0 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o unified-libc.o unified-libc.c
@@ -358,11 +366,13 @@ if match ${ARCH} x86; then
 fi
 
 tcc-boot1 -c -D HAVE_CONFIG_H=1 -D HAVE_LONG_LONG=1 -D HAVE_FLOAT=1 -I include -I include/linux/${MES_ARCH} -o libtcc1.o lib/libtcc1.c
+# va_list.o into libtcc1.a (see tcc-mes libc build above for rationale).
+tcc-boot1 -c -D TCC_TARGET_${TCC_TARGET_ARCH}=1 -o va_list.o ../${TCC_PKG}/lib/va_list.c
 if match ${ARCH} riscv64; then
     tcc-boot1 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o lib-arm64.o ../${TCC_PKG}/lib/lib-arm64.c
-    tcc-boot1 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o lib-arm64.o
+    tcc-boot1 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o lib-arm64.o va_list.o
 else
-    tcc-boot1 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o
+    tcc-boot1 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o va_list.o
 fi
 
 tcc-boot1 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o unified-libc.o unified-libc.c
@@ -412,11 +422,13 @@ if match ${ARCH} x86; then
 fi
 
 tcc-boot2 -c -D HAVE_CONFIG_H=1 -D HAVE_LONG_LONG=1 -D HAVE_FLOAT=1 -I include -I include/linux/${MES_ARCH} -o libtcc1.o lib/libtcc1.c
+# va_list.o into libtcc1.a (see tcc-mes libc build above for rationale).
+tcc-boot2 -c -D TCC_TARGET_${TCC_TARGET_ARCH}=1 -o va_list.o ../${TCC_PKG}/lib/va_list.c
 if match ${ARCH} riscv64; then
     tcc-boot2 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o lib-arm64.o ../${TCC_PKG}/lib/lib-arm64.c
-    tcc-boot2 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o lib-arm64.o
+    tcc-boot2 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o lib-arm64.o va_list.o
 else
-    tcc-boot2 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o
+    tcc-boot2 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o va_list.o
 fi
 
 tcc-boot2 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o unified-libc.o unified-libc.c

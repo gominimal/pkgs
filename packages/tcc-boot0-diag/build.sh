@@ -206,7 +206,10 @@ emit "DIAG-INFO tcc-mes -c unified-libc.c rc=$? ($([ -s unified-libc.o ] && echo
 # __SIZE_TYPE__ is predefined by tcc (libtcc.c) so va_list.c compiles standalone; guard is TCC_TARGET_X86_64.
 timeout "$UNIT_TIMEOUT" "$TCCMES" -c -D TCC_TARGET_X86_64=1 -o va_list.o "/build/$TCC_PKG/lib/va_list.c" >"$WORK/valist.out" 2>&1
 emit "DIAG-INFO tcc-mes -c va_list.c rc=$? ($([ -s va_list.o ] && echo OBJ-OK || echo NO-OBJ)) >>> $(tail -2 "$WORK/valist.out" 2>/dev/null | tr '\n' '|')"
-"$TCCMES" -ar cr "$LIBDIR/libc.a" unified-libc.o va_list.o >>"$WORK/ulibc.out" 2>&1
+# va_list.o goes in libtcc1.a ONLY (matches real tcc Makefile OBJ-x86_64). It is NOT added to libc.a:
+# libtcc1.a is auto-linked (TCC_LIBTCC1), so it resolves unified-libc.o's __va_start ref. Putting it in
+# BOTH archives makes tcc pull va_list.o twice -> "'__va_start' defined twice".
+"$TCCMES" -ar cr "$LIBDIR/libc.a" unified-libc.o >>"$WORK/ulibc.out" 2>&1
 mkdir -p "$LIBDIR/tcc"
 timeout "$UNIT_TIMEOUT" "$TCCMES" -c -D HAVE_CONFIG_H=1 -D HAVE_LONG_LONG=1 -D HAVE_FLOAT=1 -I include -I "include/linux/$MES_ARCH" -o libtcc1.o lib/libtcc1.c >"$WORK/libtcc1.out" 2>&1
 "$TCCMES" -ar cr "$LIBDIR/tcc/libtcc1.a" libtcc1.o va_list.o >>"$WORK/libtcc1.out" 2>&1
