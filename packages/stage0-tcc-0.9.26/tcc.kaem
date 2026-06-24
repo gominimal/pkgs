@@ -326,7 +326,7 @@ else
     tcc-boot0 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o va_list.o
 fi
 
-tcc-boot0 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o unified-libc.o unified-libc.c
+tcc-boot0 -w -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o unified-libc.o unified-libc.c
 tcc-boot0 -ar cr ${LIBDIR}/libc.a unified-libc.o
 cd ../${TCC_PKG}
 
@@ -382,7 +382,7 @@ else
     tcc-boot1 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o va_list.o
 fi
 
-tcc-boot1 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o unified-libc.o unified-libc.c
+tcc-boot1 -w -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o unified-libc.o unified-libc.c
 tcc-boot1 -ar cr ${LIBDIR}/libc.a unified-libc.o
 cd ../${TCC_PKG}
 
@@ -438,7 +438,7 @@ else
     tcc-boot2 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o va_list.o
 fi
 
-tcc-boot2 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o unified-libc.o unified-libc.c
+tcc-boot2 -w -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o unified-libc.o unified-libc.c
 tcc-boot2 -ar cr ${LIBDIR}/libc.a unified-libc.o
 cd ../${TCC_PKG}
 
