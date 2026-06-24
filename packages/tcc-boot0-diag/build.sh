@@ -326,9 +326,20 @@ int main(int ac,char**av,char**ev){
 TRACE_EOF
   if timeout "$UNIT_TIMEOUT" "$TCCMES" -static -o "$WORK/trace" -L . -L "$LIBDIR" "$WORK/trace.c" >"$WORK/trace-build.err" 2>&1 && [ -s "$WORK/trace" ]; then
     /usr/bin/chmod 755 "$WORK/trace"
-    emit "DIAG-TRACE tracer built; running on tcc-boot0 -c hello.c ..."
-    timeout "$UNIT_TIMEOUT" "$WORK/trace" "$TCCBOOT0" -c -o "$WORK/tr.o" "$WORK/hello.c" >"$WORK/trace.out" 2>&1
-    while IFS= read -r ln; do emit "DIAG-TRACE $ln"; done < "$WORK/trace.out"
+    emit "DIAG-TRACE tracer built; tracing tcc-boot0 -c across a DECLARATOR SPECTRUM ..."
+    # each input isolates ONE variable. tracer reports EXITED(parsed-ok) / sig=0xb(crash) / sig=0x13(hang) + bt.
+    printf 'int p(int);\n'              > "$WORK/t_proto.c"   # func PROTOTYPE, NO body -> pure declarator parse (no body-check)
+    printf 'char **q;\n'                > "$WORK/t_dptr.c"    # double-pointer global -> '**' declarator (argv's type)
+    printf 'int nf(){return 5;}\n'      > "$WORK/t_noparm.c"  # func, EMPTY () param list, body
+    printf 'int pf(int a){return a;}\n' > "$WORK/t_1parm.c"   # func, 1 NAMED param, body
+    printf 'void vf(void){}\n'          > "$WORK/t_void.c"    # func, (void), body  (known HANG)
+    /usr/bin/cp "$WORK/hello.c"           "$WORK/t_main.c"    # func, 3 params, body  (known CRASH)
+    printf 'int x=;\n'                  > "$WORK/t_synerr.c"  # REAL syntax error -> exercises error/varargs path directly
+    for tc in t_proto t_dptr t_noparm t_1parm t_void t_main t_synerr; do
+      emit "DIAG-TRACE ===== INPUT $tc ====="
+      timeout 30 "$WORK/trace" "$TCCBOOT0" -c -o "$WORK/$tc.o" "$WORK/$tc.c" >"$WORK/trace-$tc.out" 2>&1
+      while IFS= read -r ln; do emit "DIAG-TRACE[$tc] $ln"; done < "$WORK/trace-$tc.out"
+    done
   else
     emit "DIAG-TRACE tracer BUILD FAILED >>> $(tail -3 "$WORK/trace-build.err" 2>/dev/null | tr '\n' '|')"
   fi
