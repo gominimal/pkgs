@@ -516,7 +516,12 @@ cd /build
 # checksums flow), record the shas from /build/output/usr/..., fill stage0.answers,
 # re-enable.  See BUILD-RUNBOOK.md §capture.
 ###########################################################################
-sha256sum -c stage0.answers
+# CAPTURE RUN 2026-06-24: gate DISABLED for the FIRST green amd64 build. The full spine just built
+# end-to-end (tcc-mes -> boot0 -> boot1 -> boot2 -> deliverable tcc + getopt + libc) for the first
+# time ever on amd64, thanks to fix-shift. stage0.answers has no amd64 shas yet, so `sha256sum -c`
+# fails "no properly formatted checksum lines". DISABLE to let R2 publish, then pin the published
+# artifact shas into stage0.answers + RE-ENABLE this line for byte-identity reproducibility (L4).
+# sha256sum -c stage0.answers
 
 ###########################################################################
 # §D STAGING: the build wrote every output directly into OUTPUT_DIR=/build/output
