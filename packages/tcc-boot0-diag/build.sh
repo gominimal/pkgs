@@ -296,7 +296,7 @@ extern long write(int, const void*, unsigned long);
 static L pt(L req,L pid,L addr,L data){
   L ret;
   __asm__ volatile(
-    "movq %1,%%rax\n\t movq %2,%%rdi\n\t movq %3,%%rsi\n\t movq %4,%%rdx\n\t movq %5,%%r10\n\t syscall\n\t movq %%rax,%0\n\t"
+    "movq $101,%%rax\n\t movq %1,%%rdi\n\t movq %2,%%rsi\n\t movq %3,%%rdx\n\t movq %4,%%r10\n\t syscall\n\t movq %%rax,%0\n\t"
     : "=m"(ret) : "m"(req),"m"(pid),"m"(addr),"m"(data)
     : "rax","rdi","rsi","rdx","r10","rcx","r11","memory");
   return ret;
