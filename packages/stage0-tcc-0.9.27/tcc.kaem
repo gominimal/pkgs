@@ -151,9 +151,12 @@ cd /build
 # CAPTURE run this `-c` must be disabled (it would fail "no properly formatted
 # checksum lines"); record the shas, pin them, re-enable.  See BUILD-RUNBOOK §capture.
 ###########################################################################
-# CAPTURE RUN — gate DISABLED until the 5 amd64 shas are pinned into stage0.answers, then
-# this line is re-enabled (commit) and rebuilt to SEAL R3 as an L4 fixed point (cf. R2 2026-06-24).
-# sha256sum -c stage0.answers
+# BYTE-IDENTITY GATE — RE-ENABLED 2026-06-25 after the first green amd64 build pinned the 5 shas into
+# stage0.answers. kaem --strict ABORTS HARD on any mismatch, so this verifies the spine (tcc-0.9.27 +
+# tcc-0.9.27-rebuilt libc/libgetopt/crt1/libtcc1) reproduces byte-identically — the L4 fixed-point
+# property for R3. NB: the ~50% tcc-0.9.26 lottery means a gated build may crash before passing; the
+# seal-verify retries until a GREEN gated build (the successful output is byte-identical to the pin).
+sha256sum -c stage0.answers
 
 ###########################################################################
 # §D STAGING: every output was written directly into OUTPUT_DIR=/build/output, so there is no

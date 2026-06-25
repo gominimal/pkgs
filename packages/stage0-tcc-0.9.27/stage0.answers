@@ -13,12 +13,16 @@
 # so its bytes differ from any writable-/usr build; reproducible because OUTPUT_DIR is the fixed
 # /build/output.  All five are record-at-pin-time.
 #
-# ── PIN HERE after the capture run (uncomment + fill, then re-enable the gate in tcc.kaem) ──
-# <sha>  /build/output/usr/bin/tcc
-# <sha>  /build/output/usr/lib/mes/libc.a
-# <sha>  /build/output/usr/lib/mes/libgetopt.a
-# <sha>  /build/output/usr/lib/mes/crt1.o
-# <sha>  /build/output/usr/lib/mes/tcc/libtcc1.a
+# PINNED 2026-06-25 — the first GREEN amd64 CS build (capture run; tcc-0.9.26 compiled tcc-0.9.27's
+# tcc.c clean — the ~50% lottery landed favorable on attempt 1).  Captured from the published artifact
+# gs://minimalmertic-sign-staging/stage0-tcc-0.9.27-0.9.27-a/.  The gate (re-enabled in tcc.kaem) now
+# verifies the spine reproduces byte-identically — the seal-verify confirms the lottery affects only
+# WHETHER it crashes, not the output bytes (R2 arena-lottery precedent).
+76dddcc5fa4888a781ca2306056d7f061f4af8ca8223b7eba118d5127abf5215  /build/output/usr/bin/tcc
+cf41cbfcadfe2efde70d8bac1939de9916007a68b74d132feef019103d553e96  /build/output/usr/lib/mes/libc.a
+d7e61f3b3d30272d1a543744953e465a7d7e2729f816cf64987ae60047a7b85a  /build/output/usr/lib/mes/libgetopt.a
+3d4a1a47482e29ed3122aa4cf5193753e9d9d3eb092c1a0acddaf8c060ccc812  /build/output/usr/lib/mes/crt1.o
+2ebad5b5aa56e2716442853be06bc737f7b07d6ccf1b4ae45911061d5afdd313  /build/output/usr/lib/mes/tcc/libtcc1.a
 #
 # NOTE: crtn.o/crti.o are EMPTY on amd64 (catm with no inputs), so they are not pinned.
 # tcc-0.9.27 is byte-identical to tcc (cp) so it is not separately pinned.
