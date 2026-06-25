@@ -1,0 +1,24 @@
+# R4 stage0-musl-1.1.24 byte-identity pins.  Checked from $OUTPUT_DIR (CWD) by `sha256sum -c`.
+# A mismatch ABORTS the build (sha256sum -c exits non-zero, set -e in build.sh) -> byte-identity gate.
+#
+# !! RECORD-AT-PIN-TIME (amd64) !!  Like R2/R3, there is NO upstream amd64 fixed point for
+# musl-1.1.24: live-bootstrap builds musl ONLY for i386 (--host=i386) and ships no checksums for
+# the libc artifacts (its musl outputs are intermediate, not gated by .checksums).  We build
+# --host=x86_64, a path upstream never exercises.
+# => Capture these six sha256 values AFTER the first green amd64 CS build and paste them below.
+#
+# PATHS = RELATIVE to $OUTPUT_DIR (build.sh does `cd "$OUTPUT_DIR"` before `sha256sum -c`), so the
+# check is independent of the sandbox's absolute $OUTPUT_DIR path.
+#
+# ── PIN HERE after the capture run (uncomment + fill, then re-enable the gate in build.sh) ──
+# <sha>  usr/lib/libc.a
+# <sha>  usr/lib/crt1.o
+# <sha>  usr/lib/crti.o
+# <sha>  usr/lib/crtn.o
+# <sha>  usr/lib/Scrt1.o
+# <sha>  usr/lib/rcrt1.o
+#
+# NOTE: the empty stub archives (libm/libpthread/librt/libdl/libcrypt/libresolv/libutil/libxnet.a)
+# are zero-byte `touch`ed files (makefile.patch) — all share the empty-file sha and are not pinned
+# individually.  Headers under usr/include/** are reproducible too but numerous; the libc.a + crt
+# objects are the canonical byte-identity anchors (matches R3 pinning the lib outputs).
