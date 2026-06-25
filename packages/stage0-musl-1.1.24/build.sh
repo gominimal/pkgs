@@ -29,6 +29,7 @@ patch -Np1 -i "${BUILDROOT}/avoid_sys_clone.patch"        # posix_spawn: fork() 
 patch -Np1 -i "${BUILDROOT}/disable_ctype_headers.patch"  # drop iswalpha/… decls (no table regen)
 patch -Np1 -i "${BUILDROOT}/skip-pic-crt.patch"           # amd64: skip Scrt1.o/rcrt1.o (tcc segfaults on -fPIC %rip crt)
 patch -Np1 -i "${BUILDROOT}/drop-dynamic-crt.patch"       # amd64: drop _DYNAMIC lea from crt_arch.h (tcc asm segfault on weak+hidden %rip)
+patch -Np1 -i "${BUILDROOT}/amd64-va-list.patch"          # amd64: define __builtin_va_list (tcc-0.9.27 segfaults on it) via tcc's SysV __va_list_struct
 
 # meslibc/tcc cannot regenerate the ctype tables or iconv, and tcc has no _Complex — drop the
 # consumers exactly as live-bootstrap pass1 does (these are the `rm`s that pair with

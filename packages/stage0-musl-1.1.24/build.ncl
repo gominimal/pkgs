@@ -92,6 +92,10 @@ let version = "1.1.24" in
     # (weak+hidden sym, RIP-rel reloc). Static crt1.c's _start_c uses only rdi, so rsi/_DYNAMIC is
     # vestigial -> replace with `xor %esi,%esi`. (Every -f/-W flag probe passed; only this asm crashes.)
     { file = "drop-dynamic-crt.patch" } | Local,
+    # amd64-ONLY (analog of live-bootstrap's i386 va_list.patch the scaffold dropped): tcc-0.9.27 has
+    # NO __builtin_va_list and SEGFAULTS on it (musl-crt-diag v4 pinned it: stdio.h -> the va_list
+    # typedef -> crash). Define it under __TINYC__ via tcc-0.9.27's OWN SysV __va_list_struct mechanism.
+    { file = "amd64-va-list.patch" } | Local,
     {
       # upstream musl 1.1.24.  sha256 from live-bootstrap steps/musl-1.1.24/sources
       # (https://musl.libc.org/releases/musl-1.1.24.tar.gz); mirrored byte-identically to our

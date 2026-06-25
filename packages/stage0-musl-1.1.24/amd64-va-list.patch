@@ -1,0 +1,32 @@
+amd64 va_list for tcc-0.9.27 (analog of live-bootstrap's i386 va_list.patch, which our R4
+scaffold wrongly dropped). tcc-0.9.27 has NO __builtin_va_list and SEGFAULTS on it (pinned by
+musl-crt-diag v4). Define it under __TINYC__ via tcc-0.9.27's OWN SysV __va_list_struct +
+__va_start/__va_arg (va_list.o in libtcc1.a from R3; layout verbatim from tcc include/stdarg.h).
+--- musl-1.1.24/arch/x86_64/bits/alltypes.h.in
++++ musl-1.1.24/arch/x86_64/bits/alltypes.h.in
+@@ -1,6 +1,25 @@
+ #define _Addr long
+ #define _Int64 long
+ #define _Reg long
++
++#ifdef __TINYC__
++typedef struct {
++	unsigned int gp_offset;
++	unsigned int fp_offset;
++	union {
++		unsigned int overflow_offset;
++		char *overflow_arg_area;
++	};
++	char *reg_save_area;
++} __va_list_struct;
++typedef __va_list_struct __builtin_va_list[1];
++void __va_start(__va_list_struct *, void *);
++void *__va_arg(__va_list_struct *, int, int, int);
++#define __builtin_va_start(ap, last) __va_start(ap, __builtin_frame_address(0))
++#define __builtin_va_arg(ap, type) (*(type *)(__va_arg(ap, __builtin_va_arg_types(type), sizeof(type), __alignof__(type))))
++#define __builtin_va_copy(dest, src) (*(dest) = *(src))
++#define __builtin_va_end(ap)
++#endif
+ 
+ TYPEDEF __builtin_va_list va_list;
+ TYPEDEF __builtin_va_list __isoc_va_list;
