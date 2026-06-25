@@ -1,52 +1,69 @@
 #!/usr/bin/env bash
-# musl-crt-diag v2 — pin the EXACT crt1.c C construct that segfaults tcc-0.9.27, with STANDALONE
-# snippets (no musl includes -> no alltypes.h fidelity gap, no tracer needed: tcc-0.9.27 miscompiles
-# the tracer). v1 localized it to crt1.c's C (not asm, not flags); v2 isolates WHICH construct +
-# tests fix candidates (named params / typedef). set +e, never abort, exit 0 with greppable rows.
+# musl-crt-diag v3 — FAITHFUL reproduction of R4's crt1.c crash + -vv include trace (the R3-diag win).
+# v2 proved the crt1.c C *constructs* compile fine standalone → the crash needs the musl INCLUDES.
+# v1/v2 had a fidelity gap (no `make` → no generated alltypes.h). v3: configure THEN generate the
+# headers `make` would (alltypes.h/syscall.h), so crt1.c's includes resolve exactly like R4 — then
+# `tcc -vv -c crt1.c` shows the include chain + WHERE it dies (R3-style), plus a -w test (warning vs
+# error) and an include bisection. set +e, never abort, exit 0.
 set +e
 set -u
 TCC=/usr/bin/tcc
+VERSION="${MINIMAL_ARG_VERSION:-1.1.24}"
+SRC="musl-${VERSION}"
+BUILDROOT="$(pwd)"
 OUTROOT=/build/output/usr/share/musl-crt-diag
 WORK=/build/diag
 mkdir -p "$OUTROOT" "$WORK"
 MANIFEST="$OUTROOT/MANIFEST.txt"
 emit(){ echo "$1"; echo "$1" >> "$WORK/rows.txt"; }
-emit "DIAG-INFO musl-crt-diag v2 — CC=$TCC ($("$TCC" -version 2>&1 | head -1))"
+emit "DIAG-INFO musl-crt-diag v3 — CC=$TCC ($("$TCC" -version 2>&1 | head -1))"
 
-# compile a snippet with tcc-0.9.27; report rc + OBJ + stderr-tail. The crt1.c flags include the C99
-# freestanding set, but v1 b3 proved flags are fine on trivial C, so use minimal -c here.
-t(){ local lab="$1" src="$2"
-  printf '%s\n' "$src" > "$WORK/$lab.c"
-  "$TCC" -c -o "$WORK/$lab.o" "$WORK/$lab.c" >"$WORK/$lab.err" 2>&1
-  local rc=$?
-  emit "DIAG-CONSTRUCT $lab rc=$rc ($([ -s "$WORK/$lab.o" ] && echo OBJ-OK || echo NO-OBJ/CRASH)) >>> $(tail -1 "$WORK/$lab.err" 2>/dev/null | tr '\n' '|')"
-}
+# ── replay R4: unpack + patch + rm's + configure ──
+tar -xf "${SRC}.tar.gz" || { emit "FATAL untar"; cp "$WORK/rows.txt" "$MANIFEST"; exit 0; }
+cd "${SRC}" || { emit "FATAL cd"; exit 0; }
+for p in makefile madvise_preserve_errno avoid_sys_clone disable_ctype_headers skip-pic-crt drop-dynamic-crt; do
+  patch -Np1 -i "${BUILDROOT}/${p}.patch" >/dev/null 2>&1 && emit "DIAG-INFO applied ${p}.patch" || emit "FATAL ${p}.patch"
+done
+rm src/ctype/iswalpha.c src/ctype/iswalnum.c src/ctype/iswctype.c src/ctype/towctrans.c 2>/dev/null
+rm include/iconv.h src/locale/iconv.c src/locale/iconv_close.c 2>/dev/null
+rm -rf src/complex 2>/dev/null
+CC=tcc ./configure --host=x86_64 --disable-shared --prefix=/usr --libdir=/usr/lib --includedir=/usr/include >"$WORK/configure.out" 2>&1
+emit "DIAG-INFO configure rc=$?"
 
-emit "DIAG-INFO ===== standalone construct bisection (crt1.c's C, no includes) ====="
-# the actual crt1.c constructs (musl-1.1.24 crt/crt1.c):
-t s0_trivial      'int x; void f(long*p){(void)p;}'
-t s1_unnamed_fp   'int __libc_start_main(int (*)(), int, char **, void (*)(), void(*)(), void(*)());'
-t s2_weak         '__attribute__((__weak__)) void _init(void); __attribute__((__weak__)) void _fini(void);'
-t s3_call_fp      'int __libc_start_main(int(*)(),int,char**,void(*)(),void(*)(),void(*)()); int main(); __attribute__((__weak__)) void _init(void); __attribute__((__weak__)) void _fini(void); void _start_c(long*p){int argc=p[0];char**argv=(void*)(p+1);__libc_start_main(main,argc,argv,_init,_fini,0);}'
-# === FIX CANDIDATES (if s1/s3 crash) ===
-t f1_named_fp     'int __libc_start_main(int (*main_fn)(), int argc, char **argv, void (*init)(), void(*fini)(), void(*rtld)());'
-t f2_typedef_fp   'typedef int (*main_t)(); typedef void (*vfn_t)(); int __libc_start_main(main_t, int, char **, vfn_t, vfn_t, vfn_t);'
-t f3_typedef_call 'typedef int (*main_t)(); typedef void (*vfn_t)(); int __libc_start_main(main_t,int,char**,vfn_t,vfn_t,vfn_t); int main(); __attribute__((__weak__)) void _init(void); __attribute__((__weak__)) void _fini(void); void _start_c(long*p){int argc=p[0];char**argv=(void*)(p+1);__libc_start_main((main_t)main,argc,argv,(vfn_t)_init,(vfn_t)_fini,0);}'
+# ── FIDELITY FIX: generate the headers `make` makes (alltypes.h + syscall.h) — so crt1.c resolves like R4 ──
+make obj/include/bits/alltypes.h obj/include/bits/syscall.h >"$WORK/genh.out" 2>&1
+emit "DIAG-INFO genh rc=$? alltypes=$([ -f obj/include/bits/alltypes.h ] && echo OK || echo MISSING) syscall=$([ -f obj/include/bits/syscall.h ] && echo OK || echo MISSING)"
 
-emit "DIAG-INFO ===== INTERPRET ====="
-emit "DIAG-INFO s0 OBJ-OK (sanity). If s1/s3 CRASH but f2/f3 (typedef) OBJ-OK => tcc-0.9.27 chokes on"
-emit "DIAG-INFO   the UNNAMED inline func-ptr param/arg; fix = typedef the func-ptr types in crt1.c."
-emit "DIAG-INFO   If f1 (named) OBJ-OK => naming the params suffices. If s2 CRASH => the weak attr."
+FULL="-std=c99 -nostdinc -ffreestanding -fexcess-precision=standard -frounding-math -Wa,--noexecstack -D_XOPEN_SOURCE=700 -I./arch/x86_64 -I./arch/generic -Iobj/src/internal -I./src/include -I./src/internal -Iobj/include -I./include -Os -pipe -fomit-frame-pointer -fno-unwind-tables -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections -Werror=implicit-function-declaration -Werror=implicit-int -Werror=pointer-sign -Werror=pointer-arith -DSYSCALL_NO_TLS -fno-stack-protector -DCRT"
 
-# save tcc-0.9.27 (unstripped) + logs
-cp "$TCC" "$OUTROOT/tcc-0.9.27" 2>/dev/null && emit "DIAG-INFO saved tcc-0.9.27 ($(wc -c < "$OUTROOT/tcc-0.9.27") bytes)"
+# ── (a) FAITHFUL reproduce + -vv include trace (R3-style: the last header before the crash) ──
+emit "DIAG-INFO ===== (a) tcc -vv -c crt1.c (FAITHFUL: alltypes.h present) ====="
+"$TCC" -vv $FULL -c -o "$WORK/crt1.o" crt/crt1.c >"$WORK/vv.out" 2>"$WORK/vv.err"
+emit "DIAG-VV rc=$? ($([ -s "$WORK/crt1.o" ] && echo OBJ-OK || echo NO-OBJ/CRASH))"
+emit "DIAG-VV last-includes >>> $(grep -aE '^-> | -> ' "$WORK/vv.out" 2>/dev/null | tail -6 | tr '\n' '|')"
+emit "DIAG-VV stdout-tail >>> $(tail -3 "$WORK/vv.out" 2>/dev/null | tr '\n' '|')"
+emit "DIAG-VV stderr-tail >>> $(tail -4 "$WORK/vv.err" 2>/dev/null | tr '\n' '|')"
+
+# ── (b) -w test: is it a WARNING-triggered error-varargs crash (R3-class), or a real ERROR? ──
+"$TCC" -w $FULL -c -o "$WORK/crt1w.o" crt/crt1.c >"$WORK/w.err" 2>&1
+emit "DIAG-W crt1.c -w rc=$? ($([ -s "$WORK/crt1w.o" ] && echo OBJ-OK-->was-a-WARNING || echo still-CRASH-->real-ERROR))"
+
+# ── (c) include bisection: which include pulls the crash? ──
+printf '#include <features.h>\n' > "$WORK/i_feat.c"
+"$TCC" $FULL -c -o "$WORK/i_feat.o" "$WORK/i_feat.c" >"$WORK/i_feat.err" 2>&1
+emit "DIAG-INC features.h-only rc=$? ($([ -s "$WORK/i_feat.o" ] && echo OBJ-OK || echo CRASH)) >>> $(tail -1 "$WORK/i_feat.err" 2>/dev/null)"
+printf '#include <features.h>\n#include "libc.h"\n' > "$WORK/i_libc.c"
+"$TCC" $FULL -c -o "$WORK/i_libc.o" "$WORK/i_libc.c" >"$WORK/i_libc.err" 2>&1
+emit "DIAG-INC features.h+libc.h rc=$? ($([ -s "$WORK/i_libc.o" ] && echo OBJ-OK || echo CRASH)) >>> $(tail -1 "$WORK/i_libc.err" 2>/dev/null)"
+
+cp "$TCC" "$OUTROOT/tcc-0.9.27" 2>/dev/null
 cp "$WORK/rows.txt" "$OUTROOT/rows.txt.log" 2>/dev/null
-for s in s1_unnamed_fp s3_call_fp f2_typedef_fp; do [ -f "$WORK/$s.err" ] && cp "$WORK/$s.err" "$OUTROOT/$s.err.log"; done
-
+for f in vv.out vv.err w.err i_feat.err i_libc.err genh.out; do [ -f "$WORK/$f" ] && cp "$WORK/$f" "$OUTROOT/$f.log"; done
 {
-  echo "============ musl-crt-diag v2 RESULT ============"
-  echo "CC: $("$TCC" -version 2>&1 | head -1)"
-  grep -E "DIAG-CONSTRUCT|INTERPRET" "$WORK/rows.txt" 2>/dev/null
+  echo "============ musl-crt-diag v3 RESULT ============"
+  grep -E "DIAG-VV|DIAG-W|DIAG-INC|DIAG-INFO (genh|configure)" "$WORK/rows.txt" 2>/dev/null
+  echo "INTERPRET: DIAG-VV last-includes = the header tcc was in at the crash (R3-style). -w OBJ-OK =>"
+  echo "  warning-triggered error-varargs (suppress/fix the formatter). features.h/libc.h CRASH => bisect that header."
   echo "================================================="
 } | tee "$MANIFEST"
 exit 0
