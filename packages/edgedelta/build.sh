@@ -1,11 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-case "$(uname -m)" in
-  x86_64)  ARCH="amd64" ;;
-  aarch64) ARCH="arm64" ;;
-  *)       echo "unsupported architecture: $(uname -m)" >&2; exit 1 ;;
-esac
+ARCH="${MINIMAL_ARG_TARGET_ARCH}"
 
 installer="edgedelta-linux-${ARCH}.sh"
 

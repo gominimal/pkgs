@@ -11,6 +11,11 @@ let { amd64_sha256, arm64_sha256 } = {
 }
 in
 
+let target_arch = match {
+  { arch = 'Amd64, .. } => "amd64",
+  { arch = 'Arm64, .. } => "arm64",
+} target in
+
 {
   name = "edgedelta",
 
@@ -38,6 +43,7 @@ in
   cmd = "./build.sh",
   build_args = {
     include version,
+    include target_arch,
   },
 
   outputs = {
@@ -51,7 +57,7 @@ in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "test -x /usr/bin/edgedelta"],
-          ["/bin/bash", "-c", "/usr/bin/edgedelta -v || /usr/bin/edgedelta -version || /usr/bin/edgedelta --help || true"],
+          ["/bin/bash", "-c", "/usr/bin/edgedelta -version"],
         ],
       } | Test,
   },
