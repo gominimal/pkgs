@@ -27,6 +27,7 @@ patch -Np1 -i "${BUILDROOT}/makefile.patch"               # tcc -ar can't make e
 patch -Np1 -i "${BUILDROOT}/madvise_preserve_errno.patch" # preserve errno across __madvise
 patch -Np1 -i "${BUILDROOT}/avoid_sys_clone.patch"        # posix_spawn: fork() instead of __clone
 patch -Np1 -i "${BUILDROOT}/disable_ctype_headers.patch"  # drop iswalpha/… decls (no table regen)
+patch -Np1 -i "${BUILDROOT}/skip-pic-crt.patch"           # amd64: skip Scrt1.o/rcrt1.o (tcc segfaults on -fPIC %rip crt)
 
 # meslibc/tcc cannot regenerate the ctype tables or iconv, and tcc has no _Complex — drop the
 # consumers exactly as live-bootstrap pass1 does (these are the `rm`s that pair with

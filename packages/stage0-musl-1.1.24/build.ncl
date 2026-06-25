@@ -85,6 +85,9 @@ let version = "1.1.24" in
     { file = "madvise_preserve_errno.patch" } | Local, # preserve errno across __madvise in malloc
     { file = "avoid_sys_clone.patch" } | Local, # posix_spawn: fork() instead of __clone (tcc/early-env safe)
     { file = "disable_ctype_headers.patch" } | Local, # drop iswalpha/… decls meslibc can't regenerate tables for
+    # amd64-ONLY (net-new vs live-bootstrap's i386 path): skip the PIC crts (Scrt1.o/rcrt1.o) — tcc-0.9.27
+    # segfaults on arch/x86_64/crt_arch.h's `lea _DYNAMIC(%rip),%rsi` under -fPIC. Static bootstrap uses crt1.o only.
+    { file = "skip-pic-crt.patch" } | Local,
     {
       # upstream musl 1.1.24.  sha256 from live-bootstrap steps/musl-1.1.24/sources
       # (https://musl.libc.org/releases/musl-1.1.24.tar.gz); mirrored byte-identically to our
