@@ -33,6 +33,7 @@ let version = "1.1.24" in
     { file = "disable_ctype_headers.patch" } | Local,
     { file = "skip-pic-crt.patch" } | Local,
     { file = "drop-dynamic-crt.patch" } | Local,
+    { file = "amd64-va-list.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/musl-%{version}.tar.gz",
       sha256 = "1370c9a812b2cf2a7d92802510cca0058cc37e66a7bedd70051f0a34015022a3",
