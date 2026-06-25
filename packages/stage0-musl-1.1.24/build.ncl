@@ -88,6 +88,10 @@ let version = "1.1.24" in
     # amd64-ONLY (net-new vs live-bootstrap's i386 path): skip the PIC crts (Scrt1.o/rcrt1.o) — tcc-0.9.27
     # segfaults on arch/x86_64/crt_arch.h's `lea _DYNAMIC(%rip),%rsi` under -fPIC. Static bootstrap uses crt1.o only.
     { file = "skip-pic-crt.patch" } | Local,
+    # amd64-ONLY (net-new): tcc-0.9.27 segfaults ASSEMBLING crt_arch.h's `lea _DYNAMIC(%rip),%rsi`
+    # (weak+hidden sym, RIP-rel reloc). Static crt1.c's _start_c uses only rdi, so rsi/_DYNAMIC is
+    # vestigial -> replace with `xor %esi,%esi`. (Every -f/-W flag probe passed; only this asm crashes.)
+    { file = "drop-dynamic-crt.patch" } | Local,
     {
       # upstream musl 1.1.24.  sha256 from live-bootstrap steps/musl-1.1.24/sources
       # (https://musl.libc.org/releases/musl-1.1.24.tar.gz); mirrored byte-identically to our
