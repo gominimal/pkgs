@@ -1,32 +1,16 @@
 #!/bin/bash
 set -euo pipefail
 
-case "$(uname -m)" in
-  x86_64)  ARCH="amd64" ;;
-  aarch64) ARCH="arm64" ;;
-  *)       echo "unsupported architecture: $(uname -m)" >&2; exit 1 ;;
-esac
+ARCH="${MINIMAL_ARG_TARGET_ARCH}"
 
 installer="edgedelta-linux-${ARCH}.sh"
 
 # The installer is a Makeself self-extracting archive that, when run, would
 # create a system user, install a service and start the agent. We don't want
-# any of that — we only want the bundled binary. So extract the embedded
-# gzip-compressed tar payload directly instead of executing the installer.
-#
-# Makeself appends the payload after a fixed number of header lines; the line
-# count is embedded in the script itself (`offset=`head -n N "$0"`...`). Parse
-# it out rather than hardcoding, so this keeps working across versions.
-header_lines=$(grep -aoE 'head -n [0-9]+ "\$0"' "$installer" | head -1 | grep -oE 'head -n [0-9]+' | grep -oE '[0-9]+')
-if [ -z "$header_lines" ]; then
-  echo "could not determine Makeself payload offset in $installer" >&2
-  exit 1
-fi
-
-byte_offset=$(head -n "$header_lines" "$installer" | wc -c | tr -d ' ')
-
-mkdir -p payload
-tail -c "+$((byte_offset + 1))" "$installer" | gzip -dc | tar -xof - -C payload
+# any of that — we only want the bundled binary. Safely extract the archive
+# contents using the installer's native command-line options without executing
+# the embedded installation script.
+sh "$installer" --target payload --noexec
 
 if [ ! -f payload/edgedelta ]; then
   echo "edgedelta binary not found in extracted payload" >&2
