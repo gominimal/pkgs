@@ -516,12 +516,11 @@ cd /build
 # checksums flow), record the shas from /build/output/usr/..., fill stage0.answers,
 # re-enable.  See BUILD-RUNBOOK.md §capture.
 ###########################################################################
-# CAPTURE RUN 2026-06-24: gate DISABLED for the FIRST green amd64 build. The full spine just built
-# end-to-end (tcc-mes -> boot0 -> boot1 -> boot2 -> deliverable tcc + getopt + libc) for the first
-# time ever on amd64, thanks to fix-shift. stage0.answers has no amd64 shas yet, so `sha256sum -c`
-# fails "no properly formatted checksum lines". DISABLE to let R2 publish, then pin the published
-# artifact shas into stage0.answers + RE-ENABLE this line for byte-identity reproducibility (L4).
-# sha256sum -c stage0.answers
+# BYTE-IDENTITY GATE — RE-ENABLED 2026-06-24 after the first green amd64 build pinned the 8 shas into
+# stage0.answers (see that file). kaem --strict ABORTS HARD on any mismatch, so this verifies the
+# whole spine (tcc-mes/boot0/boot1/deliverable tcc + libc/libgetopt/crt1/libtcc1) reproduces
+# byte-identically — the L4 fixed-point property for R2.
+sha256sum -c stage0.answers
 
 ###########################################################################
 # §D STAGING: the build wrote every output directly into OUTPUT_DIR=/build/output

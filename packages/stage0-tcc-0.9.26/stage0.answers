@@ -19,15 +19,16 @@
 # differ from any writable-/usr build; the DELIVERABLE tcc bakes the CONSUMER /usr/lib/mes.
 # All are reproducible (OUTPUT_DIR is the fixed /build/output) and all are record-at-pin-time.
 #
-# FILL AT PIN TIME (uncomment + paste the amd64 shas):
-# <sha>  /build/output/usr/bin/tcc-mes
-# <sha>  /build/output/usr/bin/tcc-boot0
-# <sha>  /build/output/usr/bin/tcc-boot1
-# <sha>  /build/output/usr/bin/tcc
-# <sha>  /build/output/usr/lib/mes/libc.a
-# <sha>  /build/output/usr/lib/mes/libgetopt.a
-# <sha>  /build/output/usr/lib/mes/crt1.o
-# <sha>  /build/output/usr/lib/mes/tcc/libtcc1.a
+# PINNED 2026-06-24 — the FIRST green amd64 CS build (fix-shift cracked mescc->tcc-boot0, lb#470).
+# Captured from the published artifact gs://minimalmertic-sign-staging/stage0-tcc-0.9.26-0.9.26-a/.
+ac21410449a0df354c41ab0735d92d486d6d39adb460c393cda9f737ac18a36f  /build/output/usr/bin/tcc-mes
+df3251355370d4007c6e807cd1cc7296fc8f194fa57a4af3ededfde1f0374a0c  /build/output/usr/bin/tcc-boot0
+72be64c1271b2cfa92da057aeb9bfd26fdd75f8ad851024c7ee723ffc9040402  /build/output/usr/bin/tcc-boot1
+f3f100fedd7d6a67aa67d4b1771f019c0412507e27e622cb15a6ca8557d41540  /build/output/usr/bin/tcc
+291680418bcef8d4296fd7d5b0d4a3640dc24b3caedbac3da44ca35245614e5d  /build/output/usr/lib/mes/libc.a
+7de27a4ba2db3b3cf17b50ae604729ef8893fedb67243372c4eda5d22314f0f8  /build/output/usr/lib/mes/libgetopt.a
+c746f523fa1427565324cb74e0adf10499474f7f512b4c70fc63c74bef5f3240  /build/output/usr/lib/mes/crt1.o
+41d8eec428d29c8b575b164f1ce25b47727b858b61b14f0740c57df6655fb5dd  /build/output/usr/lib/mes/tcc/libtcc1.a
 #
 # NOTE: crtn.o/crti.o are EMPTY on amd64 (catm with no inputs — the x86-only branch is
 # not taken), so they are not pinned (the x86 reference lists them only because the x86
