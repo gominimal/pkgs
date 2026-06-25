@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
-# musl-crt-diag v9 — BUILD-DOWN bisection on the REAL read.c. v6/v7/v8 narrowed by elimination but every
-# hand-built minimal TU (syscall_arch.h swap, hidden multi-declarator, 7-arg call) COMPILES while the real
-# files CRASH — so the trigger needs the real include environment, not a reconstruction. syscall.h has NO
-# static inlines (just macros), so it's not "codegen'd unused static". v9 reduces the ACTUAL read.c
-# (smallest crasher) step by step against the REAL headers to localize the crash to one of:
-#   pE  tcc -E read.c            -> preprocessor/macro expansion?
-#   pA2 #include "syscall.h"     -> parsing syscall.h alone?
-#   pA1 #include <unistd.h>      -> parsing unistd.h alone?
-#   pA  both includes, no fn     -> header interaction?
-#   pB  includes + trivial body  -> the function signature (ssize_t/size_t)?
-#   pC  real read.c              -> the syscall_cp(...) body? (control: must crash)
-# Whatever is the FIRST to crash gets -vv + a head of its preprocessed form for the next cut. Pure
-# diagnosis this cycle (no fix matrix until the construct is real). set +e, exit 0, OutputData.
+# musl-crt-diag v10 — CONFIRM the R3 tcc fix. Root cause (pinned by v6-v9 build-down): tcc-0.9.27 SIGSEGVs
+# PARSING musl's src/internal/syscall.h `char __buf[static 15+3*sizeof(int)]` (C99 array-param `[static N]`).
+# live-bootstrap fixes this IN TCC via ignore-static-inside-array.patch (tccgen.c post_type) — which R3
+# originally MISSED. R3 now carries it (+ dont-skip-weak-symbols-ar, static-link). This probe builds against
+# the PATCHED R3 tcc and confirms, in one cycle:
+#   (1) pA2: `#include "syscall.h"` alone -> OK (was CRASH) — the direct fix check.
+#   (2) breadth-24 sample -> OK count (was 13/24) — no other broad crashers?
+#   (3) the 11 former crashers -> 11/11 OK.
+#   (4) THE REAL R4 make (CC=tcc, AR="tcc -ar") -> does full musl libc.a build now, and if not, where?
+# set +e, never aborts, exits 0 with greppable rows + OutputData.
 set +e
 set -u
 TCC=/usr/bin/tcc
@@ -20,7 +17,7 @@ SRC="musl-${VERSION}"; BUILDROOT="$(pwd)"
 OUTROOT=/build/output/usr/share/musl-crt-diag; WORK=/build/diag
 mkdir -p "$OUTROOT" "$WORK"; MANIFEST="$OUTROOT/MANIFEST.txt"
 emit(){ echo "$1"; echo "$1" >> "$WORK/rows.txt"; }
-emit "DIAG-INFO musl-crt-diag v9 BUILD-DOWN — $("$TCC" -version 2>&1 | head -1)"
+emit "DIAG-INFO musl-crt-diag v10 CONFIRM-FIX — $("$TCC" -version 2>&1 | head -1)"
 tar -xf "${SRC}.tar.gz" 2>/dev/null; cd "${SRC}" || { emit FATAL; exit 0; }
 for p in makefile madvise_preserve_errno avoid_sys_clone disable_ctype_headers skip-pic-crt drop-dynamic-crt amd64-va-list; do
   patch -Np1 -i "${BUILDROOT}/${p}.patch" >/dev/null 2>&1
@@ -33,47 +30,39 @@ FULL="-std=c99 -nostdinc -ffreestanding -fexcess-precision=standard -frounding-m
 cls(){ rc=$1; if [ "$rc" = 0 ]; then echo OK; elif [ "$rc" -gt 128 ] 2>/dev/null; then echo "CRASH(rc=$rc)"; else echo "err(rc=$rc)"; fi; }
 try(){ "$TCC" $FULL -c -o "$WORK/t.o" "$1" >"$WORK/t.err" 2>&1; cls $?; }
 
-# Build-down TUs live in src/internal so quote-includes resolve exactly as real musl files do.
-DIR=src/internal
-printf '#include <unistd.h>\n' > "$DIR/_pA1.c"
-printf '#include "syscall.h"\n' > "$DIR/_pA2.c"
-printf '#include <unistd.h>\n#include "syscall.h"\n' > "$DIR/_pA.c"
-printf '#include <unistd.h>\n#include "syscall.h"\nssize_t read(int fd,void*buf,size_t count){(void)fd;(void)buf;(void)count;return 0;}\n' > "$DIR/_pB.c"
+# (1) the direct fix check: syscall.h alone.
+printf '#include "syscall.h"\n' > src/internal/_pA2.c
+emit "DIAG-CONFIRM pA2(syscall.h alone) -> $(try src/internal/_pA2.c)   [expect OK; was CRASH]"
 
-emit "DIAG-INFO ===== build-down on real read.c ====="
-"$TCC" -E $FULL src/unistd/read.c > "$WORK/read.i" 2>"$WORK/read.E.err"; emit "DIAG-BD pE(-E preprocess) -> $(cls $?)  (read.i lines=$(wc -l < "$WORK/read.i" 2>/dev/null))"
-emit "DIAG-BD pA1(unistd.h only)     -> $(try "$DIR/_pA1.c")"
-emit "DIAG-BD pA2(syscall.h only)    -> $(try "$DIR/_pA2.c")"
-emit "DIAG-BD pA(both, no fn)        -> $(try "$DIR/_pA.c")"
-emit "DIAG-BD pB(incl+trivial body)  -> $(try "$DIR/_pB.c")"
-emit "DIAG-BD pC(real read.c)        -> $(try src/unistd/read.c)"
+# (2) breadth-24 + (3) the 11 former crashers
+SAMPLE="src/aio/aio.c src/string/memcpy.c src/string/strlen.c src/string/strcmp.c src/stdlib/atoi.c src/stdlib/qsort.c src/stdio/fputs.c src/stdio/vfprintf.c src/stdio/snprintf.c src/malloc/malloc.c src/math/sqrt.c src/math/pow.c src/thread/pthread_mutex_lock.c src/time/gmtime.c src/ctype/isalpha.c src/errno/strerror.c src/env/getenv.c src/unistd/read.c src/signal/raise.c src/locale/setlocale.c src/regex/regcomp.c src/network/inet_pton.c src/prng/rand.c src/dirent/opendir.c"
+ok=0; crash=0; badf=""
+for f in $SAMPLE; do [ -f "$f" ] || continue; "$TCC" $FULL -c -o "$WORK/s.o" "$f" >/dev/null 2>&1; rc=$?
+  if [ "$rc" = 0 ]; then ok=$((ok+1)); else crash=$((crash+1)); badf="$badf $(basename $f)($rc)"; fi; done
+emit "DIAG-CONFIRM breadth-24 OK=$ok CRASH=$crash  still:$badf   [expect OK=24]"
 
-# If preprocessing succeeded, the crash is reproducible from the self-contained .i — confirm + measure,
-# so next cycle can bisect read.i mechanically (no headers).
-if [ -s "$WORK/read.i" ]; then
-  cp "$WORK/read.i" "$DIR/_read_i.c"
-  emit "DIAG-BD pI(compile read.i)     -> $(try "$DIR/_read_i.c")   <- if CRASH, read.i is the self-contained reducer"
-  emit "DIAG-INFO read.i tail (the actual read() after expansion):"
-  tail -12 "$WORK/read.i" | while IFS= read -r ln; do emit "DIAG-I| $ln"; done
+# (4) THE REAL R4 make — does full musl libc.a build now?
+emit "DIAG-INFO ===== (4) real R4 make ====="
+make CROSS_COMPILE= AR="tcc -ar" RANLIB=true CFLAGS="-DSYSCALL_NO_TLS" >"$WORK/make.log" 2>&1; MRC=$?
+NOBJ=$(find . -name '*.o' 2>/dev/null | wc -l)
+emit "DIAG-MAKE rc=$MRC  objects=$NOBJ  libc.a=$( [ -f lib/libc.a ] && echo PRESENT:$(wc -c <lib/libc.a)B || echo ABSENT )"
+if [ "$MRC" != 0 ]; then
+  emit "DIAG-MAKE FAILED — last 8 log lines:"; tail -8 "$WORK/make.log" | while IFS= read -r l; do emit "DIAG-M| $l"; done
+  # the file that failed (first non-zero compile in the log)
+  emit "DIAG-MAKE first error context:"; grep -aE "error|Error|\.c$|signal|Segmentation" "$WORK/make.log" | head -6 | while IFS= read -r l; do emit "DIAG-M> $l"; done
+else
+  emit "DIAG-MAKE SUCCESS — full musl libc.a built with the patched R3 tcc. R4 is GREEN."
 fi
 
-# -vv on the first crashing minimal include TU, to see exactly where include-scan stops.
-for t in _pA2 _pA1 _pA; do
-  if [ "$(try "$DIR/$t.c")" != OK ]; then
-    "$TCC" -vv $FULL -c -o "$WORK/x.o" "$DIR/$t.c" > "$WORK/$t.vv" 2>&1
-    emit "DIAG-INFO -vv $t last includes: $(grep -aE '^->| -> ' "$WORK/$t.vv" | tail -4 | tr '\n' '|')"
-    break
-  fi
-done
-
 cp "$WORK/rows.txt" "$OUTROOT/rows.txt.log" 2>/dev/null
-cp "$WORK/read.i" "$OUTROOT/read.i.log" 2>/dev/null
+cp "$WORK/make.log" "$OUTROOT/make.log" 2>/dev/null
 cp "$TCC" "$OUTROOT/tcc-0.9.27" 2>/dev/null
+[ -f lib/libc.a ] && cp lib/libc.a "$OUTROOT/libc.a" 2>/dev/null
 {
-  echo "============ musl-crt-diag v9 BUILD-DOWN ============"
-  grep -E "DIAG-BD|DIAG-I\\||DIAG-INFO -vv" "$WORK/rows.txt" 2>/dev/null
-  echo "READ: first CRASH localizes it — pA2=syscall.h parse, pA1=unistd parse, pB=signature, pC=body."
-  echo "      If pE OK and pI CRASH, read.i is a self-contained reducer for a mechanical line-bisect."
-  echo "===================================================="
+  echo "============ musl-crt-diag v10 CONFIRM-FIX ============"
+  grep -E "DIAG-CONFIRM|DIAG-MAKE|DIAG-M>" "$WORK/rows.txt" 2>/dev/null
+  echo "READ: pA2 OK + breadth 24/24 => the [static] tcc fix landed. DIAG-MAKE SUCCESS => R4 builds;"
+  echo "      else DIAG-M> shows the NEXT amd64 wall (a deeper construct), now on the patched tcc."
+  echo "======================================================"
 } | tee "$MANIFEST"
 exit 0

@@ -44,6 +44,19 @@ simple-patch ${TCC_PKG}/tcctools.c addback-fileopen.before addback-fileopen.afte
 # tccelf.c: upstream R3's two fixes (fidelity to pass1.kaem) — fiwix paddr handling + a null-reloc guard.
 simple-patch ${TCC_PKG}/tccelf.c fiwix-paddr.before fiwix-paddr.after
 simple-patch ${TCC_PKG}/tccelf.c check-reloc-null.before check-reloc-null.after
+# [R3 completeness 2026-06-25] THREE upstream tcc-0.9.27 patches from live-bootstrap steps/tcc-0.9.27/
+# patches/ that R3 originally OMITTED (we only carried the simple-patches/ set). Converted to simple-patch
+# .before/.after (Tier-2: upstream CONTENT, our rewiring — byte-identical hunk bodies):
+#   ignore-static-inside-array (tccgen.c post_type): the original only skips TOK_RESTRICT1 inside `[]`;
+#     this loops over restrict/const/volatile/STATIC/'*'. WITHOUT it, tcc-0.9.27 SIGSEGVs parsing musl's
+#     src/internal/syscall.h `hidden void __procfdname(char __buf[static 15+3*sizeof(int)], unsigned);`
+#     — the R4 wall (every syscall.h includer crashed; pinned via musl-crt-diag v6-v9 build-down).
+#   dont-skip-weak-symbols-ar (tcctools.c): index STB_WEAK syms (st_info 0x20/0x21/0x22) in `tcc -ar`
+#     archives, so musl's weak-alias-heavy libc.a links correctly at R5+.
+#   static-link (libtcc.c): default s->static_link=1 (mes libc is static-only; R5+ executable links).
+simple-patch ${TCC_PKG}/tccgen.c ignore-static-inside-array.before ignore-static-inside-array.after
+simple-patch ${TCC_PKG}/tcctools.c dont-skip-weak-symbols-ar.before dont-skip-weak-symbols-ar.after
+simple-patch ${TCC_PKG}/libtcc.c static-link.before static-link.after
 
 # empty config.h for both trees (BOOTSTRAP/HAVE_* defines arrive via -D, not config.h).
 catm ${TCC_PKG}/config.h
@@ -156,7 +169,11 @@ cd /build
 # tcc-0.9.27-rebuilt libc/libgetopt/crt1/libtcc1) reproduces byte-identically — the L4 fixed-point
 # property for R3. NB: the ~50% tcc-0.9.26 lottery means a gated build may crash before passing; the
 # seal-verify retries until a GREEN gated build (the successful output is byte-identical to the pin).
-sha256sum -c stage0.answers
+# [RE-CAPTURE 2026-06-25] TEMPORARILY DISABLED: adding the 3 live-bootstrap tcc patches (esp.
+# ignore-static-inside-array) changes the tcc-0.9.27 binary bytes (new parser code) and may change the
+# tcc-built .a indices (dont-skip-weak-symbols-ar). Re-pin all 5 shas from the first green patched build,
+# then RE-ENABLE. Until then this gate would abort on the stale pins.
+# sha256sum -c stage0.answers
 
 ###########################################################################
 # §D STAGING: every output was written directly into OUTPUT_DIR=/build/output, so there is no

@@ -71,6 +71,15 @@ let coreutils = import "../coreutils/build.ncl" in # /usr/bin/{cp,chmod,mkdir,sh
     { file = "fiwix-paddr.after" } | Local,
     { file = "check-reloc-null.before" } | Local,
     { file = "check-reloc-null.after" } | Local,
+    # [R3 completeness 2026-06-25] THREE upstream tcc-0.9.27 patches from live-bootstrap's patches/ dir
+    # (the unified-diff set, distinct from simple-patches/) that R3 originally MISSED — the first is the
+    # R4 syscall.h wall (tcc-0.9.27 SIGSEGVs parsing `char buf[static N]` array params). See tcc.kaem.
+    { file = "ignore-static-inside-array.before" } | Local,
+    { file = "ignore-static-inside-array.after" } | Local,
+    { file = "dont-skip-weak-symbols-ar.before" } | Local,
+    { file = "dont-skip-weak-symbols-ar.after" } | Local,
+    { file = "static-link.before" } | Local,
+    { file = "static-link.after" } | Local,
     # REUSED from R2 (same fresh mes-0.27.1): mes stdarg.h -> SysV under __TINYC__ (shadows tcc's own),
     # and the basic-asm setjmp rewrite.  See the header note above for why these two survive but the
     # mescc-fix patches do not.
