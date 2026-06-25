@@ -1,0 +1,29 @@
+# R3 stage0-tcc-0.9.27 byte-identity pins.  Checked from /build (CWD) by `sha256sum -c`.
+# kaem --strict ABORTS HARD on any mismatch -> a build-failing byte-identity gate.
+#
+# !! RECORD-AT-PIN-TIME (amd64) !!  Like R2, there is NO upstream amd64 fixed point for
+# tcc-0.9.27: live-bootstrap ships ONLY an x86 checksum (steps/tcc-0.9.27/tcc-0.9.27.checksums
+# = 77f3da9f… for /usr/bin/tcc) because its canonical fully-exercised path is 32-bit x86.
+# => Capture these five sha256 values AFTER the first green amd64 CS build and paste them below.
+#
+# PATHS = the §D STAGING paths /build/output/usr/...  (the build writes BINDIR=/build/output/usr/bin
+# + LIBDIR=/build/output/usr/lib/mes — /usr is read-only).  Absolute => the check is CWD-independent.
+#
+# CAVEAT: the deliverable tcc bakes the CONSUMER /usr/lib/mes (so R4 resolves R3's installed libc),
+# so its bytes differ from any writable-/usr build; reproducible because OUTPUT_DIR is the fixed
+# /build/output.  All five are record-at-pin-time.
+#
+# ── PIN HERE after the capture run (uncomment + fill, then re-enable the gate in tcc.kaem) ──
+# <sha>  /build/output/usr/bin/tcc
+# <sha>  /build/output/usr/lib/mes/libc.a
+# <sha>  /build/output/usr/lib/mes/libgetopt.a
+# <sha>  /build/output/usr/lib/mes/crt1.o
+# <sha>  /build/output/usr/lib/mes/tcc/libtcc1.a
+#
+# NOTE: crtn.o/crti.o are EMPTY on amd64 (catm with no inputs), so they are not pinned.
+# tcc-0.9.27 is byte-identical to tcc (cp) so it is not separately pinned.
+#
+# ---------------------------------------------------------------------------------------
+# UPSTREAM x86 REFERENCE (provenance only; 32-bit binary with a DIFFERENT baked libdir — will NOT
+# match amd64, do NOT use as the gate).  From live-bootstrap steps/tcc-0.9.27/tcc-0.9.27.checksums:
+#   77f3da9f73e433f29ae0a4d1d13043f196ed5b131062da4e27d6b9bef1ff2b6e  /usr/bin/tcc
