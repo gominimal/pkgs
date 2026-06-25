@@ -1,15 +1,19 @@
-amd64 va_list for tcc-0.9.27 (analog of live-bootstrap's i386 va_list.patch, which our R4
-scaffold wrongly dropped). tcc-0.9.27 has NO __builtin_va_list and SEGFAULTS on it (pinned by
-musl-crt-diag v4). Define it under __TINYC__ via tcc-0.9.27's OWN SysV __va_list_struct +
-__va_start/__va_arg (va_list.o in libtcc1.a from R3; layout verbatim from tcc include/stdarg.h).
+amd64 va_list for tcc-0.9.27 (the analog of live-bootstrap's i386 va_list.patch the scaffold
+dropped). tcc-0.9.27 has NO __builtin_va_list + SEGFAULTS on it (musl-crt-diag v4). Define it under
+__TINYC__ via tcc's OWN SysV __va_list_struct (verbatim from tcc include/stdarg.h). GUARDED with
+__TINYC_va_list_defined because alltypes.h is #included once per __NEED'd type — without the guard
+the anon-struct re-typedef on the 2nd include is an incompatible redefinition -> tcc error path ->
+SIGSEGV (musl-crt-diag v5: my def compiles standalone but crt1.c pulls alltypes.h twice). Tier-3.
 --- musl-1.1.24/arch/x86_64/bits/alltypes.h.in
 +++ musl-1.1.24/arch/x86_64/bits/alltypes.h.in
-@@ -1,6 +1,25 @@
+@@ -1,6 +1,28 @@
  #define _Addr long
  #define _Int64 long
  #define _Reg long
 +
 +#ifdef __TINYC__
++#ifndef __TINYC_va_list_defined
++#define __TINYC_va_list_defined
 +typedef struct {
 +	unsigned int gp_offset;
 +	unsigned int fp_offset;
@@ -26,6 +30,7 @@ __va_start/__va_arg (va_list.o in libtcc1.a from R3; layout verbatim from tcc in
 +#define __builtin_va_arg(ap, type) (*(type *)(__va_arg(ap, __builtin_va_arg_types(type), sizeof(type), __alignof__(type))))
 +#define __builtin_va_copy(dest, src) (*(dest) = *(src))
 +#define __builtin_va_end(ap)
++#endif
 +#endif
  
  TYPEDEF __builtin_va_list va_list;
