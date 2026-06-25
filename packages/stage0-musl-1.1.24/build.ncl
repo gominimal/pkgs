@@ -68,7 +68,10 @@ let make = import "../make/build.ncl" in # the build engine
 let sed = import "../sed/build.ncl" in # configure: config.mak + musl-gcc wrapper generation
 let grep = import "../grep/build.ncl" in # configure probes
 let patch = import "../patch/build.ncl" in # apply the 4 arch-neutral patches
-let coreutils = import "../coreutils/build.ncl" in # /usr/bin/{rm,mkdir,cp,chmod,tar,sha256sum,…}
+let coreutils = import "../coreutils/build.ncl" in # /usr/bin/{rm,mkdir,cp,chmod,install,cat,sort,tr,sha256sum,…} (NB: NOT tar)
+let tar = import "../tar/build.ncl" in # build.sh `tar -xf` — a SEPARATE pkg, NOT part of coreutils
+let gzip = import "../gzip/build.ncl" in # tar's .gz decompression
+let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # musl's configure uses awk once (bootstrap variant = light closure, matches packages/make)
 let version = "1.1.24" in
 {
   name = "stage0-musl-1.1.24",
@@ -99,7 +102,10 @@ let version = "1.1.24" in
     sed, # configure wrapper/config.mak
     grep, # configure probes
     patch, # apply the 4 patches
-    coreutils, # rm/mkdir/cp/chmod/tar/sha256sum
+    coreutils, # rm/mkdir/cp/chmod/install/cat/sort/tr/sha256sum
+    tar, # build.sh `tar -xf musl-1.1.24.tar.gz`
+    gzip, # tar's .gz decompression
+    gawk-bootstrap, # musl configure's awk
   ],
   build_args = {
     include version,
