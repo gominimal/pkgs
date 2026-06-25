@@ -59,8 +59,15 @@ catm ${MES_PKG}/include/mes/config.h
 # under /usr/include/mes, so tcc.c's `#include <stdlib.h>` resolves via -I /usr/include (same fix
 # R2/boot0 applied).  `.` first preserves tcc's own headers ahead of the system tree.
 cd ${TCC_PKG}
+# -w: tcc-0.9.26's deliverable is a correct compiler (its PARSER is fine), but its error/warning
+# FORMATTER rides the mes-libc va_list path that crashes on the first warning (the R2 error-varargs
+# bug — tcc_warning -> strcat_vprintf -> vsnprintf -> __va_arg bad slot).  tcc-0.9.26's OWN tcc.c is
+# warning-clean (R2 never hit it), but tcc-0.9.27's newer source trips a warning -> SIGSEGV at
+# `-> tcc.c`.  -w short-circuits tcc_warning BEFORE the varargs (libtcc.c:570 warn_none); trust-neutral
+# (warnings don't affect codegen, so the output tcc bytes are identical).  Same band-aid R2 used.
 tcc-0.9.26 \
     -v \
+    -w \
     -static \
     -o ${BINDIR}/tcc \
     -D TCC_TARGET_${TCC_TARGET_ARCH}=1 \
@@ -114,9 +121,10 @@ tcc -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o ${LIBDIR}/c
 catm ${LIBDIR}/crtn.o
 catm ${LIBDIR}/crti.o
 
-# libc.a (unified).  tcc-0.9.27's warning path is correct (it was built by a correct tcc), so the
-# unified-libc.c redefined-macro warnings print harmlessly — no -w needed (upstream pass1 omits it).
-tcc -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o unified-libc.o unified-libc.c
+# libc.a (unified).  -w: tcc-0.9.27 is mainline tcc with the same mes-libc va_list lineage as R2's
+# tccs, so unified-libc.c's redefined-macro warnings (SYS_exit/SYS_write) could trip the same
+# error-varargs crash.  Defensive -w (trust-neutral, matches R2's boot0/1/2 unified-libc.c compiles).
+tcc -w -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o unified-libc.o unified-libc.c
 tcc -ar cr ${LIBDIR}/libc.a unified-libc.o
 
 # libtcc1.a — tcc-0.9.27's OWN libtcc1.c + va_list.o (the amd64 OBJ-x86_64 set; i386 omits va_list.o).
