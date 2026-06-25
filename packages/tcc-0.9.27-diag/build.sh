@@ -116,6 +116,35 @@ for f in "$WORK"/vv.err "$WORK"/vv.out "$WORK"/trace.out "$WORK"/rows.txt "$WORK
   [ -f "$f" ] && /usr/bin/cp "$f" "$OUTROOT/$(/usr/bin/basename "$f").log"
 done
 
+# ── PHASE 5: HEADER LAYOUT RECON — is /usr/include mes or glibc? where are mes's headers? ──
+emit "DIAG-INFO ===== (c) header layout recon ====="
+emit "DIAG-HDR /usr/include top-level .h count: $(ls /usr/include/*.h 2>/dev/null | /usr/bin/wc -l)"
+emit "DIAG-HDR /usr/include/mes .h count: $(ls /usr/include/mes/*.h 2>/dev/null | /usr/bin/wc -l)"
+emit "DIAG-HDR /usr/include/stdlib.h is: $(grep -qiE 'GNU Mes|__MES' /usr/include/stdlib.h 2>/dev/null && echo MES || echo GLIBC/other)"
+emit "DIAG-HDR /usr/include/unistd.h is: $(grep -qiE 'GNU Mes|SYSTEM_LIBC|__MES_UNISTD' /usr/include/unistd.h 2>/dev/null && echo MES || echo GLIBC)"
+emit "DIAG-HDR /usr/include/mes/stdlib.h exists: $([ -f /usr/include/mes/stdlib.h ] && echo YES || echo NO)"
+emit "DIAG-HDR /usr/include/mes/unistd.h exists: $([ -f /usr/include/mes/unistd.h ] && echo YES || echo NO)"
+emit "DIAG-HDR features-time64.h (modern-glibc marker): $([ -f /usr/include/features-time64.h ] && echo PRESENT=glibc-leak || echo absent)"
+emit "DIAG-HDR where does <stdlib.h> live? $(ls -d /usr/include/stdlib.h /usr/include/mes/stdlib.h 2>/dev/null | tr '\n' ' ')"
+
+# ── PHASE 6: FIX-TEST — compile tcc.c with candidate include configs; which one COMPILES clean? ──
+# The crash is glibc's unistd.h chain. Test mes-header-preferring configs. The -D set matches R3.
+emit "DIAG-INFO ===== (d) fix-test: which -I config compiles tcc.c? ====="
+DBASE=( -D TCC_TARGET_X86_64=1 -D "CONFIG_TCCDIR=\"/usr/lib/mes/tcc\"" -D "CONFIG_TCC_CRTPREFIX=\"/usr/lib/mes\"" \
+  -D "CONFIG_TCC_ELFINTERP=\"/mes/loader\"" -D "CONFIG_TCC_LIBPATHS=\"/usr/lib/mes:/usr/lib/mes/tcc\"" \
+  -D "CONFIG_TCC_SYSINCLUDEPATHS=\"/usr/include/mes\"" -D "TCC_LIBGCC=\"/usr/lib/mes/libc.a\"" \
+  -D CONFIG_TCC_STATIC=1 -D CONFIG_USE_LIBGCC=1 -D "TCC_VERSION=\"0.9.27\"" -D ONE_SOURCE=1 )
+testcfg(){ local lab="$1"; shift
+  ( cd "/build/$TCC_PKG" && timeout 150 "$TCC" -w -c -o "$WORK/t-$lab.o" "${DBASE[@]}" "$@" tcc.c ) >"$WORK/cfg-$lab.out" 2>&1
+  local rc=$?
+  emit "DIAG-FIX [$lab] rc=$rc ($([ -s "$WORK/t-$lab.o" ] && echo OBJ-OK || echo NO-OBJ)) args='$*' >>> $(tail -2 "$WORK/cfg-$lab.out" 2>/dev/null | tr '\n' '|')"
+}
+testcfg mesonly     -I . -I /usr/include/mes
+testcfg mesfirst    -I . -I /usr/include/mes -I /usr/include
+testcfg glibc-repro -I . -I /usr/include -I /usr/include/mes
+emit "DIAG-FIX INTERPRET: a 'mesonly'/'mesfirst' OBJ-OK while 'glibc-repro' crashes => the fix is to"
+emit "DIAG-FIX   prefer mes headers in R3's tcc.c compile (and it's a hermeticity win — no host glibc)."
+
 # ── MANIFEST ──
 {
   echo "================ tcc-0.9.27-diag RESULT ================"
