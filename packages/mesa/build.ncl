@@ -28,6 +28,9 @@ let version = "26.1.3" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
+      # https://archive.mesa3d.org/mesa-26.1.3.tar.xz
+      # (mesa is developed at gitlab.freedesktop.org/mesa/mesa; archive.mesa3d.org
+      #  serves the release tarballs. The gs:// URL is a staged mirror of that.)
       url = "gs://minimal-staging-archives/mesa-%{version}.tar.xz",
       sha256 = "7725004e724b34c6d4fbaf5c48fc6c6223aa9f2741d6d7782c699b049356fc45",
       extract = true,
