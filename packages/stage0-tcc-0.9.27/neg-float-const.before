@@ -1,2 +1,11 @@
 	if (is_float(t)) {
             /* In IEEE negate(x) isn't subtract(0,x), but rather
+	       subtract(-0, x).  */
+	    vpush(&vtop->type);
+	    if (t == VT_FLOAT)
+	        vtop->c.f = -1.0 * 0.0;
+	    else if (t == VT_DOUBLE)
+	        vtop->c.d = -1.0 * 0.0;
+	    else
+	        vtop->c.ld = -1.0 * 0.0;
+	} else
