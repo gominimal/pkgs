@@ -4,14 +4,14 @@ let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.8.1" in
+let version = "1.8.2" in
 {
   name = "jq",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/jq-%{version}.tar.gz",
-      sha256 = "2be64e7129cecb11d5906290eba10af694fb9e3e7f9fc208a311dc33ca837eb0",
+      sha256 = "71b8d6e8f5fe81f6c6d0d110e3892251f6ce76ed095abd315e26e6e1193af3af",
       extract = true,
     } | Source,
     base,
