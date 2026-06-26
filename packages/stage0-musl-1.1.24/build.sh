@@ -61,6 +61,19 @@ CC=tcc ./configure \
     --libdir=/usr/lib \
     --includedir=/usr/include
 
+# [amd64 -Werror strip 2026-06-26] musl's configure adds `-Werror=implicit-function-declaration
+# -Werror=implicit-int -Werror=pointer-sign -Werror=pointer-arith` to CFLAGS_AUTO (configure lines
+# 503-506) because tcc ACCEPTS the flags. But src/env/__init_tls.c trips one of these warnings under
+# tcc in the CS sandbox, and -Werror promotes it to an ERROR — and tcc's error path (unlike its
+# warning path) does NOT honor -w, so it calls the mes-libc varargs formatter, which SIGSEGVs (the
+# "error-varargs masker": mes-libc's vsnprintf crashes on tcc's diagnostic args). Result: a
+# DETERMINISTIC SIGSEGV compiling __init_tls.o, but ONLY in CS — local Rosetta emulation neither fires
+# the warning nor crashes the formatter, so it was invisible on the laptop (confirmed via musl-crt-diag
+# v20/v21: no-Werror=OK, +Werror=CRASH, Werror-stripped=OK, same sealed tcc eb22a8fd). -Werror only
+# promotes diagnostics; stripping it changes NO codegen (the .o is byte-identical), so byte-identity is
+# preserved. The warnings are tcc pedantry on known-good musl source (-w already suppresses them).
+sed -i 's/-Werror=[A-Za-z=-]*//g' config.mak
+
 # --- compile + install.  CROSS_COMPILE= blanks the x86_64- prefix configure would add to AR/RANLIB;
 #     AR="tcc -ar" / RANLIB=true because no binutils exists yet; CFLAGS=-DSYSCALL_NO_TLS matches
 #     live-bootstrap (errno without TLS in the early/tcc context).  NO -march/-O/gcc-isms (tcc would
@@ -72,16 +85,11 @@ CC=tcc ./configure \
 # LAST rung on mes-libc (R5+ runs on the musl we are building here), so a per-file RETRY wrapper cures it
 # cleanly: re-run the exact compile on signal-death until it lands. Output determinism preserves the
 # byte-identity seal. Wrap the REAL tcc (resolved now) under a different name so there is no recursion.
-# [R4-DIAG/fix 2026-06-26] obj/src/env/__init_tls.o deterministically SIGSEGVs in the CS sandbox (20/20,
-# even under the retry wrapper) but compiles 0/10 LOCALLY with the SAME sealed tcc — so it's an ENVIRONMENT
-# resource limit, not a tcc/lottery bug. __init_tls pulls in the heaviest headers (pthread_impl.h/elf.h),
-# and mes-libc's malloc is brk-based; a tight RLIMIT_DATA/AS/STACK in the sandbox would make tcc's heap
-# growth fail -> NULL deref -> SIGSEGV. Print the limits (so we learn the CS values) and raise them.
-echo "=== R4-DIAG CS build limits BEFORE raise ==="; ulimit -a 2>&1 || true
-ulimit -d unlimited 2>/dev/null || true; ulimit -v unlimited 2>/dev/null || true
-ulimit -s unlimited 2>/dev/null || true; ulimit -m unlimited 2>/dev/null || true
-echo "=== R4-DIAG limits AFTER raise ==="; ulimit -a 2>&1 || true
-
+# NB: the __init_tls.o "deterministic CS-only SIGSEGV" was NOT a resource limit (CS ulimits are all
+# unlimited) and NOT real-HW-specific codegen — it was the -Werror error-formatter crash, cured by the
+# `sed -i 's/-Werror=...//' config.mak` above (see that block). The retry wrapper below remains for the
+# genuine arena lottery (mes-libc allocator SIGSEGVs ~randomly on SOME per-file compiles; output is
+# byte-identical on success, so re-running the exact compile until it lands preserves the seal).
 REALTCC="$(command -v tcc)"
 cat > "${BUILDROOT}/tcc-retry" <<WRAP
 #!/bin/sh

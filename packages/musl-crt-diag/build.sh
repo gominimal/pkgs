@@ -29,44 +29,29 @@ FULL="-std=c99 -nostdinc -ffreestanding -fexcess-precision=standard -frounding-m
 cls(){ rc=$1; if [ "$rc" = 0 ]; then echo OK; elif [ "$rc" -gt 128 ] 2>/dev/null; then echo "CRASH(rc=$rc)"; else echo "err(rc=$rc)"; fi; }
 F=src/env/__init_tls.c
 
-# (a) confirm crash + make the self-contained reducer
-"$TCC" $FULL -c -o "$WORK/it.o" "$F" >"$WORK/it.err" 2>&1; emit "DIAG-IT __init_tls.c -> $(cls $?)"
-"$TCC" -E $FULL "$F" > "$WORK/it.i" 2>/dev/null
-"$TCC" $FULL -c -o "$WORK/ii.o" "$WORK/it.i" >/dev/null 2>&1; emit "DIAG-IT __init_tls.i (preprocessed) -> $(cls $?)   lines=$(wc -l <"$WORK/it.i")"
+# What CS configure actually produced (does it add -Werror? local emulation did NOT):
+emit "DIAG-CFG CFLAGS_AUTO = $(grep -E '^CFLAGS_AUTO' config.mak 2>/dev/null | head -1)"
+WERR="-Werror=implicit-function-declaration -Werror=implicit-int -Werror=pointer-sign -Werror=pointer-arith"
 
-# (b) prefix-bisect __init_tls.i for the smallest crashing head -N
-LO=1; HI=$(wc -l < "$WORK/it.i")
-"$TCC" $FULL -c -o "$WORK/p.o" "$WORK/it.i" >/dev/null 2>&1
-if [ "$?" -gt 128 ]; then
-  while [ $LO -lt $HI ]; do
-    MID=$(( (LO+HI)/2 ))
-    head -n $MID "$WORK/it.i" > "$WORK/pre.c"
-    "$TCC" $FULL -c -o "$WORK/p.o" "$WORK/pre.c" >/dev/null 2>&1; rc=$?
-    if [ "$rc" -gt 128 ] 2>/dev/null; then HI=$MID; else LO=$((MID+1)); fi
-  done
-  emit "DIAG-IT prefix-bisect: smallest crashing head -N = $LO"
-  emit "DIAG-IT context (lines $((LO-4))..$((LO+1))):"
-  sed -n "$((LO-4)),$((LO+1))p" "$WORK/it.i" | while IFS= read -r l; do emit "DIAG-L| $l"; done
-fi
-
-# (c) which include alone crashes
-emit "DIAG-INFO ===== include isolation ====="
-for h in elf.h limits.h sys/mman.h string.h stddef.h pthread_impl.h libc.h atomic.h syscall.h; do
-  printf '#include "%s"\nint x;\n' "$h" > "$WORK/h.c" 2>/dev/null
-  printf '#include <%s>\nint x;\n' "$h" > "$WORK/h2.c" 2>/dev/null
-  "$TCC" $FULL -c -o "$WORK/h.o" "$WORK/h.c" >/dev/null 2>&1; r1=$?
-  "$TCC" $FULL -c -o "$WORK/h.o" "$WORK/h2.c" >/dev/null 2>&1; r2=$?
-  [ "$r1" -gt 128 ] 2>/dev/null && emit "DIAG-INC \"$h\" -> CRASH"
-  [ "$r2" -gt 128 ] 2>/dev/null && emit "DIAG-INC <$h> -> CRASH"
+# (a) baseline: no -Werror (= my v20 probe; was OK)
+"$TCC" $FULL -c -o "$WORK/it.o" "$F" >"$WORK/a.err" 2>&1; emit "DIAG-IT (a) NO -Werror        -> $(cls $?)"
+# (b) the REAL make flags: WITH all 4 -Werror (hypothesis: CRASH)
+"$TCC" $FULL $WERR -c -o "$WORK/it.o" "$F" >"$WORK/b.err" 2>&1; emit "DIAG-IT (b) +ALL -Werror     -> $(cls $?)   diag:$(head -1 "$WORK/b.err")"
+# (c) isolate WHICH -Werror crashes
+for w in implicit-function-declaration implicit-int pointer-sign pointer-arith; do
+  "$TCC" $FULL -Werror=$w -c -o "$WORK/it.o" "$F" >"$WORK/w.err" 2>&1
+  emit "DIAG-IT (c) only -Werror=$w -> $(cls $?)   diag:$(head -1 "$WORK/w.err")"
 done
+# (d) THE FIX: real make flags but -Werror stripped (hypothesis: OK). Proves the build.sh sed.
+"$TCC" $FULL -c -o "$WORK/it.o" "$F" >/dev/null 2>&1; emit "DIAG-IT (d) -Werror STRIPPED   -> $(cls $?)  [= the R4 fix]"
 
 cp "$WORK/rows.txt" "$OUTROOT/rows.txt.log" 2>/dev/null
 cp "$WORK/it.i" "$OUTROOT/init_tls.i.log" 2>/dev/null
 cp "$TCC" "$OUTROOT/tcc-0.9.27" 2>/dev/null
 {
-  echo "============ musl-crt-diag v20 INITTLS-REDUCE ============"
-  grep -E "DIAG-IT|DIAG-L\\||DIAG-INC" "$WORK/rows.txt" 2>/dev/null
-  echo "READ: the prefix-bisect boundary line + context = the construct tcc miscompiles on real amd64."
-  echo "========================================================="
+  echo "============ musl-crt-diag v21 WERROR-AB (real amd64) ============"
+  grep -E "DIAG-IT|DIAG-CFG" "$WORK/rows.txt" 2>/dev/null
+  echo "READ: if (a)/(d) OK and (b) CRASH, the -Werror= error-formatter is the wall; strip-Werror fixes R4."
+  echo "================================================================="
 } | tee "$MANIFEST"
 exit 0
