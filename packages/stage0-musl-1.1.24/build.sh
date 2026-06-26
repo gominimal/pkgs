@@ -65,8 +65,31 @@ CC=tcc ./configure \
 #     AR="tcc -ar" / RANLIB=true because no binutils exists yet; CFLAGS=-DSYSCALL_NO_TLS matches
 #     live-bootstrap (errno without TLS in the early/tcc context).  NO -march/-O/gcc-isms (tcc would
 #     reject them); musl's configure supplies its own CFLAGS. ---
-make CROSS_COMPILE= AR="tcc -ar" RANLIB=true CFLAGS="-DSYSCALL_NO_TLS -w"
-make CROSS_COMPILE= AR="tcc -ar" RANLIB=true CFLAGS="-DSYSCALL_NO_TLS -w" \
+# [amd64 arena-lottery 2026-06-26] tcc-0.9.27 runs on the mes-libc whose allocator layout makes it
+# SIGSEGV ~randomly on some per-file compiles in the CS sandbox (the arena lottery — NONdeterministic
+# WHETHER it crashes, but the .o is byte-IDENTICAL on success; cf. R2/R3 lottery). The full 1900-file
+# `make` therefore stops at a random file (locally 0/10, in CS it hit src/env/__init_tls.o). R4 is the
+# LAST rung on mes-libc (R5+ runs on the musl we are building here), so a per-file RETRY wrapper cures it
+# cleanly: re-run the exact compile on signal-death until it lands. Output determinism preserves the
+# byte-identity seal. Wrap the REAL tcc (resolved now) under a different name so there is no recursion.
+REALTCC="$(command -v tcc)"
+cat > "${BUILDROOT}/tcc-retry" <<WRAP
+#!/bin/sh
+i=0
+while [ \$i -lt 20 ]; do
+  "${REALTCC}" "\$@"; rc=\$?
+  [ \$rc -le 128 ] && exit \$rc
+  i=\$((i+1)); echo "tcc-retry: signal-death rc=\$rc, attempt \$i/20 -> \$*" >&2
+done
+exit \$rc
+WRAP
+chmod 755 "${BUILDROOT}/tcc-retry"
+
+# CC = the retry wrapper for the compile (cures the lottery); AR stays the real `tcc -ar` (archiving
+# does not compile, so it does not lottery).  configure already ran with the real tcc (it handles its
+# own probe segfaults), so config.mak's CC is overridden here for the build only.
+make CROSS_COMPILE= CC="${BUILDROOT}/tcc-retry" AR="tcc -ar" RANLIB=true CFLAGS="-DSYSCALL_NO_TLS -w"
+make CROSS_COMPILE= CC="${BUILDROOT}/tcc-retry" AR="tcc -ar" RANLIB=true CFLAGS="-DSYSCALL_NO_TLS -w" \
      DESTDIR="${OUTPUT_DIR}" install
 
 ###########################################################################
