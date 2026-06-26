@@ -1,14 +1,14 @@
 	if (is_float(t)) {
-	    /* [R3 amd64 fix 2026-06-26] If the operand is already a constant, negate it in place.
-	       The IEEE subtract(-0,x) path below is MISCOMPILED by the bootstrap tcc-0.9.26 on amd64
-	       (the constant fold is dropped, so a negated float literal in a static initializer is
-	       wrongly rejected as "initializer element is not constant" -> SIGSEGV). A direct negate
-	       of the constant is generated correctly and is value-identical for finite operands.
-	       gcc-built tcc-0.9.27 does not need this; our mes-chain-built one does. */
+	    /* [R3 amd64 fix 2026-06-26 v2] The bootstrap tcc-0.9.26 (amd64) MISCOMPILES floating-point
+	       negation (-x produces NaN), so both the IEEE subtract(-0,x) path below AND a plain
+	       `c.d = -c.d` are broken -> a negated float literal in a static initializer yields a wrong
+	       (non-finite) constant, which then crashes any fold that uses it ('not constant' / SIGSEGV;
+	       the R4 musl/math wall). For a constant operand, negate by flipping the IEEE SIGN BIT with an
+	       INTEGER xor (which tcc-0.9.26 compiles correctly) — value-exact, no FP negate involved. */
 	    if ((vtop->r & (VT_VALMASK | VT_LVAL | VT_SYM)) == VT_CONST) {
-	        if (t == VT_FLOAT) vtop->c.f = -vtop->c.f;
-	        else if (t == VT_DOUBLE) vtop->c.d = -vtop->c.d;
-	        else vtop->c.ld = -vtop->c.ld;
+	        if (t == VT_FLOAT) vtop->c.i ^= 0x80000000U;
+	        else if (t == VT_DOUBLE) vtop->c.i ^= (uint64_t)1 << 63;
+	        else vtop->c.tab[2] ^= 0x8000; /* long double: sign is bit 79 */
 	        break;
 	    }
             /* In IEEE negate(x) isn't subtract(0,x), but rather
