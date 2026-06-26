@@ -65,8 +65,8 @@ CC=tcc ./configure \
 #     AR="tcc -ar" / RANLIB=true because no binutils exists yet; CFLAGS=-DSYSCALL_NO_TLS matches
 #     live-bootstrap (errno without TLS in the early/tcc context).  NO -march/-O/gcc-isms (tcc would
 #     reject them); musl's configure supplies its own CFLAGS. ---
-make CROSS_COMPILE= AR="tcc -ar" RANLIB=true CFLAGS="-DSYSCALL_NO_TLS"
-make CROSS_COMPILE= AR="tcc -ar" RANLIB=true CFLAGS="-DSYSCALL_NO_TLS" \
+make CROSS_COMPILE= AR="tcc -ar" RANLIB=true CFLAGS="-DSYSCALL_NO_TLS -w"
+make CROSS_COMPILE= AR="tcc -ar" RANLIB=true CFLAGS="-DSYSCALL_NO_TLS -w" \
      DESTDIR="${OUTPUT_DIR}" install
 
 ###########################################################################
