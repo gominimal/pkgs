@@ -38,6 +38,16 @@ rm src/ctype/iswalpha.c src/ctype/iswalnum.c src/ctype/iswctype.c src/ctype/towc
 rm include/iconv.h src/locale/iconv.c src/locale/iconv_close.c
 rm -rf src/complex
 
+# [amd64 asm-rm 2026-06-26] tcc-0.9.27's integrated assembler can't handle musl's x86_64 SSE math/fenv/
+# setjmp .s (unknown opcodes e.g. stmxcsr/ldmxcsr, or SIGSEGV on others). Portable C fallbacks exist for
+# all of them (sqrt.c/fabs.c/expl.c/lrint.c/.../sigsetjmp.c), so remove the asm and let musl build the C
+# versions — correctness over speed, exactly right for a bootstrap libc. (live-bootstrap's i386 asm
+# assembles under their tcc; the x86_64 asm is amd64-net-new, Tier-3. Confirmed via the local tcc harness:
+# every C fallback compiles.)
+# NB: core setjmp/x86_64/setjmp.s + longjmp.s ASSEMBLE FINE and have NO C fallback — KEEP them. Only
+# sigsetjmp.s (signal) fails and has a C fallback (sigsetjmp.c -> calls the kept setjmp.s).
+rm -f src/math/x86_64/*.s src/fenv/x86_64/*.s src/signal/x86_64/sigsetjmp.s
+
 # NOTE: live-bootstrap pass1 does `mkdir -p /dev` + later `rm /dev/null`; that was for its early
 # environment which lacked /dev/null.  Our CS builder already provides /dev/null and / is mounted
 # READ-ONLY (§D), so we deliberately skip both.
