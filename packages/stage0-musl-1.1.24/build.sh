@@ -72,6 +72,16 @@ CC=tcc ./configure \
 # LAST rung on mes-libc (R5+ runs on the musl we are building here), so a per-file RETRY wrapper cures it
 # cleanly: re-run the exact compile on signal-death until it lands. Output determinism preserves the
 # byte-identity seal. Wrap the REAL tcc (resolved now) under a different name so there is no recursion.
+# [R4-DIAG/fix 2026-06-26] obj/src/env/__init_tls.o deterministically SIGSEGVs in the CS sandbox (20/20,
+# even under the retry wrapper) but compiles 0/10 LOCALLY with the SAME sealed tcc — so it's an ENVIRONMENT
+# resource limit, not a tcc/lottery bug. __init_tls pulls in the heaviest headers (pthread_impl.h/elf.h),
+# and mes-libc's malloc is brk-based; a tight RLIMIT_DATA/AS/STACK in the sandbox would make tcc's heap
+# growth fail -> NULL deref -> SIGSEGV. Print the limits (so we learn the CS values) and raise them.
+echo "=== R4-DIAG CS build limits BEFORE raise ==="; ulimit -a 2>&1 || true
+ulimit -d unlimited 2>/dev/null || true; ulimit -v unlimited 2>/dev/null || true
+ulimit -s unlimited 2>/dev/null || true; ulimit -m unlimited 2>/dev/null || true
+echo "=== R4-DIAG limits AFTER raise ==="; ulimit -a 2>&1 || true
+
 REALTCC="$(command -v tcc)"
 cat > "${BUILDROOT}/tcc-retry" <<WRAP
 #!/bin/sh
