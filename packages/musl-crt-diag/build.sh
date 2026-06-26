@@ -50,6 +50,7 @@ trial "G  musl-crt + mes-libc"  "$TCC" -nostdlib -static /usr/lib/crt1.o /usr/li
 trial "H  mes-crt + musl-libc"  "$TCC" -nostdlib -static $ME/crt1.o $ME/crti.o hello.o /usr/lib/libc.a $ME/tcc/libtcc1.a $ME/crtn.o
 
 cp "$WORK/rows.txt" "$OUTROOT/rows.txt.log" 2>/dev/null
+cp "$TCC" "$OUTROOT/tcc-0.9.27" 2>/dev/null   # satisfy build.ncl's `binaries` output glob (else build fails)
 {
   echo "============ musl-crt-diag v23 R5-LINK-CANARY (CS real amd64) ============"
   grep -E "DIAG-ENV|DIAG-CC|DIAG-LINK" "$WORK/rows.txt" 2>/dev/null
