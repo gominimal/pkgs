@@ -12,8 +12,12 @@ cd "opencode-${MINIMAL_ARG_VERSION}"
 bun_version="$(bun --version)"
 sed -i "s/\"packageManager\": \"bun@[^\"]*\"/\"packageManager\": \"bun@${bun_version}\"/" package.json
 
-# Install monorepo dependencies (requires network access).
-bun install --frozen-lockfile --ignore-scripts
+# Install monorepo dependencies (requires network access). NOT --frozen-lockfile:
+# our shipped bun resolves upstream's committed lockfile differently and rejects
+# it, and this install already network-fetches deps (so it isn't hermetic anyway),
+# so let bun float the lockfile. Proper fix = a vendored, bun-version-matched
+# bun.lock (tracked in a pkgs issue).
+bun install --ignore-scripts
 
 # The build script consults git for a channel name when these are unset;
 # set them explicitly so it doesn't shell out to git in the sandbox.
