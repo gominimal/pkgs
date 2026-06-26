@@ -1,0 +1,2 @@
+	if (is_float(t)) {
+            /* In IEEE negate(x) isn't subtract(0,x), but rather

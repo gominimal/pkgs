@@ -80,6 +80,12 @@ let coreutils = import "../coreutils/build.ncl" in # /usr/bin/{cp,chmod,mkdir,sh
     { file = "dont-skip-weak-symbols-ar.after" } | Local,
     { file = "static-link.before" } | Local,
     { file = "static-link.after" } | Local,
+    # [R3 amd64 fix 2026-06-26] tccgen.c unary-minus on a float CONSTANT: the bootstrap tcc-0.9.26 (amd64)
+    # miscompiles tcc-0.9.27's IEEE subtract(-0,x) negate path -> a negated float literal in a static
+    # initializer is wrongly rejected "not constant" -> SIGSEGV (the R4 musl/math 48-file wall). Direct-negate
+    # the constant instead. gcc-built tcc-0.9.27 doesn't need this; our mes-chain one does (amd64-net-new, Tier-3).
+    { file = "neg-float-const.before" } | Local,
+    { file = "neg-float-const.after" } | Local,
     # REUSED from R2 (same fresh mes-0.27.1): mes stdarg.h -> SysV under __TINYC__ (shadows tcc's own),
     # and the basic-asm setjmp rewrite.  See the header note above for why these two survive but the
     # mescc-fix patches do not.

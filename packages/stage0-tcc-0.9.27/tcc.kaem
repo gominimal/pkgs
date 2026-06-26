@@ -57,6 +57,12 @@ simple-patch ${TCC_PKG}/tccelf.c check-reloc-null.before check-reloc-null.after
 simple-patch ${TCC_PKG}/tccgen.c ignore-static-inside-array.before ignore-static-inside-array.after
 simple-patch ${TCC_PKG}/tcctools.c dont-skip-weak-symbols-ar.before dont-skip-weak-symbols-ar.after
 simple-patch ${TCC_PKG}/libtcc.c static-link.before static-link.after
+# [R3 amd64 fix 2026-06-26] tccgen.c case '-': direct-negate a float CONSTANT instead of the IEEE
+# subtract(-0,x) path that tcc-0.9.26 miscompiles on amd64. WITHOUT this, a negated float literal in a
+# static initializer (musl's math coefficient tables: -0x1.62e42...p-8) is rejected "initializer element
+# is not constant" -> SIGSEGV, crashing 48 of musl's math .c files (the R4 math wall). Root-caused via a
+# local amd64-container tcc harness: gcc-built tcc-0.9.27 compiles it fine, our mes-chain-built one does not.
+simple-patch ${TCC_PKG}/tccgen.c neg-float-const.before neg-float-const.after
 
 # empty config.h for both trees (BOOTSTRAP/HAVE_* defines arrive via -D, not config.h).
 catm ${TCC_PKG}/config.h
