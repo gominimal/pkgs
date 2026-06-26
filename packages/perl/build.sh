@@ -20,14 +20,14 @@ export CXXFLAGS="${CFLAGS}"
 # which feeds $config_tag1 (perlbug/perlthanks) and the "Configuration time" line
 # in Config_heavy.pl. config.over is sourced AFTER all of Configure's computation
 # (perl's documented override hook), so pin cf_time/cf_by there instead.
-export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-0}"
-CF_TIME="$(LC_ALL=C TZ=UTC date -u -d "@$SOURCE_DATE_EPOCH" 2>/dev/null || echo 'Thu Jan  1 00:00:00 UTC 1970')"
+# The sandbox already exports SOURCE_DATE_EPOCH=0 — read it (with a fallback), don't re-set it.
+CF_TIME="$(LC_ALL=C TZ=UTC date -u -d "@${SOURCE_DATE_EPOCH:-0}" 2>/dev/null || echo 'Thu Jan  1 00:00:00 UTC 1970')"
 # Configure also bakes the build host's nodename (in the sandbox a per-build
 # `minimal-<pid>` hostname) into several Config fields: myuname (the "Target
 # system" line, via `uname -a`), myhostname, and the derived cf_email/perladmin.
 # config.over is sourced after all computation, so pin every host-derived field
 # here. myuname keeps the real kernel info with just the nodename sanitized.
-MYUNAME="$(uname -a | sed "s/$(uname -n)/builder/g" | tr '[:upper:]' '[:lower:]' | sed 's#/##g')"
+MYUNAME="$(uname -a | awk '{$2="builder"; print}' | tr '[:upper:]' '[:lower:]' | tr -d '/')"
 cat > config.over <<EOF
 cf_time='$CF_TIME'
 cf_by='builder'
