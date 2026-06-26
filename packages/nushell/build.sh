@@ -42,10 +42,9 @@ int getentropy(void *buf, size_t len) {
 }
 CEOF
 gcc -shared -fPIC -O2 -o /tmp/libdetrand.so /tmp/detrand.c
-export LD_PRELOAD=/tmp/libdetrand.so
 
-cargo build --release
-unset LD_PRELOAD
+# Scope the shim to the cargo build only — no global export/unset window.
+LD_PRELOAD=/tmp/libdetrand.so cargo build --release
 
 mkdir -p $OUTPUT_DIR/usr/bin
 install -m 755 target/release/nu $OUTPUT_DIR/usr/bin/nu
