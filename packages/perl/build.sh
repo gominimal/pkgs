@@ -20,7 +20,7 @@ export CXXFLAGS="${CFLAGS}"
 # which feeds $config_tag1 (perlbug/perlthanks) and the "Configuration time" line
 # in Config_heavy.pl. config.over is sourced AFTER all of Configure's computation
 # (perl's documented override hook), so pin cf_time/cf_by there instead.
-# The sandbox already exports SOURCE_DATE_EPOCH=0 — read it (with a fallback), don't re-set it.
+# The sandbox already exports SOURCE_DATE_EPOCH — read it (with a fallback), don't re-set it.
 CF_TIME="$(LC_ALL=C TZ=UTC date -u -d "@${SOURCE_DATE_EPOCH:-0}" 2>/dev/null || echo 'Thu Jan  1 00:00:00 UTC 1970')"
 # Configure also bakes the build host's nodename (in the sandbox a per-build
 # `minimal-<pid>` hostname) into several Config fields: myuname (the "Target
