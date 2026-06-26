@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
-# musl-crt-diag v15 — the FINALLY-identified untested construct. v13 ruled out constructs, v14 ruled out
-# size. The real exp_data.tab is full of LARGE UNSUFFIXED hex integers with bit 63 set (0xbc7160139cd8dc5d,
-# 0x3ff0000000000000) — and EVERY one of my prior reconstructions used small / ull-suffixed / decimal
-# values, NEVER a large unsuffixed hex. On amd64 (LONG_SIZE=8) such a constant lexes to TOK_CLONG/CULONG
-# (the `long` type, t = VT_LLONG|VT_LONG[|VT_UNSIGNED]); on i386 (LONG_SIZE=4) the SAME literal lexes to
-# CLLONG/CULLONG — so the `long`-constant path is amd64-ONLY, never exercised by live-bootstrap (i386). v15:
-#   (A) isolated: one/array of large UNSUFFIXED bit-63 hex vs the SAME with `ull` suffix; + bit-63-CLEAR
-#       (signed-fitting -> CLONG) to split signed-long vs unsigned-long.
-#   (B) REAL reduction: suffix every 16-hex-digit tab value in exp_data.i with `ull` (regex matches the
-#       uint64 tab entries, NOT the 0x1.xp hex floats) -> does it then COMPILE? (proves unsuffixed-hex).
+# musl-crt-diag v16 — STOP testing constructs; LOCALIZE. v13(constructs) v14(size) v15(hex-typing) all
+# wrong: nothing stripped from real exp_data.i compiles, no synthetic reproduces. Decisive cuts:
+#   (1) noinit   — remove the = {..} initializer from exp_data.i -> compiles? (crash in DECL/headers vs INIT)
+#   (2) faithful — self-contained clone: inline struct + the REAL init from exp_data.c, typedef uint64_t as
+#       `unsigned long` (musl's ACTUAL amd64 type — every prior u64 test used `unsigned long long`!). NO musl
+#       headers. crash here => reproducible+bisectable & it's the struct/init; OK => needs the musl header chain.
+#   (3) faithful_ull — same but uint64_t = `unsigned long long` -> does the typedef BASE TYPE (long vs longlong) matter?
+# Pins header-vs-init, struct-context, and unsigned-long-vs-longlong in one cycle.
 set +e
 set -u
 TCC=/usr/bin/tcc
@@ -17,7 +15,7 @@ SRC="musl-${VERSION}"; BUILDROOT="$(pwd)"
 OUTROOT=/build/output/usr/share/musl-crt-diag; WORK=/build/diag
 mkdir -p "$OUTROOT" "$WORK"; MANIFEST="$OUTROOT/MANIFEST.txt"
 emit(){ echo "$1"; echo "$1" >> "$WORK/rows.txt"; }
-emit "DIAG-INFO musl-crt-diag v15 CLONG-HEX — $("$TCC" -version 2>&1 | head -1)"
+emit "DIAG-INFO musl-crt-diag v16 LOCALIZE — $("$TCC" -version 2>&1 | head -1)"
 tar -xf "${SRC}.tar.gz" 2>/dev/null; cd "${SRC}" || { emit FATAL; exit 0; }
 for p in makefile madvise_preserve_errno avoid_sys_clone disable_ctype_headers skip-pic-crt drop-dynamic-crt amd64-va-list amd64-syscall-arch; do
   patch -Np1 -i "${BUILDROOT}/${p}.patch" >/dev/null 2>&1
@@ -30,30 +28,39 @@ FULL="-std=c99 -nostdinc -ffreestanding -fexcess-precision=standard -frounding-m
 cls(){ rc=$1; if [ "$rc" = 0 ]; then echo OK; elif [ "$rc" -gt 128 ] 2>/dev/null; then echo "CRASH(rc=$rc)"; else echo "err(rc=$rc)"; fi; }
 try(){ "$TCC" $FULL -c -o "$WORK/t.o" "$1" >"$WORK/t.err" 2>&1; cls $?; }
 
-# (A) isolated tests of the UNSUFFIXED large-hex (CLONG/CULONG) construct
-emit "DIAG-INFO ===== (A) unsuffixed large-hex (CLONG/CULONG) ====="
-printf 'unsigned long long x(void){return 0xbc7160139cd8dc5d;}\n' > "$WORK/a_one_ns.c"          # bit63 set, unsuffixed -> CULONG
-printf 'unsigned long long x(void){return 0xbc7160139cd8dc5dull;}\n' > "$WORK/a_one_su.c"        # same, suffixed -> CULLONG
-printf 'unsigned long long x(void){return 0x3c9b3b4f1a88bf6e;}\n' > "$WORK/a_one_clong.c"        # bit63 CLEAR, fits signed long -> CLONG
-printf 'static const unsigned long long t[8]={0x0,0x3ff0000000000000,0x3c9b3b4f1a88bf6e,0x3feff63da9fb3335,0xbc7160139cd8dc5d,0x3fefec9a3e778061,0xbc905e7a108766d1,0x3fefe315e86e7f85};unsigned long long g(int i){return t[i];}\n' > "$WORK/a_arr_ns.c"
-printf 'static const unsigned long long t[8]={0x0ull,0x3ff0000000000000ull,0x3c9b3b4f1a88bf6eull,0x3feff63da9fb3335ull,0xbc7160139cd8dc5dull,0x3fefec9a3e778061ull,0xbc905e7a108766d1ull,0x3fefe315e86e7f85ull};unsigned long long g(int i){return t[i];}\n' > "$WORK/a_arr_su.c"
-for t in a_one_ns a_one_su a_one_clong a_arr_ns a_arr_su; do emit "DIAG-HEX $t -> $(try "$WORK/$t.c")"; done
+emit "DIAG-LOC control exp_data.c -> $(try src/math/exp_data.c)"
 
-# (B) REAL-FILE reduction: suffix every 16-hex-digit value in exp_data.i with `ull`, recompile
-emit "DIAG-INFO ===== (B) real exp_data.i: suffix 16-digit hex with ull ====="
+# (1) noinit: strip the initializer from the real preprocessed file
 "$TCC" -E $FULL src/math/exp_data.c > "$WORK/exp.i" 2>/dev/null
-emit "DIAG-REAL exp_data.c (control) -> $(try src/math/exp_data.c)"
-sed -E 's/(0x[0-9a-fA-F]{16})/\1ull/g' "$WORK/exp.i" > src/math/_exp_ull.c
-emit "DIAG-REAL exp_data.i 16-hex-suffixed-ull -> $(try src/math/_exp_ull.c)   [OK => unsuffixed large hex IS the crash]"
-emit "DIAG-INFO (suffix count applied: $(grep -aoE '0x[0-9a-fA-F]{16}ull' src/math/_exp_ull.c | wc -l))"
+awk '/const struct exp_data __exp_data = \{/{print "const struct exp_data __exp_data;"; skip=1; next} skip&&/^\};/{skip=0; next} skip{next} {print}' "$WORK/exp.i" > src/math/_noinit.c
+emit "DIAG-LOC noinit (init removed) -> $(try src/math/_noinit.c)   [OK => crash is the INIT; CRASH => crash is DECL/headers]"
+
+# (2)(3) faithful self-contained clone (NO musl headers), with the REAL init body from exp_data.c
+PRE='#define EXP_TABLE_BITS 7
+#define EXP_POLY_ORDER 5
+#define EXP_USE_TOINT_NARROW 0
+#define EXP2_POLY_ORDER 5
+#define N (1 << EXP_TABLE_BITS)
+struct exp_data { double invln2N; double shift; double negln2hiN; double negln2loN; double poly[4]; double exp2_shift; double exp2_poly[EXP2_POLY_ORDER]; uint64_t tab[2*(1 << EXP_TABLE_BITS)]; };'
+{ echo 'typedef unsigned long uint64_t;'; echo "$PRE"; sed -n '/const struct exp_data __exp_data/,$p' src/math/exp_data.c; } > "$WORK/faithful.c"
+{ echo 'typedef unsigned long long uint64_t;'; echo "$PRE"; sed -n '/const struct exp_data __exp_data/,$p' src/math/exp_data.c; } > "$WORK/faithful_ull.c"
+emit "DIAG-LOC faithful (uint64_t=unsigned long,   NO musl hdrs) -> $(try "$WORK/faithful.c")"
+emit "DIAG-LOC faithful (uint64_t=unsigned long long, NO musl hdrs) -> $(try "$WORK/faithful_ull.c")"
+
+# bonus: if faithful crashes, try it with tab truncated to 8 (does shrinking the real tab help in-context?)
+if [ "$(try "$WORK/faithful.c")" != OK ]; then
+  awk 'BEGIN{n=0} /\.tab = \{/{print; intab=1; next} intab{ if($0 ~ /^\}/){intab=0;print "};";next} if(n<4){print; n++} ; next} {print}' "$WORK/faithful.c" | sed '$ s/$/\n/' > "$WORK/faithful_smalltab.c"
+  emit "DIAG-LOC faithful tab-truncated-to-~8 -> $(try "$WORK/faithful_smalltab.c")"
+fi
 
 cp "$WORK/rows.txt" "$OUTROOT/rows.txt.log" 2>/dev/null
+cp "$WORK/faithful.c" "$OUTROOT/faithful.c.log" 2>/dev/null
 cp "$TCC" "$OUTROOT/tcc-0.9.27" 2>/dev/null
 {
-  echo "============ musl-crt-diag v15 CLONG-HEX ============"
-  grep -E "DIAG-HEX|DIAG-REAL" "$WORK/rows.txt" 2>/dev/null
-  echo "READ: a_arr_ns CRASH + a_arr_su OK + DIAG-REAL ull-suffixed OK => tcc amd64 miscompiles UNSUFFIXED"
-  echo "      large hex (CLONG/CULONG). a_one_* says single-vs-array. Fix: tcc parse/CLONG path (R3 re-seal)."
-  echo "===================================================="
+  echo "============ musl-crt-diag v16 LOCALIZE ============"
+  grep -E "DIAG-LOC" "$WORK/rows.txt" 2>/dev/null
+  echo "READ: noinit OK => it's the INITIALIZER. faithful CRASH => reproducible self-contained (bisect it);"
+  echo "      faithful OK => needs musl header chain. faithful vs faithful_ull => unsigned long vs long long."
+  echo "==================================================="
 } | tee "$MANIFEST"
 exit 0
