@@ -11,6 +11,7 @@ let { BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 # Probe, not a trust rung: bash + set +e, never aborts, ALWAYS exits 0 with greppable rows + OutputData.
 # Pins are the EXACT R4 deps/patches/source so the crash reproduces faithfully.
 let stage0-tcc-r3 = import "../stage0-tcc-0.9.27/build.ncl" in # R3 — tcc-0.9.27 (the compiler under test = CC)
+let stage0-musl-r4 = import "../stage0-musl-1.1.24/build.ncl" in # R4 — SEALED musl libc.a + crt at /usr/lib (R5 link canary)
 let stage0-mes = import "../stage0-mes/build.ncl" in # R1 — mes headers for configure probes
 let bash = import "../bash/build.ncl" in # ./build.sh driver + the configure shell
 let make = import "../make/build.ncl" in # configure invokes it (we stop before the full make)
@@ -41,6 +42,7 @@ let version = "1.1.24" in
       extract = false,
     } | Source,
     stage0-tcc-r3,
+    stage0-musl-r4, # R4: /usr/lib/{libc.a,crt1.o,crti.o,crtn.o} + /usr/include/** (the R5 static-link target)
     stage0-mes,
     bash,
     make,
