@@ -103,7 +103,7 @@ make CROSS_COMPILE= CC="${BUILDROOT}/tcc-retry" AR="tcc -ar" RANLIB=true CFLAGS=
 # `-c` MUST stay disabled (it would fail "no properly formatted checksum lines").
 ###########################################################################
 cd "${OUTPUT_DIR}"
-# sha256sum -c "${BUILDROOT}/stage0.answers"   # re-enable after the 6 amd64 shas are pinned
+sha256sum -c "${BUILDROOT}/stage0.answers"   # SEALED 2026-06-26: 4 amd64 shas pinned; mismatch aborts (set -e)
 
 ###########################################################################
 # §D STAGING: every output went to DESTDIR=$OUTPUT_DIR, so build.ncl's `outputs` globs already

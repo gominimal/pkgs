@@ -10,13 +10,13 @@
 # PATHS = RELATIVE to $OUTPUT_DIR (build.sh does `cd "$OUTPUT_DIR"` before `sha256sum -c`), so the
 # check is independent of the sandbox's absolute $OUTPUT_DIR path.
 #
-# ── PIN HERE after the capture run (uncomment + fill, then re-enable the gate in build.sh) ──
-# <sha>  usr/lib/libc.a
-# <sha>  usr/lib/crt1.o
-# <sha>  usr/lib/crti.o
-# <sha>  usr/lib/crtn.o
-# <sha>  usr/lib/Scrt1.o
-# <sha>  usr/lib/rcrt1.o
+# ── PINNED 2026-06-26 (first green amd64 CS build, image 551dcab7; reproduced byte-identically) ──
+e12bb52caa7d870be51dd1246142044b95b7ee44a953e630805da6f1816d44ca  usr/lib/libc.a
+c5b1dbf178abecda16bfe7e4028fecd8ce975a2e45c9b09c2d34635f39574adb  usr/lib/crt1.o
+8c243a82aa43a9d72ff580c168c1627dbb7a64d43447f5d84a2f721b16c6db37  usr/lib/crti.o
+d6646d8b28bae17ff833effbed132fbf7eaacc592eac56f0931b8ec914f61237  usr/lib/crtn.o
+# Scrt1.o / rcrt1.o are NOT built (skip-pic-crt.patch: tcc-0.9.27 segfaults on the -fPIC %rip crt) —
+# the static bootstrap uses crt1.o only, so they are intentionally absent and not pinned.
 #
 # NOTE: the empty stub archives (libm/libpthread/librt/libdl/libcrypt/libresolv/libutil/libxnet.a)
 # are zero-byte `touch`ed files (makefile.patch) — all share the empty-file sha and are not pinned
