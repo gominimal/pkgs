@@ -86,6 +86,8 @@ let coreutils = import "../coreutils/build.ncl" in # /usr/bin/{cp,chmod,mkdir,sh
     # the constant instead. gcc-built tcc-0.9.27 doesn't need this; our mes-chain one does (amd64-net-new, Tier-3).
     { file = "neg-float-const.before" } | Local,
     { file = "neg-float-const.after" } | Local,
+    { file = "cast-signed-direct.before" } | Local,
+    { file = "cast-signed-direct.after" } | Local,
     # REUSED from R2 (same fresh mes-0.27.1): mes stdarg.h -> SysV under __TINYC__ (shadows tcc's own),
     # and the basic-asm setjmp rewrite.  See the header note above for why these two survive but the
     # mescc-fix patches do not.

@@ -63,6 +63,10 @@ simple-patch ${TCC_PKG}/libtcc.c static-link.before static-link.after
 # is not constant" -> SIGSEGV, crashing 48 of musl's math .c files (the R4 math wall). Root-caused via a
 # local amd64-container tcc harness: gcc-built tcc-0.9.27 compiles it fine, our mes-chain-built one does not.
 simple-patch ${TCC_PKG}/tccgen.c neg-float-const.before neg-float-const.after
+# [R3 amd64 fix] gen_cast signed-int->float: replace the `-(long double)-x` FP-negate trick (NaN under
+# tcc-0.9.26) with a direct signed cast. Cures (double)<neg int> folding to NaN -> the float*negint / pow_data
+# crashes. Found+fixed+validated via the local amd64 tcc-build harness (build patched tcc-0.9.27 with tcc-0.9.26).
+simple-patch ${TCC_PKG}/tccgen.c cast-signed-direct.before cast-signed-direct.after
 
 # empty config.h for both trees (BOOTSTRAP/HAVE_* defines arrive via -D, not config.h).
 catm ${TCC_PKG}/config.h
