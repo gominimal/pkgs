@@ -96,6 +96,11 @@ let version = "1.1.24" in
     # NO __builtin_va_list and SEGFAULTS on it (musl-crt-diag v4 pinned it: stdio.h -> the va_list
     # typedef -> crash). Define it under __TINYC__ via tcc-0.9.27's OWN SysV __va_list_struct mechanism.
     { file = "amd64-va-list.patch" } | Local,
+    # amd64-ONLY (net-new vs i386 live-bootstrap): rewrite __syscall4/5/6 in arch/x86_64/syscall_arch.h —
+    # tcc-0.9.27 cannot compile musl's GCC `register long r10 __asm__("r10")` arg-pinning; use explicit
+    # `movq %N,%%rN ; syscall`. src/env/__init_tls.o (SYS_mmap2, 6-arg) is the FIRST >=4-arg-syscall user
+    # in the build -> without this tcc SIGSEGVs there at compile time (proven via musl-crt-diag v22).
+    { file = "amd64-syscall-arch.patch" } | Local,
     {
       # upstream musl 1.1.24.  sha256 from live-bootstrap steps/musl-1.1.24/sources
       # (https://musl.libc.org/releases/musl-1.1.24.tar.gz); mirrored byte-identically to our
