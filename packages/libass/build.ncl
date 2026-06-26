@@ -10,14 +10,14 @@ let fribidi = import "../fribidi/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let harfbuzz = import "../harfbuzz/build.ncl" in
 
-let version = "0.17.4" in
+let version = "0.17.5" in
 {
   name = "libass",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/libass/libass/releases/download/%{version}/libass-%{version}.tar.gz",
-      sha256 = "a886b3b80867f437bc55cff3280a652bfa0d37b43d2aff39ddf3c4f288b8c5a8",
+      sha256 = "caab4b993dd7be6187c55623b789ed75dddefea6e65938af134637c732fe094a",
       extract = true,
       strip_prefix = "libass-%{version}",
     } | Source,
