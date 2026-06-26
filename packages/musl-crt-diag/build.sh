@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# musl-crt-diag v14 — pin the math SIZE THRESHOLD. v13 ruled out the constructs: every reconstruction
-# (designators, hex-float arith, long-double arrays, the faithful exp_data mini) COMPILES, and stripping
-# designators AND arithmetic from the real exp_data.i BOTH still crash. The only thing separating compiling
-# d_full (tab[4]) from crashing exp_data (tab[256], ~270 initializers) is SIZE. Striking clue: tcc.h
-# VSTACK_SIZE=256 and exp_data.tab is EXACTLY 256 (2*(1<<7)). v14 sweeps aggregate-initializer element-count
-# (dense around 256) for both double and uint64 arrays to find the exact OK->CRASH boundary:
-#   threshold == 256 => tcc value-stack overflow on large flat initializers (front-end, VSTACK_SIZE).
-#   threshold ~ a byte size => data-section / alloc. double-only crash => FP-constant path.
-# set +e, exit 0, OutputData.
+# musl-crt-diag v15 — the FINALLY-identified untested construct. v13 ruled out constructs, v14 ruled out
+# size. The real exp_data.tab is full of LARGE UNSUFFIXED hex integers with bit 63 set (0xbc7160139cd8dc5d,
+# 0x3ff0000000000000) — and EVERY one of my prior reconstructions used small / ull-suffixed / decimal
+# values, NEVER a large unsuffixed hex. On amd64 (LONG_SIZE=8) such a constant lexes to TOK_CLONG/CULONG
+# (the `long` type, t = VT_LLONG|VT_LONG[|VT_UNSIGNED]); on i386 (LONG_SIZE=4) the SAME literal lexes to
+# CLLONG/CULLONG — so the `long`-constant path is amd64-ONLY, never exercised by live-bootstrap (i386). v15:
+#   (A) isolated: one/array of large UNSUFFIXED bit-63 hex vs the SAME with `ull` suffix; + bit-63-CLEAR
+#       (signed-fitting -> CLONG) to split signed-long vs unsigned-long.
+#   (B) REAL reduction: suffix every 16-hex-digit tab value in exp_data.i with `ull` (regex matches the
+#       uint64 tab entries, NOT the 0x1.xp hex floats) -> does it then COMPILE? (proves unsuffixed-hex).
 set +e
 set -u
 TCC=/usr/bin/tcc
@@ -16,7 +17,7 @@ SRC="musl-${VERSION}"; BUILDROOT="$(pwd)"
 OUTROOT=/build/output/usr/share/musl-crt-diag; WORK=/build/diag
 mkdir -p "$OUTROOT" "$WORK"; MANIFEST="$OUTROOT/MANIFEST.txt"
 emit(){ echo "$1"; echo "$1" >> "$WORK/rows.txt"; }
-emit "DIAG-INFO musl-crt-diag v14 SIZE-THRESHOLD — $("$TCC" -version 2>&1 | head -1)"
+emit "DIAG-INFO musl-crt-diag v15 CLONG-HEX — $("$TCC" -version 2>&1 | head -1)"
 tar -xf "${SRC}.tar.gz" 2>/dev/null; cd "${SRC}" || { emit FATAL; exit 0; }
 for p in makefile madvise_preserve_errno avoid_sys_clone disable_ctype_headers skip-pic-crt drop-dynamic-crt amd64-va-list amd64-syscall-arch; do
   patch -Np1 -i "${BUILDROOT}/${p}.patch" >/dev/null 2>&1
@@ -27,36 +28,32 @@ CC=tcc ./configure --host=x86_64 --disable-shared --prefix=/usr --libdir=/usr/li
 make obj/include/bits/alltypes.h obj/include/bits/syscall.h >/dev/null 2>&1
 FULL="-std=c99 -nostdinc -ffreestanding -fexcess-precision=standard -frounding-math -Wa,--noexecstack -D_XOPEN_SOURCE=700 -I./arch/x86_64 -I./arch/generic -Iobj/src/internal -I./src/include -I./src/internal -Iobj/include -I./include -Os -pipe -fomit-frame-pointer -fno-unwind-tables -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections -DSYSCALL_NO_TLS -fno-stack-protector"
 cls(){ rc=$1; if [ "$rc" = 0 ]; then echo OK; elif [ "$rc" -gt 128 ] 2>/dev/null; then echo "CRASH(rc=$rc)"; else echo "err(rc=$rc)"; fi; }
+try(){ "$TCC" $FULL -c -o "$WORK/t.o" "$1" >"$WORK/t.err" 2>&1; cls $?; }
 
-# generate `const <type> a[K] = {K distinct values};` and compile it.
-gen_try(){ K=$1; TYPE="$2"; SUF="$3"
-  awk -v k="$K" -v t="$TYPE" -v s="$SUF" 'BEGIN{printf "const %s a[%d]={", t, k; for(i=0;i<k;i++) printf "%s%d%s",(i?",":""),i+1,s; print "};"}' > "$WORK/sz.c"
-  "$TCC" $FULL -c -o "$WORK/sz.o" "$WORK/sz.c" >/dev/null 2>&1; cls $?
-}
+# (A) isolated tests of the UNSUFFIXED large-hex (CLONG/CULONG) construct
+emit "DIAG-INFO ===== (A) unsuffixed large-hex (CLONG/CULONG) ====="
+printf 'unsigned long long x(void){return 0xbc7160139cd8dc5d;}\n' > "$WORK/a_one_ns.c"          # bit63 set, unsuffixed -> CULONG
+printf 'unsigned long long x(void){return 0xbc7160139cd8dc5dull;}\n' > "$WORK/a_one_su.c"        # same, suffixed -> CULLONG
+printf 'unsigned long long x(void){return 0x3c9b3b4f1a88bf6e;}\n' > "$WORK/a_one_clong.c"        # bit63 CLEAR, fits signed long -> CLONG
+printf 'static const unsigned long long t[8]={0x0,0x3ff0000000000000,0x3c9b3b4f1a88bf6e,0x3feff63da9fb3335,0xbc7160139cd8dc5d,0x3fefec9a3e778061,0xbc905e7a108766d1,0x3fefe315e86e7f85};unsigned long long g(int i){return t[i];}\n' > "$WORK/a_arr_ns.c"
+printf 'static const unsigned long long t[8]={0x0ull,0x3ff0000000000000ull,0x3c9b3b4f1a88bf6eull,0x3feff63da9fb3335ull,0xbc7160139cd8dc5dull,0x3fefec9a3e778061ull,0xbc905e7a108766d1ull,0x3fefe315e86e7f85ull};unsigned long long g(int i){return t[i];}\n' > "$WORK/a_arr_su.c"
+for t in a_one_ns a_one_su a_one_clong a_arr_ns a_arr_su; do emit "DIAG-HEX $t -> $(try "$WORK/$t.c")"; done
 
-emit "DIAG-INFO ===== double[] element-count sweep (dense around 256) ====="
-for K in 32 64 128 200 250 254 255 256 257 258 260 300 384 512; do
-  emit "DIAG-SZ double[$K] -> $(gen_try $K double .5)"
-done
-emit "DIAG-INFO ===== unsigned long long[] sweep (same K) ====="
-for K in 64 200 254 255 256 257 260 300 512; do
-  emit "DIAG-SZ u64[$K] -> $(gen_try $K 'unsigned long long' ull)"
-done
-# also: NESTED like exp_data (struct{double sc; T big[K];}) — does nesting shift the threshold?
-emit "DIAG-INFO ===== nested struct{double; double big[K];} sweep ====="
-for K in 250 254 255 256 260; do
-  awk -v k="$K" 'BEGIN{printf "struct S{double sc;double big[%d];};const struct S s={1.0,{",k; for(i=0;i<k;i++) printf "%s%d.5",(i?",":""),i+1; print "}};"}' > "$WORK/ns.c"
-  "$TCC" $FULL -c -o "$WORK/ns.o" "$WORK/ns.c" >/dev/null 2>&1; emit "DIAG-SZ nested.big[$K] -> $(cls $?)"
-done
+# (B) REAL-FILE reduction: suffix every 16-hex-digit value in exp_data.i with `ull`, recompile
+emit "DIAG-INFO ===== (B) real exp_data.i: suffix 16-digit hex with ull ====="
+"$TCC" -E $FULL src/math/exp_data.c > "$WORK/exp.i" 2>/dev/null
+emit "DIAG-REAL exp_data.c (control) -> $(try src/math/exp_data.c)"
+sed -E 's/(0x[0-9a-fA-F]{16})/\1ull/g' "$WORK/exp.i" > src/math/_exp_ull.c
+emit "DIAG-REAL exp_data.i 16-hex-suffixed-ull -> $(try src/math/_exp_ull.c)   [OK => unsuffixed large hex IS the crash]"
+emit "DIAG-INFO (suffix count applied: $(grep -aoE '0x[0-9a-fA-F]{16}ull' src/math/_exp_ull.c | wc -l))"
 
 cp "$WORK/rows.txt" "$OUTROOT/rows.txt.log" 2>/dev/null
 cp "$TCC" "$OUTROOT/tcc-0.9.27" 2>/dev/null
 {
-  echo "============ musl-crt-diag v14 SIZE-THRESHOLD ============"
-  grep -E "DIAG-SZ" "$WORK/rows.txt" 2>/dev/null
-  echo "READ: the OK->CRASH boundary K is the threshold. ==256 => VSTACK_SIZE overflow (front-end, flat init);"
-  echo "      a byte-size boundary => data-section/alloc; double-crashes-but-u64-ok => FP-constant path."
-  echo "      Fix follows: tcc VSTACK_SIZE bump / init-loop fix (R3 re-seal) vs a musl table-split workaround."
-  echo "========================================================="
+  echo "============ musl-crt-diag v15 CLONG-HEX ============"
+  grep -E "DIAG-HEX|DIAG-REAL" "$WORK/rows.txt" 2>/dev/null
+  echo "READ: a_arr_ns CRASH + a_arr_su OK + DIAG-REAL ull-suffixed OK => tcc amd64 miscompiles UNSUFFIXED"
+  echo "      large hex (CLONG/CULONG). a_one_* says single-vs-array. Fix: tcc parse/CLONG path (R3 re-seal)."
+  echo "===================================================="
 } | tee "$MANIFEST"
 exit 0
