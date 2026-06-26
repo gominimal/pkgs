@@ -24,10 +24,19 @@ done
 # e2fsprogs is a build-only dependency: it provides mke2fs to pack the image
 # below (invoked from the build sandbox PATH, not from $STAGE), but the guest
 # never needs it at runtime. Drop its staged files so the runtime image carries
-# only the runtime closure. The symlink guard skips a usr-merged /usr/sbin.
-if [ -d "$STAGE/usr/sbin" ] && [ ! -L "$STAGE/usr/sbin" ]; then
-  rm -rf "$STAGE/usr/sbin"
-fi
+# only the runtime closure. Remove e2fsprogs's sbin tools by name rather than
+# nuking usr/sbin wholesale: iproute2 installs `ip` (and ss/tc/bridge) there
+# (SBINDIR=/usr/sbin) and util-linux installs its sbin tools there too — all
+# runtime deps that must survive into the guest. The list is e2fsprogs-EXCLUSIVE:
+# blkid, findfs, fsck and uuidd are deliberately omitted because util-linux also
+# ships those names and its copies are the ones we keep. rm -f tolerates names
+# this e2fsprogs config happens not to build.
+for tool in badblocks debugfs dumpe2fs e2freefrag e2fsck e2image e2label \
+            e2mmpstatus e2scrub e2scrub_all e2undo e4crypt filefrag fsck.ext2 \
+            fsck.ext3 fsck.ext4 logsave mke2fs mkfs.ext2 mkfs.ext3 mkfs.ext4 \
+            mklost+found resize2fs tune2fs; do
+  rm -f "$STAGE/usr/sbin/$tool"
+done
 rm -f "$STAGE"/usr/bin/chattr "$STAGE"/usr/bin/lsattr "$STAGE"/usr/bin/uuidgen \
       "$STAGE"/usr/bin/compile_et "$STAGE"/usr/bin/mk_cmds
 # Note: `libss.so*` (not `libss*.so*`) — the latter also matches openssl's
