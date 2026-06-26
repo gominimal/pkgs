@@ -5,6 +5,15 @@ let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let version = "2.19.0" in
 
+# Resolve the *target* arch (not the build host's `uname -m`) so build.sh
+# references the same installer that build_deps stages. Passed via MINIMAL_ARG_ARCH.
+let target_arch =
+  match {
+    { arch = 'Amd64, .. } => "amd64",
+    { arch = 'Arm64, .. } => "arm64",
+  } target
+in
+
 let { amd64_sha256, arm64_sha256 } = {
   amd64_sha256 = "e660e312df0faa8fe319a98bc19244f3b741c9e65576a1be20bd95ec03857dbc",
   arm64_sha256 = "48f523fefcf5f1b40954a6524ce70b6b540241d88a7043c40ec01e2832dd0a49",
@@ -38,6 +47,7 @@ in
   cmd = "./build.sh",
   build_args = {
     include version,
+    arch = target_arch,
   },
 
   outputs = {
@@ -51,7 +61,11 @@ in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "test -x /usr/bin/edgedelta"],
-          ["/bin/bash", "-c", "/usr/bin/edgedelta -v || /usr/bin/edgedelta -version || /usr/bin/edgedelta --help || true"],
+          # Usability: the binary must actually execute. The exit code of
+          # --version is irrelevant; we fail only if the kernel can't run it
+          # (126/127) or it dies on a signal (>=128) -- i.e. a wrong-arch,
+          # corrupt, or mis-extracted binary.
+          ["/bin/bash", "-c", "/usr/bin/edgedelta --version >/dev/null 2>&1; rc=$?; [ $rc -lt 126 ]"],
         ],
       } | Test,
   },

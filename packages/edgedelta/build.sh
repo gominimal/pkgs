@@ -1,13 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-case "$(uname -m)" in
-  x86_64)  ARCH="amd64" ;;
-  aarch64) ARCH="arm64" ;;
-  *)       echo "unsupported architecture: $(uname -m)" >&2; exit 1 ;;
-esac
-
-installer="edgedelta-linux-${ARCH}.sh"
+# Use the resolved target arch from build.ncl (MINIMAL_ARG_ARCH) rather than the
+# build host's `uname -m`, so the correct installer is referenced on cross-builds.
+installer="edgedelta-linux-${MINIMAL_ARG_ARCH}.sh"
 
 # The installer is a Makeself self-extracting archive that, when run, would
 # create a system user, install a service and start the agent. We don't want
