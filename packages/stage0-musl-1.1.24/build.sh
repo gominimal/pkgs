@@ -30,6 +30,7 @@ patch -Np1 -i "${BUILDROOT}/disable_ctype_headers.patch"  # drop iswalpha/… de
 patch -Np1 -i "${BUILDROOT}/skip-pic-crt.patch"           # amd64: skip Scrt1.o/rcrt1.o (tcc segfaults on -fPIC %rip crt)
 patch -Np1 -i "${BUILDROOT}/drop-dynamic-crt.patch"       # amd64: drop _DYNAMIC lea from crt_arch.h (tcc asm segfault on weak+hidden %rip)
 patch -Np1 -i "${BUILDROOT}/amd64-va-list.patch"          # amd64: define __builtin_va_list (tcc-0.9.27 segfaults on it) via tcc's SysV __va_list_struct
+patch -Np1 -i "${BUILDROOT}/amd64-syscall-arch.patch"     # amd64: rewrite __syscall4/5/6 — tcc-0.9.27 can't do GCC `register long r10 __asm__("r10")`; use explicit movq %N,%%r10. __init_tls (SYS_mmap2, 6-arg) is the FIRST __syscall6 user → without this it SIGSEGVs tcc at compile time.
 
 # meslibc/tcc cannot regenerate the ctype tables or iconv, and tcc has no _Complex — drop the
 # consumers exactly as live-bootstrap pass1 does (these are the `rm`s that pair with
@@ -65,29 +66,22 @@ CC=tcc ./configure \
 #     AR="tcc -ar" / RANLIB=true because no binutils exists yet; CFLAGS=-DSYSCALL_NO_TLS matches
 #     live-bootstrap (errno without TLS in the early/tcc context).  NO -march/-O/gcc-isms (tcc would
 #     reject them); musl's configure supplies its own CFLAGS. ---
-# [amd64 arena-lottery / PERTURBING retry 2026-06-26] tcc-0.9.27 runs on mes-libc, whose allocator
-# SIGSEGVs on SOME per-file compiles in the CS sandbox. CRUCIAL refinement: in CS this is NOT a
-# per-RUN coin flip (ASLR is effectively off) — it is DETERMINISTIC per exact invocation CONTEXT
-# (argv / -o path / cwd / env layout). Proof (musl-crt-diag v20/v21/v22): the SAME sealed tcc compiles
-# src/env/__init_tls.c fine with a short -o path but SIGSEGVs 20/20 with make's exact `-o
-# obj/src/env/__init_tls.o` — and a naive "re-run the identical argv" wrapper therefore loops forever
-# (it reproduces the identical crashing layout every time; that is why the old 20/20 wrapper failed).
-# The cure is to PERTURB the memory layout each retry until it lands in a non-crashing one. We pad the
-# environment with a dummy var of growing length: this shifts the argv/env block at the top of the
-# initial stack (and thus the whole layout below it) WITHOUT touching anything tcc reads — codegen is
-# identical, so the emitted .o is byte-for-byte the same regardless of the padding (v22 verifies two
-# different landing pads produce an IDENTICAL sha). Seal preserved. R4 is the LAST rung on mes-libc
-# (R5+ runs on the musl we build here), so this wrapper is the final appearance of the lottery.
+# [amd64 arena-lottery retry 2026-06-26] tcc-0.9.27 runs on the mes-libc whose allocator can SIGSEGV
+# ~randomly on a per-file compile in the CS sandbox (the documented R2/R3 arena lottery — output is
+# byte-IDENTICAL on success). NB: the src/env/__init_tls.o "deterministic crash" earlier this session was
+# NOT this lottery — it was the missing amd64-syscall-arch patch above (tcc can't compile musl's
+# `register __asm__("r10")` __syscall4/5/6, and __init_tls is the first 6-arg-syscall user). That is now
+# fixed at the source. This simple per-file retry remains only as insurance for the genuine occasional
+# lottery: re-run the exact compile on signal-death until it lands; determinism of the output preserves
+# the byte-identity seal. Wrap the REAL tcc under a different name so there is no recursion.
 REALTCC="$(command -v tcc)"
 cat > "${BUILDROOT}/tcc-retry" <<WRAP
 #!/bin/sh
-# perturb env-padding length each attempt to shift the mes-libc/stack layout off the crashing one
 i=0
-while [ \$i -lt 120 ]; do
-  PAD=\$(awk "BEGIN{for(j=0;j<\$i*16;j++)printf \"x\"}")
-  env _MESPAD="\$PAD" "${REALTCC}" "\$@"; rc=\$?
+while [ \$i -lt 20 ]; do
+  "${REALTCC}" "\$@"; rc=\$?
   [ \$rc -le 128 ] && exit \$rc
-  i=\$((i+1)); echo "tcc-retry: signal-death rc=\$rc, perturb attempt \$i (pad=\$((i*16))) -> \$*" >&2
+  i=\$((i+1)); echo "tcc-retry: signal-death rc=\$rc, attempt \$i/20 -> \$*" >&2
 done
 exit \$rc
 WRAP
