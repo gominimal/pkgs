@@ -7,6 +7,7 @@ let make = import "../make/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+let openjpeg = import "../openjpeg/build.ncl" in
 
 # TODO: This doesn't install the opencv_contrib, which has a LOT of the useful stuff. Implement that.
 # See:
@@ -18,7 +19,7 @@ let version = "4.13.0" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://github.com/opencv/opencv/archive/refs/tags/4.12.0.tar.gz
+      # https://github.com/opencv/opencv/archive/refs/tags/4.13.0.tar.gz
       url = "gs://minimal-staging-archives/opencv-%{version}.tar.gz",
       sha256 = "1d40ca017ea51c533cf9fd5cbde5b5fe7ae248291ddf2af99d4c17cf8e13017d",
       extract = true,
@@ -27,11 +28,16 @@ let version = "4.13.0" in
     toolchain,
     cmake,
     make,
+    # System openjpeg for JPEG2000 (find_package(OpenJPEG) at configure
+    # time); replaces opencv's bundled 3rdparty/openjpeg. See build.sh.
+    openjpeg,
   ],
   runtime_deps = [
     glibc,
     subsetOf gcc ["libgcc", "libstdcpp"],
     zlib,
+    # opencv's imgcodecs dynamically links libopenjp2.so at runtime.
+    openjpeg,
   ],
 
   cmd = "./build.sh",
