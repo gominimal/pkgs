@@ -32,6 +32,10 @@ if [ -f cabal.config ]; then
   sed -i '/Cabal-syntax ==/d' cabal.config
 fi
 
+# Pin cabal index-state to the release date of stack 3.9.3
+# to ensure build reproducibility and prevent dependency version drift.
+echo "index-state: 2026-02-20T00:00:00Z" > cabal.project.local
+
 cabal update
 cabal build
 

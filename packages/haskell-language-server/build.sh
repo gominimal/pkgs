@@ -8,6 +8,10 @@ export GHC="$(command -v ghc)"
 export CABAL="$(command -v cabal)"
 
 # Update cabal package index
+# Pin cabal index-state to the release date of haskell-language-server 2.14.0.0
+# to ensure build reproducibility and prevent dependency version drift.
+echo "index-state: 2026-04-28T00:00:00Z" > cabal.project.local
+
 cabal update
 
 # Build HLS with the available GHC version
