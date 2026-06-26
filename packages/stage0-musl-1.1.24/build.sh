@@ -61,43 +61,33 @@ CC=tcc ./configure \
     --libdir=/usr/lib \
     --includedir=/usr/include
 
-# [amd64 -Werror strip 2026-06-26] musl's configure adds `-Werror=implicit-function-declaration
-# -Werror=implicit-int -Werror=pointer-sign -Werror=pointer-arith` to CFLAGS_AUTO (configure lines
-# 503-506) because tcc ACCEPTS the flags. But src/env/__init_tls.c trips one of these warnings under
-# tcc in the CS sandbox, and -Werror promotes it to an ERROR — and tcc's error path (unlike its
-# warning path) does NOT honor -w, so it calls the mes-libc varargs formatter, which SIGSEGVs (the
-# "error-varargs masker": mes-libc's vsnprintf crashes on tcc's diagnostic args). Result: a
-# DETERMINISTIC SIGSEGV compiling __init_tls.o, but ONLY in CS — local Rosetta emulation neither fires
-# the warning nor crashes the formatter, so it was invisible on the laptop (confirmed via musl-crt-diag
-# v20/v21: no-Werror=OK, +Werror=CRASH, Werror-stripped=OK, same sealed tcc eb22a8fd). -Werror only
-# promotes diagnostics; stripping it changes NO codegen (the .o is byte-identical), so byte-identity is
-# preserved. The warnings are tcc pedantry on known-good musl source (-w already suppresses them).
-sed -i 's/-Werror=[A-Za-z=-]*//g' config.mak
-
 # --- compile + install.  CROSS_COMPILE= blanks the x86_64- prefix configure would add to AR/RANLIB;
 #     AR="tcc -ar" / RANLIB=true because no binutils exists yet; CFLAGS=-DSYSCALL_NO_TLS matches
 #     live-bootstrap (errno without TLS in the early/tcc context).  NO -march/-O/gcc-isms (tcc would
 #     reject them); musl's configure supplies its own CFLAGS. ---
-# [amd64 arena-lottery 2026-06-26] tcc-0.9.27 runs on the mes-libc whose allocator layout makes it
-# SIGSEGV ~randomly on some per-file compiles in the CS sandbox (the arena lottery — NONdeterministic
-# WHETHER it crashes, but the .o is byte-IDENTICAL on success; cf. R2/R3 lottery). The full 1900-file
-# `make` therefore stops at a random file (locally 0/10, in CS it hit src/env/__init_tls.o). R4 is the
-# LAST rung on mes-libc (R5+ runs on the musl we are building here), so a per-file RETRY wrapper cures it
-# cleanly: re-run the exact compile on signal-death until it lands. Output determinism preserves the
-# byte-identity seal. Wrap the REAL tcc (resolved now) under a different name so there is no recursion.
-# NB: the __init_tls.o "deterministic CS-only SIGSEGV" was NOT a resource limit (CS ulimits are all
-# unlimited) and NOT real-HW-specific codegen — it was the -Werror error-formatter crash, cured by the
-# `sed -i 's/-Werror=...//' config.mak` above (see that block). The retry wrapper below remains for the
-# genuine arena lottery (mes-libc allocator SIGSEGVs ~randomly on SOME per-file compiles; output is
-# byte-identical on success, so re-running the exact compile until it lands preserves the seal).
+# [amd64 arena-lottery / PERTURBING retry 2026-06-26] tcc-0.9.27 runs on mes-libc, whose allocator
+# SIGSEGVs on SOME per-file compiles in the CS sandbox. CRUCIAL refinement: in CS this is NOT a
+# per-RUN coin flip (ASLR is effectively off) — it is DETERMINISTIC per exact invocation CONTEXT
+# (argv / -o path / cwd / env layout). Proof (musl-crt-diag v20/v21/v22): the SAME sealed tcc compiles
+# src/env/__init_tls.c fine with a short -o path but SIGSEGVs 20/20 with make's exact `-o
+# obj/src/env/__init_tls.o` — and a naive "re-run the identical argv" wrapper therefore loops forever
+# (it reproduces the identical crashing layout every time; that is why the old 20/20 wrapper failed).
+# The cure is to PERTURB the memory layout each retry until it lands in a non-crashing one. We pad the
+# environment with a dummy var of growing length: this shifts the argv/env block at the top of the
+# initial stack (and thus the whole layout below it) WITHOUT touching anything tcc reads — codegen is
+# identical, so the emitted .o is byte-for-byte the same regardless of the padding (v22 verifies two
+# different landing pads produce an IDENTICAL sha). Seal preserved. R4 is the LAST rung on mes-libc
+# (R5+ runs on the musl we build here), so this wrapper is the final appearance of the lottery.
 REALTCC="$(command -v tcc)"
 cat > "${BUILDROOT}/tcc-retry" <<WRAP
 #!/bin/sh
+# perturb env-padding length each attempt to shift the mes-libc/stack layout off the crashing one
 i=0
-while [ \$i -lt 20 ]; do
-  "${REALTCC}" "\$@"; rc=\$?
+while [ \$i -lt 120 ]; do
+  PAD=\$(awk "BEGIN{for(j=0;j<\$i*16;j++)printf \"x\"}")
+  env _MESPAD="\$PAD" "${REALTCC}" "\$@"; rc=\$?
   [ \$rc -le 128 ] && exit \$rc
-  i=\$((i+1)); echo "tcc-retry: signal-death rc=\$rc, attempt \$i/20 -> \$*" >&2
+  i=\$((i+1)); echo "tcc-retry: signal-death rc=\$rc, perturb attempt \$i (pad=\$((i*16))) -> \$*" >&2
 done
 exit \$rc
 WRAP

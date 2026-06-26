@@ -24,34 +24,56 @@ rm src/ctype/iswalpha.c src/ctype/iswalnum.c src/ctype/iswctype.c src/ctype/towc
 rm include/iconv.h src/locale/iconv.c src/locale/iconv_close.c 2>/dev/null; rm -rf src/complex 2>/dev/null
 CC=tcc ./configure --host=x86_64 --disable-shared --prefix=/usr --libdir=/usr/lib --includedir=/usr/include >/dev/null 2>&1
 make obj/include/bits/alltypes.h obj/include/bits/syscall.h >/dev/null 2>&1
-# the EXACT real flags for __init_tls.o (incl -fno-stack-protector)
-FULL="-std=c99 -nostdinc -ffreestanding -fexcess-precision=standard -frounding-math -Wa,--noexecstack -D_XOPEN_SOURCE=700 -I./arch/x86_64 -I./arch/generic -Iobj/src/internal -I./src/include -I./src/internal -Iobj/include -I./include -Os -pipe -fomit-frame-pointer -fno-unwind-tables -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections -DSYSCALL_NO_TLS -w -fno-stack-protector"
+# v22: -Werror REFUTED (v21: all combos OK in the probe). The crash is INVOCATION-CONTEXT sensitive — the
+# only delta vs the real `make` is the -o PATH / cwd / env layout (mes-libc arena, ASLR-off-deterministic).
+# Reproduce via the EXACT make -o path, then sweep perturbations to find what lands it.
+MK="-std=c99 -nostdinc -ffreestanding -fexcess-precision=standard -frounding-math -Wa,--noexecstack -D_XOPEN_SOURCE=700 -I./arch/x86_64 -I./arch/generic -Iobj/src/internal -I./src/include -I./src/internal -Iobj/include -I./include -Os -pipe -fomit-frame-pointer -fno-unwind-tables -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections -Werror=implicit-function-declaration -Werror=implicit-int -Werror=pointer-sign -Werror=pointer-arith -DSYSCALL_NO_TLS -w -fno-stack-protector"
 cls(){ rc=$1; if [ "$rc" = 0 ]; then echo OK; elif [ "$rc" -gt 128 ] 2>/dev/null; then echo "CRASH(rc=$rc)"; else echo "err(rc=$rc)"; fi; }
 F=src/env/__init_tls.c
+mkdir -p obj/src/env
 
-# What CS configure actually produced (does it add -Werror? local emulation did NOT):
-emit "DIAG-CFG CFLAGS_AUTO = $(grep -E '^CFLAGS_AUTO' config.mak 2>/dev/null | head -1)"
-WERR="-Werror=implicit-function-declaration -Werror=implicit-int -Werror=pointer-sign -Werror=pointer-arith"
+# REPRO: the EXACT make -o path, from the musl cwd
+"$TCC" $MK -c -o obj/src/env/__init_tls.o "$F" >/dev/null 2>&1; emit "DIAG-RC repro: -o obj/src/env/__init_tls.o (make's exact path) -> $(cls $?)"
+# control: a short /tmp -o path
+"$TCC" $MK -c -o /tmp/o "$F" >/dev/null 2>&1; emit "DIAG-RC ctrl : -o /tmp/o (short path)               -> $(cls $?)"
 
-# (a) baseline: no -Werror (= my v20 probe; was OK)
-"$TCC" $FULL -c -o "$WORK/it.o" "$F" >"$WORK/a.err" 2>&1; emit "DIAG-IT (a) NO -Werror        -> $(cls $?)"
-# (b) the REAL make flags: WITH all 4 -Werror (hypothesis: CRASH)
-"$TCC" $FULL $WERR -c -o "$WORK/it.o" "$F" >"$WORK/b.err" 2>&1; emit "DIAG-IT (b) +ALL -Werror     -> $(cls $?)   diag:$(head -1 "$WORK/b.err")"
-# (c) isolate WHICH -Werror crashes
-for w in implicit-function-declaration implicit-int pointer-sign pointer-arith; do
-  "$TCC" $FULL -Werror=$w -c -o "$WORK/it.o" "$F" >"$WORK/w.err" 2>&1
-  emit "DIAG-IT (c) only -Werror=$w -> $(cls $?)   diag:$(head -1 "$WORK/w.err")"
+# PERTURB sweep 1: env padding lengths (shifts the argv/env stack block -> stack-top layout)
+emit "DIAG-INFO ===== env-padding sweep (-o = make's exact path) ====="
+firstpad=-1
+for n in 0 1 2 4 8 16 24 32 48 64 96 128 192 256 384 512 768 1024 2048 4096; do
+  PAD=$(awk "BEGIN{for(i=0;i<$n;i++)printf \"x\"}")
+  env _MESPAD="$PAD" "$TCC" $MK -c -o obj/src/env/__init_tls.o "$F" >/dev/null 2>&1; rc=$?
+  st=$(cls $rc); emit "DIAG-PAD env _MESPAD len=$n -> $st"
+  [ "$rc" = 0 ] && [ "$firstpad" = -1 ] && { firstpad=$n; cp obj/src/env/__init_tls.o "$WORK/pad-$n.o"; }
 done
-# (d) THE FIX: real make flags but -Werror stripped (hypothesis: OK). Proves the build.sh sed.
-"$TCC" $FULL -c -o "$WORK/it.o" "$F" >/dev/null 2>&1; emit "DIAG-IT (d) -Werror STRIPPED   -> $(cls $?)  [= the R4 fix]"
+emit "DIAG-INFO first landing env-pad length = $firstpad"
+
+# PERTURB sweep 2: -o path LENGTH (the -o string sits in argv -> shifts early malloc/stack layout)
+emit "DIAG-INFO ===== -o path-length sweep ====="
+firstlen=-1
+for n in 0 4 8 16 32 64 128 200; do
+  pad=$(awk "BEGIN{for(i=0;i<$n;i++)printf \"p\"}")
+  op="obj/src/env/${pad}__init_tls.o"
+  "$TCC" $MK -c -o "$op" "$F" >/dev/null 2>&1; rc=$?
+  st=$(cls $rc); emit "DIAG-OPLEN -o pad=$n -> $st"
+  [ "$rc" = 0 ] && [ "$firstlen" = -1 ] && { firstlen=$n; cp "$op" "$WORK/oplen-$n.o" 2>/dev/null; }
+done
+emit "DIAG-INFO first landing -o pad length = $firstlen"
+
+# byte-identity check: do two DIFFERENT successful perturbations produce the SAME .o?
+S1=$(sha256sum "$WORK"/pad-*.o 2>/dev/null | head -1 | cut -d' ' -f1)
+S2=$(sha256sum "$WORK"/oplen-*.o 2>/dev/null | head -1 | cut -d' ' -f1)
+emit "DIAG-SHA pad-success .o sha=$S1"
+emit "DIAG-SHA oplen-success .o sha=$S2"
+[ -n "$S1" ] && [ "$S1" = "$S2" ] && emit "DIAG-SHA -> IDENTICAL across perturbations (seal-safe)"
 
 cp "$WORK/rows.txt" "$OUTROOT/rows.txt.log" 2>/dev/null
 cp "$WORK/it.i" "$OUTROOT/init_tls.i.log" 2>/dev/null
 cp "$TCC" "$OUTROOT/tcc-0.9.27" 2>/dev/null
 {
-  echo "============ musl-crt-diag v21 WERROR-AB (real amd64) ============"
-  grep -E "DIAG-IT|DIAG-CFG" "$WORK/rows.txt" 2>/dev/null
-  echo "READ: if (a)/(d) OK and (b) CRASH, the -Werror= error-formatter is the wall; strip-Werror fixes R4."
-  echo "================================================================="
+  echo "============ musl-crt-diag v22 LAYOUT-PERTURB (real amd64) ============"
+  grep -E "DIAG-RC|DIAG-PAD|DIAG-OPLEN|DIAG-SHA|first landing" "$WORK/rows.txt" 2>/dev/null
+  echo "READ: if repro=CRASH and some pad/oplen=OK, a PERTURBING retry wrapper cures R4 (seal-safe if SHA identical)."
+  echo "======================================================================"
 } | tee "$MANIFEST"
 exit 0
