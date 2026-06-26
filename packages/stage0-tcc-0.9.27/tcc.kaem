@@ -179,11 +179,11 @@ cd /build
 # tcc-0.9.27-rebuilt libc/libgetopt/crt1/libtcc1) reproduces byte-identically — the L4 fixed-point
 # property for R3. NB: the ~50% tcc-0.9.26 lottery means a gated build may crash before passing; the
 # seal-verify retries until a GREEN gated build (the successful output is byte-identical to the pin).
-# [RE-CAPTURE 2026-06-25] TEMPORARILY DISABLED: adding the 3 live-bootstrap tcc patches (esp.
-# ignore-static-inside-array) changes the tcc-0.9.27 binary bytes (new parser code) and may change the
-# tcc-built .a indices (dont-skip-weak-symbols-ar). Re-pin all 5 shas from the first green patched build,
-# then RE-ENABLE. Until then this gate would abort on the stale pins.
-# sha256sum -c stage0.answers
+# [RE-ENABLED 2026-06-26] After adding the tcc patches (ignore-static-inside-array + dont-skip-weak-
+# symbols-ar + static-link, then the amd64 FP fixes neg-float-const v3 + cast-signed-direct), stage0.answers
+# was re-pinned from the green re-build (tcc/libc.a/libtcc1.a shas changed; the fixed tcc compiles mes-libc
+# float code correctly). Gate ON again — seal-verify confirms the patched spine reproduces byte-identically.
+sha256sum -c stage0.answers
 
 ###########################################################################
 # §D STAGING: every output was written directly into OUTPUT_DIR=/build/output, so there is no
