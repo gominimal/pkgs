@@ -1,0 +1,19 @@
+# R5 stage0-binutils-2.30 byte-identity pins. Checked from $OUTPUT_DIR by `sha256sum -c` (set -e aborts).
+#
+# !! RECORD-AT-PIN-TIME (amd64) !! No upstream amd64 binutils-2.30 fixed point (live-bootstrap is i386).
+# Capture AFTER the first green amd64 CS build, paste below, then re-enable the gate in build.sh.
+#
+# Canonical byte-identity anchors = the deliverable tools + the static libs (paths RELATIVE to $OUTPUT_DIR):
+# <sha>  usr/bin/as
+# <sha>  usr/bin/ld
+# <sha>  usr/bin/ar
+# <sha>  usr/bin/nm
+# <sha>  usr/bin/objcopy
+# <sha>  usr/bin/objdump
+# <sha>  usr/bin/strip
+# <sha>  usr/bin/ranlib
+# <sha>  usr/lib/libbfd.a
+# <sha>  usr/lib/libopcodes.a
+#
+# NB: the x86_64-linux-musl-<tool> entries are symlinks (not pinned). --enable-deterministic-archives
+# zeroes ar timestamps/uids so libbfd.a/libopcodes.a are reproducible.
