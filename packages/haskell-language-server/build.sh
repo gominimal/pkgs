@@ -23,9 +23,17 @@ mkdir -p "$OUTPUT_DIR"/usr/lib
 HLS_BIN=$(cabal list-bin exe:haskell-language-server)
 cp "$HLS_BIN" "$OUTPUT_DIR"/usr/bin/
 
-# Copy all shared Haskell libraries the binary depends on
+# Copy all shared Haskell libraries the binary depends on, skipping standard system runtime libraries
 for lib in $(ldd "$HLS_BIN" | grep '\.so' | awk '{print $3}'); do
   if [ -n "$lib" ] && [ -f "$lib" ]; then
-    cp "$lib" "$OUTPUT_DIR"/usr/lib/
+    lib_name=$(basename "$lib")
+    case "$lib_name" in
+      ld-linux*|libc.so*|libpthread.so*|libm.so*|libdl.so*|librt.so*|libutil.so*|libcrypt.so*|libgcc_s.so*|libresolv.so*|libnss_*|libnsl*|libstdc++*)
+        echo "Skipping standard system runtime library: $lib_name"
+        ;;
+      *)
+        cp "$lib" "$OUTPUT_DIR"/usr/lib/
+        ;;
+    esac
   fi
 done
