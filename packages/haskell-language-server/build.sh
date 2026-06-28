@@ -26,6 +26,12 @@ cp "$HLS_BIN" "$OUTPUT_DIR"/usr/bin/
 # Copy all shared Haskell libraries the binary depends on
 for lib in $(ldd "$HLS_BIN" | grep '\.so' | awk '{print $3}'); do
   if [ -n "$lib" ] && [ -f "$lib" ]; then
+    # Exclude standard host system library paths to avoid bundling glibc/system libraries
+    case "$lib" in
+      /lib*|/usr/lib*)
+        continue
+        ;;
+    esac
     cp "$lib" "$OUTPUT_DIR"/usr/lib/
   fi
 done
