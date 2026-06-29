@@ -19,8 +19,13 @@ pnpm install --frozen-lockfile
 sed -i "s/moduleIds: 'named',/moduleIds: 'deterministic',/" \
   packages/next/next-runtime.webpack-config.js \
   packages/next/next-devtools.webpack-config.js
-grep -q "moduleIds: 'deterministic'" packages/next/next-runtime.webpack-config.js \
-  || { echo "ERROR: next moduleIds repro patch did not apply (webpack config changed upstream)" >&2; exit 1; }
+for file in \
+  packages/next/next-runtime.webpack-config.js \
+  packages/next/next-devtools.webpack-config.js
+do
+  grep -q "moduleIds: 'deterministic'" "$file" \
+    || { echo "ERROR: next moduleIds repro patch did not apply in $file (webpack config changed upstream)" >&2; exit 1; }
+done
 
 # L2: the bundle-analyzer fixture app is built during the build and bakes a
 # random Next.js buildId (nanoid) into dist/bundle-analyzer/* and the
@@ -77,8 +82,12 @@ node install/build.js
 # Clean up native build artifacts, keeping ONLY the final .node addon — the rest
 # of src/build is node-gyp scaffolding (Makefile, *.mk, config.gypi) that bakes
 # the random $(mktemp -d) staging path into cmd_regen_makefile / compile lines.
-find src/build -mindepth 1 -maxdepth 1 ! -name Release -exec rm -rf {} +
-find src/build/Release -mindepth 1 -maxdepth 1 ! -name '*.node' -exec rm -rf {} +
+if [ -d src/build ]; then
+  find src/build -mindepth 1 -maxdepth 1 ! -name Release -exec rm -rf {} +
+  if [ -d src/build/Release ]; then
+    find src/build/Release -mindepth 1 -maxdepth 1 ! -name '*.node' -exec rm -rf {} +
+  fi
+fi
 
 # Copy the source-built sharp into next's node_modules
 cd "$SHARP_STAGING"
