@@ -431,7 +431,7 @@ def self_dated_version(version: str) -> str | None:
 
 def resolve(pkg: dict) -> tuple[str, str | None, str, str]:
     """Return (version, date|None, source_type, date_source_detail)."""
-    attrs = pkg.get("attrs", {})
+    attrs = pkg.get("attrs") or {}
     version = attr_str(attrs, "upstream_version") or "?"
     declared = attr_str(attrs, "released_at")
     prov = provenance(attrs)
