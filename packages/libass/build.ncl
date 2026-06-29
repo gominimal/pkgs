@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -40,6 +40,19 @@ let version = "0.17.5" in
     libs = { glob = "usr/lib/libass.so*" } | OutputLib,
     includes = { glob = "usr/include/ass/**" } | OutputData,
     pkgconfigs = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
+  },
+
+  tests = {
+    link_and_run =
+      {
+        class = 'Standalone,
+        test_deps = [base, toolchain],
+        cmds = [
+          ["/bin/bash", "-c", "echo '#include <ass/ass.h>\n#include <stdio.h>\nint main() { ASS_Library* s = ass_library_init(); if (s) { printf(\"ok\\n\"); ass_library_done(s); return 0; } return 1; }' > test.c"],
+          ["/bin/gcc", "test.c", "-lass", "-o", "test"],
+          ["/bin/bash", "-c", "./test | grep -q '^ok$'"],
+        ],
+      } | Test,
   },
 
   attrs =
