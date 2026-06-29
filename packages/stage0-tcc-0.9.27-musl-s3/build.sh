@@ -14,7 +14,7 @@ emit "S3-INFO musl-relink — TM1(s1)=$("$TM1" -version 2>&1 | head -1)  musl li
 
 cd /build/tm
 tar --no-same-owner -xzf "$BUILDROOT/tccsrc.tar.gz" 2>/tmp/te || emit "S3-FAIL extract: $(head -1 /tmp/te)"
-cd tccsrc || { emit "S3-FAIL no tccsrc"; cp /build/tm/rows.txt "$LOGOUT/rows.log"; echo fail | tee "$MAN"; cp "$TM1" "$BINOUT/tcc-musl2"; cp "$LT" "$LIBOUT/libtcc1.a"; exit 0; }
+cd tccsrc || { emit "S3-FAIL no tccsrc (deterministic extract failure — NOT the lottery; fix the source, not a re-enqueue)"; cp /build/tm/rows.txt "$LOGOUT/rows.log"; echo fail | tee "$MAN"; exit 1; }
 : > config.h
 
 # copy s1's libtcc1.a through (tcc-musl2 bakes /usr/lib/tcc/libtcc1.a — same x86_64 archive)
@@ -40,15 +40,23 @@ for i in $(seq 1 30); do
     -I . -I /usr/include \
     tcc.c 2>/tmp/be
   bc=$?
-  [ -x "$TM2" ] && { built=1; break; }
+  [ "$bc" = 0 ] && [ -x "$TM2" ] && { built=1; break; }   # require a CLEAN compile exit (bc=0), not a partial +x binary from a crash
 done
 emit "S3-BUILD tcc-musl2 built=$built (try $i/30 last-rc=$bc be-bytes=$(wc -c </tmp/be | tr -d ' '))"
 if [ "$built" != 1 ]; then
-  emit "S3-BUILD-ERR: $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
-  cp "$TM1" "$BINOUT/tcc-musl2"
+  # NO cache-poisoning fallback (cp TM1 -> tcc-musl2 would ship s1's flaky mes-linked compiler as the
+  # supposedly-stable musl tcc-musl2 — s1:58-59 warns against exactly this). Leave tcc-musl2 absent.
+  # Key the marker on the CAPTURED compile exit $bc: 139 => the per-task ASLR lottery (matchable marker
+  # -> MesccArenaLottery -> --retry-on-lottery re-rolls in a fresh sandbox); else a deterministic
+  # tcc<->musl link/compile bug (BuildScriptFailed; a re-enqueue won't help — fix the recipe).
+  if [ "$bc" = 139 ]; then
+    emit "S3-BUILD-ERR mes-m2 arena lottery: tcc-musl2 SIGSEGV rc=139 compiling tcc.c->tcc.s (all 30 tries, per-task ASLR — re-enqueue for a fresh sandbox roll): $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
+  else
+    emit "S3-BUILD-ERR (non-lottery, rc=$bc, deterministic — fix the tcc<->musl link, not a re-enqueue): $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
+  fi
   cp /build/tm/rows.txt "$LOGOUT/rows.log"
-  { echo "===== tcc-musl2 build FAILED (mes-libc lottery on big tcc.c, 30 tries) ====="; grep S3- /build/tm/rows.txt; } | tee "$MAN"
-  exit 0
+  { echo "===== tcc-musl2 build FAILED (rc=$bc) ====="; grep S3- /build/tm/rows.txt; } | tee "$MAN"
+  exit 1
 fi
 cp "$TM2" "$BINOUT/tcc-musl2"
 
@@ -64,6 +72,17 @@ for i in 1 2 3 4 5; do
   if [ "$lc" = 0 ]; then b=$((b+1)); timeout 10 ./h >/tmp/lo 2>&1; [ "$?" = 0 ] && r=$((r+1)); out="$(head -1 /tmp/lo)"; fi
 done
 emit "S3-SELFTEST tcc-musl2 links hello: built $b/5 ran-OK $r/5 run='$out'  $([ "$b" -gt 0 ] || head -1 /tmp/le)"
+
+# Gate caching on a tcc-musl2 that actually WORKS: runs (-version rc=0) AND links (b>0) AND the linked
+# binary RUNS (r>0 — a links-but-non-running tcc-musl2 is still miscompiled). A built-but-miscompiled
+# tcc-musl2 is a flaky-TM1 lottery outcome (s1's mes-linked compiler emitted garbage) — route it to
+# --retry-on-lottery (matchable marker) for a fresh roll rather than caching a broken compiler that R5
+# binutils would then build against.
+if [ "$rc" != 0 ] || [ "$b" = 0 ] || [ "$r" = 0 ]; then
+  emit "S3-VERIFY-FAIL mes-m2 arena lottery (rc=139-class): tcc-musl2 built but MISCOMPILED by flaky TM1 — -version rc=$rc links $b/5 runs $r/5 — re-enqueue for a fresh sandbox roll compiling tcc.c->tcc.s"
+  cp /build/tm/rows.txt "$LOGOUT/rows.log"; grep S3- /build/tm/rows.txt | tee "$MAN"
+  exit 1
+fi
 
 cp /build/tm/rows.txt "$LOGOUT/rows.log"
 {
