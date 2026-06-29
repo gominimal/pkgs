@@ -45,6 +45,22 @@ CC
 "$TM" -nostdinc -c -o cs.o cs.c 2>/tmp/ccs; emit "S2-CC cs.o(custom _start) rc=$? $(head -1 /tmp/ccs)"
 trial "CUSTOM-start (no musl startup)" "$TM" -nostdlib -static cs.o ret42.o
 
+# BARE-exit: _start -> exit(42) syscall, NO C, NO main, NO GOT. Isolates asm+ELF-format+loading from C
+# codegen. If this RUNS (rc=42) but CUSTOM/full-musl crash -> the bug is C codegen / startup, format sound.
+cat > bare.c <<'CC'
+__asm__(".global _start\n_start:\n movl $42,%edi\n movl $60,%eax\n syscall\n");
+CC
+"$TM" -nostdinc -c -o bare.o bare.c 2>/tmp/cb; emit "S2-CC bare.o rc=$? $(head -1 /tmp/cb)"
+trial "BARE-exit (asm+format only)" "$TM" -nostdlib -static bare.o
+# DATA-ref: main returns a global int (tests static data reloc + codegen, no startup/asm)
+cat > dref.c <<'CC'
+int g = 42;
+__asm__(".global _start\n_start:\n call get\n movl %eax,%edi\n movl $60,%eax\n syscall\n");
+int get(void){ return g; }
+CC
+"$TM" -nostdinc -c -o dref.o dref.c 2>/tmp/cd; emit "S2-CC dref.o rc=$? $(head -1 /tmp/cd)"
+trial "DATA-ref (global int via call)" "$TM" -nostdlib -static dref.o
+
 cp /build/tm/rows.txt "$LOGOUT/rows.log"
 {
   echo "============ stage0-tcc-0.9.27-musl-s2 VERDICT (GOT fix on real amd64) ============"
