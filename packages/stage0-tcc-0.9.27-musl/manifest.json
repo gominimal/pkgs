@@ -1,0 +1,6 @@
+{
+  "package": "stage0-tcc-0.9.27-musl",
+  "version": "0.9.27",
+  "inputs": [],
+  "source_commit": "f2548633ce2039ed773cbf59f1f2d50ae55f7d2b"
+}

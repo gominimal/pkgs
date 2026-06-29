@@ -57,4 +57,4 @@ let version = "2.30" in
     libs = { glob = "usr/lib/*.a" } | OutputLib,
     headers = { glob = "usr/include/**" } | OutputData,
   },
-}
+} | BuildSpec
