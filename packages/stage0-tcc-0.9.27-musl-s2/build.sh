@@ -60,6 +60,46 @@ int get(void){ return g; }
 CC
 "$TM" -nostdinc -c -o dref.o dref.c 2>/tmp/cd; emit "S2-CC dref.o rc=$? $(head -1 /tmp/cd)"
 trial "DATA-ref (global int via call)" "$TM" -nostdlib -static dref.o
+# 3ARG: a 3-arg C call (like main(argc,argv,envp)). exit code = 1+2+20=23 if 3-arg passing is correct.
+cat > a3.c <<'CC'
+__asm__(".global _start\n_start:\n movl $1,%edi\n movl $2,%esi\n movl $20,%edx\n call add3\n movl %eax,%edi\n movl $60,%eax\n syscall\n");
+int add3(int a,int b,int c){ return a+b+c; }
+CC
+"$TM" -nostdinc -c -o a3.o a3.c 2>/tmp/c3; emit "S2-CC a3.o rc=$? $(head -1 /tmp/c3)"
+trial "3ARG-call (expect rc=23)" "$TM" -nostdlib -static a3.o
+# STACKREAD: read argc off the stack pointer (like _start reading rsp). exit code = argc (>=1).
+cat > sr.c <<'CC'
+__asm__(".global _start\n_start:\n movq %rsp,%rdi\n call rd\n movl %eax,%edi\n movl $60,%eax\n syscall\n");
+int rd(long*p){ return (int)p[0]; }
+CC
+"$TM" -nostdinc -c -o sr.o sr.c 2>/tmp/csr; emit "S2-CC sr.o rc=$? $(head -1 /tmp/csr)"
+trial "STACKREAD (expect rc=argc>=1)" "$TM" -nostdlib -static sr.o
+# XOBJ: clean CROSS-OBJECT call — _start (xa.o) calls f() defined in xb.o. CUSTOM-start's distinguishing
+# feature vs the working same-object tests. exit code = 42 if cross-object call reloc is correct.
+cat > xa.c <<'CC'
+extern int f(void);
+__asm__(".global _start\n_start:\n call f\n movl %eax,%edi\n movl $60,%eax\n syscall\n");
+CC
+printf 'int f(void){ return 42; }\n' > xb.c
+"$TM" -nostdinc -c -o xa.o xa.c 2>/tmp/cxa; "$TM" -nostdinc -c -o xb.o xb.c 2>/tmp/cxb
+emit "S2-CC xa.o rc=? xb.o rc=? $(head -1 /tmp/cxa)$(head -1 /tmp/cxb)"
+trial "XOBJ-call (f in separate object, expect rc=42)" "$TM" -nostdlib -static xa.o xb.o
+# ASMINPUT: function-local inline-asm with an "r" INPUT operand (%0). Unique to mystart_c vs the working
+# tests; musl's syscall wrappers use the same. If this crashes -> tcc-musl operand-substitution codegen bug.
+cat > ai.c <<'CC'
+void g(void){ int v=42; __asm__ volatile("movl %0,%%edi\n movl $60,%%eax\n syscall"::"r"(v):"eax"); }
+__asm__(".global _start\n_start:\n call g\n");
+CC
+"$TM" -nostdinc -c -o ai.o ai.c 2>/tmp/cai; emit "S2-CC ai.o rc=$? $(head -1 /tmp/cai)"
+trial "ASMINPUT (inline-asm \"r\" operand, expect rc=42)" "$TM" -nostdlib -static ai.o
+# COMPUTEDARG: read sp[0] then pass a COMPUTED value as a call arg (mystart_c's other unique bit).
+cat > ca.c <<'CC'
+int id(int x){ return x; }
+int h(long*sp){ return id((int)sp[0] + 10); }
+__asm__(".global _start\n_start:\n movq %rsp,%rdi\n call h\n movl %eax,%edi\n movl $60,%eax\n syscall\n");
+CC
+"$TM" -nostdinc -c -o ca.o ca.c 2>/tmp/cca; emit "S2-CC ca.o rc=$? $(head -1 /tmp/cca)"
+trial "COMPUTEDARG (sp[0]+10 via call, expect rc=11)" "$TM" -nostdlib -static ca.o
 
 cp /build/tm/rows.txt "$LOGOUT/rows.log"
 {
