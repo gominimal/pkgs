@@ -57,7 +57,11 @@ if [ "$built" = 1 ]; then
 else
   # NO fallback to tcc-0.9.26: a fallback poisons the artifact cache as a fake success (s3 then gets the
   # wrong compiler). Leave tcc-musl absent so the OutputBin glob fails -> the build fails -> re-enqueue.
-  emit "S1-BUILD-ERR (no fallback; build fails): $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
+  # Marker MUST contain rc=139 + (mes-m2 | tcc.c->tcc.s) so categorize_stderr buckets this as
+  # MesccArenaLottery (transient_retryable) -> `orch enqueue --retry-on-lottery N` re-enqueues into a
+  # FRESH builder sandbox (new ASLR layout). The per-task lottery is deterministic WITHIN a sandbox, so
+  # a new task is the only real escape (the 50-try in-task loop above can't help a bad-layout task).
+  emit "S1-BUILD-ERR mes-m2 arena lottery: tcc-0.9.26 SIGSEGV rc=139 compiling tcc.c->tcc.s (all tries, per-task ASLR — re-enqueue for a fresh sandbox roll): $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
 fi
 [ -f "$LIBOUT/libtcc1.a" ] || : > "$LIBOUT/libtcc1.a"
 
@@ -67,4 +71,7 @@ cp /build/tm/rows.txt "$LOGOUT/rows.log"
   grep "S1-" /build/tm/rows.txt
   echo "READ: S1-OK + libtcc1.a>0 => stage-1 tcc-musl built; stage 2 (vs R4 musl) tests the GOT fix."
 } | tee "$MAN"
+# built=0 (lottery) -> exit non-zero: a CLEAN task failure carrying the rc=139 marker, so the queue
+# categorizes it MesccArenaLottery and --retry-on-lottery re-enqueues (fresh sandbox). built=1 -> 0.
+[ "$built" = 1 ] || exit 1
 exit 0
