@@ -9,6 +9,27 @@ export CXX=g++
 # The lockfile pins exact versions of every transitive dependency used during the build.
 pnpm install --frozen-lockfile
 
+# --- Reproducibility patches to the extracted source, before building --------
+# L3 (the blocker): next overrides rspack's production-default moduleIds from
+# 'deterministic' to 'named' in the runtime webpack configs. With 'named', the
+# externalized trace/tracer module is keyed by whichever importer's relative
+# request ('./lib/...' vs '../lib/...') rspack processes first — unstable under
+# parallel module processing — cascading through the minified
+# dist/compiled/next-server/*.runtime.prod.js. Restore the deterministic default.
+sed -i "s/moduleIds: 'named',/moduleIds: 'deterministic',/" \
+  packages/next/next-runtime.webpack-config.js \
+  packages/next/next-devtools.webpack-config.js
+grep -q "moduleIds: 'deterministic'" packages/next/next-runtime.webpack-config.js \
+  || { echo "ERROR: next moduleIds repro patch did not apply (webpack config changed upstream)" >&2; exit 1; }
+
+# L2: the bundle-analyzer fixture app is built during the build and bakes a
+# random Next.js buildId (nanoid) into dist/bundle-analyzer/* and the
+# _next/static/<buildId>/ dir names. Pin it deterministically.
+sed -i "s/output: 'export',/output: 'export', generateBuildId: () => 'minimal-reproducible-build',/" \
+  apps/bundle-analyzer/next.config.mjs
+grep -q "minimal-reproducible-build" apps/bundle-analyzer/next.config.mjs \
+  || { echo "ERROR: next bundle-analyzer generateBuildId repro patch did not apply" >&2; exit 1; }
+
 # Build next and all its workspace dependencies (e.g. @next/env)
 pnpm exec turbo run build --filter=next...
 
@@ -53,10 +74,11 @@ export LDFLAGS="${LDFLAGS:-} ${glib_libs}"
 
 node install/build.js
 
-# Clean up native build artifacts, keeping only the final .node addon
-find src/build -name '*.o' -delete
-rm -rf src/build/Release/obj.target
-rm -rf src/build/Release/.deps
+# Clean up native build artifacts, keeping ONLY the final .node addon — the rest
+# of src/build is node-gyp scaffolding (Makefile, *.mk, config.gypi) that bakes
+# the random $(mktemp -d) staging path into cmd_regen_makefile / compile lines.
+find src/build -mindepth 1 -maxdepth 1 ! -name Release -exec rm -rf {} +
+find src/build/Release -mindepth 1 -maxdepth 1 ! -name '*.node' -exec rm -rf {} +
 
 # Copy the source-built sharp into next's node_modules
 cd "$SHARP_STAGING"
