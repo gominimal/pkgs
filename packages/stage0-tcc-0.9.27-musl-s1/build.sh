@@ -31,7 +31,10 @@ emit "S1-LIBTCC1 libtcc1.a=$(ls -la $LIBOUT/libtcc1.a 2>/dev/null | awk '{print 
 # tcc-0.9.26 is mes-linked -> mes-libc instability compiling the big tcc.c is a draw; retry up to 25.
 TM=/build/tcc-musl
 built=0
-for i in $(seq 1 50); do
+# The mes-libc/ASLR lottery is DETERMINISTIC within a sandbox (s1k/s1j: 0/50 in one task; abc2: 1/1).
+# So the in-task loop can't escape a bad-layout task — keep it tiny (a margin for any fluke) and let
+# `orch enqueue --retry-on-lottery N` do the real work: a NEW task = fresh sandbox = fresh roll.
+for i in $(seq 1 3); do
   rm -f "$TM"
   "$TCC26" -w -static -o "$TM" \
     -D TCC_TARGET_X86_64=1 \
@@ -50,7 +53,7 @@ for i in $(seq 1 50); do
   bc=$?
   [ -x "$TM" ] && { built=1; break; }
 done
-emit "S1-BUILD tcc-musl built=$built (try $i/50 last-rc=$bc be-bytes=$(wc -c </tmp/be | tr -d ' '))"
+emit "S1-BUILD tcc-musl built=$built (try $i/3 last-rc=$bc be-bytes=$(wc -c </tmp/be | tr -d ' '))"
 if [ "$built" = 1 ]; then
   cp "$TM" "$BINOUT/tcc-musl"
   emit "S1-OK tcc-musl: $("$TM" -version 2>&1 | head -1)"
