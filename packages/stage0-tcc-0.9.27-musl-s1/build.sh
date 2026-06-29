@@ -31,7 +31,7 @@ emit "S1-LIBTCC1 libtcc1.a=$(ls -la $LIBOUT/libtcc1.a 2>/dev/null | awk '{print 
 # tcc-0.9.26 is mes-linked -> mes-libc instability compiling the big tcc.c is a draw; retry up to 25.
 TM=/build/tcc-musl
 built=0
-for i in $(seq 1 25); do
+for i in $(seq 1 50); do
   rm -f "$TM"
   "$TCC26" -w -static -o "$TM" \
     -D TCC_TARGET_X86_64=1 \
@@ -50,13 +50,14 @@ for i in $(seq 1 25); do
   bc=$?
   [ -x "$TM" ] && { built=1; break; }
 done
-emit "S1-BUILD tcc-musl built=$built (try $i/25 last-rc=$bc be-bytes=$(wc -c </tmp/be | tr -d ' '))"
+emit "S1-BUILD tcc-musl built=$built (try $i/50 last-rc=$bc be-bytes=$(wc -c </tmp/be | tr -d ' '))"
 if [ "$built" = 1 ]; then
   cp "$TM" "$BINOUT/tcc-musl"
   emit "S1-OK tcc-musl: $("$TM" -version 2>&1 | head -1)"
 else
-  emit "S1-BUILD-ERR: $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
-  cp "$TCC26" "$BINOUT/tcc-musl"
+  # NO fallback to tcc-0.9.26: a fallback poisons the artifact cache as a fake success (s3 then gets the
+  # wrong compiler). Leave tcc-musl absent so the OutputBin glob fails -> the build fails -> re-enqueue.
+  emit "S1-BUILD-ERR (no fallback; build fails): $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
 fi
 [ -f "$LIBOUT/libtcc1.a" ] || : > "$LIBOUT/libtcc1.a"
 
