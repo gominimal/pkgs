@@ -43,7 +43,7 @@ for i in $(seq 1 25); do
     -D TCC_LIBGCC=\"/usr/lib/tcc/libtcc1.a\" \
     -D CONFIG_TCC_STATIC=1 \
     -D CONFIG_USE_LIBGCC=1 \
-    -D TCC_VERSION=\"0.9.27fixC\" \
+    -D TCC_VERSION=\"0.9.27fixD\" \
     -D ONE_SOURCE=1 \
     -I . -I /usr/include -I /usr/include/mes \
     tcc.c 2>/tmp/be
