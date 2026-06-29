@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # build.sh — R5 (stage0-binutils-2.30) driver. SKELETON / WIP 2026-06-26.
 # Model-B adaptation of live-bootstrap steps/binutils-2.30/pass1.sh: ship ALL generated files, skip the
 # autoreconf/bison/flex/perl regen (none exist in bedrock). First rung to LINK executables (as/ld/ar/nm/
@@ -28,15 +28,24 @@ cd "${SRC}"
 #       libiberty-add-missing-config-directory-reference / new-gettext / opcodes-ensure-i386-init-deps.
 #     crc32 static-table regen is unneeded: CFLAGS carries -DDYNAMIC_CRC_TABLE=1 (runtime gen). ---
 
-# TODO(WALL): produce a musl-linked tcc here (recompile tcc.c with -D CONFIG_TCC_CRTPREFIX="/usr/lib"
-#   -D CONFIG_TCC_SYSINCLUDEPATHS="/usr/include" -D TCC_LIBGCC="/usr/lib/libc.a" using R3 tcc + R4 musl),
-#   install it as $BUILDROOT/musl-tcc, and set CC accordingly. Until then this is a stub.
-MUSLTCC="tcc"   # PLACEHOLDER — links mes today; replace per the WALL block above.
+# WALL RESOLVED: CC = tcc-musl2 (R4a/s3 — tcc-0.9.27 with static-link fixes A+B+C, rebuilt musl-linked so
+# it is stable, not mes-libc-lottery-flaky). It links RUNNING static musl binaries (proven s2i/s3).
+# A CC WRAPPER handles the abort/libtcc1<->libc cycle (fix-D can't live in tcc — it crashes tcc-0.9.26's
+# compile): on LINK use the explicit `crt1 crti <args> libc.a libtcc1.a libc.a crtn` order (libc twice);
+# on COMPILE (-c/-S/-E) pass through. tcc -ar is used directly for archives.
+cat > "${BUILDROOT}/musl-cc" <<'WRAP'
+#!/bin/sh
+for a in "$@"; do case "$a" in -c|-S|-E) exec /usr/bin/tcc-musl2 "$@" ;; esac; done
+exec /usr/bin/tcc-musl2 -nostdlib -static /usr/lib/crt1.o /usr/lib/crti.o "$@" \
+  /usr/lib/libc.a /usr/lib/tcc/libtcc1.a /usr/lib/libc.a /usr/lib/crtn.o
+WRAP
+chmod +x "${BUILDROOT}/musl-cc"
+MUSLTCC="${BUILDROOT}/musl-cc"
 
 # --- configure loop (Model-B order) ---
 for dir in intl libiberty opcodes bfd binutils gas gprof ld zlib; do
   ( cd "$dir" && \
-    LD="true" AR="tcc -ar" CC="${MUSLTCC}" \
+    LD="true" AR="/usr/bin/tcc-musl2 -ar" CC="${MUSLTCC}" \
       CFLAGS="-DBUILDFIXED=1 -DDYNAMIC_CRC_TABLE=1" \
       ./configure \
         --disable-nls \
