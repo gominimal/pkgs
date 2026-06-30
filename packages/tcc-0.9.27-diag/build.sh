@@ -19,6 +19,62 @@ emit "DIAG-INFO $("$TCC" -version 2>&1 | head -1)"
 [ -d "/build/$TCC_PKG" ] || { echo "FATAL: /build/$TCC_PKG missing" | tee "$MANIFEST"; exit 0; }
 command -v simple-patch >/dev/null 2>&1 || { echo "FATAL simple-patch missing" | tee "$MANIFEST"; exit 0; }
 
+# ── PHASE 0 (R5 SWEEP): localize the mes-tcc lottery determinant — env/argv-seeded stack layout? ──
+# Reproduce s1's tcc.c compile (s1's MUSL DEFS, ONE_SOURCE=1) under (a) ambient env [the control], (b)
+# fully-cleared env, (c) a swept env-block length (PAD=k×'A'), to DISCOVER whether the per-sandbox
+# rc=139 SIGSEGV tracks the process initial-stack offset (argv+envp length). OPEN probe: MEASURE only —
+# every roll prints rc + objbytes; bakes NOTHING into any rung; set +e; falls straight through to exit 0.
+emit "DIAG-INFO ===== (0) R5 env+stack-PAD sweep ====="
+SW_TCC=/usr/bin/tcc-0.9.26
+SWEEPDIR=/build/sweep; mkdir -p "$SWEEPDIR"
+cd "/build/$TCC_PKG" || emit "SWEEP-FAIL no /build/$TCC_PKG source dir"
+: > config.h                          # tcc.c #includes "config.h"; s1 does the same (empty)
+# s1's EXACT compile flags (MUSL prefixes, from stage0-tcc-0.9.27-musl-s1/build.sh DEFS+INCS);
+# ONE_SOURCE=1 for the reliable full-tcc.c crasher (the primary unit).
+SW_DEFS=(
+  -D TCC_TARGET_X86_64=1
+  -D 'CONFIG_TCCDIR="/usr/lib/tcc"' -D 'CONFIG_TCC_CRTPREFIX="/usr/lib"'
+  -D 'CONFIG_TCC_ELFINTERP="/mes/loader"' -D 'CONFIG_TCC_LIBPATHS="/usr/lib:/usr/lib/tcc"'
+  -D 'CONFIG_TCC_SYSINCLUDEPATHS="/usr/include"' -D 'TCC_LIBGCC="/usr/lib/tcc/libtcc1.a"'
+  -D CONFIG_TCC_STATIC=1 -D CONFIG_USE_LIBGCC=1 -D 'TCC_VERSION="0.9.27PW2"'
+)
+SW_INCS=(-I . -I /usr/include -I /usr/include/mes)
+SW_OUT=/tmp/sw.o
+SW_ARGS=(-w -c -o "$SW_OUT" "${SW_DEFS[@]}" -D ONE_SOURCE=1 "${SW_INCS[@]}" tcc.c)      # primary  unit
+SW_TG_ARGS=(-w -c -o "$SW_OUT" "${SW_DEFS[@]}" -D ONE_SOURCE=0 "${SW_INCS[@]}" tccgen.c) # secondary unit
+
+# (1) CAPTURE the load-bearing-but-uncited premises: the ambient env, the EXACT argv, the search-dirs.
+emit "SWEEP-CAP env:"
+env | sort | while IFS= read -r ln; do emit "SWEEP-CAP env| $ln"; done
+emit "SWEEP-CAP argv: $SW_TCC ${SW_ARGS[*]}"
+emit "SWEEP-CAP search-dirs:"
+"$SW_TCC" -print-search-dirs 2>&1 | while IFS= read -r ln; do emit "SWEEP-CAP sdir| $ln"; done
+
+# (2) MATRIX: one config = one initial-stack env layout; reps expose per-exec stability within THIS
+# sandbox. rc is timeout's verdict (139=SIGSEGV, 124=timeout, else tcc's rc); objbytes = output .o size.
+SW_CURARGS=("${SW_ARGS[@]}")
+sw_run(){ local cfg="$1" reps="$2"; shift 2      # remaining args = optional env-clearing prefix (env -i …)
+  local r rc ob
+  for r in $(seq 1 "$reps"); do
+    rm -f "$SW_OUT"
+    timeout 180 "$@" "$SW_TCC" "${SW_CURARGS[@]}" >/dev/null 2>>"$SWEEPDIR/$cfg.err"; rc=$?
+    ob=0; [ -f "$SW_OUT" ] && ob=$(/usr/bin/wc -c < "$SW_OUT" 2>/dev/null | tr -d ' ')
+    emit "SWEEP $cfg rep$r rc=$rc objbytes=$ob"
+  done
+}
+sw_run C0 3                                                   # ambient env — the control (MUST crash here)
+sw_run C1 3 /usr/bin/env -i PATH=/usr/bin TMPDIR=/tmp         # fully-cleared env
+for k in 0 8 16 32 64 128 256 512 1024; do                   # sweep stack offset via env-block length
+  pad=$(head -c "$k" </dev/zero | tr '\0' A)
+  sw_run "PAD$k" 3 /usr/bin/env -i PATH=/usr/bin TMPDIR=/tmp "PAD=$pad"
+done
+# (2b) secondary size-independence re-check on tccgen.c alone (1 rep ambient + 1 rep cleared).
+SW_CURARGS=("${SW_TG_ARGS[@]}")
+sw_run tccgen-C0 1
+sw_run tccgen-C1 1 /usr/bin/env -i PATH=/usr/bin TMPDIR=/tmp
+rm -f "$SW_OUT"
+emit "SWEEP-DONE C0=ambient C1=cleared PAD{0,8,16,32,64,128,256,512,1024}=env-len sweep (×3 reps); tccgen ×1"
+
 # ── PHASE 1: apply R3's EXACT tcc-0.9.27 source patches (so the crash reproduces faithfully) ──
 cd "/build/$TCC_PKG" || { echo "FATAL cd"; exit 0; }
 simple-patch tcctools.c /build/remove-fileopen.before /build/remove-fileopen.after \
@@ -156,7 +212,7 @@ emit "DIAG-FIX   prefer mes headers in R3's tcc.c compile (and it's a hermeticit
   echo "NEXT: objdump -d --start-address=<rip> tcc-0.9.26 | head  (map rip + each BACKTRACE addr to a fn);"
   echo "  the fn that hands strlen/the formatter a non-canonical ptr is the miscompiled one -> patch tcc.c"
   echo "  (like fix-shift/fix-plt). The -vv stderr-tail names the last file/phase before the crash."
-  echo "ARTIFACTS (gs://minimalmertic-sign-staging/tcc-0.9.27-diag-1.0-a/usr/share/tcc-0.9.27-diag/):"
+  echo "ARTIFACTS (gs://minimalmertic-sign-staging/tcc-0.9.27-diag-1.1-a/usr/share/tcc-0.9.27-diag/):"
   for f in "$OUTROOT"/*; do [ "$f" = "$MANIFEST" ] && continue; printf '  %-26s %s bytes\n' "$(basename "$f")" "$(/usr/bin/wc -c < "$f" 2>/dev/null || echo 0)"; done
   echo "======================================================="
 } | tee "$MANIFEST"
