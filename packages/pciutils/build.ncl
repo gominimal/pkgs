@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "3.14.0" in
+let version = "3.15.0" in
 {
   name = "pciutils",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/pciutils-%{version}.tar.gz",
-      sha256 = "e31c79722dbbe9d2906b92996ce295268e54d4342fefe3ff476caa613e51be2a"
+      sha256 = "a42e6e3f76fb6b1f6ac2e08cdd151f6bf78bc4f6312c591f4b6ec197582ede3a"
     } | Source,
     base,
     sed,
