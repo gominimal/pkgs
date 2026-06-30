@@ -35,6 +35,9 @@ TM=/build/tcc-musl
 # tcc-0.9.26 links the .o's with its OWN (mes) crt -> mes-linked but musl-configured tcc-musl (unchanged).
 DEFS=(
   -D TCC_TARGET_X86_64=1
+  -D ONE_SOURCE=0   # CRITICAL: tcc.h:293 defaults ONE_SOURCE=1 when undefined; must set =0 explicitly
+                    # for a real multi-file build (else libtcc.c/tcc.c #include the whole program and
+                    # ST_FUNC=static breaks the link). Upstream tcc Makefile:177 mandates this.
   -D 'CONFIG_TCCDIR="/usr/lib/tcc"'
   -D 'CONFIG_TCC_CRTPREFIX="/usr/lib"'
   -D 'CONFIG_TCC_ELFINTERP="/mes/loader"'
@@ -43,7 +46,7 @@ DEFS=(
   -D 'TCC_LIBGCC="/usr/lib/tcc/libtcc1.a"'
   -D CONFIG_TCC_STATIC=1
   -D CONFIG_USE_LIBGCC=1
-  -D 'TCC_VERSION="0.9.27PW"'
+  -D 'TCC_VERSION="0.9.27PW2"'
 )
 INCS=(-I . -I /usr/include -I /usr/include/mes)
 # x86_64 units: matches libtcc.c's ONE_SOURCE includes for TCC_TARGET_X86_64 + CONFIG_TCC_ASM, plus
