@@ -24,7 +24,9 @@ cp "$LT" "$LIBOUT/libtcc1.a"
 # libc.a TWICE for the libc<->libtcc1 abort cycle. Retry the mes-libc lottery.
 TM2=/build/tcc-musl2
 built=0
-for i in $(seq 1 30); do
+# Lottery is deterministic within a sandbox, so a big in-task loop can't escape a bad-layout task —
+# keep it tiny and let `orch enqueue --retry-on-lottery N` (fresh sandbox per roll) do the real work.
+for i in $(seq 1 3); do
   rm -f "$TM2"
   "$TM1" -w -static -o "$TM2" \
     -D TCC_TARGET_X86_64=1 \
@@ -42,7 +44,7 @@ for i in $(seq 1 30); do
   bc=$?
   [ "$bc" = 0 ] && [ -x "$TM2" ] && { built=1; break; }   # require a CLEAN compile exit (bc=0), not a partial +x binary from a crash
 done
-emit "S3-BUILD tcc-musl2 built=$built (try $i/30 last-rc=$bc be-bytes=$(wc -c </tmp/be | tr -d ' '))"
+emit "S3-BUILD tcc-musl2 built=$built (try $i/3 last-rc=$bc be-bytes=$(wc -c </tmp/be | tr -d ' '))"
 if [ "$built" != 1 ]; then
   # NO cache-poisoning fallback (cp TM1 -> tcc-musl2 would ship s1's flaky mes-linked compiler as the
   # supposedly-stable musl tcc-musl2 — s1:58-59 warns against exactly this). Leave tcc-musl2 absent.
