@@ -65,8 +65,16 @@ rm -rf src/complex
 # (unknown opcodes e.g. stmxcsr/ldmxcsr, or SIGSEGV on others); tcc-musl2 has the IDENTICAL assembler
 # limits.  Portable C fallbacks exist for all of them, so remove the asm and let musl build the C
 # versions — correctness over speed, exactly right for a bootstrap libc.  KEEP core setjmp/x86_64/setjmp.s
-# + longjmp.s (they assemble fine and have NO C fallback); only sigsetjmp.s fails and has a C fallback.
-rm -f src/math/x86_64/*.s src/fenv/x86_64/*.s src/signal/x86_64/sigsetjmp.s
+# + longjmp.s (assemble fine, no C fallback).  KEEP sigsetjmp.s TOO (2026-07-01): R5 binutils LINKS
+# sigsetjmp and musl has NO generic C fallback for it (undefined-symbol without the .s).  The mes-tcc-era
+# "sigsetjmp.s fails" claim is re-tested here on tcc-musl2's CORRECTLY-built assembler; if it truly can't
+# assemble it, provide sigsetjmp via a tcc-assemblable stub instead.
+rm -f src/math/x86_64/*.s src/fenv/x86_64/*.s
+
+# tcc-0.9.27's assembler rejects the `@PLT` reloc suffix (sigsetjmp.s:14 `call setjmp@PLT` -> "end of line
+# expected").  Strip it: this is a STATIC build so a direct `call setjmp` is correct (setjmp is in the same
+# libc.a, no PLT needed).  THIS is what lets us KEEP sigsetjmp.s (above) so R5 binutils can link sigsetjmp.
+sed -i 's/@PLT//g' src/signal/x86_64/sigsetjmp.s
 
 # --- configure: CC=tcc-musl2; --host=x86_64 is the amd64 adaptation.  static only; install layout baked
 #     to /usr, physically redirected via DESTDIR below. ---
