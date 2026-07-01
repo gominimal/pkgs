@@ -54,11 +54,10 @@ patch -Np1 -i "${BUILDROOT}/drop-dynamic-crt.patch"       # amd64: drop _DYNAMIC
 patch -Np1 -i "${BUILDROOT}/amd64-va-list.patch"          # amd64: define __builtin_va_list via tcc's SysV __va_list_struct
 patch -Np1 -i "${BUILDROOT}/amd64-syscall-arch.patch"     # amd64: rewrite __syscall4/5/6 — tcc-0.9.27 can't do GCC `register long r10 __asm__("r10")`
 
-# tcc has no _Complex; iconv + some wide-ctype consumers were a MES-tcc-era drop.  KEEP towctrans.c:
-# musl defines towlower/towupper (and towctrans) THERE, and R5 binutils LINKS against them (undefined-symbol
-# 'towlower' without it).  tcc-musl2 (unlike the mes-linked tcc) compiles towctrans.c's inline case table fine.
-# (isw*/iswctype stay dropped until a consumer needs them; add them back the same way if so.)
-rm src/ctype/iswalpha.c src/ctype/iswalnum.c src/ctype/iswctype.c
+# tcc has no _Complex (src/complex dropped below); iconv also can't build under tcc.  But KEEP ALL of
+# src/ctype/ — musl's wide-ctype (iswalpha/iswalnum/iswctype + towctrans's towlower/towupper) compiles
+# fine under tcc-musl2 (the drop was a MES-tcc-era workaround), and R5 binutils LINKS against iswalpha AND
+# towlower.  So we NO LONGER `rm` any src/ctype/*.c (2026-07-01: binutils needs the full wide-ctype set).
 rm include/iconv.h src/locale/iconv.c src/locale/iconv_close.c
 rm -rf src/complex
 
