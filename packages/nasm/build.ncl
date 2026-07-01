@@ -4,14 +4,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "3.01" in
+let version = "3.02" in
 {
   name = "nasm",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://www.nasm.us/pub/nasm/releasebuilds/%{version}/nasm-%{version}.tar.xz",
-      sha256 = "b7324cbe86e767b65f26f467ed8b12ad80e124e3ccb89076855c98e43a9eddd4",
+      sha256 = "87336eba53b4acfe917424ab5d500d2b0054d9f5148d35c2273ccf2cfb712f0d",
       extract = true,
       strip_prefix = "nasm-%{version}",
     } | Source,
