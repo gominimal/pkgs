@@ -72,7 +72,7 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # '/bin/chromium-headless-shell' from the headless-shell pkg) to
 # bypass the registry lookup. See packages/chromium-bin/README.md.
 let revision = "1217" in
-let browser_version = "147.0.7727.15" in
+let browser_version = "150.0.7871.46" in
 {
   name = "chromium-bin",
   build_deps = [
@@ -81,7 +81,7 @@ let browser_version = "147.0.7727.15" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chrome-linux64.zip",
-          sha256 = "04883e331b31448d6255fa058f0e1c7e8657c004da1f8a1c04eb28855a37ec6c",
+          sha256 = "ad115a7498a17f53f6ed0914458326c6516addc756224db14c32184a9b1ab078",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
