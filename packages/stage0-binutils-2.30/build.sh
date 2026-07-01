@@ -83,7 +83,12 @@ for dir in libiberty zlib bfd opcodes binutils gas gprof ld; do
   make -C "$dir" tooldir=/usr DESTDIR="${OUTPUT_DIR}" install MAKEINFO=true
 done
 cd "${OUTPUT_DIR}/usr/bin"
-for f in *; do ln -s "/usr/bin/${f}" "x86_64-linux-musl-${f}"; done
+# RELATIVE symlinks (a `/usr/bin/$f` absolute target is DANGLING in $OUTPUT_DIR at build time and trips
+# minimal's output staging); -f for idempotence; skip already-prefixed names so the glob can't self-nest.
+for f in *; do
+  case "$f" in x86_64-linux-musl-*) continue ;; esac
+  ln -sf "$f" "x86_64-linux-musl-$f"
+done
 
 ###########################################################################
 # BYTE-IDENTITY GATE — record-at-pin-time (no upstream amd64 binutils fixed point). Disabled for the

@@ -7,7 +7,7 @@ let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "min
 # ⚠️ UNRESOLVED: the tcc↔musl link bridge (R3 tcc bakes the mes crt prefix; binutils needs musl). See
 #    .staging-ctx/bedrock-R5-binutils-status-2026-06-26.md and the WALL block in build.sh. This package
 #    will NOT build green until that precursor (a musl-relinked tcc) lands + the GOTPCREL canary verdict.
-let stage0-tcc-musl-s3 = import "../stage0-tcc-0.9.27-musl-s3/build.ncl" in   # CC = tcc-musl2 (musl-linked, fixes A+B+C) + libtcc1.a
+let stage0-tcc-musl-s4 = import "../stage0-tcc-0.9.27-musl-s4/build.ncl" in   # CC = the s4-SEALED tcc-musl2 (C2: C2==C3 fixed point + 12/12 torture validated) + gate-validated libtcc1.a. s3 (the C1 candidate) is s4's BUILD dep, not runtime → not extracted here, no /usr/bin/tcc-musl2 collision.
 # LINK TARGET REWIRED 2026-07-01: binutils links against R4b (stage0-musl-1.1.24-cc2 — the DETERMINISTIC
 # tcc-musl2-built musl), NOT the lottery-prone R4a.  Same /usr/lib/{libc.a,crt*.o} + /usr/include paths,
 # just sourced from the sealed-correct rung (build.sh needs no change).  No cycle (R4b is a rung above R4a).
@@ -39,7 +39,7 @@ let version = "2.30" in
       sha256 = "6e46b8aeae2f727a36f0bd9505e405768a72218f1796f0d09757d45209871ae6",
       extract = false,
     } | Source,
-    stage0-tcc-musl-s3,    # s3: /usr/bin/tcc-musl2 (stable musl-linked tcc) + /usr/lib/tcc/libtcc1.a
+    stage0-tcc-musl-s4,    # s4: /usr/bin/tcc-musl2 = the SEALED C2 + gate-validated /usr/lib/tcc/libtcc1.a
     stage0-musl-r4b,   # R4b: /usr/lib/{libc.a,crt1.o,crti.o,crtn.o} + /usr/include/** (the link target)
     bash,
     make,
