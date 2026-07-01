@@ -16,6 +16,11 @@ export CXXFLAGS="${CFLAGS}"
 ./bootstrap.sh --prefix=/usr --with-python=python3
 ./b2 stage -j$(nproc) threading=multi link=shared
 
-pushd tools/build/test; python3 test_all.py; popd
+# Deliberately do NOT run Boost.Build's engine self-test suite
+# (tools/build/test/test_all.py) here: it validates the b2 build *tool*, not
+# boost, so it's unnecessary for packaging — and it spawns a
+# multiprocessing.Pool(cpu_count()) that deadlocks in the build sandbox (49 idle
+# workers, empty /dev/shm), which wedged the whole fleet for hours once the
+# res-servers went to 48 cores. Don't re-add it.
 
 ./b2 --prefix=$OUTPUT_DIR/usr install threading=multi link=shared
