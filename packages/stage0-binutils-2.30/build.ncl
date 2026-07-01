@@ -20,6 +20,7 @@ let coreutils = import "../coreutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
 let xz = import "../xz/build.ncl" in                             # binutils ships as .tar.xz (R4 was .gz)
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in     # configure's awk
+let diffutils = import "../diffutils/build.ncl" in              # cmp — move-if-change / config.status use it
 let version = "2.30" in
 {
   name = "stage0-binutils-2.30",
@@ -48,6 +49,7 @@ let version = "2.30" in
     tar,
     xz,
     gawk-bootstrap,
+    diffutils,
   ],
   build_args = {
     include version,

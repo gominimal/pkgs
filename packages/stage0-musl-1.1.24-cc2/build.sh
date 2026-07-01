@@ -54,9 +54,11 @@ patch -Np1 -i "${BUILDROOT}/drop-dynamic-crt.patch"       # amd64: drop _DYNAMIC
 patch -Np1 -i "${BUILDROOT}/amd64-va-list.patch"          # amd64: define __builtin_va_list via tcc's SysV __va_list_struct
 patch -Np1 -i "${BUILDROOT}/amd64-syscall-arch.patch"     # amd64: rewrite __syscall4/5/6 — tcc-0.9.27 can't do GCC `register long r10 __asm__("r10")`
 
-# meslibc/tcc cannot regenerate the ctype tables or iconv, and tcc has no _Complex — drop the consumers
-# exactly as live-bootstrap pass1 does (these pair with disable_ctype_headers.patch):
-rm src/ctype/iswalpha.c src/ctype/iswalnum.c src/ctype/iswctype.c src/ctype/towctrans.c
+# tcc has no _Complex; iconv + some wide-ctype consumers were a MES-tcc-era drop.  KEEP towctrans.c:
+# musl defines towlower/towupper (and towctrans) THERE, and R5 binutils LINKS against them (undefined-symbol
+# 'towlower' without it).  tcc-musl2 (unlike the mes-linked tcc) compiles towctrans.c's inline case table fine.
+# (isw*/iswctype stay dropped until a consumer needs them; add them back the same way if so.)
+rm src/ctype/iswalpha.c src/ctype/iswalnum.c src/ctype/iswctype.c
 rm include/iconv.h src/locale/iconv.c src/locale/iconv_close.c
 rm -rf src/complex
 

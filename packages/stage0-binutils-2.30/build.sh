@@ -19,7 +19,9 @@ BUILDROOT="$(pwd)"
 T="x86_64-linux-gnu"   # build=host=target; shipped 2018 config.sub resolves -gnu AND -musl (no donor swap)
 
 # --- unpack (.tar.xz -> needs xz in the closure) ---
-tar -xf "${SRC}.tar.xz"
+# --no-same-owner: the sandbox is a user namespace; tar's default chown-to-archived-uid fails with
+# "Cannot change ownership … Invalid argument" (matches s4/R4b's tar). We own the extracted tree anyway.
+tar --no-same-owner -xf "${SRC}.tar.xz"
 cd "${SRC}"
 
 # --- Model-B: NO src_prepare regen. We deliberately KEEP every shipped generated file (configure,
