@@ -1,0 +1,11 @@
+shl1 2
+shl31 2147483648
+shr8 1193046
+shr16 4660
+shl4 591751040
+byte 68
+byte 51
+byte 34
+byte 17
+nbytes 4
+varshl 16777216
