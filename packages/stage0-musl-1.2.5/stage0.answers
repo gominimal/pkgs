@@ -1,0 +1,5 @@
+# UNPINNED — record-at-pin-time placeholder (R7 stage0-musl-1.2.5).
+# After the first green CS build, capture the real hashes:
+#   (cd "$OUTPUT_DIR" && sha256sum usr/lib/libc.a usr/lib/*.o)
+# replace this file with those lines (drop this sentinel), then set SEAL_FATAL=1 in build.sh to
+# promote the byte-identity seal to fail-shut (gcc-4.0.4 is deterministic, so it's a real invariant).
