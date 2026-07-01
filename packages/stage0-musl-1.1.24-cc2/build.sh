@@ -85,6 +85,25 @@ rm -rf "${OUTPUT_DIR}/usr"
 make CROSS_COMPILE= CC="${CC_MUSL2}" AR="tcc-musl2 -ar" RANLIB=true CFLAGS="-DSYSCALL_NO_TLS -w" \
      DESTDIR="${OUTPUT_DIR}" install
 
+###########################################################################
+# §SYSROOT — CLEAN SINGLE-WRITER MUSL SYSROOT (bedrock anti-pollution)
+# Downstream rungs (s4 fixed-point gate, R5 binutils) run in a sandbox whose /usr is a MERGED hardlink
+# farm shared with the glibc-linked shell tools (bash/coreutils/sed/grep/tar/gzip/gawk-bootstrap).  Those
+# tools carry a `glibc` runtime_dep whose outputs ALSO include usr/include/** and usr/lib/libc.a — the
+# SAME paths this musl installs above.  minimal's rootfs overlay is an UNORDERED hash-set materialized
+# with FIRST-writer-wins collision handling (common::hardlink_dir_contents skips AlreadyExists), so at
+# /usr/include/stdio.h and /usr/lib/libc.a the winner (musl vs glibc) is a nondeterministic per-build
+# coin-flip.  When glibc wins, tcc-0.9.27 chokes on glibc's stdio.h ("invalid type") / links the wrong
+# libc.  Fix: publish a byte-identical COPY of this musl at a path NOTHING else writes, so the downstream
+# rungs have a deterministic clean tree to point -nostdinc / explicit-crt+libc at.  $OUTPUT_DIR/usr here
+# is R4b's OWN install (pure musl — the glibc merge happens only in the CONSUMER sandbox), so the copy is
+# guaranteed clean.
+###########################################################################
+SYSROOT="${OUTPUT_DIR}/usr/lib/musl-bedrock"
+mkdir -p "${SYSROOT}/lib"
+cp -a "${OUTPUT_DIR}/usr/include" "${SYSROOT}/include"
+cp -a "${OUTPUT_DIR}"/usr/lib/*.a "${OUTPUT_DIR}"/usr/lib/*.o "${SYSROOT}/lib/"
+
 #########################################################################
 # FLOAT + printf CORRECTNESS GATE  [FAIL-SHUT — no re-roll]
 # WHY IT SURVIVES THE R4a→R4b SWAP: the R4a mes-tcc, under the arena lottery, SOMETIMES emitted fmt_fp's

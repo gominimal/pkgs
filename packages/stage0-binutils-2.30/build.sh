@@ -35,9 +35,18 @@ cd "${SRC}"
 # on COMPILE (-c/-S/-E) pass through. tcc -ar is used directly for archives.
 cat > "${BUILDROOT}/musl-cc" <<'WRAP'
 #!/bin/sh
-for a in "$@"; do case "$a" in -c|-S|-E) exec /usr/bin/tcc-musl2 "$@" ;; esac; done
-exec /usr/bin/tcc-musl2 -nostdlib -static /usr/lib/crt1.o /usr/lib/crti.o "$@" \
-  /usr/lib/libc.a /usr/lib/tcc/libtcc1.a /usr/lib/libc.a /usr/lib/crtn.o
+# ANTI-POLLUTION: compile/link against the CLEAN single-writer musl sysroot R4b publishes at
+# /usr/lib/musl-bedrock, NOT the merged /usr.  The glibc-linked shell tools in this sandbox carry a
+# `glibc` runtime_dep that ALSO ships usr/include/** + usr/lib/libc.a, and minimal's rootfs overlay is an
+# UNORDERED hash-set with FIRST-writer-wins collisions — so /usr/{include,lib}/libc.a is a random
+# musl-vs-glibc coin-flip per build.  When glibc wins, tcc chokes on glibc's stdio.h / links the wrong
+# libc.  -nostdinc -I $MB/include + explicit crt/libc from $MB/lib make every binutils compile+link
+# deterministic and immune.  (/usr/lib/tcc/libtcc1.a stays as-is: s3 is its sole writer — no collision.)
+MB=/usr/lib/musl-bedrock
+for a in "$@"; do case "$a" in -c|-S|-E) exec /usr/bin/tcc-musl2 -nostdinc -I "$MB/include" "$@" ;; esac; done
+exec /usr/bin/tcc-musl2 -nostdinc -I "$MB/include" -nostdlib -static \
+  "$MB/lib/crt1.o" "$MB/lib/crti.o" "$@" \
+  "$MB/lib/libc.a" /usr/lib/tcc/libtcc1.a "$MB/lib/libc.a" "$MB/lib/crtn.o"
 WRAP
 chmod +x "${BUILDROOT}/musl-cc"
 MUSLTCC="${BUILDROOT}/musl-cc"

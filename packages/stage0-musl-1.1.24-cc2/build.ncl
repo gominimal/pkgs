@@ -99,6 +99,17 @@ let version = "1.1.24" in # SOURCE tarball version (the musl-%{version}.tar.gz U
     crt = { glob = "usr/lib/*.o" } | OutputLib,
     libs = { glob = "usr/lib/*.a" } | OutputLib,
     includes = { glob = "usr/include/**" } | OutputData,
+    # CLEAN SINGLE-WRITER MUSL SYSROOT (bedrock anti-pollution — see build.sh §SYSROOT).  A byte-identical
+    # COPY of the musl headers + static libc/crt above, published at a path NO OTHER package writes.  The
+    # /usr copies above collide, in the merged sandbox rootfs, with the glibc-linked shell tools' `glibc`
+    # runtime_dep (which ships the same usr/include/** + usr/lib/libc.a); minimal's rootfs overlay is an
+    # UNORDERED hash-set with FIRST-writer-wins collision handling, so which of {musl,glibc} owns
+    # /usr/include/stdio.h + /usr/lib/libc.a is a nondeterministic per-build coin-flip.  Downstream rungs
+    # (s4 fixed-point gate, R5 binutils) point their compiler at THIS clean tree with -nostdinc + explicit
+    # crt/libc, so the coin-flip can never feed them glibc.  Single-level `usr/lib/*.{a,o}` globs above do
+    # NOT match this nested path (literal_separator), so it is not double-captured.
+    sysroot_inc = { glob = "usr/lib/musl-bedrock/include/**" } | OutputData,
+    sysroot_lib = { glob = "usr/lib/musl-bedrock/lib/**" } | OutputLib,
   },
   attrs =
     {

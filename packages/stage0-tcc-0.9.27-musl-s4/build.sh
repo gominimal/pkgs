@@ -12,7 +12,17 @@ set +e
 set -u
 BUILDROOT="$(pwd)"
 TM2=/usr/bin/tcc-musl2            # s3: the musl-linked CANDIDATE compiler under test
-LT=/usr/lib/tcc/libtcc1.a        # s3: x86_64 libtcc1.a (also under test via the torture helpers)
+LT=/usr/lib/tcc/libtcc1.a        # s3: x86_64 libtcc1.a (also under test via the torture helpers). NOTE:
+                                 # /usr/lib/tcc is s3's SOLE-writer path (glibc never writes it) — safe.
+# CLEAN SINGLE-WRITER MUSL SYSROOT (R4b publishes /usr/lib/musl-bedrock/{include,lib}).  WHY: the bedrock's
+# glibc-linked shell-tool deps (bash/coreutils/sed/grep/tar/gzip/gawk-bootstrap) each carry a `glibc`
+# runtime_dep whose outputs ALSO include usr/include/** + usr/lib/libc.a.  minimal materializes the sandbox
+# rootfs from an UNORDERED hash-set of dep dirs with FIRST-writer-wins collision handling, so whether musl
+# (R4b) or glibc owns the MERGED /usr/include/stdio.h + /usr/lib/libc.a is a nondeterministic per-build
+# coin-flip; when glibc wins, tcc-0.9.27 dies on glibc's stdio.h ("invalid type") and would link the wrong
+# libc.  Every musl compile/link below therefore IGNORES the coin-flip /usr and uses this deterministic
+# clean tree: -nostdinc -I "$MI" for headers, -nostdlib + explicit crt/libc from "$ML" for the link.
+MB=/usr/lib/musl-bedrock; MI="$MB/include"; ML="$MB/lib"
 OUT=/build/output; BINOUT=$OUT/usr/bin; LIBOUT=$OUT/usr/lib/tcc; LOGOUT=$OUT/usr/share/tcc-musl-s4
 mkdir -p "$LOGOUT" /build/g
 MAN="$LOGOUT/MANIFEST.txt"
@@ -47,11 +57,15 @@ finish_fail(){
   exit 1
 }
 
-emit "S4-INFO gate tcc-musl2 -> seal.  TM2=$("$TM2" -version 2>&1 | head -1)  libc.a=$(ls -la /usr/lib/libc.a 2>/dev/null | awk '{print $5}')B  libtcc1=$(ls -la $LT 2>/dev/null | awk '{print $5}')B  stdio.h=$(test -f /usr/include/stdio.h && echo yes || echo NO)"
+emit "S4-INFO gate tcc-musl2 -> seal.  TM2=$("$TM2" -version 2>&1 | head -1)  CLEAN-musl(R4b $MB): libc.a=$(ls -la "$ML/libc.a" 2>/dev/null | awk '{print $5}')B stdio.h=$(test -f "$MI/stdio.h" && echo yes || echo NO)  libtcc1=$(ls -la $LT 2>/dev/null | awk '{print $5}')B  [merged /usr, glibc-polluted + UNUSED for musl compiles: libc.a=$(ls -la /usr/lib/libc.a 2>/dev/null | awk '{print $5}')B stdio.h=$(test -f /usr/include/stdio.h && echo yes || echo NO)]"
 
 # ---- Preflight (fatal: cannot run any gate without these) --------------------------------------
 [ -x "$TM2" ] || { gate_fail "tcc-musl2 missing/not-executable (s3 did not deliver)"; finish_fail; }
 [ -f "$LT" ]  || { gate_fail "libtcc1.a missing (s3 did not deliver)"; finish_fail; }
+# The clean R4b musl sysroot is MANDATORY: without it we would fall back to the coin-flip /usr and the gate
+# would be nondeterministic.  Absence is a broken R4b edge (R4b must publish usr/lib/musl-bedrock), NOT a
+# lottery — fail hard as BuildScriptFailed.
+{ [ -f "$MI/stdio.h" ] && [ -f "$ML/libc.a" ] && [ -f "$ML/crt1.o" ]; } || { gate_fail "clean musl sysroot missing/incomplete at $MB (broken R4b edge: expected $MI/stdio.h + $ML/{libc.a,crt1.o,crti.o,crtn.o}). s4 REQUIRES R4b's usr/lib/musl-bedrock/{include,lib} to avoid the glibc /usr coin-flip."; finish_fail; }
 TM2SHA=$(sha "$TM2")
 emit "S4-DETERM-INPUT-SHA tcc-musl2=$TM2SHA  (GATE 1: operator compares this across >=2 fresh-sandbox s3 rolls; must be byte-identical)"
 
@@ -84,7 +98,17 @@ TCCSRC=/build/g/tm/tccsrc
 # artifact. Runs in a subshell so the caller's cwd is untouched; rc is the compile's rc.
 compile_tcc(){
   local out="$1" cc="$2" log="$3"
-  ( cd "$TCCSRC" && : > config.h && "$cc" -w -static -o "$out" \
+  # HEADERS: -nostdinc + -I "$MI" reads ONLY the clean R4b musl sysroot — never the glibc-vs-musl coin-flip
+  # /usr/include.  musl 1.1.24 ships its OWN stddef.h/stdarg.h/stdbool.h (verified), so -nostdinc is safe
+  # (tcc-musl2 has no builtin-header dir anyway).  LINK: -nostdlib + explicit crt/libc from "$ML" links the
+  # clean musl static libc (crt1 crti <tcc.c-obj> libc.a libtcc1.a libc.a crtn — libc.a twice so the
+  # libtcc1<->libc back-refs resolve without --start-group, which tcc lacks).  This is R4b's PROVEN
+  # float-gate invocation generalized to compile tcc.c.  The baked -D CONFIG_* values (SYSINCLUDEPATHS=
+  # /usr/include etc.) are the emitted tcc's RUNTIME identity and stay UNCHANGED — R5 + the ecosystem
+  # expect /usr/include at runtime; only s4's OWN compile flags move to the clean sysroot.  C2 and C3 share
+  # this EXACT invocation, so any resulting sha divergence is a real codegen non-convergence, not a flag
+  # artifact.
+  ( cd "$TCCSRC" && : > config.h && "$cc" -w -nostdinc -nostdlib -static -o "$out" \
     -D TCC_TARGET_X86_64=1 \
     -D CONFIG_TCCDIR=\"/usr/lib/tcc\" \
     -D CONFIG_TCC_CRTPREFIX=\"/usr/lib\" \
@@ -95,8 +119,11 @@ compile_tcc(){
     -D CONFIG_USE_LIBGCC=1 \
     -D TCC_VERSION=\"0.9.27musl2\" \
     -D ONE_SOURCE=1 \
-    -I . -I /usr/include \
-    tcc.c 2>"$log" )
+    -I . -I "$MI" \
+    "$ML/crt1.o" "$ML/crti.o" \
+    tcc.c \
+    "$ML/libc.a" "$LT" "$ML/libc.a" \
+    "$ML/crtn.o" 2>"$log" )
 }
 
 TM3=/build/g/tcc-musl3            # C2 = C1(tcc.c)
@@ -157,7 +184,11 @@ pass=0; total=0
 for t in $TESTS; do
   total=$((total+1))
   rm -f bin
-  "$SEALCC" -static -o bin "torture/$t.c" 2>/tmp/ce; cc=$?
+  # Same clean-sysroot musl-cc invocation as compile_tcc: -nostdinc + explicit musl crt/libc, so the
+  # torture gate exercises the sealed compiler against CLEAN musl and can never be tripped by glibc /usr.
+  "$SEALCC" -nostdinc -nostdlib -static -I "$MI" -o bin \
+    "$ML/crt1.o" "$ML/crti.o" "torture/$t.c" \
+    "$ML/libc.a" "$LT" "$ML/libc.a" "$ML/crtn.o" 2>/tmp/ce; cc=$?
   if [ "$cc" != 0 ]; then gate_fail "TORTURE $t COMPILE rc=$cc : $(head -1 /tmp/ce)"; continue; fi
   act="$(timeout 15 ./bin 2>&1)"; rrc=$?
   exp="$(cat "torture/$t.expected")"
@@ -170,9 +201,11 @@ done
 # Cross-object (BUG1 static-PLT): a call to a DEFINED GLOBAL fn in a SEPARATE object — the exact defect
 # that crashed -static links. Two units -> two .o -> one link -> run.
 total=$((total+1))
-"$SEALCC" -c -o xm.o torture/t_xobj_main.c 2>/tmp/cxm; m=$?
-"$SEALCC" -c -o xl.o torture/t_xobj_lib.c 2>/tmp/cxl; l=$?
-"$SEALCC" -static -o xbin xm.o xl.o 2>/tmp/cxlnk; lk=$?
+"$SEALCC" -c -nostdinc -I "$MI" -o xm.o torture/t_xobj_main.c 2>/tmp/cxm; m=$?
+"$SEALCC" -c -nostdinc -I "$MI" -o xl.o torture/t_xobj_lib.c 2>/tmp/cxl; l=$?
+"$SEALCC" -nostdlib -static -o xbin \
+  "$ML/crt1.o" "$ML/crti.o" xm.o xl.o \
+  "$ML/libc.a" "$LT" "$ML/libc.a" "$ML/crtn.o" 2>/tmp/cxlnk; lk=$?
 if [ "$m" = 0 ] && [ "$l" = 0 ] && [ "$lk" = 0 ]; then
   act="$(timeout 15 ./xbin 2>&1)"; rrc=$?
   exp="$(cat torture/t_xobj.expected)"
