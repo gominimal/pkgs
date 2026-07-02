@@ -141,6 +141,14 @@ export PATH="${STUBS}:${PATH}"
 #     10.5 fatal, since its host g++ would compile every .cc directly with no stage2 rescue).
 #   --enable-languages=c,c++ : the point of the pivot (cc1 + cc1plus + g++ + static libstdc++).
 #   --without-isl : Graphite off (Q2) — no ISL in the closure, no ISL rung.
+#   ★ R12 WALL-FIX --with-native-system-header-dir=$SR/include : gcc-15's libstdc++ probes glibc-only
+#     headers (sys/single_threaded.h, execinfo.h, sys/sdt.h) with COMPILE-TIME __has_include — NO configure
+#     knob (verified in libstdc++'s configure).  Without this the built xgcc searches the coin-flip
+#     /usr/include, FINDS glibc's sys/single_threaded.h, and libsupc++/guard.cc calls glibc-only
+#     __libc_single_threaded → "not a member of __gnu_cxx" (the R12 v1 build died here after cc1/xgcc/libgcc
+#     built clean).  This REPLACES xgcc's default system-header dir (/usr/include) with the musl sysroot →
+#     those glibc-only headers are correctly ABSENT → libstdc++ falls back to __gthread_active_p() (musl-safe).
+#     R11/gcc-10.4 didn't need it (its libstdc++ predates the __has_include single_threaded path).
 #   --disable-lto : the lto-plugin is a .so that can't link static musl (bedrock reflex).
 #   --disable-libsanitizer/libssp/libgomp/libquadmath/libitm : glibc-coupled optional runtime libs we
 #     don't need + that carry Alpine's musl patch surface (delta #5; libmudflap was removed in gcc-4.9).
@@ -157,6 +165,7 @@ CC="${GCCCC}" CXX="${GCCCXX}" AR=ar RANLIB=ranlib \
     --enable-languages=c,c++ \
     --disable-bootstrap --disable-shared --disable-multilib --disable-nls \
     --disable-lto --without-isl \
+    --with-native-system-header-dir="${SR}/include" \
     --disable-libsanitizer --disable-libssp --disable-libgomp --disable-libquadmath --disable-libitm --disable-libatomic \
     --disable-libstdcxx-pch \
     --with-gmp="${GCC_MATH}" --with-mpfr="${GCC_MATH}" --with-mpc="${GCC_MATH}" \
