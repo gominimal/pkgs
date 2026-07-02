@@ -8,14 +8,14 @@ let xorgproto = import "../xorgproto/build.ncl" in
 let libx11 = import "../libx11/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "6.0.1" in
+let version = "6.0.2" in
 {
   name = "libxfixes",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libXfixes-%{version}.tar.xz",
-      sha256 = "b695f93cd2499421ab02d22744458e650ccc88c1d4c8130d60200213abc02d58",
+      sha256 = "39f115d72d9c5f8111e4684164d3d68cc1fd21f9b27ff2401b08fddfc0f409ba",
       extract = true,
       strip_prefix = "libXfixes-%{version}",
     } | Source,
