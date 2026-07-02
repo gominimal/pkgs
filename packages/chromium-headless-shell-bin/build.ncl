@@ -54,7 +54,7 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # packages/playwright-core/browsers.json. Revision 1217 ↔ Chrome 147.0.7727.15
 # ↔ playwright-core ^1.58.0. Keep in lockstep with chromium-bin.
 let revision = "1217" in
-let browser_version = "147.0.7727.15" in
+let browser_version = "150.0.7871.46" in
 {
   name = "chromium-headless-shell-bin",
   build_deps = [
@@ -63,7 +63,7 @@ let browser_version = "147.0.7727.15" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chrome-headless-shell-linux64.zip",
-          sha256 = "cf779cd5486f3fc5a18bea4ac606026a1667ae16efaee15af51bd3ad3ae01092",
+          sha256 = "0395e5db8d1631d5ed879d4f05fec423425537018fa1d73a58b1ade13288f447",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
