@@ -1,0 +1,6 @@
+{
+  "package": "binutils-2.46-glibc",
+  "version": "2.46.0",
+  "inputs": [],
+  "source_commit": "1d23461403acf0fa1cfd51e2a53c5a021953b8be"
+}

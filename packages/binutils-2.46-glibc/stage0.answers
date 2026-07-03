@@ -1,0 +1,14 @@
+# NO BYTE-IDENTITY SEAL AT B5 — BY DESIGN.
+#
+# binutils-2.46-glibc is built by R12 (stage0-gcc-15.2.0, a DIFFERENT — musl-linked — compiler) than
+# the debian PREBUILT binutils, targeting the from-source glibc-2.42.  A different compiler produces
+# different bytes, so byte-identity to the prebuilt is EXPLICITLY NOT expected (b4-b7-readiness risk
+# #3).  There is therefore NO `sha256sum -c` gate at the tail of build.sh (unlike the sealed stage0-*
+# rungs).
+#
+# The invariant B5 DOES enforce is the fail-shut SMOKE gate in build.sh: the freshly-built,
+# glibc-linked as+ld must assemble+link a glibc-dynamic exe that RUNS and returns 42 (run via an
+# explicit loader invocation, no /lib64 symlink dependency).
+#
+# --enable-deterministic-archives + -Wl,--build-id=none + -ffile-prefix-map keep the artifact
+# reproducible for the B6 differential-coreutils determinism proof.  Pin nothing here.

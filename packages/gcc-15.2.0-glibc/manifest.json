@@ -1,0 +1,6 @@
+{
+  "package": "gcc-15.2.0-glibc",
+  "version": "15.2.0",
+  "inputs": [],
+  "source_commit": "1d23461403acf0fa1cfd51e2a53c5a021953b8be"
+}

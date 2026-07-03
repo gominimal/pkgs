@@ -1,0 +1,25 @@
+# NO BYTE-IDENTITY SEAL AT B5 — BY DESIGN.
+#
+# gcc-15.2.0-glibc is the "self-hosting fixed point" (buildplan B5).  It is built by R12
+# (stage0-gcc-15.2.0, a DIFFERENT — musl-linked — compiler) targeting the from-source glibc-2.42.
+# A different compiler produces different bytes, so byte-identity to the debian PREBUILT gcc is
+# EXPLICITLY NOT expected (b4-b7-readiness risk #3).  There is therefore NO `sha256sum -c` gate at
+# the tail of build.sh (unlike the sealed stage0-* rungs).
+#
+# The correctness invariant B5 DOES enforce is the fail-shut FUNCTIONAL gate in build.sh:
+#   - cross-DSO C++ exception handling through the fresh libgcc_s.so.1 (the check B4 deferred);
+#   - backtrace(3) against the fresh glibc + libgcc_s unwinder;
+#   - long-double / %.17g / %a printf (the R4 fmt_fp silent-corruption class);
+#   - __thread TLS across two translation units.
+#
+# The DETERMINISM proof for these leaves is B6 (differential-coreutils: compile twice — prebuilt vs
+# bedrock toolchain — and byte-diff, aided by -ffile-prefix-map + --build-id=none).  The
+# SELF-HOSTING fixed point is proved by having this glibc-linked gcc rebuild ITSELF to a stable
+# result, NOT by parity with the prebuilt.
+#
+# Pin nothing here.  If a future policy wants a self-consistency anchor, capture the shas of the
+# deliverable drivers + shared runtime libs from the SECOND (self-hosted) build, not the first:
+# <sha>  usr/bin/gcc
+# <sha>  usr/bin/g++
+# <sha>  usr/lib/libstdc++.so.6.0.34
+# <sha>  usr/lib/libgcc_s.so.1
