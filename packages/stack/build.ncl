@@ -4,14 +4,14 @@ let base = import "../base/build.ncl" in
 let ghc = import "../ghc/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 
-let version = "3.9.3" in
+let version = "3.11.1" in
 {
   name = "stack",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/commercialhaskell/stack/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "144bc7eaaf384228f6b0f960ced130b503dc4945ffa42f3ca2037abbc8136c05",
+      sha256 = "388916c20e2a9e9d343ef40c0c31fbb664cdbf302122ded8508ded8f765cbb4f",
       extract = true,
       strip_prefix = "stack-%{version}",
     } | Source,
