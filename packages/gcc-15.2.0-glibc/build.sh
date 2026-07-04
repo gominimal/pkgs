@@ -171,7 +171,14 @@ CC="${GCCCC}" CXX="${GCCCXX}" AR=ar RANLIB=ranlib \
 # ============================================================================================
 export CPATH="${SR}/include"
 export LIBRARY_PATH="${SR}/lib"
-FT="-g -O2 -B ${SR}/lib -L ${SR}/lib"
+# -L FIXLIB first: the fresh xgcc links target libs (libgcc_s.so was the first casualty) via these
+# flags, NOT via our host wrappers -> it needs the corrected libc.so script too (proven ordering from
+# the binutils gate: -L FIXLIB beats -B SR/lib for -lc).  --dynamic-linker: target-lib configure
+# steps (libstdc++) RUN fresh-linked conftests; no /lib64 in the sandbox -> bake the SR interp
+# (inert for -shared libs; only affects throwaway conftest exes).
+# NO space after -L/-B: libtool's link mode rejects the two-token form ("require no space between
+# -L and ...", libssp Error 1) even though gcc/ld accept it.  Joined form works everywhere.
+FT="-g -O2 -L${FIXLIB} -B${SR}/lib -L${SR}/lib -Wl,--dynamic-linker=${SR}/lib/ld-linux-x86-64.so.2"
 make -j"$(nproc)" MAKEINFO=true CFLAGS_FOR_TARGET="${FT}" CXXFLAGS_FOR_TARGET="${FT}"
 make -j"$(nproc)" MAKEINFO=true CFLAGS_FOR_TARGET="${FT}" CXXFLAGS_FOR_TARGET="${FT}" DESTDIR="${OUTPUT_DIR}" install
 
@@ -193,7 +200,9 @@ GATE="${BUILDROOT}/b5gate"; rm -rf "${GATE}"; mkdir -p "${GATE}"
 CB="${OUTPUT_DIR}/usr/include/c++/${VERSION}"
 GIX="$("${XGXX}" -print-file-name=include)"
 GXXINC="-nostdinc -nostdinc++ -isystem ${CB} -isystem ${CB}/${TARGET} -isystem ${CB}/backward -isystem ${GIX} -isystem ${SR}/include"
-GLNK="-B ${SR}/lib -L ${SR}/lib -L ${OUTPUT_DIR}/usr/lib"
+# -L$FIXLIB FIRST: the freshly-installed g++/gcc resolve -lc like every other link path in this
+# recipe -> they hit the poisoned $SR/lib/libc.so without it (gate bit exactly this, 2026-07-04).
+GLNK="-L${FIXLIB} -B${SR}/lib -L${SR}/lib -L${OUTPUT_DIR}/usr/lib"
 GRUN_LIBS="${OUTPUT_DIR}/usr/lib:${SR}/lib"
 
 # --- shared lib: throws across the DSO boundary ---
