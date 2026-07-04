@@ -36,6 +36,11 @@ let version = "692" in
   attrs =
     {
       upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "gwsw",
+        repo = "less",
+      },
       license_spdx = "BSD-2-Clause OR GPL-3.0-or-later",
       # Home page: https://www.greenwoodsoftware.com/less/
     } | Attrs,

@@ -34,6 +34,7 @@ let version = "11076708" in
   attrs =
     {
       upstream_version = version,
+      binary_from = "https://dl.google.com/android/repository/",
     } | Attrs,
 
   tests = {

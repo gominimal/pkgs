@@ -74,6 +74,7 @@ in
   attrs =
     {
       upstream_version = version,
+      binary_from = "https://storage.googleapis.com/cloud-sdk-release",
       # `Pixar` + `Python-2.0.1` from auto-scan were false positives:
       # `Pixar` matched a docstring in pygments' USD lexer (the file
       # itself is BSD-licensed; "Pixar" is the format it parses), and

@@ -60,6 +60,7 @@ let version = "9.8.1" in
 
   attrs = {
     upstream_version = version,
+    binary_from = "https://downloads.haskell.org/~ghc/",
     license_spdx = "BSD-3-Clause",
   },
 } | BuildSpec
