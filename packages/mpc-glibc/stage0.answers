@@ -1,0 +1,17 @@
+# NO BYTE-IDENTITY SEAL AT THE B5 SUB-RUNG — BY DESIGN.
+#
+# mpc-glibc is built by R12 (musl-linked gcc-15.2.0), not the debian prebuilt that built
+# production's mpc -> different bytes, no `sha256sum -c` gate (b4-b7-readiness risk #3).
+#
+# Invariant enforced (fail-shut, in build.sh): B5-MPC-GATE — complex mul (6+i)*(7+0i)=42+7i
+# link+RUN against the staged libmpc.so via an explicit B4-loader invocation, both parts verified.
+# Upstream `make check` off — production parity (prod comments it out).
+#
+# DOCUMENTED DIVERGENCES from production packages/mpc:
+#   * libmpc.so carries RUNPATH entries for /usr/lib/{gmp,mpfr}-bedrock-*/lib (production has no
+#     RUNPATH) so it resolves its deps in any sandbox hydrating the sibling twins.
+#   * gmp/mpfr consumed via the versioned trees (--with-{gmp,mpfr}-{lib,include}), not /usr, and
+#     listed explicitly in build_deps (production leans on runtime_deps hydration).
+#   * base-leaf set trimmed to the proven B5 tool set.
+#
+# Reproducible-not-sealed: prod CFLAGS + --build-id=none + -ffile-prefix-map, for the B6 proof.
