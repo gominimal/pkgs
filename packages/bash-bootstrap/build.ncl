@@ -49,6 +49,10 @@ let version = "5.3" in
 
   attrs = {
     upstream_version = version,
+    source_provenance = {
+      category = 'GnuProject,
+      name = "bash",
+    },
     license_spdx = "GPL-3.0-only",
   },
 

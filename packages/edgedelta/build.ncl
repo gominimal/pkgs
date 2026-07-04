@@ -73,5 +73,6 @@ in
   attrs =
     {
       upstream_version = version,
+      binary_from = "https://release.edgedelta.com/",
     } | Attrs,
 } | BuildSpec

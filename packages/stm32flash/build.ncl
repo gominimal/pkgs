@@ -40,6 +40,10 @@ let version = "0.7" in
 
   attrs = {
     upstream_version = version,
+    source_provenance = {
+      category = 'Sourceforge,
+      name = "stm32flash",
+    },
     license_spdx = "GPL-2.0-or-later",
   },
 } | BuildSpec
