@@ -165,7 +165,10 @@ cp -a "$OUTPUT_DIR"/usr/lib/*.a "$OUTPUT_DIR"/usr/lib/*.so* "$OUTPUT_DIR"/usr/li
 cp -a "$OUTPUT_DIR/usr/lib/gconv" "$PUB/lib/gconv" 2>/dev/null || true
 # libc.so is a linker SCRIPT with absolute GROUP(/usr/lib/...) paths -> repoint into the versioned tree
 # so B5 (-L $PUB/lib) resolves within the clean sysroot, not the musl-polluted /usr:
-sed -i "s@/usr/lib/@$PUB/lib/@g" "$PUB/lib/libc.so" 2>/dev/null || true
+# ⚠ use the RUNTIME install path (/$PUB_REL), NOT $PUB — $PUB is the build-time staging dir
+# ($OUTPUT_DIR/...); baking it produced dangling GROUP(/build/output/...) paths that broke every
+# consumer link ("C compiler cannot create executables" at B5 binutils configure, 2026-07-03).
+sed -i "s@/usr/lib/@/$PUB_REL/lib/@g" "$PUB/lib/libc.so" 2>/dev/null || true
 
 # ============ locale generation (production commands).  Runs the JUST-BUILT localedef => needs AVX2 ====
 # (compiled -march=x86-64-v3, executed on the builder).  Non-fatal for the cold hop: the 368 pkgs need
