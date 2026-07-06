@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.14.10" in
+let version = "0.14.12" in
 {
   name = "procs",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/dalance/procs/v%{version}.tar.gz",
-      sha256 = "7b287ac253fd1d202b0ea6a9a8ba2ed97598cf8e7dfd539bd40e382c6dc6d350",
+      sha256 = "f2fab583fe98a9ae9505c5eecf4f3d9d4ad9bcb5d478a8222d52c87aa1ac602e",
       extract = true,
       strip_prefix = "procs-%{version}",
     } | Source,
