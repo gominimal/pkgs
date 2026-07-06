@@ -47,6 +47,12 @@ let version = "1.8.1.1" in
   attrs =
     {
       upstream_version = version,
+      # socat's upstream (dest-unreach.org) is HTTP-only and fits no
+      # source_provenance category, so version discovery resolves via repology
+      # (newest = 1.8.1.3). The gs:// mirror re-fetch on a bump pulls the real
+      # tarball from dest-unreach.org via pkgmgr's NAME_KEYED_UPSTREAMS. See
+      # gominimal/pkgmgr-rs#441.
+      repology_project = "socat",
       license_spdx = "GPL-2.0-only WITH openvpn-openssl-exception",
     } | Attrs,
 
