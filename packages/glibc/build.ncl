@@ -107,8 +107,8 @@ let version = "2.42" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/glibc/0b3158f86607d703484cdc2b989850085ee57cd9d774f00ff6bf5b83c9fb20db.tar.zst",
-              sha256 = "0a8fe9137ed3e906bae9e1f922e80d6b198bd2d29d390f1283f7d32e0f921580",
+              url = "gs://minimalmertic-release-channel-stable/glibc-bedrock-2.42-2.42/glibc-bedrock-2.42-2.42.tar.zst",
+              sha256 = "d0850b659687f160368bf87a57d02cfbbe0f1a5fe6ab4b623ca8296b5659126f",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>

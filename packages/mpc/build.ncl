@@ -80,8 +80,8 @@ let version = "1.4.0" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/mpc/94ebf966b773423844ef6b2b620c062f31e8479bbe9e97ad808e414b558743a7.tar.zst",
-              sha256 = "a3bb4b9e9bfcb0e2018065dd0036f2943cf0b5fda8aebb56f477026531ba7fdd",
+              url = "gs://minimalmertic-release-channel-stable/mpc-glibc-1.4.0/mpc-glibc-1.4.0.tar.zst",
+              sha256 = "a385e3fa185012d00bd68131f7fa8789c5207fefe89411b9f7ea4c3869469c53",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>

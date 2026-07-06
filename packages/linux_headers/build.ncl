@@ -50,8 +50,8 @@ let version = "6.12.43" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/linux_headers/06b2114a47cb8be25785fa4fae5b2d5c18a21b6dac059dcfd50577fb16e688a9.tar.zst",
-              sha256 = "353a3bc9146169c825d8ee9cfc40338f943e352b498bc19626720507328f5328",
+              url = "gs://minimalmertic-release-channel-stable/stage0-linux-headers-6.12.43-6.12.43/stage0-linux-headers-6.12.43-6.12.43.tar.zst",
+              sha256 = "083cdb678eb2a154373819a5b3511b2b0e73c6261a010dce896287c742be83c3",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>

@@ -100,8 +100,8 @@ let version = "2.46.0" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/binutils/baea2e99362c3138a3b129ca4fceee19d0444bbb68f3c57b08d3cb89145ea103.tar.zst",
-              sha256 = "63f6b776215970427b3360fb00d69b84debe607b57511c7832874049cf05a2d4",
+              url = "gs://minimalmertic-release-channel-stable/binutils-2.46-glibc-2.46.0/binutils-2.46-glibc-2.46.0.tar.zst",
+              sha256 = "e796366aca5bb03f1e082598b4c3824ad3c95e0001b961a6d339da8c19f836bb",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>

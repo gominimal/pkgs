@@ -76,8 +76,8 @@ let version = "6.3.0" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/gmp/acaec4d86dd7eecdc941fddbc87751178539c1997d17dbfa81b59e60004ace58.tar.zst",
-              sha256 = "544d0211eab4b2c9e21bad9428177e9b9f61e8ce44f288607bd639d6d41babaa",
+              url = "gs://minimalmertic-release-channel-stable/gmp-glibc-6.3.0/gmp-glibc-6.3.0.tar.zst",
+              sha256 = "ff310873811a3821cbad6c168b9d78004ef126ba58df2ddfde8c1aac90389a2c",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>

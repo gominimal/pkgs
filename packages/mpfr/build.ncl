@@ -79,8 +79,8 @@ let version = "4.2.2" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/mpfr/2269dbfcccb3b624829aeb41192cd32fac30b4e7fb22270718a885e9f25d5cc8.tar.zst",
-              sha256 = "2ce617aea29ff171ba53070741f85f8559b66b7f29c8d2f1946147efa94c2694",
+              url = "gs://minimalmertic-release-channel-stable/mpfr-glibc-4.2.2/mpfr-glibc-4.2.2.tar.zst",
+              sha256 = "be4f04c67a274a5e868d715383db84f0f06963b271f7b62401b1cd6f9df28e8a",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
