@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof sed-4.9.tar.xz
-cd sed-4.9
+tar -xof sed-4.10.tar.xz
+cd sed-4.10
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
