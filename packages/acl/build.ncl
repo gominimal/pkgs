@@ -12,14 +12,14 @@ let make = import "../make/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 let sed = import "../sed/build.ncl" in
 
-let version = "2.3.2" in
+let version = "2.4.0" in
 {
   name = "acl",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/acl-%{version}.tar.xz",
-      sha256 = "97203a72cae99ab89a067fe2210c1cbf052bc492b479eca7d226d9830883b0bd",
+      sha256 = "e661131456d2708a01c614a0f400e11d7d1bfaeb6f3e74b75bb980b72f0161a3",
       extract = true,
       strip_prefix = "acl-%{version}",
     } | Source,
