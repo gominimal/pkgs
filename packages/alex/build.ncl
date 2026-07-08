@@ -38,6 +38,11 @@ let version = "3.5.1.0" in
 
   attrs = {
     upstream_version = version,
+    source_provenance = {
+      category = 'GithubRepo,
+      owner = "haskell",
+      repo = "alex",
+    },
     license_spdx = "BSD-3-Clause",
   },
 } | BuildSpec

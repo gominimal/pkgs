@@ -6,14 +6,14 @@ let ninja = import "../ninja/build.ncl" in
 let meson = import "../meson/build.ncl" in
 let pyproject-metadata = import "../pyproject-metadata/build.ncl" in
 
-let version = "0.18.0" in
+let version = "0.20.0" in
 {
   name = "meson-python",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://files.pythonhosted.org/packages/source/m/meson_python/meson_python-%{version}.tar.gz",
-      sha256 = "c56a99ec9df669a40662fe46960321af6e4b14106c14db228709c1628e23848d",
+      sha256 = "6d9726ae6cd37e22f210c74b364b30180a68c20442e97ff09f3c566a414af738",
       extract = true,
       strip_prefix = "meson_python-%{version}",
     } | Source,

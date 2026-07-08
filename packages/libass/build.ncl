@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -10,14 +10,14 @@ let fribidi = import "../fribidi/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let harfbuzz = import "../harfbuzz/build.ncl" in
 
-let version = "0.17.4" in
+let version = "0.17.5" in
 {
   name = "libass",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/libass/libass/releases/download/%{version}/libass-%{version}.tar.gz",
-      sha256 = "a886b3b80867f437bc55cff3280a652bfa0d37b43d2aff39ddf3c4f288b8c5a8",
+      sha256 = "caab4b993dd7be6187c55623b789ed75dddefea6e65938af134637c732fe094a",
       extract = true,
       strip_prefix = "libass-%{version}",
     } | Source,
@@ -40,6 +40,19 @@ let version = "0.17.4" in
     libs = { glob = "usr/lib/libass.so*" } | OutputLib,
     includes = { glob = "usr/include/ass/**" } | OutputData,
     pkgconfigs = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
+  },
+
+  tests = {
+    link_and_run =
+      {
+        class = 'Standalone,
+        test_deps = [base, toolchain],
+        cmds = [
+          ["/bin/bash", "-c", "echo '#include <ass/ass.h>\n#include <stdio.h>\nint main() { ASS_Library* s = ass_library_init(); if (s) { printf(\"ok\\n\"); ass_library_done(s); return 0; } return 1; }' > test.c"],
+          ["/bin/gcc", "test.c", "-lass", "-o", "test"],
+          ["/bin/bash", "-c", "./test | grep -q '^ok$'"],
+        ],
+      } | Test,
   },
 
   attrs =

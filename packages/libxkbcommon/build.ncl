@@ -12,14 +12,14 @@ let libxml2 = import "../libxml2/build.ncl" in
 let xorgproto = import "../xorgproto/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.13.1" in
+let version = "1.13.2" in
 {
   name = "libxkbcommon",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/xkbcommon/libxkbcommon/xkbcommon-%{version}.tar.gz",
-      sha256 = "aeb951964c2f7ecc08174cb5517962d157595e9e3f38fc4a130b91dc2f9fec18",
+      sha256 = "acc4d5f7c3cbba5f9f8d08d8bdbeede84ecede46792f47929aa9321873385528",
       extract = true,
       strip_prefix = "libxkbcommon-xkbcommon-%{version}",
     } | Source,

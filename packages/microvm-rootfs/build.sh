@@ -2,14 +2,14 @@
 # Assemble a libkrun microVM guest userland as a read-only ext4 image.
 #
 # The build sandbox hardlinks this package's runtime closure (base + git +
-# e2fsprogs + util-linux + their libs) into the sandbox root at standard paths.
-# We snapshot the userland into a staging tree, prune build-only bulk, and pack
-# an ext4 image with mke2fs (from the e2fsprogs runtime closure, on PATH). The
-# image is loaded as a virtio-blk block device (/dev/vda); the guest minimald
-# ships as the initramfs pid-1, mounts this image, and chroots into it, so the
-# image itself carries no standalone init. e2fsprogs (mkfs.ext4) and util-linux
-# (fstrim) ship in the image so the guest can format and reclaim the per-VM
-# writable volume (/dev/vdb) mounted at /var/lib/minimal.
+# iproute2 + e2fsprogs + util-linux + their libs) into the sandbox root at
+# standard paths. We snapshot the userland into a staging tree, prune build-only
+# bulk, and pack an ext4 image with mke2fs (from the e2fsprogs runtime closure,
+# on PATH). The image is loaded as a virtio-blk block device (/dev/vda); the
+# guest minimald ships as the initramfs pid-1, mounts this image, and chroots
+# into it, so the image itself carries no standalone init. e2fsprogs (mkfs.ext4)
+# and util-linux (fstrim) ship in the image so the guest can format and reclaim
+# the per-VM writable volume (/dev/vdb) mounted at /var/lib/minimal.
 set -euo pipefail
 
 STAGE="$(pwd)/stage"

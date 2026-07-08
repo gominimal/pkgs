@@ -7,14 +7,14 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 
-let version = "10.3p1" in
+let version = "10.4p1" in
 {
   name = "openssh",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/openssh-%{version}.tar.gz",
-      sha256 = "56682a36bb92dcf4b4f016fd8ec8e74059b79a8de25c15d670d731e7d18e45f4",
+      sha256 = "ef6026dd2aea8d56059638d5d3262902c892ceba9f88395835e0d06d3fb63238",
       extract = true,
       strip_prefix = "openssh-%{version}",
     } | Source,

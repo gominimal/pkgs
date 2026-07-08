@@ -32,6 +32,7 @@ let version = "3.9.12" in
   attrs =
     {
       upstream_version = version,
+      binary_from = "https://archive.apache.org/dist/maven/",
       license_spdx = "Apache-2.0",
     } | Attrs,
 

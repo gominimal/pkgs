@@ -62,6 +62,10 @@ let version = "4.10.0" in
   attrs =
     {
       upstream_version = version,
+      source_provenance = {
+        category = 'GnuProject,
+        name = "findutils",
+      },
       license_spdx = "GPL-3.0-only",
       repology_project = "findutils",
     } | Attrs,

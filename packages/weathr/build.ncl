@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.3.0" in
+let version = "1.4.0" in
 {
   name = "weathr",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/Veirt/weathr/v%{version}.tar.gz",
-      sha256 = "88eebe264fc874be24b0f250d19b48eaecf050b268af6f333ec1ce6da13a30f0",
+      sha256 = "aa940326f41b23db192165f831567656ea50eb73c971519cbc83adc6d3a21908",
       extract = true,
       strip_prefix = "weathr-%{version}",
     } | Source,

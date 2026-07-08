@@ -30,6 +30,11 @@ let version = "2.42.1" in
     bins = { glob = "usr/bin/*" } | OutputBin,
     sbins = { glob = "usr/sbin/*" } | OutputBin,
 
+    # Granular single-tool output so a consumer can `subsetOf util-linux
+    # ["nsenter"]` (just the binary + glibc) instead of pulling the whole
+    # ~18 MB toolset. nsenter links only libc, so no extra outputs are needed.
+    nsenter = { glob = "usr/bin/nsenter" } | OutputBin,
+
     libblkid = { glob = "usr/lib/libblkid*.so*" } | OutputLib,
     libfdisk = { glob = "usr/lib/libfdisk*.so*" } | OutputLib,
     libmount = { glob = "usr/lib/libmount*.so*" } | OutputLib,

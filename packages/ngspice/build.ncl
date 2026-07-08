@@ -47,10 +47,14 @@ let version = "46" in
   attrs = {
     upstream_version = version,
     license_spdx = "BSD-3-Clause",
+    # github.com/ngspice/ngspice is a frozen CVS-import mirror (newest tag
+    # ngspice-26, ~2014); real releases (up to 46) ship only on SourceForge
+    # (ng-spice-rework). Track SourceForge for version resolution. No CPE
+    # impact: ngspice has no NVD CVEs, and both provenances map to
+    # vendor/product = ngspice/ngspice.
     source_provenance = {
-      category = 'GithubRepo,
-      owner = "ngspice",
-      repo = "ngspice",
+      category = 'Sourceforge,
+      name = "ngspice",
     },
   },
 

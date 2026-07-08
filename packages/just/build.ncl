@@ -6,16 +6,16 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.14.12" in
+let version = "1.55.1" in
 {
-  name = "procs",
+  name = "just",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/dalance/procs/v%{version}.tar.gz",
-      sha256 = "f2fab583fe98a9ae9505c5eecf4f3d9d4ad9bcb5d478a8222d52c87aa1ac602e",
+      url = "https://github.com/casey/just/archive/refs/tags/%{version}.tar.gz",
+      sha256 = "40a2d3725480523ffebb762669cafe2b0135a00383946eec3d47adf5e9be6345",
       extract = true,
-      strip_prefix = "procs-%{version}",
+      strip_prefix = "just-%{version}",
     } | Source,
     base,
     rust,
@@ -30,17 +30,18 @@ let version = "0.14.12" in
   cmd = "./build.sh",
 
   outputs = {
-    procs = { glob = "usr/bin/procs" } | OutputBin,
+    just = { glob = "usr/bin/just" } | OutputBin,
+
     completions = { glob = "usr/share/bash-completion/completions/*" } | OutputData,
   },
   attrs =
     {
       upstream_version = version,
-      license_spdx = "MIT",
+      license_spdx = "CC0-1.0",
       source_provenance = {
         category = 'GithubRepo,
-        owner = "dalance",
-        repo = "procs",
+        owner = "casey",
+        repo = "just",
       },
     } | Attrs,
 } | BuildSpec

@@ -42,6 +42,10 @@ let version = "5.3.2" in
 
   attrs = {
     upstream_version = version,
+    source_provenance = {
+      category = 'GnuProject,
+      name = "gawk",
+    },
     license_spdx = "GPL-3.0-only",
   },
 

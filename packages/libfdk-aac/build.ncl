@@ -36,6 +36,10 @@ let version = "2.0.3" in
   attrs =
     {
       upstream_version = version,
+      source_provenance = {
+        category = 'Sourceforge,
+        name = "opencore-amr",
+      },
       license_spdx = "FDK-AAC",
     } | Attrs,
 } | BuildSpec
