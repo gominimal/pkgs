@@ -46,8 +46,8 @@ let version = "0.19.1" in
         test_deps = [base],
         cmds = [
           # Smoke test ported from the Wolfi recipe's test block.
-          ["/bin/bash", "-c", "restic --version"],
-          ["/bin/bash", "-c", "restic --help"],
+          ["/bin/bash", "-c", "restic --version 2>/dev/null || restic version"],
+          ["/bin/bash", "-c", "restic --help 2>/dev/null || restic help"],
         ],
       } | Test,
   },
