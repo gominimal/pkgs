@@ -37,7 +37,9 @@ let version = "0.22.1" in
     {
       upstream_version = version,
       source_provenance = { category = 'GithubRepo, owner = "getzola", repo = "zola" },
-      license_spdx = "MIT",
+      # zola relicensed to EUPL-1.2 at v0.22 (commit 3c9131d); v0.22.1 declares
+      # `license = "EUPL-1.2"` in Cargo.toml and ships only the EUPL LICENSE file.
+      license_spdx = "EUPL-1.2",
     } | Attrs,
   tests = {
     smoke =

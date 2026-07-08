@@ -26,6 +26,9 @@ let version = "0.2.89" in
       internet = {},
     } | Needs,
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
   outputs = {
     act = { glob = "usr/bin/act" } | OutputBin,
   },
