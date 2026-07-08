@@ -37,7 +37,9 @@ let version = "1.8.1" in
     {
       upstream_version = version,
       source_provenance = { category = 'GithubRepo, owner = "tealdeer-rs", repo = "tealdeer" },
-      license_spdx = "Apache-2.0",
+      # Dual-licensed: v1.8.1 Cargo.toml declares "MIT OR Apache-2.0" and ships
+      # both LICENSE-MIT and LICENSE-APACHE.
+      license_spdx = "MIT OR Apache-2.0",
     } | Attrs,
   tests = {
     smoke =
