@@ -1,13 +1,15 @@
 #!/bin/bash
 # Assemble a libkrun microVM guest userland as a read-only ext4 image.
 #
-# The build sandbox hardlinks this package's runtime closure (base + git + their
-# libs) and its build-only deps (e2fsprogs, for mke2fs) into the sandbox root at
-# standard paths. We snapshot the userland into a staging tree, drop the
-# build-only e2fsprogs files, prune bulk, and pack an ext4 image with mke2fs. The
-# image is loaded as a virtio-blk block device (/dev/vda); the guest minimald
-# ships as the initramfs pid-1, mounts this image, and chroots into it, so the
-# image itself carries no standalone init.
+# The build sandbox hardlinks this package's runtime closure (base + git +
+# iproute2 + e2fsprogs + util-linux + their libs) into the sandbox root at
+# standard paths. We snapshot the userland into a staging tree, prune build-only
+# bulk, and pack an ext4 image with mke2fs (from the e2fsprogs runtime closure,
+# on PATH). The image is loaded as a virtio-blk block device (/dev/vda); the
+# guest minimald ships as the initramfs pid-1, mounts this image, and chroots
+# into it, so the image itself carries no standalone init. e2fsprogs (mkfs.ext4)
+# and util-linux (fstrim) ship in the image so the guest can format and reclaim
+# the per-VM writable volume (/dev/vdb) mounted at /var/lib/minimal.
 set -euo pipefail
 
 STAGE="$(pwd)/stage"
@@ -21,29 +23,13 @@ for d in usr bin sbin lib lib64 etc; do
   fi
 done
 
-# e2fsprogs is a build-only dependency: it provides mke2fs to pack the image
-# below (invoked from the build sandbox PATH, not from $STAGE), but the guest
-# never needs it at runtime. Drop its staged files so the runtime image carries
-# only the runtime closure. Remove e2fsprogs's sbin tools by name rather than
-# nuking usr/sbin wholesale: iproute2 installs `ip` (and ss/tc/bridge) into
-# /usr/sbin (SBINDIR=/usr/sbin) and that must survive into the guest. The list
-# is the full e2fsprogs sbin set — nothing else in the runtime closure ships
-# these names (util-linux is pulled as `subsetOf ["nsenter"]`, so its blkid/
-# findfs/fsck/uuidd never reach the image and the e2fsprogs copies must go).
-# rm -f tolerates names this e2fsprogs config happens not to build.
-for tool in badblocks blkid debugfs dumpe2fs e2freefrag e2fsck e2image e2label \
-            e2mmpstatus e2scrub e2scrub_all e2undo e4crypt filefrag findfs fsck \
-            fsck.ext2 fsck.ext3 fsck.ext4 logsave mke2fs mkfs.ext2 mkfs.ext3 \
-            mkfs.ext4 mklost+found resize2fs tune2fs uuidd; do
-  rm -f "$STAGE/usr/sbin/$tool"
-done
-rm -f "$STAGE"/usr/bin/chattr "$STAGE"/usr/bin/lsattr "$STAGE"/usr/bin/uuidgen \
-      "$STAGE"/usr/bin/compile_et "$STAGE"/usr/bin/mk_cmds
-# Note: `libss.so*` (not `libss*.so*`) — the latter also matches openssl's
-# libssl.so, which the git runtime closure (curl, openssl) needs at runtime.
-rm -f "$STAGE"/usr/lib/libext2fs.so* "$STAGE"/usr/lib/libe2p.so* "$STAGE"/usr/lib/libss.so*
-
 mkdir -p "$STAGE/bin" "$STAGE/sbin"
+
+# Per-VM writable volume mountpoint. The guest minimald mounts /dev/vdb here on
+# first boot (after formatting it with mkfs.ext4). The root image is mounted
+# read-only, so this directory cannot be created at runtime — it must ship in
+# the image or the mount fails with ENOENT/EROFS.
+mkdir -p "$STAGE/var/lib/minimal"
 
 # Kernel mountpoints. devtmpfs auto-mounts on /dev at boot (CONFIG_DEVTMPFS_MOUNT)
 # — without the directory it fails with "devtmpfs: error mounting -2" and the
@@ -61,6 +47,26 @@ if [ ! -e "$STAGE/bin/sh" ]; then
   fi
 fi
 
+# libblkid / libuuid canonicalization. e2fsprogs and util-linux both ship a
+# libblkid.so.1 and libuuid.so.1 with the same soname; the staging composition
+# resolves them to e2fsprogs's older, unversioned forks. util-linux's libmount
+# then loads those and warns "libblkid.so.1: no version information available"
+# on every fstrim/mount/blkid. Repoint the sonames at util-linux's versioned
+# libs (an ABI superset — e2fsprogs's own mke2fs/e2fsck link them fine) and drop
+# the e2fsprogs forks. The util-linux targets are version-specific filenames;
+# fail loudly if a package bump renames them so this can't silently regress.
+ul_blkid=libblkid.so.1.1.0
+ul_uuid=libuuid.so.1.3.0
+for f in "$ul_blkid" "$ul_uuid"; do
+  [ -e "$STAGE/usr/lib/$f" ] || {
+    echo "ERROR: util-linux lib usr/lib/$f missing — did util-linux change soname?" >&2
+    exit 1
+  }
+done
+rm -f "$STAGE"/usr/lib/libblkid.so.1.0 "$STAGE"/usr/lib/libuuid.so.1.2
+ln -sf "$ul_blkid" "$STAGE/usr/lib/libblkid.so.1"
+ln -sf "$ul_uuid" "$STAGE/usr/lib/libuuid.so.1"
+
 # Prune build-time-only bulk the guest never needs: headers, static libs,
 # docs/man, and especially glibc's locale archive (the bulk of the closure).
 # The C locale fallback is sufficient for the guest workload.
@@ -75,7 +81,7 @@ fi
 
 # Fail loudly (not silently with an empty output) if the image tool is absent.
 command -v mke2fs >/dev/null || {
-  echo "ERROR: mke2fs not found on PATH ($PATH) — is e2fsprogs in build_deps?" >&2
+  echo "ERROR: mke2fs not found on PATH ($PATH) — is e2fsprogs in runtime_deps?" >&2
   exit 1
 }
 
