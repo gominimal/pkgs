@@ -47,26 +47,6 @@ if [ ! -e "$STAGE/bin/sh" ]; then
   fi
 fi
 
-# libblkid / libuuid canonicalization. e2fsprogs and util-linux both ship a
-# libblkid.so.1 and libuuid.so.1 with the same soname; the staging composition
-# resolves them to e2fsprogs's older, unversioned forks. util-linux's libmount
-# then loads those and warns "libblkid.so.1: no version information available"
-# on every fstrim/mount/blkid. Repoint the sonames at util-linux's versioned
-# libs (an ABI superset — e2fsprogs's own mke2fs/e2fsck link them fine) and drop
-# the e2fsprogs forks. The util-linux targets are version-specific filenames;
-# fail loudly if a package bump renames them so this can't silently regress.
-ul_blkid=libblkid.so.1.1.0
-ul_uuid=libuuid.so.1.3.0
-for f in "$ul_blkid" "$ul_uuid"; do
-  [ -e "$STAGE/usr/lib/$f" ] || {
-    echo "ERROR: util-linux lib usr/lib/$f missing — did util-linux change soname?" >&2
-    exit 1
-  }
-done
-rm -f "$STAGE"/usr/lib/libblkid.so.1.0 "$STAGE"/usr/lib/libuuid.so.1.2
-ln -sf "$ul_blkid" "$STAGE/usr/lib/libblkid.so.1"
-ln -sf "$ul_uuid" "$STAGE/usr/lib/libuuid.so.1"
-
 # Prune build-time-only bulk the guest never needs: headers, static libs,
 # docs/man, and especially glibc's locale archive (the bulk of the closure).
 # The C locale fallback is sufficient for the guest workload.
