@@ -21,6 +21,9 @@ let version = "1.6.0" in
     setuptools-scm,
   ],
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
   outputs = {
     python_site_package = { glob = "usr/lib/python*/site-packages/pluggy/**" } | OutputData,
     python_dist_info = { glob = "usr/lib/python*/site-packages/pluggy-*.dist-info/**" } | OutputData,

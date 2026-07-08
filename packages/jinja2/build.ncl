@@ -1,5 +1,5 @@
-# Imported from Wolfi `jinja2` by `pkgmgr import-wolfi` (python build).
-# TODO: REVIEWER — verify the pypi runtime deps (install_requires) + outputs.
+# Imported from Wolfi `jinja2` by `pkgmgr import-wolfi` (python build),
+# with outputs refined from a verified `minimal package` build.
 let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let flit-core = import "../flit-core/build.ncl" in
@@ -21,7 +21,8 @@ let version = "3.1.6" in
   ],
   cmd = "./build.sh",
   outputs = {
-    everything = { glob = "usr/**", allow_executable = true } | OutputData,
+    python_site_package = { glob = "usr/lib/python*/site-packages/jinja2/**" } | OutputData,
+    python_dist_info = { glob = "usr/lib/python*/site-packages/jinja2-*.dist-info/**" } | OutputData,
   },
   runtime_deps = [python, markupsafe],
   attrs =

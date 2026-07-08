@@ -1,5 +1,5 @@
-# Imported from Wolfi `wrapt` by `pkgmgr import-wolfi` (python build).
-# TODO: REVIEWER — verify the pypi runtime deps (install_requires) + outputs.
+# Imported from Wolfi `wrapt` by `pkgmgr import-wolfi` (python build),
+# with outputs refined from a verified `minimal package` build.
 let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let setuptools = import "../setuptools/build.ncl" in
@@ -20,7 +20,9 @@ let version = "2.2.2" in
   ],
   cmd = "./build.sh",
   outputs = {
-    everything = { glob = "usr/**", allow_executable = true } | OutputData,
+    python_site_package = { glob = "usr/lib/python*/site-packages/wrapt/**" } | OutputData,
+    site_wrapt_stubs = { glob = "usr/lib/python*/site-packages/wrapt-stubs/**" } | OutputData,
+    python_dist_info = { glob = "usr/lib/python*/site-packages/wrapt-*.dist-info/**" } | OutputData,
   },
   runtime_deps = [python],
   attrs =

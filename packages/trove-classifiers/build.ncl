@@ -21,6 +21,9 @@ let version = "2026.6.1.19" in
     setuptools-scm,
   ],
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
   outputs = {
     trove-classifiers = { glob = "usr/bin/trove-classifiers" } | OutputBin,
     python_site_package = { glob = "usr/lib/python*/site-packages/trove_classifiers/**" } | OutputData,
