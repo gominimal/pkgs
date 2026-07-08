@@ -11,9 +11,9 @@ let ripgrep = import "../ripgrep/build.ncl" in
 
 let { version, amd64_sha256, arm64_sha256, gcs_bucket } = {
   gcs_bucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases",
-  version = "2.1.197",
-  amd64_sha256 = "f54e69cbc89b2da61a415700af7ff52a147e862517d4f1b0eecf768448cf7f83",
-  arm64_sha256 = "fb48473c467c27615ac799a754f4ef0b68c363e4596cefbb59c3815d51a0cc8a",
+  version = "2.1.204",
+  amd64_sha256 = "c8ee1ea69154533c691a68f46abb645196fe7339d26e6fc204cc7f08220139d3",
+  arm64_sha256 = "c37256a8c3998b8675e8385f1ae4677d69bdff1e717c389296eec70e02e317ef",
 }
 in
 
