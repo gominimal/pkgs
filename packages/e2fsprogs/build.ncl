@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -20,17 +20,23 @@ let version = "1.47.4" in
     make,
     pkgconf,
     toolchain,
+    # Build against util-linux's libblkid/libuuid (build.sh configures
+    # --disable-libblkid --disable-libuuid). Configure detects them via
+    # pkg-config, needing the headers and .pc files (OutputData) as well as the
+    # libs, so pull the whole package here — build_deps don't propagate to
+    # consumers' runtime closures.
+    util-linux,
   ],
-  # util-linux provides libblkid/libuuid: build.sh configures --disable-libblkid
-  # --disable-libuuid so e2fsprogs's tools link util-linux's maintained,
-  # symbol-versioned libs instead of bundling its own older forks (same soname,
-  # which otherwise collide in a shared image). Needed both to link at build and
-  # to load at runtime. Cycle-safe: nothing in util-linux's closure uses
-  # e2fsprogs.
+  # e2fsprogs bundles its own older forks of libblkid/libuuid with the same
+  # soname as util-linux's maintained, symbol-versioned libs; shipping both in
+  # one image collides. build.sh disables the forks, so mke2fs/e2fsck DT_NEED
+  # util-linux's libblkid.so.1/libuuid.so.1 at runtime — pull only those two
+  # outputs, not the whole ~18 MB toolset. Cycle-safe: nothing in util-linux's
+  # closure uses e2fsprogs.
   runtime_deps = [
     glibc,
     bash,
-    util-linux,
+    subsetOf util-linux ["libblkid", "libuuid"],
   ],
 
   cmd = "./build.sh",
