@@ -54,10 +54,10 @@ let version = "4.8.0" in
     fish_indent = { glob = "usr/bin/fish_indent" } | OutputBin,
     fish_key_reader = { glob = "usr/bin/fish_key_reader" } | OutputBin,
 
-    completions = { glob = "usr/share/fish/completions/**" } | OutputData,
-    functions = { glob = "usr/share/fish/functions/**" } | OutputData,
-    conf = { glob = "usr/share/fish/config.fish" } | OutputData,
+    # fish 4.x (Rust rewrite) embeds completions/functions/config.fish into the
+    # binary — they are no longer installed as files under usr/share/fish/.
     docs = { glob = "usr/share/doc/fish/**" } | OutputData,
+    pkgconfig = { glob = "usr/share/pkgconfig/fish.pc" } | OutputData,
   },
 
   attrs =
