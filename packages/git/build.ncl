@@ -10,15 +10,15 @@ let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "2.55.0" in
+let version = "2.54.0" in
 {
   name = "git",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://www.kernel.org/pub/software/scm/git/git-2.55.0.tar.xz
+      # https://www.kernel.org/pub/software/scm/git/git-2.54.0.tar.xz
       url = "gs://minimal-staging-archives/git-%{version}.tar.xz",
-      sha256 = "457fdb04dc8728e007d4688695e6912e6f680727920f2a40bf11eacc17505357",
+      sha256 = "f689162364c10de79ef89aa8dbf48731eb057e34edbbd20aca510ce0154681a3",
       extract = true,
       strip_prefix = "git-%{version}",
     } | Source,
