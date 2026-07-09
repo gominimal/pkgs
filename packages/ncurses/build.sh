@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof ncurses-6.5-20250830.tgz
-cd ncurses-6.5-20250830
+tar -xof ncurses-6.6.tgz
+cd ncurses-6.6
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;

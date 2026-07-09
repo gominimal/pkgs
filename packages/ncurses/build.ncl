@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "6.5-20250830" in
+let version = "6.6" in
 {
   name = "ncurses",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/ncurses-%{version}.tgz",
-      sha256 = "519ec9f748d7f2873cf763394fc766a701967439610125ad0fbf76ab2c7510a5"
+      sha256 = "355b4cbbed880b0381a04c46617b7656e362585d52e9cf84a67e2009b749ff11"
     } | Source,
     base-bootstrap,
     make,

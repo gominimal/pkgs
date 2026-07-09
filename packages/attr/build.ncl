@@ -11,14 +11,14 @@ let make = import "../make/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 let sed = import "../sed/build.ncl" in
 
-let version = "2.5.2" in
+let version = "2.6.0" in
 {
   name = "attr",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/attr-%{version}.tar.gz",
-      sha256 = "39bf67452fa41d0948c2197601053f48b3d78a029389734332a6309a680c6c87",
+      sha256 = "d42fa374513180bb48cb11a46696f488240e5124ff1e6ad88b0abff706985612",
       extract = true,
       strip_prefix = "attr-%{version}",
     } | Source,

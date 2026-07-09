@@ -12,16 +12,16 @@ let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let lz4 = import "../lz4/build.ncl" in
 let xz = import "../xz/build.ncl" in
-let version = "5.47" in
+let version = "5.48" in
 {
   name = "file",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       # Home page: https://www.darwinsys.com/file/
-      # https://astron.com/pub/file/file-5.47.tar.gz
+      # https://astron.com/pub/file/file-5.48.tar.gz
       url = "gs://minimal-staging-archives/file-%{version}.tar.gz",
-      sha256 = "45672fec165cb4cc1358a2d76b5d57d22876dcb97ab169427ac385cbe1d5597a"
+      sha256 = "ed14656883b23a364b4057c05595d93252da9bc473d30106519519d0da141283"
     } | Source,
     bash-bootstrap,
     tar,
