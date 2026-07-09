@@ -1,6 +1,16 @@
 #!/bin/sh
 set -e
 
+# pnpm 11 migration: strictDepBuilds now defaults to true, so unreviewed
+# dependency build scripts (esbuild/geckodriver/…) are a hard error
+# (ERR_PNPM_IGNORED_BUILDS) rather than a warning — but this build deliberately
+# skips them (`--ignore-scripts`; the daemon ships a prebuilt binary), so demote
+# it back to a warning. Also disable the pre-script deps check, which otherwise
+# reinstalls before `pnpm build` and re-runs the husky postinstall (which needs
+# a `.git` the source tarball doesn't have).
+export PNPM_CONFIG_STRICT_DEP_BUILDS=false
+export PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false
+
 export CC=gcc
 export LD=gcc
 export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo -C codegen-units=1"

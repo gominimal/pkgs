@@ -5,6 +5,16 @@ set -euo pipefail
 export CC=gcc
 export CXX=g++
 
+# pnpm 11 migration: strictDepBuilds now defaults to true, so a dependency with
+# an unreviewed build script (esbuild/sharp/…) aborts the install with
+# ERR_PNPM_IGNORED_BUILDS instead of just warning. We don't rely on those
+# install-time native builds (sharp is source-built separately below against
+# system libvips), so demote it back to a warning. Also disable the pre-script
+# deps check, which otherwise reinstalls before `pnpm exec turbo` and re-runs
+# the husky prepare hook (which needs a `.git` the source tarball doesn't have).
+export PNPM_CONFIG_STRICT_DEP_BUILDS=false
+export PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false
+
 # Install all dependencies using the repo's pnpm-lock.yaml for reproducibility.
 # The lockfile pins exact versions of every transitive dependency used during the build.
 pnpm install --frozen-lockfile
