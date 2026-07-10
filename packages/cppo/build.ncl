@@ -1,5 +1,5 @@
 # Auto-bootstrapped from https://github.com/ocaml-community/cppo by `pkgmgr bootstrap` (ocaml/dune build).
-let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let ocaml = import "../ocaml/build.ncl" in
 let dune = import "../dune/build.ncl" in
@@ -25,6 +25,7 @@ let version = "1.6.9" in
   ],
   cmd = "./build.sh",
   outputs = {
+    bin = { glob = "usr/bin/cppo" } | OutputBin,
     cppo = { glob = "usr/lib/ocaml/cppo/**", allow_executable = true } | OutputData,
   },
   runtime_deps = [ocaml],
