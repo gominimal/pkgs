@@ -1,6 +1,11 @@
 #!/bin/sh
 set -e
 
+# gcc-15 rejects abseil's direct `#include <bmi2intrin.h>` (raw_hash_set.h)
+# under -march=x86-64-v3 (which defines __BMI2__) — swap it for the sanctioned
+# `<x86intrin.h>` umbrella header, exactly as gcc's own diagnostic advises.
+patch -Np1 -i "abseil-cpp-gcc15-bmi2intrin.patch"
+
 mkdir build &&
 cd    build
 
