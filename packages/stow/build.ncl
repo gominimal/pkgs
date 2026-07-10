@@ -1,5 +1,4 @@
 # Imported from Wolfi `stow` by `pkgmgr import-wolfi` (autotools build).
-# TODO: REVIEWER — verify deps/outputs/runtime_deps + the build.sh opts.
 let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let autoconf = import "../autoconf/build.ncl" in
@@ -52,8 +51,6 @@ let version = "2.4.1" in
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          # TODO: REVIEWER — ported from the Wolfi test block; verify each
-          # against minimal's toolchain (bins on PATH, flags supported).
           ["/bin/bash", "-c", "stow --version\nstow --help\n\nmkdir test links\ncd test || exit\necho 'this is a test' > test.file\n\nstow -S -t ../links .\nls -1 ../links/test.file"],
         ],
       } | Test,
