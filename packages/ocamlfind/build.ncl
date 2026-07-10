@@ -51,12 +51,24 @@ let version = "1.9.8" in
     } | Attrs,
 
   tests = {
-    version_check =
+    list =
       {
         class = 'Standalone,
         test_deps = [base, grep, coreutils],
         cmds = [
           ["/bin/bash", "-c", "/usr/bin/ocamlfind list 2>&1 | grep -qi findlib"],
+        ],
+      } | Test,
+    # Prove ocamlfind actually resolves + drives the compiler: query a known
+    # package for its dir, then compile a program via `ocamlfind ocamlopt`
+    # (the path non-dune libraries like zarith rely on).
+    query_and_compile =
+      {
+        class = 'Standalone,
+        test_deps = [base, ocaml, toolchain, grep, coreutils],
+        cmds = [
+          ["/bin/bash", "-c", "OCAMLPATH=/usr/lib/ocaml /usr/bin/ocamlfind query stdlib | grep -q /usr/lib/ocaml"],
+          ["/bin/bash", "-c", "echo 'let () = print_string \"ok\"' > t.ml && OCAMLPATH=/usr/lib/ocaml /usr/bin/ocamlfind ocamlopt t.ml -o t && ./t | grep -q ok"],
         ],
       } | Test,
   },

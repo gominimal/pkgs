@@ -64,5 +64,15 @@ let version = "3.20.2" in
           ["/bin/bash", "-c", "/usr/bin/dune --version | grep -q '3.20.2'"],
         ],
       } | Test,
+    # The real proof dune works as a build tool: scaffold a tiny dune project,
+    # build it (resolving the compiler via OCAMLPATH), and run the output.
+    builds_a_project =
+      {
+        class = 'Standalone,
+        test_deps = [base, ocaml, toolchain, grep, coreutils],
+        cmds = [
+          ["/bin/bash", "-c", "mkdir -p proj && cd proj && printf '(lang dune 3.0)\\n' > dune-project && printf '(executable (name main))\\n' > dune && printf 'let () = print_string \"ok\"\\n' > main.ml && OCAMLPATH=/usr/lib/ocaml CAML_LD_LIBRARY_PATH=/usr/lib/ocaml/stublibs /usr/bin/dune build ./main.exe && ./_build/default/main.exe | grep -q ok"],
+        ],
+      } | Test,
   },
 } | BuildSpec
