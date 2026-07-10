@@ -2,7 +2,7 @@
 set -ex
 
 # `.tbz` isn't auto-extracted by minimal; unpack + enter the source tree.
-tar -xf "yojson-${MINIMAL_ARG_VERSION}.tbz"
+tar -xof "yojson-${MINIMAL_ARG_VERSION}.tbz"
 cd "yojson-${MINIMAL_ARG_VERSION}"
 
 export BUILD_PATH_PREFIX_MAP="/builddir=$(pwd)"

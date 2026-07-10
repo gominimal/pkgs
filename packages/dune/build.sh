@@ -2,7 +2,7 @@
 set -ex
 
 # `.tbz` isn't auto-extracted by minimal; unpack + enter the source tree.
-tar -xf "dune-${MINIMAL_ARG_VERSION}.tbz"
+tar -xof "dune-${MINIMAL_ARG_VERSION}.tbz"
 cd "dune-${MINIMAL_ARG_VERSION}"
 
 export BUILD_PATH_PREFIX_MAP="/builddir=$(pwd)"

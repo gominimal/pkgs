@@ -2,6 +2,7 @@ let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = impor
 let base = import "../base/build.ncl" in
 let ocaml = import "../ocaml/build.ncl" in
 let dune = import "../dune/build.ncl" in
+let seq = import "../seq/build.ncl" in
 let ocamlfind = import "../ocamlfind/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -14,19 +15,21 @@ let version = "2.2.2" in
     { file = "build.sh" } | Local,
     {
       # https://github.com/ocaml-community/yojson/releases/download/2.2.2/yojson-2.2.2.tbz
-      url = "https://github.com/ocaml-community/yojson/releases/download/%{version}/yojson-%{version}.tbz",
+      url = "gs://minimal-staging-archives/yojson-%{version}.tbz",
       sha256 = "9abfad8c9a79d4723ad2f6448e669c1e68dbfc87cc54a1b7c064b0c90912c595",
       extract = false,
     } | Source,
     base,
     ocaml,
     dune,
+    seq,
     toolchain,
   ],
-  # A pure-OCaml library: bytecode users need ocamlrun from `ocaml`; native
-  # users link nothing extra. (`seq` is stdlib on OCaml 5, so no dep for it.)
+  # A pure-OCaml library: bytecode users need ocamlrun from `ocaml`; `seq` is an
+  # empty findlib shim yojson's META `requires` (Seq itself is stdlib on OCaml 5).
   runtime_deps = [
     ocaml,
+    seq,
   ],
 
   cmd = "./build.sh",

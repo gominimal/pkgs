@@ -12,10 +12,11 @@ let version = "1.9.8" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # Findlib's OFFICIAL release tarball from camlcity — NOT the GitHub
+      # Mirror of findlib's OFFICIAL camlcity release tarball — NOT the GitHub
       # auto-generated archive, whose contents/checksum can change over time
       # (per dune-release guidance: pin the upstream release artifact).
-      url = "http://download.camlcity.org/download/findlib-%{version}.tar.gz",
+      # http://download.camlcity.org/download/findlib-1.9.8.tar.gz
+      url = "gs://minimal-staging-archives/findlib-%{version}.tar.gz",
       sha256 = "662c910f774e9fee3a19c4e057f380581ab2fc4ee52da4761304ac9c31b8869d",
       extract = true,
       strip_prefix = "findlib-%{version}",

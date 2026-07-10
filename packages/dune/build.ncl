@@ -13,7 +13,7 @@ let version = "3.20.2" in
     { file = "build.sh" } | Local,
     {
       # https://github.com/ocaml/dune/releases/download/3.20.2/dune-3.20.2.tbz
-      url = "https://github.com/ocaml/dune/releases/download/%{version}/dune-%{version}.tbz",
+      url = "gs://minimal-staging-archives/dune-%{version}.tbz",
       sha256 = "b1a86b2d60bdb4a8b9bb6861bdf2f9f28a6e7cb5d833ce81afecceb9ef9ca549",
       # minimal's extractor doesn't know `.tbz`; unpack it in build.sh (tar -xf
       # autodetects bzip2), mirroring how ghc handles its source archive.

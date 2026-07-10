@@ -13,7 +13,7 @@ let version = "5.3.0" in
     { file = "build.sh" } | Local,
     {
       # https://github.com/ocaml/ocaml/releases/download/5.3.0/ocaml-5.3.0.tar.gz
-      url = "https://github.com/ocaml/ocaml/releases/download/%{version}/ocaml-%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/ocaml-%{version}.tar.gz",
       sha256 = "22c1dd9de21bf43b62d1909041fb5fad648905227bf69550a6a6bef31e654f38",
       extract = true,
       strip_prefix = "ocaml-%{version}",
