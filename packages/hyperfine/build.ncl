@@ -1,5 +1,3 @@
-# Auto-bootstrapped from https://github.com/sharkdp/hyperfine by `pkgmgr bootstrap` (rust build).
-# TODO: REVIEWER — verify outputs/runtime_deps + the build.sh.
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in

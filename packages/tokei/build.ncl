@@ -1,5 +1,3 @@
-# Auto-bootstrapped from https://github.com/XAMPPRocky/tokei by `pkgmgr bootstrap` (rust build).
-# TODO: REVIEWER — verify outputs/runtime_deps + the build.sh.
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
@@ -37,6 +35,6 @@ let version = "14.0.0" in
     {
       upstream_version = version,
       source_provenance = { category = 'GithubRepo, owner = "XAMPPRocky", repo = "tokei" },
-      # TODO: REVIEWER — set license_spdx.
+      license_spdx = "MIT OR Apache-2.0",
     } | Attrs,
 } | BuildSpec
