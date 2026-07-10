@@ -4,14 +4,14 @@ let glibc = import "../glibc/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "2.14" in
+let version = "2.15.1" in
 {
   name = "jansson",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/akheron/jansson/releases/download/v%{version}/jansson-%{version}.tar.gz",
-      sha256 = "5798d010e41cf8d76b66236cfb2f2543c8d082181d16bc3085ab49538d4b9929",
+      sha256 = "0c7114dc0b2d22a670724a1f95922029d7077c19dbf79a584cb8084d2f267f2f",
       extract = true,
       strip_prefix = "jansson-%{version}",
     } | Source,
