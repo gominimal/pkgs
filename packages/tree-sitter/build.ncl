@@ -5,14 +5,14 @@ let glibc = import "../glibc/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "0.24.7" in
+let version = "0.25.10" in
 {
   name = "tree-sitter",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/tree-sitter/tree-sitter/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "7cbc13c974d6abe978cafc9da12d1e79e07e365c42af75e43ec1b5cdc03ed447",
+      sha256 = "ad5040537537012b16ef6e1210a572b927c7cdc2b99d1ee88d44a7dcdc3ff44c",
       extract = true,
       strip_prefix = "tree-sitter-%{version}",
     } | Source,
