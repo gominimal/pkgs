@@ -12,14 +12,14 @@ let glibc = import "../glibc/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let git = import "../git/build.ncl" in
 
-let version = "0.130.0" in
+let version = "0.144.1" in
 {
   name = "codex",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/openai/codex/archive/refs/tags/rust-v%{version}.tar.gz",
-      sha256 = "13fac7f7aa8ef2e2747696ae2681bd2129f31f0f592a9d276af9780234f4fdf0",
+      sha256 = "c11868501ef0e67c90759deaf2c0933cd07e4bea4f47a47186ee6de046c57ef6",
       extract = true,
       strip_prefix = "codex-rust-v%{version}",
     } | Source,
