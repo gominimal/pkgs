@@ -33,7 +33,9 @@ let version = "1.9.8" in
   cmd = "./build.sh",
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    # Just the one binary — enumerated explicitly (the checker wants named
+    # outputs, not a `usr/bin/*` wildcard, when there are only a few).
+    ocamlfind = { glob = "usr/bin/ocamlfind" } | OutputBin,
     libs = { glob = "usr/lib/ocaml/**", allow_executable = true } | OutputData,
     conf = { glob = "usr/lib/findlib.conf" } | OutputData,
   },
