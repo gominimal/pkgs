@@ -12,11 +12,13 @@ let version = "1.9.8" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://github.com/ocaml/ocamlfind/archive/refs/tags/findlib-1.9.8.tar.gz
-      url = "https://github.com/ocaml/ocamlfind/archive/refs/tags/findlib-%{version}.tar.gz",
-      sha256 = "d6899935ccabf67f067a9af3f3f88d94e310075d13c648fa03ff498769ce039d",
+      # Findlib's OFFICIAL release tarball from camlcity — NOT the GitHub
+      # auto-generated archive, whose contents/checksum can change over time
+      # (per dune-release guidance: pin the upstream release artifact).
+      url = "http://download.camlcity.org/download/findlib-%{version}.tar.gz",
+      sha256 = "662c910f774e9fee3a19c4e057f380581ab2fc4ee52da4761304ac9c31b8869d",
       extract = true,
-      strip_prefix = "ocamlfind-findlib-%{version}",
+      strip_prefix = "findlib-%{version}",
     } | Source,
     base,
     ocaml,
