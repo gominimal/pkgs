@@ -13,14 +13,14 @@ let gcc = import "../gcc/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
 
-let version = "4.5.0" in
+let version = "4.8.0" in
 {
   name = "fish",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/fish-shell/fish-shell/releases/download/%{version}/fish-%{version}.tar.xz",
-      sha256 = "89151f8cf14b634e080226fe696f9ce7d4d153c77629996ca4431c80482c64ed",
+      sha256 = "33af62c7df2fa553e0e84fa81f6ea48acf98c2bfc50036eaacc70ac8ba63e707",
       extract = true,
       strip_prefix = "fish-%{version}",
     } | Source,
@@ -54,10 +54,10 @@ let version = "4.5.0" in
     fish_indent = { glob = "usr/bin/fish_indent" } | OutputBin,
     fish_key_reader = { glob = "usr/bin/fish_key_reader" } | OutputBin,
 
-    completions = { glob = "usr/share/fish/completions/**" } | OutputData,
-    functions = { glob = "usr/share/fish/functions/**" } | OutputData,
-    conf = { glob = "usr/share/fish/config.fish" } | OutputData,
+    # fish 4.x (Rust rewrite) embeds completions/functions/config.fish into the
+    # binary — they are no longer installed as files under usr/share/fish/.
     docs = { glob = "usr/share/doc/fish/**" } | OutputData,
+    pkgconfig = { glob = "usr/share/pkgconfig/fish.pc" } | OutputData,
   },
 
   attrs =
