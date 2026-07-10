@@ -46,6 +46,8 @@ let version = "0.1.0" in
     {
       upstream_version = version,
       license_spdx = "MIT",
+      closed_source = true,
+      binary_from = "https://registry.npmjs.org/cf/-/cf-%{version}.tgz",
     } | Attrs,
 
   tests = {
