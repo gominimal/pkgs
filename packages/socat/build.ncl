@@ -8,7 +8,7 @@ let openssl = import "../openssl/build.ncl" in
 let readline = import "../readline/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.8.1.1" in
+let version = "1.8.1.3" in
 {
   name = "socat",
   build_deps = [
@@ -19,7 +19,7 @@ let version = "1.8.1.1" in
       # PR-update fetch has the same HTTPS integrity story as every
       # other package — see gominimal/pkgs#172).
       url = "gs://minimal-staging-archives/socat-%{version}.tar.gz",
-      sha256 = "f68b602c80e94b4b7498d74ec408785536fe33534b39467977a82ab2f7f01ddb",
+      sha256 = "06602ffd591e98c75b3dc1d66f0f19136cc666b0b2d95caad987d6ab2cb28097",
       extract = true,
       strip_prefix = "socat-%{version}",
     } | Source,
