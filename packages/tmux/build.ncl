@@ -13,14 +13,14 @@ let ncurses = import "../ncurses/build.ncl" in
 let libevent = import "../libevent/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "3.6a" in
+let version = "3.7" in
 {
   name = "tmux",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/tmux/tmux/%{version}.tar.gz",
-      sha256 = "cd8d97f344cd2faa89e41358428b3ada883e4c72fd7d4f43ccac93daec1442eb",
+      sha256 = "123b9ed37c7ee957327a483024ea6ae0e6032348c02680be2ac91b9350e62d36",
       extract = true,
       strip_prefix = "tmux-%{version}",
     } | Source,
