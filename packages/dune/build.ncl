@@ -61,7 +61,7 @@ let version = "3.20.2" in
         class = 'Standalone,
         test_deps = [base, grep, coreutils],
         cmds = [
-          ["/bin/bash", "-c", "/usr/bin/dune --version | grep -q '3.20.2'"],
+          ["/bin/bash", "-c", "/usr/bin/dune --version | grep -q '%{version}'"],
         ],
       } | Test,
     # The real proof dune works as a build tool: scaffold a tiny dune project,
