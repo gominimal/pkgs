@@ -18,17 +18,28 @@ concurrency:
   group: notify-webapp
   cancel-in-progress: true
 
-# No GITHUB_TOKEN scopes needed — the dispatch authenticates with the
-# cross-repo PAT in WEBAPP_DISPATCH_TOKEN, not the workflow token.
+# No GITHUB_TOKEN scopes needed — the dispatch authenticates with a
+# short-lived token minted from the webapp-deployer GitHub App, matching
+# the org's App-based cross-repo pattern (infra pkgsec #162) rather than a
+# long-lived user PAT.
 permissions: {}
 
 jobs:
   dispatch:
     runs-on: ubuntu-latest
     steps:
+      # Mint an installation token scoped to gominimal/webapp only.
+      - name: Mint webapp-deployer token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.WEBAPP_DEPLOYER_APP_ID }}
+          private-key: ${{ secrets.WEBAPP_DEPLOYER_PRIVATE_KEY }}
+          owner: gominimal
+          repositories: webapp
       - name: Dispatch webapp prerender rebuild
         env:
-          GH_TOKEN: ${{ secrets.WEBAPP_DISPATCH_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
           jq -n --arg sha "$GITHUB_SHA" \
