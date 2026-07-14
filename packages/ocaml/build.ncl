@@ -65,7 +65,7 @@ let version = "5.5.0" in
         class = 'Standalone,
         test_deps = [base, grep, coreutils],
         cmds = [
-          ["/bin/bash", "-c", "/usr/bin/ocaml -version | grep -q '5.3.0'"],
+          ["/bin/bash", "-c", "/usr/bin/ocaml -version | grep -q '%{version}'"],
         ],
       } | Test,
     # The real proof the toolchain is whole: bytecode AND native compilation of
