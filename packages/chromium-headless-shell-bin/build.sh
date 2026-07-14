@@ -29,6 +29,24 @@ if [ "$(uname -m)" = "x86_64" ] && [ "$SHELL_INNER" = "headless-shell" ]; then
   mv _shell/headless-shell _shell/chrome-headless-shell-linux64
   SHELL_INNER=chrome-headless-shell-linux64
   ln -s headless_shell "_shell/$SHELL_INNER/chrome-headless-shell"
+
+  # The snapshot headless-shell.zip ships only the binary + .paks; the
+  # runtime also needs ICU data, the v8 context snapshot, and the
+  # GL/SwiftShader fallback libs (all of which the CfT and Playwright
+  # bundles carry inline — headless_shell FATALs on missing icudtl.dat).
+  # Graft them from the full-browser zip at the same snapshot position,
+  # which build_deps fetches on amd64 only.
+  mkdir -p _support
+  unzip -q chrome-linux.zip \
+    "chrome-linux/icudtl.dat" \
+    "chrome-linux/v8_context_snapshot.bin" \
+    "chrome-linux/libEGL.so" \
+    "chrome-linux/libGLESv2.so" \
+    "chrome-linux/libvulkan.so.1" \
+    "chrome-linux/libvk_swiftshader.so" \
+    "chrome-linux/vk_swiftshader_icd.json" \
+    -d _support
+  cp _support/chrome-linux/* "_shell/$SHELL_INNER/"
 fi
 
 # Inner binary differs by source:

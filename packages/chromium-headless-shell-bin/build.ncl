@@ -62,23 +62,41 @@ let browser_version = "147.0.7727.15" in
 let snapshot_position = "1596534" in
 {
   name = "chromium-headless-shell-bin",
-  build_deps = [
-    { file = "build.sh" } | Local,
-    match {
-      { arch = 'Amd64, .. } =>
-        {
-          url = "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/headless-shell.zip",
-          sha256 = "77e0566b9059f5f050a0ce0ebf0edd5ad01978d8c82ab77d0ca6ce1aff81665e",
-        } | Source,
-      { arch = 'Arm64, .. } =>
-        {
-          url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-headless-shell-linux-arm64.zip",
-          sha256 = "6db7041d8a273093b8f2c7a7338766c6d12abb06cd0253fc91feebb71ecd4635",
-        } | Source,
-    } target,
-    base,
-    unzip,
-  ],
+  build_deps =
+    [
+      { file = "build.sh" } | Local,
+      match {
+        { arch = 'Amd64, .. } =>
+          {
+            url = "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/headless-shell.zip",
+            sha256 = "77e0566b9059f5f050a0ce0ebf0edd5ad01978d8c82ab77d0ca6ce1aff81665e",
+          } | Source,
+        { arch = 'Arm64, .. } =>
+          {
+            url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-headless-shell-linux-arm64.zip",
+            sha256 = "6db7041d8a273093b8f2c7a7338766c6d12abb06cd0253fc91feebb71ecd4635",
+          } | Source,
+      } target,
+      base,
+      unzip,
+    ]
+    @ (
+      match {
+        # The snapshot bucket's headless-shell.zip ships only the binary + its
+        # .paks — no icudtl.dat / v8 snapshot / GL fallback libs (the CfT and
+        # Playwright bundles carry them inline). Graft them from the full-browser
+        # zip at the SAME snapshot position; build.sh copies just those members.
+        { arch = 'Amd64, .. } =>
+          [
+            {
+              url = "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/chrome-linux.zip",
+              sha256 = "73ccb8d31d7c9e736ef94fcecf74a8e09e3f2fa9fd34d610781ccc44e7b40b69",
+            } | Source,
+          ],
+        # Playwright's arm64 bundle is already complete.
+        { arch = 'Arm64, .. } => [],
+      } target
+    ),
   runtime_deps = [
     bash,
     glibc,
