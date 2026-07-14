@@ -65,6 +65,7 @@ let version = "6.12.0.206" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(MIT AND BSD-3-Clause)",
       build_cost_multiple = 2,
       source_provenance = {
         category = 'GithubRepo,
