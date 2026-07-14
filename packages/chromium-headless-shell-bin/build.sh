@@ -4,11 +4,14 @@ set -euo pipefail
 # One zip arrives in the cwd. Extract into a scratch dir so we can
 # discover its (arch-dependent) top-level directory name.
 mkdir -p _shell
-# amd64 zip from the chromium-browser-snapshots bucket is named
-# headless-shell.zip; arm64 zip from Playwright's CDN is
-# chromium-headless-shell-linux-arm64.zip. Each build fetches exactly
-# one zip into the cwd, so a broad glob is fine.
-unzip -q *headless-shell*.zip -d _shell
+# The primary zip is arch-specific by NAME, and on amd64 the cwd also
+# holds the arm64 donor zip (for the command-resources pak below), so
+# extraction must be explicit rather than a glob.
+if [ "$(uname -m)" = "x86_64" ]; then
+  unzip -q headless-shell.zip -d _shell
+else
+  unzip -q chromium-headless-shell-linux-arm64.zip -d _shell
+fi
 
 # The zip is expected to extract to exactly one top-level directory —
 # fail loudly if that ever changes.
@@ -47,6 +50,14 @@ if [ "$(uname -m)" = "x86_64" ] && [ "$SHELL_INNER" = "headless-shell" ]; then
     "chrome-linux/vk_swiftshader_icd.json" \
     -d _support
   cp _support/chrome-linux/* "_shell/$SHELL_INNER/"
+
+  # --dump-dom & friends live in headless_command_resources.pak, which no
+  # snapshot artifact ships (the full build rolls it into resources.pak —
+  # which is why chromium-bin's launch_check passes without it). Borrow the
+  # tiny arch-independent pak from the same-branch Playwright arm64 bundle.
+  unzip -q chromium-headless-shell-linux-arm64.zip \
+    "chrome-linux/headless_command_resources.pak" -d _cmdres
+  cp _cmdres/chrome-linux/headless_command_resources.pak "_shell/$SHELL_INNER/"
 fi
 
 # Inner binary differs by source:

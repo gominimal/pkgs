@@ -92,6 +92,16 @@ let snapshot_position = "1596534" in
               url = "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/chrome-linux.zip",
               sha256 = "73ccb8d31d7c9e736ef94fcecf74a8e09e3f2fa9fd34d610781ccc44e7b40b69",
             } | Source,
+            # headless_command_resources.pak (the pak implementing --dump-dom &
+            # friends in standalone headless) ships in NO snapshot artifact —
+            # the full build rolls it into chrome's resources.pak. It's tiny
+            # (~3 KB), arch-independent grit data, so borrow it from the
+            # same-branch Playwright arm64 bundle (the arm64 leg's exact
+            # artifact, same pin).
+            {
+              url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-headless-shell-linux-arm64.zip",
+              sha256 = "6db7041d8a273093b8f2c7a7338766c6d12abb06cd0253fc91feebb71ecd4635",
+            } | Source,
           ],
         # Playwright's arm64 bundle is already complete.
         { arch = 'Arm64, .. } => [],
