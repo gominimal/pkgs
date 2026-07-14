@@ -1,0 +1,69 @@
+name: license-lint
+
+# REPORT-ONLY, NON-BLOCKING. For each package changed by a PR (or the whole
+# catalog on demand), check that license_spdx is declared and is a valid SPDX
+# license expression (gominimal/inbox#281 / #53). Nothing else validates this —
+# the attrs schema only checks String-ness — so a typo'd id silently poisons
+# the licensing data downstream attribution work consumes. Validation is fully
+# offline against the vendored SPDX id lists beside the script. MUST NOT be a
+# branch-protection required check. Sibling of version-age.yml / dwell.yml /
+# smoke-test-coverage.yml / trivial-update.yml.
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: license-lint-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned to a SHA (matches the sibling report-only workflows).
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0 # base..head reachable for the changed-file diff
+
+      - name: Package set
+        id: pkgset
+        env:
+          # SHAs via env per repo convention (zizmor template-injection).
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -uo pipefail
+          if [ "$EVENT" = "pull_request" ]; then
+            git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'packages/*/build.ncl' \
+              | cut -d/ -f2 | sort -u > pkgs.txt || : > pkgs.txt
+            echo "mode=file" >> "$GITHUB_OUTPUT"
+            echo "count=$(wc -l < pkgs.txt | tr -d ' ')" >> "$GITHUB_OUTPUT"
+          else
+            : > pkgs.txt # --all lints the whole catalog
+            echo "mode=all" >> "$GITHUB_OUTPUT"
+            echo "count=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: License lint
+        if: steps.pkgset.outputs.count != '0'
+        run: |
+          set -uo pipefail
+          # Report-only: a genuine error is downgraded to a warning so the
+          # check never reds.
+          if [ "${{ steps.pkgset.outputs.mode }}" = "file" ]; then
+            python3 .github/scripts/license_lint.py --packages-file pkgs.txt \
+              || echo "::warning::license lint hit an internal error; see logs (non-blocking)"
+          else
+            python3 .github/scripts/license_lint.py --all \
+              || echo "::warning::license lint hit an internal error; see logs (non-blocking)"
+          fi
+
+      - name: No package changes
+        if: steps.pkgset.outputs.count == '0'
+        run: echo "No packages/*/build.ncl changed in this PR — nothing to lint." >> "$GITHUB_STEP_SUMMARY"
