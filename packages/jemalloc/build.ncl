@@ -75,7 +75,7 @@ let version = "5.3.1" in
             "-c",
             "cat > t.c <<'EOF'\n#include <jemalloc/jemalloc.h>\n#include <stdio.h>\nint main() {\n  void *p = mallocx(64, 0);\n  if (!p) return 1;\n  dallocx(p, 0);\n  printf(\"ok\\n\");\n  return 0;\n}\nEOF\ngcc t.c -o t $(pkg-config --cflags --libs jemalloc)\n./t | grep -q '^ok$'",
           ],
-          ["/bin/bash", "-c", "jemalloc-config --version | grep -q '^5.3.1'"],
+          ["/bin/bash", "-c", "jemalloc-config --version | grep -q '^%{version}'"],
         ],
       } | Test,
   },
