@@ -1,0 +1,47 @@
+name: notify-webapp
+
+# On every push to main, tell gominimal/webapp to rebuild. The webapp
+# prerenders /pkgs and /pkgs/<name> by baking lockStateLatest() at build
+# time, so without this nudge those static pages only refresh on a webapp
+# code deploy and drift from the catalog. The matching trigger lives in
+# webapp/.github/workflows/deploy-cloudrun.yml (repository_dispatch:
+# types: [pkgs-updated]).
+on:
+  push:
+    branches: [main]
+
+# Debounce catalog-commit bursts: a rapid series of package updates
+# cancels superseded notify runs so only the last one dispatches, and the
+# webapp rebuild bakes the latest tip (which already includes every earlier
+# commit in the burst) — one rebuild instead of one per commit.
+concurrency:
+  group: notify-webapp
+  cancel-in-progress: true
+
+# No GITHUB_TOKEN scopes needed — the dispatch authenticates with a
+# short-lived token minted from the webapp-deployer GitHub App, matching
+# the org's App-based cross-repo pattern (infra pkgsec #162) rather than a
+# long-lived user PAT.
+permissions: {}
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      # Mint an installation token scoped to gominimal/webapp only.
+      - name: Mint webapp-deployer token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.WEBAPP_DEPLOYER_APP_ID }}
+          private-key: ${{ secrets.WEBAPP_DEPLOYER_PRIVATE_KEY }}
+          owner: gominimal
+          repositories: webapp
+      - name: Dispatch webapp prerender rebuild
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          jq -n --arg sha "$GITHUB_SHA" \
+            '{event_type: "pkgs-updated", client_payload: {sha: $sha}}' \
+            | gh api -X POST /repos/gominimal/webapp/dispatches --input -
