@@ -4,10 +4,11 @@ set -euo pipefail
 # One zip arrives in the cwd. Extract into a scratch dir so we can
 # discover its (arch-dependent) top-level directory name.
 mkdir -p _shell
-# amd64 zip from CfT is named chrome-headless-shell-linux64.zip;
-# arm64 zip from Playwright's CDN is chromium-headless-shell-linux-arm64.zip.
-# Each build fetches exactly one zip into the cwd, so a broad glob is fine.
-unzip -q chrom*-headless-shell-linux*.zip -d _shell
+# amd64 zip from the chromium-browser-snapshots bucket is named
+# headless-shell.zip; arm64 zip from Playwright's CDN is
+# chromium-headless-shell-linux-arm64.zip. Each build fetches exactly
+# one zip into the cwd, so a broad glob is fine.
+unzip -q *headless-shell*.zip -d _shell
 
 # The zip is expected to extract to exactly one top-level directory —
 # fail loudly if that ever changes.
@@ -18,9 +19,21 @@ if [ "${#entries[@]}" -ne 1 ] || [ ! -d "${entries[0]}" ]; then
 fi
 SHELL_INNER=$(basename "${entries[0]}")
 
-# Inner dir + binary differ by arch:
-#   amd64 → chrome-headless-shell-linux64/chrome-headless-shell  (CfT direct)
-#   arm64 → chrome-linux/headless_shell                          (Playwright arm64)
+# The snapshot zip extracts to headless-shell/headless_shell, but
+# Playwright's x64 registry expects
+# chrome-headless-shell-linux64/chrome-headless-shell — normalize the
+# dir and add a compat symlink so registry discovery keeps working.
+# (arm64 extracts to chrome-linux/headless_shell, which already matches
+# Playwright's arm64 registry.)
+if [ "$(uname -m)" = "x86_64" ] && [ "$SHELL_INNER" = "headless-shell" ]; then
+  mv _shell/headless-shell _shell/chrome-headless-shell-linux64
+  SHELL_INNER=chrome-headless-shell-linux64
+  ln -s headless_shell "_shell/$SHELL_INNER/chrome-headless-shell"
+fi
+
+# Inner binary differs by source:
+#   snapshot amd64 → headless_shell (+ chrome-headless-shell symlink)
+#   Playwright arm64 → headless_shell
 if [ -x "_shell/$SHELL_INNER/chrome-headless-shell" ]; then
   SHELL_BIN=chrome-headless-shell
 elif [ -x "_shell/$SHELL_INNER/headless_shell" ]; then

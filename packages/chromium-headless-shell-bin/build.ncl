@@ -45,16 +45,21 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # rendering (mermaid-cli, e.g.) depend on this pkg alone to avoid
 # pulling the full browser.
 #
-# Source mix mirrors chromium-bin: amd64 from Google's Chrome for
-# Testing bucket, arm64 from Playwright's own arm64 build via
-# cdn.playwright.dev. The same Playwright revision identifies both
-# arches.
+# Source mix mirrors chromium-bin (see its header for the full
+# rationale): both legs are true open-source Chromium, deliberately NOT
+# Chrome for Testing (a branded Google Chrome build whose ToS does not
+# permit redistribution — our cache redistributes, gominimal/inbox#284).
+# amd64 comes from Chromium's official snapshot bucket at
+# `snapshot_position` (the main-branch position `browser_version`
+# branched from); arm64 from Playwright's own arm64 build.
 #
 # `revision` is the Playwright browser-revision number from
 # packages/playwright-core/browsers.json. Revision 1217 ↔ Chrome 147.0.7727.15
-# ↔ playwright-core ^1.58.0. Keep in lockstep with chromium-bin.
+# ↔ playwright-core ^1.59. `snapshot_position` must be re-derived whenever
+# `browser_version` bumps. Keep all three in lockstep with chromium-bin.
 let revision = "1217" in
-let browser_version = "150.0.7871.46" in
+let browser_version = "147.0.7727.15" in
+let snapshot_position = "1596534" in
 {
   name = "chromium-headless-shell-bin",
   build_deps = [
@@ -62,8 +67,8 @@ let browser_version = "150.0.7871.46" in
     match {
       { arch = 'Amd64, .. } =>
         {
-          url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chrome-headless-shell-linux64.zip",
-          sha256 = "0395e5db8d1631d5ed879d4f05fec423425537018fa1d73a58b1ade13288f447",
+          url = "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/headless-shell.zip",
+          sha256 = "77e0566b9059f5f050a0ce0ebf0edd5ad01978d8c82ab77d0ca6ce1aff81665e",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
@@ -131,7 +136,7 @@ let browser_version = "150.0.7871.46" in
       },
       binary_from =
         match {
-          { arch = 'Amd64, .. } => "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chrome-headless-shell-linux64.zip",
+          { arch = 'Amd64, .. } => "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/headless-shell.zip",
           { arch = 'Arm64, .. } => "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-headless-shell-linux-arm64.zip",
         } target,
     } | Attrs,
