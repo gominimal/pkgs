@@ -13,8 +13,11 @@ mirrored object drifted, builds would already fail, so presence == exactness.
 Categories per copyleft package:
   ✅ mirrored     — every source URL is the mirror and the object exists
   ❌ mirror-miss  — a mirror URL whose object is GONE (drift/GC: the worst case)
-  ⚠️ unmirrored   — fetches upstream directly (GitHub, dl.grafana.com, …); a
-                    retention/mirroring action is needed for the offer to hold
+  ✅ mirrored-oob — fetches upstream directly, but the archive IS present on
+                    the mirror at the conventional path (mirrored out-of-band;
+                    repoint the URL at the next natural version bump)
+  ⚠️ unmirrored   — fetches upstream directly AND the mirror holds no copy; a
+                    mirroring action is needed for the offer to hold
   ❓ unresolved   — URL interpolation couldn't be resolved statically
 
 Presence is probed with unauthenticated HTTPS HEADs against the public bucket
@@ -40,7 +43,7 @@ _LET_RE = re.compile(r'^\s*let\s+([A-Za-z_][A-Za-z0-9_-]*)\s*=\s*"([^"]*)"\s+in\
 _INTERP_RE = re.compile(r"%\{([A-Za-z_][A-Za-z0-9_-]*)\}")
 _MIRROR = "gs://minimal-staging-archives/"
 _MIRROR_HTTP = "https://storage.googleapis.com/minimal-staging-archives/"
-_SAFE_PATH = re.compile(r"^[A-Za-z0-9._/+~-]+$")
+_SAFE_PATH = re.compile(r"^[A-Za-z0-9_./+~-]+$")
 
 # SPDX id prefixes that carry source obligations on binary distribution.
 # Strong and weak/file-level copyleft both create a corresponding-source duty
@@ -67,6 +70,15 @@ def resolve_interpolations(url: str, lets: dict[str, str]) -> str:
             break
         url = expanded
     return url
+
+
+def conventional_dest(url: str) -> str:
+    """Where the mirror convention would place this upstream URL: GitHub ->
+    <owner>/<repo>/<basename>, other hosts -> flat <basename> (matches the
+    existing 289 mirrored sources and the inbox#283 backfill)."""
+    m = re.match(r"https://github\.com/([^/]+)/([^/]+)/", url)
+    base = url.split("?")[0].rstrip("/").split("/")[-1]
+    return f"{m.group(1)}/{m.group(2)}/{base}" if m else base
 
 
 def head_mirror_object(path: str) -> bool | None:
@@ -127,7 +139,7 @@ def main() -> int:
             return 0
 
     rows = []
-    counts = {"mirrored": 0, "mirror-miss": 0, "unmirrored": 0, "unresolved": 0, "probe-unknown": 0}
+    counts = {"mirrored": 0, "mirrored-oob": 0, "mirror-miss": 0, "unmirrored": 0, "unresolved": 0, "probe-unknown": 0}
     for name in names:
         try:
             with open(os.path.join("packages", name, "build.ncl"), encoding="utf-8") as f:
@@ -164,6 +176,18 @@ def main() -> int:
                 else:
                     verdicts.append("probe-unknown")
                     details.append(f"probe failed: {u}")
+            elif u.startswith("https://"):
+                dest = conventional_dest(u)
+                present = head_mirror_object(dest)
+                if present is True:
+                    verdicts.append("mirrored-oob")
+                    details.append(f"mirror holds {dest}; build.ncl still fetches upstream")
+                elif present is False:
+                    verdicts.append("unmirrored")
+                    details.append(f"upstream-only: {u}")
+                else:
+                    verdicts.append("probe-unknown")
+                    details.append(f"probe failed: {dest}")
             else:
                 verdicts.append("unmirrored")
                 details.append(f"upstream-only: {u}")
@@ -171,16 +195,16 @@ def main() -> int:
         if not urls:
             continue  # nothing fetched -> nothing to mirror
         # Package verdict = worst URL verdict.
-        order = ["mirror-miss", "unmirrored", "unresolved", "probe-unknown", "mirrored"]
+        order = ["mirror-miss", "unmirrored", "unresolved", "probe-unknown", "mirrored-oob", "mirrored"]
         worst = min(verdicts, key=order.index)
         counts[worst] += 1
-        icon = {"mirrored": "✅", "mirror-miss": "❌", "unmirrored": "⚠️",
-                "unresolved": "❓", "probe-unknown": "❓"}[worst]
+        icon = {"mirrored": "✅", "mirrored-oob": "✅", "mirror-miss": "❌",
+                "unmirrored": "⚠️", "unresolved": "❓", "probe-unknown": "❓"}[worst]
         licenses = " ".join(sorted(set(cl)))
         rows.append((name, licenses, f"{icon} {worst}", "; ".join(details) or "—"))
         print(f"{name} [{licenses}] -> {worst}" + (f" ({'; '.join(details)})" if details else ""))
 
-    sev = ["mirror-miss", "unmirrored", "unresolved", "probe-unknown", "mirrored"]
+    sev = ["mirror-miss", "unmirrored", "unresolved", "probe-unknown", "mirrored-oob", "mirrored"]
     rows.sort(key=lambda r: (sev.index(r[2].split()[1]), r[0]))
 
     out = [
@@ -191,11 +215,13 @@ def main() -> int:
         "the cache carries a corresponding-source obligation (gominimal/inbox#283 "
         "/ #53); the mirror is the offer. Exactness rides on the build's sha256 "
         "pin — presence is what can drift.", "",
-        f"**{counts['mirrored']} mirrored ✅ · {counts['mirror-miss']} mirror-MISSING ❌ · "
+        f"**{counts['mirrored'] + counts['mirrored-oob']} mirrored ✅ "
+        f"(of which {counts['mirrored-oob']} out-of-band) · "
+        f"{counts['mirror-miss']} mirror-MISSING ❌ · "
         f"{counts['unmirrored']} unmirrored ⚠️ · "
         f"{counts['unresolved'] + counts['probe-unknown']} unresolved/unknown ❓**", "",
     ]
-    flagged = [r for r in rows if not r[2].endswith("mirrored")] or rows[:0]
+    flagged = [r for r in rows if r[2].split()[1] not in ("mirrored", "mirrored-oob")] or rows[:0]
     shown = rows if not args.all else (flagged if flagged else [])
     if shown:
         out += ["| package | copyleft license(s) | verdict | detail |",
