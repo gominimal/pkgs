@@ -1,0 +1,36 @@
+name: notify-webapp
+
+# On every push to main, tell gominimal/webapp to rebuild. The webapp
+# prerenders /pkgs and /pkgs/<name> by baking lockStateLatest() at build
+# time, so without this nudge those static pages only refresh on a webapp
+# code deploy and drift from the catalog. The matching trigger lives in
+# webapp/.github/workflows/deploy-cloudrun.yml (repository_dispatch:
+# types: [pkgs-updated]).
+on:
+  push:
+    branches: [main]
+
+# Debounce catalog-commit bursts: a rapid series of package updates
+# cancels superseded notify runs so only the last one dispatches, and the
+# webapp rebuild bakes the latest tip (which already includes every earlier
+# commit in the burst) — one rebuild instead of one per commit.
+concurrency:
+  group: notify-webapp
+  cancel-in-progress: true
+
+# No GITHUB_TOKEN scopes needed — the dispatch authenticates with the
+# cross-repo PAT in WEBAPP_DISPATCH_TOKEN, not the workflow token.
+permissions: {}
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch webapp prerender rebuild
+        env:
+          GH_TOKEN: ${{ secrets.WEBAPP_DISPATCH_TOKEN }}
+        run: |
+          set -euo pipefail
+          jq -n --arg sha "$GITHUB_SHA" \
+            '{event_type: "pkgs-updated", client_payload: {sha: $sha}}' \
+            | gh api -X POST /repos/gominimal/webapp/dispatches --input -
