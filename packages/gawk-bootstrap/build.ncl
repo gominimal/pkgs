@@ -7,14 +7,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let mpfr = import "../mpfr/build.ncl" in
 
-let version = "5.3.2" in
+let version = "5.4.1" in
 {
   name = "gawk-bootstrap",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/gawk-%{version}.tar.xz",
-      sha256 = "f8c3486509de705192138b00ef2c00bbbdd0e84c30d5c07d23fc73a9dc4cc9cc"
+      sha256 = "07f6f7342b7febe4313fc2c2542ad93d64fe20ad8717200109f105a826f5fd37"
     } | Source,
     base-bootstrap,
     make,
