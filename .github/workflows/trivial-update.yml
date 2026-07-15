@@ -1,0 +1,61 @@
+name: trivial-update
+
+# REPORT-ONLY, NON-BLOCKING. Audits each changed package's build.ncl diff and
+# reports whether the update is *trivial* (only version + source hash changed,
+# version increased) -- inbox#20's `#trivial` fast-path classifier. Writes
+# nothing, needs no secrets, and MUST NOT be a branch-protection required check.
+# Complements version-age.yml (#279), stable-closure-check.yml (#280),
+# dwell.yml, and smoke-test-coverage.yml.
+#
+# Pure git diff: no `minimal dump`, no network.
+
+on:
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trivial-update-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned to a SHA (matches version-age.yml / dwell.yml).
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0 # base..head reachable for the per-package diff
+
+      - name: Detect changed packages
+        id: changed
+        env:
+          # SHAs via env per repo convention (zizmor template-injection).
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -uo pipefail
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'packages/*/build.ncl' \
+            | cut -d/ -f2 | sort -u > pkgs.txt || : > pkgs.txt
+          echo "count=$(wc -l < pkgs.txt | tr -d ' ')" >> "$GITHUB_OUTPUT"
+
+      - name: Trivial-update audit
+        if: steps.changed.outputs.count != '0'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -uo pipefail
+          # Report-only: a genuine error is downgraded to a warning so the check
+          # never reds.
+          python3 .github/scripts/trivial_update_report.py \
+            --packages-file pkgs.txt \
+            --base-sha "$BASE_SHA" \
+            --head-sha "$HEAD_SHA" \
+          || echo "::warning::trivial-update audit hit an internal error; see logs (non-blocking)"
+
+      - name: No package changes
+        if: steps.changed.outputs.count == '0'
+        run: echo "No packages/*/build.ncl changed in this PR — nothing to audit." >> "$GITHUB_STEP_SUMMARY"
