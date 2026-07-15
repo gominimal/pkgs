@@ -8,14 +8,14 @@ let file = import "../file/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "9.0" in
+let version = "9.1" in
 {
   name = "nano",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/nano-%{version}.tar.gz",
-      sha256 = "48a9cf0d021ddaf9d7b567ed30396147d4d2e3f7a32644f83257a7efead2b380",
+      url = "gs://minimal-staging-archives/nano-%{version}.tar.xz",
+      sha256 = "5f47764274cb7532349ce0aa20ec10f1e8e851a6e9fa3eb66812c43d196db042",
       extract = true,
       strip_prefix = "nano-%{version}",
     } | Source,
