@@ -16,14 +16,14 @@ let openssl = import "../openssl/build.ncl" in
 let readline = import "../readline/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "4.0.5" in
+let version = "4.0.6" in
 {
   name = "ruby",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://cache.ruby-lang.org/pub/ruby/4.0/ruby-%{version}.tar.gz",
-      sha256 = "7d6149079a63f8ae1d326c9fa65c6019ba2dc3155eae7b39159817911c88958e",
+      sha256 = "837d299e8f7ddf2be31a229a7a7e019d354979825117989acb3b32b1a9be262a",
     } | Source,
     base,
     make,
