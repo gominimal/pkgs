@@ -57,9 +57,9 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # packages/playwright-core/browsers.json. Revision 1217 ↔ Chrome 147.0.7727.15
 # ↔ playwright-core ^1.59. `snapshot_position` must be re-derived whenever
 # `browser_version` bumps. Keep all three in lockstep with chromium-bin.
-let revision = "1217" in
-let browser_version = "147.0.7727.15" in
-let snapshot_position = "1596534" in
+let revision = "1233" in
+let browser_version = "151.0.7922.19" in
+let snapshot_position = "1654408" in
 {
   name = "chromium-headless-shell-bin",
   build_deps =
@@ -69,12 +69,12 @@ let snapshot_position = "1596534" in
         { arch = 'Amd64, .. } =>
           {
             url = "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/headless-shell.zip",
-            sha256 = "77e0566b9059f5f050a0ce0ebf0edd5ad01978d8c82ab77d0ca6ce1aff81665e",
+            sha256 = "4cd2324a9343cf01fa192902c203250f73a14b6e60f4a775f84a2b26314c5cfa",
           } | Source,
         { arch = 'Arm64, .. } =>
           {
             url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-headless-shell-linux-arm64.zip",
-            sha256 = "6db7041d8a273093b8f2c7a7338766c6d12abb06cd0253fc91feebb71ecd4635",
+            sha256 = "ab7a333e423170cda6eb335cdab54920a0f88e5495e1a29f1ae73e3e3da520f4",
           } | Source,
       } target,
       base,
@@ -90,7 +90,7 @@ let snapshot_position = "1596534" in
           [
             {
               url = "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/chrome-linux.zip",
-              sha256 = "73ccb8d31d7c9e736ef94fcecf74a8e09e3f2fa9fd34d610781ccc44e7b40b69",
+              sha256 = "c094b77ad8d462bacd54769c5aa1fcd2e9d61f9b146796bbcded9276cdc40a5e",
             } | Source,
             # headless_command_resources.pak (the pak implementing --dump-dom &
             # friends in standalone headless) ships in NO snapshot artifact —
@@ -100,7 +100,7 @@ let snapshot_position = "1596534" in
             # artifact, same pin).
             {
               url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-headless-shell-linux-arm64.zip",
-              sha256 = "6db7041d8a273093b8f2c7a7338766c6d12abb06cd0253fc91feebb71ecd4635",
+              sha256 = "ab7a333e423170cda6eb335cdab54920a0f88e5495e1a29f1ae73e3e3da520f4",
             } | Source,
           ],
         # Playwright's arm64 bundle is already complete.
