@@ -45,6 +45,9 @@ let version = "4.0.6" in
   ],
 
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
   outputs = {
     bins = { glob = "usr/bin/*" } | OutputBin,
     libs = { glob = "usr/lib/libruby*.so*" } | OutputLib,

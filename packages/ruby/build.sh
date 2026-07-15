@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-tar -xof ruby-4.0.5.tar.gz
-cd ruby-4.0.5
+tar -xof "ruby-$MINIMAL_ARG_VERSION.tar.gz"
+cd "ruby-$MINIMAL_ARG_VERSION"
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
