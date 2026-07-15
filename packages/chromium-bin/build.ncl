@@ -47,19 +47,25 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # this case. The bare `chromium` name is intentionally left available
 # for a future source-built pkg.
 #
-# Source mix: amd64 comes straight from Google's Chrome for Testing
-# bucket (Playwright's own cdn.playwright.dev URL just redirects there
-# for amd64, and that redirect is unreliable on newer revisions — MS's
-# CDN doesn't host amd64 zips). For linux-arm64 — which Google does
-# not publish under CfT — we use Playwright's own arm64 build hosted
-# on Microsoft's CDN via cdn.playwright.dev. The same Playwright
-# revision identifies matching builds across both arches; the
-# corresponding Chrome version (used to address the CfT bucket) lives
-# in `browser_version`.
+# Source mix — both legs are true open-source Chromium (BSD-3-Clause),
+# deliberately NOT Chrome for Testing: CfT is a *branded Google Chrome*
+# build governed by the Chrome ToS, which does not permit redistribution
+# — and our binary cache redistributes (gominimal/inbox#284). Playwright
+# itself stopped publishing its own linux-x64 Chromium (its registry now
+# fetches CfT directly for x64), so:
+#   amd64 → Chromium's official snapshot bucket
+#     (chromium-browser-snapshots), pinned to `snapshot_position` — the
+#     main-branch position Chrome `browser_version` branched from
+#     (chromiumdash fetch_version), i.e. the same code the arm64 build
+#     was cut from, minus branch cherry-picks.
+#   arm64 → Playwright's own arm64 Chromium build on cdn.playwright.dev
+#     (Google publishes no linux-arm64; Playwright still builds arm64).
 #
 # `revision` is the Playwright browser-revision number from
 # packages/playwright-core/browsers.json. Revision 1217 ↔ Chrome 147.0.7727.15
-# ↔ playwright-core ^1.58.0. Keep in lockstep with chromium-headless-shell-bin.
+# ↔ playwright-core ^1.59. `snapshot_position` must be re-derived whenever
+# `browser_version` bumps. Keep all three in lockstep with
+# chromium-headless-shell-bin.
 #
 # Consumer note (Playwright): files are laid out under
 # /usr/share/playwright-browsers/chromium-<rev>/ in Playwright's
@@ -72,7 +78,8 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # '/bin/chromium-headless-shell' from the headless-shell pkg) to
 # bypass the registry lookup. See packages/chromium-bin/README.md.
 let revision = "1217" in
-let browser_version = "150.0.7871.46" in
+let browser_version = "147.0.7727.15" in
+let snapshot_position = "1596534" in
 {
   name = "chromium-bin",
   build_deps = [
@@ -80,8 +87,8 @@ let browser_version = "150.0.7871.46" in
     match {
       { arch = 'Amd64, .. } =>
         {
-          url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chrome-linux64.zip",
-          sha256 = "ad115a7498a17f53f6ed0914458326c6516addc756224db14c32184a9b1ab078",
+          url = "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/chrome-linux.zip",
+          sha256 = "73ccb8d31d7c9e736ef94fcecf74a8e09e3f2fa9fd34d610781ccc44e7b40b69",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
@@ -149,7 +156,7 @@ let browser_version = "150.0.7871.46" in
       },
       binary_from =
         match {
-          { arch = 'Amd64, .. } => "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chrome-linux64.zip",
+          { arch = 'Amd64, .. } => "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/chrome-linux.zip",
           { arch = 'Arm64, .. } => "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-linux-arm64.zip",
         } target,
     } | Attrs,

@@ -45,35 +45,68 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # rendering (mermaid-cli, e.g.) depend on this pkg alone to avoid
 # pulling the full browser.
 #
-# Source mix mirrors chromium-bin: amd64 from Google's Chrome for
-# Testing bucket, arm64 from Playwright's own arm64 build via
-# cdn.playwright.dev. The same Playwright revision identifies both
-# arches.
+# Source mix mirrors chromium-bin (see its header for the full
+# rationale): both legs are true open-source Chromium, deliberately NOT
+# Chrome for Testing (a branded Google Chrome build whose ToS does not
+# permit redistribution — our cache redistributes, gominimal/inbox#284).
+# amd64 comes from Chromium's official snapshot bucket at
+# `snapshot_position` (the main-branch position `browser_version`
+# branched from); arm64 from Playwright's own arm64 build.
 #
 # `revision` is the Playwright browser-revision number from
 # packages/playwright-core/browsers.json. Revision 1217 ↔ Chrome 147.0.7727.15
-# ↔ playwright-core ^1.58.0. Keep in lockstep with chromium-bin.
+# ↔ playwright-core ^1.59. `snapshot_position` must be re-derived whenever
+# `browser_version` bumps. Keep all three in lockstep with chromium-bin.
 let revision = "1217" in
-let browser_version = "150.0.7871.46" in
+let browser_version = "147.0.7727.15" in
+let snapshot_position = "1596534" in
 {
   name = "chromium-headless-shell-bin",
-  build_deps = [
-    { file = "build.sh" } | Local,
-    match {
-      { arch = 'Amd64, .. } =>
-        {
-          url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chrome-headless-shell-linux64.zip",
-          sha256 = "0395e5db8d1631d5ed879d4f05fec423425537018fa1d73a58b1ade13288f447",
-        } | Source,
-      { arch = 'Arm64, .. } =>
-        {
-          url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-headless-shell-linux-arm64.zip",
-          sha256 = "6db7041d8a273093b8f2c7a7338766c6d12abb06cd0253fc91feebb71ecd4635",
-        } | Source,
-    } target,
-    base,
-    unzip,
-  ],
+  build_deps =
+    [
+      { file = "build.sh" } | Local,
+      match {
+        { arch = 'Amd64, .. } =>
+          {
+            url = "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/headless-shell.zip",
+            sha256 = "77e0566b9059f5f050a0ce0ebf0edd5ad01978d8c82ab77d0ca6ce1aff81665e",
+          } | Source,
+        { arch = 'Arm64, .. } =>
+          {
+            url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-headless-shell-linux-arm64.zip",
+            sha256 = "6db7041d8a273093b8f2c7a7338766c6d12abb06cd0253fc91feebb71ecd4635",
+          } | Source,
+      } target,
+      base,
+      unzip,
+    ]
+    @ (
+      match {
+        # The snapshot bucket's headless-shell.zip ships only the binary + its
+        # .paks — no icudtl.dat / v8 snapshot / GL fallback libs (the CfT and
+        # Playwright bundles carry them inline). Graft them from the full-browser
+        # zip at the SAME snapshot position; build.sh copies just those members.
+        { arch = 'Amd64, .. } =>
+          [
+            {
+              url = "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/chrome-linux.zip",
+              sha256 = "73ccb8d31d7c9e736ef94fcecf74a8e09e3f2fa9fd34d610781ccc44e7b40b69",
+            } | Source,
+            # headless_command_resources.pak (the pak implementing --dump-dom &
+            # friends in standalone headless) ships in NO snapshot artifact —
+            # the full build rolls it into chrome's resources.pak. It's tiny
+            # (~3 KB), arch-independent grit data, so borrow it from the
+            # same-branch Playwright arm64 bundle (the arm64 leg's exact
+            # artifact, same pin).
+            {
+              url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-headless-shell-linux-arm64.zip",
+              sha256 = "6db7041d8a273093b8f2c7a7338766c6d12abb06cd0253fc91feebb71ecd4635",
+            } | Source,
+          ],
+        # Playwright's arm64 bundle is already complete.
+        { arch = 'Arm64, .. } => [],
+      } target
+    ),
   runtime_deps = [
     bash,
     glibc,
@@ -131,7 +164,7 @@ let browser_version = "150.0.7871.46" in
       },
       binary_from =
         match {
-          { arch = 'Amd64, .. } => "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chrome-headless-shell-linux64.zip",
+          { arch = 'Amd64, .. } => "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/headless-shell.zip",
           { arch = 'Arm64, .. } => "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-headless-shell-linux-arm64.zip",
         } target,
     } | Attrs,
