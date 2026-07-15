@@ -28,6 +28,7 @@ let libxkbcommon = import "../libxkbcommon/build.ncl" in
 let libxrandr = import "../libxrandr/build.ncl" in
 let libxrender = import "../libxrender/build.ncl" in
 let libxshmfence = import "../libxshmfence/build.ncl" in
+let libxtst = import "../libxtst/build.ncl" in
 let mesa = import "../mesa/build.ncl" in
 let nss = import "../nss/build.ncl" in
 let nspr = import "../nspr/build.ncl" in
@@ -132,6 +133,7 @@ let snapshot_position = "1654408" in
     libxrandr,
     libxrender,
     libxshmfence,
+    libxtst,
     mesa,
     nss,
     nspr,
