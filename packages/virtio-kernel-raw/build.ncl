@@ -30,5 +30,6 @@ let version = "6.12.94" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-2.0-only",
     } | Attrs,
 } | BuildSpec

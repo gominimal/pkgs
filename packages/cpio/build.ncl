@@ -35,6 +35,7 @@ let version = "2.15" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-3.0-or-later",
       source_provenance = {
         category = 'GnuProject,
         name = "cpio",
