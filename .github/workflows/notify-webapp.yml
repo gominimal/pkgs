@@ -33,7 +33,10 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          app-id: ${{ secrets.WEBAPP_DEPLOYER_APP_ID }}
+          # App id is deprecated in favor of client-id. This is the App's
+          # public client id (an identifier, not a credential) — safe to
+          # inline in this public repo; only the private key is a secret.
+          client-id: Iv23lid5yjpQK4fb4g2p
           private-key: ${{ secrets.WEBAPP_DEPLOYER_PRIVATE_KEY }}
           owner: gominimal
           repositories: webapp
