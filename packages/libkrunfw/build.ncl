@@ -62,6 +62,7 @@ let version = "5.5.0" in
 
   attrs = {
     upstream_version = version,
+    license_spdx = "(LGPL-2.1-only AND GPL-2.0-only)",
     source_provenance = {
       category = 'GithubRepo,
       owner = "containers",

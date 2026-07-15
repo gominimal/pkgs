@@ -73,6 +73,7 @@ in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "LicenseRef-EdgeDelta-Proprietary",
       binary_from = "https://release.edgedelta.com/",
     } | Attrs,
 } | BuildSpec

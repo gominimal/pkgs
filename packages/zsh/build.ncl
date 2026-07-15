@@ -51,6 +51,7 @@ let version = "5.9" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT-Modern-Variant",
     } | Attrs,
 
   tests = {

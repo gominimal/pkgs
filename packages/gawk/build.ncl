@@ -8,14 +8,14 @@ let glibc = import "../glibc/build.ncl" in
 let mpfr = import "../mpfr/build.ncl" in
 let readline = import "../readline/build.ncl" in
 
-let version = "5.4.0" in
+let version = "5.4.1" in
 {
   name = "gawk",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/gawk-%{version}.tar.xz",
-      sha256 = "3dd430f0cd3b4428c6c3f6afc021b9cd3c1f8c93f7a688dc268ca428a90b4ac1"
+      sha256 = "07f6f7342b7febe4313fc2c2542ad93d64fe20ad8717200109f105a826f5fd37"
     } | Source,
     base-bootstrap,
     make,

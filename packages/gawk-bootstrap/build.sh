@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof gawk-5.3.2.tar.xz
-cd gawk-5.3.2
+tar -xof gawk-5.4.1.tar.xz
+cd gawk-5.4.1
 
 sed -i 's/extras//' Makefile.in
 
