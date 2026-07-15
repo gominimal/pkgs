@@ -10,8 +10,9 @@
 #   * progress   (progress bar) — cosmetic; stubbed to a no-op reporter.
 #   * domainslib (multicore pool) — aeneas output is deterministic; run sequential.
 # The `charon` Rust binary that produces the .llbc input is a SEPARATE package
-# (a later Rust PR); this package is aeneas's OCaml side, which links charon-ml at
-# build time and shells out to that binary at runtime.
+# (charon, #412) — now carried in runtime_deps so it's on PATH; this package is
+# aeneas's OCaml side, which links charon-ml at build time and shells out to the
+# charon binary at runtime.
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let ocaml = import "../ocaml/build.ncl" in
@@ -20,6 +21,7 @@ let ocamlfind = import "../ocamlfind/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let charon-ml = import "../charon-ml/build.ncl" in
+let charon = import "../charon/build.ncl" in
 let ocamlgraph = import "../ocamlgraph/build.ncl" in
 let ppx_deriving = import "../ppx_deriving/build.ncl" in
 let ppx_deriving_yojson = import "../ppx_deriving_yojson/build.ncl" in
@@ -61,6 +63,7 @@ let version = "20260713" in
     ocaml,
     zarith,
     charon-ml,
+    charon,
   ],
   attrs =
     {
