@@ -14,7 +14,16 @@ export OCAMLFIND_DESTDIR="$OUTPUT_DIR/usr/lib/ocaml"
 export OCAMLFIND_LDCONF=ignore
 mkdir -p "$OCAMLFIND_DESTDIR/stublibs"
 # configure probes GMP via a -lgmp test-compile; gmp (a build_dep) mounts its
-# headers+lib under /usr, so the default search path resolves it.
+# headers+lib under /usr, so the default search path resolves it. configure feeds
+# $LDFLAGS to gcc via `ocamlc -ccopt` here, so the bare `-Wl,--build-id=none`
+# above is what it needs.
 ./configure
-make
+# project.mak passes $(LDFLAGS) STRAIGHT to `ocamlmklib` (the .cma/.cmxa/libzarith
+# link rules), which has its own option parser and rejects the bare
+# `-Wl,--build-id=none` with "Unknown option" — it only forwards C-linker flags
+# via `-ldopt`. Same var, incompatible consumer, so override it to the `-ldopt`
+# form for `make` only (a make-cmdline assignment overrides the Makefile's
+# `LDFLAGS=`, and LDFLAGS reaches nothing here but ocamlmklib). Keeps the build-id
+# stripped on dllzarith.so for reproducibility without breaking the link.
+make LDFLAGS="-ldopt -Wl,--build-id=none"
 make install
