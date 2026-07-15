@@ -27,7 +27,7 @@ let version = "5.4.1" in
 
   cmd = "./build.sh",
   outputs = {
-    "gawk-5.3.2" = { glob = "usr/bin/gawk-5.3.2" } | OutputBin,
+    gawk_versioned = { glob = "usr/bin/gawk-*" } | OutputBin,
     gawk = { glob = "usr/bin/gawk" } | OutputBin,
     awk = { glob = "usr/bin/awk" } | OutputBin,
     libs = { glob = "usr/lib/gawk/*.so" } | OutputLib,
