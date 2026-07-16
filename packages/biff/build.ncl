@@ -6,16 +6,16 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.1.1" in
+let version = "0.1.4" in
 {
   name = "biff",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/BurntSushi/biff/%{version}.tar.gz",
-      sha256 = "459a9d4e085b1545e8974ed16a49f161f6efad2a7b14a4292fa28b49e6ef9292",
+      sha256 = "21b265959403c02406137adac1012f676a25ad67d6fbf29a553b9e459c7bbc73",
       extract = true,
-      strip_prefix = "biff-%{version}",
+      strip_prefix = "bttf-%{version}",
     } | Source,
     base,
     rust,
