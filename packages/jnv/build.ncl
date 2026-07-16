@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.6.1" in
+let version = "0.7.1" in
 {
   name = "jnv",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/ynqa/jnv/v%{version}.tar.gz",
-      sha256 = "03223fb20a4c65c2610b94e6208b65098e6b3fe836d3deea75931a5c808f4869",
+      sha256 = "22423fe5d621848f2b7dd3b94511d74068b763235d07a30a191d086f6a98b6b5",
       extract = true,
       strip_prefix = "jnv-%{version}",
     } | Source,
