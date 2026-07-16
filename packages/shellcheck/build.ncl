@@ -3,7 +3,7 @@ let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.10.0" in
+let version = "0.11.0" in
 {
   name = "shellcheck",
   build_deps = [
@@ -12,12 +12,12 @@ let version = "0.10.0" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://github.com/koalaman/shellcheck/releases/download/v%{version}/shellcheck-v%{version}.linux.x86_64.tar.xz",
-          sha256 = "6c881ab0698e4e6ea235245f22832860544f17ba386442fe7e9d629f8cbedf87",
+          sha256 = "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://github.com/koalaman/shellcheck/releases/download/v%{version}/shellcheck-v%{version}.linux.aarch64.tar.xz",
-          sha256 = "324a7e89de8fa2aed0d0c28f3dab59cf84c6d74264022c00c22af665ed1a09bb",
+          sha256 = "12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14588",
         } | Source,
     } target,
     base,
