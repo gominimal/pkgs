@@ -7,14 +7,14 @@ let nasm = import "../nasm/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "4.1" in
+let version = "4.2" in
 {
   name = "libx265",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://bitbucket.org/multicoreware/x265_git/downloads/x265_%{version}.tar.gz",
-      sha256 = "a31699c6a89806b74b0151e5e6a7df65de4b49050482fe5ebf8a4379d7af8f29",
+      sha256 = "40b1ea0453e0309f0eba934e0ddf533f8f6295966679e8894e8f1c1c8d5e1210",
       extract = true,
       strip_prefix = "x265_%{version}",
     } | Source,
