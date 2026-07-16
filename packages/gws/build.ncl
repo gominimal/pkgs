@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.11.0" in
+let version = "0.22.5" in
 {
   name = "gws",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/googleworkspace/cli/v%{version}.tar.gz",
-      sha256 = "45fcf2eedfb94bf8a57f57fc00bdce68e2b83dcdfd593b56efbb8258ae085aac",
+      sha256 = "1e55ec8c6ee87fac7d422975604a2d546c35f6d687a1cfaba7c7cc0d3c05663f",
       extract = true,
       strip_prefix = "cli-%{version}",
     } | Source,

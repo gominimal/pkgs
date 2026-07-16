@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.55.1" in
+let version = "1.56.0" in
 {
   name = "just",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/casey/just/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "40a2d3725480523ffebb762669cafe2b0135a00383946eec3d47adf5e9be6345",
+      sha256 = "145cb76ccd858da30ee56de884dad9241b2706140bcf9ae189dfda5e5a62ed52",
       extract = true,
       strip_prefix = "just-%{version}",
     } | Source,

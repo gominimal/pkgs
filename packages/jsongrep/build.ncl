@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.7.0" in
+let version = "0.9.0" in
 {
   name = "jsongrep",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/micahkepe/jsongrep/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "2db5efbe33cdaba5b93d8a884baa12049b17174d839dce25480551a5fb358375",
+      sha256 = "9ed0a0f7ca44652e7851ba7223bb69af56498311b1d5b2064f7bf532677c8a33",
       extract = true,
       strip_prefix = "jsongrep-%{version}",
     } | Source,
