@@ -10,14 +10,14 @@ let libxext = import "../libxext/build.ncl" in
 let libx11 = import "../libx11/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.5.4" in
+let version = "1.5.5" in
 {
   name = "libxrandr",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libXrandr-%{version}.tar.xz",
-      sha256 = "1ad5b065375f4a85915aa60611cc6407c060492a214d7f9daf214be752c3b4d3",
+      sha256 = "72b922c2e765434e9e9f0960148070bd4504b288263e2868a4ccce1b7cf2767a",
       extract = true,
       strip_prefix = "libXrandr-%{version}",
     } | Source,
