@@ -7,14 +7,14 @@ let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 
-let version = "0.110.0" in
+let version = "0.114.1" in
 {
   name = "nushell",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/nushell/nushell/%{version}.tar.gz",
-      sha256 = "e4c95f743cea3d985ab90e03fd35707a46eef926d407ed363f994155c1ca5055",
+      sha256 = "48ef2fb6bb3ec2b1dcff87a792aeebdfab10b29f3119a62291075b17e4ad25d5",
       extract = true,
       strip_prefix = "nushell-%{version}",
     } | Source,
