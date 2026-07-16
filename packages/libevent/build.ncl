@@ -7,14 +7,14 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.1.12-stable" in
+let version = "2.1.13-stable" in
 {
   name = "libevent",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/libevent/libevent/releases/download/release-%{version}/libevent-%{version}.tar.gz",
-      sha256 = "92e6de1be9ec176428fd2367677e61ceffc2ee1cb119035037a27d346b0403bb",
+      sha256 = "f7e9383b8c0baa81b687e5b5eecc01beefaf1b19b64151d95ed61647fe7a315c",
       extract = true,
       strip_prefix = "libevent-%{version}",
     } | Source,
