@@ -4,14 +4,14 @@ let python = import "../python/build.ncl" in
 let setuptools = import "../setuptools/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.10.2" in
+let version = "1.11.2" in
 {
   name = "meson",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/mesonbuild/meson/%{version}.tar.gz",
-      sha256 = "4f3c6fe1d163fb6d5b52094035fc29d14cf4a254c3ac29544ba0a3d5a739c7ba",
+      sha256 = "09cc2faedc61262fc62abf57aa6c47c57a8c0730b950609a0711bbaf587bd133",
       extract = true,
       strip_prefix = "meson-%{version}",
     } | Source,
