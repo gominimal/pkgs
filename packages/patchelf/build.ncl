@@ -37,7 +37,7 @@ let glibc = import "../glibc/build.ncl" in
       # upstream_version, so `pkgmgr check` couldn't compare against the
       # GithubRepo provenance (update-dark). Stamp the release it's based on;
       # check flags it once NixOS cuts the next release.
-      upstream_version = "0.18.0",
+      upstream_version = "0.19.1",
       license_spdx = "GPL-3.0-or-later",
       source_provenance = {
         category = 'GithubRepo,
