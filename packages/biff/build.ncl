@@ -15,7 +15,7 @@ let version = "0.1.4" in
       url = "gs://minimal-staging-archives/BurntSushi/biff/%{version}.tar.gz",
       sha256 = "21b265959403c02406137adac1012f676a25ad67d6fbf29a553b9e459c7bbc73",
       extract = true,
-      strip_prefix = "biff-%{version}",
+      strip_prefix = "bttf-%{version}",
     } | Source,
     base,
     rust,
