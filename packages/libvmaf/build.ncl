@@ -8,14 +8,14 @@ let nasm = import "../nasm/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "3.0.0" in
+let version = "3.2.0" in
 {
   name = "libvmaf",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/Netflix/vmaf/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "7178c4833639e6b989ecae73131d02f70735fdb3fc2c7d84bc36c9c3461d93b1",
+      sha256 = "a28f93f3b4fa65601be324587072e32a6a704a304ba7b1aec9b70b3f709bc1dc",
       extract = true,
       strip_prefix = "vmaf-%{version}",
     } | Source,
