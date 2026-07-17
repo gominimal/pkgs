@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof libffi-3.6.0.tar.gz
-cd libffi-3.6.0
+tar -xof libffi-3.7.1.tar.gz
+cd libffi-3.7.1
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
