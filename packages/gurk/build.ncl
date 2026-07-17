@@ -10,14 +10,14 @@ let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 
-let version = "0.8.1" in
+let version = "0.9.3" in
 {
   name = "gurk",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/boxdot/gurk-rs/v%{version}.tar.gz",
-      sha256 = "08077c44f4cee3b5f2f31a0cc90d978e052a51677ed73af61419093ca154163f",
+      sha256 = "1c8ee4466374375a3df2ccd94fcc86d76bfcdd868820f3f9d4a1f2cbed2be22b",
       extract = true,
       strip_prefix = "gurk-rs-%{version}",
     } | Source,

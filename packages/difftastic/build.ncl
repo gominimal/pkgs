@@ -7,14 +7,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.67.0" in
+let version = "0.69.0" in
 {
   name = "difftastic",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/Wilfred/difftastic/%{version}.tar.gz",
-      sha256 = "a6a15d6ca9f9ab7c034d1770417d1829deb3fbe9dcf4731b9cba867e50e78437",
+      sha256 = "49d722fb80a0324ea99fe11907f796cde635443084d15cc6f1afd9e0de54bde0",
       extract = true,
       strip_prefix = "difftastic-%{version}",
     } | Source,
