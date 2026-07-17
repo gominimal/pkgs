@@ -29,7 +29,7 @@ let version = "1.1.411" in
   outputs = {
     pyright = { glob = "usr/bin/pyright" } | OutputBin,
     pyright-langserver = { glob = "usr/bin/pyright-langserver" } | OutputBin,
-    libexec = { glob = "usr/lib/node_modules/**" } | OutputData,
+    libexec = { glob = "usr/libexec/pyright/**", allow_executable = true } | OutputData,
   },
 
   attrs =
