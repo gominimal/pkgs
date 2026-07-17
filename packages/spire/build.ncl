@@ -4,7 +4,7 @@ let glibc = import "../glibc/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.14.4" in
+let version = "1.15.2" in
 {
   name = "spire",
 
@@ -12,7 +12,7 @@ let version = "1.14.4" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/spiffe/spire/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "532ceb467da800e4c084976d7472f3975d41bb381c2f7c1b8718e4ba2e66fe8c",
+      sha256 = "0ef800257cc709db57c92b5420e4e58396b8e63461bc36f26dcce349a147cd34",
       extract = true,
       strip_prefix = "spire-%{version}",
     } | Source,

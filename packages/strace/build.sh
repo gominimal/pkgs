@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof strace-6.17.tar.xz
-cd strace-6.17
+tar -xof strace-7.1.tar.xz
+cd strace-7.1
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
