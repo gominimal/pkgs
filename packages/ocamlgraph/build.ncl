@@ -34,7 +34,7 @@ let version = "2.2.0" in
     {
       upstream_version = version,
       source_provenance = { category = 'GithubRepo, owner = "backtracking", repo = "ocamlgraph" },
-      # TODO: REVIEWER — set license_spdx.
+      license_spdx = "LGPL-2.1-only WITH OCaml-LGPL-linking-exception",
     } | Attrs,
   tests = {
     findlib_resolve =
