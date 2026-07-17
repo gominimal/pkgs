@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 # BuDDy — standard automake, but the release tarball ships configure/install-sh
 # WITHOUT the execute bit (noted in Maude's INSTALL), so restore it first. C++.
-set -e
+set -euo pipefail
 
 chmod +x configure install-sh 2>/dev/null || true
 

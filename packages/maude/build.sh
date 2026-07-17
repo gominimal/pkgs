@@ -5,7 +5,7 @@
 # --disable-static (shared only), so we link DYNAMICALLY — configure's default
 # *_LIB flags already point at the shared libs (see below). CVC4 + Yices2
 # disabled to start. See pkgmgr-rs#528.
-set -ex
+set -euo pipefail
 
 export CFLAGS="-O2 -pipe -fno-stack-protector -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
 export CXXFLAGS="$CFLAGS"

@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 # libsigsegv — standard GNU autotools. Source is pre-extracted (extract=true),
 # so we configure in-tree. Shared lib only (Maude links it dynamically).
-set -e
+set -euo pipefail
 
 export CFLAGS="-O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
 export LDFLAGS="-Wl,--build-id=none"
