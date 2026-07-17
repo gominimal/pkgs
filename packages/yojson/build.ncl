@@ -8,15 +8,15 @@ let toolchain = import "../toolchain/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
 
-let version = "2.2.2" in
+let version = "3.0.0" in
 {
   name = "yojson",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://github.com/ocaml-community/yojson/releases/download/2.2.2/yojson-2.2.2.tbz
+      # https://github.com/ocaml-community/yojson/releases/download/2.2.2/yojson-3.0.0.tbz
       url = "gs://minimal-staging-archives/yojson-%{version}.tbz",
-      sha256 = "9abfad8c9a79d4723ad2f6448e669c1e68dbfc87cc54a1b7c064b0c90912c595",
+      sha256 = "99414da7609b92a02474ef4b49ecda15edc8cbba5229341b124e7e4695c39610",
       extract = false,
     } | Source,
     base,
