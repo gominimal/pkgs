@@ -9,14 +9,14 @@ let autoconf = import "../autoconf/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.15.5" in
+let version = "0.15.6" in
 {
   name = "liburcu",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/urcu/userspace-rcu/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "46d276662de37c2be46675be7b5ab418b0a7ef308fe92ec7fbc0cc4436ee8c38",
+      sha256 = "15c341ce8b93d3b70bec120c1df90b2b02a219d65593cddeb4b52521a950e45e",
       extract = true,
       strip_prefix = "userspace-rcu-%{version}",
     } | Source,
