@@ -1,0 +1,21 @@
+--- a/src/Data/Label/Derive.hs	2026-07-17 09:53:34
++++ b/src/Data/Label/Derive.hs	2026-07-17 09:55:02
+@@ -307,7 +307,7 @@
+         -- We are only interested in lenses of record constructors.
+         fields = groupFields mk vars cons
+ 
+-    forM fields $ generateLabel failing concrete name vars cons
++    forM fields $ generateLabel failing concrete name (map dropBndrVis vars) cons
+ 
+ groupFields :: (String -> String) -> [TyVarBndr a] -> [Con]
+   -> [Field ([Context], Subst)]
+@@ -727,3 +727,9 @@
+ 
+ trd :: (a, b, c) -> c
+ trd (_, _, x) = x
++
++-- GHC 9.10 / template-haskell 2.22 made DataD's binders [TyVarBndr BndrVis];
++-- generateLabel wants [TyVarBndr ()]. Drop the visibility flag. (pkgmgr#528)
++dropBndrVis :: TyVarBndr flag -> TyVarBndr ()
++dropBndrVis (PlainTV  n _)   = PlainTV  n ()
++dropBndrVis (KindedTV n _ k) = KindedTV n () k
