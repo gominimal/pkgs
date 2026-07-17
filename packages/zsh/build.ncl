@@ -17,7 +17,11 @@ let version = "5.9" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://www.zsh.org/pub/old/zsh-%{version}.tar.xz",
+      # Sourced from the gs:// mirror so the pin stays fetchable: zsh moves the
+      # current release to /pub/old/ once superseded, so a hardcoded /pub/old/
+      # (or /pub/) URL rots. On update, pkgmgr re-mirrors from the canonical
+      # /pub/ (see upstream_sources.rs `zsh`). Mirror of the /pub/old/ tarball.
+      url = "gs://minimal-staging-archives/zsh-%{version}.tar.xz",
       sha256 = "9b8d1ecedd5b5e81fbf1918e876752a7dd948e05c1a0dba10ab863842d45acd5",
       extract = true,
       strip_prefix = "zsh-%{version}",
