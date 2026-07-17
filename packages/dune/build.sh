@@ -17,6 +17,14 @@ BIN=./_boot/dune.exe
 # this tarball, but it depends on `csexp` — a Tier-1 library we package
 # separately. Add `dune-configurator` here (or as its own package) once `csexp`
 # lands; the toolchain trio + pure-dune libs don't need it. (roadmap C2)
+# dune's `@install` runs a `generate_opam_files` consistency check that diffs the
+# committed opam/dune.opam against what dune regenerates. Release `.tbz` tarballs
+# ship an opam file post-processed by dune-release (version: injected at the top,
+# trailing newline trimmed), so it never matches dune's own output and the check
+# fails. First pass auto-promotes the generated file over the committed one (and
+# exits non-zero *because* it promoted — expected); the second pass then sees
+# matching files and builds cleanly.
+"$BIN" build @install -p dune --profile dune-bootstrap --auto-promote || true
 "$BIN" build @install -p dune --profile dune-bootstrap
 
 # dune install honors --destdir for the DESTDIR-style sandbox layout.
