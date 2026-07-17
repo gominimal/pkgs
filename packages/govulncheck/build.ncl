@@ -4,14 +4,14 @@ let glibc = import "../glibc/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.5.0" in
+let version = "1.6.0" in
 {
   name = "govulncheck",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/golang/vuln/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "94510a4ff2691b13fc217381389b8aaccbb54857058ef528a1c2192de7ab1e41",
+      sha256 = "70f82d70f3a6757babbeb4e6834536e572d1c822180619ac74b649e3e4f247fb",
       extract = true,
     } | Source,
     base,
