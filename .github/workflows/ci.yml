@@ -19,6 +19,12 @@ jobs:
   minimal-check:
     runs-on: ubuntu-latest
     steps:
+      - name: Free Disk Space
+        uses: endersonmenezes/free-disk-space@v3 # Use @main for latest, @v3 for stable
+        with:
+            remove_android: true
+            remove_dotnet: true
+            remove_haskell: true
       - uses: actions/checkout@v6
       - uses: gominimal/check@v1
         with:
