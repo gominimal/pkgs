@@ -7,14 +7,14 @@ let pkgconf = import "../pkgconf/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.4.131" in
+let version = "2.4.134" in
 {
   name = "libdrm",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libdrm-%{version}.tar.xz",
-      sha256 = "45ba9983b51c896406a3d654de81d313b953b76e6391e2797073d543c5f617d5",
+      sha256 = "ac5e74d157830eb8bee44c6a6bf3ad49774ef0dd2a72bdad74a8f20308b52a95",
       extract = true,
       strip_prefix = "libdrm-%{version}",
     } | Source,

@@ -6,14 +6,14 @@ let make = import "../make/build.ncl" in
 let nasm = import "../nasm/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "4.0.1" in
+let version = "4.2.0" in
 {
   name = "libsvtav1",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v%{version}/SVT-AV1-v%{version}.tar.bz2",
-      sha256 = "df2a2dd51512717e8c3637072750a3899c3a69d684accccace33c1c467f7e852",
+      sha256 = "512f2ea5649e3e76c2dddcc25c2556fb67a9582baaab207c9c96161c94659dad",
       extract = true,
       strip_prefix = "SVT-AV1-v%{version}",
     } | Source,
