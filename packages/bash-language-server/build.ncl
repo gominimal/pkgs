@@ -3,7 +3,7 @@ let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let node = import "../node/build.ncl" in
 
-let version = "5.4.3" in
+let version = "5.6.0" in
 {
   name = "bash-language-server",
   build_deps = [

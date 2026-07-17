@@ -3,7 +3,7 @@ let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let node = import "../node/build.ncl" in
 
-let version = "1.1.398" in
+let version = "1.1.411" in
 {
   name = "pyright",
   build_deps = [
