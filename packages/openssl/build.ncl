@@ -4,6 +4,7 @@ let perl = import "../perl/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let zlib = import "../zlib/build.ncl" in
 
 let version = "3.6.2" in
 {
@@ -20,9 +21,11 @@ let version = "3.6.2" in
     perl,
     make,
     toolchain,
+    zlib, # build.sh `zlib-dynamic` compiles crypto/comp/c_zlib.c against <zlib.h>
   ],
   runtime_deps = [
     glibc,
+    zlib, # `zlib-dynamic` dlopen's libz.so.1 at runtime for compression
   ],
 
   cmd = "./build.sh",

@@ -46,6 +46,7 @@ let version = "1.5.7" in
     glibc,
     lz4,
     xz,
+    zlib, # the zstd CLI links libz at runtime for --format=gzip (zlib already a build_dep)
   ],
 
   cmd = "./build.sh",
