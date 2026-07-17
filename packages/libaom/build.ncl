@@ -6,14 +6,14 @@ let make = import "../make/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "3.13.1" in
+let version = "3.14.1" in
 {
   name = "libaom",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://storage.googleapis.com/aom-releases/libaom-%{version}.tar.gz",
-      sha256 = "19e45a5a7192d690565229983dad900e76b513a02306c12053fb9a262cbeca7d",
+      sha256 = "44bf90dbd23e734d50e70a8c41c285193922938bd0d3bc2ee56764d181d55ef5",
       extract = true,
       strip_prefix = "libaom-%{version}",
     } | Source,
