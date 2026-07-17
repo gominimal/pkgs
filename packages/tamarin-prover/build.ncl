@@ -18,7 +18,16 @@ let version = "1.12.0" in
   build_deps = [
     { file = "build.sh" } | Local,
     { file = "fclabels-ghc910.patch" } | Local,
-    { file = "lts-24.50.config" } | Local,
+    # The Stackage LTS-24.50 cabal.config (~3.5k lines pinning the whole GHC-9.10.3
+    # dep set) is FETCHED, not vendored: the pkgs repo is cloned by every consumer,
+    # so we keep the large file out of it. It's an immutable Stackage snapshot,
+    # pinned by sha256, and the build already needs internet for Hackage anyway.
+    # (raised by @twitchyliquid64 on pkgs#449)
+    {
+      url = "gs://minimal-staging-archives/stackage-lts-24.50.cabal.config",
+      sha256 = "2014c4b51f8f5f9dcd0e5771619eff7c9d8d10cb205d22916e2c08b64ea8924c",
+      extract = false,
+    } | Source,
     {
       url = "https://github.com/tamarin-prover/tamarin-prover/archive/refs/tags/%{version}.tar.gz",
       sha256 = "35f0262e770db3632fcb297deb6ecc2d7c724c693fecfe97892e8224fa161956",

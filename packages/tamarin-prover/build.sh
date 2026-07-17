@@ -48,7 +48,8 @@ sed -i 's/ *&& *< *[0-9][0-9.]*//g' fclabels-2.0.5.1/fclabels.cabal
 # whereas an unconstrained `allow-newer: all` picks bleeding-edge combos that don't
 # line up (e.g. yesod-static needs crypton 1.0.6 + memory 0.18.0, not the newest).
 # Strip the config's `with-compiler:` (we pass --with-compiler on the CLI instead).
-grep -v '^with-compiler:' lts-24.50.config > lts-pinned.config
+# The LTS config is fetched (extract=false Source) — see build.ncl.
+grep -v '^with-compiler:' stackage-lts-24.50.cabal.config > lts-pinned.config
 # tamarin is a multi-package project (stack.yaml, which cabal ignores) → declare
 # the root + six lib sub-packages. fclabels was DROPPED from LTS 24 (doesn't build
 # on 9.10 unpatched), so it isn't in the pin; our patched local copy provides it,
