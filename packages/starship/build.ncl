@@ -5,7 +5,7 @@ let glibc = import "../glibc/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.25.1" in
+let version = "1.26.0" in
 {
   name = "starship",
 
@@ -13,7 +13,7 @@ let version = "1.25.1" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/starship/starship/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "521306b14066ee7e332d998ef5b5b6455fdc6085c52e86b6316a7cdc37bae1d8",
+      sha256 = "8c95e8a6c596b29ac192104eae00dd991e8c8fd66083fd2b34d6b223a5803a59",
       extract = true,
       strip_prefix = "starship-%{version}",
     } | Source,
