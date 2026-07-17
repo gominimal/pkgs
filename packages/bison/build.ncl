@@ -1,8 +1,10 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 
-# TODO: When packaging i see errors like: /usr/bin/bison: m4 subprocess failed: No such file or directory
-# Maybe m4 needs to be a runtime_dep here?
+# /usr/bin/bison execs m4 at runtime (the grammar tables are expanded by an m4
+# subprocess). Without m4 in the runtime closure bison fails at runtime with
+# "/usr/bin/bison: m4 subprocess failed: No such file or directory". m4 is
+# therefore a genuine runtime_dep (in addition to a build_dep), declared below.
 let base = import "../base/build.ncl" in
 let flex = import "../flex/build.ncl" in
 let m4 = import "../m4/build.ncl" in
@@ -29,6 +31,7 @@ let version = "3.8.2" in
   runtime_deps = [
     bash, # yacc is a shell script
     glibc,
+    m4, # /usr/bin/bison spawns m4 at runtime to expand grammar tables
   ],
 
   cmd = "./build.sh",

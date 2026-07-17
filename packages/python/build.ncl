@@ -9,6 +9,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let util-linux = import "../util-linux/build.ncl" in
 
 let bash = import "../bash/build.ncl" in
+let bzip2 = import "../bzip2/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let expat = import "../expat/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
@@ -43,6 +44,14 @@ let version = "3.14.5" in
     zlib,
     subsetOf util-linux ["libuuid"],
     xz,
+    # The following are linked (DT_NEEDED) by stdlib C extension modules and
+    # must be in the runtime closure or `import` fails at runtime. They are
+    # already present at build time (sqlite/gdbm via build_deps, bzip2 via
+    # base's runtime closure), so declaring them here does not change the
+    # build output — it only completes the honest runtime closure.
+    bzip2, #   _bz2      -> libbz2
+    sqlite, #  _sqlite3  -> libsqlite3
+    gdbm, #    _dbm/_gdbm-> libgdbm / libgdbm_compat
   ],
 
   cmd = "./build.sh",
