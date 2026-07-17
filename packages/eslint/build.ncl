@@ -24,7 +24,7 @@ let version = "10.6.0" in
   },
   outputs = {
     eslint = { glob = "usr/bin/eslint" } | OutputBin,
-    node_modules = { glob = "usr/lib/node_modules/**", allow_executable = true } | OutputData,
+    libexec = { glob = "usr/libexec/eslint/**", allow_executable = true } | OutputData,
   },
   attrs =
     {

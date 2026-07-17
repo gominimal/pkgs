@@ -24,7 +24,7 @@ let version = "9.0.7" in
   },
   outputs = {
     lerna = { glob = "usr/bin/lerna" } | OutputBin,
-    node_modules = { glob = "usr/lib/node_modules/**", allow_executable = true } | OutputData,
+    libexec = { glob = "usr/libexec/lerna/**", allow_executable = true } | OutputData,
   },
   attrs =
     {

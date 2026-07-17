@@ -24,7 +24,7 @@ let version = "14.2.6" in
   },
   outputs = {
     serve = { glob = "usr/bin/serve" } | OutputBin,
-    node_modules = { glob = "usr/lib/node_modules/**", allow_executable = true } | OutputData,
+    libexec = { glob = "usr/libexec/serve/**", allow_executable = true } | OutputData,
   },
   attrs =
     {

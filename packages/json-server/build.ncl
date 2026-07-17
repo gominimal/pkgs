@@ -24,7 +24,7 @@ let version = "0.17.4" in
   },
   outputs = {
     json-server = { glob = "usr/bin/json-server" } | OutputBin,
-    node_modules = { glob = "usr/lib/node_modules/**", allow_executable = true } | OutputData,
+    libexec = { glob = "usr/libexec/json-server/**", allow_executable = true } | OutputData,
   },
   attrs =
     {
