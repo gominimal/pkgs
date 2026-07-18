@@ -13,13 +13,13 @@ let linux_headers = import "../linux_headers/build.ncl" in
 let sed = import "../sed/build.ncl" in
 let tar = import "../tar/build.ncl" in
 
-let version = "4.10.0" in
+let version = "4.11.0" in
 {
   name = "findutils",
   build_deps = [
     {
       url = "gs://minimal-staging-archives/findutils-%{version}.tar.xz",
-      sha256 = "1387e0b67ff247d2abde998f90dfbf70c1491391a59ddfecb8ae698789f0a4f5",
+      sha256 = "bfd19cb06cc71f3352d567e90284d8cdac02ac89774bbeadf0b533b0c11432fd",
       extract = true,
     } | Source,
     { file = "build.sh" } | Local,
