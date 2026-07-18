@@ -8,14 +8,14 @@ let ninja = import "../ninja/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "2022.3.0" in
+let version = "2023.1.0" in
 {
   name = "onetbb",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/uxlfoundation/oneTBB/v%{version}.tar.gz",
-      sha256 = "01598a46c1162c27253a0de0236f520fd8ee8166e9ebb84a4243574f88e6e50a",
+      sha256 = "191288b52e1e6b17198000b64d77d194bb65e791be46ebc606e9b091781e2070",
       extract = true,
       strip_prefix = "oneTBB-%{version}",
     } | Source,
