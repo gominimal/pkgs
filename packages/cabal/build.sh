@@ -1,24 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
-# cabal's bootstrap fetches ~20 tarballs from hackage.haskell.org live during
-# the build, and those downloads flake intermittently (truncated reads ->
-# http.client.IncompleteRead). cabal verifies each tarball's sha256, so a
-# partial download is re-fetched cleanly, which makes a retry safe. The
-# hermetic fix is to vendor the bootstrap sources offline (see packages/ghc,
-# which passes --bootstrap-sources) -- this retry is the cheap stopgap.
-retry() {
-    local -i attempt=1 max=4
-    until "$@"; do
-        if (( attempt >= max )); then
-            echo "retry: '$*' failed after $max attempts" >&2
-            return 1
-        fi
-        echo "retry: '$*' failed (attempt $attempt/$max) -- likely a transient hackage fetch; retrying in $(( attempt * 15 ))s" >&2
-        sleep $(( attempt * 15 ))
-        attempt+=1
-    done
-}
+# cabal's bootstrap fetches ~20 tarballs from hackage.haskell.org live during the
+# build. cabal/hackage-security already re-fetch on a TUF sha256 mismatch and
+# fall back to mirrors on failure, and bootstrap.py retries each fetch a few
+# times internally, so we rely on that native resilience rather than a
+# hand-rolled retry loop. The complete fix is to build fully offline via
+# `bootstrap.py ... fetch` + `--bootstrap-sources` (see packages/ghc, which uses
+# the identical flag from the same forked script); that drops the network
+# dependency (and `needs = { internet }`) entirely.
 
 # Patch monorepo .cabal files to accept GHC 9.10.1's built-in Cabal-syntax-3.12.0.0
 # (cabal-install-3.12.1.0 expects ^>=3.12.1.0 but GHC 9.10.1 ships 3.12.0.0)
@@ -37,7 +27,7 @@ done
 python3 update_bootstrap_json.py bootstrap/linux-9.8.2.json > bootstrap/linux-actual.json
 
 # Run the bootstrap script with the generated JSON
-retry python3 bootstrap/bootstrap.py -w "$(command -v ghc)" -d bootstrap/linux-actual.json
+python3 bootstrap/bootstrap.py -w "$(command -v ghc)" -d bootstrap/linux-actual.json
 
 # The bootstrap script compiles cabal-install and installs to _build/bin
 mkdir -p "$OUTPUT_DIR"/usr/bin

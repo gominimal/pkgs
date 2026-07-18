@@ -6,28 +6,20 @@ set -euo pipefail
 # `cabal` + the system GHC and let cabal's solver pick 9.10-compatible dependency
 # versions from Hackage. Pioneering — upstream has no published 9.10 build.
 
-# Hackage fetches flake intermittently (truncated reads -> IncompleteRead); cabal
-# re-fetches cleanly on a verified sha mismatch, so retry is safe (cf. cabal's
-# build.sh, which hit the same).
-retry() {
-    local -i attempt=1 max=4
-    until "$@"; do
-        if (( attempt >= max )); then
-            echo "retry: '$*' failed after $max attempts" >&2
-            return 1
-        fi
-        echo "retry: '$*' failed (attempt $attempt/$max) -- likely a transient hackage fetch; retrying in $(( attempt * 15 ))s" >&2
-        sleep $(( attempt * 15 ))
-        attempt+=1
-    done
-}
+# Hackage fetches flake intermittently, but cabal already re-fetches on a TUF
+# sha256 mismatch, falls back to mirrors, and retries each fetch internally, so
+# we rely on that native resilience rather than a hand-rolled retry loop. The
+# complete fix is a cabal.project.freeze + `--offline` (a bigger job) which
+# drops the network dependency entirely. (The earlier "IncompleteRead" note
+# was cargo-culted from cabal's Python bootstrap; tamarin's fetches go through
+# cabal/ghc's Haskell HTTP stack, not Python.)
 
 # cabal needs a writable HOME for its config, package index, and build store.
 export CABAL_DIR="$PWD/.cabal-home"
 mkdir -p "$CABAL_DIR"
 
 # Fetch the Hackage package index.
-retry cabal update
+cabal update
 
 # Vendor a GHC-9.10-patched fclabels. Upstream 2.0.5.1 (dormant since 2021) is the
 # ONE dep that doesn't compile on 9.10: its TH derivation hits the
@@ -35,7 +27,7 @@ retry cabal update
 # `cabal get` unpacks the hackage source; we patch it and add it as a LOCAL
 # package so cabal builds the fixed copy instead of the broken hackage one.
 # (pkgmgr-rs#528)
-retry cabal get fclabels-2.0.5.1
+cabal get fclabels-2.0.5.1
 patch -p1 -d fclabels-2.0.5.1 < fclabels-ghc910.patch
 # fclabels 2.0.5.1's .cabal caps base/template-haskell/mtl/... below GHC 9.10's
 # versions; our source patch makes it actually compile on 9.10, so strip the stale
