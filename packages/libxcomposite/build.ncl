@@ -9,14 +9,14 @@ let libxfixes = import "../libxfixes/build.ncl" in
 let libx11 = import "../libx11/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.4.6" in
+let version = "0.4.7" in
 {
   name = "libxcomposite",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libXcomposite-%{version}.tar.xz",
-      sha256 = "fe40bcf0ae1a09070eba24088a5eb9810efe57453779ec1e20a55080c6dc2c87",
+      sha256 = "8bdf310967f484503fa51714cf97bff0723d9b673e0eecbf92b3f97c060c8ccb",
       extract = true,
       strip_prefix = "libXcomposite-%{version}",
     } | Source,

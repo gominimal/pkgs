@@ -9,14 +9,14 @@ let libxfixes = import "../libxfixes/build.ncl" in
 let libx11 = import "../libx11/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.1.6" in
+let version = "1.1.7" in
 {
   name = "libxdamage",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libXdamage-%{version}.tar.xz",
-      sha256 = "52733c1f5262fca35f64e7d5060c6fcd81a880ba8e1e65c9621cf0727afb5d11",
+      sha256 = "127067f521d3ee467b97bcb145aeba1078e2454d448e8748eb984d5b397bde24",
       extract = true,
       strip_prefix = "libXdamage-%{version}",
     } | Source,
