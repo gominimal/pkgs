@@ -10,9 +10,12 @@ export OPENSSL_NO_VENDOR=1
 
 FEATURES="kvm,io_uring,guest_debug,ivshmem,pvmemcontrol,fw_cfg"
 
-if [ "$(uname -m)" = "x86_64" ]; then
-  FEATURES="${FEATURES},tdx"
-fi
+# `tdx` (Intel Trust Domain Extensions) is DISABLED as of 53.0: upstream ships a
+# hard `compile_error!` guard for it —
+#   error: Feature 'tdx' is broken.
+#   error: could not compile `cloud-hypervisor` (bin "cloud-hypervisor")
+# — so enabling it fails the x86_64 build outright. Re-enable once upstream drops
+# the guard; check cloud-hypervisor's release notes on the next version bump.
 
 cargo build --release --features "$FEATURES"
 
