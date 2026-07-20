@@ -23,29 +23,28 @@ let version = "1.95.0" in
       extract = true,
       strip_prefix = "rustc-%{version}-src",
     } | Source,
-    # rust stage0 bootstrap toolchain (rustc/cargo/rust-std 1.94.0 — the
-    # previous stable that bootstraps 1.95.0). Declared as `extract =
-    # false` Sources so minimal's normal source hydration drops the
-    # tarballs into the build CWD; build.sh then moves them into
-    # build/cache/<date>/ where x.py's bootstrap looks, instead of
-    # curling static.rust-lang.org (no network egress in Confidential
-    # Space). shas must match the rust source's own src/stage0 manifest.
-    # amd64-only for now — an arm64 target needs the aarch64 stage0
-    # tarballs (tracked under #16). Bumping rust = update these three
-    # URLs/shas + the date fallback in build.sh together.
+    # SEED-ROOTED stage0 (issue #17): rustc + cargo 1.94.1 built from the
+    # 229-byte hex0 seed via mrustc — NOT the trust-by-fiat prebuilt 1.94.0.
+    # These ARE the official 1.94.1 by source (commit e408947bf), bootstrapped
+    # mrustc 0.12.0 -> rustc 1.90.0 -> 1.91.1 -> 1.92.0 -> 1.93.1 -> 1.94.1 on
+    # our own compute (verified: our rustc compiles+runs code; see issue #17).
+    # Because their version/sha differ from 1.95.0's src/stage0 manifest (which
+    # pins 1.94.0), they do NOT use the build/cache/<date> pre-place path —
+    # build.sh extracts them and points bootstrap.toml's [build] rustc/cargo at
+    # them, so x.py uses them directly and skips the src/stage0 download (exactly
+    # as the mrustc chain's own rung configs do). The rustc tarball bundles its
+    # sysroot (bin/rustc + lib/, i.e. rust-std), so only two Sources are needed.
+    # NB: shas are of OUR packaged tarballs (2026-07-18); they must be uploaded
+    # to these URLs before a CS build — see docs/rust-seed-stage0-bridge.md.
+    # amd64-only for now — arm64 needs the aarch64 seed-rooted stage0 (#16).
     {
-      url = "gs://minimalmertic-hermetic-mirror/rust-stage0/2026-03-05/rustc-1.94.0-x86_64-unknown-linux-gnu.tar.xz",
-      sha256 = "31a0d3ac9383dfdeb4fce86eeed5ade3230131c635264c0eab7252dbf235f28e",
+      url = "gs://minimalmertic-hermetic-mirror/rust-stage0-seed/2026-07-18/seed-rustc-1.94.1-x86_64-unknown-linux-gnu.tar.gz",
+      sha256 = "99c538b75dd4d007bb7034dbc2c4b39b2fc661b8c1eb1cce5361c3c2235aeee0",
       extract = false,
     } | Source,
     {
-      url = "gs://minimalmertic-hermetic-mirror/rust-stage0/2026-03-05/cargo-1.94.0-x86_64-unknown-linux-gnu.tar.xz",
-      sha256 = "8e17624f3de39e079845bfb25ed15a042f4b50ceca78e37c56c4b9b15949b9f7",
-      extract = false,
-    } | Source,
-    {
-      url = "gs://minimalmertic-hermetic-mirror/rust-stage0/2026-03-05/rust-std-1.94.0-x86_64-unknown-linux-gnu.tar.xz",
-      sha256 = "dd33653107c36e040082050d9e547e64dac5b456ba74069430d838c00c189a05",
+      url = "gs://minimalmertic-hermetic-mirror/rust-stage0-seed/2026-07-18/seed-cargo-1.94.1-x86_64-unknown-linux-gnu.tar.gz",
+      sha256 = "6b34c8c415e36e59c8025ffb04dbe39318dec000906a87808f17ccd9425ad0c7",
       extract = false,
     } | Source,
     base,
