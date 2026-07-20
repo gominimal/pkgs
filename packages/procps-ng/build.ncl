@@ -5,14 +5,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 
-let version = "4.0.5" in
+let version = "4.0.6" in
 {
   name = "procps-ng",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/procps-ng-%{version}.tar.xz",
-      sha256 = "c2e6d193cc78f84cd6ddb72aaf6d5c6a9162f0470e5992092057f5ff518562fa"
+      sha256 = "67bea6fbc3a42a535a0230c9e891e5ddfb4d9d39422d46565a2990d1ace15216"
     } | Source,
     base,
     pkgconf,
