@@ -6,7 +6,7 @@ let openssl = import "../openssl/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "52.0" in
+let version = "53.0" in
 {
   name = "cloud-hypervisor",
 
@@ -14,7 +14,7 @@ let version = "52.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/cloud-hypervisor/cloud-hypervisor/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "20f0e2c9cbd9cb912500ea0f755f96aebe1d7cc5e2a4a546df344e7af0eab015",
+      sha256 = "2c3d8bf1d504d62767af3c53c2fb3462f7dcfc7d5704c86b6a7feee79daf1293",
       extract = true,
       strip_prefix = "cloud-hypervisor-%{version}",
     } | Source,
