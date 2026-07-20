@@ -4,6 +4,7 @@ let make = import "../make/build.ncl" in
 let acl = import "../acl/build.ncl" in
 let attr = import "../attr/build.ncl" in
 let libxcrypt = import "../libxcrypt/build.ncl" in
+let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
 let version = "4.19.4" in
@@ -17,6 +18,7 @@ let version = "4.19.4" in
     } | Source,
     base,
     make,
+    pkgconf,
     toolchain,
   ],
   runtime_deps = [
