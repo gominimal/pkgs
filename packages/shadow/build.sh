@@ -26,8 +26,12 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
+# shadow 4.19.x enables logind integration by default and hard-fails configure
+# when libsystemd is absent. minimal ships no systemd, so turn it off explicitly
+# (4.18.0 had no such probe -- it arrived with the 4.19 bump).
 ./configure --sysconfdir=/etc   \
             --disable-static    \
+            --disable-logind    \
             --with-{b,yes}crypt \
             --without-libbsd    \
             --with-group-name-max-length=32
