@@ -4,7 +4,7 @@ let glibc = import "../glibc/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "0.50.18" in
+let version = "0.51.0" in
 {
   name = "k9s",
 
@@ -12,7 +12,7 @@ let version = "0.50.18" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/derailed/k9s/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "4a438b4bc480c05ba6f78a1573ee7e1dad7956ef3e30912ae22c744cea031f96",
+      sha256 = "e2c3851c909b87f9cfafa262e426f4a89023ca4e745cba5cab6d0153f76e7dcd",
       extract = true,
       strip_prefix = "k9s-%{version}",
     } | Source,
