@@ -8,6 +8,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let python = import "../python/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
+let libssh2 = import "../libssh2/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
@@ -50,6 +51,9 @@ let version = "1.95.0" in
     base,
     cmake,
     curl,
+    # our seed-rooted stage0 cargo (issue #17) is dynamically linked against
+    # libssh2.so.1; curl already brings zlib+openssl, gcc brings libgcc_s.
+    libssh2,
     pkgconf,
     python,
     toolchain,
