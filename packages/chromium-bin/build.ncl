@@ -79,7 +79,7 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # '/bin/chromium-headless-shell' from the headless-shell pkg) to
 # bypass the registry lookup. See packages/chromium-bin/README.md.
 let revision = "1233" in
-let browser_version = "151.0.7922.19" in
+let browser_version = "151.0.7922.34" in
 let snapshot_position = "1654408" in
 {
   name = "chromium-bin",
