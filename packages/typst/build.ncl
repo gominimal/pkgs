@@ -8,14 +8,14 @@ let glibc = import "../glibc/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 
-let version = "0.15.0" in
+let version = "0.15.1" in
 {
   name = "typst",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/typst/typst/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "5044bd12138491c6e880df0e09056a9ae4607d937c73962d5806402ae6ee96a6",
+      sha256 = "c07909e01a2a6941e52c9b616e48c209c755eed416d62bcf5583c37a4aca01a3",
       extract = true,
       strip_prefix = "typst-%{version}",
     } | Source,
