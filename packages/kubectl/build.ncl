@@ -2,7 +2,7 @@ let { Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.n
 let bash = import "../bash/build.ncl" in
 let go = import "../go/build.ncl" in
 
-let version = "1.36.0" in
+let version = "1.36.2" in
 
 {
   name = "kubectl",
@@ -11,7 +11,7 @@ let version = "1.36.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/kubernetes/kubernetes/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "b98652d8ebf5d60d0715cd952e5d489aa10e14ad75d7b6e2425b8de8c65aa4c5",
+      sha256 = "ffbc46612cf32ad08a3b606de064b63afc350ae1dd1a691e99b5cd127d716c26",
       extract = true,
       strip_prefix = "kubernetes-%{version}",
     } | Source,

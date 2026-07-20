@@ -8,7 +8,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.19.0" in
+let version = "1.19.4" in
 {
   name = "libkrun",
 
@@ -16,7 +16,7 @@ let version = "1.19.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/containers/libkrun/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "832e76e93f1ea7a41e5c763a9710acf42d3d54f628015c1255f115a4b7ef2a06",
+      sha256 = "e8775fab2b460972a67ca6cd936296bb79cdb078d852d712a283cb290dd0b284",
       extract = true,
       strip_prefix = "libkrun-%{version}",
     } | Source,

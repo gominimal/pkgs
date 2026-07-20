@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof procps-ng-4.0.5.tar.xz
-cd procps-ng-4.0.5
+tar -xof procps-ng-4.0.6.tar.xz
+cd procps-ng-4.0.6
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
@@ -14,7 +14,7 @@ export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
 ./configure --prefix=/usr                           \
-            --docdir=/usr/share/doc/procps-ng-4.0.5 \
+            --docdir=/usr/share/doc/procps-ng-4.0.6 \
             --disable-static                        \
             --disable-kill                          \
             --enable-watch8bit
