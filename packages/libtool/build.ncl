@@ -8,14 +8,14 @@ let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.5.4" in
+let version = "2.6.2" in
 {
   name = "libtool",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libtool-%{version}.tar.xz",
-      sha256 = "f81f5860666b0bc7d84baddefa60d1cb9fa6fceb2398cc3baca6afaa60266675",
+      sha256 = "2ef1067c16c97db930fd740cc9bc3d3ba9a583804ae5ac42cc3e8719e49e191e",
       extract = true,
       strip_prefix = "libtool-%{version}",
     } | Source,
