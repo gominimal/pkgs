@@ -16,6 +16,16 @@ sed -i 's/set(OPENSSL_USE_STATIC_LIBS TRUE)/set(OPENSSL_USE_STATIC_LIBS FALSE)/'
 # Disable flowbench (not needed for production builds)
 sed -i '/add_subdirectory(flowbench/s/^/#/' CMakeLists.txt
 
+# Disable the binding tester. bindings/CMakeLists.txt guards it with only
+# `if(NOT WIN32 AND NOT OPEN_FOR_IDE)`, so on Linux it runs unconditionally --
+# it ignores every WITH_*_BINDING flag AND BUILD_TESTING=OFF. Its
+# prepare_binding_test_files step then fails:
+#   FAILED: bindingtester.touch
+#   Error copying directory from "/build/bindings" to ".../bindingtester/tests":
+#     No such file or directory
+# (This is also why the Python stub files below were needed -- same target.)
+sed -i '/package_bindingtester/s/^/#/' bindings/CMakeLists.txt
+
 # Fix toml11 compatibility with CMake 4.x (old cmake_minimum_required)
 sed -i '/-Dtoml11_BUILD_TEST/a\      -DCMAKE_POLICY_VERSION_MINIMUM:STRING=3.5' cmake/FDBComponents.cmake
 
