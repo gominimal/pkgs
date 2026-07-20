@@ -4,13 +4,13 @@ let base = import "../base/build.ncl" in
 let python = import "../python/build.ncl" in
 let pyproject-hooks = import "../pyproject-hooks/build.ncl" in
 
-let version = "25.0" in
+let version = "26.2" in
 {
   name = "py-packaging",
   build_deps = [
     {
       url = "https://files.pythonhosted.org/packages/source/p/packaging/packaging-%{version}.tar.gz",
-      sha256 = "d443872c98d677bf60f6a1f2f8c1cb748e8fe762d2bf9d3148b5599295b0fc4f",
+      sha256 = "ff452ff5a3e828ce110190feff1178bb1f2ea2281fa2075aadb987c2fb221661",
       extract = true,
       strip_prefix = "packaging-%{version}",
     } | Source,
