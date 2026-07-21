@@ -6,14 +6,14 @@ let m4 = import "../m4/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "3.10.1" in
+let version = "4.0" in
 {
   name = "nettle",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://ftpmirror.gnu.org/nettle/nettle-%{version}.tar.gz",
-      sha256 = "b0fcdd7fc0cdea6e80dcf1dd85ba794af0d5b4a57e26397eee3bc193272d9132",
+      sha256 = "3addbc00da01846b232fb3bc453538ea5468da43033f21bb345cb1e9073f5094",
       extract = true,
       strip_prefix = "nettle-%{version}",
     } | Source,
