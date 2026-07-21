@@ -65,7 +65,18 @@ export PATH="$STUB_DIR:$PWD/_build/bin:$PATH"
 # Bootstrap Hadrian
 # We must explicitly pass the bootstrap GHC path and also pass --bootstrap-sources to force
 # the bootstrap.py script to use the local offline tarballs instead of downloading them.
-python3 hadrian/bootstrap/bootstrap.py -w "$(command -v ghc)" --bootstrap-sources ../hadrian-bootstrap-sources-9.8.1.tar.gz
+# Locate the bootstrap sources by GLOB rather than repeating the version. The
+# version already lives in build.ncl's url + sha256; naming it a third time here
+# is what broke the 9.14.1 bump (build.ncl moved to 9.12.2, this line stayed at
+# 9.8.1, and bootstrap.py died on a missing file). Fail loudly if the glob is
+# not exactly one file, so an ambiguous /build never silently picks the wrong
+# bootstrap plan.
+bootstrap_sources=(../hadrian-bootstrap-sources-*.tar.gz)
+[ "${#bootstrap_sources[@]}" -eq 1 ] && [ -f "${bootstrap_sources[0]}" ] || {
+  echo "ERROR: expected exactly one ../hadrian-bootstrap-sources-*.tar.gz, got: ${bootstrap_sources[*]}" >&2
+  exit 1
+}
+python3 hadrian/bootstrap/bootstrap.py -w "$(command -v ghc)" --bootstrap-sources "${bootstrap_sources[0]}"
 
 # Add pseudostore lib dirs to LD_LIBRARY_PATH so bootstrapped tools can find their dependencies
 PSEUDO_LIBS="$(find _build/pseudostore -name "*.so*" -exec dirname {} \; | sort -u | paste -sd : || true)"
