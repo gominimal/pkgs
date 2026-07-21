@@ -1,4 +1,4 @@
-change-id = 142379
+change-id = 154587
 
 [build]
 # When compiling from source, you almost always want a full stage 2 build,
@@ -8,8 +8,6 @@ test-stage = 2
 doc-stage = 2
 # When compiling from source, you usually want all tools.
 extended = true
-# Use libtest built from the source tree instead of the precompiled one from stage 0.
-compiletest-use-stage0-libtest = false
 
 docs = false
 
@@ -19,6 +17,10 @@ link-shared = true
 [rust]
 channel = "stable"
 download-rustc = false
+# Load-bearing beyond just "don't build lld": since rust#147157, an unset `lld`
+# makes x86_64-unknown-linux-gnu default to the self-contained rust-lld linker.
+# Explicit `false` opts that target back out, so built binaries keep linking
+# through cc rather than a rust-lld we don't ship.
 lld = false
 llvm-bitcode-linker = false
 

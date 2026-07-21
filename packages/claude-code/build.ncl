@@ -67,10 +67,7 @@ in
       binary_from = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases",
       closed_source = true,
 
-      # Claude code needs two things to function properly:
-      #  - `.claude.json`, which contains anthropic credentials for the user
-      #  - `.claude`, which contains project state and recent context windows and such.
-      env_dir_mappings = [{ read_only = false, path = "~/.claude", class = 'State }],
+      # Claude code wires `.claude.json`, which contains anthropic credentials for the user
       env_file_mappings = [{ read_only = false, path = "~/.claude.json", class = 'Credential }],
     } | Attrs,
 } | BuildSpec
