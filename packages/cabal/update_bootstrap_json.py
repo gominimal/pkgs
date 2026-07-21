@@ -35,7 +35,7 @@ data['builtin'] = new_builtin
 # genuinely too old for the GHC we build with (hence the original comment,
 # "too old for GHC 9.10.3").
 #
-# Since the base plan moved to linux-9.12.4.json (cabal 3.18.1.0), every one of
+# Since the base plan moved to linux-9.10.3.json (cabal 3.18.1.0), every one of
 # those pins became a DOWNGRADE of cabal's own tested set, with stale hashes:
 #
 #   HTTP              plan 4000.5.0  -> pinned 4000.4.1   <- failed to configure

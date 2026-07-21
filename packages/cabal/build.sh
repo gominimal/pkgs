@@ -45,7 +45,7 @@ done
 # `builtin` list with the real `ghc-pkg list` output, so the compiler-package
 # half adapts to whatever GHC is on PATH. The base plan supplies the
 # `dependencies` (Hackage packages to build), so take the newest available.
-BOOTSTRAP_PLAN=bootstrap/linux-9.12.4.json
+BOOTSTRAP_PLAN=bootstrap/linux-9.10.3.json
 [ -f "$BOOTSTRAP_PLAN" ] || {
   echo "ERROR: $BOOTSTRAP_PLAN not found — cabal $(basename "$PWD") ships a different set of bootstrap plans." >&2
   echo "Available:" >&2

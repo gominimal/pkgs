@@ -65,18 +65,7 @@ export PATH="$STUB_DIR:$PWD/_build/bin:$PATH"
 # Bootstrap Hadrian
 # We must explicitly pass the bootstrap GHC path and also pass --bootstrap-sources to force
 # the bootstrap.py script to use the local offline tarballs instead of downloading them.
-# Locate the bootstrap sources by GLOB rather than repeating the version. The
-# version already lives in build.ncl's url + sha256; naming it a third time here
-# is what broke the 9.14.1 bump (build.ncl moved to 9.12.2, this line stayed at
-# 9.8.1, and bootstrap.py died on a missing file). Fail loudly if the glob is
-# not exactly one file, so an ambiguous /build never silently picks the wrong
-# bootstrap plan.
-bootstrap_sources=(../hadrian-bootstrap-sources-*.tar.gz)
-[ "${#bootstrap_sources[@]}" -eq 1 ] && [ -f "${bootstrap_sources[0]}" ] || {
-  echo "ERROR: expected exactly one ../hadrian-bootstrap-sources-*.tar.gz, got: ${bootstrap_sources[*]}" >&2
-  exit 1
-}
-python3 hadrian/bootstrap/bootstrap.py -w "$(command -v ghc)" --bootstrap-sources "${bootstrap_sources[0]}"
+python3 hadrian/bootstrap/bootstrap.py -w "$(command -v ghc)" --bootstrap-sources ../hadrian-bootstrap-sources-9.8.1.tar.gz
 
 # Add pseudostore lib dirs to LD_LIBRARY_PATH so bootstrapped tools can find their dependencies
 PSEUDO_LIBS="$(find _build/pseudostore -name "*.so*" -exec dirname {} \; | sort -u | paste -sd : || true)"
@@ -89,28 +78,8 @@ if [ -n "$PSEUDO_LIBS" ]; then
 fi
 
 # Now we can configure GHC.
-#
-# --with-system-libffi: use the libffi package we already declare as a
-# runtime_dep instead of the copy bundled in libffi-tarballs/. Two reasons:
-#
-#  1. It makes the declared dependency true. ghc lists libffi in runtime_deps,
-#     so the shipped compiler is expected to link the system libffi — but
-#     without this flag the build compiled GHC's own bundled copy, and the
-#     dependency described something that wasn't happening.
-#
-#  2. It is what unblocks 9.14.1. hadrian's `libffiContext` builds libffi
-#     dynamic only when getLibraryWays contains Dynamic; --flavour=quickest
-#     sets libraryWays = [vanilla], so libffi is built static-only. The RTS
-#     rule (hadrian/src/Rules/Rts.hs) nevertheless asks for libffi.so and dies:
-#
-#       Needed "_build/stage1/rts/build/libffi.so" which is not any of
-#       libffi's built shared libraries: []
-#
-#     needRtsLibffiTargets short-circuits on `useSystemFfi -> return []`, so
-#     with this flag hadrian never reaches copyLibffiDynamicUnix at all.
 ./configure \
   --prefix=/usr \
-  --with-system-libffi \
   GHC=ghc
 
 # Now we can run the build!
