@@ -74,12 +74,31 @@ if [ "$built" = 1 ]; then
   cp "$TM" "$BINOUT/tcc-musl"
   emit "S1-OK tcc-musl: $("$TM" -version 2>&1 | head -1)"
 else
-  # NO fallback (it poisons the cache as fake success). Discriminate on the captured exit $bc: 139 = the
-  # per-task ASLR/mes-libc lottery -> matchable marker (rc=139 + mes-m2 + tcc.c->tcc.s) -> MesccArenaLottery
-  # -> --retry-on-lottery re-rolls in a fresh sandbox. Any OTHER rc = a DETERMINISTIC compile/link bug
-  # (wrong unit list/flags) -> BuildScriptFailed, NOT retryable, so a recipe mistake can't burn retries.
+  # NO fallback (it poisons the cache as fake success).
+  #
+  # 2026-07-21 CORRECTION -- this block used to emit a marker containing the literal tokens
+  # "mes-m2" and "tcc.c->tcc.s" for ONE reason: categorize_stderr (orch-queue/src/lib.rs:471-482)
+  # requires (SIGSEGV|rc=139) AND (mescc|mes-m2|tcc.c->tcc.s|dynamic-wind...) to return
+  # MesccArenaLottery, which is_transient_retryable() then re-rolls. NEITHER TOKEN IS TRUE HERE:
+  # the crashing process is $TCC26 = /usr/bin/tcc-0.9.26, a COMPILED ELF linked against mes-libc.
+  # There is no mes-m2 interpreter and no Scheme GC arena in this process, and the failing unit is
+  # whatever $failunit says (UNITS starts at libtcc), not tcc.c.
+  #
+  # The consequence was real: a DETERMINISTIC mes-libc SIGSEGV was classified transient, so the
+  # builder auto-re-enqueued it and operators were told to "re-roll". It blocked packages/mrustc
+  # twice on 2026-07-21 -- mrustc has no no_auto_retry flag, so it burned retries on a dependency
+  # that had already set one. The `retry_count: 2` seen there was the DETERMINISM guard
+  # (SAME_SIG_LIMIT, queue_mode.rs:219) firing, not budget exhaustion; the builder was right.
+  #
+  # The marker below is now TRUTHFUL, which means it no longer matches MesccArenaLottery and
+  # correctly falls through to BuildScriptFailed (not retryable). That is the desired behaviour:
+  # this is a real undiagnosed bug in mes-libc, not a draw to re-roll. Do NOT re-add the tokens to
+  # buy retries -- fix the segfault. NOTE the tokens are SUBSTRING-matched, so you cannot even
+  # write "NOT mes-m2" in an emitted string without re-triggering the classifier -- describe the
+  # mechanism without naming it (this bit me while writing this very fix). (ASLR is separately disabled globally now, Dockerfile.prod:91
+  # -> sandbox2 personality(ADDR_NO_RANDOMIZE), so the old "per-task ASLR" attribution is stale too.)
   if [ "$bc" = 139 ]; then
-    emit "S1-BUILD-ERR mes-m2 arena lottery: tcc-0.9.26 SIGSEGV rc=139 compiling tcc.c->tcc.s (unit=${failunit:-link}, per-task ASLR — re-enqueue for a fresh sandbox roll): $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
+    emit "S1-BUILD-ERR mes-libc SIGSEGV rc=139 in tcc-0.9.26 (a compiled ELF linked against mes-libc; no Scheme interpreter and no GC arena are in this process) compiling unit=${failunit:-link} — DETERMINISTIC, not retryable, do not re-enqueue: $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
   else
     emit "S1-BUILD-ERR (non-lottery, rc=$bc unit=${failunit:-link}, deterministic — fix the recipe, not a re-enqueue): $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
   fi
