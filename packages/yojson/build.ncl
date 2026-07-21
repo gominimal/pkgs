@@ -14,7 +14,7 @@ let version = "3.0.0" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://github.com/ocaml-community/yojson/releases/download/2.2.2/yojson-3.0.0.tbz
+      # https://github.com/ocaml-community/yojson/releases/download/3.0.0/yojson-3.0.0.tbz
       url = "gs://minimal-staging-archives/yojson-%{version}.tbz",
       sha256 = "99414da7609b92a02474ef4b49ecda15edc8cbba5229341b124e7e4695c39610",
       extract = false,

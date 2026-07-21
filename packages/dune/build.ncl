@@ -12,7 +12,7 @@ let version = "3.24.0" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://github.com/ocaml/dune/releases/download/3.20.2/dune-3.24.0.tbz
+      # https://github.com/ocaml/dune/releases/download/3.24.0/dune-3.24.0.tbz
       url = "gs://minimal-staging-archives/dune-%{version}.tbz",
       sha256 = "501f73727a939aa954dc0537e37792a1ba189e61719c81dc367e2594fe016034",
       # minimal's extractor doesn't know `.tbz`; unpack it in build.sh (tar -xf
