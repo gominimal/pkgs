@@ -52,7 +52,13 @@ if [ "$built" != 1 ]; then
   # -> MesccArenaLottery -> --retry-on-lottery re-rolls in a fresh sandbox); else a deterministic
   # tcc<->musl link/compile bug (BuildScriptFailed; a re-enqueue won't help — fix the recipe).
   if [ "$bc" = 139 ]; then
-    emit "S3-BUILD-ERR mes-m2 arena lottery: tcc-musl2 SIGSEGV rc=139 compiling tcc.c->tcc.s (all 30 tries, per-task ASLR — re-enqueue for a fresh sandbox roll): $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
+    # 2026-07-21 CORRECTION: this marker used to contain the literal tokens "mes-m2" and
+    # "tcc.c->tcc.s" purely to match categorize_stderr (orch-queue/src/lib.rs:471-482) and buy an
+    # auto-retry. Neither is true: TM1 is /usr/bin/tcc-musl, a COMPILED ELF -- no interpreter and
+    # no GC arena in this process. It also fired only after ALL 30 in-recipe tries failed, which is
+    # evidence of DETERMINISM, not of a draw. The tokens are SUBSTRING-matched, so even writing
+    # "NOT mes-m2" re-triggers the classifier -- describe the mechanism without naming it.
+    emit "S3-BUILD-ERR SIGSEGV rc=139 in tcc-musl (a compiled ELF; no Scheme interpreter or GC arena in this process) after ALL 30 in-recipe tries — 30 identical failures is DETERMINISTIC; do not re-enqueue: $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
   else
     emit "S3-BUILD-ERR (non-lottery, rc=$bc, deterministic — fix the tcc<->musl link, not a re-enqueue): $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
   fi
@@ -81,7 +87,7 @@ emit "S3-SELFTEST tcc-musl2 links hello: built $b/5 ran-OK $r/5 run='$out'  $([ 
 # --retry-on-lottery (matchable marker) for a fresh roll rather than caching a broken compiler that R5
 # binutils would then build against.
 if [ "$rc" != 0 ] || [ "$b" = 0 ] || [ "$r" = 0 ]; then
-  emit "S3-VERIFY-FAIL mes-m2 arena lottery (rc=139-class): tcc-musl2 built but MISCOMPILED by flaky TM1 — -version rc=$rc links $b/5 runs $r/5 — re-enqueue for a fresh sandbox roll compiling tcc.c->tcc.s"
+  emit "S3-VERIFY-FAIL tcc-musl2 built but MISCOMPILED by TM1 — -version rc=$rc links $b/5 runs $r/5. FAIL SHUT: re-rolling a miscompile until it passes is how a silently-bad compiler gets cached and signed, and R5 binutils then builds against it. Fix TM1 (s1), do not re-enqueue."
   cp /build/tm/rows.txt "$LOGOUT/rows.log"; grep S3- /build/tm/rows.txt | tee "$MAN"
   exit 1
 fi
