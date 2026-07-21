@@ -89,8 +89,28 @@ if [ -n "$PSEUDO_LIBS" ]; then
 fi
 
 # Now we can configure GHC.
+#
+# --with-system-libffi: use the libffi package we already declare as a
+# runtime_dep instead of the copy bundled in libffi-tarballs/. Two reasons:
+#
+#  1. It makes the declared dependency true. ghc lists libffi in runtime_deps,
+#     so the shipped compiler is expected to link the system libffi — but
+#     without this flag the build compiled GHC's own bundled copy, and the
+#     dependency described something that wasn't happening.
+#
+#  2. It is what unblocks 9.14.1. hadrian's `libffiContext` builds libffi
+#     dynamic only when getLibraryWays contains Dynamic; --flavour=quickest
+#     sets libraryWays = [vanilla], so libffi is built static-only. The RTS
+#     rule (hadrian/src/Rules/Rts.hs) nevertheless asks for libffi.so and dies:
+#
+#       Needed "_build/stage1/rts/build/libffi.so" which is not any of
+#       libffi's built shared libraries: []
+#
+#     needRtsLibffiTargets short-circuits on `useSystemFfi -> return []`, so
+#     with this flag hadrian never reaches copyLibffiDynamicUnix at all.
 ./configure \
   --prefix=/usr \
+  --with-system-libffi \
   GHC=ghc
 
 # Now we can run the build!
