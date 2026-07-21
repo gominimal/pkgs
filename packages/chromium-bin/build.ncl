@@ -63,7 +63,7 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 #     (Google publishes no linux-arm64; Playwright still builds arm64).
 #
 # `revision` is the Playwright browser-revision number from
-# packages/playwright-core/browsers.json. Revision 1233 ↔ Chrome 151.0.7922.19
+# packages/playwright-core/browsers.json. Revision 1234 ↔ Chrome 151.0.7922.34
 # ↔ playwright-core ^1.59. `snapshot_position` must be re-derived whenever
 # `browser_version` bumps. Keep all three in lockstep with
 # chromium-headless-shell-bin.
@@ -78,8 +78,8 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # If it doesn't, pass `executablePath: '/bin/chromium'` (or
 # '/bin/chromium-headless-shell' from the headless-shell pkg) to
 # bypass the registry lookup. See packages/chromium-bin/README.md.
-let revision = "1233" in
-let browser_version = "151.0.7922.19" in
+let revision = "1234" in
+let browser_version = "151.0.7922.34" in
 let snapshot_position = "1654408" in
 {
   name = "chromium-bin",
@@ -94,7 +94,7 @@ let snapshot_position = "1654408" in
       { arch = 'Arm64, .. } =>
         {
           url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-linux-arm64.zip",
-          sha256 = "aacc401c41eb236aff88c8d2a2d2e8f4c5f67ffd5508339ce2542f8470f846f3",
+          sha256 = "b5ad7d8fe70f230b34198ddb5626d717c016db2f627cb44b922babbcaf3479b9",
         } | Source,
     } target,
     base,
