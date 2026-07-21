@@ -5,14 +5,14 @@ let bun = import "../bun/build.ncl" in
 let git = import "../git/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.16.0" in
+let version = "0.17.3" in
 {
   name = "hunk",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/modem-dev/hunk/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "08ccd2aadd92a875ef74a277310f3e70e5ea36f0a83d11b7bc36c6bca90b11d8",
+      sha256 = "86c37686352fcc6925e4080ea2cc414fe84c1b2af10a07dccfbc0e0fc275dbc2",
       extract = true,
       strip_prefix = "hunk-%{version}",
     } | Source,
