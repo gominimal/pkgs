@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof tcl8.6.16-src.tar.gz
-cd tcl8.6.16
+tar -xof tcl$MINIMAL_ARG_VERSION-src.tar.gz
+cd tcl$MINIMAL_ARG_VERSION
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
@@ -25,16 +25,20 @@ sed -e "s|$SRCDIR/unix|/usr/lib|" \
     -e "s|$SRCDIR|/usr/include|"  \
     -i tclConfig.sh
 
-sed -e "s|$SRCDIR/unix/pkgs/tdbc1.1.10|/usr/lib/tdbc1.1.10|" \
-    -e "s|$SRCDIR/pkgs/tdbc1.1.10/generic|/usr/include|"     \
-    -e "s|$SRCDIR/pkgs/tdbc1.1.10/library|/usr/lib/tcl8.6|"  \
-    -e "s|$SRCDIR/pkgs/tdbc1.1.10|/usr/include|"             \
-    -i pkgs/tdbc1.1.10/tdbcConfig.sh
+# The bundled tdbc/itcl versions move between Tcl releases, so read them off the source tree.
+TDBC=$(basename "$SRCDIR"/pkgs/tdbc[0-9]*)
+ITCL=$(basename "$SRCDIR"/pkgs/itcl[0-9]*)
 
-sed -e "s|$SRCDIR/unix/pkgs/itcl4.3.2|/usr/lib/itcl4.3.2|" \
-    -e "s|$SRCDIR/pkgs/itcl4.3.2/generic|/usr/include|"    \
-    -e "s|$SRCDIR/pkgs/itcl4.3.2|/usr/include|"            \
-    -i pkgs/itcl4.3.2/itclConfig.sh
+sed -e "s|$SRCDIR/unix/pkgs/$TDBC|/usr/lib/$TDBC|" \
+    -e "s|$SRCDIR/pkgs/$TDBC/generic|/usr/include|" \
+    -e "s|$SRCDIR/pkgs/$TDBC/library|/usr/lib/tcl8.6|" \
+    -e "s|$SRCDIR/pkgs/$TDBC|/usr/include|" \
+    -i pkgs/$TDBC/tdbcConfig.sh
+
+sed -e "s|$SRCDIR/unix/pkgs/$ITCL|/usr/lib/$ITCL|" \
+    -e "s|$SRCDIR/pkgs/$ITCL/generic|/usr/include|" \
+    -e "s|$SRCDIR/pkgs/$ITCL|/usr/include|" \
+    -i pkgs/$ITCL/itclConfig.sh
 
 unset SRCDIR
 
