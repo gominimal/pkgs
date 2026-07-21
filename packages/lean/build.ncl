@@ -10,14 +10,14 @@ let git = import "../git/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "4.28.0" in
+let version = "4.32.0" in
 {
   name = "lean",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/leanprover/lean4/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "b50c5423a72098aedcea9650264d936f2a3d3903daef7f082e7ffc5b7d323974",
+      sha256 = "f39c6d87a9b4e9253bef15ffae460d2652b668e619688e4c01e59bbd2cd3b002",
     } | Source,
     base,
     toolchain,
