@@ -7,14 +7,14 @@ let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "0.23.4" in
+let version = "0.23.5" in
 {
   name = "eza",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/eza-community/eza/v%{version}.tar.gz",
-      sha256 = "9fbcad518b8a2095206ac385329ca62d216bf9fdc652dde2d082fcb37c309635",
+      sha256 = "bbf179f2611c904014431740b559e8055276c12fcf978a7e31c271663548337f",
       extract = true,
       strip_prefix = "eza-%{version}",
     } | Source,
