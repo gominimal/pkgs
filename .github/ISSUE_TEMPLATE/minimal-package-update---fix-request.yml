@@ -1,0 +1,59 @@
+name: Minimal Package Update / Fix Request
+description: Request an update or fix to an existing Minimal package
+title: "[PkgFix] "
+labels: ["pkgfix", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! If you'd like to send the update or fix yourself as a pull request, see [CONTRIBUTING.md](https://github.com/gominimal/pkgs/blob/main/CONTRIBUTING.md) — PRs are welcome.
+  - type: input
+    id: package-name
+    attributes:
+      label: Package name
+    validations:
+      required: true
+  - type: input
+    id: current-version
+    attributes:
+      label: Current version
+      description: From `min search <name>` or `packages/<name>/build.ncl` (`upstream_version`).
+    validations:
+      required: false
+  - type: input
+    id: requested-version
+    attributes:
+      label: Requested version (for update requests)
+    validations:
+      required: false
+  - type: input
+    id: upstream-url
+    attributes:
+      label: Upstream project URL
+    validations:
+      required: false
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's the problem?
+      description: For a fix — describe the bug, what you expected, what happened, and steps to reproduce. For an update — anything notable in the new release we should know about (breaking changes, new dependencies, build flag changes).
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / error output (if applicable)
+      render: shell
+    validations:
+      required: false
+  - type: dropdown
+    id: os-arch
+    attributes:
+      label: OS/arch
+      options:
+        - Linux amd64
+        - Linux arm64
+        - macOS arm64 (Apple Silicon)
+        - other
+    validations:
+      required: false
