@@ -31,7 +31,7 @@ let version = "9.14.1" in
       extract = false,
     } | Source,
     {
-      url = "https://downloads.haskell.org/~ghc/%{version}/hadrian-bootstrap-sources/hadrian-bootstrap-sources-9.8.1.tar.gz",
+      url = "https://downloads.haskell.org/~ghc/%{version}/hadrian-bootstrap-sources/hadrian-bootstrap-sources-9.12.2.tar.gz",
       sha256 = "eec7233763bc31801fcbc996edc9c1f5abae707c1661deb8b22f0a7c2780b5e9",
       extract = false,
     } | Source,

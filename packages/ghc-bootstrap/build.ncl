@@ -10,7 +10,7 @@ let tar = import "../tar/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let xz = import "../xz/build.ncl" in
 
-let version = "9.8.1" in
+let version = "9.12.2" in
 {
   name = "ghc-bootstrap",
 
@@ -20,13 +20,13 @@ let version = "9.8.1" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://downloads.haskell.org/~ghc/%{version}/ghc-%{version}-x86_64-deb11-linux.tar.xz",
-          sha256 = "ca4dde3a6f34f1fe6d0783767671f02e862f1b0222ef2dc2c5c68cc2abc1abae",
+          sha256 = "47d5faba492545b49b8dd49a79e64b4ef8eb4b1632d4ddc64355ce4e812eec75",
           extract = false,
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://downloads.haskell.org/~ghc/%{version}/ghc-%{version}-aarch64-deb10-linux.tar.xz",
-          sha256 = "aab7af72614f8bf9ca624407aa4dbc69bc009c2b4cc1a0f3c062008db81bdb95",
+          sha256 = "6048eae62ede069459398fa6f2e92ab9719e1b83e93a9014e6a410c54ed2755f",
           extract = false,
         } | Source,
     } target,
