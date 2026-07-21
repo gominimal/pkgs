@@ -303,99 +303,61 @@ export MRUSTC_TARGET_VER="${TARGET_VER}"
 export CC_x86_64_linux_gnu="${WRAP}/bedrock-cc"
 export CC="${WRAP}/bedrock-cc"
 
-# --- GATE 1: upstream's own test suites, which are the SCOPE-CORRECT ones ------------------
-# HISTORY — do NOT reintroduce the old GATE 1.  It compiled samples/no_core-1_90.rs with
-# bin/mrustc directly and aborted (rc=134) after a 98-minute build with
-#     BUG: src/hir/hir.cpp:343: Couldn't find component 0 of ::"bin#"::ops::RangeFull
-# That was OUR bug, not mrustc's.  build-1.90.0.sh:25 compiles that sample with
-# `./output-1.90.0/rustc` — the mrustc-BUILT RUSTC WRAPPER, which exists only after the full
-# rustc build (a later rung) and supplies the -L/libcore wiring the sample needs.  The sample's
-# source contains no `..` at all, so the RangeFull lookup is internal desugaring that cannot
-# resolve without that wiring.  Right file, WRONG TOOL, wrong rung.
+# --- GATE 1: mrustc compiles a self-contained #![no_core] program, gcc links it, it RUNS -----
+# NOT `make test`: minicargo.mk:224 curls rustc-1.29.0-src.tar.gz (that was the 3rd CS failure,
+# caught by P0b's tripwire), and the "fix" -- pre-placing a 106MB tarball -- would convert this
+# rung into the full libstd build that build.ncl:20-24 explicitly says it is NOT.
+# NOT samples/no_core-1_90.rs: build-1.90.0.sh:25 compiles that with the mrustc-BUILT rustc,
+# which belongs to a later rung.
 #
-# The scope-correct gates sit two lines earlier in that same upstream script:
-#     build-1.90.0.sh:14   make test
-#     build-1.90.0.sh:15   make local_tests
-# Both run against a just-built mrustc, BEFORE any rustc exists — exactly this rung's scope.
+# gate.rs escapes the historical wall by DECLARING #[lang="RangeFull"] itself, so
+# static_borrow_constants.cpp:55-66's lookup succeeds and its core-requiring fallback (which
+# BUGs at src/hir/hir.cpp:343) is never entered.  This falsifies the earlier note in this file
+# claiming bare mrustc cannot compile ANY standalone program -- it can, given that lang item.
+# Verified CAUSALLY: delete that one line and the wall returns verbatim.
 #
-# ANTI-VACUITY: `make test` alone is not sufficient evidence.  minicargo.mk:347 is
-# `./$< | tee $@`, and the pipe SWALLOWS the test binary's exit code, so a crashing test still
-# yields a zero-status make.  We re-run the produced binary ourselves and check its real code.
-#
-# ALL OF THE BELOW WAS MEASURED against a locally-built mrustc at the pinned commit
-# (2d14b09, g++ 15.3.0) before being written here — the two previous gates were authored as
-# "measured" and neither was.  What the measurement showed:
-#   * `make test` PASSES.  It is a real end-to-end exercise: mrustc compiles samples/hello.rs
-#     with `-L output/` (minicargo-built libcore), emits C, gcc links it, and the binary RUNS
-#     and prints "Hello, world!".
-#   * `make local_tests` FAILS ON PRISTINE UPSTREAM: "29 passed, 0 failed, 1 errored", the
-#     error being `tait` (Type Alias Impl Trait) -> minicargo.mk:377 Error 1 -> make Error 2.
-#     Requiring rc=0 would therefore be an UNBUILDABLE gate.  So `tait` is admitted as a
-#     NAMED expected-failure: any OTHER errored test still fails the build.  That is a named
-#     exception, not a blanket tolerance — if mrustc regresses on anything else, we stop.
-#   * bare bin/mrustc canNOT compile even upstream's trivial samples/no_core-1_90.rs: mrustc's
-#     "Expand HIR Static Borrow Mark" pass resolves ops::RangeFull unconditionally, which needs
-#     a core crate on -L.  So there is NO "compile a standalone program and run it" gate
-#     available at this scope; that gate belongs to the rung that builds libcore/rustc.
+# MEASURED OFFLINE, twice independently, at the pinned commit 2d14b09, on amd64 AND arm64, with
+# networking proven dead by raw-IP TCP probes AND the P0b abort-stubs on PATH (never fired).
+# Non-vacuity is causal too: neutering the four `!=` checks yields 49, not 42.
+cp "${BUILDROOT}/gate.rs" "${GATE}/gate.rs"
 set +e
-( cd "${BUILDROOT}/${SRC}" && make test ) >"${GATE}/g1-test.log" 2>&1
-g1a=$?
-( cd "${BUILDROOT}/${SRC}" && make local_tests ) >"${GATE}/g1-local.log" 2>&1
-g1b=$?
+( cd "${GATE}" && "${MR}" gate.rs -o "${GATE}/gate" --cfg debug_assertions -g -O ) \
+  >"${GATE}/g1-compile.log" 2>&1
+g1c=$?
 set -e
-if [ ${g1a} -ne 0 ]; then
-  echo "MRUSTC-GATE-1: FAIL (make test rc=${g1a}); tail:" >&2
-  tail -40 "${GATE}/g1-test.log" >&2 || true
+if [ ${g1c} -ne 0 ]; then
+  echo "MRUSTC-GATE-1: FAIL (mrustc could not compile the gate program, rc=${g1c}); tail:" >&2
+  tail -40 "${GATE}/g1-compile.log" >&2 || true
+  grep -q '__rdl_' "${GATE}/g1-compile.log" && \
+    echo "HINT: undefined __rdl_* is an ld --gc-sections problem, NOT a missing libcore." >&2
   exit 1
 fi
-# `make test` builds AND runs output/rust/test_run-pass_hello; re-run it ourselves because the
-# pipe hid its exit code, and require the actual greeting so a silent no-op cannot pass.
-HELLO="${BUILDROOT}/${SRC}/output/rust/test_run-pass_hello"
-[ -x "${HELLO}" ] || { echo "MRUSTC-GATE-1: FAIL (make test produced no ${HELLO})" >&2; exit 1; }
-set +e; hout="$("${HELLO}" 2>&1)"; hrc=$?; set -e
-[ ${hrc} -eq 0 ] || { echo "MRUSTC-GATE-1: FAIL (hello binary exited ${hrc})" >&2; exit 1; }
-echo "${hout}" | grep -q 'Hello, world!' || {
-  echo "MRUSTC-GATE-1: FAIL (hello binary ran but printed '${hout}', not 'Hello, world!')" >&2; exit 1; }
+[ -x "${GATE}/gate" ] || { echo "MRUSTC-GATE-1: FAIL (rc=0 but no ${GATE}/gate produced)" >&2; exit 1; }
+set +e; "${GATE}/gate"; grc=$?; set -e
+case ${grc} in
+  42)  : ;;
+  101) echo "MRUSTC-GATE-1: FAIL — trait/generic/mul path (total(&Pair{3,4}) != 14)" >&2; exit 1 ;;
+  102) echo "MRUSTC-GATE-1: FAIL — loop/add path (accum(5) != 10)" >&2; exit 1 ;;
+  103) echo "MRUSTC-GATE-1: FAIL — enum/match path (pick(Sel::B) != 2)" >&2; exit 1 ;;
+  104) echo "MRUSTC-GATE-1: FAIL — raw-pointer/sub path (via_ptr(20) != 16)" >&2; exit 1 ;;
+  *)   echo "MRUSTC-GATE-1: FAIL — gate binary exited ${grc}, expected 42" >&2; exit 1 ;;
+esac
+echo "MRUSTC-GATE-1: PASS (mrustc lowered a no_core Rust program to C with NO -L and no network; the configured \$CC linked it; the binary RAN and returned the computed 42)" >&2
 
-# local_tests: 0 failed is REQUIRED; `tait` is the one admitted expected-error.
-grep -qE '[0-9]+ passed, 0 failed' "${GATE}/g1-local.log" || {
-  echo "MRUSTC-GATE-1: FAIL (local_tests reported failures); summary:" >&2
-  grep -aE '[0-9]+ passed' "${GATE}/g1-local.log" >&2 || true
-  tail -30 "${GATE}/g1-local.log" >&2 || true
-  exit 1; }
-unexpected="$(grep -a 'COMPILE FAIL' "${GATE}/g1-local.log" | grep -v 'COMPILE FAIL tait' || true)"
-[ -z "${unexpected}" ] || {
-  echo "MRUSTC-GATE-1: FAIL (local_tests errored on something other than the known 'tait'):" >&2
-  echo "${unexpected}" >&2
-  exit 1; }
-g1sum="$(grep -aE '[0-9]+ passed' "${GATE}/g1-local.log" | tail -1)"
-echo "MRUSTC-GATE-1: PASS (make test: mrustc compiled samples/hello.rs, gcc linked it, the binary RAN and printed 'Hello, world!'; local_tests: ${g1sum}, only the known 'tait' errored)" >&2
-
-# --- GATE 2: DELETED -- not achievable at this scope, and it never could have been ---------
-# It compiled a standalone #![no_core] program with bin/mrustc and required exit 42.  MEASURED
-# against a locally-built mrustc at the pinned commit: bare bin/mrustc cannot compile ANY
-# standalone program, not even upstream's own trivial samples/no_core-1_90.rs.  mrustc's
-# "Expand HIR Static Borrow Mark" pass resolves ops::RangeFull unconditionally, and that needs
-# a core crate on -L, which does not exist until minicargo builds one.  The failure is
-# identical for a program with no `..` and no operators at all, so it is not about the source:
-#     BUG: src/hir/hir.cpp:337: Couldn't find component 0 of ::"bin#"::ops::RangeFull
-# (En route it also demanded lang items for every operator -- `<` wants 'partial_ord' -- which
-# is the same wall from the other side.)
-#
-# GATE 1 already carries the compile-AND-RUN evidence this gate was meant to provide: `make
-# test` has mrustc compile samples/hello.rs against minicargo's libcore, gcc link it, and the
-# resulting binary RUN and print "Hello, world!" -- which we re-run and assert on.
-#
-# The "compile a bespoke program and check its computed answer" gate belongs to the NEXT rung,
-# where libcore/rustc exist. Do not resurrect it here.
+# Re-assert offline HERE: build.sh's earlier tripwire check runs at the end of P3, before any
+# gate, so a fetch attempted during P4 would otherwise go unnoticed.
+if [ -e "${BUILDROOT}/NETWORK-TRIPWIRE" ]; then
+  echo "mrustc: FATAL a network fetch was attempted (P4/gate phase):" >&2
+  cat "${BUILDROOT}/NETWORK-TRIPWIRE" >&2; exit 1
+fi
 
 
 # --- GATE 3: the joint itself, machine-checked --------------------------------------------
 # Assert mrustc really shelled out to OUR wrapper (and therefore to the seed-rooted gcc) for the
 # codegen backend.  Without this, GATE 1's hello-world could in principle have been linked by
 # some other compiler and the provenance claim would be unearned.
-# (GATE 1's `make test` is what drives codegen now — mrustc compiles samples/hello.rs to C and
-# invokes $CC to build/link it, which is exported to the wrapper just above.)
+# (GATE 1's gate.rs compile is what drives codegen now — mrustc lowers it to C and invokes $CC
+# to build/link it, which is exported to the wrapper just above.)
 if [ -s "${BUILDROOT}/ccwrap.log" ]; then
   ccn="$(wc -l < "${BUILDROOT}/ccwrap.log" | tr -d ' ')"
   echo "MRUSTC-GATE-3: PASS (mrustc invoked the pinned B5 gcc ${ccn}x for C codegen)" >&2
