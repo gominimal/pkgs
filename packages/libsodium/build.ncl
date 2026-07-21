@@ -5,7 +5,7 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.0.21" in
+let version = "1.0.22" in
 {
   name = "libsodium",
   build_deps = [
@@ -14,7 +14,7 @@ let version = "1.0.21" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://github.com/jedisct1/libsodium/releases/download/%{version}-RELEASE/libsodium-%{version}.tar.gz",
-          sha256 = "9e4285c7a419e82dedb0be63a72eea357d6943bc3e28e6735bf600dd4883feaf",
+          sha256 = "adbdd8f16149e81ac6078a03aca6fc03b592b89ef7b5ed83841c086191be3349",
           extract = true,
           strip_prefix = "libsodium-%{version}",
         } | Source,
