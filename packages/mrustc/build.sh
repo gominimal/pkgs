@@ -303,25 +303,48 @@ export MRUSTC_TARGET_VER="${TARGET_VER}"
 export CC_x86_64_linux_gnu="${WRAP}/bedrock-cc"
 export CC="${WRAP}/bedrock-cc"
 
-# --- GATE 1: upstream's own sample, compiled (NOT run) -------------------------------------
-# samples/no_core-1_90.rs is what upstream's build-1.90.0.sh:20 compiles, so a failure here is a
-# real regression rather than a quirk of a sample we wrote.  It is deliberately NOT executed:
-# the sample defines `#[no_mangle] fn __libc_start_main()->i32{0}` (samples/no_core-1_90.rs:17-20),
-# which OVERRIDES glibc's, so glibc's _start calls it, it returns, and _start falls into `hlt`
-# -> SIGSEGV.  Upstream never runs it either.  The run-gate is GATE 2, which drops that override.
-cp samples/no_core-1_90.rs "${GATE}/upstream.rs"
+# --- GATE 1: upstream's own test suites, which are the SCOPE-CORRECT ones ------------------
+# HISTORY — do NOT reintroduce the old GATE 1.  It compiled samples/no_core-1_90.rs with
+# bin/mrustc directly and aborted (rc=134) after a 98-minute build with
+#     BUG: src/hir/hir.cpp:343: Couldn't find component 0 of ::"bin#"::ops::RangeFull
+# That was OUR bug, not mrustc's.  build-1.90.0.sh:25 compiles that sample with
+# `./output-1.90.0/rustc` — the mrustc-BUILT RUSTC WRAPPER, which exists only after the full
+# rustc build (a later rung) and supplies the -L/libcore wiring the sample needs.  The sample's
+# source contains no `..` at all, so the RangeFull lookup is internal desugaring that cannot
+# resolve without that wiring.  Right file, WRONG TOOL, wrong rung.
+#
+# The scope-correct gates sit two lines earlier in that same upstream script:
+#     build-1.90.0.sh:14   make test
+#     build-1.90.0.sh:15   make local_tests
+# Both run against a just-built mrustc, BEFORE any rustc exists — exactly this rung's scope.
+#
+# ANTI-VACUITY: `make test` alone is not sufficient evidence.  minicargo.mk:347 is
+# `./$< | tee $@`, and the pipe SWALLOWS the test binary's exit code, so a crashing test still
+# yields a zero-status make.  We re-run the produced binaries ourselves and check real codes.
 set +e
-( cd "${GATE}" && "${MR}" --target "${TRIPLE}" -o "${GATE}/upstream_bin" upstream.rs ) >"${GATE}/g1.log" 2>&1
-g1=$?
+( cd "${BUILDROOT}/${SRC}" && make test ) >"${GATE}/g1-test.log" 2>&1
+g1a=$?
+( cd "${BUILDROOT}/${SRC}" && make local_tests ) >"${GATE}/g1-local.log" 2>&1
+g1b=$?
 set -e
-if [ ${g1} -ne 0 ]; then
-  echo "MRUSTC-GATE-1: FAIL (upstream no_core sample did not compile, rc=${g1}); tail:" >&2
-  tail -30 "${GATE}/g1.log" >&2 || true
+if [ ${g1a} -ne 0 ] || [ ${g1b} -ne 0 ]; then
+  echo "MRUSTC-GATE-1: FAIL (make test rc=${g1a}, make local_tests rc=${g1b}); tails:" >&2
+  tail -30 "${GATE}/g1-test.log" >&2 || true
+  tail -30 "${GATE}/g1-local.log" >&2 || true
   exit 1
 fi
-g1magic="$(head -c 4 "${GATE}/upstream_bin" | od -An -tx1 | tr -d ' \n')"
-[ "${g1magic}" = "7f454c46" ] || { echo "MRUSTC-GATE-1: FAIL (output is not an ELF, magic=${g1magic})" >&2; exit 1; }
-echo "MRUSTC-GATE-1: PASS (upstream samples/no_core-1_90.rs -> ELF)" >&2
+# Re-run each test binary make produced — the pipe above hid their exit codes.
+g1n=0; g1bad=0
+for tb in $(find "${BUILDROOT}/${SRC}" -maxdepth 3 -type f -perm -u+x -path '*test*' 2>/dev/null | head -40); do
+  g1n=$((g1n+1))
+  set +e; "${tb}" >/dev/null 2>&1; trc=$?; set -e
+  if [ ${trc} -ne 0 ]; then
+    echo "  GATE-1: test binary exited ${trc}: ${tb}" >&2
+    g1bad=$((g1bad+1))
+  fi
+done
+[ ${g1bad} -eq 0 ] || { echo "MRUSTC-GATE-1: FAIL (${g1bad}/${g1n} re-run test binaries exited non-zero)" >&2; exit 1; }
+echo "MRUSTC-GATE-1: PASS (make test + make local_tests; ${g1n} binaries re-run, all exit 0)" >&2
 
 # --- GATE 2: THE FUNCTIONAL GATE — compile AND run, and check the ANSWER ------------------
 # Minimal delta from the upstream sample: same three lang items, same lang_start signature (the
