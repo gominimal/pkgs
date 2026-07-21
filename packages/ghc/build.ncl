@@ -19,7 +19,7 @@ let make = import "../make/build.ncl" in
 let ghc-bootstrap = import "../ghc-bootstrap/build.ncl" in
 let happy = import "../happy/build.ncl" in
 
-let version = "9.10.3" in
+let version = "9.14.1" in
 {
   name = "ghc",
 
@@ -27,7 +27,7 @@ let version = "9.10.3" in
     { file = "build.sh" } | Local,
     {
       url = "https://downloads.haskell.org/~ghc/%{version}/ghc-%{version}-src.tar.xz",
-      sha256 = "d266864b9e0b7b741abe8c9d6a790d7c01c21cf43a1419839119255878ebc59a",
+      sha256 = "2a83779c9af86554a3289f2787a38d6aa83d00d136aa9f920361dd693c101e77",
       extract = false,
     } | Source,
     {
