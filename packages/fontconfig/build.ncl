@@ -18,7 +18,7 @@ let version = "2.18.2" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/2.17.1/fontconfig-2.18.2.tar.xz
+      # https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/2.18.2/fontconfig-2.18.2.tar.xz
       url = "gs://minimal-staging-archives/fontconfig-%{version}.tar.xz",
       sha256 = "cf8e6576ef0484c15079bdaf77cd9c51c464df5365814ada4d3ee7331ea31eb5",
       extract = true,
