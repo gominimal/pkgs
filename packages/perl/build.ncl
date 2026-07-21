@@ -21,14 +21,14 @@ let linux_headers = import "../linux_headers/build.ncl" in
 # other
 let zlib = import "../zlib/build.ncl" in
 
-let version = "5.42.2" in
+let version = "5.44.0" in
 {
   name = "perl",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/perl-%{version}.tar.xz",
-      sha256 = "0a585eeb9e363c0f80482ddb3571625250c2c86aeb408853e8ea50805cfb14bb"
+      sha256 = "505cf43912e9480495c344c70260452e32aa2a73c546a026b3f100053b23ce91"
     } | Source,
     # base
     bash-bootstrap,
