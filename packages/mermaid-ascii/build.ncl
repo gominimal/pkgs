@@ -3,14 +3,14 @@ let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.1.0" in
+let version = "1.4.0" in
 {
   name = "mermaid-ascii",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/AlexanderGrooff/mermaid-ascii/%{version}.tar.gz",
-      sha256 = "28c8b9a5ff1e475518d2054384a08bf23bb372f2f21cd3a7a3a5ba97eecd552a",
+      sha256 = "bd5081a926914c7b156b5222ee1f71bfb974ba3a3df34a9f8c82c1418caf617b",
       extract = true,
       strip_prefix = "mermaid-ascii-%{version}",
     } | Source,
