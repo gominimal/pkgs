@@ -53,6 +53,17 @@ corresponding source — attach at that distribution point. The source mirror
 holds the exact, content-addressed archives each binary was built from and
 serves as the corresponding-source offer for copyleft packages.
 
+Mirror objects are write-once (uploads never overwrite) and the bucket
+carries a three-year retention policy — the GPLv2 §3(b) written-offer
+period — so archives cannot be deleted or modified while the offer is
+live. Retention runs from each object's upload time and is reviewed
+periodically, since the offer lasts for as long as the corresponding
+binary is distributed. A weekly automated sweep verifies every distributed
+copyleft package's exact pinned source is present on the mirror. If public
+distribution moves to a different endpoint, these obligations follow
+wherever consumers actually fetch, and the mirror and this policy move
+with it.
+
 Questions about a specific package's license belong on the package (check
 its `license_spdx` and upstream project) — questions about *this
 repository's* license terms belong with the [LICENSE](LICENSE) file and the
