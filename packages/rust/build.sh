@@ -13,7 +13,15 @@ export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
 # SEED-ROOTED stage0 (issue #17): use our mrustc-bootstrapped rustc/cargo 1.94.1
-# (built from the 229-byte hex0 seed) instead of the trust-by-fiat prebuilt. Their
+# instead of the trust-by-fiat prebuilt.
+#
+# ⚠ NOT hex0-rooted. This comment previously said "(built from the 229-byte hex0
+# seed)" — FALSE, and it shipped in a signed artifact. The seeds were built on an
+# UNATTESTED plain GCE VM whose host compiler came from `apt-get install g++`;
+# mrustc's own source has no recorded sha. What IS proven is that this CS build
+# consumed those tarballs by sha. See build.ncl's header for the full statement.
+#
+# Their
 # version/sha differ from src/stage0's pin (1.94.0), so the build/cache pre-place
 # path can't be used; instead extract them and point bootstrap.toml's [build]
 # rustc/cargo at them — x.py uses them directly and skips the src/stage0 download
