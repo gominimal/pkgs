@@ -5,7 +5,7 @@ let ghc-bootstrap = import "../ghc-bootstrap/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "3.5.1.0" in
+let version = "3.5.4.2" in
 {
   name = "alex",
 
@@ -13,7 +13,7 @@ let version = "3.5.1.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://hackage.haskell.org/package/alex-%{version}/alex-%{version}.tar.gz",
-      sha256 = "c92efe86f8eb959ee03be6c04ee57ebc7e4abc75a6c4b26551215d7443e92a07",
+      sha256 = "df481dc960e2c59a30395f7335031fd4ef8773b8a42894a4f2320e00ff474418",
       extract = true,
     } | Source,
     base,
