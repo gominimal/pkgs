@@ -3,12 +3,12 @@ minimum_version = "0.0.15"
 
 [tasks.shell]
 interactive = true
-packages = ["base", "bash", "claude-code", "curl"]
+packages = ["base", "bash", "claude-code", "claude-code-minimal-plugin", "curl"]
 exec = "bash --noprofile -l"
 
 [tasks.claude]
 interactive = true
-packages = ["base", "bash", "claude-code", "curl"]
+packages = ["base", "bash", "claude-code", "claude-code-minimal-plugin", "curl"]
 exec = "claude --dangerously-skip-permissions"
 
 [tasks.opencode]

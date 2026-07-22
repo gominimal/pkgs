@@ -12,11 +12,21 @@ other packages) as well as the exact steps to build it and what outputs are coll
 You are running in an environment with access to a few specialized tools to help you accomplish your
 goals. These tools are all subcommands of the `min` command.
  
- * `min add <package name>` - Installs the package with the given name into your environment, letting you
-    use the CLI tools it encapsulates. If you aren't sure of the right package name, you can use
+ * `min add [--session|--build|--runtime|--task <task name>] <package name>...` - Installs the package(s)
+    into your environment, letting you use the CLI tools they encapsulate. **With no flag it defaults to
+    `--session`**, which is ephemeral — it does not persist the dependency into any config. Use `--build` /
+    `--runtime` to record the package in the current package's `build_deps` / `runtime_deps`, or `--task` to
+    record it against a `minimal.toml` task. If you aren't sure of the right package name, you can use
     `min search <term>` to help find it.
- * `min check [--packages] [--profiles] [--harnesses] [--fix] [<name 1>[, <name N>]]` - Runs linters and static checks on the packages/profiles/harnesses with the given names, or all if names are not specified. If none of --profiles, --harnesses, and --packages are set, then checks are run for all three object kinds.
- * `min patched-build <package name>` - Runs the build for the named package. Unlike a full build, a patched build will wire dependencies to the most recent available version of the package with the same name, so you won't have long rebuilds when editing packages which are circularly dependent on a lot of other packages.
+ * `min check [--packages] [--profiles] [--stacks] [--fix] [<name 1>[, <name N>]]` - Runs linters and static checks on the packages/profiles/stacks with the given names, or all if names are not specified. If none of --profiles, --stacks, and --packages are set, then checks are run for all three object kinds.
+ * `min patched-pkg <package name>` - Runs the build for the named package. Unlike a full build, a patched build will wire dependencies to the most recent available version of the package with the same name, so you won't have long rebuilds when editing packages which are circularly dependent on a lot of other packages.
+ * `min run <task name>` - Runs a task declared in `minimal.toml`. `min build` and `min test` are shorthand
+    for `min run build` / `min run test`. Tasks marked `interactive = true` (such as `shell` and `claude`)
+    can only be launched from the host — running one from inside a session fails with "cannot run
+    interactive tasks from within an environment".
+
+Running `min` with no subcommand prints the authoritative list of what this session's `min` accepts. Trust
+that output over this file if the two ever disagree.
 
 
 
@@ -27,19 +37,19 @@ All objects are described using [Nickel](https://nickel-lang.org/) syntax, and o
 Specifically:
 
  * Packages: `packages/<package name>/build.ncl`
- * Harnesses: `harnesses/<harness name>/harness.ncl`
+ * Stacks: `stacks/<stack name>/stack.ncl`
 
 The repo-level config lives at `minimal.toml` (declares the minimum `stdlib` version and interactive `tasks` like `min run shell` / `min run claude`).
 
-### Harnesses
+### Stacks
 
-A harness describes a reusable build environment for a class of project (e.g. a Go module, a Rust crate, a CMake project). Each harness declares the packages it needs, a default build command, and a set of project-detection rules — `minimal init` uses these rules to auto-select the right harness for a source tree.
+A stack describes a reusable build environment for a class of project (e.g. a Go module, a Rust crate, a CMake project). Each stack declares the packages it needs, a default build command, and a set of project-detection rules — `minimal init` uses these rules to auto-select the right stack for a source tree.
 
-Example (`harnesses/go/harness.ncl`):
+Example (`stacks/go/stack.ncl`):
 
 ```ncl
-let { harness, .. } = import "minimal.ncl" in
-harness {
+let { stack, .. } = import "minimal.ncl" in
+stack {
   name = "go",
   build_packages = ["go", "binutils", "linux_headers"],
   build_cmd = "go build",
@@ -49,7 +59,10 @@ harness {
 }
 ```
 
-Current harnesses cover: bun, cmake, deno, go, gradle, make, maven, meson, npm, pip, pnpm, pulumi-go, pulumi-nodejs, rust, shell, uv, zig.
+Stacks were previously called "harnesses". The stdlib still exports `harness` as an alias for `stack`, but new
+stacks should use `stack` and live at `stacks/<name>/stack.ncl`.
+
+Current stacks cover: aeneas, bun, cabal, cmake, deno, go, gradle, make, maven, meson, npm, ocaml, pip, pnpm, pulumi-go, pulumi-nodejs, rust, shell, stack, uv, zig.
 
 
 
@@ -677,7 +690,7 @@ This validates that the Nickel spec parses correctly and conforms to the schema.
 ### Step 5: Build
 
 ```bash
-min patched-build <name>
+min patched-pkg <name>
 ```
 
 If the build fails:
@@ -686,7 +699,7 @@ If the build fails:
 - Check that `build.sh` installs to `$OUTPUT_DIR` (not `/usr/` directly)
 - Check the source URL and SHA256
 - Check that output globs match what `build.sh` actually installs
-- And keep iterating running the `patched-build` and `check` commands.
+- And keep iterating running the `patched-pkg` and `check` commands.
 
 
 ### Step 6: Validate again
@@ -697,7 +710,7 @@ min check --packages <name>
 
 Some validation checkers run on the compiled output, and show up as skipped when a package hasn't been built yet.
 
-Run `min check` again to make sure these checkers are run, and iterate by fixing issues, running `patched-build`, and then
+Run `min check` again to make sure these checkers are run, and iterate by fixing issues, running `patched-pkg`, and then
 running `min check` until all addressed.
 
 
@@ -706,7 +719,7 @@ running `min check` until all addressed.
 
 ### error: other: resolving dep '<package name>' by name: not found
 
-When using `min patched-build`, you can get an error if a package is not available locally, that looks
+When using `min patched-pkg`, you can get an error if a package is not available locally, that looks
 like this:
 
 ```text
@@ -718,7 +731,7 @@ To fix this, you need to make the package available locally, typically by forcin
 `min add <package>`
 
 If the package thats not found is one that you are presently trying to package, `min add` will fail
-because it does not yet exist upstream. Instead, you should get it building with `min patched-build` first,
+because it does not yet exist upstream. Instead, you should get it building with `min patched-pkg` first,
 so the completed build populates the package locally, and only then move on to packages that depend on it.
 
 ### Rust build errors, `cc` not found
