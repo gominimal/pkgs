@@ -33,8 +33,27 @@ for cabal_file in \
     fi
 done
 
-# Generate a bootstrap JSON that matches the actual GHC in the sandbox
-python3 update_bootstrap_json.py bootstrap/linux-9.8.2.json > bootstrap/linux-actual.json
+# Generate a bootstrap JSON that matches the actual GHC in the sandbox.
+#
+# The base plan is picked by cabal's OWN bootstrap/ directory, which ships a
+# fixed set of linux-<ghc>.json files per cabal release — it does NOT track the
+# GHC we build with. cabal 3.18.1.0 ships 9.6.7 / 9.8.4 / 9.10.3 / 9.12.4; the
+# 9.8.2 this used to name existed only in older cabals, so bumping cabal broke
+# it with a bare FileNotFoundError from our own script.
+#
+# Which one matters less than it looks: update_bootstrap_json.py REPLACES the
+# `builtin` list with the real `ghc-pkg list` output, so the compiler-package
+# half adapts to whatever GHC is on PATH. The base plan supplies the
+# `dependencies` (Hackage packages to build), so take the newest available.
+BOOTSTRAP_PLAN=bootstrap/linux-9.10.3.json
+[ -f "$BOOTSTRAP_PLAN" ] || {
+  echo "ERROR: $BOOTSTRAP_PLAN not found — cabal $(basename "$PWD") ships a different set of bootstrap plans." >&2
+  echo "Available:" >&2
+  ls bootstrap/linux-*.json >&2 || echo "  (none)" >&2
+  echo "Pick the newest and update BOOTSTRAP_PLAN in build.sh." >&2
+  exit 1
+}
+python3 update_bootstrap_json.py "$BOOTSTRAP_PLAN" > bootstrap/linux-actual.json
 
 # Run the bootstrap script with the generated JSON
 retry python3 bootstrap/bootstrap.py -w "$(command -v ghc)" -d bootstrap/linux-actual.json
