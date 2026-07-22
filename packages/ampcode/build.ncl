@@ -17,12 +17,14 @@ let glibc = import "../glibc/build.ncl" in
 #   same-vendor but different product — that imports another
 #   product's CVEs as false positives.
 # TODO: REVIEWER — formula declares `license :cannot_represent` (proprietary). Emitted
-#   as closed_source + redistributable=false — CONFIRM the
-#   vendor's terms before merging, and note nothing in minimal reads
-#   `redistributable` yet (#861 is schema only), so it does not
-#   currently prevent an upload.
+#   as closed_source + redistributable=false, which the prod
+#   buildbot ENFORCES (build-servers#180): the spec is excluded from
+#   cache upload, exempted from the cache audit, and skipped in the
+#   closure seal, so the artifact never enters the shared binary
+#   cache. CONFIRM the vendor's terms still match that posture
+#   before merging.
 #
-# ── TODO resolution (searched 2026-07-22) ───────────────────────────
+# ── TODO resolution (verified 2026-07-22) ───────────────────────────
 # CPE: NVD keywordSearch=ampcode returns 0 results — no CPE identity
 #   exists for Amp, so there is nothing to attach and this package is
 #   UNSCANNABLE by construction, not by omission. Note `sourcegraph`
@@ -30,11 +32,14 @@ let glibc = import "../glibc/build.ncl" in
 #   code-search product — a DIFFERENT product. Attaching it would import
 #   another product's CVEs as false positives. Deliberately not done.
 # TERMS: ampcode.com/terms grants a "limited, revocable, non-exclusive,
-#   non-transferable, non-sublicensable" licence. Redistribution is NOT
-#   permitted, so this package fetches direct from static.ampcode.com and
-#   is never mirrored to gs://. `redistributable = false` records that;
-#   nothing in minimal reads it yet (minimal#861 is schema only), so the
-#   constraint is currently declarative, not enforced.
+#   non-transferable, non-sublicensable" licence, so redistribution is
+#   NOT permitted. Two mechanisms cover that, and both are real:
+#     1. the Source urls fetch DIRECT from static.ampcode.com — the
+#        artifact is never mirrored to gs:// in the first place;
+#     2. `redistributable = false` is ENFORCED by the prod buildbot
+#        (build-servers#180, merged 2026-07-21): excluded from cache
+#        upload, exempt from the cache audit, skipped in the closure
+#        seal. Consumers build locally via the index-miss fallback.
 #
 let version = "0.0.1784751724-g9d1cfb" in
 let target_suffix = match { { arch = 'Amd64, .. } => "x64", { arch = 'Arm64, .. } => "arm64" } target in
