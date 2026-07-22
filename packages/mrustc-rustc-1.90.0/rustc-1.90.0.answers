@@ -1,0 +1,52 @@
+# rustc-1.90.0.answers — byte-seal pins for packages/mrustc-rustc-1.90.0.
+#
+# STATUS: UNPINNED.  This rung is GREEN, not SEALED.  Do not describe it as sealed anywhere.
+#
+# This file is SELF-ARMING, exactly like packages/mrustc/mrustc.answers and deliberately unlike
+# the bedrock rungs' inert placeholders (whose `sha256sum -c` line is commented out in build.sh
+# and therefore stays dead until a human remembers it).  The gate at the bottom of build.sh
+# greps for `^<64 hex>  ` and, the moment one such line is present, runs `sha256sum -c`
+# FAIL-SHUT from ${OUTPUT_DIR}.  Sealing this rung is a DATA edit, not a code edit.
+#
+# TO SEAL, once two independent CS builds have produced byte-identical output:
+#   1. cd ${OUTPUT_DIR} && sha256sum usr/lib/mrustc-rust-1.90.0/bin/rustc_binary \
+#                                    usr/lib/mrustc-rust-1.90.0/bin/cargo
+#   2. paste below, uncommented, in `sha256sum` format (TWO spaces between sha and path)
+#   3. re-run.  Any drift now aborts the build.
+#
+# ── ⚠ DO NOT EXPECT THIS TO SEAL ON THE FIRST TRY, AND DO NOT TREAT THAT AS A BUG ────────────
+# Known nondeterminism surface at this scope, none of it addressed (deliberately — chasing it
+# before the rung is even green would be premature):
+#   - LLVM cmake build ......... minicargo.mk:294-303 sets NO LLVM_APPEND_VC_REV=OFF and no
+#                                timestamp suppression.  Untriaged.
+#   - cargo metadata hashes .... the four run_rustc cargo stages (Makefile:183/:207/:235/:248)
+#                                each have their own -Cmetadata surface.
+#   - mrustc-emitted C ......... symbol names are path-dependent.
+#   - ar member mtimes ......... in the .rlib archives (unlike packages/mrustc, these DO ship).
+# Contrast packages/mrustc, where the only nondeterminism was ONE Makefile line and could be
+# patched + proven in-build.  Here a second `make output-1.90.0/rustc` costs HOURS, not seconds,
+# which is why build.sh deliberately does NOT copy packages/mrustc/build.sh:248-264's in-build
+# determinism proof.  Two-run comparison here means two CS builds, not one build doing it twice.
+#
+# ── WHAT TO PIN, AND WHAT NOT TO ─────────────────────────────────────────────────────────────
+# PIN: bin/rustc_binary and bin/cargo — the two real ELF artifacts, and the only two whose bytes
+#      say anything about the compiler.
+# DO NOT PIN:
+#   - bin/rustc .............. a shell wrapper this recipe REGENERATES at install (build.sh P6);
+#                              its bytes are a function of the recipe, not of the build.
+#   - lib/rustlib/** ......... hundreds of .rlib files; pinning them adds seal churn without
+#                              adding evidence, and they are covered transitively by the two
+#                              binaries above being byte-identical.
+#   - usr/share/**/BUILDINFO . constants only, already covered by its inputs.
+#
+# ── ⚠ THE ANCHOR ITSELF IS NOT SEALED ────────────────────────────────────────────────────────
+# packages/mrustc ships `# UNPINNED` mrustc.answers, so this rung's strongest in-recipe assert
+# on its own most critical input is a commit STRING the binary prints ABOUT ITSELF (`mrustc -vV`,
+# src/main.cpp:1015).  That is a self-assertion, not a seal.
+# THE FIX IS CHEAP, INDEPENDENT OF THIS RUNG, AND SHOULD BE DONE FIRST: run packages/mrustc
+# twice and populate ITS answers file.  ~2 mrustc builds, versus paying the uncertainty on every
+# iteration of a 20-hour rung, and it benefits every future consumer.
+#
+# UNPINNED
+# usr/lib/mrustc-rust-1.90.0/bin/rustc_binary
+# usr/lib/mrustc-rust-1.90.0/bin/cargo
