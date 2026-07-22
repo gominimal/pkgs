@@ -267,6 +267,19 @@ export CC="${CCW}"
 export CXX="${CXXW}"
 export CC_x86_64_linux_gnu="${CCW}"   # takes priority over CC (codegen_c.cpp:1284-1292)
 
+# 2026-07-22: the rustc mrustc BUILDS invokes a linker named `cc` by default (rustc's built-in
+# default is the literal "cc"; run_rustc/Makefile:172 links samples/hello.rs with no -C linker=).
+# The hermetic sandbox has `gcc`, not `cc`, so the run_rustc smoke test died with
+#     error: linker `cc` not found (os error 2)
+# after a full 37-minute build that otherwise SUCCEEDED (rustc built its own sysroot; the
+# archive.rs zero-length-mmap bug did NOT bite -- "failed to map object file" appears 0x).
+# Put `cc`/`c++` on PATH aliased to the SAME bedrock wrapper, so the built rustc's default linker
+# resolves to our pinned gcc inside the sandbox rather than to a name that does not exist.
+ln -sf "${CCW}" "${WRAP}/cc"
+ln -sf "${CXXW}" "${WRAP}/c++"
+PATH="${WRAP}:${PATH}"; export PATH
+command -v cc >/dev/null 2>&1 || { echo "mrustc-1.90.0: FATAL cc alias not on PATH" >&2; exit 1; }
+
 # Command-line variables, passed to EVERY make invocation.  Command line beats both `?=` and
 # `:=`, and propagates to sub-makes via MAKEFLAGS (which matters: run_rustc/Makefile:127-132
 # re-enters `$(MAKE) -C ../ -f minicargo.mk`).
