@@ -12,7 +12,12 @@ let version = "3.53.3" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/sqlite-autoconf-3500400.tar.gz",
+      # ⚠ Nothing below derives from `version` above: the mirrored archive name
+      # carries the zero-padded release number (3.53.3 -> 3530300) and the
+      # sha256 is its own copy. A bump must change all three together — this
+      # line was left on 3500400 while version+sha256 moved to 3.53.3, so every
+      # build failed HashMismatch until the 3.53.3 archive was mirrored.
+      url = "gs://minimal-staging-archives/sqlite-autoconf-3530300.tar.gz",
       sha256 = "c917d7db16648ec95f714974ace5e5dcf46b7dc70e26600a0a102a3141125db0"
     } | Source,
     base-bootstrap,
