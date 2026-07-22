@@ -1,7 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
-let glibc = import "../glibc/build.ncl" in
 
 # Imported from the Homebrew formula `ampcode/homebrew-tap/zvelte-check` by `pkgmgr import homebrew`.
 #
@@ -27,9 +26,8 @@ let target_suffix = match { { arch = 'Amd64, .. } => "x86_64", { arch = 'Arm64, 
     } target,
     base,
   ],
-  runtime_deps = [
-    glibc,
-  ],
+  # No runtime_deps: the installed binary is statically linked
+  # (verified against the built tree, not assumed).
 
   cmd = "./build.sh",
   build_args = { include version, arch = target_suffix },
