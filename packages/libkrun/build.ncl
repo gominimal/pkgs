@@ -15,36 +15,30 @@ let version = "1.19.4" in
 
   build_deps = [
     { file = "build.sh" } | Local,
-    # Two vsock fixes for a bulk host->guest stream that dies mid-upload with
-    # ENOBUFS. Order matters: 0002 is written against the tree 0001 produces,
-    # and build.sh applies them by name in that order.
+    # vsock fix for a bulk host->guest stream that dies mid-upload with
+    # ENOBUFS. Since Linux 6.12.92 the guest resets the connection once its
+    # queued socket-buffer overhead exceeds buf_alloc:
+    # (skb_queue_len + 1) * SKB_TRUESIZE(0) > buf_alloc -- a second,
+    # packet-count receive ceiling the vsock credit protocol (which meters
+    # bytes only) does not express. A sender that fragments the stream into
+    # sub-SKB_TRUESIZE(0) packets (576 B on arm64) exhausts that count ceiling
+    # with the byte window mostly unused.
     #
-    # 0001 -- the credit-request path sets `push_credit_req` but never
-    # `signal_queue`, and push_packet() alone does not raise the IRQ. A proxy
-    # that must wait for credit therefore disarms its own polling and never
-    # wakes the peer, so the credit update it is waiting on is never sent.
-    # Usually masked (a batch normally pushes data packets first, and those
-    # set signal_queue), reachable when the first packet of a batch has to
-    # wait. A real bug, but NOT the upload fix -- measured 0/6 on its own.
+    # The patch meters packet count the same way byte credit is metered:
+    # recv_to_pkt() tracks the guest's skb_queue_len exactly (rx_cnt at each
+    # emitted packet's tail, retired as fwd_cnt passes it) and, before
+    # emitting, waits on the existing WaitForCredit path if one more packet
+    # would approach buf_alloc / SKB_OVERHEAD. Unlike coalescing it does not
+    # change delivery granularity -- send() stays 1:1 with recv(); it is pure
+    # backpressure, invisible until the reader falls behind. It bundles the
+    # credit-request wakeup fix (push_credit_req must set signal_queue), which
+    # the count ceiling makes reachable during bulk transfer.
     #
-    # 0002 -- the actual fix. recv_to_pkt() issued one recv() per RX
-    # descriptor and shipped whatever happened to be buffered, so the muxer
-    # outran the writer and fragmented the stream into sub-KiB packets. A
-    # Linux peer charges every queued skb SKB_TRUESIZE(0) (576 bytes on
-    # arm64) against buf_alloc regardless of payload, so those packets burn
-    # queue budget far faster than they deliver bytes and the peer resets the
-    # connection with credit still outstanding. Instrumentation over 40,749
-    # packets: 74% of reads drained the socket with descriptor space still
-    # free, mean 2,199 bytes available against 239,848 bytes of credit -- the
-    # window was never the constraint. Loop until the descriptor is full or
-    # the socket returns EAGAIN.
-    #
-    # Byte-identical to the patches the macOS source build carries at
-    # vendor/libkrun/patches/ in gominimal/minimal; drop both once they land
-    # in an upstream release we can pin.
+    # Identical to the patch the macOS source build carries at
+    # vendor/libkrun/patches/ in gominimal/minimal (#926); drop it once the
+    # fix lands in an upstream release we can pin.
     # https://github.com/gominimal/minimal/issues/869
-    { file = "0001-vsock-signal-the-used-queue-when-requesting-credit.patch" } | Local,
-    { file = "0002-vsock-fill-the-rx-descriptor-instead-of-one-recv-per-packet.patch" } | Local,
+    { file = "0001-vsock-bound-outstanding-packets.patch" } | Local,
     {
       url = "https://github.com/containers/libkrun/archive/refs/tags/v%{version}.tar.gz",
       sha256 = "e8775fab2b460972a67ca6cd936296bb79cdb078d852d712a283cb290dd0b284",
