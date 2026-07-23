@@ -5,7 +5,7 @@ let glibc = import "../glibc/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "0.31.0" in
+let version = "0.32.0" in
 {
   name = "probe-rs",
 
@@ -13,7 +13,7 @@ let version = "0.31.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/probe-rs/probe-rs/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "7a5022d6956daaa8dba96bb3aedf2ace0b5a76a60729d93971c9dab439ac045e",
+      sha256 = "9c4ba2046d4709f6a07e47933b1aa7edaf72a4d0a9f482b81d81798879070229",
       extract = true,
       strip_prefix = "probe-rs-%{version}",
     } | Source,
