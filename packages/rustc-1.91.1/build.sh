@@ -150,16 +150,25 @@ done
 
 cat > "${STUBS}/git" <<EOF
 #!/bin/sh
-case "\$1 \$2" in
-  "rev-parse HEAD"|"rev-parse --git-dir"|"rev-parse --show-toplevel")
-    echo "git \$*" >> "${BUILDROOT}/GIT-LOCAL.log"; exit 1 ;;   # real git's out-of-repo behaviour
-esac
+# Allowlist by SUBCOMMAND: all of these are purely local repo reads with NO network semantics.
+# x.py version-stamps the build with many of them (rev-parse --show-cdup/--git-path, log -1, ...);
+# enumerating exact argv was whack-a-mole, so allow the local read-only verbs wholesale and
+# tripwire ONLY the ones that can reach the network. Local verbs exit 1 (git's out-of-repo
+# behaviour; x.py handles it via .output().ok()); --version prints a stub.
 if [ "\$1" = "--version" ]; then
   echo "git \$*" >> "${BUILDROOT}/GIT-LOCAL.log"; echo "git version 0.0.0-bedrock-stub"; exit 0
 fi
-echo "git \$*" >> "${BUILDROOT}/NETWORK-TRIPWIRE"
-echo "r191: FATAL — the build invoked git with a non-local argv: \$*" >&2
-exit 1
+case "\$1" in
+  rev-parse|log|describe|symbolic-ref|show-ref|rev-list|cat-file|status|diff|show|name-rev|for-each-ref|update-index|config)
+    echo "git \$*" >> "${BUILDROOT}/GIT-LOCAL.log"; exit 1 ;;   # local read-only; no network
+  clone|fetch|pull|push|remote|ls-remote|submodule|archive|request-pull|send-pack|fetch-pack|upload-pack)
+    echo "git \$*" >> "${BUILDROOT}/NETWORK-TRIPWIRE"
+    echo "r191: FATAL — git NETWORK verb attempted: \$*" >&2; exit 1 ;;
+  *)
+    # unknown verb: default DENY (tripwire) so a new network path cannot slip through silently
+    echo "git \$*" >> "${BUILDROOT}/NETWORK-TRIPWIRE"
+    echo "r191: FATAL — git invoked with an un-allowlisted verb (default-deny): \$*" >&2; exit 1 ;;
+esac
 EOF
 chmod 0755 "${STUBS}/git"
 
