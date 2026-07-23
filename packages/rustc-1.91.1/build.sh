@@ -597,6 +597,7 @@ echo "R191-GATE-4: PASS (proc-macro crate built as a dylib, dlopen'd, expanded, 
 CW="${G}/cargows"
 mkdir -p "${CW}/pmderive/src" "${CW}/app/src"
 cat > "${CW}/pmderive/Cargo.toml" <<'EOF'
+[workspace]
 [package]
 name = "pmderive"
 version = "0.0.0"
@@ -613,6 +614,10 @@ pub fn gate_val(_input: TokenStream) -> TokenStream {
 }
 RSEOF
 cat > "${CW}/app/Cargo.toml" <<'EOF'
+# empty [workspace] makes this app its own workspace root, so cargo does not walk UP the dir
+# tree and adopt a stray /build/Cargo.toml (MEASURED: cargo-drive gate failed on exactly that
+# 2026-07-23, after rustc 1.91.1 itself built+installed clean).
+[workspace]
 [package]
 name = "gateapp"
 version = "0.0.0"
