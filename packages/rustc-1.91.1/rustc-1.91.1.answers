@@ -1,0 +1,44 @@
+# rustc-1.91.1.answers — byte-seal pins for packages/rustc-1.91.1.
+#
+# STATUS: UNPINNED.  This rung is GREEN, not SEALED.  Do not describe it as sealed anywhere.
+#
+# SELF-ARMING, exactly like packages/mrustc-rustc-1.90.0/rustc-1.90.0.answers.  The seal at the
+# bottom of build.sh (P6) greps for `^<64 hex>  ` and, the moment one such line is present, runs
+# `sha256sum -c` FAIL-SHUT from ${OUTPUT_DIR}.  Sealing this rung is a DATA edit, not a code edit.
+#
+# ── TO SHIP THE SEAL ──────────────────────────────────────────────────────────────────────────
+# This file is NOT currently wired as a Local build_dep, so build.sh prints "NOT SEALED" and
+# continues.  To arm it after TWO independent CS builds have produced byte-identical output:
+#   1. add  `{ file = "rustc-1.91.1.answers" } | Local,`  to build.ncl's build_deps.
+#   2. cd ${OUTPUT_DIR} && sha256sum usr/lib/rustc-1.91.1/bin/rustc \
+#                                    usr/lib/rustc-1.91.1/bin/cargo
+#   3. paste below, uncommented, in `sha256sum` format (TWO spaces between sha and path).
+#   4. re-run.  Any drift now aborts the build.
+#
+# ── ⚠ DO NOT EXPECT THIS TO SEAL ON THE FIRST TRY, AND DO NOT TREAT THAT AS A BUG ────────────
+# Known nondeterminism surface at this scope, none of it addressed yet (chasing it before the rung
+# is even green would be premature):
+#   - LLVM version-control rev ... external llvm-config is fixed, but rustc bakes an LLVM VC-rev
+#                                  string; if it drifts, the driver hash drifts.
+#   - cargo -Cmetadata hashes ... the workspace crates each have their own -Cmetadata surface.
+#   - std debuginfo paths ....... Rust debuginfo may carry the build root (see P4's sweep).
+# A second build here costs HOURS, not seconds, so build.sh does NOT attempt an in-build
+# determinism proof.  Two-run comparison here means two CS builds, not one build doing it twice.
+#
+# ── WHAT TO PIN, AND WHAT NOT TO ─────────────────────────────────────────────────────────────
+# PIN: bin/rustc and bin/cargo — the two real ELF artifacts (contrast RUNG 1, whose bin/rustc was
+#      a regenerated shell wrapper, so it pinned bin/rustc_binary instead; x.py bakes a real ELF
+#      here, so bin/rustc IS the artifact to pin).
+# DO NOT PIN:
+#   - lib/rustlib/** ......... hundreds of .rlib files; pinning them adds seal churn without
+#                              adding evidence, and they are covered transitively by the two
+#                              binaries above being byte-identical.
+#   - BUILDINFO .............. constants only, already covered by its inputs.
+#
+# ── ⚠ THE ANCHOR ITSELF IS NOT SEALED ────────────────────────────────────────────────────────
+# packages/mrustc ships `# UNPINNED` mrustc.answers, so this whole chain is GREEN, not byte-SEALED.
+# Sealing packages/mrustc (2 builds) benefits every rung and should be done independently.
+#
+# UNPINNED
+# usr/lib/rustc-1.91.1/bin/rustc
+# usr/lib/rustc-1.91.1/bin/cargo
