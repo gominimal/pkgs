@@ -5,7 +5,8 @@
 #
 # Phases:
 #   P0   preconditions   — every anchor asserted BY NAME before anything is built
-#   P0b  offline harness — curl/wget fail-shut; git allows ONLY `rev-parse HEAD`
+#   P0b  offline harness — curl/wget fail-shut; git allows only LOCAL probes (rev-parse
+#        HEAD/--git-dir/--show-toplevel, --version); any fetch verb is a hard tripwire
 #   P1   unpack mrustc tree as DATA + sysroot harness + logging compiler wrappers
 #   P2   rustc source     — pre-place tarball, let MAKE extract+patch, then our two patches
 #   P3   LLVM via cmake   — pinned CC/CXX, the single biggest silent-provenance hole
@@ -140,10 +141,18 @@ done
 
 cat > "${STUBS}/git" <<EOF
 #!/bin/sh
-# ONLY \`git rev-parse HEAD\` is permitted (local ref lookup, no network semantics).
-if [ \$# -eq 2 ] && [ "\$1" = "rev-parse" ] && [ "\$2" = "HEAD" ]; then
-  echo "git \$*" >> "${BUILDROOT}/GIT-LOCAL.log"
-  exit 1   # what real git does outside a repo; callers handle this via .output().ok()
+# Permit the PURELY-LOCAL git probes rustc 1.90.0 makes to stamp its version. Measured on the
+# 2026-07-22 CS run: after a COMPLETE build (100%, 22/22 crates), run_rustc's version-stamp step
+# invoked \`git --version\` and \`git rev-parse --git-dir\` and the tripwire fired at 49.5min. None
+# of these touch the network -- they are the same class as \`rev-parse HEAD\`. Allow exactly:
+#   rev-parse HEAD | rev-parse --git-dir | rev-parse --show-toplevel | --version
+# Everything else (clone/fetch/pull/remote/ls-remote/submodule) is still a hard tripwire.
+case "\$1 \$2" in
+  "rev-parse HEAD"|"rev-parse --git-dir"|"rev-parse --show-toplevel")
+    echo "git \$*" >> "${BUILDROOT}/GIT-LOCAL.log"; exit 1 ;;  # real git's out-of-repo behaviour
+esac
+if [ "\$1" = "--version" ]; then
+  echo "git \$*" >> "${BUILDROOT}/GIT-LOCAL.log"; echo "git version 0.0.0-bedrock-stub"; exit 0
 fi
 echo "git \$*" >> "${BUILDROOT}/NETWORK-TRIPWIRE"
 echo "r190: FATAL — the build invoked git with a non-local argv: \$*" >&2
