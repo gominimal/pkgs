@@ -6,14 +6,14 @@ let make = import "../make/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "0.11.30" in
+let version = "0.11.31" in
 {
   name = "uv",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/uv-%{version}.tar.gz",
-      sha256 = "ff895fff1c218fcad67b5b7de829df6d868e677ff34a39d3d0c49a9754247db6"
+      sha256 = "57a268b4178270ee0339ec1d5a8961082978ab5ad75ff8de3b25b726e92deda3"
     } | Source,
     base,
     make,

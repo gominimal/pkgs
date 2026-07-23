@@ -6,7 +6,7 @@ let ca-certificates = import "../ca-certificates/build.ncl" in
 let git = import "../git/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 
-let version = "0.8.0" in
+let version = "0.9.0" in
 {
   name = "capy",
   build_deps = [
@@ -16,7 +16,7 @@ let version = "0.8.0" in
     # into this registry.
     {
       url = "https://github.com/capysc/capy-cli/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "979a9e73d4db3f17a3c9b04fc76f637e20068dc2ff152ad0fd39e18c1a995565",
+      sha256 = "3257d7d0652d1df2e5d61cc1ed0e7313ac1e4d45a9ce62df4d2bc5e558f2de6a",
       extract = true,
       strip_prefix = "capy-cli-%{version}",
     } | Source,
@@ -44,7 +44,11 @@ let version = "0.8.0" in
 
   outputs = {
     capy = { glob = "usr/bin/capy" } | OutputBin,
-    node_modules = { glob = "usr/lib/node_modules/**" } | OutputData,
+    # allow_executable: @capysc/cli (>= this release) depends on
+    # @napi-rs/keyring, which ships native `.node` ELF libraries inside
+    # node_modules — real loadable code, so an inert-data claim fails the
+    # output-types checker on both arches. Same shape as cf's node_modules.
+    node_modules = { glob = "usr/lib/node_modules/**", allow_executable = true } | OutputData,
   },
   attrs =
     {
