@@ -44,7 +44,11 @@ let version = "0.9.0" in
 
   outputs = {
     capy = { glob = "usr/bin/capy" } | OutputBin,
-    node_modules = { glob = "usr/lib/node_modules/**" } | OutputData,
+    # allow_executable: @capysc/cli (>= this release) depends on
+    # @napi-rs/keyring, which ships native `.node` ELF libraries inside
+    # node_modules — real loadable code, so an inert-data claim fails the
+    # output-types checker on both arches. Same shape as cf's node_modules.
+    node_modules = { glob = "usr/lib/node_modules/**", allow_executable = true } | OutputData,
   },
   attrs =
     {
