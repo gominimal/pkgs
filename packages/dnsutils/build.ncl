@@ -11,14 +11,14 @@ let libcap = import "../libcap/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "9.20.24" in
+let version = "9.20.26" in
 {
   name = "dnsutils",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://downloads.isc.org/isc/bind9/%{version}/bind-%{version}.tar.xz",
-      sha256 = "989fef1fc88ea59d04cd86f854dca5a4616a20a9968bcdde3c1a3668ab36be08",
+      sha256 = "55248def0f870c4c46b3de72978ea972615131516663188a4564dca1d20bf350",
     } | Source,
     base,
     toolchain,

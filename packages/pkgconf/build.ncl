@@ -4,14 +4,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "3.0.3" in
+let version = "3.0.4" in
 {
   name = "pkgconf",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/pkgconf-%{version}.tar.xz",
-      sha256 = "aa033abb2b777ba4e66635495a931e53c49d86e4e4e38af68c0f76d666cbd8cf",
+      sha256 = "91ce346b47f46b87d680c6928e6c43240b9cdc7a31afbea19f2298de4dbe266d",
       extract = true,
       strip_prefix = "pkgconf-%{version}",
     } | Source,
