@@ -27,7 +27,7 @@ let version = "14.1.1" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives//graphviz-%{version}.tar.bz2",
+      url = "gs://minimal-staging-archives/graphviz-%{version}.tar.bz2",
       sha256 = "975f4b9a7a7a7b614900ecd12919ccbd36a680818cc6fc527389b93e919410f0",
       extract = true,
       strip_prefix = "graphviz-%{version}",
