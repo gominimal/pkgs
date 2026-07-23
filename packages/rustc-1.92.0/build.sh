@@ -119,11 +119,17 @@ grep -q 'vendored-sources' "${BUILDROOT}/.cargo/config.toml" || {
   echo "r191: FATAL .cargo/config.toml does not redirect crates-io to vendored-sources" >&2; exit 1; }
 SVER="$(cat "${BUILDROOT}/src/version" 2>/dev/null || echo MISSING)"
 [ "${SVER}" = "${VERSION}" ] || { echo "r191: FATAL src/version = '${SVER}', expected ${VERSION} — wrong source extracted" >&2; exit 1; }
-grep -q "compiler_version=${STAGE0_VERSION}" "${BUILDROOT}/src/stage0" || {
-  echo "r191: FATAL src/stage0 does not pin compiler_version=${STAGE0_VERSION} — the bootstrap pairing is wrong" >&2
+# x.py's check_stage0_version accepts a stage0 that is the SAME minor or exactly ONE minor behind
+# the source, and IGNORES the patch — so our point-release stage0 (e.g. 1.91.1) validly builds a
+# source that pins the .0 (1.91.0).  Mirror that: assert src/stage0's compiler_version is in our
+# stage0's MINOR line, NOT the exact patch (upstream pins the .0 of the prior minor).
+STAGE0_MINOR="${STAGE0_VERSION%.*}"   # 1.91.1 -> 1.91
+grep -qE "compiler_version=${STAGE0_MINOR}\.[0-9]+" "${BUILDROOT}/src/stage0" || {
+  echo "r191: FATAL src/stage0 compiler_version not in the ${STAGE0_MINOR}.x line (our stage0 is ${STAGE0_VERSION}) — wrong bootstrap pairing" >&2
   grep -i 'compiler_' "${BUILDROOT}/src/stage0" >&2 || true
   exit 1; }
-echo "R191-SOURCE: OK — src/version=${SVER}, src/stage0 pins ${STAGE0_VERSION} (pairing confirmed)" >&2
+S0PIN="$(grep -oE 'compiler_version=[0-9.]+' "${BUILDROOT}/src/stage0" | head -1)"
+echo "R191-SOURCE: OK — src/version=${SVER}, src/stage0 ${S0PIN} matches our stage0 ${STAGE0_VERSION} minor line (x.py minor-rule)" >&2
 
 # ============================================================================================
 # P0b — OFFLINE HARNESS (ported verbatim in spirit from mrustc-rustc-1.90.0/build.sh:113-188).
