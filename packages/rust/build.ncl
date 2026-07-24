@@ -11,6 +11,7 @@ let libffi = import "../libffi/build.ncl" in
 let libssh2 = import "../libssh2/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let rustc-1-94-0 = import "../rustc-1.94.0/build.ncl" in # ★ THE STAGE0 — final chain rung, CS-attested
 
 let version = "1.95.0" in
 {
@@ -24,52 +25,24 @@ let version = "1.95.0" in
       extract = true,
       strip_prefix = "rustc-%{version}-src",
     } | Source,
-    # SEED-ROOTED stage0 (issue #17): rustc + cargo 1.94.1 bootstrapped by mrustc
-    # on our own compute — NOT the trust-by-fiat prebuilt 1.94.0.
-    # These ARE the official 1.94.1 by source (commit e408947bf), bootstrapped
-    # mrustc 0.12.0 -> rustc 1.90.0 -> 1.91.1 -> 1.92.0 -> 1.93.1 -> 1.94.1
-    # (verified: our rustc compiles+runs code; see issue #17).
+    # ★ ATTESTED stage0 (issue #17 — the ladder CLOSED).  The stage0 rustc/cargo is now the
+    # CS-attested rustc-1.94.0 rung (a build_dep, installed at /usr/lib/rustc-1.94.0/bin), NOT the
+    # unattested seed-*.tar.gz tarballs this recipe used to consume.  build.sh points bootstrap.toml's
+    # [build] rustc/cargo at that prefix; x.py uses it directly and skips the src/stage0 download.
     #
-    # ⚠ NOT hex0-rooted, and the seeds are NOT attested. Read before citing this.
-    # An earlier version of this comment claimed they were "built from the
-    # 229-byte hex0 seed via mrustc". That was FALSE, and it shipped in a signed
-    # artifact. What is actually true:
-    #   PROVEN     — rust@1.95.0 was built in Confidential Space from THESE exact
-    #                tarballs by sha (both appear in the in-toto declaredSources
-    #                AND resolvedDependencies; "1.94.0" appears nowhere).
-    #   NOT PROVEN — the seeds' own provenance. Built on `rust-ladder`, a plain
-    #                GCE VM: no TEE, no attestation, host compiler from
-    #                `apt-get install g++` (Debian trixie), mrustc's source
-    #                fetched with NO recorded sha anywhere, dtolnay/bootstrap
-    #                cloned --depth 1 unpinned. Our own hex0-rooted
-    #                stage0-gcc-15.2.0 was NOT used to build them.
-    # This moves the trust boundary from "trust Rust's prebuilt binaries" to
-    # "trust our unattested build VM". Real progress; not a source root.
+    # THE CHAIN, all phase=signed in Confidential Space (each rung built by its attested predecessor):
+    #   gcc-15.2.0 -> mrustc 0.12.0 -> rustc-1.90.0 -> 1.91.1 -> 1.92.0 -> 1.93.1 -> 1.94.0 -> (THIS)
+    # x.py accepts 1.94.0 as stage0 for 1.95.0: src/stage0 pins 1.94.0 (exact) and check_stage0_version
+    # allows same-or-one-minor-behind.  This RETIRES the old seed tarballs (deleted below) — the trust
+    # boundary moves off "our unattested rust-ladder GCE VM" and onto the CS-attested chain.
     #
-    # ⚠ These seeds are also structurally un-fail-shut-able: assess_dep_chain
-    # anchors its trust set on declaredSources shas and returns None on a hit, so
-    # CHAIN_ENFORCE=1 can never flag them however they were produced. Do not read
-    # a green chain gate as evidence about the seed.
-    # Because their version/sha differ from 1.95.0's src/stage0 manifest (which
-    # pins 1.94.0), they do NOT use the build/cache/<date> pre-place path —
-    # build.sh extracts them and points bootstrap.toml's [build] rustc/cargo at
-    # them, so x.py uses them directly and skips the src/stage0 download (exactly
-    # as the mrustc chain's own rung configs do). The rustc tarball bundles its
-    # sysroot (bin/rustc + lib/, i.e. rust-std), so only two Sources are needed.
-    # NB: shas are of OUR packaged tarballs. "2026-07-18" is a path LABEL, not the
-    # upload date; the tarballs were uploaded 2026-07-20T17:46Z and a CS build has
-    # consumed them since — see docs/rust-seed-stage0-bridge.md (outer repo).
-    # amd64-only for now — arm64 needs the aarch64 seed-rooted stage0 (#16).
-    {
-      url = "gs://minimalmertic-hermetic-mirror/rust-stage0-seed/2026-07-18/seed-rustc-1.94.1-x86_64-unknown-linux-gnu.tar.gz",
-      sha256 = "99c538b75dd4d007bb7034dbc2c4b39b2fc661b8c1eb1cce5361c3c2235aeee0",
-      extract = false,
-    } | Source,
-    {
-      url = "gs://minimalmertic-hermetic-mirror/rust-stage0-seed/2026-07-18/seed-cargo-1.94.1-x86_64-unknown-linux-gnu.tar.gz",
-      sha256 = "6b34c8c415e36e59c8025ffb04dbe39318dec000906a87808f17ccd9425ad0c7",
-      extract = false,
-    } | Source,
+    # ⚠ HONESTY BOUNDARY (do not overstate): the chain is ATTESTED (CS-signed at every rung), NOT
+    # byte-SEALED — packages/mrustc ships `# UNPINNED` mrustc.answers.  And attested != hex0-rooted:
+    # mrustc's own root provenance (see packages/mrustc) is the remaining boundary, not this edge.
+    # assess_dep_chain still returns None on a declaredSources hit, so CHAIN_ENFORCE=1 cannot fail-shut
+    # this edge; proof is this recipe's stage0 assert + the predecessor rungs' own signatures.
+    # amd64-only for now — arm64's seed-rooted gcc/rust stage0 is a separate track (#16).
+    rustc-1-94-0,
     base,
     cmake,
     curl,
