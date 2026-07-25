@@ -11,6 +11,14 @@ mkdir -p "$CABAL_DIR"
 export GHC="$(command -v ghc)"
 export CABAL="$(command -v cabal)"
 
+# GHC's shared libraries (libHSrts, etc.) aren't on the default library search
+# path. Cabal-installed build tools (alex, happy) link against them and fail
+# to run — "version could not be determined" — so add GHC's libdir to
+# LD_LIBRARY_PATH. Also point cabal at the pre-installed alex/happy via
+# --with-alex/--with-happy so it doesn't try to use its own broken copies.
+GHC_LIBDIR="$(ghc --print-libdir)"
+export LD_LIBRARY_PATH="${GHC_LIBDIR}:${LD_LIBRARY_PATH:-}"
+
 # Update cabal package index
 cabal update
 
@@ -23,6 +31,8 @@ cabal build \
   --disable-tests \
   --disable-benchmarks \
   --with-compiler="$(command -v ghc)" \
+  --with-alex="$(command -v alex)" \
+  --with-happy="$(command -v happy)" \
   --jobs="$(nproc)" \
   -v1 \
   exe:haskell-language-server 2>&1 | tee /tmp/hls-build.log
@@ -30,7 +40,7 @@ rc=${PIPESTATUS[0]}
 set -e
 if [ "$rc" -ne 0 ]; then
     echo "===== cabal build failed (rc=$rc) — real error: ====="
-    grep -iE "\.hs:[0-9]+:[0-9]+: error|error:\s*\[GHC|undefined reference|cannot find -l|panic|internal error|cannot satisfy|conflict" /tmp/hls-build.log | tail -25 \
+    grep -iE "\.hs:[0-9]+:[0-9]+: error|error:\s*\[GHC|error:\s*\[Cabal|undefined reference|cannot find -l|panic|internal error|cannot satisfy|conflict|could not be determined|Failed to build" /tmp/hls-build.log | tail -25 \
         || echo "(no error text captured)"
     tail -25 /tmp/hls-build.log
     exit 1
