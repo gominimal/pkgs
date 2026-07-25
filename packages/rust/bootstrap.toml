@@ -16,6 +16,13 @@ test-stage = 2
 doc-stage = 2
 # When compiling from source, you usually want all tools.
 extended = true
+# Explicit tool list WITHOUT "src": the rust-src INSTALL step is gated on
+# `extended && tools.contains("src")` (install.rs:332), so omitting "src" here skips installing a
+# rust-src component into the output.  (The actual `cargo vendor` failure is killed by [dist] vendor
+# =false below — that command is a dist-side PlainSourceTarball step, not the install step this list
+# gates.)  We do NOT want a bundled rust-src anyway: one in a rustc rung is exactly what polluted
+# x.py with the pre-rename proc_macro::tracked_env source (the E0433 wall).  Ship tools, not source.
+tools = ["cargo", "clippy", "rustfmt", "rust-analyzer"]
 # Use libtest built from the source tree instead of the precompiled one from stage 0.
 compiletest-use-stage0-libtest = false
 
@@ -43,6 +50,15 @@ remap-debuginfo = false
 
 [dist]
 compression-profile = "balanced"
+# vendor=false is the DIRECT cure for the install-stage failure.  `x.py install` (via the Src
+# component / PlainSourceTarball) runs `cargo vendor --sync src/tools/cargo/Cargo.toml …` ONLY inside
+# `if builder.config.dist_vendor` (dist.rs:1355).  With our attested stage0 cargo + build.vendor=false
+# that command dies ("failed to load lockfile for src/tools/cargo") and aborts install.  We do not
+# ship a vendored rust-src, so skip the vendoring entirely.  src-tarball=false additionally drops the
+# PlainSourceTarball default step (dist.rs:1232 gates on config.rust_dist_src) so no source tree is
+# even assembled — belt-and-suspenders with the [build] tools list that omits "src".
+vendor = false
+src-tarball = false
 
 [target.x86_64-unknown-linux-gnu]
 cc = "clang"
