@@ -3,6 +3,10 @@ set -euo pipefail
 
 # The source tarball is already extracted with strip_prefix, so we're in the source root
 
+# cabal needs a writable HOME for its config, package index, and build store.
+export CABAL_DIR="$PWD/.cabal-home"
+mkdir -p "$CABAL_DIR"
+
 # Build HLS for the GHC version available in the sandbox
 export GHC="$(command -v ghc)"
 export CABAL="$(command -v cabal)"
@@ -10,12 +14,27 @@ export CABAL="$(command -v cabal)"
 # Update cabal package index
 cabal update
 
-# Build HLS with the available GHC version
+# Build HLS with the available GHC version. The cabal.project ships with
+# tests:True and benchmarks:True, which makes the solver consider test/benchmark
+# deps for every transitive dependency — pass --disable-tests/--disable-benchmarks
+# to build only the executable.
+set +e
 cabal build \
   --disable-tests \
   --disable-benchmarks \
+  --with-compiler="$(command -v ghc)" \
   --ghc-options="-j$(nproc)" \
-  exe:haskell-language-server
+  -v1 \
+  exe:haskell-language-server 2>&1 | tee /tmp/hls-build.log
+rc=${PIPESTATUS[0]}
+set -e
+if [ "$rc" -ne 0 ]; then
+    echo "===== cabal build failed (rc=$rc) — real error: ====="
+    grep -iE "\.hs:[0-9]+:[0-9]+: error|error:\s*\[GHC|undefined reference|cannot find -l|panic|internal error|cannot satisfy|conflict" /tmp/hls-build.log | tail -25 \
+        || echo "(no error text captured)"
+    tail -25 /tmp/hls-build.log
+    exit 1
+fi
 
 # Install to OUTPUT_DIR
 mkdir -p "$OUTPUT_DIR"/usr/bin
