@@ -12,12 +12,11 @@ export GHC="$(command -v ghc)"
 export CABAL="$(command -v cabal)"
 
 # GHC's shared libraries (libHSrts, etc.) aren't on the default library search
-# path. Cabal installs alex/happy from Hackage as build-tool-depends; those
-# binaries link against GHC's shared libs and fail to run without this —
-# cabal reports "version could not be determined" (Cabal-1008). We let cabal
-# install its own alex/happy (built with 9.10.3, so their template files land
-# in the right data dir) rather than using the system alex/happy, which were
-# built with ghc-bootstrap 9.8.1 and look for templates in the wrong dir.
+# path. The system alex/happy (from build_deps) link against GHC's shared libs
+# and need them to run. We use --with-alex/--with-happy to point cabal at the
+# pre-packaged versions instead of letting cabal download and build its own
+# from Hackage — those packages already ship their template files as a data
+# output, so they work with any GHC version.
 GHC_LIBDIR="$(ghc --print-libdir)"
 export LD_LIBRARY_PATH="${GHC_LIBDIR}:${LD_LIBRARY_PATH:-}"
 
@@ -33,6 +32,8 @@ cabal build \
   --disable-tests \
   --disable-benchmarks \
   --with-compiler="$(command -v ghc)" \
+  --with-alex="$(command -v alex)" \
+  --with-happy="$(command -v happy)" \
   --jobs="$(nproc)" \
   -v1 \
   exe:haskell-language-server 2>&1 | tee /tmp/hls-build.log

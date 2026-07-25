@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let ghc-bootstrap = import "../ghc-bootstrap/build.ncl" in
@@ -34,6 +34,7 @@ let version = "1.20.1.1" in
 
   outputs = {
     happy = { glob = "usr/bin/happy" } | OutputBin,
+    data = { glob = "usr/share/**" } | OutputData,
   },
 
   attrs = {
