@@ -5,7 +5,9 @@ let base = import "../base/build.ncl" in
 let cabal = import "../cabal/build.ncl" in
 let ghc = import "../ghc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let gmp = import "../gmp/build.ncl" in
 let happy = import "../happy/build.ncl" in
+let libffi = import "../libffi/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
 let version = "2.14.0.0" in
@@ -26,10 +28,9 @@ let version = "2.14.0.0" in
     cabal,
     alex,
     happy,
-    zlib,
   ],
 
-  runtime_deps = [glibc],
+  runtime_deps = [glibc, gmp, libffi, zlib],
 
   needs =
     {
