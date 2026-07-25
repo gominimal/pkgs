@@ -23,7 +23,7 @@ cabal build \
   --disable-tests \
   --disable-benchmarks \
   --with-compiler="$(command -v ghc)" \
-  --ghc-options="-j$(nproc)" \
+  --jobs="$(nproc)" \
   -v1 \
   exe:haskell-language-server 2>&1 | tee /tmp/hls-build.log
 rc=${PIPESTATUS[0]}
