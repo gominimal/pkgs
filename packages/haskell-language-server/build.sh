@@ -12,6 +12,8 @@ cabal update
 
 # Build HLS with the available GHC version
 cabal build \
+  --disable-tests \
+  --disable-benchmarks \
   --ghc-options="-j$(nproc)" \
   exe:haskell-language-server
 

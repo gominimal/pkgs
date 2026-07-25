@@ -1,9 +1,12 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 
+let alex = import "../alex/build.ncl" in
 let base = import "../base/build.ncl" in
 let cabal = import "../cabal/build.ncl" in
 let ghc = import "../ghc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let happy = import "../happy/build.ncl" in
+let zlib = import "../zlib/build.ncl" in
 
 let version = "2.14.0.0" in
 
@@ -21,6 +24,9 @@ let version = "2.14.0.0" in
     base,
     ghc,
     cabal,
+    alex,
+    happy,
+    zlib,
   ],
 
   runtime_deps = [glibc],
