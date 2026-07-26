@@ -67,6 +67,36 @@ grep -v '^with-compiler:' stackage-lts-24.50.cabal.config > lts-pinned.config
 # so the field is reachable via the type. (pkgmgr-rs#528)
 sed -i 's/defaultTheoryLoadOptions, maudePath, TheoryLoadError/defaultTheoryLoadOptions, TheoryLoadOptions(maudePath), TheoryLoadError/' src/Main/REPL.hs
 
+# Reproducibility: tamarin's version banner embeds the WALL-CLOCK compile time
+#
+#     Git revision: UNKNOWN, branch: UNKNOWN
+#     Compiled at: 2026-07-25 03:47:54.541898723 UTC
+#
+# via a TemplateHaskell splice that calls getCurrentTime while COMPILING. It
+# asks the clock directly, so the sandbox's SOURCE_DATE_EPOCH never reaches it,
+# and two builds differ by exactly that string — measured: 26 bytes out of
+# 135 MB, with the Haskell codegen itself bit-identical. (The git fields are
+# already deterministic: no repo here, so both builds say UNKNOWN.)
+#
+# Rewrite the splice to a fixed instant derived from SOURCE_DATE_EPOCH. Located
+# by content rather than by path so an upstream file move fails loudly here
+# instead of silently reverting to a wall clock.
+STAMP="$(date -u -d "@${SOURCE_DATE_EPOCH:-0}" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null \
+        || date -u -r "${SOURCE_DATE_EPOCH:-0}" '+%Y-%m-%d %H:%M:%S UTC')"
+stamp_file="$(grep -rl 'Compiled at' --include='*.hs' src lib 2>/dev/null | head -1)"
+if [ -z "$stamp_file" ]; then
+    echo "ERROR: no source file embeds 'Compiled at' — tamarin's version banner moved; revisit this patch." >&2
+    exit 1
+fi
+# Replace the runIO getCurrentTime splice with the pinned literal.
+sed -i "s|runIO Data\.Time\.getCurrentTime|pure (\"$STAMP\")|g; \
+        s|runIO getCurrentTime|pure (\"$STAMP\")|g" "$stamp_file"
+if grep -q 'getCurrentTime' "$stamp_file"; then
+    echo "ERROR: tamarin compile-time-clock patch did not apply in $stamp_file (splice shape changed)." >&2
+    grep -n 'getCurrentTime' "$stamp_file" >&2
+    exit 1
+fi
+
 # Build + install the executable (STATIC — a normal Haskell static link; the link
 # was never the problem). The sandbox hides build detail, so on failure dump the
 # real error (compile OR link) rather than a silent "Failed to build".
