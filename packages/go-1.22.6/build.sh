@@ -144,7 +144,7 @@ fi
 
 mkdir -p "${OUTPUT_DIR}/usr/share/go-${VERSION}"
 {
-  echo "go-${VERSION} (Go ladder rung 2, issue #19)"
+  echo "go-${VERSION} (Go ladder rung 4, issue #19)"
   echo "source:       ${SRC_TARBALL}  sha256=${SRC_SHA}"
   echo "bootstrapped: ${BOOTVER}  (from ${BOOTSTRAP_PREFIX} — the C-rooted go-1.4 joint)"
   echo "built_by:     that Go; C toolchain gcc ${GCCVER} (B5, seed-rooted to hex0) available for cgo-less probes"

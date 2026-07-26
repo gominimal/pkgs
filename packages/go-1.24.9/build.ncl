@@ -17,8 +17,8 @@ let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" i
 #        go-1.22.6 -> THIS.
 #
 # ── SOURCE PIN ───────────────────────────────────────────────────────────────────────────────
-#   https://go.dev/dl/go1.17.13.src.tar.gz -> gs://minimal-staging-archives/go1.17.13.src.tar.gz
-#   sha256 a1a48b23afb206f95e7bbaa9b898d965f90826f6f1d1fc0c1d784ada0cd300fd  (22206518 B)
+#   https://go.dev/dl/go1.24.9.src.tar.gz -> gs://minimal-staging-archives/go1.24.9.src.tar.gz
+#   sha256 c72f81ba54fe00efe7f3e7499d400979246881b13b775e9a9bb85541c11be695  (30800154 B)
 #
 # amd64 only (see go-1.4's banner: arm64 needs a cross-bootstrap track).
 # `needs` is deliberately ABSENT: nothing here touches the network.  Go's stdlib is
