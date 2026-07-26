@@ -87,19 +87,33 @@ chmod +x "${BUILDROOT}/go-cc"
 # nothing in the ladder needs cgo from the 1.4 rung).  GOROOT_FINAL bakes the RUNTIME prefix.
 # ============================================================================================
 tar --no-same-owner -xzf "${SRC_TARBALL}"
-GODIR="$(ls -d go 2>/dev/null || ls -d go* 2>/dev/null | head -1)"
-[ -d "${GODIR}/src" ] || { echo "go-1.4 infra: unpacked tree has no src/ (got '${GODIR}')" >&2; exit 1; }
+# NO `find` HERE — findutils is NOT in this sandbox (only declared build_deps exist; an undeclared
+# `find` silently yields empty and turned into a bogus "not C-hosted" verdict).  The archive is
+# sha-PINNED, so its layout is fixed and knowable: it unpacks to ./go.  Assert that, don't discover it.
+GODIR=go
+DISTDIR="${GODIR}/src/cmd/dist"
+[ -d "${DISTDIR}" ] || {
+  echo "go-1.4 infra: expected ${DISTDIR} after untar (sha-pinned archive, layout is fixed). cwd:" >&2
+  ls -la >&2
+  exit 1; }
+echo "go-1.4: source tree = ${GODIR}" >&2
 # Confirm the C-hosted premise on the ACTUAL bytes we are building (not on a memory of it).
-NC="$(find "${GODIR}/src/cmd/dist" -name '*.c' | wc -l)"
-NG="$(find "${GODIR}/src/cmd/dist" -name '*.go' | wc -l)"
+# Counted with shell globs (POSIX, no findutils): a non-matching glob stays literal, so test -f.
+NC=0; for f in "${DISTDIR}"/*.c;  do [ -f "$f" ] && NC=$((NC+1)); done
+NG=0; for f in "${DISTDIR}"/*.go; do [ -f "$f" ] && NG=$((NG+1)); done
 [ "${NC}" -gt 0 ] && [ "${NG}" -eq 0 ] || {
   echo "go-1.4 infra: src/cmd/dist is not C-hosted (.c=${NC} .go=${NG}) — this is not the bootstrap Go" >&2
   exit 1; }
 echo "go-1.4: C-hosted bootstrap confirmed (src/cmd/dist .c=${NC} .go=${NG})" >&2
 
+# TMPDIR is REQUIRED: go1.4's dist (src/cmd/dist/unix.c xtmpdir()) falls back to a hardcoded
+# /var/tmp when TMPDIR is unset, and this sandbox has no /var/tmp — the C bootstrap tool builds
+# and RUNS, then dies with `mkdtemp(/var/tmp/go-cbuild-XXXX): No such file or directory`.
+GOTMP="${BUILDROOT}/gotmp"; mkdir -p "${GOTMP}"
 cd "${GODIR}/src"
 CC="${BUILDROOT}/go-cc" \
 CGO_ENABLED=0 \
+TMPDIR="${GOTMP}" \
 GOROOT_FINAL="/${PREFIX_REL}" \
 GOOS=linux GOARCH=amd64 GOHOSTOS=linux GOHOSTARCH=amd64 \
   ./make.bash
