@@ -1,8 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Security vulnerability
-    url: https://github.com/gominimal/pkgs/blob/main/SECURITY.md
-    about: Please do NOT file security issues publicly. See SECURITY.md and email security@minimal.dev.
   - name: Question or discussion
     url: https://github.com/gominimal/pkgs/discussions
     about: For general questions, ideas, or design discussion, please use GitHub Discussions.

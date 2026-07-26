@@ -33,6 +33,7 @@ let version = "8.3" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-3.0-only",
       source_provenance = {
         category = 'GnuProject,
         name = "readline",

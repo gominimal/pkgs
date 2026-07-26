@@ -9,6 +9,9 @@ esac
 export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
+# git 2.55+ builds a Rust component (libgitcore.a) via cargo; remap paths so the
+# static lib is reproducible (matches the C -ffile-prefix-map above).
+export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 
 ./configure --prefix=/usr                   \
             --with-gitconfig=/etc/gitconfig \

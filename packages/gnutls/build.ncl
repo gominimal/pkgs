@@ -11,14 +11,14 @@ let nettle = import "../nettle/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "3.8.9" in
+let version = "3.8.13" in
 {
   name = "gnutls",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-%{version}.tar.xz",
-      sha256 = "69e113d802d1670c4d5ac1b99040b1f2d5c7c05daec5003813c049b5184820ed",
+      sha256 = "ffed8ec1bf09c2426d4f14aae377de4753b53e537d685e604e99a8b16ca9c97e",
       extract = true,
       strip_prefix = "gnutls-%{version}",
     } | Source,
@@ -54,5 +54,13 @@ let version = "3.8.9" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(GPL-3.0-only AND LGPL-2.1-only)",
+      # Vuln-scan identity. GnuProject → pkg:generic/gnu/gnutls, which the
+      # cpe_remap maps to NVD's gnu:gnutls — without this, gnutls is "dark"
+      # (no provenance → never queried → reported 0/0/0 despite real CVEs).
+      source_provenance = {
+        category = 'GnuProject,
+        name = "gnutls",
+      },
     } | Attrs,
 } | BuildSpec

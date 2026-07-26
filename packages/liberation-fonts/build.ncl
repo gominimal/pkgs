@@ -23,6 +23,7 @@ let version = "2.1.5" in
 
   attrs = {
     upstream_version = version,
+    license_spdx = "OFL-1.1",
     source_provenance = {
       category = 'GithubRepo,
       owner = "liberationfonts",

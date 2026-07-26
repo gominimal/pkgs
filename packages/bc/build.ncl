@@ -35,10 +35,12 @@ let version = "7.0.3" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-2-Clause",
       repology_project = "bc-gh",
       source_provenance = {
-        category = 'GnuProject,
-        name = "bc",
+        category = 'GithubRepo,
+        owner = "gavinhoward",
+        repo = "bc",
       },
     } | Attrs,
 

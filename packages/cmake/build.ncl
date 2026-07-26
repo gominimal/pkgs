@@ -14,13 +14,13 @@ let xz = import "../xz/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 
-let version = "4.2.3" in
+let version = "4.4.0" in
 {
   name = "cmake",
   build_deps = [
     {
       url = "gs://minimal-staging-archives/Kitware/CMake/v%{version}.tar.gz",
-      sha256 = "803186734800e1e8b2a242154ba1ed7bda4e77643e77e12477c71f3cdc7ede1d",
+      sha256 = "0dc194a6ade7d0ec474f952dcc923aa43d72eef971b64fb9813f78e6c4e61afc",
       extract = true,
       strip_prefix = "CMake-%{version}",
     } | Source,
@@ -57,6 +57,7 @@ let version = "4.2.3" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-3-Clause",
       repology_project = "cmake",
       source_provenance = {
         category = 'GithubRepo,

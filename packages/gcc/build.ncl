@@ -113,6 +113,7 @@ let version = "15.2.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(GPL-2.0-only AND GPL-3.0-only AND LGPL-2.1-only)",
       repology_project = "gcc",
       source_provenance = {
         category = 'GnuProject,

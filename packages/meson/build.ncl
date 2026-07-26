@@ -4,14 +4,14 @@ let python = import "../python/build.ncl" in
 let setuptools = import "../setuptools/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.10.1" in
+let version = "1.11.2" in
 {
   name = "meson",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/mesonbuild/meson/%{version}.tar.gz",
-      sha256 = "3d4768a76fc63dc4c562edc7892de17b54dfaa7309d148e805b0d763bc085e00",
+      sha256 = "09cc2faedc61262fc62abf57aa6c47c57a8c0730b950609a0711bbaf587bd133",
       extract = true,
       strip_prefix = "meson-%{version}",
     } | Source,
@@ -30,6 +30,7 @@ let version = "1.10.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Apache-2.0",
       repology_project = "meson",
       source_provenance = {
         category = 'GithubRepo,

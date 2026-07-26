@@ -41,6 +41,7 @@ let version = "3.1.4.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "IJG AND BSD-3-Clause AND Zlib",
       source_provenance = {
         category = 'GithubRepo,
         owner = "libjpeg-turbo",

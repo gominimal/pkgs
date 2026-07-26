@@ -5,14 +5,14 @@ let python = import "../python/build.ncl" in
 let py-packaging = import "../py-packaging/build.ncl" in
 let flit-core = import "../flit-core/build.ncl" in
 
-let version = "0.9.1" in
+let version = "0.12.1" in
 {
   name = "pyproject-metadata",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://files.pythonhosted.org/packages/source/p/pyproject-metadata/pyproject_metadata-%{version}.tar.gz",
-      sha256 = "b8b2253dd1b7062b78cf949a115f02ba7fa4114aabe63fa10528e9e1a954a816",
+      sha256 = "8809a4df6fe08279b39a8890669506ed3158e0617855ac9aff098fcbe772ae4c",
       extract = true,
       strip_prefix = "pyproject_metadata-%{version}",
     } | Source,
@@ -35,6 +35,7 @@ let version = "0.9.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT",
       source_provenance = {
         category = 'GithubRepo,
         owner = "pypa",

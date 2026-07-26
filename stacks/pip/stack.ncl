@@ -1,0 +1,18 @@
+let { stack, .. } = import "minimal.ncl" in
+stack {
+  name = "pip",
+
+  runtime_packages = ["python"],
+  build_packages = ["setuptools", "go"], # TODO: 'go' isnt needed, just used to set side-effect of inter
+
+  build_cmd = "pip3 install --target ./build .",
+
+  matches_project_if_any = [
+    {
+      file_regexes."requirements.txt" = "*",
+    },
+    {
+      file_regexes."setup.py" = "*",
+    },
+  ],
+}

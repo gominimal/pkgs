@@ -70,6 +70,7 @@ let version = "25.8.2" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT",
       env_state_wiring = {
         env_var = "NPM_CONFIG_CACHE",
         prefix = "npm-cache",

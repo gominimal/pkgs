@@ -1,9 +1,11 @@
 # chromium-bin
 
 Prebuilt full Chromium browser binary, used in headed mode. amd64 comes
-from Google's Chrome for Testing bucket; arm64 comes from Playwright's
+from Chromium's official snapshot bucket (true Chromium — Chrome for
+Testing is a branded-Chrome build whose ToS forbids redistribution);
+arm64 comes from Playwright's
 own arm64 build hosted on Microsoft's CDN (Google does not publish
-arm64 under CfT).
+arm64 builds at all).
 
 Sibling package: [`chromium-headless-shell-bin`](../chromium-headless-shell-bin/)
 ships the stripped headless-shell variant used by Playwright/Puppeteer

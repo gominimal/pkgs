@@ -14,14 +14,14 @@ let icu = import "../icu/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "18.0" in
+let version = "18.4" in
 {
   name = "postgres",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/postgresql-%{version}.tar.gz",
-      sha256 = "30e97fc1f1594a7226580ea51080d3d883f4a0fb6ff716dbf7ad09e9f7e93ab2",
+      sha256 = "450aa8f2da06c46f8221916e82ae06b04fb1040f8f00643dbf8b7d663caac0b9",
     } | Source,
     base,
     make,
@@ -54,6 +54,7 @@ let version = "18.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "PostgreSQL",
       source_provenance = {
         category = 'GithubRepo,
         owner = "postgres",

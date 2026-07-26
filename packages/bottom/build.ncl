@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.12.3" in
+let version = "0.14.6" in
 {
   name = "bottom",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/ClementTsang/bottom/%{version}.tar.gz",
-      sha256 = "1c70894f0eceb7034075959ff3080cf4706c11d7c012912c24e777abe4e62b70",
+      sha256 = "ec899586164423377ceaf0d15975b8cb4430e47f3c84db0394411048755c1412",
       extract = true,
       strip_prefix = "bottom-%{version}",
     } | Source,
@@ -37,6 +37,7 @@ let version = "0.12.3" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT",
       repology_project = "bottom",
       source_provenance = {
         category = 'GithubRepo,

@@ -10,14 +10,14 @@ let linux_headers = import "../linux_headers/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 
-let version = "8.6.3" in
+let version = "8.8.0" in
 {
   name = "redis",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/redis/redis/%{version}.tar.gz",
-      sha256 = "58d0d1eb49a1ea6c2179659707fec171b1e2e2b8d5157ed2ec59d1d66ad5a654",
+      sha256 = "19736ce6117d90b3df032504c6e5c1ce41667ae47f073281b40d2f274c200a74",
       extract = true,
       strip_prefix = "redis-%{version}",
     } | Source,
@@ -49,6 +49,7 @@ let version = "8.6.3" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "AGPL-3.0-only OR SSPL-1.0",
       repology_project = "redis",
       source_provenance = {
         category = 'GithubRepo,

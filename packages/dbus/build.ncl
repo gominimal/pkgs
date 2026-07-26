@@ -51,5 +51,6 @@ let version = "1.16.2" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(AFL-2.1 OR GPL-2.0-or-later) AND GPL-2.0-or-later",
     } | Attrs,
 } | BuildSpec

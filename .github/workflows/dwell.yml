@@ -1,0 +1,85 @@
+name: dwell
+
+# REPORT-ONLY, NON-BLOCKING. Computes each package's git-derived DWELL in `main`
+# (how long its current version has lived there) and reports which packages have
+# soaked >= the reference minimum (7d, gominimal/inbox#20) and are therefore
+# eligible to promote main -> stable. It writes nothing to the tree, needs no
+# secrets, and MUST NOT be added to branch-protection required checks — this is
+# the "report-only spec first" step of the promotion criteria (inbox#20/#21). It
+# complements #279 (upstream version-age advisory) and #280 (stable closure).
+#
+# Pure git: no `minimal dump`, no network. The dwell walk is a per-package
+# `git log -S` pickaxe over first-parent `main` history.
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "17 6 * * *" # daily "what's promotable to stable" dashboard
+  pull_request:
+    branches: ["stable"] # promotion PRs: per-changed-package dwell (gate preview)
+
+# Least privilege. Posts via GITHUB_STEP_SUMMARY, which needs no write scope.
+permissions:
+  contents: read
+
+concurrency:
+  group: dwell-${{ github.ref }}
+  cancel-in-progress: true # a superseded report run is worthless; drop it
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned to a SHA (matches version-age.yml / aggregate-unstable.yml).
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0 # full history for the version-introduction pickaxe
+
+      - name: Fetch main + stable refs
+        run: |
+          set -uo pipefail
+          # The dwell walk reads origin/main; the comparison reads origin/stable.
+          # Tolerate a fetch error (stay green; the script resolves refs
+          # defensively and no-ops if one is missing) — never block.
+          git fetch --no-tags --quiet origin main stable \
+            || echo "::warning::could not fetch main/stable (non-blocking)"
+
+      - name: Package set
+        id: pkgset
+        env:
+          # SHAs via env per repo convention (zizmor template-injection), not
+          # inline ${{ }} in run:.
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -uo pipefail
+          if [ "$EVENT" = "pull_request" ]; then
+            # Promotion PR into stable: report dwell of each package it changes.
+            git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'packages/*/build.ncl' \
+              | cut -d/ -f2 | sort -u > pkgs.txt || : > pkgs.txt
+            echo "mode=file" >> "$GITHUB_OUTPUT"
+            echo "count=$(wc -l < pkgs.txt | tr -d ' ')" >> "$GITHUB_OUTPUT"
+          else
+            : > pkgs.txt # --all computes the differing set itself
+            echo "mode=all" >> "$GITHUB_OUTPUT"
+            echo "count=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Dwell report
+        if: steps.pkgset.outputs.count != '0'
+        run: |
+          set -uo pipefail
+          # Report-only: the script returns 0 for any verdict; a genuine
+          # programming error is downgraded to a warning so the check never reds.
+          if [ "${{ steps.pkgset.outputs.mode }}" = "file" ]; then
+            python3 .github/scripts/dwell_report.py --packages-file pkgs.txt --min-dwell-days 7 \
+              || echo "::warning::dwell report hit an internal error; see logs (non-blocking)"
+          else
+            python3 .github/scripts/dwell_report.py --all --min-dwell-days 7 \
+              || echo "::warning::dwell report hit an internal error; see logs (non-blocking)"
+          fi
+
+      - name: No package changes
+        if: steps.pkgset.outputs.count == '0'
+        run: echo "No packages/*/build.ncl changed by this promotion PR — nothing to report." >> "$GITHUB_STEP_SUMMARY"

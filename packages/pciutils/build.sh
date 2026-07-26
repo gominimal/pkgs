@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof pciutils-3.14.0.tar.gz
-cd pciutils-3.14.0
+tar -xof pciutils-3.15.0.tar.gz
+cd pciutils-3.15.0
 
 # Avoid conflict with hwdata package
 sed -r '/INSTALL/{/PCI_IDS|update-pciids /d; s/update-pciids.8//}' \

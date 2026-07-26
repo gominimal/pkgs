@@ -13,6 +13,22 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
+# Reproducibility: mkromfs/pack_ps read SOURCE_DATE_EPOCH but then do
+# `if (!buildtime) buildtime = time(NULL)`, which treats the sandbox's
+# SOURCE_DATE_EPOCH=0 (epoch 0 is falsy) as "unset" and falls back to wall-clock
+# time -> non-deterministic gs_romfs_buildtime baked into the gs binary. Only
+# fall back to time() when SOURCE_DATE_EPOCH is genuinely unset.
+#
+# Guard: if a future ghostscript renames the variable or changes this logic,
+# fail loudly rather than silently shipping a non-reproducible binary.
+for src in base/mkromfs.c base/pack_ps.c; do
+  grep -q 'if (!buildtime)' "$src" || {
+    echo "ERROR: 'if (!buildtime)' not found in $src — ghostscript changed its SOURCE_DATE_EPOCH handling; update this patch." >&2
+    exit 1
+  }
+done
+sed -i 's/if (!buildtime)/if (!env_source_date_epoch)/' base/mkromfs.c base/pack_ps.c
+
 ./configure --prefix=/usr \
             --disable-static \
             --with-system-libtiff \
