@@ -88,8 +88,13 @@ if [ -z "$stamp_file" ]; then
     echo "ERROR: no source file embeds 'Compiled at' — tamarin's version banner moved; revisit this patch." >&2
     exit 1
 fi
-# Replace the runIO getCurrentTime splice with the pinned literal.
-sed -i "s|runIO Data\.Time\.getCurrentTime|pure (\"$STAMP\")|g; \
+# Replace the compile-time-clock splice with the pinned literal. Upstream
+# COMPOSES the action rather than naming it bare:
+#     $(stringE =<< runIO (show `fmap` Data.Time.getCurrentTime))
+# so the first pattern matches the whole parenthesised argument. The two bare
+# forms are kept in case upstream simplifies back to them.
+sed -i "s|runIO ([^)]*getCurrentTime[^)]*)|pure (\"$STAMP\")|g; \
+        s|runIO Data\.Time\.getCurrentTime|pure (\"$STAMP\")|g; \
         s|runIO getCurrentTime|pure (\"$STAMP\")|g" "$stamp_file"
 if grep -q 'getCurrentTime' "$stamp_file"; then
     echo "ERROR: tamarin compile-time-clock patch did not apply in $stamp_file (splice shape changed)." >&2
