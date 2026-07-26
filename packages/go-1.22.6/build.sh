@@ -135,7 +135,7 @@ GOUT="$(cd "${GATE}" && GOROOT="${DEST}" GOTOOLCHAIN=local GOPATH="${GATE}/gp" G
 grc=$?
 set -e
 if [ "${GOUT}" = "GO-1226-GATE:21" ]; then
-  echo "GO1226-GATE: PASS (go-1.4-rooted Go 1.17.13 compiled AND RAN a stdlib program; got '${GOUT}')" >&2
+  echo "GO1226-GATE: PASS (go-1.20.14-rooted Go 1.22.6 compiled AND RAN a stdlib program; got '${GOUT}')" >&2
 else
   echo "GO1226-GATE: FAIL (rc=${grc}, got '${GOUT}', want 'GO-1713-GATE:21'); tail:" >&2
   tail -20 "${GATE}/err" >&2 || true
