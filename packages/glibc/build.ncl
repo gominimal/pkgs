@@ -47,7 +47,7 @@ let all_outputs = {
 }
 in
 
-let version = "2.43" in
+let version = "2.44" in
 {
   name = "glibc",
   build_deps = [
@@ -55,7 +55,7 @@ let version = "2.43" in
     {
       # Downloadable from: https://ftp.gnu.org/gnu/glibc/
       url = "gs://minimal-staging-archives/glibc-%{version}.tar.xz",
-      sha256 = "d9c86c6b5dbddb43a3e08270c5844fc5177d19442cf5b8df4be7c07cd5fa3831"
+      sha256 = "37f600f2bef3c5e8300147059568b2a2e40a7ad6ccc65ce942556d49429cc667"
     } | Source,
     # base
     bash,
