@@ -10,14 +10,14 @@ let linux_headers = import "../linux_headers/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 
-let version = "8.8.0" in
+let version = "8.8.1" in
 {
   name = "redis",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/redis/redis/%{version}.tar.gz",
-      sha256 = "19736ce6117d90b3df032504c6e5c1ce41667ae47f073281b40d2f274c200a74",
+      sha256 = "56008a7e9c87ed4ec5ce13032ff8a685ffff944276c2a993024ce805df8338e2",
       extract = true,
       strip_prefix = "redis-%{version}",
     } | Source,
