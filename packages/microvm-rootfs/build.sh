@@ -1,29 +1,66 @@
 #!/bin/bash
 # Assemble a libkrun microVM guest userland as a read-only ext4 image.
 #
-# The build sandbox hardlinks this package's runtime closure (base + git +
-# iproute2 + e2fsprogs + util-linux + their libs) into the sandbox root at
-# standard paths. We snapshot the userland into a staging tree, prune build-only
-# bulk, and pack an ext4 image with mke2fs (from the e2fsprogs runtime closure,
-# on PATH). The image is loaded as a virtio-blk block device (/dev/vda); the
-# guest minimald ships as the initramfs pid-1, mounts this image, and chroots
-# into it, so the image itself carries no standalone init. e2fsprogs (mkfs.ext4)
-# and util-linux (fstrim) ship in the image so the guest can format and reclaim
-# the per-VM writable volume (/dev/vdb) mounted at /var/lib/minimal.
+# Everything in the image comes from the pinned upstream Alpine artifacts
+# build.ncl fetches into this directory: the minirootfs tarball (musl libc +
+# busybox + baselayout) unpacked as the base, overlaid with the sha256-pinned
+# closure of .apk files for the tools busybox does not cover. This build no
+# longer snapshots the sandbox root, so none of this repo's packages — and no
+# glibc — reach the image.
+#
+# The image is packed with mke2fs from the e2fsprogs *build* dep (on PATH) and
+# loaded as a virtio-blk block device (/dev/vda); the guest minimald ships as
+# the initramfs pid-1, mounts this image and chroots into it, so the image
+# itself carries no init and no minimald. e2fsprogs (mkfs.ext4) and fstrim ship
+# in the image so the guest can format and reclaim the per-VM writable volume
+# (/dev/vdb) mounted at /var/lib/minimal.
 set -euo pipefail
 
 STAGE="$(pwd)/stage"
 rm -rf "$STAGE"
 mkdir -p "$STAGE"
 
-# Snapshot the runtime userland composed into this build sandbox.
-for d in usr bin sbin lib lib64 etc; do
-  if [ -e "/$d" ]; then
-    cp -a "/$d" "$STAGE/"
-  fi
-done
+# Base userland. The minirootfs tarball is a complete rootfs with no top-level
+# directory, so it unpacks straight into the staging root. Its own paths carry
+# the modes the image needs (/tmp 1777, /root 0700).
+shopt -s nullglob
+minirootfs=(alpine-minirootfs-*.tar.gz)
+if [ "${#minirootfs[@]}" -ne 1 ]; then
+  echo "ERROR: expected exactly 1 minirootfs tarball, found ${#minirootfs[@]}: ${minirootfs[*]}" >&2
+  exit 1
+fi
+tar -xzf "${minirootfs[0]}" -C "$STAGE"
 
-mkdir -p "$STAGE/bin" "$STAGE/sbin"
+# Overlay the pinned .apk closure. An .apk is a gzipped tar, so it is unpacked
+# with tar rather than apk — the guest root is read-only and nothing in the
+# closure has an install script to run (the busybox applet symlinks and the CA
+# bundle that do need one are already applied in the minirootfs). Unpack via a
+# scratch dir so apk's own metadata entries — dotfiles at the archive root
+# (.PKGINFO, .SIGN.*, .pre-/.post-install, .trigger) — can be dropped before
+# the payload is merged into the staging tree.
+#
+# The merge goes through tar rather than cp so that a destination entry is
+# replaced rather than written through: several of these packages ship a real
+# binary where the minirootfs has a busybox applet symlink (/sbin/ip and
+# /sbin/fstrim point at /bin/busybox), and copying onto the symlink would
+# follow it and overwrite busybox itself.
+#
+# --warning=no-unknown-keyword: apk records per-file checksums in a pax header
+# keyword tar does not know, and would otherwise warn about once per file.
+apks=(*.apk)
+if [ "${#apks[@]}" -eq 0 ]; then
+  echo "ERROR: no .apk sources in $(pwd)" >&2
+  exit 1
+fi
+SCRATCH="$(pwd)/apk-payload"
+for a in "${apks[@]}"; do
+  rm -rf "$SCRATCH"
+  mkdir -p "$SCRATCH"
+  tar --warning=no-unknown-keyword -xzf "$a" -C "$SCRATCH"
+  find "$SCRATCH" -mindepth 1 -maxdepth 1 -name '.*' -exec rm -rf {} +
+  tar -cf - -C "$SCRATCH" . | tar -xf - -C "$STAGE"
+done
+rm -rf "$SCRATCH"
 
 # Per-VM writable volume mountpoint. The guest minimald mounts /dev/vdb here on
 # first boot (after formatting it with mkfs.ext4). The root image is mounted
@@ -31,57 +68,47 @@ mkdir -p "$STAGE/bin" "$STAGE/sbin"
 # the image or the mount fails with ENOENT/EROFS.
 mkdir -p "$STAGE/var/lib/minimal"
 
-# Kernel mountpoints. devtmpfs auto-mounts on /dev at boot (CONFIG_DEVTMPFS_MOUNT)
-# — without the directory it fails with "devtmpfs: error mounting -2" and the
-# guest has no /dev/vsock node. /proc and /sys are conventional mountpoints.
-mkdir -p "$STAGE/dev" "$STAGE/proc" "$STAGE/sys" "$STAGE/run" "$STAGE/tmp"
-chmod 1777 "$STAGE/tmp"
+# bash's loadable builtins (~2.7 MB) are only reachable via `enable -f`, which
+# nothing in the guest uses. This is the one payload the .apk closure ships that
+# the guest does not need: Alpine splits headers, static libs, man pages and
+# docs into -dev/-doc subpackages that are not in the closure at all, so there
+# is nothing else to prune.
+rm -rf "$STAGE/usr/lib/bash"
 
-# Guarantee /bin/sh: the in-guest minimald chroots in and runs /bin/bash, but a
-# /bin/sh is conventional for any script the session shells out to.
-if [ ! -e "$STAGE/bin/sh" ]; then
-  if [ -e "$STAGE/bin/bash" ]; then
-    ln -sf bash "$STAGE/bin/sh"
-  elif [ -e "$STAGE/usr/bin/bash" ]; then
-    ln -sf ../usr/bin/bash "$STAGE/bin/sh"
-  fi
-fi
-
-# libblkid / libuuid canonicalization. e2fsprogs and util-linux both ship a
-# libblkid.so.1 and libuuid.so.1 with the same soname; the staging composition
-# resolves them to e2fsprogs's older, unversioned forks. util-linux's libmount
-# then loads those and warns "libblkid.so.1: no version information available"
-# on every fstrim/mount/blkid. Repoint the sonames at util-linux's versioned
-# libs (an ABI superset — e2fsprogs's own mke2fs/e2fsck link them fine) and drop
-# the e2fsprogs forks. The util-linux targets are version-specific filenames;
-# fail loudly if a package bump renames them so this can't silently regress.
-ul_blkid=libblkid.so.1.1.0
-ul_uuid=libuuid.so.1.3.0
-for f in "$ul_blkid" "$ul_uuid"; do
-  [ -e "$STAGE/usr/lib/$f" ] || {
-    echo "ERROR: util-linux lib usr/lib/$f missing — did util-linux change soname?" >&2
+# Assert the guest tools landed where the boot contract expects them, so a
+# silently-empty .apk or an upstream path move fails here rather than at guest
+# boot. One entry per root package in build.ncl, plus busybox from the
+# minirootfs; the musl loader is checked separately below.
+for f in \
+  bin/busybox \
+  bin/bash \
+  bin/sh \
+  usr/bin/git \
+  sbin/ip \
+  sbin/mkfs.ext4 \
+  sbin/fstrim \
+  usr/bin/nsenter; do
+  # -L as well as -e: /bin/sh is an absolute symlink to /bin/busybox, which
+  # only resolves once the image is the root.
+  [ -e "$STAGE/$f" ] || [ -L "$STAGE/$f" ] || {
+    echo "ERROR: expected /$f in the staged rootfs" >&2
     exit 1
   }
 done
-rm -f "$STAGE"/usr/lib/libblkid.so.1.0 "$STAGE"/usr/lib/libuuid.so.1.2
-ln -sf "$ul_blkid" "$STAGE/usr/lib/libblkid.so.1"
-ln -sf "$ul_uuid" "$STAGE/usr/lib/libuuid.so.1"
-
-# Prune build-time-only bulk the guest never needs: headers, static libs,
-# docs/man, and especially glibc's locale archive (the bulk of the closure).
-# The C locale fallback is sufficient for the guest workload.
-# `|| true` is scoped to `find` only — a failure in `cd` or `rm -rf` must still
-# fail the build (set -euo pipefail), while `find`'s noncritical errors are ok.
-( cd "$STAGE" && \
-  rm -rf usr/include usr/share/man usr/share/doc usr/share/info \
-         usr/share/locale usr/share/i18n usr/lib/locale usr/lib/pkgconfig \
-         usr/share/aclocal usr/share/gtk-doc usr/share/bash-completion \
-         usr/share/gdb && \
-  { find . \( -name '*.a' -o -name '*.la' -o -name '*.o' \) -delete 2>/dev/null || true; } )
+# musl's loader is the only interpreter in the image; if it is missing, or a
+# glibc loader appears, the image is not what this package claims to build.
+compgen -G "$STAGE/lib/ld-musl-*.so.1" >/dev/null || {
+  echo "ERROR: no musl loader in the staged rootfs" >&2
+  exit 1
+}
+if [ -e "$STAGE/lib64" ] || compgen -G "$STAGE/lib/ld-linux*" >/dev/null; then
+  echo "ERROR: glibc loader in the staged rootfs — a glibc dep leaked in" >&2
+  exit 1
+fi
 
 # Fail loudly (not silently with an empty output) if the image tool is absent.
 command -v mke2fs >/dev/null || {
-  echo "ERROR: mke2fs not found on PATH ($PATH) — is e2fsprogs in runtime_deps?" >&2
+  echo "ERROR: mke2fs not found on PATH ($PATH) — is e2fsprogs in build_deps?" >&2
   exit 1
 }
 
@@ -113,4 +140,4 @@ mke2fs -q -t ext4 -O ^has_journal \
   ls -la "$OUT" >&2 || true
   exit 1
 }
-echo "built rootfs.img: $(wc -c < "$OUT/rootfs.img") bytes"
+echo "built rootfs.img: $(wc -c < "$OUT/rootfs.img") bytes (staged tree ${KB} KiB)"
