@@ -59,6 +59,12 @@ let version = "1.95.0" in
     toolchain,
   ],
   runtime_deps = [
+    # libssh2 must be a RUNTIME dep, not only a build dep: the shipped `cargo` binary
+    # carries a DT_NEEDED on libssh2.so.1, so every consumer that runs cargo needs the
+    # .so present. Without it cargo dies before it starts:
+    #   cargo: error while loading shared libraries: libssh2.so.1: cannot open shared object file
+    # (observed on fd@10.3.0; blocks cargo packages generally).
+    libssh2,
     libffi,
     llvm,
     openssl,
