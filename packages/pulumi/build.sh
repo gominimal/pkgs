@@ -10,6 +10,7 @@ if [ -d /goproxy ]; then
 fi
 
 export GOROOT=/usr/go
+export GOTOOLCHAIN=local
 
 LDFLAGS="-buildid= -w -s -X 'github.com/pulumi/pulumi/sdk/v3/go/common/version.Version=${MINIMAL_ARG_VERSION}'"
 

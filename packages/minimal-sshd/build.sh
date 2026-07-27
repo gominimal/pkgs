@@ -10,6 +10,7 @@ if [ -d /goproxy ]; then
 fi
 
 export GOROOT=/usr/go
+export GOTOOLCHAIN=local
 
 go mod tidy
 CGO_ENABLED=0 go build -trimpath -ldflags "-buildid= -w -s" -o minimal-sshd .

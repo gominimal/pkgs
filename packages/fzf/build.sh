@@ -13,6 +13,7 @@ export FZF_VERSION=$MINIMAL_ARG_VERSION
 export FZF_REVISION=tarball
 
 export GOROOT=/usr/go
+export GOTOOLCHAIN=local
 
 go build -trimpath -ldflags "-buildid= -s -w -X main.version=${FZF_VERSION} -X main.revision=${FZF_REVISION}" -o bin/fzf
 

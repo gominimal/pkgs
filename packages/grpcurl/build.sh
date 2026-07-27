@@ -10,5 +10,6 @@ if [ -d /goproxy ]; then
 fi
 
 export GOROOT=/usr/go
+export GOTOOLCHAIN=local
 go build -trimpath -ldflags="-buildid=" -o 'grpcurl' ./cmd/grpcurl
 install -D -m 0755 grpcurl "$OUTPUT_DIR/usr/bin/grpcurl"

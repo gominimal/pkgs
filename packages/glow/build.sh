@@ -10,6 +10,7 @@ if [ -d /goproxy ]; then
 fi
 
 export GOROOT=/usr/go
+export GOTOOLCHAIN=local
 
 go build -trimpath -buildvcs=false -ldflags="-buildid=" -o glow
 install -D -m 0755 glow "$OUTPUT_DIR/usr/bin/glow"

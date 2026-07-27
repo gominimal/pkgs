@@ -10,6 +10,7 @@ if [ -d /goproxy ]; then
 fi
 
 export GOROOT=/usr/go
+export GOTOOLCHAIN=local
 
 # Inject version via the ldflag path crane's own .goreleaser.yml uses,
 # so `crane version` reports the tag we built from rather than the

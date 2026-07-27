@@ -13,6 +13,7 @@ fi
 # build.ncl — no explicit `cd` needed.
 
 export GOROOT=/usr/go
+export GOTOOLCHAIN=local
 # Static binary so the result has no glibc-version coupling beyond
 # what the runtime_dep declares; matches kubectl's choice.
 export CGO_ENABLED=0

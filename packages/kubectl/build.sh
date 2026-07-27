@@ -10,6 +10,7 @@ if [ -d /goproxy ]; then
 fi
 
 export GOROOT=/usr/go
+export GOTOOLCHAIN=local
 export CGO_ENABLED=0
 export GONOSUMCHECK=*
 export GONOSUMDB=*

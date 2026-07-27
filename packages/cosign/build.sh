@@ -10,6 +10,7 @@ if [ -d /goproxy ]; then
 fi
 
 export GOROOT=/usr/go
+export GOTOOLCHAIN=local
 
 go build -trimpath -ldflags "-buildid= -w -s -X 'sigs.k8s.io/release-utils/version.gitVersion=v${MINIMAL_ARG_VERSION}'" -o cosign ./cmd/cosign
 

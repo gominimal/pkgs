@@ -11,6 +11,7 @@ fi
 
 
 export GOROOT=/usr/go
+export GOTOOLCHAIN=local
 go build -trimpath -o 'age' -ldflags "-buildid= -X main.Version=$MINIMAL_ARG_VERSION" ./cmd/age
 install -D -m 0755 age "$OUTPUT_DIR/usr/bin/age"
 

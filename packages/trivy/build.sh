@@ -10,6 +10,7 @@ if [ -d /goproxy ]; then
 fi
 
 export GOROOT=/usr/go
+export GOTOOLCHAIN=local
 export GOEXPERIMENT=jsonv2
 export CGO_LDFLAGS="-fuse-ld=bfd"
 

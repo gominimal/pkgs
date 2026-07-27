@@ -10,6 +10,7 @@ if [ -d /goproxy ]; then
 fi
 
 export GOROOT=/usr/go
+export GOTOOLCHAIN=local
 
 go build -trimpath -ldflags="-buildid=" -o mermaid-ascii ./
 install -D -m 0755 mermaid-ascii "$OUTPUT_DIR/usr/bin/mermaid-ascii"

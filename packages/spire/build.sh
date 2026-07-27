@@ -10,6 +10,7 @@ if [ -d /goproxy ]; then
 fi
 
 export GOROOT=/usr/go
+export GOTOOLCHAIN=local
 
 LDFLAGS="-buildid= -s -w -X github.com/spiffe/spire/pkg/common/version.gittag=${MINIMAL_ARG_VERSION}"
 
