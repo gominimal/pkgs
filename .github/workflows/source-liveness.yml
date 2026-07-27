@@ -1,0 +1,59 @@
+name: source-liveness
+
+# REPORT-ONLY, NON-BLOCKING. Probe the DIRECT-UPSTREAM source URLs (the ones
+# not served from gs://minimal-staging-archives) and report the ones that have
+# gone away — 404/410. gominimal/pkgmgr-rs#447. MUST NOT be a
+# branch-protection required check.
+#
+# Why a scheduled sweep and not a PR check: `pkgmgr update` only touches
+# packages it is attempting to bump, so a package sitting at the latest version
+# never exercises its source URL. Upstream can delete a tarball and the first
+# symptom is a build failure during a security bump — exactly when you need the
+# source most. This is the same "drift happens independently of any PR" logic
+# that gives corresponding-source its weekly cron.
+#
+# Schedule-only on purpose: PR-triggered probing of arbitrary upstream hosts
+# would add per-PR latency and rate-limit exposure for a signal that changes on
+# upstream's timescale, not ours.
+#
+# Network: unauthenticated HTTPS HEADs against hosts named in tracked build.ncl
+# files. No secrets, no downloads. See the script's docstring for why a non-404
+# is reported as "unknown" rather than as a fault — a runner's egress differs
+# from the build sandbox's, and conflating the two makes the report noise.
+#
+# Eighth sibling of the report-only check family.
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Probe at most N URLs (0 = no cap)"
+        required: false
+        default: "0"
+  schedule:
+    - cron: "17 6 * * 2" # weekly; Tuesday, offset from the Monday siblings
+
+permissions:
+  contents: read
+
+concurrency:
+  group: source-liveness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned to a SHA (matches the sibling report-only workflows).
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Source-liveness report
+        env:
+          # Via env per repo convention (zizmor template-injection).
+          LIMIT: ${{ inputs.limit || '0' }}
+        run: |
+          set -uo pipefail
+          # Report-only: a genuine error is downgraded to a warning so the
+          # check never reds.
+          python3 .github/scripts/source_liveness_report.py --limit "$LIMIT" \
+            || echo "::warning::source-liveness report hit an internal error; see logs (non-blocking)"
