@@ -13,7 +13,7 @@ let version = "1.25.0" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/ngtcp2/ngtcp2/releases/download/v1.25.0/ngtcp2-%{version}.tar.gz",
+      url = "https://github.com/ngtcp2/ngtcp2/releases/download/v%{version}/ngtcp2-%{version}.tar.gz",
       sha256 = "1c0843076528a87b65e9a9d455100941f4cb65d44f96c5da6ae56df146043955",
       extract = true,
       strip_prefix = "ngtcp2-%{version}",

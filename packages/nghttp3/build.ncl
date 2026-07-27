@@ -11,7 +11,7 @@ let version = "1.18.0" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/ngtcp2/nghttp3/releases/download/v1.18.0/nghttp3-%{version}.tar.gz",
+      url = "https://github.com/ngtcp2/nghttp3/releases/download/v%{version}/nghttp3-%{version}.tar.gz",
       sha256 = "2812e9c06583fa24c8dc46bdb5291310a69196352ceaca8fbe98106ff36ae7d8",
       extract = true,
       strip_prefix = "nghttp3-%{version}",
