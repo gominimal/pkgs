@@ -11,7 +11,7 @@ let version = "3.2.9" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/cython/cython/releases/download/3.2.9/cython-%{version}.tar.gz",
+      url = "https://github.com/cython/cython/releases/download/%{version}/cython-%{version}.tar.gz",
       sha256 = "d249c9022ab13286b17bd66f30609e800c5f95efeecb06168990c7a66cecde6c",
       extract = true,
       strip_prefix = "cython-%{version}",
