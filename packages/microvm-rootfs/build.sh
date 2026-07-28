@@ -58,7 +58,7 @@ for a in "${apks[@]}"; do
   mkdir -p "$SCRATCH"
   tar --warning=no-unknown-keyword -xzf "$a" -C "$SCRATCH"
   find "$SCRATCH" -mindepth 1 -maxdepth 1 -name '.*' -exec rm -rf {} +
-  tar -cf - -C "$SCRATCH" . | tar -xf - -C "$STAGE"
+  tar -cf - -C "$SCRATCH" . | tar -xof - -C "$STAGE"
 done
 rm -rf "$SCRATCH"
 
