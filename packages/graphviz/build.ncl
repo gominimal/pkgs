@@ -21,14 +21,14 @@ let libwebp = import "../libwebp/build.ncl" in
 let pango = import "../pango/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "14.1.1" in
+let version = "15.1.0" in
 {
   name = "graphviz",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/graphviz-%{version}.tar.bz2",
-      sha256 = "975f4b9a7a7a7b614900ecd12919ccbd36a680818cc6fc527389b93e919410f0",
+      url = "gs://minimal-staging-archives/graphviz-%{version}.tar.xz",
+      sha256 = "4c44f9f6654d39638db7cdb6a088735117469015299298d82087b24dd4042b16",
       extract = true,
       strip_prefix = "graphviz-%{version}",
     } | Source,
