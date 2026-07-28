@@ -27,20 +27,21 @@ let version = "15.1.0" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/graphviz-%{version}.tar.xz",
-      sha256 = "4c44f9f6654d39638db7cdb6a088735117469015299298d82087b24dd4042b16",
-      extract = true,
-      # No `strip_prefix`. graphviz 15.1.0 added a HARDLINK
-      # (redhat/graphviz.spec.rhel.in -> redhat/graphviz.spec.fedora.in), and
-      # the prefix-stripping extraction path cannot place one: it strips the
-      # prefix from the entry's destination but passes the link TARGET through
-      # verbatim, still carrying `graphviz-15.1.0/`, so the link resolves
-      # outside the stripped tree and fails with ENOENT. The no-strip path uses
-      # whole-archive unpack, which resolves link targets against the
-      # destination root and handles this correctly.
+      # The GitLab REPO archive, not the release-registry tarball.
       #
-      # So: extract with the prefix intact and `cd` into it from build.sh, the
-      # same shape bash/binutils/coreutils already use.
+      # graphviz 15.x stopped shipping CMake build files in its release
+      # tarball: `graphviz-15.1.0.tar.xz` is an autotools `make dist` output
+      # with ZERO CMakeLists.txt in it, while this recipe is CMake-based
+      # (`sed -i lib/CMakeLists.txt`, `cmake ...`). 14.1.1's tarball DID
+      # include them, so this is an upstream packaging change.
+      #
+      # The repo archive carries all 78 CMakeLists.txt — and, incidentally,
+      # none of the hardlink the dist tarball added, which the prefix-strip
+      # extraction path can't place. One artifact fixes both.
+      url = "https://gitlab.com/graphviz/graphviz/-/archive/%{version}/graphviz-%{version}.tar.gz",
+      sha256 = "cc673e3eb9013f40761590b2b071c0fb89ad5c5d694e25d4e1238c74df86c697",
+      extract = true,
+      strip_prefix = "graphviz-%{version}",
     } | Source,
     base,
     bison,
