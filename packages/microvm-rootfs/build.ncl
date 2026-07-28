@@ -3,10 +3,20 @@ let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let e2fsprogs = import "../e2fsprogs/build.ncl" in
 
-# Pinned upstream Alpine release the guest userland is assembled from. To bump:
-# raise both, then refresh every sha256 below from the same branch — the .apk
-# set is version-locked to that branch's APKINDEX, so the closure has to be
-# re-resolved as a whole, not package by package.
+# Pinned upstream Alpine release the guest userland is assembled from.
+#
+# Fetched from the staging mirror, not dl-cdn.alpinelinux.org: a branch's
+# /main/ directory only ever holds each package's *current* build, so the
+# moment Alpine rebuilds one of these (bash-5.3.9-r1 -> -r2) the pinned
+# filename 404s. Upstream paths map onto the mirror one-to-one —
+# https://dl-cdn.alpinelinux.org/alpine/<branch>/... is mirrored at
+# gs://minimal-staging-archives/alpine/<branch>/... — so the source of every
+# object below is its own key.
+#
+# To bump: raise both versions, re-resolve the whole closure against the new
+# branch's APKINDEX (it is version-locked to that branch, so it moves as a
+# unit, not package by package), mirror the new objects, then refresh every
+# sha256 below.
 let alpine_branch = "v3.24" in
 let alpine_release = "3.24.1" in
 
@@ -22,7 +32,7 @@ in
 # picks one.
 let apk = fun pkg arm64_sha256 amd64_sha256 =>
   {
-    url = "https://dl-cdn.alpinelinux.org/alpine/%{alpine_branch}/main/%{alpine_arch}/%{pkg}.apk",
+    url = "gs://minimal-staging-archives/alpine/%{alpine_branch}/main/%{alpine_arch}/%{pkg}.apk",
     sha256 = (
       match {
         { arch = 'Arm64, .. } => arm64_sha256,
@@ -62,7 +72,7 @@ in
     # applets), and alpine-baselayout's /etc (passwd, group, hosts) plus the
     # /dev, /proc, /sys, /run, /tmp and /var/lib mountpoints.
     {
-      url = "https://dl-cdn.alpinelinux.org/alpine/%{alpine_branch}/releases/%{alpine_arch}/alpine-minirootfs-%{alpine_release}-%{alpine_arch}.tar.gz",
+      url = "gs://minimal-staging-archives/alpine/%{alpine_branch}/releases/%{alpine_arch}/alpine-minirootfs-%{alpine_release}-%{alpine_arch}.tar.gz",
       sha256 = (
         match {
           { arch = 'Arm64, .. } => "f55a90f69052c5bd6f92cb09a8f47065970830b194c917a006fb94028e721259",
