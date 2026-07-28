@@ -1,6 +1,10 @@
 #!/bin/sh
 set -e
 
+# The source is extracted WITHOUT strip_prefix (see build.ncl), so enter the
+# versioned directory first.
+cd "graphviz-${MINIMAL_ARG_VERSION}"
+
 sed '/ORIGIN/d' -i lib/CMakeLists.txt
 
 mkdir build && cd build
