@@ -60,6 +60,12 @@ let version = "21.1.8" in
 
   attrs = {
     upstream_version = version,
+    source_provenance = {
+      category = 'GithubRepo,
+      owner = "llvm",
+      repo = "llvm-project",
+    },
+    license_spdx = "Apache-2.0",
     build_cost_multiple = 6,
   },
 } | BuildSpec

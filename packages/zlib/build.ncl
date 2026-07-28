@@ -66,6 +66,7 @@ let version = "1.3.2" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Zlib",
       source_provenance = {
         category = 'GithubRepo,
         owner = "madler",

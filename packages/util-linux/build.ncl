@@ -4,14 +4,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.42.1" in
+let version = "2.42.2" in
 {
   name = "util-linux",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/util-linux-%{version}.tar.xz",
-      sha256 = "82e9158eb12a9b0b569d84e1687fed9dd18fe89ccd8ef5ac3427218a7c0d7f7f"
+      sha256 = "03a05d3adf9602ef128f2da05b84b3205ce60c351e5737c0370f74000679ce8a"
     } | Source,
     base-bootstrap,
     make,
@@ -30,6 +30,11 @@ let version = "2.42.1" in
     bins = { glob = "usr/bin/*" } | OutputBin,
     sbins = { glob = "usr/sbin/*" } | OutputBin,
 
+    # Granular single-tool output so a consumer can `subsetOf util-linux
+    # ["nsenter"]` (just the binary + glibc) instead of pulling the whole
+    # ~18 MB toolset. nsenter links only libc, so no extra outputs are needed.
+    nsenter = { glob = "usr/bin/nsenter" } | OutputBin,
+
     libblkid = { glob = "usr/lib/libblkid*.so*" } | OutputLib,
     libfdisk = { glob = "usr/lib/libfdisk*.so*" } | OutputLib,
     libmount = { glob = "usr/lib/libmount*.so*" } | OutputLib,
@@ -46,6 +51,7 @@ let version = "2.42.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-2.0-or-later AND LGPL-2.1-or-later AND BSD-3-Clause",
       source_provenance = {
         category = 'GithubRepo,
         owner = "util-linux",

@@ -32,5 +32,6 @@ let version = "1.17.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "X11-swapped",
     } | Attrs,
 } | BuildSpec

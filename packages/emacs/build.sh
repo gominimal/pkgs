@@ -13,6 +13,16 @@ export CXXFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -std=gnu++17 -ffile-p
 export LDFLAGS="-Wl,--build-id=none"
 export ARFLAGS=Drc
 
+# tree-sitter 0.26 renamed ts_language_version() -> ts_language_abi_version()
+# and removed the old declaration from api.h. Emacs 30.2's treesit.c still calls
+# the old name, so the build dies at src/treesit.c:749 with
+#   error: implicit declaration of function 'ts_language_version';
+#          did you mean 'ts_language_abi_version'?
+# Rename at the call sites. Word-anchored so it can't touch an already-correct
+# ts_language_abi_version, which makes it a no-op if Emacs upstream fixes this
+# in a later version bump.
+sed -i 's/\bts_language_version\b/ts_language_abi_version/g' src/treesit.c
+
 # Build LD_PRELOAD shim that makes getrandom() and /dev/urandom reads
 # deterministic, fixing Emacs hash table seeding and thus .elc/.pdmp output.
 gcc -shared -fPIC -O2 -ldl -o fixrand.so fixrand.c

@@ -104,6 +104,7 @@ let version = "10.47" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-3-Clause WITH PCRE2-exception",
       repology_project = "pcre2",
       source_provenance = {
         category = 'GithubRepo,

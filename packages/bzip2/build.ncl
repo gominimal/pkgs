@@ -68,6 +68,7 @@ let version = "1.0.8" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "bzip2-1.0.6",
       source_provenance = {
         category = 'GithubRepo,
         owner = "libarchive",

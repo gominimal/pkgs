@@ -38,4 +38,5 @@ let version = "0.46.4" in
     includes = { glob = "usr/include/**" } | OutputData,
   },
   attrs.upstream_version = version,
+  attrs.license_spdx = "MIT",
 } | BuildSpec

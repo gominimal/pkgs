@@ -44,3 +44,6 @@ Full text: [ICLA](./legal/ICLA.md) · [CCLA](./legal/CCLA.md)
 
 This project is licensed under the [Apache License Version 2.0](LICENSE)
 - see the [LICENSE](LICENSE) file for details.
+
+The *packages built from these recipes* remain under their own upstream
+licenses — see [LICENSING.md](LICENSING.md) for how the two relate.

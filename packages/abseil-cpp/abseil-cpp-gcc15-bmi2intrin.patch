@@ -1,0 +1,26 @@
+From 8878695bde809ff5c4e3aaf40db809e78cdbdbb5 Mon Sep 17 00:00:00 2001
+From: minimal <pkgs@minimal.dev>
+Date: Fri, 10 Jul 2026 15:26:52 -0700
+Subject: [PATCH] abseil: use <x86intrin.h> not <bmi2intrin.h> (gcc-15 rejects
+ the direct include under -march=x86-64-v3)
+
+---
+ absl/container/internal/raw_hash_set.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/absl/container/internal/raw_hash_set.h b/absl/container/internal/raw_hash_set.h
+index a50a488..f23cd58 100644
+--- a/absl/container/internal/raw_hash_set.h
++++ b/absl/container/internal/raw_hash_set.h
+@@ -226,7 +226,7 @@
+ #endif
+ 
+ #ifdef __BMI2__
+-#include <bmi2intrin.h>
++#include <x86intrin.h>
+ #endif  // __BMI2__
+ 
+ namespace absl {
+-- 
+2.50.1 (Apple Git-155)
+

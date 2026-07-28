@@ -14,7 +14,7 @@ export CXXFLAGS="${CFLAGS}"
             --sysconfdir=/etc    \
             --localstatedir=/var \
             --disable-docs       \
-            --docdir=/usr/share/doc/fontconfig-2.17.1
+            --docdir=/usr/share/doc/fontconfig-2.18.2
 
 make -j$(nproc)
 make DESTDIR="$OUTPUT_DIR" install

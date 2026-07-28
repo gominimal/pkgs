@@ -2,7 +2,7 @@
 set -e
 
 tar -xof sqlite-autoconf-3500400.tar.gz
-cd sqlite-autoconf-3500400
+cd sqlite-autoconf-3530300
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;

@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.42.4" in
+let version = "1.49.0" in
 {
   name = "syft",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/anchore/syft/v%{version}.tar.gz",
-      sha256 = "8e84d456e253149d0e0c5a381a1cc4121a0e169c0608c73f99eed9ea56ed036d",
+      sha256 = "7fa1d225a50be61a17c86a0d523412d60b3d8678a1864839217769d3472a8700",
       extract = true,
       strip_prefix = "syft-%{version}",
     } | Source,
@@ -42,6 +42,7 @@ let version = "1.42.4" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Apache-2.0",
       repology_project = "syft",
       source_provenance = {
         category = 'GithubRepo,

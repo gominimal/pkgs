@@ -5,7 +5,7 @@ let python = import "../python/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 
-let version = "568.0.0" in
+let version = "577.0.0" in
 # Google's per-version GCS bucket; explicit per-version path. The
 # previous rapid-channel URL
 # (dl.google.com/dl/cloudsdk/channels/rapid/downloads) has the
@@ -16,8 +16,8 @@ let version = "568.0.0" in
 let dl_base = "https://storage.googleapis.com/cloud-sdk-release" in
 
 let { amd64_sha256, arm64_sha256 } = {
-  amd64_sha256 = "ee39a260f5d30486c654be018b0e99f396a9c061617d206becaca4456e84ff94",
-  arm64_sha256 = "0b31153517665f12a664675b48571938f0beeec46450485e966a4dce7b125cf6",
+  amd64_sha256 = "0b32d330446ce7b0f57f253e7efab4636c18fb1f87a3ac31c6c3f2a2a697525e",
+  arm64_sha256 = "dbac26bdf80d72b5d13538e3a215dcbfe2781edfd2d69723effbeef3839cffb8",
 }
 in
 
@@ -74,6 +74,7 @@ in
   attrs =
     {
       upstream_version = version,
+      binary_from = "https://storage.googleapis.com/cloud-sdk-release",
       # `Pixar` + `Python-2.0.1` from auto-scan were false positives:
       # `Pixar` matched a docstring in pygments' USD lexer (the file
       # itself is BSD-licensed; "Pixar" is the format it parses), and

@@ -4,14 +4,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.4.1" in
+let version = "1.4.2" in
 {
   name = "libunistring",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/libunistring-%{version}.tar.xz",
-      sha256 = "67d88430892527861903788868c77802a217b0959990f7449f2976126a307763",
+      url = "gs://minimal-staging-archives/libunistring-%{version}.tar.gz",
+      sha256 = "e82664b170064e62331962126b259d452d53b227bb4a93ab20040d846fec01d8",
       extract = true,
       strip_prefix = "libunistring-%{version}",
     } | Source,
@@ -32,6 +32,7 @@ let version = "1.4.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-3.0-only",
       repology_project = "libunistring",
       source_provenance = {
         category = 'GnuProject,

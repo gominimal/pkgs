@@ -5,6 +5,12 @@ set -euo pipefail
 
 JOBS=$(nproc)
 
+# Reproducibility: the kernel bakes build time/user/host into the image
+# (scripts/mkcompile_h). Pin them so vmlinuz is byte-identical across builds.
+export KBUILD_BUILD_TIMESTAMP="@${SOURCE_DATE_EPOCH:-0}"
+export KBUILD_BUILD_USER=builder
+export KBUILD_BUILD_HOST=minimal
+
 # Pick the right kernel image target + path per host arch. arm64's analogue
 # of bzImage is just `Image`; there's no `kvm_guest.config` fragment for
 # arm64 either, so we only merge that on x86.

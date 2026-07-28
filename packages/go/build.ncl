@@ -8,16 +8,16 @@ let toolchain = import "../toolchain/build.ncl" in
 # cannot produce an arm64 toolchain directly (separate cross-bootstrap track).
 let go-1-24-9 = import "../go-1.24.9/build.ncl" in
 
-let version = "1.26.2" in
+let version = "1.26.5" in
 let variants = {
   amd64_url = "https://go.dev/dl/go%{version}.linux-amd64.tar.gz",
-  amd64_sha256 = "990e6b4bbba816dc3ee129eaeaf4b42f17c2800b88a2166c265ac1a200262282",
+  amd64_sha256 = "5c2c3b16caefa1d968a94c1daca04a7ca301a496d9b086e17ad77bb81393f053",
 
   arm64_url = "https://go.dev/dl/go%{version}.linux-arm64.tar.gz",
-  arm64_sha256 = "c958a1fe1b361391db163a485e21f5f228142d6f8b584f6bef89b26f66dc5b23",
+  arm64_sha256 = "fe4789e92b1f33358680864bbe8704289e7bb5fc207d80623c308935bd696d49",
 
   source_url = "https://go.dev/dl/go%{version}.src.tar.gz",
-  source_sha256 = "2e91ebb6947a96e9436fb2b3926a8802efe63a6d375dffec4f82aa9dbd6fd43b",
+  source_sha256 = "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42",
 }
 in
 {
@@ -75,6 +75,7 @@ in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-3-Clause",
       repology_project = "go",
 
       # When Go is used in a task environment, a `gocache` directory is created

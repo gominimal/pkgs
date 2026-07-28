@@ -16,13 +16,13 @@ let glibc = import "../glibc/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "2.46.0" in
+let version = "2.46.1" in
 {
   name = "binutils",
   build_deps = [
     {
       url = "gs://minimal-staging-archives/binutils-%{version}.tar.xz",
-      sha256 = "d75a94f4d73e7a4086f7513e67e439e8fcdcbb726ffe63f4661744e6256b2cf2",
+      sha256 = "e127a709cba24c76de8936cb7083dd768f28cd37eb010492e2f19b71eb1294e4",
       extract = true,
     } | Source,
     { file = "build.sh" } | Local,
@@ -85,6 +85,7 @@ let version = "2.46.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(GPL-2.0-only AND GPL-3.0-only AND LGPL-2.0-only)",
       repology_project = "binutils",
       source_provenance = {
         category = 'GnuProject,

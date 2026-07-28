@@ -21,14 +21,14 @@ let openssl = import "../openssl/build.ncl" in
 let xz = import "../xz/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "8.1" in
+let version = "8.1.2" in
 {
   name = "ffmpeg",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://ffmpeg.org/releases/ffmpeg-%{version}.tar.xz",
-      sha256 = "b072aed6871998cce9b36e7774033105ca29e33632be5b6347f3206898e0756a",
+      sha256 = "464beb5e7bf0c311e68b45ae2f04e9cc2af88851abb4082231742a74d97b524c",
       extract = true,
       strip_prefix = "ffmpeg-%{version}",
     } | Source,
@@ -70,6 +70,7 @@ let version = "8.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(GPL-2.0-only AND GPL-3.0-only AND LGPL-2.1-only)",
       repology_project = "ffmpeg",
       source_provenance = {
         category = 'GithubRepo,

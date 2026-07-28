@@ -42,6 +42,7 @@ let version = "0.150.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Apache-2.0",
       source_provenance = {
         category = 'GithubRepo,
         owner = "open-telemetry",

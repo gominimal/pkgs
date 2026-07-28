@@ -35,6 +35,7 @@ let version = "1.9.3" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT",
       repology_project = "grpcurl",
       source_provenance = {
         category = 'GithubRepo,
