@@ -81,6 +81,17 @@ export ARFLAGS="Drc"
 # both ./configure and make.
 export BUILD_PATH_PREFIX_MAP="/builddir=$(pwd)"
 
+# ★ STASH UPSTREAM'S COMMITTED BLOBS *BEFORE* ANYTHING RUNS.
+# Required for the fixpoint gate below to mean what its comment claims. `make bootstrap` is
+# `bootstrap: coreboot` (Makefile:862), and coreboot's FIRST step is promote-cross ->
+# promote-common -> `$(PROMOTE) ocamlc boot/ocamlc` (Makefile:770,762-763) — it OVERWRITES the
+# shipped blob before any comparison happens. Capturing it here is the only way to compare
+# against what upstream actually shipped rather than against our own previous generation.
+UPSTREAM_BOOT="${BUILDROOT:-/tmp}/upstream-boot"; mkdir -p "${UPSTREAM_BOOT}"
+cp boot/ocamlc "${UPSTREAM_BOOT}/ocamlc"
+cp boot/ocamllex "${UPSTREAM_BOOT}/ocamllex" 2>/dev/null || true
+[ -s "${UPSTREAM_BOOT}/ocamlc" ] || { echo "ocaml infra: failed to stash upstream boot/ocamlc" >&2; exit 1; }
+
 # The release tarball ships a pre-generated ./configure (no autogen). Disable
 # zstd (optional .cmi compression) to avoid the extra system dep.
 ./configure --prefix=/usr --without-zstd
@@ -157,13 +168,38 @@ echo "OCAML-BEDROCK-GATE: ocaml 5.5.0 is rooted at B5 gcc-15.2.0-glibc (hex0 -> 
 # ============================================================================================
 echo "OCAML-FIXPOINT: regenerating boot/ocamlc with the compiler we just built" >&2
 if make bootstrap >/tmp/ocaml-bootstrap.log 2>&1; then
-  echo "OCAML-FIXPOINT: PASS — the shipped boot/ocamlc is a fixed point of this source tree" >&2
-  echo "OCAML-FIXPOINT: NOTE this does NOT defeat Thompson; only the #48 ladder retires the blob" >&2
+  echo "OCAML-FIXPOINT: PASS — self-consistent fixed point reached (our gen N == our gen N+1)" >&2
 else
   echo "OCAML-FIXPOINT: MISMATCH or build error (non-fatal today; see tail) —" >&2
   tail -20 /tmp/ocaml-bootstrap.log >&2 || true
-  echo "OCAML-FIXPOINT: a MISMATCH would mean the shipped blob does not reproduce from this source" >&2
 fi
+
+# ── THE COMPARISON THAT WAS MISSING ─────────────────────────────────────────────────────────
+# What `make bootstrap` alone proves is NARROWER than it looks, and the previous version of this
+# block mis-stated it. `bootstrap: coreboot` (Makefile:862) begins with promote-cross ->
+# promote-common -> `$(PROMOTE) ocamlc boot/ocamlc` (Makefile:770,762-763): the shipped blob is
+# OVERWRITTEN FIRST. The `compare` step (Makefile:749) therefore checks OUR generation N against
+# OUR generation N+1 — self-consistency — and says nothing whatever about the blob upstream
+# actually shipped. A backdoored blob that reproduces itself passes it trivially.
+#
+# Comparing against the stashed upstream blob is a strictly stronger statement: it says the bytes
+# upstream shipped are the bytes this source tree produces. Report-only, because a mismatch is
+# EXPECTED and is not a defect: upstream's blob has its own ./configure substitutions baked in
+# (prefix, target triplet, probed gcc flags land in utils/config.mlp), so byte-identity requires
+# reproducing upstream's build environment, not just its source.
+if [ -s "${UPSTREAM_BOOT}/ocamlc" ] && [ -f boot/ocamlc ]; then
+  if cmp -s "${UPSTREAM_BOOT}/ocamlc" boot/ocamlc; then
+    echo "OCAML-UPSTREAM-CMP: IDENTICAL — our regenerated boot/ocamlc matches upstream's shipped blob byte for byte" >&2
+  else
+    echo "OCAML-UPSTREAM-CMP: DIFFERS — upstream $(wc -c < "${UPSTREAM_BOOT}/ocamlc")B vs ours $(wc -c < boot/ocamlc)B" >&2
+    echo "  Expected today (configure substitutions are baked into the blob). Recorded so that the" >&2
+    echo "  #48 end-state can say precisely which claim we hold: 'seed-rooted' vs 'byte-identical" >&2
+    echo "  to upstream'. These are different claims and only this line distinguishes them." >&2
+  fi
+else
+  echo "OCAML-UPSTREAM-CMP: SKIPPED — no stashed upstream blob to compare against" >&2
+fi
+echo "OCAML-FIXPOINT: NOTE neither check defeats Thompson; only the #48 ladder retires the blob" >&2
 
 
 # ocamldebug mixes C + bytecode; exclude it from any blanket debug strip.
