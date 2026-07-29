@@ -43,7 +43,7 @@ let version = "2.4.1" in
     {
       upstream_version = version,
       source_provenance = { category = 'GnuProject, name = "stow" },
-      license_spdx = "GPL-3.0",
+      license_spdx = "GPL-3.0-or-later",
     } | Attrs,
   tests = {
     smoke =
