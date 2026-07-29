@@ -62,7 +62,7 @@ stack {
 Stacks were previously called "harnesses". The stdlib still exports `harness` as an alias for `stack`, but new
 stacks should use `stack` and live at `stacks/<name>/stack.ncl`.
 
-Current stacks cover: aeneas, bun, cabal, cmake, deno, go, gradle, make, maven, meson, npm, ocaml, pip, pnpm, pulumi-go, pulumi-nodejs, rust, shell, stack, uv, zig.
+Current stacks cover: aeneas, bun, cabal, cmake, deno, go, gradle, make, maven, meson, npm, ocaml, odin, pip, pnpm, pulumi-go, pulumi-nodejs, rust, shell, stack, uv, zig.
 
 
 
