@@ -68,6 +68,17 @@ rm -rf "$SCRATCH"
 # the image or the mount fails with ENOENT/EROFS.
 mkdir -p "$STAGE/var/lib/minimal"
 
+# Resolver mountpoint. The guest minimald points DNS at the switch's server by
+# writing /run/resolv.conf and bind-mounting it over /etc/resolv.conf. A bind
+# only changes the mount tree, so it works on this read-only root — but only if
+# the target path already exists. The Alpine minirootfs ships no resolv.conf
+# (the old sandbox-snapshot image inherited one from the build root), so without
+# this the mount fails with ENOENT, the guest has no resolver at all, and
+# anything that resolves a name — the in-guest `pkgs` clone during session mint
+# — dies with "Could not resolve host". Empty on purpose: the contents are
+# written at runtime, this only reserves the path.
+: > "$STAGE/etc/resolv.conf"
+
 # bash's loadable builtins (~2.7 MB) are only reachable via `enable -f`, which
 # nothing in the guest uses. This is the one payload the .apk closure ships that
 # the guest does not need: Alpine splits headers, static libs, man pages and
