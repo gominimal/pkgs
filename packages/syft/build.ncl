@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.49.0" in
+let version = "1.50.0" in
 {
   name = "syft",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/anchore/syft/v%{version}.tar.gz",
-      sha256 = "7fa1d225a50be61a17c86a0d523412d60b3d8678a1864839217769d3472a8700",
+      sha256 = "83a6c11669094a6514a620976f22d0a4006509b4e2925f53e43e7bf506f0a3ac",
       extract = true,
       strip_prefix = "syft-%{version}",
     } | Source,
