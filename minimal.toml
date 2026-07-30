@@ -15,3 +15,9 @@ exec = "claude --dangerously-skip-permissions"
 interactive = true
 packages = ["base", "bash", "opencode", "curl"]
 exec = "opencode"
+
+# UNCOMMITTED test rig for the libarchive PR — discard before push.
+[tasks.diffcheck]
+description = "Prove diffoscope actually runs with the new libarchive dep"
+packages = ["base", "coreutils", "diffoscope"]
+bash = "diffoscope --version && echo 'diffcheck: ok'"
