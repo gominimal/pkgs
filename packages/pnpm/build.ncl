@@ -5,14 +5,14 @@ let tar = import "../tar/build.ncl" in
 
 let node-lts = import "../node-lts/build.ncl" in
 
-let version = "11.17.0" in
+let version = "11.18.0" in
 {
   name = "pnpm",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://registry.npmjs.org/pnpm/-/pnpm-%{version}.tgz",
-      sha256 = "644eb5079654e87dae59a07e62d7f098162b9ce58f06077328b5ddefca1c8541"
+      sha256 = "29c35ca8d2a287988fdee3e0f36e07d9b93783f567b579b7fd5b798a4563dd81"
     } | Source,
     base,
     tar,

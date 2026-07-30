@@ -22,7 +22,15 @@ case $(uname -m) in
   aarch64) MARCH="-march=armv8-a" ;;
   *)       MARCH="" ;;
 esac
-export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
+# shadow 4.20.0 doesn't build clean under gcc 15's stricter defaults (implicit
+# declarations are now hard errors):
+#   - find_new_sub_{uid,gid}s.c use uintmax_t without <stdint.h> -> force-include it.
+#   - chkname.c uses the GNU extension strdupa without _GNU_SOURCE in effect
+#     -> define it globally so string.h declares it (a missing declaration would
+#     otherwise be silently miscompiled as int-returning).
+# Applied via flags rather than per-file patches: version-agnostic and covers
+# any sibling TUs with the same latent omissions.
+export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir -include stdint.h -D_GNU_SOURCE"
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
