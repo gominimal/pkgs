@@ -1,5 +1,9 @@
 # Minimal's Public Registry
 
+<p align="center">
+  <img src=".github/readme-packages.webp" alt="Minimal public packages" width="880">
+</p>
+
 The MPR has build specifications for a curated, regularly-updated set of open source packages
 for use with Minimal. It also contains other specifications for common toolsets and other
 helpers for development and working in CLI environments.
