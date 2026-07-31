@@ -208,7 +208,36 @@ let version = "12.1.2" in
           # ...and resolved to the ARM platform specifically. If the swap ever
           # regresses to shipping the all-platforms jar, the list stops being a
           # single entry and this is what notices.
-          ["/bin/bash", "-c", "grep -q 'PLATFORM=Linux-arm64' /build/7z.out"],
+          # ...and resolved to THIS HOST's platform. Deliberately derived from
+          # uname rather than hardcoded: the first version of this test
+          # asserted Linux-arm64 unconditionally and failed CI on amd64, where
+          # the correct answer is Linux-amd64 — the assertion encoded the
+          # architecture I happened to build on.
+          #
+          # Still catches the regression that matters. On arm64 the answer is
+          # Linux-arm64 ONLY because build.sh replaced the all-platforms jar
+          # with the per-platform one; if that swap regresses, the platform
+          # list stops being a single entry, getPlatformBestMatch() falls back
+          # to matching os.arch ("aarch64") against "Linux-arm64", and fails —
+          # so this reports Linux-amd64 or nothing on an arm64 host, and the
+          # test fails.
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              case "$(uname -m)" in
+                aarch64 | arm64) want=Linux-arm64 ;;
+                x86_64) want=Linux-amd64 ;;
+                *) echo "unsupported arch $(uname -m)" >&2; exit 1 ;;
+              esac
+              grep -q "PLATFORM=$want" /build/7z.out || {
+                echo "expected PLATFORM=$want for $(uname -m); got:" >&2
+                cat /build/7z.out >&2
+                exit 1
+              }
+            "%
+          ],
           # ...and genuinely decompressed the container: the inner filename can
           # only appear if 7-Zip enumerated the archive.
           ["/bin/bash", "-c", "grep -q 'ENTRY=SEVENZIP_PARITY_OK.txt' /build/7z.out"],
