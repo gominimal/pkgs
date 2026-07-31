@@ -50,15 +50,24 @@ let version = "5.2.0" in
     {
       upstream_version = version,
       source_provenance = { category = 'GithubRepo, owner = "upx", repo = "upx" },
-      # GPL-2.0-or-later: COPYING is the GPLv2 text and LICENSE says "either
-      # version 2 of the License, or (at your option) any later version".
+      # The aggregate of what is actually LINKED INTO the shipped binary, which
+      # is not the same as what sits in vendor/ — see build.sh for how that was
+      # established:
+      #   GPL-2.0-or-later  upx's own code, plus the vendored UCL
+      #   Zlib              the vendored zlib
+      #   MIT               doctest, compiled in via src/check/dt_impl.cpp
+      # The vendored LZMA SDK is also compiled in (compress_lzma.cpp #includes
+      # its .cpp files directly) but is placed in the PUBLIC DOMAIN by its
+      # author, so it adds no conditions and has no SPDX identifier to add.
+      # bzip2 and zstd are present in vendor/ but upstream hard-disables both
+      # (CMakeLists.txt:269-270), so their licences are deliberately absent.
       #
       # UPX additionally grants a special exception so that compressing a
       # program does not impose the GPL on that program. That exception has no
       # SPDX identifier, so it cannot be expressed in this field — recorded
       # here instead, because the bare GPL value overstates the obligations on
       # anything this tool merely packs.
-      license_spdx = "GPL-2.0-or-later",
+      license_spdx = "(GPL-2.0-or-later AND Zlib AND MIT)",
     } | Attrs,
   tests = {
     smoketest = standaloneTest "/bin/upx --version-short",

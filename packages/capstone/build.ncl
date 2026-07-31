@@ -36,11 +36,16 @@ let version = "5.0.9" in
     {
       upstream_version = version,
       source_provenance = { category = 'GithubRepo, owner = "capstone-engine", repo = "capstone" },
-      # BSD-3-Clause (LICENSE.TXT). The tree also carries LICENSE_LLVM.TXT —
-      # Apache-2.0 WITH LLVM-exception — covering the arch decoders generated
-      # from LLVM's tables. Both are permissive; BSD-3-Clause is the stricter
-      # on attribution, so it is the honest single value.
-      license_spdx = "BSD-3-Clause",
+      # Two licences, both permissive, and the tree ships both files:
+      #   LICENSE.TXT       BSD-3-Clause (COSEINC)
+      #   LICENSE_LLVM.TXT  University of Illinois/NCSA Open Source License,
+      #                     covering the arch decoders generated from LLVM's
+      #                     tables. This is the OLD "LLVM Release License" —
+      #                     capstone 5.x predates LLVM's relicensing, so it is
+      #                     NCSA here, NOT Apache-2.0 WITH LLVM-exception.
+      # Recorded as the aggregate rather than the headline licence, since
+      # NCSA's attribution clause travels with the binary too.
+      license_spdx = "(BSD-3-Clause AND NCSA)",
     } | Attrs,
   tests = {
     smoketest = standaloneTest "/bin/cstool -v",
