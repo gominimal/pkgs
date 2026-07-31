@@ -1,4 +1,4 @@
-let { subsetOf, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { subsetOf, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
@@ -114,6 +114,126 @@ let version = "12.1.2" in
     # the tree stays a data blob.
     install = { glob = "usr/share/ghidra/**/*", allow_executable = true } | OutputData,
   },
+
+  tests = {
+    # THE LOAD-BEARING TEST. Every other check in this package confirms a file
+    # EXISTS and has the right ELF arch; this confirms Ghidra actually FINDS
+    # AND USES it — which is a different question, and the one that fails
+    # silently.
+    #
+    # When the decompile native is missing or unloadable:
+    # DecompileProcessFactory logs once behind a static latch, openProgram()
+    # returns false, decompileFunction() short-circuits with errMsg="" so
+    # CppExporter's `!"".equals(...)` guard never fires, and analyzeHeadless
+    # writes an empty .c and EXITS 0. Worse, that results object is built with
+    # DISPOSED_ON_CANCEL, so isCancelled() reports a user cancellation and
+    # isValid() returns TRUE for a decompile that produced nothing. Only
+    # decompileCompleted() still tells the truth, so the script below is
+    # written against that and nothing else.
+    #
+    # analyzeHeadless has ZERO System.exit calls — it exits 0 when the
+    # postScript throws, too. So nothing here trusts its exit code; every
+    # assertion is against an artifact the script can only produce by really
+    # decompiling.
+    #
+    # The C++ fixture is deliberately namespaced: `Foo::bar` in names.txt also
+    # proves the GNU demangler natives ran, which nothing else here covers and
+    # which shipped broken (mode 0644) for the life of this package.
+    headless_decompile =
+      {
+        class = 'Standalone,
+        test_deps = [base, toolchain],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              cat > /build/prog.cpp <<'CPP'
+              struct Foo { int bar(int a, int b); };
+              int Foo::bar(int a, int b) { int c = a * 3; if (b > c) { c = b - c; } return c + 7; }
+              int main(void) { Foo f; return f.bar(11, 40); }
+              CPP
+              cat > /build/DecompParityCheck.java <<'JAVA'
+              //Proves Ghidra resolves and uses its platform natives.
+              //@category Selftest
+              import java.io.File;
+              import java.io.PrintWriter;
+              import ghidra.app.decompiler.DecompInterface;
+              import ghidra.app.decompiler.DecompileResults;
+              import ghidra.app.script.GhidraScript;
+              import ghidra.program.model.listing.Function;
+
+              public class DecompParityCheck extends GhidraScript {
+                  @Override
+                  public void run() throws Exception {
+                      String[] args = getScriptArgs();
+                      if (args.length < 2) { printerr("usage: <out.c> <names.txt>"); return; }
+                      StringBuilder names = new StringBuilder();
+                      Function target = null;
+                      for (Function f : currentProgram.getFunctionManager().getFunctions(true)) {
+                          String n = f.getName(true);
+                          names.append(n).append('\n');
+                          if (n.contains("bar")) { target = f; }
+                      }
+                      try (PrintWriter w = new PrintWriter(new File(args[1]))) { w.print(names); }
+                      if (target == null) { printerr("SELFTEST: no candidate function"); return; }
+                      DecompInterface ifc = new DecompInterface();
+                      try {
+                          if (!ifc.openProgram(currentProgram)) {
+                              printerr("SELFTEST: openProgram()==false: " + ifc.getLastMessage());
+                              return;
+                          }
+                          DecompileResults res = ifc.decompileFunction(target, 120, monitor);
+                          if (!res.decompileCompleted() || res.getDecompiledFunction() == null) {
+                              printerr("SELFTEST: incomplete: " + res.getErrorMessage());
+                              return;
+                          }
+                          String c = res.getDecompiledFunction().getC();
+                          if (c == null || c.isBlank()) { printerr("SELFTEST: empty C"); return; }
+                          try (PrintWriter w = new PrintWriter(new File(args[0]))) { w.print(c); }
+                      } finally { ifc.dispose(); }
+                  }
+              }
+              JAVA
+            "%
+          ],
+          ["/bin/g++", "-O0", "-o", "/build/prog", "/build/prog.cpp"],
+          [
+            "/bin/analyzeHeadless",
+            "/build",
+            "parity",
+            "-import",
+            "/build/prog",
+            "-analysisTimeoutPerFile",
+            "300",
+            "-scriptPath",
+            "/build",
+            "-postScript",
+            "DecompParityCheck.java",
+            "/build/decompiled.c",
+            "/build/names.txt"
+          ],
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              [ -s /build/decompiled.c ] ||
+                { echo "no decompiled C: the decompile native did not run" >&2; exit 1; }
+              c=$(cat /build/decompiled.c)
+              case "$c" in *return*) ;; *)
+                echo "no return statement in decompiled C:" >&2; echo "$c" >&2; exit 1 ;; esac
+              n=$(cat /build/names.txt)
+              case "$n" in *"Foo::bar"*) ;; *)
+                echo "GNU demangler native did not run; names still mangled:" >&2
+                echo "$n" >&2; exit 1 ;; esac
+            "%
+          ],
+        ],
+      } | Test,
+  },
+
   attrs = {
     upstream_version = version,
     # Root LICENSE is verbatim Apache-2.0. The tree aggregates ~20 further
