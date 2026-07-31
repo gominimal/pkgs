@@ -63,7 +63,6 @@ let version = "12.1.2" in
     # bison/flex (the generated parsers are checked in upstream and shipped).
     toolchain,
     make,
-    zlib, # only the `sleigh` target links it (-lz via the Makefile's $(LNK))
   ],
   runtime_deps = [
     bash, # every launcher is a POSIX shell script
@@ -323,5 +322,13 @@ let version = "12.1.2" in
     # is GPL-3.0 (already a separate top-level module for exactly that
     # reason), and lzfse is BSD-3-Clause.
     license_spdx = "Apache-2.0",
+    # This package installs UPSTREAM-BUILT binaries — the whole Java tree, and
+    # on amd64 the platform natives too — so record where they came from.
+    #
+    # Worth noting what this does NOT cover: on arm64 the five natives are
+    # COMPILED HERE from the C/C++ sources inside that same release zip,
+    # because upstream publishes no linux_arm_64 build. So the Java is
+    # upstream's binary, and the arm64 decompiler is ours.
+    binary_from = "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_%{version}_build/",
   },
 } | BuildSpec
