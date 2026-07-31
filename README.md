@@ -1,3 +1,7 @@
+<p align="center">
+  <img src=".github/readme-packages.webp" alt="Minimal public packages" width="880">
+</p>
+
 # Minimal's Public Registry
 
 The MPR has build specifications for a curated, regularly-updated set of open source packages
