@@ -42,6 +42,20 @@ let version = "12.1.2" in
       url = "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_%{version}_build/ghidra_%{version}_PUBLIC_20260605.zip",
       sha256 = "b62e81a0390618466c019c60d8c2f796ced2509c4c1aea4a37644a77272cf99d",
     } | Source,
+    # The aarch64 7-Zip JNI native. Upstream's `-all-platforms` roll-up
+    # deliberately excludes ARM ("WARNING: Not a part of -AllPlatform or
+    # -AllLinux !!!"), but the per-platform artifact IS published at the exact
+    # version Ghidra vendors. Closes the only genuine arm64/amd64 capability
+    # gap in this package.
+    #
+    # Deliberately SECOND: pkgmgr's updater rewrites only the FIRST sha256, and
+    # this pin must NOT track the Ghidra version — upstream froze it in 2016.
+    # build.sh asserts the vendored version still matches and fails the build
+    # if a Ghidra bump ever revendors it.
+    {
+      url = "https://repo1.maven.org/maven2/net/sf/sevenzipjbinding/sevenzipjbinding-linux-arm64/16.02-2.01/sevenzipjbinding-linux-arm64-16.02-2.01.jar",
+      sha256 = "da89d64861ed45063dc9d655a0c745ca097bd341765d7f0bbedcca1c961d1771",
+    } | Source,
     base,
     python, # `python3 -m zipfile` does the extraction
     # The natives upstream does not publish for linux_arm_64 are compiled from
