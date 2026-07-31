@@ -139,6 +139,83 @@ let version = "12.1.2" in
     # The C++ fixture is deliberately namespaced: `Foo::bar` in names.txt also
     # proves the GNU demangler natives ran, which nothing else here covers and
     # which shipped broken (mode 0644) for the life of this package.
+    # PROVE THE 7-ZIP PARITY FIX ACTUALLY WORKS, not merely that the .so is on
+    # disk with the right ELF arch — which is all the output-types checker and
+    # a `file` invocation can tell you.
+    #
+    # This is the one capability that was genuinely MISSING on arm64 (upstream
+    # excludes ARM from the -all-platforms roll-up by design), so "we injected
+    # a native" deserves more evidence than "a file exists". The failure it
+    # guards is silent twice over: SevenZipCustomInitializer catches Throwable
+    # and rewraps, initNativeLibraries() eats the result, and analyzeHeadless
+    # swallows the resulting IOException and exits 0 with an empty listing.
+    #
+    # Uses sevenzipjbinding's OWN documented entry point rather than Ghidra's
+    # wrapper, so it tests the jar + native pairing directly: if the platform
+    # list is not exactly one entry, getPlatformBestMatch() falls back to
+    # matching os.arch ("aarch64") against the artifact's "Linux-arm64" and can
+    # never succeed. That is precisely the mistake the build.sh comment warns
+    # about, and this catches it.
+    #
+    # The fixture is a real 187-byte 7z archive, embedded base64 because the
+    # sandbox ships GNU tar, which cannot WRITE 7z (bsdtar can; we do not
+    # package it). Decoding it needs nothing but coreutils.
+    sevenzip_native =
+      {
+        class = 'Standalone,
+        test_deps = [base, jdk],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              printf '%s' 'N3q8ryccAAOwgYeuFwAAAAAAAACEAAAAAAAAADYSLXkAOBhKq0FKVlNmTkeB6IoTIX///ploAAEEBgABCRcABwsBAAEjAwEBBV0AAIAADA0ACAoBDg+qJwAABQERLwBTAEUAVgBFAE4AWgBJAFAAXwBQAEEAUgBJAFQAWQBfAE8ASwAuAHQAeAB0AAAAFAoBAK3P1wCYIN0BEgoBAK3P1wCYIN0BEwoBAPnM1wCYIN0BFQYBACCApIEAAA==' | base64 -d > /build/fixture.7z
+              # Sanity: the fixture must itself be a 7z, or a green test would
+              # be proving nothing about 7z at all.
+              head -c 6 /build/fixture.7z | grep -q '7z' ||
+                { echo "fixture is not a 7z archive" >&2; exit 1; }
+
+              cat > /build/SevenZipCheck.java <<'JAVA'
+              import java.io.RandomAccessFile;
+              import net.sf.sevenzipjbinding.*;
+              import net.sf.sevenzipjbinding.impl.RandomAccessFileInStream;
+
+              public class SevenZipCheck {
+                  public static void main(String[] args) throws Exception {
+                      SevenZip.initSevenZipFromPlatformJAR();
+                      System.out.println("PLATFORM=" + SevenZip.getUsedPlatform());
+                      try (RandomAccessFile f = new RandomAccessFile(args[0], "r");
+                           IInArchive a = SevenZip.openInArchive(null,
+                                   new RandomAccessFileInStream(f))) {
+                          for (int i = 0; i < a.getNumberOfItems(); i++) {
+                              System.out.println("ENTRY=" + a.getProperty(i, PropID.PATH));
+                          }
+                      }
+                  }
+              }
+              JAVA
+
+              CP=$(ls /usr/share/ghidra/Ghidra/Features/FileFormats/lib/sevenzipjbinding-*.jar | tr '\n' ':')
+              /usr/lib/jvm/bin/javac -cp "$CP" -d /build /build/SevenZipCheck.java
+              /usr/lib/jvm/bin/java -cp "$CP:/build" SevenZipCheck /build/fixture.7z \
+                  > /build/7z.out 2>&1 || { cat /build/7z.out >&2; exit 1; }
+              cat /build/7z.out
+            "%
+          ],
+          # The native initialised at all — this is the UnsatisfiedLinkError /
+          # wrong-arch / missing-DT_NEEDED case.
+          ["/bin/bash", "-c", "grep -q '^PLATFORM=' /build/7z.out"],
+          # ...and resolved to the ARM platform specifically. If the swap ever
+          # regresses to shipping the all-platforms jar, the list stops being a
+          # single entry and this is what notices.
+          ["/bin/bash", "-c", "grep -q 'PLATFORM=Linux-arm64' /build/7z.out"],
+          # ...and genuinely decompressed the container: the inner filename can
+          # only appear if 7-Zip enumerated the archive.
+          ["/bin/bash", "-c", "grep -q 'ENTRY=SEVENZIP_PARITY_OK.txt' /build/7z.out"],
+        ],
+      } | Test,
+
     headless_decompile =
       {
         class = 'Standalone,
