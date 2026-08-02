@@ -44,9 +44,15 @@ let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "mini
 # recorded as sha-pinned resolvedDependencies).
 let stage0-mes = import "../stage0-mes/build.ncl" in # R1 — mes-m2, mescc.scm, mes-libc, headers, module trees
 let stage0-mescc-full = import "../stage0-mescc-full/build.ncl" in # R0.5 — kaem(driver)+catm+M1+hex2 + M2-Mesoplanet+match+simple-patch+blood-elf
-let coreutils = import "../coreutils/build.ncl" in # /usr/bin/{cp,chmod,mkdir,rm,sha256sum} — bare-name generic ops
 {
   name = "stage0-tcc-0.9.26",
+  # coreutils DROPPED 2026-08-02 -- the first rung(s) to stop importing it.
+  # Its chmod/cp/mkdir/rm/sha256sum now come from stage0-mescc-full's R0.5 prefix export at
+  # /usr/lib/stage0/bin/, which this rung already imports for the kaem driver. Those tools were
+  # always built and gated there as part of the 19-leaf fixed point; they were merely unstaged to
+  # avoid shadowing /usr/bin, and a prefix removes that risk.
+  # The call sites were BARE NAMES resolved via PATH; they are now absolute, so the repoint is
+  # explicit and greppable rather than dependent on PATH order.
   build_deps = [
     { file = "tcc.kaem" } | Local, # the kaem driver (derived from pass1.kaem)
     { file = "stage0.answers" } | Local, # sha256sum -c byte-identity gate (RECORD-AT-PIN-TIME for amd64)
@@ -104,7 +110,6 @@ let coreutils = import "../coreutils/build.ncl" in # /usr/bin/{cp,chmod,mkdir,rm
     # compiler-spine predecessor edges (chain-enforce) — toolchain taken WHOLE from R0.5+R1 only:
     stage0-mes, # R1: /usr/bin/{mes-m2,mescc.scm} + /usr/lib/x86_64-mes/** + /usr/include/** + /usr/share/{mes,nyacc}/**
     stage0-mescc-full, # R0.5: /usr/bin/{kaem(=driver),catm,M1,hex2,blood-elf,match,M2-Mesoplanet,simple-patch}
-    coreutils, # /usr/bin/{cp,chmod,mkdir,rm,sha256sum} (no name collision with the R0.5 export set)
   ],
   # tcc-mes/tcc-boot*/tcc are STATIC ELF (CONFIG_TCC_STATIC=1, linked against mes-libc) — no
   # .interp / DT_NEEDED — so allow_missing_interpreter=true and there are no runtime_deps.

@@ -97,10 +97,25 @@ let coreutils = import "../coreutils/build.ncl" in
     catm = { glob = "usr/bin/catm", allow_missing_interpreter = true } | OutputBin, # c13daf05 (canonical)
     m1 = { glob = "usr/bin/M1", allow_missing_interpreter = true } | OutputBin, # fc68c115 (re-export)
     hex2 = { glob = "usr/bin/hex2", allow_missing_interpreter = true } | OutputBin, # f782df6d (re-export)
-    # DELIBERATELY NOT exported: the coreutils-colliding extra tools (chmod/cp/mkdir/rm/
-    # sha256sum/ungz/unbz2/unxz/untar/replace/wrap). All are BUILT + GATED in-tree (part of the
-    # 19-leaf fixed point) but staging them would shadow the consumer's coreutils. None of the
-    # 10 exported keys above is a coreutils tool name, so R1/R2 keep coreutils as a build_dep
-    # with no shadow.
+    #
+    # ── R0.5 PREFIX EXPORT (2026-08-02) ────────────────────────────────────────────────────
+    # PREVIOUSLY these were "DELIBERATELY NOT exported ... staging them would shadow the
+    # consumer's coreutils". That objection was correct about /usr/bin and ONLY about /usr/bin.
+    # They are now staged under usr/lib/stage0/bin/, which collides with nothing: no consumer's
+    # PATH or absolute-path lookup changes unless it opts in by naming that directory.
+    # These five are what let rungs ABOVE this one drop `coreutils` from build_deps entirely --
+    # the measured tool surface of stage0-tcc-0.9.26 and stage0-tcc-0.9.27 is a subset of them.
+    # They do NOT help rungs 1-2 (stage0-hex1, stage0-kaem): those sit BELOW this rung and
+    # consuming it would be a ladder-order inversion. Verified with
+    #   bin/ladder-order-check.py --simulate coreutils=stage0-mescc-full
+    # which reports exactly those two as inversions plus a new 2-cycle. See
+    # docs/cut-the-cycle-plan.md §4.
+    x_chmod = { glob = "usr/lib/stage0/bin/chmod", allow_missing_interpreter = true } | OutputBin,
+    x_cp = { glob = "usr/lib/stage0/bin/cp", allow_missing_interpreter = true } | OutputBin,
+    x_mkdir = { glob = "usr/lib/stage0/bin/mkdir", allow_missing_interpreter = true } | OutputBin,
+    x_rm = { glob = "usr/lib/stage0/bin/rm", allow_missing_interpreter = true } | OutputBin,
+    x_sha256sum = { glob = "usr/lib/stage0/bin/sha256sum", allow_missing_interpreter = true } | OutputBin,
+    # Still NOT exported: ungz/unbz2/unxz/untar/replace/wrap -- no consumer names them yet, and an
+    # unused OutputBin is an unverified claim about a file that may not exist.
   },
 } | BuildSpec

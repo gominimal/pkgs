@@ -29,8 +29,8 @@ TCC_TARGET_ARCH=X86_64
 HAVE_LONG_LONG=1
 
 # §D staging dirs must exist before the first write.
-mkdir -p ${BINDIR}
-mkdir -p ${LIBDIR}
+/usr/lib/stage0/bin/mkdir -p ${BINDIR}
+/usr/lib/stage0/bin/mkdir -p ${LIBDIR}
 
 # --- unpack: Source{extract=true} already placed both trees at /build (CWD), so upstream's
 # mkdir build / unbz2 / ungz / untar is unnecessary.  Trees are siblings at /build, so the
@@ -108,9 +108,9 @@ tcc-0.9.26 \
     -I ${PREFIX}/include \
     -I ${PREFIX}/include/mes \
     tcc.c
-chmod 755 ${BINDIR}/tcc
-cp ${BINDIR}/tcc ${BINDIR}/tcc-0.9.27
-chmod 755 ${BINDIR}/tcc-0.9.27
+/usr/lib/stage0/bin/chmod 755 ${BINDIR}/tcc
+/usr/lib/stage0/bin/cp ${BINDIR}/tcc ${BINDIR}/tcc-0.9.27
+/usr/lib/stage0/bin/chmod 755 ${BINDIR}/tcc-0.9.27
 
 # test the fresh tcc-0.9.27
 tcc -version
@@ -120,10 +120,10 @@ cd ../${MES_PKG}
 
 # Populate include/arch/ exactly as mes configure.sh does (configure.sh:267-270) — this manual
 # libc rebuild bypasses mes's configure, so dirent.h's `#include <arch/syscall.h>` has a target.
-mkdir -p include/arch
-cp include/linux/${MES_ARCH}/kernel-stat.h include/arch/kernel-stat.h
-cp include/linux/${MES_ARCH}/signal.h include/arch/signal.h
-cp include/linux/${MES_ARCH}/syscall.h include/arch/syscall.h
+/usr/lib/stage0/bin/mkdir -p include/arch
+/usr/lib/stage0/bin/cp include/linux/${MES_ARCH}/kernel-stat.h include/arch/kernel-stat.h
+/usr/lib/stage0/bin/cp include/linux/${MES_ARCH}/signal.h include/arch/signal.h
+/usr/lib/stage0/bin/cp include/linux/${MES_ARCH}/syscall.h include/arch/syscall.h
 
 # REUSED patches (see build.ncl): basic-asm setjmp, and mes stdarg.h -> SysV under __TINYC__ (it
 # shadows tcc-0.9.27's own SysV stdarg.h via `-I include`).  cwd is ${MES_PKG}; the Local patch
@@ -151,7 +151,7 @@ tcc -w -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o unified-
 tcc -ar cr ${LIBDIR}/libc.a unified-libc.o
 
 # libtcc1.a — tcc-0.9.27's OWN libtcc1.c + va_list.o (the amd64 OBJ-x86_64 set; i386 omits va_list.o).
-mkdir ${LIBDIR}/tcc
+/usr/lib/stage0/bin/mkdir ${LIBDIR}/tcc
 tcc -c -D TCC_TARGET_${TCC_TARGET_ARCH}=1 -o libtcc1.o ../${TCC_PKG}/lib/libtcc1.c
 tcc -c -D TCC_TARGET_${TCC_TARGET_ARCH}=1 -o va_list.o ../${TCC_PKG}/lib/va_list.c
 tcc -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o va_list.o
@@ -183,7 +183,7 @@ cd /build
 # symbols-ar + static-link, then the amd64 FP fixes neg-float-const v3 + cast-signed-direct), stage0.answers
 # was re-pinned from the green re-build (tcc/libc.a/libtcc1.a shas changed; the fixed tcc compiles mes-libc
 # float code correctly). Gate ON again — seal-verify confirms the patched spine reproduces byte-identically.
-sha256sum -c stage0.answers
+/usr/lib/stage0/bin/sha256sum -c stage0.answers
 
 ###########################################################################
 # §D STAGING: every output was written directly into OUTPUT_DIR=/build/output, so there is no

@@ -139,3 +139,27 @@ cd ..
 /usr/bin/cp stage0-posix-1.9.1/AMD64/bin/catm          /build/output/usr/bin/catm
 /usr/bin/cp stage0-posix-1.9.1/AMD64/bin/M1            /build/output/usr/bin/M1
 /usr/bin/cp stage0-posix-1.9.1/AMD64/bin/hex2          /build/output/usr/bin/hex2
+
+#####################################################################
+# R0.5 PREFIX EXPORT (added 2026-08-02)                             #
+#                                                                   #
+# The coreutils-named extra tools are ALREADY built and gated here  #
+# as part of the 19-leaf fixed point (mescc-tools-extra.kaem builds  #
+# sha256sum/mkdir/cp/chmod/rm into the same BINDIR staged above).    #
+# They were withheld from staging for exactly ONE stated reason:     #
+# landing them in /usr/bin would SHADOW the consumer's coreutils.    #
+# A non-colliding prefix removes that objection without weakening    #
+# it -- nothing enters /usr/bin, so no consumer's lookup changes      #
+# unless it opts in by naming /usr/lib/stage0/bin explicitly.        #
+#                                                                   #
+# This is what lets rungs ABOVE this one stop importing coreutils.   #
+# It does NOT help rungs 1-2: they sit BELOW this rung, so consuming #
+# it is a ladder-order inversion -- measured, and the reason the     #
+# obvious first step was rejected. See docs/cut-the-cycle-plan.md §4.#
+#####################################################################
+/usr/bin/mkdir -p /build/output/usr/lib/stage0/bin
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/chmod     /build/output/usr/lib/stage0/bin/chmod
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/cp        /build/output/usr/lib/stage0/bin/cp
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/mkdir     /build/output/usr/lib/stage0/bin/mkdir
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/rm        /build/output/usr/lib/stage0/bin/rm
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/sha256sum /build/output/usr/lib/stage0/bin/sha256sum

@@ -55,9 +55,15 @@ let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "mini
 let stage0-tcc-r2 = import "../stage0-tcc-0.9.26/build.ncl" in # R2 — tcc-0.9.26 + tcc-rebuilt mes-libc at /usr/lib/mes
 let stage0-mes = import "../stage0-mes/build.ncl" in # R1 — mes libc headers at /usr/include(+/mes)
 let stage0-mescc-full = import "../stage0-mescc-full/build.ncl" in # R0.5 — kaem(driver) + catm + simple-patch
-let coreutils = import "../coreutils/build.ncl" in # /usr/bin/{cp,chmod,mkdir,sha256sum}
 {
   name = "stage0-tcc-0.9.27",
+  # coreutils DROPPED 2026-08-02 -- the first rung(s) to stop importing it.
+  # Its chmod/cp/mkdir/rm/sha256sum now come from stage0-mescc-full's R0.5 prefix export at
+  # /usr/lib/stage0/bin/, which this rung already imports for the kaem driver. Those tools were
+  # always built and gated there as part of the 19-leaf fixed point; they were merely unstaged to
+  # avoid shadowing /usr/bin, and a prefix removes that risk.
+  # The call sites were BARE NAMES resolved via PATH; they are now absolute, so the repoint is
+  # explicit and greppable rather than dependent on PATH order.
   build_deps = [
     { file = "tcc.kaem" } | Local, # the kaem driver (derived from pass1.kaem)
     { file = "stage0.answers" } | Local, # sha256sum -c byte-identity gate (RECORD-AT-PIN-TIME for amd64)
@@ -114,7 +120,6 @@ let coreutils = import "../coreutils/build.ncl" in # /usr/bin/{cp,chmod,mkdir,sh
     stage0-tcc-r2, # R2: /usr/bin/{tcc-0.9.26,tcc,…} + /usr/lib/mes/** (the libc tcc-0.9.26 links against)
     stage0-mes, # R1: /usr/include/** (mes libc headers for the tcc.c self-compile)
     stage0-mescc-full, # R0.5: /usr/bin/{kaem(=driver),catm,simple-patch,…}
-    coreutils, # /usr/bin/{cp,chmod,mkdir,sha256sum}
   ],
   # tcc-0.9.27 + the rebuilt mes-libc are STATIC ELF (CONFIG_TCC_STATIC=1) — no .interp / DT_NEEDED.
   cmds = [

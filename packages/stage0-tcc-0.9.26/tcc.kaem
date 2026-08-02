@@ -81,8 +81,8 @@ HAVE_LONG_LONG=1
 
 # §D the staging dirs must exist before the first write (BINDIR before `cp tcc-mes ${BINDIR}/`,
 # LIBDIR before the first `-o ${LIBDIR}/crt1.o`).  Both are under /build/output (writable).
-mkdir -p ${BINDIR}
-mkdir -p ${LIBDIR}
+/usr/lib/stage0/bin/mkdir -p ${BINDIR}
+/usr/lib/stage0/bin/mkdir -p ${LIBDIR}
 
 # --- unpack: Source{extract=true} already placed both trees at /build (CWD), so
 # upstream's `mkdir build; cd build; ungz; ungz; untar; untar` is unnecessary.
@@ -189,8 +189,8 @@ ${MES} --no-auto-compile -e main ${MESCC} -- \
     -L ${LIBDIR} \
     tcc.s \
     -l c+tcc
-cp tcc-mes ${BINDIR}/
-chmod 755 ${BINDIR}/tcc-mes
+/usr/lib/stage0/bin/cp tcc-mes ${BINDIR}/
+/usr/lib/stage0/bin/chmod 755 ${BINDIR}/tcc-mes
 
 # test tcc-mes
 tcc-mes -version
@@ -202,10 +202,10 @@ cd ../${MES_PKG}
 # This manual libc rebuild bypasses mes's configure, so dirent.h's `#include <arch/syscall.h>`
 # (resolved via `-I include` -> include/arch/syscall.h) had no target -> "arch/syscall.h not
 # found" when tcc-mes compiles unified-libc.c. mes_kernel=linux, mes_cpu=${MES_ARCH}.
-mkdir -p include/arch
-cp include/linux/${MES_ARCH}/kernel-stat.h include/arch/kernel-stat.h
-cp include/linux/${MES_ARCH}/signal.h include/arch/signal.h
-cp include/linux/${MES_ARCH}/syscall.h include/arch/syscall.h
+/usr/lib/stage0/bin/mkdir -p include/arch
+/usr/lib/stage0/bin/cp include/linux/${MES_ARCH}/kernel-stat.h include/arch/kernel-stat.h
+/usr/lib/stage0/bin/cp include/linux/${MES_ARCH}/signal.h include/arch/signal.h
+/usr/lib/stage0/bin/cp include/linux/${MES_ARCH}/syscall.h include/arch/syscall.h
 
 # BUG (5th, the tcc-boot0 first-use SIGSEGV): mes-libc setjmp uses an EXTENDED-asm OUTPUT operand
 # (`asm("mov %%rbp,%0":"=r"(p))`) that the amd64 mes-built tcc miscompiles -> tcc-boot0 crashes at
@@ -246,7 +246,7 @@ tcc-mes -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o unified
 tcc-mes -ar cr ${LIBDIR}/libc.a unified-libc.o
 
 # libtcc1.a
-mkdir ${LIBDIR}/tcc
+/usr/lib/stage0/bin/mkdir ${LIBDIR}/tcc
 tcc-mes -c -D HAVE_CONFIG_H=1 -D HAVE_LONG_LONG=1 -D HAVE_FLOAT=1 -I include -I include/linux/${MES_ARCH} -o libtcc1.o lib/libtcc1.c
 # BUG6-RUNTIME: tcc-0.9.26's amd64 SysV stdarg.h (struct va_list) calls __va_start/__va_arg, which live
 # in lib/va_list.c.  lib/libtcc1.c does NOT contain them; the real tcc Makefile builds va_list.o into
@@ -306,8 +306,8 @@ tcc-mes \
     -L ${LIBDIR} \
     tcc.c
 # Install
-cp tcc-boot0 ${BINDIR}/
-chmod 755 ${BINDIR}/tcc-boot0
+/usr/lib/stage0/bin/cp tcc-boot0 ${BINDIR}/
+/usr/lib/stage0/bin/chmod 755 ${BINDIR}/tcc-boot0
 cd ../${MES_PKG}
 # Recompile libc: crt{1,n,i}, libtcc.a, libc.a
 tcc-boot0 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o ${LIBDIR}/crt1.o lib/linux/${MES_ARCH}-mes-gcc/crt1.c
@@ -363,8 +363,8 @@ tcc-boot0 \
     -L . \
     -L ${LIBDIR} \
     tcc.c
-cp tcc-boot1 ${BINDIR}
-chmod 755 ${BINDIR}/tcc-boot1
+/usr/lib/stage0/bin/cp tcc-boot1 ${BINDIR}
+/usr/lib/stage0/bin/chmod 755 ${BINDIR}/tcc-boot1
 cd ../${MES_PKG}
 tcc-boot1 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o ${LIBDIR}/crt1.o lib/linux/${MES_ARCH}-mes-gcc/crt1.c
 if match ${ARCH} x86; then
@@ -419,8 +419,8 @@ tcc-boot1 \
     -L . \
     -L ${LIBDIR} \
     tcc.c
-cp tcc-boot2 ${BINDIR}
-chmod 755 ${BINDIR}/tcc-boot2
+/usr/lib/stage0/bin/cp tcc-boot2 ${BINDIR}
+/usr/lib/stage0/bin/chmod 755 ${BINDIR}/tcc-boot2
 cd ../${MES_PKG}
 tcc-boot2 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o ${LIBDIR}/crt1.o lib/linux/${MES_ARCH}-mes-gcc/crt1.c
 if match ${ARCH} x86; then
@@ -483,11 +483,11 @@ tcc-boot2 \
     -L . \
     -L ${LIBDIR} \
     tcc.c
-chmod 755 ${BINDIR}/tcc
-cp ${BINDIR}/tcc ${BINDIR}/tcc-0.9.26
-chmod 755 ${BINDIR}/tcc-0.9.26
+/usr/lib/stage0/bin/chmod 755 ${BINDIR}/tcc
+/usr/lib/stage0/bin/cp ${BINDIR}/tcc ${BINDIR}/tcc-0.9.26
+/usr/lib/stage0/bin/chmod 755 ${BINDIR}/tcc-0.9.26
 # tcc-boot2 was only the linker for the deliverable; it is not an exported output.
-rm ${BINDIR}/tcc-boot2
+/usr/lib/stage0/bin/rm ${BINDIR}/tcc-boot2
 
 # Also recompile getopt, we don't need to do this during the boot* stages
 # because nothing is linked against it.  `-c`/`-ar` only (no crt/lib link), so the
@@ -520,7 +520,7 @@ cd /build
 # stage0.answers (see that file). kaem --strict ABORTS HARD on any mismatch, so this verifies the
 # whole spine (tcc-mes/boot0/boot1/deliverable tcc + libc/libgetopt/crt1/libtcc1) reproduces
 # byte-identically — the L4 fixed-point property for R2.
-sha256sum -c stage0.answers
+/usr/lib/stage0/bin/sha256sum -c stage0.answers
 
 ###########################################################################
 # §D STAGING: the build wrote every output directly into OUTPUT_DIR=/build/output
