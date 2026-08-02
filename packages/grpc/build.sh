@@ -20,6 +20,7 @@ cmake -B build \
   -DgRPC_RE2_PROVIDER=package \
   -DgRPC_SSL_PROVIDER=package \
   -DgRPC_ZLIB_PROVIDER=package \
+  -DgRPC_DOWNLOAD_ARCHIVES=OFF \
   -DCMAKE_CXX_STANDARD=14
 make -C build -j$(nproc)
 make DESTDIR=$OUTPUT_DIR -C build install

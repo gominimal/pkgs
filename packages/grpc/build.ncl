@@ -1,11 +1,11 @@
-let { subsetOf, BuildSpec, Local, Source, OutputBin, OutputLib, OutputData, Test, .. } = import "minimal.ncl" in
+let { subsetOf, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 
 let version = "1.83.0" in
 
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
-let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let glibc = import "../glibc/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
@@ -61,6 +61,7 @@ let zlib = import "../zlib/build.ncl" in
     headers = { glob = "usr/include/**" } | OutputData,
     cmake = { glob = "usr/lib/cmake/**" } | OutputData,
     pkgconfig = { glob = "usr/lib/pkgconfig/**" } | OutputData,
+    roots = { glob = "usr/share/grpc/roots.pem" } | OutputData,
   },
 
   attrs = {
