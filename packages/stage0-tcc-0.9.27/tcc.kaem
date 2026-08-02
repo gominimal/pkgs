@@ -183,7 +183,7 @@ cd /build
 # symbols-ar + static-link, then the amd64 FP fixes neg-float-const v3 + cast-signed-direct), stage0.answers
 # was re-pinned from the green re-build (tcc/libc.a/libtcc1.a shas changed; the fixed tcc compiles mes-libc
 # float code correctly). Gate ON again — seal-verify confirms the patched spine reproduces byte-identically.
-/usr/lib/stage0/bin/sha256sum -c stage0.answers
+/usr/lib/stage0/bin/sha256sum -c stage0.answers.pins
 
 ###########################################################################
 # §D STAGING: every output was written directly into OUTPUT_DIR=/build/output, so there is no

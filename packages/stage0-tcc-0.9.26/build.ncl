@@ -55,7 +55,13 @@ let stage0-mescc-full = import "../stage0-mescc-full/build.ncl" in # R0.5 — ka
   # explicit and greppable rather than dependent on PATH order.
   build_deps = [
     { file = "tcc.kaem" } | Local, # the kaem driver (derived from pass1.kaem)
-    { file = "stage0.answers" } | Local, # sha256sum -c byte-identity gate (RECORD-AT-PIN-TIME for amd64)
+    { file = "stage0.answers" } | Local,
+    # Comment-free sidecar. R0.5's sha256sum (mescc-tools-extra) parses `-c` input with hex2int
+    # from byte 0 and exits on the first non-hex character, so it CANNOT read the comment headers
+    # that stage0.answers carries (42 and 28 lines respectively). The prose stays in the original;
+    # the gate reads this. Generated, not hand-maintained -- regenerate with:
+    #   grep -v '^#' stage0.answers > stage0.answers.pins
+    { file = "stage0.answers.pins" } | Local, # sha256sum -c byte-identity gate (RECORD-AT-PIN-TIME for amd64)
     { file = "remove-fileopen.before" } | Local, # verbatim live-bootstrap simple-patch pattern
     { file = "remove-fileopen.after" } | Local,
     { file = "addback-fileopen.before" } | Local,

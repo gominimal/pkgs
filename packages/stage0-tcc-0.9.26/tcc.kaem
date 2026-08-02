@@ -520,7 +520,7 @@ cd /build
 # stage0.answers (see that file). kaem --strict ABORTS HARD on any mismatch, so this verifies the
 # whole spine (tcc-mes/boot0/boot1/deliverable tcc + libc/libgetopt/crt1/libtcc1) reproduces
 # byte-identically — the L4 fixed-point property for R2.
-/usr/lib/stage0/bin/sha256sum -c stage0.answers
+/usr/lib/stage0/bin/sha256sum -c stage0.answers.pins
 
 ###########################################################################
 # §D STAGING: the build wrote every output directly into OUTPUT_DIR=/build/output
