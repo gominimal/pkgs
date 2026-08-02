@@ -10,14 +10,14 @@ let dbus = import "../dbus/build.ncl" in
 let libxml2 = import "../libxml2/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.60.5" in
+let version = "2.60.6" in
 {
   name = "at-spi2-core",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/at-spi2-core-%{version}.tar.xz",
-      sha256 = "6059a77d507438ff6c8d6d06025f8f9f5774fa0f8eabe9c9b059b1cc41e1bbc0",
+      sha256 = "a89b64a8b217a8042bdf0e35cbfab629ceee35640dba75df578afde9aa789d57",
       extract = true,
       strip_prefix = "at-spi2-core-%{version}",
     } | Source,
