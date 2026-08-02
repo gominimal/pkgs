@@ -77,31 +77,34 @@ let python = import "../python/build.ncl" in
   },
 
   tests = {
-    link_and_run = {
-      class = 'Standalone,
-      test_deps = [base, toolchain, binutils, linux_headers],
-      cmds = [
-        ["/bin/bash", "-c", "echo '#include <grpc/grpc.h>\nint main() { grpc_init(); grpc_shutdown(); return 0; }' > test.c"],
-        ["/bin/gcc", "test.c", "-lgrpc", "-o", "test"],
-        ["./test"],
-      ],
-    } | Test,
-    plugin_check = {
-      class = 'Standalone,
-      test_deps = [base],
-      cmds = [
-        ["/bin/bash", "-c", "for p in cpp csharp node objective_c php python ruby; do command -v grpc_${p}_plugin > /dev/null || exit 1; done"],
-      ],
-    } | Test,
-    proto_compile = {
-      class = 'Standalone,
-      test_deps = [base, toolchain, binutils, protobuf, python, linux_headers],
-      cmds = [
-        ["/bin/bash", "-c", "echo 'syntax = \"proto3\"; package test; service Echo { rpc Ping (Message) returns (Message) {} } message Message { string body = 1; }' > test.proto"],
-        ["/bin/bash", "-c", "protoc --cpp_out=. test.proto"],
-        ["/bin/bash", "-c", "for p in cpp csharp node objective_c php python ruby; do protoc --plugin=protoc-gen-grpc_${p}=$(command -v grpc_${p}_plugin) --grpc_${p}_out=. test.proto; done"],
-        ["/bin/bash", "-c", "g++ -c test.pb.cc test.grpc.pb.cc -std=c++17"],
-      ],
-    } | Test,
+    link_and_run =
+      {
+        class = 'Standalone,
+        test_deps = [base, toolchain, binutils, linux_headers],
+        cmds = [
+          ["/bin/bash", "-c", "echo '#include <grpc/grpc.h>\nint main() { grpc_init(); grpc_shutdown(); return 0; }' > test.c"],
+          ["/bin/gcc", "test.c", "-lgrpc", "-o", "test"],
+          ["./test"],
+        ],
+      } | Test,
+    plugin_check =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "for p in cpp csharp node objective_c php python ruby; do command -v grpc_${p}_plugin > /dev/null || exit 1; done"],
+        ],
+      } | Test,
+    proto_compile =
+      {
+        class = 'Standalone,
+        test_deps = [base, toolchain, binutils, protobuf, python, linux_headers],
+        cmds = [
+          ["/bin/bash", "-c", "echo 'syntax = \"proto3\"; package test; service Echo { rpc Ping (Message) returns (Message) {} } message Message { string body = 1; }' > test.proto"],
+          ["/bin/bash", "-c", "protoc --cpp_out=. test.proto"],
+          ["/bin/bash", "-c", "for p in cpp csharp node objective_c php python ruby; do protoc --plugin=protoc-gen-grpc_${p}=$(command -v grpc_${p}_plugin) --grpc_${p}_out=. test.proto; done"],
+          ["/bin/bash", "-c", "g++ -c test.pb.cc test.grpc.pb.cc -std=c++17"],
+        ],
+      } | Test,
   },
 } | BuildSpec
