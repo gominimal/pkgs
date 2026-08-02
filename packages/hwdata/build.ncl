@@ -3,14 +3,14 @@ let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "0.409" in
+let version = "0.410" in
 {
   name = "hwdata",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/vcrhonek/hwdata/v%{version}.tar.gz",
-      sha256 = "23006accc0f931dd5187d0307a57d0744e2b8feb85e73c37bc0f5229fb31eadd",
+      sha256 = "2864b061b179b8ad8cb6a7339ca07678240a183d9cedce8677a4950acaf798e0",
       extract = true,
       strip_prefix = "hwdata-%{version}",
     } | Source,
