@@ -1,0 +1,35 @@
+# UNPINNED — stage0-coreutils byte-identity seal, record-at-pin-time.
+#
+# WHY THIS FILE EXISTS AT ALL, BEYOND THE SEAL. build.ncl declares it as a `| Local` build_dep, and
+# minimal's decoder reads every Local input EAGERLY and PANICS THE WHOLE PROCESS if it cannot:
+#   hermetic-builder-rs/vendor/minimal/crates/decode/src/builds.rs:552
+#     blake3::hash(&std::fs::read(&full_path).unwrap_or_else(|err| panic!(
+#         "Local input could not be read: {} (file: {})", err, full_path.display())))
+# There is no fallback and no Result. From 2026-07-31 to 2026-08-02 this file was DECLARED but never
+# committed, so stage0-coreutils aborted the decode of the entire 492-package layer — the package
+# could not fail a build, because no build could ever start.
+#
+# WHY IT IS NOT SIMPLY DROPPED FROM build.ncl. 19 sibling packages carry a stage0.answers; it is the
+# ladder's byte-identity instrument, and this rung will need one for exactly the same reason they do.
+# Dropping the declaration would have made decode succeed while quietly removing the only mechanism
+# this rung has for proving reproducibility. Creating the file WITHOUT wiring build.sh to read it
+# would have been worse still: a declared input that nothing consumes is decoration, and this project
+# has scars from decoration that reads as evidence. build.sh reads it (see its CU-SEAL block).
+#
+# STATUS: UNPINNED, and legitimately so — no CS build of stage0-coreutils has ever completed, so
+# there are no bytes to pin. This is NOT a placeholder standing in for hashes someone forgot to
+# paste; it is the accurate statement that this rung has produced nothing yet.
+#
+# TO PIN (only after the CU-GATE in build.sh runs green inside the builder, twice):
+#   1. From a gate-passing build, in $OUTPUT_DIR run:
+#        sha256sum usr/bin/chmod usr/bin/cp usr/bin/mkdir usr/bin/rm \
+#                  usr/bin/cat usr/bin/sort usr/bin/tr usr/bin/install usr/bin/md5sum
+#      (build.sh prints exactly this line, and the resulting hashes, while UNPINNED.)
+#   2. Confirm a SECOND independent build produces the SAME hashes. One run is not reproducibility;
+#      two runs sharing a warm cache or a dirty tree are not either — see the retracted CUA_PASS.
+#   3. Replace this entire comment block with the `sha256sum -c` lines. Paths RELATIVE to $OUTPUT_DIR.
+#   4. Set SEAL_FATAL=1 in build.sh to promote the seal from advisory to fail-shut.
+#
+# TOOL LIST CAVEAT: the list above deliberately omits sha256sum, which coreutils 5.0 cannot build
+# (measured: zero "sha256" references in the 5.0 tree). If build.ncl's VERSION DECISION POINT lands
+# on a version that ships SHA-2, add usr/bin/sha256sum to step 1 as well.
