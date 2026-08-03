@@ -14,13 +14,13 @@ let xz = import "../xz/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 
-let version = "4.4.1" in
+let version = "4.4.2" in
 {
   name = "cmake",
   build_deps = [
     {
       url = "gs://minimal-staging-archives/Kitware/CMake/v%{version}.tar.gz",
-      sha256 = "33b21b0be53eb10adcf2f2aaa40e2d62017e9b5c82610528d4051aa17e02cf04",
+      sha256 = "e821bfb902a4f5e47b6e45bdae0a781918043d4b2c5517a023bc99596ae6abaf",
       extract = true,
       strip_prefix = "CMake-%{version}",
     } | Source,
