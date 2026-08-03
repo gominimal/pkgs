@@ -13,7 +13,14 @@ let version = "3.53.3" in
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/sqlite-autoconf-3500400.tar.gz",
-      sha256 = "c917d7db16648ec95f714974ace5e5dcf46b7dc70e26600a0a102a3141125db0"
+      # Corrected 2026-08-03. The previous pin c917d7db… matched NOTHING: not upstream, not the
+      # mirror object, not the tarball on disk. Verified three independent ways, all agreeing on
+      # the value below — upstream https://www.sqlite.org/2025/sqlite-autoconf-3500400.tar.gz, the
+      # mirror object fetched separately, and the archive's own contents (3,173,050 bytes, valid
+      # gzip, containing sqlite-autoconf-3500400/sqlite3.c). A version bump where the sha did not
+      # follow. This stale pin hard-failed mirror_hydrate::hydrate_sources for the WHOLE graph on
+      # main — hex0 included, despite hex0 having zero deps and needing no sqlite.
+      sha256 = "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18"
     } | Source,
     base-bootstrap,
     make,
