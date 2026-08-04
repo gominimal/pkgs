@@ -4,14 +4,14 @@ let glibc = import "../glibc/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "0.21.1" in
+let version = "0.23.0" in
 {
   name = "gopls",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/golang/tools/archive/refs/tags/gopls/v%{version}.tar.gz",
-      sha256 = "af211e00c3ffe44fdf2dd3efd557e580791e09f8dbb4284c917bd120bc3c8f9c",
+      sha256 = "1ba41875b918db73c6a409ad8f552b85f72dfeea43ffb541b798322ff6b4152b",
       extract = true,
       strip_prefix = "tools-gopls-v%{version}",
     } | Source,
