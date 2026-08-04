@@ -66,6 +66,32 @@ let version = "3.12" in
       },
     } | Attrs,
 
+  replace_on_cycle =
+    {
+      name = "diffutils (prebuilt)",
+      prebuilt = true,
+      build_deps = [
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/diffutils/c4bfe6f7dd469d90dccbbfa3dc70e77b4ee5fb3c742a548844e618ee89ebf5c8.tar.zst",
+              sha256 = "3d309754ed968722a853c82ab9ed01704a4e9f1a88428f47be14e393e7107643",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/diffutils/arm64-linux-gnu/diffutils_3.12_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "44067b09965bb890d58eb0f12839bd3d56c76fa4e0cbd3d8713f564f301c61f2",
+              extract = true,
+            } | Source,
+        } target,
+      ],
+      outputs = {
+        usr_bin = { glob = "usr/bin/**/*" } | OutputLib,
+        usr_share = { glob = "usr/share/**/*" } | OutputLib,
+      },
+    } | BuildSpec,
+
   tests = {
     smoketest = standaloneTest "/bin/cmp --version",
 
