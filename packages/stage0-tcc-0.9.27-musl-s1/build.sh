@@ -13,6 +13,12 @@ emit(){ echo "$1"; echo "$1" >> /build/tm/rows.txt; }
 
 emit "S1-INFO build GOT-fixed tcc-musl (mes-linked, musl-configured) in clean MES env — $($TCC26 -version 2>&1 | head -1)"
 emit "S1-INFO mes crt: $(ls -la /usr/lib/mes/crt1.o 2>/dev/null | awk '{print $5}')B  mes libc.a: $(ls -la /usr/lib/mes/libc.a 2>/dev/null | awk '{print $5}')B  mes hdr stdlib.h: $(test -f /usr/include/stdlib.h && echo yes || echo NO)"
+# WHICH stdio.h won /usr/include? The bootstrap glibc anchor extracts usr/include/** into every
+# sandbox and first-writer-wins races it against this rung's own headers. When glibc's wins,
+# tcc dies in its bits/*.h chain and the mes-libc error reporter SIGSEGVs (be=0) — the entire
+# "S1 lottery". Read the sha here instead of inferring it from a crash (2026-08-04, core
+# rdi="In file ", stack shows bits/stdio_lim.h + bits/types.h — glibc-only headers).
+emit "S1-HDR stdio.h=$(sha256sum /usr/include/stdio.h 2>/dev/null | cut -c1-16) alltypes=$(test -f /usr/include/bits/alltypes.h && echo musl-present || echo no-musl) stdio_lim=$(test -f /usr/include/bits/stdio_lim.h && echo GLIBC-PRESENT || echo clean)"
 
 cd /build/tm
 tar --no-same-owner -xzf "$BUILDROOT/tccsrc.tar.gz" 2>/tmp/te; xrc=$?
