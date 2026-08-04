@@ -5,6 +5,30 @@
 # in the committed package-lock.json. No transitive tree, no native addons, no
 # compile step — the whole build is an extract.
 #
+# WHY A REGISTRY ARTIFACT AND NOT A SOURCE BUILD — AGENTS.md requires this be
+# called out explicitly, and the reason is not "nobody tried". Source IS
+# published (codeload .../vltpkg/tar.gz/refs/tags/v1.0.1, 200, 7.4 MB, 48 real
+# TypeScript workspaces). It cannot be built with a toolchain we have:
+#
+#   - The only lockfile in the repo is `vlt-lock.json` — vlt's own format.
+#     There is no pnpm-lock.yaml and no package-lock.json.
+#   - Dependency specs use the `catalog:` protocol with the catalog declared in
+#     `vlt.json`. Measured against the extracted tarball:
+#         npm  → EUNSUPPORTEDPROTOCOL: Unsupported URL Type "catalog:"
+#         pnpm → ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC (pnpm supports
+#                catalogs, but reads pnpm-workspace.yaml, not vlt.json)
+#     `package.json` has no `workspaces` key at all, so neither tool can even
+#     see the monorepo layout.
+#   - Upstream CI agrees: `uses: vltpkg/setup-vlt@v1` then `vlt install`.
+#   - The published package (`infra/cli/package.json`) declares `bin: null`,
+#     `dependencies: {}`, and one script — `prepack: vlt-build-prepack`. The
+#     npm tarball is generated wholesale by their internal bundler.
+#
+# So building vlt from source requires vlt: a genuine bootstrap cycle, which is
+# the "required toolchain genuinely isn't packaged yet" case AGENTS.md carves
+# out. Breaking it would mean a two-stage `vlt-bootstrap` → `vlt` pair in the
+# gawk-bootstrap shape; worth doing if vlt becomes load-bearing, not before.
+#
 # `node-lts`, not `node`, for both build and runtime. Two reasons, and the
 # private `usr/libexec/vlt` prefix below is the third leg of the same argument
 # (gominimal/pkgs#370: a global `usr/lib/node_modules` install collides with
