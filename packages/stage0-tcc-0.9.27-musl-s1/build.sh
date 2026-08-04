@@ -98,7 +98,7 @@ else
   # mechanism without naming it (this bit me while writing this very fix). (ASLR is separately disabled globally now, Dockerfile.prod:91
   # -> sandbox2 personality(ADDR_NO_RANDOMIZE), so the old "per-task ASLR" attribution is stale too.)
   if [ "$bc" = 139 ]; then
-    emit "S1-BUILD-ERR mes-libc SIGSEGV rc=139 in tcc-0.9.26 (a compiled ELF linked against mes-libc; no Scheme interpreter and no GC arena are in this process) compiling unit=${failunit:-link} — DETERMINISTIC, not retryable, do not re-enqueue: $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
+    emit "S1-BUILD-ERR mes-libc SIGSEGV rc=139 in tcc-0.9.26 (a compiled ELF linked against mes-libc; no Scheme interpreter and no GC arena are in this process) compiling unit=${failunit:-link} — deterministic WITHIN this sandbox (all in-recipe tries share one layout, ASLR already off); a NEW sandbox re-rolls it (measured 2026-08-04: fail 3/3 sandbox A, pass 1/3 sandbox B, same box+sources), so RE-ENQUEUE is the correct retry: $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
   else
     emit "S1-BUILD-ERR (non-lottery, rc=$bc unit=${failunit:-link}, deterministic — fix the recipe, not a re-enqueue): $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
   fi

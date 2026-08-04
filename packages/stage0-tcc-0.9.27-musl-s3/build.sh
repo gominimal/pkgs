@@ -20,31 +20,46 @@ cd tccsrc || { emit "S3-FAIL no tccsrc (deterministic extract failure — NOT th
 # copy s1's libtcc1.a through (tcc-musl2 bakes /usr/lib/tcc/libtcc1.a — same x86_64 archive)
 cp "$LT" "$LIBOUT/libtcc1.a"
 
-# TM1 (mes-linked, flaky on the big tcc.c) compiles+LINKS tcc.c against MUSL -> tcc-musl2 (musl-linked).
-# libc.a TWICE for the libc<->libtcc1 abort cycle. Retry the mes-libc lottery.
+# TM1 (mes-linked, flaky on huge compile units) rebuilds tcc against MUSL -> tcc-musl2 (musl-linked).
+# PIECEWISE, same as s1 (2026-08-04): the SIGSEGV scales with compile-unit size, and ONE_SOURCE=1
+# was the one giant unit — s1 crossed this exact wall by compiling the ten units separately
+# (retrospective 2026-06-30 called for this port; the 08-04 cold chain measured s3 crashing 3/3
+# on the ONE_SOURCE compile right after a piecewise s1 sailed through).
 TM2=/build/tcc-musl2
-built=0
+DEFS=(
+  -D TCC_TARGET_X86_64=1
+  -D ONE_SOURCE=0   # tcc.h:293 defaults ONE_SOURCE=1 when undefined; must be =0 explicitly for a
+                    # real multi-file build (else libtcc.c/tcc.c #include the whole program and
+                    # ST_FUNC=static breaks the link). Upstream Makefile:177 mandates this. (s1:36-41)
+  -D 'CONFIG_TCCDIR="/usr/lib/tcc"'
+  -D 'CONFIG_TCC_CRTPREFIX="/usr/lib"'
+  -D 'CONFIG_TCC_LIBPATHS="/usr/lib:/usr/lib/tcc"'
+  -D 'CONFIG_TCC_SYSINCLUDEPATHS="/usr/include"'
+  -D 'TCC_LIBGCC="/usr/lib/tcc/libtcc1.a"'
+  -D CONFIG_TCC_STATIC=1
+  -D CONFIG_USE_LIBGCC=1
+  -D 'TCC_VERSION="0.9.27musl2"'
+)
+UNITS="libtcc tccpp tccgen tccelf tccrun x86_64-gen x86_64-link i386-asm tccasm tcc"
+built=0; bc=0; failunit=""
 # Lottery is deterministic within a sandbox, so a big in-task loop can't escape a bad-layout task —
-# keep it tiny and let `orch enqueue --retry-on-lottery N` (fresh sandbox per roll) do the real work.
+# keep it tiny; a re-enqueue (fresh sandbox = fresh layout) is the real retry.
 for i in $(seq 1 3); do
-  rm -f "$TM2"
-  "$TM1" -w -static -o "$TM2" \
-    -D TCC_TARGET_X86_64=1 \
-    -D CONFIG_TCCDIR=\"/usr/lib/tcc\" \
-    -D CONFIG_TCC_CRTPREFIX=\"/usr/lib\" \
-    -D CONFIG_TCC_LIBPATHS=\"/usr/lib:/usr/lib/tcc\" \
-    -D CONFIG_TCC_SYSINCLUDEPATHS=\"/usr/include\" \
-    -D TCC_LIBGCC=\"/usr/lib/tcc/libtcc1.a\" \
-    -D CONFIG_TCC_STATIC=1 \
-    -D CONFIG_USE_LIBGCC=1 \
-    -D TCC_VERSION=\"0.9.27musl2\" \
-    -D ONE_SOURCE=1 \
-    -I . -I /usr/include \
-    tcc.c 2>/tmp/be
+  rm -f "$TM2"; for u in $UNITS; do rm -f "$u.o"; done; : > /tmp/be
+  ok=1
+  for u in $UNITS; do
+    "$TM1" -w -c "${DEFS[@]}" -I . -I /usr/include -o "$u.o" "$u.c" 2>>/tmp/be
+    bc=$?
+    { [ "$bc" = 0 ] && [ -f "$u.o" ]; } || { ok=0; failunit="$u"; break; }
+  done
+  [ "$ok" = 1 ] || continue
+  objs=""; for u in $UNITS; do objs="$objs $u.o"; done
+  # $objs MUST word-split; TM1 is musl-configured so -static links musl crt + libc from /usr/lib
+  "$TM1" -w -static -o "$TM2" $objs 2>>/tmp/be
   bc=$?
-  [ "$bc" = 0 ] && [ -x "$TM2" ] && { built=1; break; }   # require a CLEAN compile exit (bc=0), not a partial +x binary from a crash
+  { [ "$bc" = 0 ] && [ -x "$TM2" ]; } && { built=1; break; }   # require a CLEAN exit, not a crash's partial +x
 done
-emit "S3-BUILD tcc-musl2 built=$built (try $i/3 last-rc=$bc be-bytes=$(wc -c </tmp/be | tr -d ' '))"
+emit "S3-BUILD tcc-musl2 built=$built piecewise (try $i/3 last-rc=$bc failunit=${failunit:-none} be-bytes=$(wc -c </tmp/be | tr -d ' '))"
 if [ "$built" != 1 ]; then
   # NO cache-poisoning fallback (cp TM1 -> tcc-musl2 would ship s1's flaky mes-linked compiler as the
   # supposedly-stable musl tcc-musl2 — s1:58-59 warns against exactly this). Leave tcc-musl2 absent.
@@ -58,7 +73,7 @@ if [ "$built" != 1 ]; then
     # no GC arena in this process. It also fired only after ALL 30 in-recipe tries failed, which is
     # evidence of DETERMINISM, not of a draw. The tokens are SUBSTRING-matched, so even writing
     # "NOT mes-m2" re-triggers the classifier -- describe the mechanism without naming it.
-    emit "S3-BUILD-ERR SIGSEGV rc=139 in tcc-musl (a compiled ELF; no Scheme interpreter or GC arena in this process) after ALL 30 in-recipe tries — 30 identical failures is DETERMINISTIC; do not re-enqueue: $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
+    emit "S3-BUILD-ERR SIGSEGV rc=139 in tcc-musl (a compiled ELF; no Scheme interpreter or GC arena in this process) unit=${failunit:-link} — deterministic WITHIN this sandbox (all in-recipe tries share one layout); a NEW sandbox re-rolls it (measured 2026-08-04: s1 failed 3/3 then passed 1/3 in the next sandbox), so RE-ENQUEUE is the correct retry: $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
   else
     emit "S3-BUILD-ERR (non-lottery, rc=$bc, deterministic — fix the tcc<->musl link, not a re-enqueue): $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
   fi
