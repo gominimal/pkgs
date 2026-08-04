@@ -34,7 +34,6 @@ let version = "1.4.21" in
     locales = { glob = "usr/share/locale/**" } | OutputData,
   },
 
-| BuildSpec,
   attrs =
     {
       upstream_version = version,
