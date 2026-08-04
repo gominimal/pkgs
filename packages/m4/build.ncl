@@ -34,33 +34,7 @@ let version = "1.4.21" in
     locales = { glob = "usr/share/locale/**" } | OutputData,
   },
 
-  replace_on_cycle =
-    {
-      name = "m4 (prebuilt)",
-      prebuilt = true,
-      build_deps = [
-        match {
-          { arch = 'Amd64, .. } =>
-            {
-              url = "gs://minimal-staging-archives/prebuilts/m4/0e48c2baab84e74ed9916a01eecf0dbc0377e247a05220ea63536bd3d189d466.tar.zst",
-              sha256 = "104907b54fb3edd8c0c18fddffbb5bacda1dea11c224118670c3cbb52ace8cce",
-              extract = true,
-            } | Source,
-          { arch = 'Arm64, .. } =>
-            {
-              url = "gs://minimal-staging-archives/prebuilts/m4/arm64-linux-gnu/m4_1.4.21_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "f5ae68574e32452d9f14cf2c47138fe969be6886cce761e9213adffecbbc08c6",
-              extract = true,
-            } | Source,
-        } target,
-      ],
-      outputs = {
-        bins = { glob = "usr/bin/**/*" } | OutputBin,
-        mans = { glob = "usr/share/man/**" } | OutputData,
-        infos = { glob = "usr/share/info/*.info" } | OutputData,
-        locales = { glob = "usr/share/locale/**" } | OutputData,
-      },
-    } | BuildSpec,
+| BuildSpec,
   attrs =
     {
       upstream_version = version,
