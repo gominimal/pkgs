@@ -52,33 +52,6 @@ let version = "5.48" in
     includes = { glob = "usr/include/**" } | OutputData,
   },
 
-  replace_on_cycle =
-    {
-      name = "file (prebuilt)",
-      prebuilt = true,
-      build_deps = [
-        match {
-          { arch = 'Amd64, .. } =>
-            {
-              url = "gs://minimal-staging-archives/prebuilts/file/595683b1e5b1f4d571fe224eb0d19ebd61d55bcc64c09c67d0b1c1cecbf3046e.tar.zst",
-              sha256 = "380fddc64d1f1ea0fc2d1044d3b6a4a9b48c91f2b3f8fbe46c7d1faa2d315837",
-              extract = true,
-            } | Source,
-          { arch = 'Arm64, .. } =>
-            {
-              url = "gs://minimal-staging-archives/prebuilts/file/arm64-linux-gnu/file_5.46_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "405f9433716791c108025de925ca77d9b4c9be6fc1cc0e1ab62c44a2a061225e",
-              extract = true,
-            } | Source,
-        } target,
-      ],
-      outputs = {
-        usr_bin = { glob = "usr/bin/**/*" } | OutputBin,
-        usr_lib = { glob = "usr/lib/**/*" } | OutputLib,
-        usr_include = { glob = "usr/include/**/*" } | OutputLib,
-        usr_share = { glob = "usr/share/**/*" } | OutputLib,
-      }
-    } | BuildSpec,
   attrs =
     {
       upstream_version = version,

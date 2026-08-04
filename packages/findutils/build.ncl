@@ -70,31 +70,6 @@ let version = "4.11.0" in
       repology_project = "findutils",
     } | Attrs,
 
-  replace_on_cycle =
-    {
-      name = "findutils (prebuilt)",
-      prebuilt = true,
-      build_deps = [
-        match {
-          { arch = 'Amd64, .. } =>
-            {
-              url = "gs://minimal-staging-archives/prebuilts/findutils/6d2d376ab982c9fe5bc932457922e40984208f49b5d3419b00774f6f1f57df89.tar.zst",
-              sha256 = "94a015e63faf0de0d4dd9d1d615c07a38e1baa2d0f5b7515b83abe0292ccac7e",
-              extract = true,
-            } | Source,
-          { arch = 'Arm64, .. } =>
-            {
-              url = "gs://minimal-staging-archives/prebuilts/findutils/arm64-linux-gnu/findutils_4.10.0_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "2cf3c2126b701aa268489bfc8063ac3698d6d2792706d38852eff46326a0d86e",
-              extract = true,
-            } | Source,
-        } target,
-      ],
-      outputs = {
-        usr = { glob = "usr/**/*" } | OutputLib,
-      },
-    } | BuildSpec,
-
   tests = {
     smoketest = standaloneTest "/bin/find --version",
 
