@@ -47,30 +47,6 @@ let version = "3.8.2" in
     aclocals = { glob = "usr/share/aclocal/*" } | OutputData,
   },
 
-  replace_on_cycle =
-    {
-      name = "bison (prebuilt)",
-      prebuilt = true,
-      build_deps = [
-        match {
-          { arch = 'Amd64, .. } =>
-            {
-              url = "gs://minimal-staging-archives/prebuilts/bison/f20d864670fe5db56ec2d789aa3d2397a83a96536204652ff054ed06d8422303.tar.zst",
-              sha256 = "8e30740fcb39511167736ea64d4dec41854633075e26e4631a51df22e9522316",
-              extract = true,
-            } | Source,
-          { arch = 'Arm64, .. } =>
-            {
-              url = "gs://minimal-staging-archives/prebuilts/bison/arm64-linux-gnu/bison_3.8.2_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "b70f0d25b0ce81a2a32299f29ec0d41897258e177bdb32c1608e642876121c06",
-              extract = true,
-            } | Source,
-        } target,
-      ],
-      outputs = {
-        usr = { glob = "usr/**/*" } | OutputLib,
-      },
-    } | BuildSpec,
   attrs =
     {
       upstream_version = version,
