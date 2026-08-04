@@ -83,6 +83,36 @@ let version = "3.12" in
       },
     } | Attrs,
 
+  replace_on_cycle =
+    {
+      name = "grep (prebuilt)",
+      prebuilt = true,
+      build_deps = [
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/grep/bc88864516b96d7d7b20e927f0129d57581a2a634f642522ae2f20ad2e15e391.tar.zst",
+              sha256 = "0a031ab16d0f899eb5013eaffc1bc4b44c11531b0fa42226ad7b7511ccf2d493",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/grep/arm64-linux-gnu/grep_3.12_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "97fc6bad9cc01106ecf460f9fb68015da04acb590409c83557de0d751887be21",
+              extract = true,
+            } | Source,
+        } target,
+      ],
+      runtime_deps = [
+        pcre2,
+      ],
+      outputs = {
+        grep_bin = { glob = "usr/bin/grep" } | OutputBin,
+        egrep_bin = { glob = "usr/bin/egrep" } | OutputBin,
+        fgrep_bin = { glob = "usr/bin/fgrep" } | OutputBin,
+      },
+    } | BuildSpec,
+
   tests = {
     smoketest = standaloneTest "/bin/grep --version",
 
