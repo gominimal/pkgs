@@ -5,6 +5,17 @@
 # in the committed package-lock.json. No transitive tree, no native addons, no
 # compile step — the whole build is an extract.
 #
+# `node-lts`, not `node`, for both build and runtime. Two reasons, and the
+# private `usr/libexec/vlt` prefix below is the third leg of the same argument
+# (gominimal/pkgs#370: a global `usr/lib/node_modules` install collides with
+# whichever node variant the user actually has):
+#   - vlt's own CI tests Node 22.x only (`node-version: '^22.22.0'`, `[22.x]`)
+#     and `engines` says `>=22.22.0`. Our node-lts is 24.14.1, node is 25.8.2 —
+#     neither is 22.x, but LTS is two majors closer to what upstream tests.
+#   - pnpm, the closest analogue in this repo (also a package manager, also a
+#     node CLI), is on node-lts for exactly this reason — see #97/#98: the node
+#     most users and hosting providers run is whatever ships with current LTS.
+#
 # Deliberately NO `source_provenance`. vlt's vuln identity is its npm package
 # name, and minimal-supply-chain routes a node-flavored package with no
 # provenance to `pkg:npm/<name>` (scan.rs `npm_purl_for_node_package`) so the
@@ -14,7 +25,7 @@
 # correct here, not an oversight.
 let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
-let node = import "../node/build.ncl" in
+let node-lts = import "../node-lts/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let version = "1.0.1" in
 {
@@ -24,9 +35,9 @@ let version = "1.0.1" in
     { file = "package.json" } | Local,
     { file = "package-lock.json" } | Local,
     base,
-    node,
+    node-lts,
   ],
-  runtime_deps = [coreutils, node],
+  runtime_deps = [coreutils, node-lts],
   needs =
     {
       dns = {},
