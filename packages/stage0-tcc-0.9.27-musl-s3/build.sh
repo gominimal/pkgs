@@ -26,6 +26,22 @@ cd tccsrc || { emit "S3-FAIL no tccsrc (deterministic extract failure — NOT th
 # copy s1's libtcc1.a through (tcc-musl2 bakes /usr/lib/tcc/libtcc1.a — same x86_64 archive)
 cp "$LT" "$LIBOUT/libtcc1.a"
 
+# ── FAIL FAST ON A MIXED INCLUDE TREE ────────────────────────────────────────────────────
+# The banner above claims "/usr/include is pure musl". MEASURED FALSE 2026-08-04: glibc
+# arrives as bash/coreutils' runtime dep and races R4's musl headers for the SAME paths, so
+# the tree can end up MIXED — musl's bits/alltypes.h present while glibc's stdio.h won
+# (exactly the failing run: alltypes=musl-present + stdio.h=5c1ff423). tcc then errors deep
+# in glibc's bits/*.h chain and the mes-libc error reporter SIGSEGVs, eating the message —
+# 90 minutes of build to reach an unexplained rc=139.
+# musl's stdio.h includes <bits/alltypes.h>; glibc's does not. One grep tells us which won.
+if ! grep -q 'bits/alltypes.h' /usr/include/stdio.h 2>/dev/null; then
+  emit "S3-FAIL-FAST /usr/include/stdio.h is NOT musl's (sha=$(sha256sum /usr/include/stdio.h 2>/dev/null | cut -c1-16)) — the rootfs assembled a MIXED libc include tree and this rung cannot build against it. NOT a compiler bug and NOT a draw to grind on: re-enqueue for a fresh sandbox, or fix rootfs precedence so a declared dep (R4 musl) beats an inherited one (glibc via coreutils)."
+  cp /build/tm/rows.txt "$LOGOUT/rows.log" 2>/dev/null
+  grep S3- /build/tm/rows.txt | tee "$MAN"
+  exit 1
+fi
+emit "S3-HDR-OK /usr/include/stdio.h is musl's — include tree is coherent"
+
 # TM1 (mes-linked, flaky on huge compile units) rebuilds tcc against MUSL -> tcc-musl2 (musl-linked).
 # PIECEWISE, same as s1 (2026-08-04): the SIGSEGV scales with compile-unit size, and ONE_SOURCE=1
 # was the one giant unit — s1 crossed this exact wall by compiling the ten units separately
