@@ -54,7 +54,15 @@ DEFS=(
   -D CONFIG_USE_LIBGCC=1
   -D 'TCC_VERSION="0.9.27PW2"'
 )
-INCS=(-I . -I /usr/include -I /usr/include/mes)
+# MES HEADERS FIRST. The banner above claims "/usr/include is pure mes" — MEASURED FALSE
+# 2026-08-04: mes installs its headers under /usr/include/mes/ ONLY (9 files), while
+# /usr/include/stdio.h comes from GLIBC, which rides into the sandbox as bash/coreutils'
+# runtime dep. Worse, TWO glibc providers contend for that path across runs (observed
+# stdio.h=776e7aad → build passes, 5c1ff423 → tcc dies in glibc's bits/*.h chain and the
+# mes-libc error reporter SIGSEGVs, eating the diagnostic: the whole "s1 lottery").
+# Searching mes first makes this rung read the libc it was written against, whichever
+# glibc happens to be mounted.
+INCS=(-I . -I /usr/include/mes -I /usr/include)
 # x86_64 units: matches libtcc.c's ONE_SOURCE includes for TCC_TARGET_X86_64 + CONFIG_TCC_ASM, plus
 # tcc.c (the CLI, which unconditionally #includes tcctools.c -> carries `-ar`). NO ONE_SOURCE => each
 # is its own small compilation unit.
