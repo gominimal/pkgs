@@ -10,14 +10,14 @@ let pnpm = import "../pnpm/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "16.2.12" in
+let version = "16.3.0" in
 {
   name = "next",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/vercel/next.js/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "659f766845f4f7914fbed5d4836b6c8a85eefcf6f852b7126e5eb71d582be682",
+      sha256 = "9269716701c0aee3e8138530c01f11a22f5fc20c5dec0d3ce131b7e5741caa9b",
       extract = true,
       strip_prefix = "next.js-%{version}",
     } | Source,
