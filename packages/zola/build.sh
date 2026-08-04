@@ -18,6 +18,21 @@ export LD=gcc
 # embeds a compilation-session hash in symbol names, which varies run to run.
 export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo -C codegen-units=1 -C symbol-mangling-version=v0"
 export CARGO_INCREMENTAL=0
-cargo build --release
+# Deterministic build-time entropy (the guide's prescribed shim, built here
+# because it exists nowhere else yet): interposes getrandom/getentropy so
+# build.rs / proc-macro / rustc-internal HashMaps iterate identically every
+# build. Runtime binary is unaffected — this wraps only the BUILD.
+cat > /tmp/detrand.c <<'SHIM'
+#include <stddef.h>
+#include <sys/types.h>
+ssize_t getrandom(void *buf, size_t n, unsigned int flags) {
+    unsigned char *p = buf; size_t i;
+    for (i = 0; i < n; i++) p[i] = (unsigned char)(0xA5 ^ (i * 157));
+    return (ssize_t)n;
+}
+int getentropy(void *buf, size_t n) { getrandom(buf, n, 0); return 0; }
+SHIM
+gcc -shared -fPIC -O2 -o /tmp/detrand.so /tmp/detrand.c
+LD_PRELOAD=/tmp/detrand.so cargo build --release
 mkdir -p "$OUTPUT_DIR/usr/bin"
 cp "target/release/zola" "$OUTPUT_DIR/usr/bin/"
