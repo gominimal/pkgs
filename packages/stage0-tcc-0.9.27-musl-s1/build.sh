@@ -54,7 +54,12 @@ INCS=(-I . -I /usr/include -I /usr/include/mes)
 # is its own small compilation unit.
 UNITS="libtcc tccpp tccgen tccelf tccrun x86_64-gen x86_64-link i386-asm tccasm tcc"
 built=0; bc=0; failunit=""
-for i in $(seq 1 3); do
+for i in $(seq 1 9); do
+  # Layout perturbation: with ASLR off, the child's initial stack position is a function of
+  # envp+argv byte counts. Growing this var between tries gives each try a DIFFERENT layout —
+  # the in-sandbox loop becomes a real re-roll instead of 3 identical draws (measured 2026-08-04:
+  # outcome is fixed per layout; sandbox A failed 3/3, sandbox B passed 1/3, same box+sources).
+  STACK_PAD="$(printf 'x%.0s' $(seq 1 $((i*17))))"; export STACK_PAD
   rm -f "$TM"; for u in $UNITS; do rm -f "$u.o"; done; : > /tmp/be
   ok=1
   for u in $UNITS; do
@@ -69,7 +74,7 @@ for i in $(seq 1 3); do
   bc=$?
   { [ "$bc" = 0 ] && [ -x "$TM" ]; } && { built=1; break; }
 done
-emit "S1-BUILD tcc-musl built=$built piecewise (try $i/3 last-rc=$bc failunit=${failunit:-none} be=$(wc -c </tmp/be | tr -d ' '))"
+emit "S1-BUILD tcc-musl built=$built piecewise (try $i/9 last-rc=$bc failunit=${failunit:-none} be=$(wc -c </tmp/be | tr -d ' '))"
 if [ "$built" = 1 ]; then
   cp "$TM" "$BINOUT/tcc-musl"
   emit "S1-OK tcc-musl: $("$TM" -version 2>&1 | head -1)"

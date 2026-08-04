@@ -44,7 +44,12 @@ UNITS="libtcc tccpp tccgen tccelf tccrun x86_64-gen x86_64-link i386-asm tccasm 
 built=0; bc=0; failunit=""
 # Lottery is deterministic within a sandbox, so a big in-task loop can't escape a bad-layout task —
 # keep it tiny; a re-enqueue (fresh sandbox = fresh layout) is the real retry.
-for i in $(seq 1 3); do
+for i in $(seq 1 9); do
+  # Layout perturbation: with ASLR off, the child's initial stack position is a function of
+  # envp+argv byte counts. Growing this var between tries gives each try a DIFFERENT layout —
+  # the in-sandbox loop becomes a real re-roll instead of 3 identical draws (measured 2026-08-04:
+  # outcome is fixed per layout; sandbox A failed 3/3, sandbox B passed 1/3, same box+sources).
+  STACK_PAD="$(printf 'x%.0s' $(seq 1 $((i*17))))"; export STACK_PAD
   rm -f "$TM2"; for u in $UNITS; do rm -f "$u.o"; done; : > /tmp/be
   ok=1
   for u in $UNITS; do
@@ -59,7 +64,7 @@ for i in $(seq 1 3); do
   bc=$?
   { [ "$bc" = 0 ] && [ -x "$TM2" ]; } && { built=1; break; }   # require a CLEAN exit, not a crash's partial +x
 done
-emit "S3-BUILD tcc-musl2 built=$built piecewise (try $i/3 last-rc=$bc failunit=${failunit:-none} be-bytes=$(wc -c </tmp/be | tr -d ' '))"
+emit "S3-BUILD tcc-musl2 built=$built piecewise (try $i/9 last-rc=$bc failunit=${failunit:-none} be-bytes=$(wc -c </tmp/be | tr -d ' '))"
 if [ "$built" != 1 ]; then
   # NO cache-poisoning fallback (cp TM1 -> tcc-musl2 would ship s1's flaky mes-linked compiler as the
   # supposedly-stable musl tcc-musl2 — s1:58-59 warns against exactly this). Leave tcc-musl2 absent.
