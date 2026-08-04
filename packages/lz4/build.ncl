@@ -48,6 +48,37 @@ let version = "1.10.0" in
     includes = { glob = "usr/include/**" } | OutputData,
   },
 
+  replace_on_cycle =
+    {
+      name = "lz4 (prebuilt)",
+      prebuilt = true,
+      build_deps = [
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/lz4/fbd8d1e9a8c1cb2987f8264b4b86466e4e6c185cae545f5ab5f4f40a45525730.tar.zst",
+              sha256 = "e346a414f9ce3fcbd0d190aa835c9bc5881019919f4dcbb99e4e661cb9c77b34",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/lz4/arm64-linux-gnu/lz4_1.10.0_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "e1101b6d1ea54d5ef20050c105f07b18bd881e5823365d520ae2055a308ffd84",
+              extract = true,
+            } | Source,
+        } target,
+      ],
+      outputs = {
+        lz4 = { glob = "usr/bin/lz4" } | OutputBin,
+        lz4c = { glob = "usr/bin/lz4c" } | OutputBin,
+        lz4cat = { glob = "usr/bin/lz4cat" } | OutputBin,
+        unlz4 = { glob = "usr/bin/unlz4" } | OutputBin,
+        liblz4 = { glob = "usr/lib/liblz4.so*" } | OutputLib,
+        pkgconfigs = { glob = "usr/lib/pkgconfig/**" } | OutputData,
+        mans = { glob = "usr/share/man/**" } | OutputData,
+        includes = { glob = "usr/include/**" } | OutputData,
+      },
+    } | BuildSpec,
   attrs =
     {
       upstream_version = version,
