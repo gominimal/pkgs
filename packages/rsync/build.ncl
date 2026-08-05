@@ -9,6 +9,8 @@ let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let xxhash = import "../xxhash/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
+let acl = import "../acl/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 
 {
   name = "rsync",
@@ -30,7 +32,10 @@ let openssl = import "../openssl/build.ncl" in
   ],
 
   runtime_deps = [
-    glibc
+    glibc,
+    acl,
+    openssl,
+    coreutils
   ],
 
   cmd = "./build.sh",
@@ -39,8 +44,9 @@ let openssl = import "../openssl/build.ncl" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
-    man = { glob = "usr/share/man/**" } | OutputData,
+    rsync = { glob = "usr/bin/rsync" } | OutputBin,
+    "rsync-ssl" = { glob = "usr/bin/rsync-ssl" } | OutputBin,
+    mans = { glob = "usr/share/man/**" } | OutputData,
   },
 
   attrs = {

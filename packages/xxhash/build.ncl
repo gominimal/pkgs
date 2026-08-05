@@ -38,8 +38,8 @@ let glibc = import "../glibc/build.ncl" in
     bins = { glob = "usr/bin/*" } | OutputBin,
     libs = { glob = "usr/lib/{*.so*,*.a*}" } | OutputLib,
     headers = { glob = "usr/include/**" } | OutputData,
-    pkgconfig = { glob = "usr/lib/pkgconfig/**" } | OutputData,
-    man = { glob = "usr/share/man/**" } | OutputData,
+    pkgconfigs = { glob = "usr/lib/pkgconfig/**" } | OutputData,
+    mans = { glob = "usr/share/man/**" } | OutputData,
   },
 
   attrs = {
