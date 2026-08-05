@@ -290,6 +290,49 @@ $CFG --enable KVM
 $CFG --enable KVM_INTEL
 $CFG --enable KVM_AMD
 
+# --- strip defconfig hardware a virtio guest has no bus to find --------------
+# Everything above *adds* to x86_64_defconfig, which is a general-purpose
+# desktop/server config: it pins a pile of physical-hardware drivers =y that
+# this kernel can never reach, on any of the hypervisors we target. They cost
+# image size and boot-time probing and buy nothing.
+#
+# This is deliberately the conservative subset. Plenty of other defconfig
+# leftovers (sound, HID/PS2, ATA/SATA, SELinux-without-an-LSM-entry, the debug
+# options) are just as unreachable, but each needs its own argument about what
+# userland might still poke at, so they stay for now.
+
+# No wifi in a microVM; defconfig carries the whole 802.11 stack =y.
+nope CFG80211 MAC80211 RFKILL
+
+# Physical NIC drivers: defconfig pins E1000/E1000E/IGB/R8169/TIGON3/SKY2/
+# FORCEDETH/8139TOO/E100/NET_TULIP =y. Only the vendor-driver menu goes —
+# NETDEVICES and VIRTIO_NET stay.
+nope ETHERNET
+
+# The rootfs arrives over virtiofs or virtio-blk, never NFS. NETWORK_FILESYSTEMS
+# itself has to stay: 9P_FS lives under it, and 9p is wanted above.
+nope NFS_FS ROOT_NFS SUNRPC
+
+# None of our hypervisors emulate a USB controller, so xhci/ehci/ohci/uhci plus
+# usb-storage and usb-hid are unreachable.
+nope USB_SUPPORT
+
+# Assorted defconfig hardware with no virtio-guest analogue. Note VIRTIO_IOMMU
+# is a different symbol and is still wanted above — what goes here are the
+# drivers for real Intel/AMD IOMMUs.
+nope INTEL_IOMMU AMD_IOMMU
+nope PCCARD YENTA AGP HOTPLUG_PCI
+nope MACINTOSH_DRIVERS NVRAM WATCHDOG DMADEVICES
+nope BLK_DEV_MD  # keep BLK_DEV_DM — wanted above
+nope HIBERNATION
+nope KEXEC CRASH_DUMP
+nope QUOTA
+nope I2C HPET
+# Not in that list: EFI_STUB. On x86 it's a promptable symbol and --disable
+# works, but on arm64 it's a bare `bool` that CONFIG_EFI selects, so the only
+# way to drop it there is to turn off UEFI support entirely — a much bigger
+# call on arm64 than the handful of KiB it saves.
+
 # Resolve any new dependencies / silently drop options renamed upstream.
 make olddefconfig
 
