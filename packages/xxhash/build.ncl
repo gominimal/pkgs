@@ -35,7 +35,11 @@ let glibc = import "../glibc/build.ncl" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    xxhsum = { glob = "usr/bin/xxhsum" } | OutputBin,
+    xxh3sum = { glob = "usr/bin/xxh3sum" } | OutputBin,
+    xxh64sum = { glob = "usr/bin/xxh64sum" } | OutputBin,
+    xxh32sum = { glob = "usr/bin/xxh32sum" } | OutputBin,
+    xxh128sum = { glob = "usr/bin/xxh128sum" } | OutputBin,
     libs = { glob = "usr/lib/{*.so*,*.a*}" } | OutputLib,
     headers = { glob = "usr/include/**" } | OutputData,
     pkgconfigs = { glob = "usr/lib/pkgconfig/**" } | OutputData,
