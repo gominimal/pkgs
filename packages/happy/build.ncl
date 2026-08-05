@@ -5,7 +5,7 @@ let ghc-bootstrap = import "../ghc-bootstrap/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.20.1.1" in
+let version = "2.1.6" in
 {
   name = "happy",
 
@@ -13,7 +13,7 @@ let version = "1.20.1.1" in
     { file = "build.sh" } | Local,
     {
       url = "https://hackage.haskell.org/package/happy-%{version}/happy-%{version}.tar.gz",
-      sha256 = "8b4e7dc5a6c5fd666f8f7163232931ab28746d0d17da8fa1cbd68be9e878881b",
+      sha256 = "9b473961010cb5673510f4133d914b9d5ad667b16aafe4a5555d9962dbf05b19",
       extract = true,
     } | Source,
     base,
