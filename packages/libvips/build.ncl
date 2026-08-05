@@ -15,14 +15,14 @@ let zlib = import "../zlib/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "8.18.4" in
+let version = "8.18.5" in
 {
   name = "libvips",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/libvips/libvips/releases/download/v%{version}/vips-%{version}.tar.xz",
-      sha256 = "2677bad6c422617fd1172d359c16af34e736965d042c214203a87187d26ff037",
+      sha256 = "8c4e6332d818249ed05ce98e36e6ed8a08e3249ac70f69680842ab2e5fee8510",
       extract = true,
       strip_prefix = "vips-%{version}",
     } | Source,
