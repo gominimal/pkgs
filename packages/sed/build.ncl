@@ -35,6 +35,7 @@ let version = "4.10" in
     grep,
     linux_headers,
     make,
+    sed,
     tar,
   ],
   runtime_deps = [
@@ -58,6 +59,36 @@ let version = "4.10" in
         name = "sed",
       },
     } | Attrs,
+
+  replace_on_cycle =
+    {
+      name = "sed (prebuilt)",
+      prebuilt = true,
+      build_deps = [
+        match {
+          { arch = 'Amd64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/sed/b2454441fcc0966caa42b1a66c39de67ed9f4fbf507443a4443313b2d955e43d.tar.zst",
+              sha256 = "0545b519704c923b41c2a704eb5162245f7496d35df09deeb051f54a7a218bed",
+              extract = true,
+            } | Source,
+          { arch = 'Arm64, .. } =>
+            {
+              url = "gs://minimal-staging-archives/prebuilts/sed/arm64-linux-gnu/sed_4.9_arm64-linux-gnu_prebuilt.tar.zst",
+              sha256 = "47e7f1648b3990e3f89656e8b93b5b795174ed1a06de2a1d173502a147088b49",
+              extract = true,
+            } | Source,
+        } target,
+      ],
+      # TODO: runtime_deps in a cycle breaker are borked?
+      # runtime_deps = [
+      #   acl,
+      #   attr,
+      # ],
+      outputs = {
+        sed = { glob = "usr/bin/sed" } | OutputBin,
+      },
+    } | BuildSpec,
 
   tests = {
     smoketest = standaloneTest "/bin/sed --version",
