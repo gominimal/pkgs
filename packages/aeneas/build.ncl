@@ -68,6 +68,11 @@ let version = "20260713" in
   attrs =
     {
       upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "AeneasVerif",
+        repo = "aeneas",
+      },
       license_spdx = "Apache-2.0",
     } | Attrs,
   tests = {
