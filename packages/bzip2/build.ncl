@@ -1,6 +1,12 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
-let base-bootstrap = import "../base-bootstrap/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let sed = import "../sed/build.ncl" in
+let tar = import "../tar/build.ncl" in
+let gzip = import "../gzip/build.ncl" in
+let make = import "../make/build.ncl" in
+let diffutils = import "../diffutils/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -14,7 +20,13 @@ let version = "1.0.8" in
       url = "gs://minimal-staging-archives/bzip2-%{version}.tar.gz",
       sha256 = "ab5a03176ee106d3f0fa90e381da478ddae405918153cca248e682cd0c4a2269"
     } | Source,
-    base-bootstrap,
+    bash-bootstrap,
+    coreutils,
+    sed,
+    tar,
+    gzip,
+    make,
+    diffutils,
     make,
     toolchain,
   ],
@@ -43,28 +55,6 @@ let version = "1.0.8" in
     headers = { glob = "usr/include/bzlib.h" } | OutputData,
   },
 
-  replace_on_cycle =
-    {
-      name = "bzip2 (prebuilt)",
-      prebuilt = true,
-      build_deps = [
-        match {
-          { arch = 'Amd64, .. } =>
-            {
-              url = "gs://minimal-staging-archives/prebuilts/bzip2/75355884e09794f5aa09558214ab877cfd1d026cf1f888d093ecfe6dd762ee85.tar.zst",
-              sha256 = "30161bb4830b54bd007e1f4c9188e98b9d310d119d31bb0ab65b12a4a43cdaea",
-              extract = true,
-            } | Source,
-          { arch = 'Arm64, .. } =>
-            {
-              url = "gs://minimal-staging-archives/prebuilts/bzip2/arm64-linux-gnu/bzip2_1.0.8_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "59684a904c14cbc161a743692366a112f211e2ce51e38cc92ae2476aaf961a52",
-              extract = true,
-            } | Source,
-        } target,
-      ],
-      outputs = {},
-    } | BuildSpec,
   attrs =
     {
       upstream_version = version,
