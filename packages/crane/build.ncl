@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.21.8" in
+let version = "0.21.9" in
 {
   name = "crane",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/google/go-containerregistry/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "29a1b525881f89bf07c50537e40ea3609e2fe5d6851b9f62cf7452ab1104445d",
+      sha256 = "6d8bce869afcc485b518cc0d59ea0ffe1090026db965806bc3be8793182528cc",
       extract = true,
       strip_prefix = "go-containerregistry-%{version}",
     } | Source,
