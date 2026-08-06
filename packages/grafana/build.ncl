@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -42,8 +42,6 @@ let arm64_sha256 = "660cc31dbd159d98a3804ac5104b0aca0e0d95ee4e88a164ff63ddd72f9f
 
   outputs = {
     grafana = { glob = "usr/bin/grafana" } | OutputBin,
-    grafana-server = { glob = "usr/bin/grafana-server" } | OutputBin,
-    grafana-cli = { glob = "usr/bin/grafana-cli" } | OutputBin,
     public = { glob = "usr/share/grafana/public/**" } | OutputData,
     conf = { glob = "usr/share/grafana/conf/**" } | OutputData,
   },
@@ -58,4 +56,27 @@ let arm64_sha256 = "660cc31dbd159d98a3804ac5104b0aca0e0d95ee4e88a164ff63ddd72f9f
         repo = "grafana",
       },
     } | Attrs,
+
+  tests = {
+    # The package had NO tests until the 12.4.3 -> 13.1.2 bump failed at
+    # `install: cannot stat 'bin/grafana-server'`. That failure was loud only
+    # because build.sh runs with `set -e`; the shape it belongs to — upstream
+    # changing which binaries a tarball ships — is otherwise invisible until a
+    # user runs the missing command.
+    smoketest = standaloneTest "/bin/grafana --version",
+
+    subcommands_replace_the_dropped_bins =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          # `grafana-server` and `grafana-cli` are gone as of 13. Assert the
+          # subcommands that replaced them actually exist, so "we dropped two
+          # bins" can never quietly become "we dropped the functionality".
+          ["/bin/bash", "-c", "/bin/grafana server --help >/dev/null"],
+          ["/bin/bash", "-c", "/bin/grafana cli --help >/dev/null"],
+        ],
+      }
+        | Test,
+  },
 } | BuildSpec
