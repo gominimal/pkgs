@@ -82,11 +82,21 @@ fi
   --prefix=/usr \
   GHC=ghc
 
+# Hadrian flags. These MUST be identical for the build and the install invocation:
+# hadrian does not encode the flavour in the _build tree paths, so an install run
+# with different flags silently redoes the entire build from scratch. It also
+# defaults to -j1, so the jobs flag has to be on both as well.
+#
+# We build the `default` flavour (-O2; vanilla + profiling + dynamic ways) because
+# downstream Haskell packages need the dynamic-way libraries. Passed explicitly
+# rather than left implicit -- an implicit flavour is what broke this before.
+HADRIAN_FLAGS=(-j"$(nproc)" --flavour=default --docs=none)
+
 # Now we can run the build!
-_build/bin/hadrian -j"$(nproc)" --flavour=quickest --docs=none
+_build/bin/hadrian "${HADRIAN_FLAGS[@]}"
 
 # And install!
-DESTDIR=$OUTPUT_DIR _build/bin/hadrian install --prefix=/usr --docs=none
+DESTDIR=$OUTPUT_DIR _build/bin/hadrian "${HADRIAN_FLAGS[@]}" install --prefix=/usr
 
 # Refresh the package database cache so downstream builds don't see stale cache warnings
 GHC_PKG="$(find "$OUTPUT_DIR" -name ghc-pkg -type f | head -1)"
