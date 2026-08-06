@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "3.255.0" in
+let version = "3.256.0" in
 {
   name = "pulumi",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/pulumi/pulumi/v%{version}.tar.gz",
-      sha256 = "c0ed8c10910d73d484547ab5146b12de3f607d84b63414f7d51bed1017497a8b",
+      sha256 = "43887337b91f4d61cb81d917947193337d4718dfe3ad21497857b431b279d886",
       extract = true,
       strip_prefix = "pulumi-%{version}",
     } | Source,

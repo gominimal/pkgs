@@ -1,12 +1,12 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "12.4.3" in
+let version = "13.1.2" in
 
-let amd64_sha256 = "64707f35d54a5441ecbc63c0b3b633b7e73fe404fac118e88574f56d70b08a93" in
-let arm64_sha256 = "825e31eb0aafcf026d7f04dd540042eedef42cb81a3d2832c296b27dacf7e95d" in
+let amd64_sha256 = "2215a38a59b573f114128e05f3836cb8708ac9b04b9283021ad28fdb88d71290" in
+let arm64_sha256 = "660cc31dbd159d98a3804ac5104b0aca0e0d95ee4e88a164ff63ddd72f9fda2e" in
 
 {
   name = "grafana",
@@ -42,8 +42,6 @@ let arm64_sha256 = "825e31eb0aafcf026d7f04dd540042eedef42cb81a3d2832c296b27dacf7
 
   outputs = {
     grafana = { glob = "usr/bin/grafana" } | OutputBin,
-    grafana-server = { glob = "usr/bin/grafana-server" } | OutputBin,
-    grafana-cli = { glob = "usr/bin/grafana-cli" } | OutputBin,
     public = { glob = "usr/share/grafana/public/**" } | OutputData,
     conf = { glob = "usr/share/grafana/conf/**" } | OutputData,
   },
@@ -58,4 +56,27 @@ let arm64_sha256 = "825e31eb0aafcf026d7f04dd540042eedef42cb81a3d2832c296b27dacf7
         repo = "grafana",
       },
     } | Attrs,
+
+  tests = {
+    # The package had NO tests until the 12.4.3 -> 13.1.2 bump failed at
+    # `install: cannot stat 'bin/grafana-server'`. That failure was loud only
+    # because build.sh runs with `set -e`; the shape it belongs to — upstream
+    # changing which binaries a tarball ships — is otherwise invisible until a
+    # user runs the missing command.
+    smoketest = standaloneTest "/bin/grafana --version",
+
+    subcommands_replace_the_dropped_bins =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          # `grafana-server` and `grafana-cli` are gone as of 13. Assert the
+          # subcommands that replaced them actually exist, so "we dropped two
+          # bins" can never quietly become "we dropped the functionality".
+          ["/bin/bash", "-c", "/bin/grafana server --help >/dev/null"],
+          ["/bin/bash", "-c", "/bin/grafana cli --help >/dev/null"],
+        ],
+      }
+        | Test,
+  },
 } | BuildSpec
