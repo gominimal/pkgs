@@ -136,8 +136,8 @@ let version = "15.2.0" in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/gcc/arm64-linux-gnu/gcc_12.4.0_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "eb0c777ac64c41781a8c846056b5817d23e8e16d16628f0b845c7b504e432654",
+              url = "gs://minimalmertic-debug-output/armd/artifacts/20260804T094739Z/stage0-gcc-15.2.0-glibc-aarch64.tar.zst",
+              sha256 = "fd451d7ec6c18a3d614bbf8691ffe3c82381c1a7689245e2fe7152e9f59cce0e",
               extract = true,
             } | Source,
         } target,
