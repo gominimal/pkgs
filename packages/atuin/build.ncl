@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "18.17.1" in
+let version = "18.19.0" in
 {
   name = "atuin",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/atuinsh/atuin/v%{version}.tar.gz",
-      sha256 = "851c3f4870e4bd181b98d2dae60b9fd76ef30f05f16a85efa21ac7e7cf294862",
+      sha256 = "fdb8268cdd5b13105db79e821f06c1c6624e0c5aee46befb0491e39af42fd4e6",
       extract = true,
       strip_prefix = "atuin-%{version}",
     } | Source,
