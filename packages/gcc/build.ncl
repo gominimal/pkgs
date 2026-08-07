@@ -136,8 +136,13 @@ let version = "15.2.0" in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/gcc/arm64-linux-gnu/gcc_12.4.0_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "eb0c777ac64c41781a8c846056b5817d23e8e16d16628f0b845c7b504e432654",
+              # BEDROCK ROOT (aarch64): our own hex0-rooted gcc-15.2.0, built on the sealed
+              # ladder hex0 -> tcc-0.9.27 -> binutils-2.30 -> gcc-4.7.3 -> 10.4.0 -> 15.2.0 ->
+              # binutils-2.41 + glibc-2.42 -> this. Replaces a foreign Debian gcc 12.4.0 prebuilt.
+              # Pinned by R12's 10-artifact byte seal (bedrock-aarch64/stage0-gcc-15.2.0-glibc/
+              # stage0.answers), 3 runs, armed `sha256sum -c` PASS.
+              url = "gs://minimalmertic-hermetic-mirror/sha256/6715136640b3e12d04231c34d4b17f0f39e7e034b94450a27769ca49e91ce5ad/stage0-gcc-15.2.0-glibc-aarch64.tar.zst",
+              sha256 = "6715136640b3e12d04231c34d4b17f0f39e7e034b94450a27769ca49e91ce5ad",
               extract = true,
             } | Source,
         } target,
