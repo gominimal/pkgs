@@ -136,7 +136,7 @@ let version = "15.2.0" in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimalmertic-debug-output/armd/artifacts/20260804T094739Z/stage0-gcc-15.2.0-glibc-aarch64.tar.zst",
+              url = "gs://minimalmertic-hermetic-mirror/sha256/fd451d7ec6c18a3d614bbf8691ffe3c82381c1a7689245e2fe7152e9f59cce0e/stage0-gcc-15.2.0-glibc-aarch64.tar.zst",
               sha256 = "fd451d7ec6c18a3d614bbf8691ffe3c82381c1a7689245e2fe7152e9f59cce0e",
               extract = true,
             } | Source,
