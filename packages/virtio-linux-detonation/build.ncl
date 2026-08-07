@@ -14,13 +14,14 @@ let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
 # Detonation observability kernel. Intentionally diverged from virtio-linux's
-# 6.12.43 base to 6.18.36 (newest LTS) for the materially newer BPF verifier +
+# 6.12.43 base to the 6.18 LTS line (6.18 is longterm; no 7.x line is longterm
+# as of 2026-08) for the materially newer BPF verifier +
 # features the in-VM eBPF observer needs (the 6.12 verifier rejected the env-scan
 # tracepoint with E2BIG). Same BPF-LSM/BTF/AUDIT config delta (see build.sh) and
 # the dwarves build_dep that supplies `pahole` for CONFIG_DEBUG_INFO_BTF. Source
 # moved off the gs:// staging mirror (only 6.1/6.12 staged there) to cdn.kernel.org,
 # matching the libkrunfw package's accepted pattern.
-let version = "6.18.36" in
+let version = "6.18.42" in
 {
   name = "virtio-linux-detonation",
 
@@ -28,7 +29,7 @@ let version = "6.18.36" in
     { file = "build.sh" } | Local,
     {
       url = "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-%{version}.tar.xz",
-      sha256 = "fbab86c9f471c81075b280cca30bd85d790c060063a1245859b6344b07c9c44e",
+      sha256 = "35a8ef5e8fb44467e56a42b40c23c4c10a61d1e95ff8d738f285230e8bed63e7",
       extract = true,
       strip_prefix = "linux-%{version}",
     } | Source,
