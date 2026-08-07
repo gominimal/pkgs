@@ -107,8 +107,13 @@ let version = "2.46.1" in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/binutils/arm64-linux-gnu/binutils_2.46.0_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "d21340bc9e9de5c1124fc7a2725868b26fbfe36b5a7c38c05cad9e19a786c613",
+              # BEDROCK ROOT (aarch64): our own hex0-rooted binutils-2.41 (R10), assembled by
+              # the sealed ladder that also produced the gcc root above. Pinned by R10's 9-artifact
+              # byte seal (bedrock-aarch64/stage0-binutils-2.41/stage0.answers).
+              # ⚠️ THIS IS A VERSION DOWNGRADE: 2.46.0 -> 2.41. That is a real behaviour change,
+              # not just a provenance swap, and it is the reason this lives on its own branch.
+              url = "gs://minimalmertic-hermetic-mirror/sha256/2c94c3d9ae665bcaacc52e4a6ea53d29e4d4904877b4d698f573d3e1d6356626/stage0-binutils-2.41-aarch64.tar.zst",
+              sha256 = "2c94c3d9ae665bcaacc52e4a6ea53d29e4d4904877b4d698f573d3e1d6356626",
               extract = true,
             } | Source,
         } target,
