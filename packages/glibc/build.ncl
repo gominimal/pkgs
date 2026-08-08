@@ -114,8 +114,17 @@ let version = "2.43" in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/glibc/arm64-linux-gnu/glibc_2.40_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "681bab31f2aac4d0379ca03014db608175366dcd8eeecd82ce385fd7b6adf507",
+              # BEDROCK ROOT (aarch64): our own hex0-rooted glibc-2.42 (R11), from the same sealed
+              # ladder as the gcc and binutils roots. Already in an allowlisted bucket.
+              # MEASURED against the tarball's entry list, not assumed: 472 headers at the STANDARD
+              # usr/include path, 32 usr/lib/*.so*, all 8 crt objects, etc/ present. The versioned
+              # usr/lib/glibc-bedrock-2.42/ tree (1701 entries) is an ADDITIONAL copy for -nostdinc
+              # consumers, not a replacement -- the earlier "ships no headers" claim was an artifact
+              # of a probe that PREFERRED the versioned path and never looked anywhere else.
+              # KNOWN GAP: usr/lib/locale/** is empty (the foreign 2.40 root ships 1 file there),
+              # so anything locale-dependent is the first place to expect trouble.
+              url = "gs://minimal-staging-archives/bedrock/aarch64/20260804/stage0-glibc-2.42-aarch64.tar.zst",
+              sha256 = "df3ae0df80cfe293f3b3f30ebb2a4638ae3add832f99e287c6ea7a2aa7430cf5",
               extract = true,
             } | Source,
         } target,
