@@ -123,8 +123,8 @@ let version = "2.43" in
               # of a probe that PREFERRED the versioned path and never looked anywhere else.
               # KNOWN GAP: usr/lib/locale/** is empty (the foreign 2.40 root ships 1 file there),
               # so anything locale-dependent is the first place to expect trouble.
-              url = "gs://minimal-staging-archives/bedrock/aarch64/20260804/stage0-glibc-2.42-aarch64.tar.zst",
-              sha256 = "df3ae0df80cfe293f3b3f30ebb2a4638ae3add832f99e287c6ea7a2aa7430cf5",
+              url = "gs://minimalmertic-hermetic-mirror/sha256/5a6f14e3a3ec84e7e0d73cd1ad8eb8c820e594d013136b90de0ca78b61bd2af2/stage0-glibc-2.42-aarch64.tar.zst",
+              sha256 = "5a6f14e3a3ec84e7e0d73cd1ad8eb8c820e594d013136b90de0ca78b61bd2af2",
               extract = true,
             } | Source,
         } target,
