@@ -22,6 +22,21 @@ let tar = import "../tar/build.ncl" in
 let xz = import "../xz/build.ncl" in
 let findutils = import "../findutils/build.ncl" in
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in
+# linux_headers IS a build dep, deliberately. `make headers` compiles exactly one host tool,
+# scripts/unifdef, and glibc's errno.h chain reaches for <linux/errno.h> then <asm/errno.h>. On
+# arm64 asm/errno.h is a GENERATED wrapper onto asm-generic that does not exist until later in the
+# same build, so the host tool cannot compile without kernel headers already present.
+#
+# This does NOT make the spec bound: boundness is P in T(P), and linux_headers does not depend back
+# on stage0-linux-headers-arm, so this spec stays out of its own transitive set and still builds
+# from source.
+#
+# WHAT IT COSTS, stated plainly: generation 1 of our headers root is compiled with the FOREIGN
+# headers prebuilt present in the sandbox. The OUTPUT is not derived from them -- usr/include comes
+# from `make headers` over the kernel SOURCE -- but the foreign package is a build input and will
+# appear in provenance. That is the ordinary bootstrap shape (a host compiler builds the first
+# compiler); the honest close is a generation 2 built against generation 1 and a fixed-point check.
+let linux_headers = import "../linux_headers/build.ncl" in
 let version = "6.12.43" in
 {
   name = "stage0-linux-headers-arm",
@@ -44,6 +59,7 @@ let version = "6.12.43" in
     xz,
     findutils,
     gawk-bootstrap,
+    linux_headers,
   ],
   cmd = "./build.sh",
   outputs = {
