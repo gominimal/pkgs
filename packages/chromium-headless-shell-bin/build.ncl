@@ -46,6 +46,12 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # rendering (mermaid-cli, e.g.) depend on this pkg alone to avoid
 # pulling the full browser.
 #
+# ⚠ CHANNEL: pre-stable BY DESIGN (pkgmgr-rs#646) — mirrors chromium-bin:
+# this pair tracks Playwright's pinned Chromium, ahead of the stable
+# channel. CVEs publish only against stable, so a 0/0/0 scan here means
+# "ahead of the published feed", NOT "audited clean". pkgmgr's nightly
+# sweep bumps the pair and alerts when the shipped major reaches stable.
+#
 # Source mix mirrors chromium-bin (see its header for the full
 # rationale): both legs are true open-source Chromium, deliberately NOT
 # Chrome for Testing (a branded Google Chrome build whose ToS does not
@@ -55,12 +61,12 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # branched from); arm64 from Playwright's own arm64 build.
 #
 # `revision` is the Playwright browser-revision number from
-# packages/playwright-core/browsers.json. Revision 1234 ↔ Chrome 151.0.7922.34
+# packages/playwright-core/browsers.json. Revision 1237 ↔ Chrome 152.0.7977.8
 # ↔ playwright-core ^1.59. `snapshot_position` must be re-derived whenever
 # `browser_version` bumps. Keep all three in lockstep with chromium-bin.
-let revision = "1234" in
-let browser_version = "151.0.7922.34" in
-let snapshot_position = "1654408" in
+let revision = "1237" in
+let browser_version = "152.0.7977.8" in
+let snapshot_position = "1669021" in
 {
   name = "chromium-headless-shell-bin",
   build_deps =
@@ -70,12 +76,12 @@ let snapshot_position = "1654408" in
         { arch = 'Amd64, .. } =>
           {
             url = "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/headless-shell.zip",
-            sha256 = "4cd2324a9343cf01fa192902c203250f73a14b6e60f4a775f84a2b26314c5cfa",
+            sha256 = "efd7bdeac429d8728e39eeb70b5de3355b276f134b159db61ffc7f6980e2b76c",
           } | Source,
         { arch = 'Arm64, .. } =>
           {
             url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-headless-shell-linux-arm64.zip",
-            sha256 = "b03443e1e1a60d06e07b6cdfe650b8c2bfcbb3db497d2b652f73dc6912f4ae15",
+            sha256 = "b3daa6584a2fcf8349d096e4b6c0706652ef1f87afd209455de509f17e7094d8",
           } | Source,
       } target,
       base,
@@ -91,7 +97,7 @@ let snapshot_position = "1654408" in
           [
             {
               url = "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/chrome-linux.zip",
-              sha256 = "c094b77ad8d462bacd54769c5aa1fcd2e9d61f9b146796bbcded9276cdc40a5e",
+              sha256 = "89a52b393189c7ab7ee0f1ebdaf8279c2c97d0c0e83708abe84292b57337da19",
             } | Source,
             # headless_command_resources.pak (the pak implementing --dump-dom &
             # friends in standalone headless) ships in NO snapshot artifact —
@@ -101,7 +107,7 @@ let snapshot_position = "1654408" in
             # artifact, same pin).
             {
               url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-headless-shell-linux-arm64.zip",
-              sha256 = "b03443e1e1a60d06e07b6cdfe650b8c2bfcbb3db497d2b652f73dc6912f4ae15",
+              sha256 = "b3daa6584a2fcf8349d096e4b6c0706652ef1f87afd209455de509f17e7094d8",
             } | Source,
           ],
         # Playwright's arm64 bundle is already complete.

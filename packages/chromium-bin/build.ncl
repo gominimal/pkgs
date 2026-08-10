@@ -48,6 +48,14 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # this case. The bare `chromium` name is intentionally left available
 # for a future source-built pkg.
 #
+# ⚠ CHANNEL: pre-stable BY DESIGN (pkgmgr-rs#646). This pair tracks
+# Playwright's pinned Chromium, which rides ahead of the stable channel
+# (the arm64 legs exist only for Playwright's revisions). CVEs are
+# published only against stable, so a 0/0/0 scan here means "ahead of
+# the published feed", NOT "audited clean" — and a held pin ages into
+# known-vulnerable as its major reaches stable. pkgmgr's nightly sweep
+# bumps the pair and alerts from the day that happens.
+#
 # Source mix — both legs are true open-source Chromium (BSD-3-Clause),
 # deliberately NOT Chrome for Testing: CfT is a *branded Google Chrome*
 # build governed by the Chrome ToS, which does not permit redistribution
@@ -63,7 +71,7 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 #     (Google publishes no linux-arm64; Playwright still builds arm64).
 #
 # `revision` is the Playwright browser-revision number from
-# packages/playwright-core/browsers.json. Revision 1234 ↔ Chrome 151.0.7922.34
+# packages/playwright-core/browsers.json. Revision 1237 ↔ Chrome 152.0.7977.8
 # ↔ playwright-core ^1.59. `snapshot_position` must be re-derived whenever
 # `browser_version` bumps. Keep all three in lockstep with
 # chromium-headless-shell-bin.
@@ -78,9 +86,9 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # If it doesn't, pass `executablePath: '/bin/chromium'` (or
 # '/bin/chromium-headless-shell' from the headless-shell pkg) to
 # bypass the registry lookup. See packages/chromium-bin/README.md.
-let revision = "1234" in
-let browser_version = "151.0.7922.34" in
-let snapshot_position = "1654408" in
+let revision = "1237" in
+let browser_version = "152.0.7977.8" in
+let snapshot_position = "1669021" in
 {
   name = "chromium-bin",
   build_deps = [
@@ -89,12 +97,12 @@ let snapshot_position = "1654408" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/chrome-linux.zip",
-          sha256 = "c094b77ad8d462bacd54769c5aa1fcd2e9d61f9b146796bbcded9276cdc40a5e",
+          sha256 = "89a52b393189c7ab7ee0f1ebdaf8279c2c97d0c0e83708abe84292b57337da19",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-linux-arm64.zip",
-          sha256 = "b5ad7d8fe70f230b34198ddb5626d717c016db2f627cb44b922babbcaf3479b9",
+          sha256 = "a188a0c13a944da8eb9b327dd473bf0378a10e170b2729d75b7be4520a9cfa1a",
         } | Source,
     } target,
     base,
