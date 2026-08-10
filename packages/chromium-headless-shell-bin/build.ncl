@@ -46,6 +46,12 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # rendering (mermaid-cli, e.g.) depend on this pkg alone to avoid
 # pulling the full browser.
 #
+# ⚠ CHANNEL: pre-stable BY DESIGN (pkgmgr-rs#646) — mirrors chromium-bin:
+# this pair tracks Playwright's pinned Chromium, ahead of the stable
+# channel. CVEs publish only against stable, so a 0/0/0 scan here means
+# "ahead of the published feed", NOT "audited clean". pkgmgr's nightly
+# sweep bumps the pair and alerts when the shipped major reaches stable.
+#
 # Source mix mirrors chromium-bin (see its header for the full
 # rationale): both legs are true open-source Chromium, deliberately NOT
 # Chrome for Testing (a branded Google Chrome build whose ToS does not

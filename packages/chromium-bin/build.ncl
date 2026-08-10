@@ -48,6 +48,14 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # this case. The bare `chromium` name is intentionally left available
 # for a future source-built pkg.
 #
+# ⚠ CHANNEL: pre-stable BY DESIGN (pkgmgr-rs#646). This pair tracks
+# Playwright's pinned Chromium, which rides ahead of the stable channel
+# (the arm64 legs exist only for Playwright's revisions). CVEs are
+# published only against stable, so a 0/0/0 scan here means "ahead of
+# the published feed", NOT "audited clean" — and a held pin ages into
+# known-vulnerable as its major reaches stable. pkgmgr's nightly sweep
+# bumps the pair and alerts from the day that happens.
+#
 # Source mix — both legs are true open-source Chromium (BSD-3-Clause),
 # deliberately NOT Chrome for Testing: CfT is a *branded Google Chrome*
 # build governed by the Chrome ToS, which does not permit redistribution
