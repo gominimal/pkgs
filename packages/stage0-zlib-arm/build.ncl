@@ -44,6 +44,14 @@ let version = "1.3.2" in
     zconf_h = { glob = "usr/include/zconf.h" } | OutputData,
     zlib_h = { glob = "usr/include/zlib.h" } | OutputData,
     pkgconfig = { glob = "usr/lib/pkgconfig/zlib.pc" } | OutputData,
+    # libz.a is NOT declared by packages/zlib -- but the FOREIGN prebuilt tarball ships it, and
+    # materialize_prebuilt never calls match_outputs_into, so a prebuilt slot delivers its WHOLE
+    # tarball into every sandbox that maps it. The foreign slot was therefore silently supplying a
+    # static libz that nothing declared. Promoting to our artifact removed it, invisibly to a
+    # declared-output check. `base` happens not to static-link zlib (rc=0), but that is luck.
+    # A promotion must be a content SUPERSET of the slot it replaces, not just of the declaration.
+    libz_a = { glob = "usr/lib/libz.a" } | OutputLib,
+    man = { glob = "usr/share/man/man3/zlib.3" } | OutputData,
   },
 
   attrs =
