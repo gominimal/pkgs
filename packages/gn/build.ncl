@@ -29,7 +29,12 @@ let gcc = import "../gcc/build.ncl" in
 # garbage. The clean fix is a curated NAME_KEYED_VERSION_CHECK entry in
 # pkgmgr-rs reading the gitiles API for the latest commit position —
 # tracked as a follow-up on pkgmgr-rs#681.
-let version = "0.2511" in
+# The two pins. `version` is DERIVED from `position`, and build.sh renders
+# the version header from the forwarded build_args — so a bump edits these
+# two lines (plus the archive sha) and nothing can go stale in lockstep.
+let position = "2511" in
+let commit = "7324363900cc" in
+let version = "0.%{position}" in
 {
   name = "gn",
   build_deps = [
@@ -51,6 +56,10 @@ let version = "0.2511" in
   ],
 
   cmd = "./build.sh",
+  build_args = {
+    include position,
+    include commit,
+  },
 
   outputs = {
     gn = { glob = "usr/bin/gn" } | OutputBin,
@@ -72,7 +81,7 @@ let version = "0.2511" in
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          ["/bin/bash", "-c", "/bin/gn --version | grep -q '^2511 '"],
+          ["/bin/bash", "-c", "/bin/gn --version | grep -q '^%{position} '"],
         ],
       } | Test,
   },
