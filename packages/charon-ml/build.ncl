@@ -66,6 +66,11 @@ let version = "0.1.223" in
   attrs =
     {
       upstream_version = version,
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "AeneasVerif",
+        repo = "charon",
+      },
       license_spdx = "Apache-2.0",
     } | Attrs,
   tests = {
