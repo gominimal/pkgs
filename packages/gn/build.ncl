@@ -1,4 +1,4 @@
-let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let python = import "../python/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
