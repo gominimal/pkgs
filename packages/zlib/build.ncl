@@ -50,8 +50,20 @@ let version = "1.3.2" in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/zlib/arm64-linux-gnu/zlib_1.3.1_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "0b2fe0629252c9b40e14ec36d31dead5c385bf668c6de4b336cd34542b955cf3",
+              # BEDROCK ROOT (aarch64): built from source by stage0-zlib-arm on the toolchain whose
+              # gcc/binutils/glibc roots are our own hex0-rooted artifacts. 42 gcc invocations,
+              # verified against THIS package's own output globs before repointing:
+              #   usr/lib/libz.so*  -> libz.so, libz.so.1, libz.so.1.3.2
+              #   usr/include/{zconf.h,zlib.h}   usr/lib/pkgconfig/zlib.pc
+              # all present. That check matters because materialize_prebuilt returns before the
+              # unmatched-glob check, so a missing declared output would fail SILENTLY later.
+              #
+              # ⚠️ VERSION CHANGE 1.3.1 -> 1.3.2 (the from-source recipe builds 1.3.2).
+              # ⚠️ GENERATION 1: built in a sandbox populated by foreign prebuilts. The OUTPUT is
+              # from source; the foreign packages are BUILD INPUTS and appear in provenance. Not
+              # yet hex0-rooted. The close is a generation-2 rebuild + fixed-point check.
+              url = "gs://minimalmertic-hermetic-mirror/sha256/dbea11e90298ad12fdcb030fa27c4430a5da8a83c8717b72a3ce4bf5625ecb8a/stage0-zlib-arm-aarch64.tar.zst",
+              sha256 = "dbea11e90298ad12fdcb030fa27c4430a5da8a83c8717b72a3ce4bf5625ecb8a",
               extract = true,
             } | Source,
         } target,
