@@ -3,14 +3,14 @@ let base = import "../base/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "83.0.0" in
+let version = "84.0.0" in
 {
   name = "setuptools",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/setuptools-%{version}.tar.gz",
-      sha256 = "188917862e785dc039fbc353b809ff185237411101fa270241034a6ec0e4f44b"
+      sha256 = "1cdd0d67229315c742282343f265cac91bb0976f83b2cf78dfa2f4a14343fe2a"
     } | Source,
     base,
     python,
