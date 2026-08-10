@@ -4,14 +4,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let uv = import "../uv/build.ncl" in
 let python = import "../python/build.ncl" in
 let libarchive = import "../libarchive/build.ncl" in
-let version = "326" in
+let version = "327" in
 {
   name = "diffoscope",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/diffoscope-%{version}.tar.gz",
-      sha256 = "21aaa977a9fbdf6e2b70b675a700ad1f80e878ac1dac59cf6fb0ba5f319616c7"
+      sha256 = "b5a398de17b180637cf091ba5c3c9fecde9dc8f5c2c80204ff8dd78e1b9d5358"
     } | Source,
     base,
     toolchain,

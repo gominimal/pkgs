@@ -12,14 +12,14 @@ let toolchain = import "../toolchain/build.ncl" in
 # master (debbugs.gnu.org #79627) but NOT in a release yet, and it makes Emacs
 # require tree-sitter >= 0.25. Bump to 0.26 only TOGETHER with an Emacs release
 # that ships the #79627 fix (coordinated reverse-dep upgrade).
-let version = "0.26.11" in
+let version = "0.26.12" in
 {
   name = "tree-sitter",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/tree-sitter/tree-sitter/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "1bab01ed21464f3272665b9c60e39ee79f68da1333e80b23f2c9356569d06971",
+      sha256 = "428e2b182fe38eddc100d8bd851e47c96921a69281b66abafc25ba4b0aaeeeab",
       extract = true,
       strip_prefix = "tree-sitter-%{version}",
     } | Source,
