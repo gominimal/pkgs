@@ -7,14 +7,14 @@ let ninja = import "../ninja/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "1.17.0" in
+let version = "1.18.0" in
 {
   name = "gtest",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/google/googletest/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "65fab701d9829d38cb77c14acdc431d2108bfdbf8979e40eb8ae567edf10b27c",
+      sha256 = "6e3191c1455468b3fc35a417fb565c1c5071aee1b7e7f85e30cf48a98d37d8b5",
       extract = true,
       strip_prefix = "googletest-%{version}",
     } | Source,
