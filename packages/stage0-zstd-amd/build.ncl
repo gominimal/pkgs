@@ -61,6 +61,8 @@ let version = "1.5.7" in
   cmd = "./build.sh",
 
   outputs = {
+    # catch-all: a promotion must be a content SUPERSET of the slot it replaces.
+    slot_all = { glob = "usr/**" } | OutputData,
     # Technically bins like zstdless depend on /bin/sh, but its not practical to depend on bash at such a low level.
     # Disable the lint for now.
     zstd_bin = { glob = "usr/bin/zstd" } | OutputBin,

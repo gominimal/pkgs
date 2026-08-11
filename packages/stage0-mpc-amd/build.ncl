@@ -75,6 +75,8 @@ let version = "1.4.1" in
   },
 
   outputs = {
+    # catch-all: a promotion must be a content SUPERSET of the slot it replaces.
+    slot_all = { glob = "usr/**" } | OutputData,
     libs = { glob = "usr/lib/libmpc.so*" } | OutputLib,
 
     ltconfigs = { glob = "usr/lib/libmpc.la" } | OutputData,

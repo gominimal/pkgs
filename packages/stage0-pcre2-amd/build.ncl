@@ -73,6 +73,8 @@ let version = "10.47" in
   },
 
   outputs = {
+    # catch-all: a promotion must be a content SUPERSET of the slot it replaces.
+    slot_all = { glob = "usr/**" } | OutputData,
     pcre2-config = { glob = "usr/bin/pcre2-config", allow_missing_interpreter = true } | OutputBin,
     pcre2grep = { glob = "usr/bin/pcre2grep" } | OutputBin,
     #pcre2test = { glob = "usr/bin/pcre2test" } | OutputBin, - does anything need this?

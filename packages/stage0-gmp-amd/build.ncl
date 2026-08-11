@@ -69,6 +69,8 @@ let version = "6.3.0" in
 
   cmd = "./build.sh",
   outputs = {
+    # catch-all: a promotion must be a content SUPERSET of the slot it replaces.
+    slot_all = { glob = "usr/**" } | OutputData,
     libs = { glob = "usr/lib/*.{a,so*}" } | OutputLib,
 
     ltconfigs = { glob = "usr/lib/*.la" } | OutputData,

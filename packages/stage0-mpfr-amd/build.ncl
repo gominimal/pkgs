@@ -72,6 +72,8 @@ let version = "4.2.2" in
 
   cmd = "./build.sh",
   outputs = {
+    # catch-all: a promotion must be a content SUPERSET of the slot it replaces.
+    slot_all = { glob = "usr/**" } | OutputData,
     libs = { glob = "usr/lib/libmpfr.so*" } | OutputLib,
     ltconfigs = { glob = "usr/lib/libmpfr.la" } | OutputData,
     pkgconfigs = { glob = "usr/lib/pkgconfig/**" } | OutputData,
