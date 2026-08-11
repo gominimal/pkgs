@@ -81,8 +81,12 @@ let version = "1.5.7" in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/zstd/arm64-linux-gnu/zstd_1.5.6_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "f4659ad196c940d7accd0de50e8551230d9631016bda5542aa0c361a3ea7aff7",
+              # BEDROCK ROOT: built from source by stage0-zstd-arm on our hex0-rooted toolchain.
+              # GATED slot-compare vs the foreign slot -> SLOT_SUPERSET.
+              # GENERATION 1: compiled with foreign prebuilts in the sandbox; they are BUILD
+              # INPUTS and appear in provenance. Not hex0-rooted.
+              url = "gs://minimalmertic-hermetic-mirror/sha256/16c31660ce632a29747751a14a89664bb219e8e0d37fb1748a2c00393b3c1bb6/stage0-zstd-arm-aarch64.tar.zst",
+              sha256 = "16c31660ce632a29747751a14a89664bb219e8e0d37fb1748a2c00393b3c1bb6",
               extract = true,
             } | Source,
         } target,

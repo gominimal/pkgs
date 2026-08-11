@@ -57,8 +57,12 @@ let version = "1.0.8" in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/bzip2/arm64-linux-gnu/bzip2_1.0.8_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "59684a904c14cbc161a743692366a112f211e2ce51e38cc92ae2476aaf961a52",
+              # BEDROCK ROOT: built from source by stage0-bzip2-arm on our hex0-rooted toolchain.
+              # GATED slot-compare vs the foreign slot -> SLOT_SUPERSET.
+              # GENERATION 1: compiled with foreign prebuilts in the sandbox; they are BUILD
+              # INPUTS and appear in provenance. Not hex0-rooted.
+              url = "gs://minimalmertic-hermetic-mirror/sha256/822a8e483cee828132ae497518796f7db13d5ef9f585457dce79afaca0124c79/stage0-bzip2-arm-aarch64.tar.zst",
+              sha256 = "822a8e483cee828132ae497518796f7db13d5ef9f585457dce79afaca0124c79",
               extract = true,
             } | Source,
         } target,

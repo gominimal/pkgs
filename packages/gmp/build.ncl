@@ -82,8 +82,12 @@ let version = "6.3.0" in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/gmp/arm64-linux-gnu/gmp_6.3.0_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "cc1a30c0897e0b2e3dbf63678bffc4e2eefb1dd38c4d039cd447e699f64f8d6f",
+              # BEDROCK ROOT: built from source by stage0-gmp-arm on our hex0-rooted toolchain.
+              # GATED slot-compare vs the foreign slot -> SLOT_SUPERSET.
+              # GENERATION 1: compiled with foreign prebuilts in the sandbox; they are BUILD
+              # INPUTS and appear in provenance. Not hex0-rooted.
+              url = "gs://minimalmertic-hermetic-mirror/sha256/2aad977c6f17f3564b8b3891ba5aa1f2af1062f9ba84f41f06e9067edf08e60a/stage0-gmp-arm-aarch64.tar.zst",
+              sha256 = "2aad977c6f17f3564b8b3891ba5aa1f2af1062f9ba84f41f06e9067edf08e60a",
               extract = true,
             } | Source,
         } target,
