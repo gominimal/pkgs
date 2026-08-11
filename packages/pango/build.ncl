@@ -13,14 +13,14 @@ let freetype = import "../freetype/build.ncl" in
 let cairo = import "../cairo/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.58.0" in
+let version = "1.58.2" in
 {
   name = "pango",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/pango-%{version}.tar.xz",
-      sha256 = "bc5bad6213ad4886a47d1e80292fd850b64159b50db67917a43d9ea80ee2298a",
+      sha256 = "342385b6ca3b7c73455d7c80a13b7dbe4489e00bc3bd4c5bd6ed4dce421e374a",
       extract = true,
       strip_prefix = "pango-%{version}",
     } | Source,
