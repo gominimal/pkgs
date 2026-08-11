@@ -86,8 +86,15 @@ let version = "1.4.1" in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/mpc/arm64-linux-gnu/mpc_1.3.1_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "8bbeb25848856021b15100d7bf1b2f08d7635d4cc6189c8441a465637b3493bd",
+              # BEDROCK ROOT: built from source by stage0-mpc-arm on our hex0-rooted toolchain.
+              # GATED slot-compare vs the foreign slot -> SLOT_SUPERSET (delivers everything
+              # the foreign tarball did). That check compares SLOT CONTENTS, not declared
+              # outputs, because materialize_prebuilt ships a prebuilt whole and a declared-
+              # output check therefore cannot see a removal.
+              # GENERATION 1: compiled in a sandbox populated by foreign prebuilts. Output is
+              # from source; foreign packages are BUILD INPUTS and appear in provenance.
+              url = "gs://minimalmertic-hermetic-mirror/sha256/bcb5eee02cfb28e3173c96ae3b1ca2c4f1a7ca4ba5537c5b4e18d248e11775bf/stage0-mpc-arm-aarch64.tar.zst",
+              sha256 = "bcb5eee02cfb28e3173c96ae3b1ca2c4f1a7ca4ba5537c5b4e18d248e11775bf",
               extract = true,
             } | Source,
         } target,

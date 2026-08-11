@@ -57,8 +57,15 @@ let version = "1.14" in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/gzip/arm64-linux-gnu/gzip_1.14_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "a1c1676a373b3819cb6a0481bd93c69b0570e09495f2e23622a8e0536f74b42d",
+              # BEDROCK ROOT: built from source by stage0-gzip-arm on our hex0-rooted toolchain.
+              # GATED slot-compare vs the foreign slot -> SLOT_SUPERSET (delivers everything
+              # the foreign tarball did). That check compares SLOT CONTENTS, not declared
+              # outputs, because materialize_prebuilt ships a prebuilt whole and a declared-
+              # output check therefore cannot see a removal.
+              # GENERATION 1: compiled in a sandbox populated by foreign prebuilts. Output is
+              # from source; foreign packages are BUILD INPUTS and appear in provenance.
+              url = "gs://minimalmertic-hermetic-mirror/sha256/e733b43e8cca05c5587ccbb381ae93a3070c3da2c0767130e2c6582c465e7e53/stage0-gzip-arm-aarch64.tar.zst",
+              sha256 = "e733b43e8cca05c5587ccbb381ae93a3070c3da2c0767130e2c6582c465e7e53",
               extract = true,
             } | Source,
         } target,

@@ -62,8 +62,15 @@ let version = "1.10.0" in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/lz4/arm64-linux-gnu/lz4_1.10.0_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "e1101b6d1ea54d5ef20050c105f07b18bd881e5823365d520ae2055a308ffd84",
+              # BEDROCK ROOT: built from source by stage0-lz4-arm on our hex0-rooted toolchain.
+              # GATED slot-compare vs the foreign slot -> SLOT_SUPERSET (delivers everything
+              # the foreign tarball did). That check compares SLOT CONTENTS, not declared
+              # outputs, because materialize_prebuilt ships a prebuilt whole and a declared-
+              # output check therefore cannot see a removal.
+              # GENERATION 1: compiled in a sandbox populated by foreign prebuilts. Output is
+              # from source; foreign packages are BUILD INPUTS and appear in provenance.
+              url = "gs://minimalmertic-hermetic-mirror/sha256/1454e18e375516d6820bfe10f8dce56ba4fda859aadd7a38f78060d69e6e617e/stage0-lz4-arm-aarch64.tar.zst",
+              sha256 = "1454e18e375516d6820bfe10f8dce56ba4fda859aadd7a38f78060d69e6e617e",
               extract = true,
             } | Source,
         } target,
