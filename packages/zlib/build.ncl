@@ -55,15 +55,21 @@ let version = "1.3.2" in
               # verified against THIS package's own output globs before repointing:
               #   usr/lib/libz.so*  -> libz.so, libz.so.1, libz.so.1.3.2
               #   usr/include/{zconf.h,zlib.h}   usr/lib/pkgconfig/zlib.pc
-              # all present. That check matters because materialize_prebuilt returns before the
-              # unmatched-glob check, so a missing declared output would fail SILENTLY later.
+              # GATED ON SLOT CONTENTS, not declared outputs (bin/queue/slot-compare.py):
+              #   old slot 8 files, new 8 files, only libz.so.1.3.1 -> libz.so.1.3.2
+              #   VERDICT: SLOT_SUPERSET
+              # The first promotion of this slot used the declared-output check instead and
+              # silently dropped usr/lib/libz.a + the man page, because a PREBUILT slot delivers
+              # its WHOLE tarball (materialize_prebuilt never calls match_outputs_into) while a
+              # from-source spec is filtered to declarations. Comparing declarations cannot catch
+              # that; comparing slot contents does.
               #
               # ⚠️ VERSION CHANGE 1.3.1 -> 1.3.2 (the from-source recipe builds 1.3.2).
               # ⚠️ GENERATION 1: built in a sandbox populated by foreign prebuilts. The OUTPUT is
               # from source; the foreign packages are BUILD INPUTS and appear in provenance. Not
               # yet hex0-rooted. The close is a generation-2 rebuild + fixed-point check.
-              url = "gs://minimalmertic-hermetic-mirror/sha256/dbea11e90298ad12fdcb030fa27c4430a5da8a83c8717b72a3ce4bf5625ecb8a/stage0-zlib-arm-aarch64.tar.zst",
-              sha256 = "dbea11e90298ad12fdcb030fa27c4430a5da8a83c8717b72a3ce4bf5625ecb8a",
+              url = "gs://minimalmertic-hermetic-mirror/sha256/d3b6f8f598e48ff5e8a062b3a65fa97fcbd895ddb173cfe9bde0ee855c783d4a/stage0-zlib-arm-aarch64.tar.zst",
+              sha256 = "d3b6f8f598e48ff5e8a062b3a65fa97fcbd895ddb173cfe9bde0ee855c783d4a",
               extract = true,
             } | Source,
         } target,
