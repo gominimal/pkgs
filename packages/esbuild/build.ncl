@@ -5,14 +5,14 @@ let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "0.28.1" in
+let version = "0.28.2" in
 {
   name = "esbuild",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/evanw/esbuild/v%{version}.tar.gz",
-      sha256 = "65c756fa87d43178ac4a5242454c2bd0fde325f8ecf77997f8fa4b88f94d5cd2",
+      sha256 = "300162f899361d9f0263065f8728ef9086dcfc1a3d36bcbc4e0abe5de9c58bf8",
       extract = true,
       strip_prefix = "esbuild-%{version}",
     } | Source,
