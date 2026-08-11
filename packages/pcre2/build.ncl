@@ -84,8 +84,11 @@ let version = "10.47" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/pcre2/b360a2688b2b47a9624e85ed4b43c2fa720c4c73551ea6210eddfd8d6b5bbb02.tar.zst",
-              sha256 = "a68ebe779fa253fe3a93806bd7d38faed940103c4122ea6e6bda44b6d50d7d04",
+              # BEDROCK ROOT (amd64): stage0-pcre2-amd, COLD-rebuilt. slot-compare -> SLOT_SUPERSET.
+              # The warm rebuild replayed a cached capture and appeared to drop usr/bin/pcre2test;
+              # outputs are not part of the spec hash, so widening globs alone changes nothing.
+              url = "gs://minimalmertic-hermetic-mirror/sha256/e43debe0442b2de6e863303c8af966f2146af3bb0d8b998f0539c9e3d5ac046a/stage0-pcre2-amd-x86_64.tar.zst",
+              sha256 = "e43debe0442b2de6e863303c8af966f2146af3bb0d8b998f0539c9e3d5ac046a",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
