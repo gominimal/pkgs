@@ -4,7 +4,7 @@ let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "mini
 let base = import "../base/build.ncl" in
 let node = import "../node/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let version = "10.6.0" in
+let version = "10.8.1" in
 {
   name = "eslint",
   build_deps = [
