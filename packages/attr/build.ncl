@@ -66,8 +66,13 @@ let version = "2.6.0" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/attr/1e7c99dbb23c903b50fa6f1093a1f629e135cbfd906a95a261816f4d96170728.tar.zst",
-              sha256 = "b6e4e7fb2f1b177c43e4b3ac88f24bb9a41b47f91de987351349a12838b06a45",
+              # BEDROCK ROOT (amd64): built from source by stage0-attr-amd on the toolchain whose
+              # gcc/glibc roots are ours (glibc-bedrock-2.42 measured 97/97 byte-identical).
+              # GATED slot-compare vs the foreign slot -> SLOT_SUPERSET.
+              # GENERATION 1: foreign prebuilts were in the build sandbox and appear in
+              # provenance as BUILD INPUTS. Not hex0-rooted.
+              url = "gs://minimalmertic-hermetic-mirror/sha256/237b893326065698a43055db46dacf8102e79fd2480e8d8de1895e9a45a51c60/stage0-attr-amd-x86_64.tar.zst",
+              sha256 = "237b893326065698a43055db46dacf8102e79fd2480e8d8de1895e9a45a51c60",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
