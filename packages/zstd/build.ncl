@@ -75,8 +75,11 @@ let version = "1.5.7" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/zstd/8a24bda7b914208fe12d01fb1fa05de91aa5f506496896e422b21c07f88e6540.tar.zst",
-              sha256 = "360e8995e62f1928192c3057546f0205787879610268f5e192e6afa5cce97da9",
+              # BEDROCK ROOT (amd64): stage0-zstd-amd, COLD-rebuilt. slot-compare -> SLOT_SUPERSET,
+              # libzstd.a present. The earlier warm "rebuild" replayed a cached capture (outputs are
+              # NOT part of the spec hash) and looked like an x86-vs-arm build difference.
+              url = "gs://minimalmertic-hermetic-mirror/sha256/8783fecd0b9fb5f25676200bf8b334e5f0b116d22e1e11c5ba5683b7cff994e8/stage0-zstd-amd-x86_64.tar.zst",
+              sha256 = "8783fecd0b9fb5f25676200bf8b334e5f0b116d22e1e11c5ba5683b7cff994e8",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
