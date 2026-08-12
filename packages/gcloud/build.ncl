@@ -5,7 +5,7 @@ let python = import "../python/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 
-let version = "579.0.0" in
+let version = "580.0.0" in
 # Google's per-version GCS bucket; explicit per-version path. The
 # previous rapid-channel URL
 # (dl.google.com/dl/cloudsdk/channels/rapid/downloads) has the
@@ -16,8 +16,8 @@ let version = "579.0.0" in
 let dl_base = "https://storage.googleapis.com/cloud-sdk-release" in
 
 let { amd64_sha256, arm64_sha256 } = {
-  amd64_sha256 = "a9a7fbe51cda37cf6142b1bbcff12227550e60a6c67e8cf84644fb301371c4de",
-  arm64_sha256 = "edc914b75f8c5d50e1efc78b849d6fa636c4412346784c148c4130f5dc3eba00",
+  amd64_sha256 = "e580c04b45dfa2e537b8dc0cf7c828e46a65bc77ef61de69161e1f3a124d7480",
+  arm64_sha256 = "a02b7c478f94c070d7cb1ec1c595d3a0c9ae84601c17d93946b89a33d3155d71",
 }
 in
 
