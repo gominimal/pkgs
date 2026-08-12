@@ -40,6 +40,22 @@ let target_suffix = match { { arch = 'Amd64, .. } => "x86_64", { arch = 'Arm64, 
     {
       upstream_version = version,
       license_spdx = "MIT",
+      # We install upstream's release BINARIES, not a build of the tree below.
+      # `binary_from` is what says so; without it the package reads as
+      # source-built from source_provenance, which is the exact conflation that
+      # let chromium-bin look like a build of microsoft/playwright.
+      binary_from =
+        match {
+          { arch = 'Amd64, .. } => "https://github.com/ampcode/zvelte-check/releases/download/v%{version}/zvelte-check-linux-x86_64.tar.gz",
+          { arch = 'Arm64, .. } => "https://github.com/ampcode/zvelte-check/releases/download/v%{version}/zvelte-check-linux-aarch64.tar.gz",
+        } target,
+      # Kept alongside `binary_from`, as chromium-bin does. Here the two are the
+      # SAME project — ampcode/zvelte-check builds these artifacts in its own
+      # release workflow — so the repo is the honest identity of the bytes, and
+      # dropping it would cost the CPE identity and the GitHub version-check
+      # tier, i.e. make this a dark package. `closed_source` deliberately absent:
+      # the repo is public and MIT with the Zig source in-tree (verified, not
+      # inferred from the formula).
       source_provenance = {
         category = 'GithubRepo,
         owner = "ampcode",
