@@ -7,14 +7,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let version = "0.23.2" in
+let version = "0.23.3" in
 {
   name = "zola",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/getzola/zola/v%{version}.tar.gz",
-      sha256 = "f46f911079913845e76f3c446eb99d3b27546a3c302a1c411c6995fef498eaff",
+      sha256 = "2028bb1608b9625f78634c75b62654583fa3214fadac7e5f448a6b59b68912ec",
       extract = true,
       strip_prefix = "zola-%{version}",
     } | Source,
@@ -37,7 +37,7 @@ let version = "0.23.2" in
     {
       upstream_version = version,
       source_provenance = { category = 'GithubRepo, owner = "getzola", repo = "zola" },
-      # zola relicensed to EUPL-1.2 at v0.22 (commit 3c9131d); v0.23.2 declares
+      # zola relicensed to EUPL-1.2 at v0.22 (commit 3c9131d); v0.23.3 declares
       # `license = "EUPL-1.2"` in Cargo.toml and ships only the EUPL LICENSE file.
       license_spdx = "EUPL-1.2",
     } | Attrs,
