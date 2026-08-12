@@ -97,8 +97,15 @@ let version = "3.12" in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/grep/arm64-linux-gnu/grep_3.12_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "97fc6bad9cc01106ecf460f9fb68015da04acb590409c83557de0d751887be21",
+              # BEDROCK EXECUTOR ROOT (aarch64): built on the ladder by rd85-armd-userland.sh with
+              # R12 gcc + R11 glibc. These seven RUN every build and cannot be built from inside
+              # pkgs (a shell is needed to build a shell); the ladder has no such constraint, the
+              # same reason gcc was never built inside a gcc-free sandbox.
+              # GATED slot-compare vs the foreign slot. COMPILED BY our hex0-rooted gcc against our
+              # hex0-rooted glibc; EXECUTED during its build by the VM's Debian tools -- exactly
+              # R12's standing, NOT "built with no foreign tool present".
+              url = "gs://minimalmertic-hermetic-mirror/sha256/e4054e291569ebf8336844b7ff5f36e846effc5af0d95cbcab968d13855bd73b/stage0-grep-bedrock-aarch64.tar.zst",
+              sha256 = "e4054e291569ebf8336844b7ff5f36e846effc5af0d95cbcab968d13855bd73b",
               extract = true,
             } | Source,
         } target,
