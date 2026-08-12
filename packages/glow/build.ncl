@@ -5,14 +5,14 @@ let toolchain = import "../toolchain/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.1.2" in
+let version = "3.0.0" in
 {
   name = "glow",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/charmbracelet/glow/v%{version}.tar.gz",
-      sha256 = "1b933139da1d08647bf5b3f112cab9548fdc2b40c056c7fa3d84d8706de5265a",
+      sha256 = "18df6f3c09157021366b8c702b5badba405d37dbb42f132353eb50c1b0d3f464",
       extract = true,
       strip_prefix = "glow-%{version}",
     } | Source,
