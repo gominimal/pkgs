@@ -35,6 +35,19 @@ fi
 mkdir -p "$OUTPUT_DIR/usr/lib/lean"
 cp -a "$STAGE/lib/lean/"*.a "$OUTPUT_DIR/usr/lib/lean/" 2>/dev/null || true
 cp -a "$STAGE/lib/lean/"*.so* "$OUTPUT_DIR/usr/lib/lean/" 2>/dev/null || true
+# The MODULE ROOTS: Init.olean, Std.olean, Lean.olean, Lake.olean sit directly
+# in lib/lean/, NOT in a subdirectory, so the per-directory loop below skips
+# them entirely. They are what `import Init` resolves, so without them lean
+# cannot compile ANY file — not even `#eval 1+1`:
+#
+#   error: object file '/usr/lib/lean/Init.olean' of module Init does not exist
+#
+# Hard to spot because everything else looked right: 586 oleans landed under
+# Init/ and Std/, and the root-level .a/.so came across in the two copies
+# above. The only missing class was the one file per module that makes all the
+# rest reachable.
+cp -a "$STAGE/lib/lean/"*.olean "$OUTPUT_DIR/usr/lib/lean/" 2>/dev/null || true
+
 # Copy olean files and other lean lib data
 for d in "$STAGE/lib/lean/"*/; do
   [ -d "$d" ] && cp -r "$d" "$OUTPUT_DIR/usr/lib/lean/"
