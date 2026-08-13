@@ -48,6 +48,21 @@ cp -a "$STAGE/lib/lean/"*.so* "$OUTPUT_DIR/usr/lib/lean/" 2>/dev/null || true
 # rest reachable.
 cp -a "$STAGE/lib/lean/"*.olean "$OUTPUT_DIR/usr/lib/lean/" 2>/dev/null || true
 
+# Then ASSERT they arrived. The copy above swallows errors (the `|| true` is
+# there so a layout change upstream doesn't hard-fail the copy), and a glob
+# happily matches the remaining files if one is absent — which is precisely how
+# this package shipped a lean that could not compile anything, for however long
+# it has been broken, with a green build the whole time. Turn a silent
+# incomplete publish into a loud build failure. (CR on #605.)
+for m in Init Std Lean Lake; do
+  if [ ! -f "$OUTPUT_DIR/usr/lib/lean/$m.olean" ]; then
+    echo "lean: module root $m.olean is MISSING from the install tree." >&2
+    echo "  Without it, 'import $m' cannot resolve and lean compiles nothing." >&2
+    echo "  Check whether upstream moved lib/lean/*.olean in this release." >&2
+    exit 1
+  fi
+done
+
 # Copy olean files and other lean lib data
 for d in "$STAGE/lib/lean/"*/; do
   [ -d "$d" ] && cp -r "$d" "$OUTPUT_DIR/usr/lib/lean/"
