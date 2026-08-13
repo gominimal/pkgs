@@ -73,8 +73,15 @@ let version = "2.78" in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/libcap/arm64-linux-gnu/libcap_2.73_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "564c33e3eb86251b0ebc7adb07b995a06953e3f0a06864119219888bff9a2df4",
+              # BEDROCK ROOT (aarch64): stage0-libcap-arm on our hex0-rooted toolchain, replacing the
+              # dockcross/crosstool-NG artifact from bootstrap-aarch64-bins. Remaining deltas are
+              # usr/share/doc/** the recipes never declare -- dockcross extras, not losses.
+              # DIVERGENCE, deliberate: the dockcross artifact ships libcap.a/libpsx.a; ours does
+              # not, because packages/libcap/build.sh DELETES the static install rule. Ours matches
+              # the recipe; dockcross deviated from it. Static-linkers of libcap would break -- none
+              # in base; the world rebuild is the census for the rest.
+              url = "gs://minimalmertic-hermetic-mirror/sha256/396c25c199b89ea2942bae1bbf28d847c058dbaaa559c5cd9e5fedf11ea011df/stage0-libcap-arm-aarch64.tar.zst",
+              sha256 = "396c25c199b89ea2942bae1bbf28d847c058dbaaa559c5cd9e5fedf11ea011df",
               extract = true,
             } | Source,
         } target,

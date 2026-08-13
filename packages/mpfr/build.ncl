@@ -85,8 +85,11 @@ let version = "4.2.2" in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/mpfr/arm64-linux-gnu/mpfr_4.2.2_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "9378ea79026ded59f941f275a692eea20ce5fef9ab81dfcabd5ba25f24ef9696",
+              # BEDROCK ROOT (aarch64): stage0-mpfr-arm on our hex0-rooted toolchain, replacing the
+              # dockcross/crosstool-NG artifact from bootstrap-aarch64-bins. Remaining deltas are
+              # usr/share/doc/** the recipes never declare -- dockcross extras, not losses.
+              url = "gs://minimalmertic-hermetic-mirror/sha256/5653e16b5777d76c64678236b097c104497d82326e9b7c42cb7e25e5625cf809/stage0-mpfr-arm-aarch64.tar.zst",
+              sha256 = "5653e16b5777d76c64678236b097c104497d82326e9b7c42cb7e25e5625cf809",
               extract = true,
             } | Source,
         } target,

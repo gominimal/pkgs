@@ -74,8 +74,11 @@ let version = "5.8.3" in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/xz/arm64-linux-gnu/xz_5.8.1_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "7adffe3bf126544f0ba575d237eba709b2de3d5e6f7667a0244feb99efcc8997",
+              # BEDROCK ROOT (aarch64): stage0-xz-arm on our hex0-rooted toolchain, replacing the
+              # dockcross/crosstool-NG artifact from bootstrap-aarch64-bins. Remaining deltas are
+              # usr/share/doc/** the recipes never declare -- dockcross extras, not losses.
+              url = "gs://minimalmertic-hermetic-mirror/sha256/a94b810187b72dc9144270f834b867be883e7cf5db155e4ac1b0dc0fabd0f2a8/stage0-xz-arm-aarch64.tar.zst",
+              sha256 = "a94b810187b72dc9144270f834b867be883e7cf5db155e4ac1b0dc0fabd0f2a8",
               extract = true,
             } | Source,
         } target,
