@@ -102,12 +102,48 @@ if grep -q 'getCurrentTime' "$stamp_file"; then
     exit 1
 fi
 
+# ── amd64: use the PACKAGED alex/happy, not cabal's own ──────────────────────
+#
+# tamarin built on arm64 and failed on amd64 (pkgs#606's run, 2026-08-14) with:
+#
+#   Error: [Cabal-1008]
+#   The program 'alex' version >=3.1.4 is required but the version of
+#   /build/.cabal-home/store/ghc-9.10.3-inplace/alex-3.5.4.2-.../bin/alex
+#   could not be determined.
+#
+# NOT a compile error: cabal BUILT alex fine ("Completed alex-3.5.4.2 (exe:alex)")
+# and then could not get a version out of it when `language-javascript`
+# configured. So the binary exists and will not answer — which is what you get
+# from a partially-installed store entry under `--jobs=$(nproc)`, or from an
+# invocation killed for memory. Either way it is cabal provisioning its own copy
+# that fails, and both alex and happy are already packaged for both arches.
+#
+# Point cabal at those instead. `--with-PROG` is Cabal's documented override for
+# a known program, and alex/happy are known programs.
+#
+# The assertions below are deliberate: if the packaged tools are the problem
+# rather than the fix, this fails HERE with the version printed, instead of 40
+# minutes later inside a dependency's configure step with no way to tell which
+# alex cabal used. Amd64 could not be reproduced locally (this fleet develops on
+# arm64), so the next run's log is the experiment.
+ALEX_BIN="$(command -v alex)"
+HAPPY_BIN="$(command -v happy)"
+echo "tamarin: packaged alex  = ${ALEX_BIN:-<not on PATH>}"
+echo "tamarin: packaged happy = ${HAPPY_BIN:-<not on PATH>}"
+[ -n "$ALEX_BIN" ]  || { echo "ERROR: alex not on PATH — build_deps regression" >&2; exit 1; }
+[ -n "$HAPPY_BIN" ] || { echo "ERROR: happy not on PATH — build_deps regression" >&2; exit 1; }
+# Prove they RUN and report a version — the exact thing cabal could not do.
+"$ALEX_BIN" --version  || { echo "ERROR: packaged alex cannot report a version"  >&2; exit 1; }
+"$HAPPY_BIN" --version || { echo "ERROR: packaged happy cannot report a version" >&2; exit 1; }
+
 # Build + install the executable (STATIC — a normal Haskell static link; the link
 # was never the problem). The sandbox hides build detail, so on failure dump the
 # real error (compile OR link) rather than a silent "Failed to build".
 set +e
 cabal build exe:tamarin-prover \
     --with-compiler="$(command -v ghc)" \
+    --with-alex="$ALEX_BIN" \
+    --with-happy="$HAPPY_BIN" \
     --jobs="$(nproc)" -v1 2>&1 | tee /tmp/tam-build.log
 rc=${PIPESTATUS[0]}
 set -e
