@@ -104,7 +104,7 @@ fi
 
 # ── amd64: use the PACKAGED alex/happy, not cabal's own ──────────────────────
 #
-# tamarin built on arm64 and failed on amd64 (pkgs#606's run, 2026-08-14) with:
+# tamarin fails INTERMITTENTLY on amd64 (pkgs#606's run, 2026-08-14) with:
 #
 #   Error: [Cabal-1008]
 #   The program 'alex' version >=3.1.4 is required but the version of
@@ -117,6 +117,15 @@ fi
 # from a partially-installed store entry under `--jobs=$(nproc)`, or from an
 # invocation killed for memory. Either way it is cabal provisioning its own copy
 # that fails, and both alex and happy are already packaged for both arches.
+#
+# INTERMITTENT is established, not assumed: pkgs#607 and #608 built the same
+# tamarin source on the same amd64 builder and PASSED (merged 20:28 and 20:30
+# the same day) hours after #606 failed at 12:33. So this is not a miscompile
+# and not a missing dependency — it is a race, and #606 drew the short straw.
+#
+# That is the worse shape for a queue: the natural response to a flake is to
+# re-run it, which usually works, which is how one survives for weeks without
+# anyone fixing it.
 #
 # Point cabal at those instead. `--with-PROG` is Cabal's documented override for
 # a known program, and alex/happy are known programs.
