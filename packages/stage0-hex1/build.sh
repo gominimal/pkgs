@@ -8,13 +8,26 @@ set -ex
 
 cd stage0-posix-1.9.1
 
-# Human-audit anchor: the inner-ELF sha256 of oriansj/stage0-posix Release_1.9.1
-# AMD64 hex0-seed. This is the HAND-CHECKED constant for the pinned tag (NOT a
-# <RECORD-AT-PIN-TIME> value); it is used here only as a defense-in-depth
-# tripwire that Pass-3 hydrated the EXPECTED seed into /usr/bin/hex0. The
-# machine trust-gate is the bootstrap_artifacts OUTER-tarball sha (trust-config);
-# this binds the human-audit anchor machine-side at build time as well.
-SEED_SHA=66c95985e668f20f2465c2b876f83fef066fd7c8c2dd3adb51a969f2d7120c8b
+# Human-audit anchors: the inner-ELF sha256 of the oriansj/stage0-posix
+# Release_1.9.1 hex0-seed, PER ARCHITECTURE. Both constants verified 2026-08-14
+# directly against the seeds inside the sha256-pinned Source tarball above
+# (33108c8c...): AMD64 = 229 bytes, AArch64 = 526 bytes. Used only as a
+# defense-in-depth tripwire that Pass-3 hydrated the EXPECTED seed into
+# /usr/bin/hex0; the machine trust-gate is the bootstrap_artifacts OUTER-tarball
+# sha (trust-config).
+#
+# WHY PER-ARCH (measured in the 2026-08 world rebuild): this constant was
+# AMD64-only, so on aarch64 -- where Pass-3 correctly hydrates the AArch64 seed
+# (8ca9745e...) -- the tripwire fired on EVERY closure containing this rung:
+# 17-18 top-level packages per arm world run, on bedrock AND baseline branches
+# alike. The guard was doing its job; it just only knew one architecture.
+# aarch64 self-reproduction is independently proven on Axion hardware
+# (bedrock-aarch64/probes/01-hex0-selfrepro.sh).
+case "$(uname -m)" in
+  x86_64)  S0ARCH=AMD64;   SEED_SHA=66c95985e668f20f2465c2b876f83fef066fd7c8c2dd3adb51a969f2d7120c8b ;;
+  aarch64) S0ARCH=AArch64; SEED_SHA=8ca9745e20af3f0d6037684cbc3ec3789c205d86ccecf43f77d0aeabf16050b4 ;;
+  *) echo "FATAL: no audited hex0 seed for $(uname -m)" >&2; exit 1 ;;
+esac
 
 seed_have=$(sha256sum < /usr/bin/hex0 | cut -d' ' -f1)
 if [ "$seed_have" != "$SEED_SHA" ]; then
@@ -24,9 +37,10 @@ fi
 
 # Phase-0 (bedrock fixed point): self-reproduce hex0 from its OWN auditable
 # hex0-language source using ONLY the trusted seed, then assert byte-identity.
-# Proves the 229 seed bytes faithfully implement hex0_AMD64.hex0 inside
+# Proves the seed bytes (229 on AMD64, 526 on AArch64) faithfully implement
+# their own hex0-language source inside
 # attested hardware. (Upstream's own audit step; we use sha256 equality.)
-/usr/bin/hex0 AMD64/hex0_AMD64.hex0 hex0.built
+/usr/bin/hex0 "$S0ARCH/hex0_$S0ARCH.hex0" hex0.built
 built_have=$(sha256sum < hex0.built | cut -d' ' -f1)
 if [ "$built_have" != "$seed_have" ]; then
   echo "FATAL: hex0 self-reproduction mismatch: built $built_have != seed $seed_have" >&2
@@ -36,7 +50,7 @@ fi
 # Phase-0b: build the DISTINCT hex1 assembler (adds single-character labels +
 # one relational-jump size that hex0 lacks) from auditable hex0-language
 # source, driven by the just-reproduced-from-source hex0 (== seed).
-./hex0.built AMD64/hex1_AMD64.hex0 hex1.built
+./hex0.built "$S0ARCH/hex1_$S0ARCH.hex0" hex1.built
 
 # Sanity: hex1 must be a non-empty ELF (catches a silently-truncated or
 # odd-nibble assemble). coreutils only — no grep.
