@@ -54,15 +54,29 @@ DEFS=(
   -D CONFIG_USE_LIBGCC=1
   -D 'TCC_VERSION="0.9.27PW2"'
 )
-# MES HEADERS FIRST. The banner above claims "/usr/include is pure mes" — MEASURED FALSE
-# 2026-08-04: mes installs its headers under /usr/include/mes/ ONLY (9 files), while
-# /usr/include/stdio.h comes from GLIBC, which rides into the sandbox as bash/coreutils'
-# runtime dep. Worse, TWO glibc providers contend for that path across runs (observed
-# stdio.h=776e7aad → build passes, 5c1ff423 → tcc dies in glibc's bits/*.h chain and the
-# mes-libc error reporter SIGSEGVs, eating the diagnostic: the whole "s1 lottery").
-# Searching mes first makes this rung read the libc it was written against, whichever
-# glibc happens to be mounted.
-INCS=(-I . -I /usr/include/mes -I /usr/include)
+# STAGED MES HEADERS FIRST — the header-race fix (PROVEN 2026-08-14, two-arm container
+# experiment: byte-identical glibc-first /usr/include in both arms, INCS-only delta →
+# the old order SIGSEGV-139'd on unit=libtcc 3/3 stack layouts with EMPTY stderr; this
+# order built tcc-musl and it ran, same tcc-musl sha both staging variants: 89d2508a…).
+# MECHANISM: /usr/include is a first-writer-wins hardlink merge; the bootstrap glibc
+# anchor rides in as bash/coreutils' runtime dep and races this rung's mes headers for
+# every top-level name. When glibc's stdio.h (5c1ff423) wins, tcc-0.9.26 dies in glibc's
+# bits/*.h chain and the mes-libc error reporter SIGSEGVs, eating the diagnostic — the
+# whole "s1 lottery". Note -I /usr/include/mes never shadowed anything: that dir holds
+# only the 8 mes-INTERNAL headers + config.h — no stdio.h.
+# CORRECTION to the 2026-08-04 note that stood here: 776e7aad is NOT a second glibc
+# provider — it is mes-0.27.1's OWN stdio.h (byte-identical in the pristine tarball and
+# the published stage0-mes-1.0 artifact), and mes installs 66 headers at /usr/include
+# (36 top-level + sys/ + mes/ + linux/ + arch/), not "9 files under /usr/include/mes
+# ONLY". The lottery was simply mes-wins vs glibc-wins.
+# FIX: mes-include.tar.gz (Local input: the exact 66-header /usr/include set from the
+# pinned stage0-mes-1.0 artifact = pristine mes-0.27.1 include/ + mes.kaem's arch/
+# fixups + mes/config.h) is extracted to a PRIVATE dir and searched FIRST, so header
+# resolution no longer depends on rootfs merge order.
+MESINC=/build/tm/mes-include
+tar --no-same-owner -xzf "$BUILDROOT/mes-include.tar.gz" -C /build/tm 2>/tmp/mi; mirc=$?
+emit "S1-HDRFIX staged rc=$mirc stdio=$(sha256sum "$MESINC/stdio.h" 2>/dev/null | cut -c1-16) files=$(find "$MESINC" -name '*.h' 2>/dev/null | wc -l | tr -d ' ') (want 776e7aadcd8b373f/66 — anything else and this build is back on the /usr/include merge lottery)"
+INCS=(-I . -I "$MESINC" -I /usr/include/mes -I /usr/include)
 # x86_64 units: matches libtcc.c's ONE_SOURCE includes for TCC_TARGET_X86_64 + CONFIG_TCC_ASM, plus
 # tcc.c (the CLI, which unconditionally #includes tcctools.c -> carries `-ar`). NO ONE_SOURCE => each
 # is its own small compilation unit.

@@ -1,7 +1,10 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputLib, OutputData, .. } = import "minimal.ncl" in
 # R4a STAGE 1 — stage0-tcc-0.9.27-musl-s1.  Builds the GOT-fixed tcc-0.9.27 (fill_got before
-# tidy_section_headers) in a CLEAN MES env: deps are R2 (tcc-0.9.26) + R1 (mes) ONLY — NO R4 (musl), so
-# /usr/include is pure mes (no R1/R4 header collision that crashed the single-package probe). tcc-0.9.26
+# tidy_section_headers) against MES headers/crt (R2 tcc-0.9.26 + R1 mes; NO R4 musl). "so /usr/include
+# is pure mes" was MEASURED FALSE: /usr/include is a first-writer-wins hardlink merge and the bootstrap
+# glibc anchor (bash/coreutils' runtime dep) races R1's headers for every top-level name — the "s1
+# lottery". Fix (proven 2026-08-14): the mes /usr/include set rides in as the mes-include.tar.gz Local
+# input and is searched FIRST, so header resolution no longer depends on rootfs merge order. tcc-0.9.26
 # compiles tcc.c vs mes headers (R3's exact -I) and links it vs mes crt (CONFIG carried by tcc-0.9.26 =
 # /usr/lib/mes; mes crt = PC32, no GOTPCREL → links fine WITHOUT the GOT fix).  The OUTPUT tcc bakes MUSL
 # prefixes (/usr/lib, /usr/include) and carries the GOT fix in its linker, for stage 2 to exercise vs R4.
@@ -22,6 +25,9 @@ let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in
   build_deps = [
     { file = "build.sh" } | Local,
     { file = "tccsrc.tar.gz" } | Local,   # R3-patched tcc-0.9.27 source + the GOT fix
+    { file = "mes-include.tar.gz" } | Local, # mes-0.27.1 /usr/include set (66 hdrs, from pinned stage0-mes-1.0
+                                             # artifact, sha 490b987a…) — build.sh -I's it FIRST; kills the
+                                             # /usr/include merge-order lottery (glibc stdio.h 5c1ff423 vs mes 776e7aad)
     stage0-tcc-r2,
     stage0-mes,
     bash,
