@@ -2,17 +2,20 @@
 set -e
 
 # ============================================================================================
-# THE LADDER-CLOSE (issue #19).  On amd64 the bootstrap Go is no longer a downloaded go.dev
-# bindist — it is /usr/lib/go-1.24.9, the top of our own hex0-rooted ladder:
+# THE LADDER-CLOSE (issue #19).  The bootstrap Go is no longer a downloaded go.dev bindist on
+# EITHER arch — both roots are our own hex0-rooted ladders:
 #
-#   hex0 (229 B) -> ... -> gcc-15.2.0-glibc -> go-1.4 (C ONLY: src/cmd/dist is 10 .c / 0 .go)
-#     -> go-1.17.13 -> go-1.20.14 -> go-1.22.6 -> go-1.24.9 -> [this go]
+#   amd64: hex0 (229 B) -> ... -> gcc-15.2.0-glibc -> go-1.4 (C ONLY: src/cmd/dist is 10 .c /
+#          0 .go) -> go-1.17.13 -> 1.20.14 -> 1.22.6 -> go-1.24.9, hydrated at /usr/lib/go-1.24.9
+#          (the go-1.24.9 rung package).
+#   arm64: hex0 -> ... -> gccgo-15.2.0 (Go 1.5 was the first arm64 port, so go-1.4 cannot root
+#          this arch; gccgo is C++ inside the gcc tarball we already mirror) -> go-1.17.13
+#          -> 1.20.14 -> 1.22.6 -> go-1.24.9, a mirrored SEALED tarball staged with
+#          `extract = true` -> appears at ./go in the build root.
 #
-# arm64 still uses the bindist: Go 1.5 was the first release with an arm64 port, so the C-hosted
-# go-1.4 root cannot produce an arm64 toolchain directly (that needs an amd64 host
-# cross-bootstrapping via bootstrap.bash — a separate track).  build.ncl's `match target`
-# supplies the rung on Amd64 and the bindist Source on Arm64; this script follows whichever
-# arrived and says LOUDLY which root it used, so a silent regression to the bindist is visible.
+# build.ncl's `match target` supplies whichever root fits the arch; this script follows what
+# arrived and FAILS SHUT if a go.dev bindist tarball shows up — after the ladder-close a bindist
+# in the build root can only mean the spec silently regressed to an unattested binary root.
 # ============================================================================================
 HEX0_ROOTED_BOOTSTRAP=/usr/lib/go-1.24.9
 
@@ -33,14 +36,26 @@ if [ -x "${HEX0_ROOTED_BOOTSTRAP}/bin/go" ]; then
     *) echo "go: FATAL hex0-rooted bootstrap reports '${BOOTVER}', expected go1.24.9" >&2; exit 1 ;;
   esac
   echo "go: bootstrap root = HEX0-ROOTED ${HEX0_ROOTED_BOOTSTRAP} (${BOOTVER})" >&2
+elif [ -x go/bin/go ]; then
+  # arm64: the hex0-rooted arm-ladder GOROOT, harness-extracted to ./go by `extract = true`.
+  # MOVE it aside FIRST — the `tar -xof go*.src.tar.gz` below untars the go SOURCE tree into
+  # this same ./go path, and extracting over the bootstrap would corrupt both.
+  mv go bootstrap-go
+  export GOROOT_BOOTSTRAP="$(pwd)/bootstrap-go"
+  BOOTVER="$(GOROOT="${GOROOT_BOOTSTRAP}" "${GOROOT_BOOTSTRAP}/bin/go" version 2>&1 || true)"
+  case "${BOOTVER}" in
+    *go1.24.9*) : ;;
+    *) echo "go: FATAL hex0-rooted arm bootstrap reports '${BOOTVER}', expected go1.24.9" >&2; exit 1 ;;
+  esac
+  echo "go: bootstrap root = HEX0-ROOTED arm ladder ./bootstrap-go (${BOOTVER})" >&2
 elif [ -f "go${MINIMAL_ARG_VERSION}.linux-${GOARCH}.tar.gz" ]; then
-  # arm64 path (and any future arch with no ladder): the upstream bindist.
-  mkdir -p bootstrap
-  tar -xof "go${MINIMAL_ARG_VERSION}.linux-${GOARCH}.tar.gz" -C bootstrap
-  export GOROOT_BOOTSTRAP="$(pwd)/bootstrap/go"
-  echo "go: bootstrap root = UPSTREAM BINDIST (${GOARCH}) — NOT hex0-rooted; see #19 for the arm64 track" >&2
+  # RETIRED PATH — fail SHUT.  Both arches are ladder-rooted now; a go.dev bindist tarball in
+  # the build root means the spec regressed.  The old behavior (print a banner, build anyway)
+  # would let an unattested binary root back in silently.
+  echo "go: FATAL bindist go${MINIMAL_ARG_VERSION}.linux-${GOARCH}.tar.gz present but the go.dev bindist bootstrap is RETIRED (#19); refusing to build on an unattested root" >&2
+  exit 1
 else
-  echo "go: FATAL no bootstrap Go (neither ${HEX0_ROOTED_BOOTSTRAP} nor a bindist tarball)" >&2
+  echo "go: FATAL no bootstrap Go (neither ${HEX0_ROOTED_BOOTSTRAP} nor ./go from the arm ladder tarball)" >&2
   exit 1
 fi
 

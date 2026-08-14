@@ -2,19 +2,19 @@ let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = impo
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-# THE LADDER-CLOSE (#19): amd64 bootstraps from our own hex0-rooted Go, not a go.dev bindist.
-# Chain: hex0 -> ... -> gcc-15.2.0-glibc -> go-1.4 (C only) -> 1.17.13 -> 1.20.14 -> 1.22.6 -> 1.24.9.
-# arm64 keeps the bindist: Go 1.5 was the first release with an arm64 port, so the C-hosted root
-# cannot produce an arm64 toolchain directly (separate cross-bootstrap track).
+# THE LADDER-CLOSE (#19): BOTH arches now bootstrap from our own hex0-rooted Go, not a go.dev
+# bindist.  amd64: hex0 -> ... -> gcc-15.2.0-glibc -> go-1.4 (C only) -> 1.17.13 -> 1.20.14
+# -> 1.22.6 -> 1.24.9 (the rung package below).  arm64 has NO go-1.4 route (Go 1.5 was the first
+# arm64 port) — its ladder roots in gccgo instead: hex0 -> ... -> gcc-15.2.0 (gccgo is the C++
+# frontend inside the gcc tarball we already mirror, so no new trust root) -> go-1.17.13
+# -> 1.20.14 -> 1.22.6 -> 1.24.9, delivered as a mirrored sealed tarball because the pkgs stage0
+# ladder is amd64-seeded and cannot host the arm rungs (bedrock-aarch64/ built them).
 let go-1-24-9 = import "../go-1.24.9/build.ncl" in
 
 let version = "1.26.5" in
 let variants = {
   amd64_url = "https://go.dev/dl/go%{version}.linux-amd64.tar.gz",
   amd64_sha256 = "5c2c3b16caefa1d968a94c1daca04a7ca301a496d9b086e17ad77bb81393f053",
-
-  arm64_url = "https://go.dev/dl/go%{version}.linux-arm64.tar.gz",
-  arm64_sha256 = "fe4789e92b1f33358680864bbe8704289e7bb5fc207d80623c308935bd696d49",
 
   source_url = "https://go.dev/dl/go%{version}.src.tar.gz",
   source_sha256 = "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42",
@@ -28,8 +28,17 @@ in
       { arch = 'Amd64, .. } => go-1-24-9,
       { arch = 'Arm64, .. } =>
         {
-          url = variants.arm64_url,
-          sha256 = variants.arm64_sha256,
+          # BEDROCK ROOT (aarch64): go1.24.9 from the hex0-rooted arm ladder
+          # (hex0 -> gccgo-15.2.0 -> go1.17.13 -> 1.20.14 -> 1.22.6 -> 1.24.9), replacing the
+          # go.dev linux-arm64 bindist.  GOLAD_ALL_PASS + GOSEAL_ALL_IDENTICAL: 1.20.14/1.22.6/
+          # 1.24.9 are 2-run byte-sealed (inner bin/go 8c4f9902..., same-machine seal), and
+          # 1.17.13 reproduced byte-identically under two DIFFERENT gccgo builds; gccgo itself is
+          # gate-passed twice, not byte-sealed (driver-only variance, proven non-propagating).
+          # `extract = true` unpacks it to ./go — build.sh MUST move it aside before untarring
+          # the go source tree into that same path.
+          url = "gs://minimalmertic-hermetic-mirror/sha256/fb0df54229ff3bf08ecde83e6095b07fbdb7d0b77c586ed4d468b7f546a8be56/go1.24.9-aarch64.tar.zst",
+          sha256 = "fb0df54229ff3bf08ecde83e6095b07fbdb7d0b77c586ed4d468b7f546a8be56",
+          extract = true,
         } | Source,
     } target,
     {
