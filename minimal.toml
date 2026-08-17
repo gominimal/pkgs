@@ -15,3 +15,120 @@ exec = "claude --dangerously-skip-permissions"
 interactive = true
 packages = ["base", "bash", "opencode", "curl"]
 exec = "opencode"
+
+
+
+
+
+
+
+
+
+# --- repro-lab rebuild tasks (managed by repro-lab/bin/rc-rebuild) ---
+# Double-build support: see repro-lab/docs/min-build-double-build.md.
+[tasks.fix-modes]
+description = "chmod build scripts back to 0755 (the upload strips exec bits — minimal#955)"
+packages = ["base", "coreutils"]
+bash = "chmod 755 packages/*/build.sh; echo \"executable build.sh: $(ls packages/*/build.sh | wc -l | tr -d ' ')\""
+
+[tasks.snap-a]
+description = "Snapshot the target's cache tree to /state/a (between double-builds)"
+packages = ["base", "coreutils"]
+state_key = "repro-neovim"
+patch.dir = { "/var/lib/minimal/cache/built" = "ro" }
+bash = "sh ./repro-snap.sh /state/a"
+
+[tasks.snap-b]
+description = "Snapshot the target's cache tree to /state/b (after build 2)"
+packages = ["base", "coreutils"]
+state_key = "repro-neovim"
+patch.dir = { "/var/lib/minimal/cache/built" = "ro" }
+bash = "sh ./repro-snap.sh /state/b"
+
+[tasks.evict]
+description = "Delete the target's cache slot+meta — forces the next build to be real (no --rebuild knob on this min)"
+packages = ["base", "coreutils"]
+patch.dir = { "/var/lib/minimal/cache/built" = "rw" }
+bash = "sh ./repro-evict.sh"
+
+[tasks.repro-why]
+description = "Deep ELF forensics on /state/a vs /state/b: which sections move, do symbols permute"
+packages = ["base", "coreutils", "binutils", "elfutils", "file"]
+state_key = "repro-neovim"
+bash = """
+set -eu
+big="$(find /state/a -type f -exec du -b {} + | sort -k1,1rn -k2,2 | head -1 | cut -f2)"
+bb="/state/b${big#/state/a}"
+echo "== target: ${big#/state/a/} ($(file -b "$big" | cut -c1-70))"
+echo "== byte deltas per file =="
+find /state/a -type f | sort | while read -r f; do
+  d="$(cmp -l "$f" "/state/b${f#/state/a}" 2>/dev/null | wc -l)"
+  echo "  $d differing bytes  ${f#/state/a/}"
+done
+echo "== section table diff (readelf -SW) =="
+readelf -SW "$big" > /tmp/sa 2>/dev/null; readelf -SW "$bb" > /tmp/sb 2>/dev/null
+diff /tmp/sa /tmp/sb | head -30 || true
+echo "== per-section diff counts =="
+for sec in .text .rodata .data.rel.ro .data .eh_frame .eh_frame_hdr .gcc_except_table .got .init_array; do
+  objcopy -O binary --only-section="$sec" "$big" /tmp/xa 2>/dev/null || continue
+  objcopy -O binary --only-section="$sec" "$bb" /tmp/xb 2>/dev/null || continue
+  d="$(cmp -l /tmp/xa /tmp/xb 2>/dev/null | wc -l)"; sz="$(wc -c < /tmp/xa)"
+  echo "  $sec: $d / $sz bytes differ"
+done
+echo "== .text diff-run clustering (runs joined across <512B gaps) =="
+objcopy -O binary --only-section=.text "$big" /tmp/xa 2>/dev/null
+objcopy -O binary --only-section=.text "$bb" /tmp/xb 2>/dev/null
+cmp -l /tmp/xa /tmp/xb 2>/dev/null | awk '
+NR==1{start=$1;prev=$1;next}
+{if($1>prev+512){print "  " start "-" prev " (" prev-start+1 "B)"; n++; start=$1} prev=$1}
+END{if(NR){print "  " start "-" prev " (" prev-start+1 "B)"; n++}; print "  total runs: " n}' | tail -14
+echo "== eh_frame FDE counts (a, b) =="
+readelf --unwind "$big" 2>/dev/null | grep -c FDE || true
+readelf --unwind "$bb" 2>/dev/null | grep -c FDE || true
+echo "== symbol counts (a, b) =="
+nm --defined-only "$big" 2>/dev/null | wc -l; nm --defined-only "$bb" 2>/dev/null | wc -l
+echo "== symbol SET diff (names only, first 12) =="
+nm --defined-only "$big" 2>/dev/null | awk '{print $NF}' | sort > /tmp/syma
+nm --defined-only "$bb" 2>/dev/null | awk '{print $NF}' | sort > /tmp/symb
+diff /tmp/syma /tmp/symb | head -12 || true
+echo "== symbols whose SIZE differs (name a_size b_size) =="
+nm -S --defined-only "$big" 2>/dev/null | awk 'NF==4{print $4, $2}' | LC_ALL=C sort > /tmp/za
+nm -S --defined-only "$bb" 2>/dev/null | awk 'NF==4{print $4, $2}' | LC_ALL=C sort > /tmp/zb
+awk '{print $1}' /tmp/za | LC_ALL=C uniq -u > /tmp/ua
+awk '{print $1}' /tmp/zb | LC_ALL=C uniq -u > /tmp/ub
+LC_ALL=C join /tmp/ua /tmp/ub > /tmp/uu
+LC_ALL=C join /tmp/uu /tmp/za | LC_ALL=C join - /tmp/zb | awk '$2!=$3{print "  " $0; n++} END{print "  size-differing UNIQUE symbols: " n}' | head -20
+echo "== .rodata OBJECT symbols whose address moved (first 15) =="
+nm -n --defined-only "$big" 2>/dev/null | awk '$2 ~ /^[rR]$/ {print $3, $1}' | LC_ALL=C sort > /tmp/ra
+nm -n --defined-only "$bb" 2>/dev/null | awk '$2 ~ /^[rR]$/ {print $3, $1}' | LC_ALL=C sort > /tmp/rb
+LC_ALL=C join /tmp/ra /tmp/rb 2>/dev/null | awk '$2!=$3{print "  " $1 "  " $2 " -> " $3; n++} END{print "  moved .rodata objects: " n+0}' | head -16
+echo "== first ADDRESS divergence (addr name) =="
+nm -n --defined-only "$big" 2>/dev/null | awk '{print $1, $NF}' > /tmp/aa
+nm -n --defined-only "$bb" 2>/dev/null | awk '{print $1, $NF}' > /tmp/ab
+diff /tmp/aa /tmp/ab | head -10 || true
+echo "== boundary context (last stable + first divergent, A then B) =="
+awk 'NR==FNR{a[FNR]=$0;t=FNR;next}{if($0!=a[FNR]){for(i=FNR-4;i<=FNR+4;i++)if(i>0&&i<=t)print "  A " a[i]; exit}}' /tmp/aa /tmp/ab
+awk 'NR==FNR{a[FNR]=$0;next}{if($0!=a[FNR]){for(i=FNR-4;i<=FNR+4;i++)print "  B " $0; exit} }' /tmp/aa /tmp/ab 2>/dev/null | head -1
+diff /tmp/aa /tmp/ab | sed -n '2,6p'
+echo "== symbol ORDER divergence (by address; first 20 diff lines) =="
+nm --defined-only -n "$big" 2>/dev/null | awk '{print $NF}' > /tmp/ora
+nm --defined-only -n "$bb" 2>/dev/null | awk '{print $NF}' > /tmp/orb
+diff /tmp/ora /tmp/orb | head -20 || true
+"""
+
+[tasks.export-state]
+description = "Stream /state (both build trees) as base64 tar — the bridge out of the session"
+packages = ["base", "coreutils", "tar"]
+state_key = "repro-neovim"
+bash = "cd /state && tar czf - a b 2>/dev/null | base64"
+
+[tasks.repro-diff]
+description = "Byte-compare /state/a vs /state/b with repro-check --explain"
+packages = ["base", "coreutils"]
+state_key = "repro-neovim"
+bash = """
+set -eu
+cp ./repro-check /tmp/repro-check && chmod +x /tmp/repro-check
+/tmp/repro-check diff /state/a /state/b --explain
+"""
+# --- end repro-lab rebuild tasks ---
