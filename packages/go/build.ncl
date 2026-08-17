@@ -3,16 +3,16 @@ let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.26.5" in
+let version = "1.26.6" in
 let variants = {
   amd64_url = "https://go.dev/dl/go%{version}.linux-amd64.tar.gz",
-  amd64_sha256 = "5c2c3b16caefa1d968a94c1daca04a7ca301a496d9b086e17ad77bb81393f053",
+  amd64_sha256 = "708effb774be8237570d0add163225abbdfaf4fca28b2611df167beba4feef89",
 
   arm64_url = "https://go.dev/dl/go%{version}.linux-arm64.tar.gz",
-  arm64_sha256 = "fe4789e92b1f33358680864bbe8704289e7bb5fc207d80623c308935bd696d49",
+  arm64_sha256 = "d0507e9e9d7fe012aae570108cbd76c15de879e17130ab8cb90d4d7445cb1f2e",
 
   source_url = "https://go.dev/dl/go%{version}.src.tar.gz",
-  source_sha256 = "495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42",
+  source_sha256 = "a0721c54c688901448d77ad9b3ec7ea7c474730755ff891382e92ecb93ff2cb1",
 }
 in
 {
