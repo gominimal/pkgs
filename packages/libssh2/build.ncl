@@ -41,6 +41,12 @@ let version = "1.11.1" in
     { file = "CVE-2025-15661.patch" } | Local,
     { file = "CVE-2026-55199.patch" } | Local,
     { file = "CVE-2026-55200.patch" } | Local,
+    # NOT a CVE fix — a PREREQUISITE. CVE-2025-15661's sftp.c hunk calls
+    # `LIBSSH2_UNCONST()`, a macro that does not exist in 1.11.1; it arrived
+    # later in upstream 606c102e. Without it the tree patches cleanly and then
+    # fails to COMPILE (`implicit declaration of function 'LIBSSH2_UNCONST'`).
+    # Debian carries it at this same position for the same reason.
+    { file = "libssh-unconst-backport.patch" } | Local,
     { file = "CVE-2026-66032.patch" } | Local,
     { file = "CVE-2026-66033.patch" } | Local,
     { file = "CVE-2026-66034.patch" } | Local,

@@ -19,6 +19,9 @@ patch -Np1 -i "CVE-2026-7598.patch"
 patch -Np1 -i "CVE-2025-15661.patch"
 patch -Np1 -i "CVE-2026-55199.patch"
 patch -Np1 -i "CVE-2026-55200.patch"
+# Prerequisite, not a CVE fix: CVE-2025-15661 calls LIBSSH2_UNCONST(), which
+# 1.11.1 does not define. Patches clean without it, then fails to compile.
+patch -Np1 -i "libssh-unconst-backport.patch"
 patch -Np1 -i "CVE-2026-66032.patch"
 patch -Np1 -i "CVE-2026-66033.patch"
 patch -Np1 -i "CVE-2026-66034.patch"
