@@ -10,6 +10,12 @@ let ghc = import "../ghc/build.ncl" in
 let cabal = import "../cabal/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let patch = import "../patch/build.ncl" in
+# alex + happy: the lexer/parser generators `language-javascript` (a tamarin
+# dependency) needs at CONFIGURE time. Both are packaged, so build them ONCE
+# from the fleet rather than letting cabal provision its own from Hackage into
+# `.cabal-home/store` — see build.sh for why that mattered on amd64.
+let alex = import "../alex/build.ncl" in
+let happy = import "../happy/build.ncl" in
 let graphviz = import "../graphviz/build.ncl" in
 let maude = import "../maude/build.ncl" in
 let version = "1.12.0" in
@@ -39,6 +45,8 @@ let version = "1.12.0" in
     cabal,
     gmp,
     patch,
+    alex,
+    happy,
   ],
   runtime_deps = [
     gmp,
