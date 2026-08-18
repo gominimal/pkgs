@@ -25,7 +25,7 @@ tar -xof obi-*-source-generated.tar.gz -C internal/obi-src --strip-components=1
 # build.sh version rewrite carry it forward on the next bump (the old
 # `v0.150.0` pin never matched the `0.150.1` package version, so it silently
 # stayed behind).
-go install -trimpath go.opentelemetry.io/collector/cmd/builder@v0.158.0
+go install -trimpath go.opentelemetry.io/collector/cmd/builder@v0.159.0
 OCB=$(go env GOPATH)/bin/builder
 
 # Run ocb FROM the distribution directory. The manifest's `output_path: ./_build`
