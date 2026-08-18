@@ -30,6 +30,11 @@ let version = "26.8.15" in
   ],
 
   cmd = "./build.sh",
+  # Surfaces `version` to build.sh as MINIMAL_ARG_VERSION, which stamps the
+  # build-time VERGEN_GIT_SHA yazi-version demands (no git in the sandbox).
+  build_args = {
+    include version,
+  },
 
   outputs = {
     yazi = { glob = "usr/bin/yazi" } | OutputLib,
