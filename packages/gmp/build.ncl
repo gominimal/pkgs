@@ -76,8 +76,11 @@ let version = "6.3.0" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              url = "gs://minimalmertic-release-channel-stable/gmp-glibc-6.3.0/gmp-glibc-6.3.0.tar.zst",
-              sha256 = "ff310873811a3821cbad6c168b9d78004ef126ba58df2ddfde8c1aac90389a2c",
+              # BEDROCK ROOT: hex0-rooted artifact replacing the bootstrap-aarch64-bins
+              # (dockcross/crosstool-NG) prebuilt. Provenance + seals: minimermetic#16.
+              # Applied by bin/queue/update-bedrock-roots.py from bedrock-roots-manifest.txt.
+              url = "gs://minimalmertic-hermetic-mirror/sha256/dcddd375997eb5b3d6d6fada06010667126145e2a92fc136af1ff8e06fa742a8/stage0-gmp-amd-x86_64.tar.zst",
+              sha256 = "dcddd375997eb5b3d6d6fada06010667126145e2a92fc136af1ff8e06fa742a8",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>

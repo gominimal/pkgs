@@ -93,8 +93,11 @@ let version = "10.47" in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/pcre2/arm64-linux-gnu/pcre2_10.45_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "184d8e5fd124d725a68e7b3b705e86fa20945561960874c5e213774ed5a7c422",
+              # BEDROCK ROOT: hex0-rooted artifact replacing the bootstrap-aarch64-bins
+              # (dockcross/crosstool-NG) prebuilt. Provenance + seals: minimermetic#16.
+              # Applied by bin/queue/update-bedrock-roots.py from bedrock-roots-manifest.txt.
+              url = "gs://minimalmertic-hermetic-mirror/sha256/2b397d27964854fe25060e887bfbcb2153da540dfe4e2a6a529c424476073ff4/stage0-pcre2-arm-aarch64.tar.zst",
+              sha256 = "2b397d27964854fe25060e887bfbcb2153da540dfe4e2a6a529c424476073ff4",
               extract = true,
             } | Source,
         } target,

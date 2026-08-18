@@ -123,8 +123,11 @@ let version = "2.43" in
               # of a probe that PREFERRED the versioned path and never looked anywhere else.
               # KNOWN GAP: usr/lib/locale/** is empty (the foreign 2.40 root ships 1 file there),
               # so anything locale-dependent is the first place to expect trouble.
-              url = "gs://minimalmertic-hermetic-mirror/sha256/5a6f14e3a3ec84e7e0d73cd1ad8eb8c820e594d013136b90de0ca78b61bd2af2/stage0-glibc-2.42-aarch64.tar.zst",
-              sha256 = "5a6f14e3a3ec84e7e0d73cd1ad8eb8c820e594d013136b90de0ca78b61bd2af2",
+              # BEDROCK ROOT: hex0-rooted artifact replacing the bootstrap-aarch64-bins
+              # (dockcross/crosstool-NG) prebuilt. Provenance + seals: minimermetic#16.
+              # Applied by bin/queue/update-bedrock-roots.py from bedrock-roots-manifest.txt.
+              url = "gs://minimalmertic-hermetic-mirror/sha256/a1d40cb10e77670c3c1b00bf2ce28f45775146dfe0397d4c4c5468e955bb1cdc/stage0-glibc-2.42-aarch64.tar.zst",
+              sha256 = "a1d40cb10e77670c3c1b00bf2ce28f45775146dfe0397d4c4c5468e955bb1cdc",
               extract = true,
             } | Source,
         } target,
