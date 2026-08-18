@@ -1,6 +1,6 @@
 # Imported from Wolfi `act` by `pkgmgr import-wolfi` (go build),
 # with outputs + runtime_deps refined from a verified `minimal package` build.
-let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -31,6 +31,9 @@ let version = "0.2.89" in
   },
   outputs = {
     act = { glob = "usr/bin/act" } | OutputBin,
+    bash_completion = { glob = "usr/share/bash-completion/completions/act" } | OutputData,
+    zsh_completion = { glob = "usr/share/zsh/site-functions/_act" } | OutputData,
+    fish_completion = { glob = "usr/share/fish/vendor_completions.d/act.fish" } | OutputData,
   },
   runtime_deps = [glibc],
   attrs =
