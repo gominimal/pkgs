@@ -38,3 +38,14 @@ runs:
     - name: Enable unprivileged user namespaces
       shell: bash
       run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+    - name: Route package-cache reads through the R2 mirror
+      shell: bash
+      # Same move as webapp#380: CI runs on GitHub-hosted Azure runners, so
+      # cache reads from GCS are billed internet egress; cache.minimal.farm
+      # serves the identical immutable, sha256-verified artifacts from R2 at
+      # $0 egress. Measured before this change: the six advisory workflows
+      # cold-pull ~6.5 GB per fresh runner, ~370 GB/week across the fleet —
+      # the majority of remaining GCS egress spend. Written to $GITHUB_ENV so
+      # it reaches the calling job's later steps. Trailing slash required
+      # (Url::join). Rollback = delete this step.
+      run: echo "MINIMAL_REMOTE_CACHE_URL=https://cache.minimal.farm/" >> "$GITHUB_ENV"
