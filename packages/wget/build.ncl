@@ -2,6 +2,7 @@ let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = impo
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
@@ -21,9 +22,19 @@ let version = "1.25.0" in
       extract = true,
       strip_prefix = "wget-%{version}",
     } | Source,
+    # Security backports for the four CVEs upstream fixed after 1.25.0 (the last
+    # release, 2024-11-11). Each is a self-contained fix touching one src/ file
+    # and a different file from the others, so they apply independently and in
+    # any order. Cherry-picked from gitlab.com/gnuwget/wget; verified to apply
+    # clean (`patch -Np1`) against the 1.25.0 tarball.
+    { file = "CVE-2026-58469.patch" } | Local,
+    { file = "CVE-2026-58470.patch" } | Local,
+    { file = "CVE-2026-58471.patch" } | Local,
+    { file = "CVE-2026-58472.patch" } | Local,
     base,
     toolchain,
     make,
+    patch,
     pkgconf,
   ],
   runtime_deps = [
