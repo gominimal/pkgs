@@ -61,7 +61,10 @@ let version = "1.10.0" in
               # GATED slot-compare vs the foreign slot -> SLOT_SUPERSET.
               # GENERATION 1: foreign prebuilts were in the build sandbox and appear in
               # provenance as BUILD INPUTS. Not hex0-rooted.
-              url = "gs://minimalmertic-hermetic-mirror/sha256/1419ad928f9d9f9324f34f4b891093dd982faa2abef669ce1e3bed653fc5814d/stage0-lz4-amd-x86_64.tar.zst",
+              # BEDROCK ROOT: hex0-rooted artifact replacing the bootstrap-aarch64-bins
+              # (dockcross/crosstool-NG) prebuilt. Provenance + seals: minimermetic#16.
+              # Applied by bin/queue/update-bedrock-roots.py from bedrock-roots-manifest.txt.
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/1419ad928f9d9f9324f34f4b891093dd982faa2abef669ce1e3bed653fc5814d/stage0-lz4-amd-x86_64.tar.zst",
               sha256 = "1419ad928f9d9f9324f34f4b891093dd982faa2abef669ce1e3bed653fc5814d",
               extract = true,
             } | Source,
@@ -74,7 +77,7 @@ let version = "1.10.0" in
               # output check therefore cannot see a removal.
               # GENERATION 1: compiled in a sandbox populated by foreign prebuilts. Output is
               # from source; foreign packages are BUILD INPUTS and appear in provenance.
-              url = "gs://minimalmertic-hermetic-mirror/sha256/1454e18e375516d6820bfe10f8dce56ba4fda859aadd7a38f78060d69e6e617e/stage0-lz4-arm-aarch64.tar.zst",
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/1454e18e375516d6820bfe10f8dce56ba4fda859aadd7a38f78060d69e6e617e/stage0-lz4-arm-aarch64.tar.zst",
               sha256 = "1454e18e375516d6820bfe10f8dce56ba4fda859aadd7a38f78060d69e6e617e",
               extract = true,
             } | Source,

@@ -78,7 +78,10 @@ let version = "1.5.7" in
               # BEDROCK ROOT (amd64): stage0-zstd-amd, COLD-rebuilt. slot-compare -> SLOT_SUPERSET,
               # libzstd.a present. The earlier warm "rebuild" replayed a cached capture (outputs are
               # NOT part of the spec hash) and looked like an x86-vs-arm build difference.
-              url = "gs://minimalmertic-hermetic-mirror/sha256/8783fecd0b9fb5f25676200bf8b334e5f0b116d22e1e11c5ba5683b7cff994e8/stage0-zstd-amd-x86_64.tar.zst",
+              # BEDROCK ROOT: hex0-rooted artifact replacing the bootstrap-aarch64-bins
+              # (dockcross/crosstool-NG) prebuilt. Provenance + seals: minimermetic#16.
+              # Applied by bin/queue/update-bedrock-roots.py from bedrock-roots-manifest.txt.
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/8783fecd0b9fb5f25676200bf8b334e5f0b116d22e1e11c5ba5683b7cff994e8/stage0-zstd-amd-x86_64.tar.zst",
               sha256 = "8783fecd0b9fb5f25676200bf8b334e5f0b116d22e1e11c5ba5683b7cff994e8",
               extract = true,
             } | Source,
@@ -88,7 +91,7 @@ let version = "1.5.7" in
               # GATED slot-compare vs the foreign slot -> SLOT_SUPERSET.
               # GENERATION 1: compiled with foreign prebuilts in the sandbox; they are BUILD
               # INPUTS and appear in provenance. Not hex0-rooted.
-              url = "gs://minimalmertic-hermetic-mirror/sha256/16c31660ce632a29747751a14a89664bb219e8e0d37fb1748a2c00393b3c1bb6/stage0-zstd-arm-aarch64.tar.zst",
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/16c31660ce632a29747751a14a89664bb219e8e0d37fb1748a2c00393b3c1bb6/stage0-zstd-arm-aarch64.tar.zst",
               sha256 = "16c31660ce632a29747751a14a89664bb219e8e0d37fb1748a2c00393b3c1bb6",
               extract = true,
             } | Source,

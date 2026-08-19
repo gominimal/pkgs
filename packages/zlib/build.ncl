@@ -49,7 +49,10 @@ let version = "1.3.2" in
               # GATED slot-compare vs the foreign slot -> SLOT_SUPERSET.
               # GENERATION 1: foreign prebuilts were in the build sandbox and appear in
               # provenance as BUILD INPUTS. Not hex0-rooted.
-              url = "gs://minimalmertic-hermetic-mirror/sha256/717d2671877766c03338838d2072f4b3db719827f387fa7ade4daf74d13083ab/stage0-zlib-amd-x86_64.tar.zst",
+              # BEDROCK ROOT: hex0-rooted artifact replacing the bootstrap-aarch64-bins
+              # (dockcross/crosstool-NG) prebuilt. Provenance + seals: minimermetic#16.
+              # Applied by bin/queue/update-bedrock-roots.py from bedrock-roots-manifest.txt.
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/717d2671877766c03338838d2072f4b3db719827f387fa7ade4daf74d13083ab/stage0-zlib-amd-x86_64.tar.zst",
               sha256 = "717d2671877766c03338838d2072f4b3db719827f387fa7ade4daf74d13083ab",
               extract = true,
             } | Source,
@@ -73,7 +76,10 @@ let version = "1.3.2" in
               # ⚠️ GENERATION 1: built in a sandbox populated by foreign prebuilts. The OUTPUT is
               # from source; the foreign packages are BUILD INPUTS and appear in provenance. Not
               # yet hex0-rooted. The close is a generation-2 rebuild + fixed-point check.
-              url = "gs://minimalmertic-hermetic-mirror/sha256/d3b6f8f598e48ff5e8a062b3a65fa97fcbd895ddb173cfe9bde0ee855c783d4a/stage0-zlib-arm-aarch64.tar.zst",
+              # BEDROCK ROOT: hex0-rooted artifact replacing the bootstrap-aarch64-bins
+              # (dockcross/crosstool-NG) prebuilt. Provenance + seals: minimermetic#16.
+              # Applied by bin/queue/update-bedrock-roots.py from bedrock-roots-manifest.txt.
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/d3b6f8f598e48ff5e8a062b3a65fa97fcbd895ddb173cfe9bde0ee855c783d4a/stage0-zlib-arm-aarch64.tar.zst",
               sha256 = "d3b6f8f598e48ff5e8a062b3a65fa97fcbd895ddb173cfe9bde0ee855c783d4a",
               extract = true,
             } | Source,

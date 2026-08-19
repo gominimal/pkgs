@@ -101,7 +101,10 @@ let version = "2.46.1" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              url = "gs://minimalmertic-release-channel-stable/binutils-2.46-glibc-2.46.0/binutils-2.46-glibc-2.46.0.tar.zst",
+              # BEDROCK ROOT: hex0-rooted artifact replacing the bootstrap-aarch64-bins
+              # (dockcross/crosstool-NG) prebuilt. Provenance + seals: minimermetic#16.
+              # Applied by bin/queue/update-bedrock-roots.py from bedrock-roots-manifest.txt.
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/e796366aca5bb03f1e082598b4c3824ad3c95e0001b961a6d339da8c19f836bb/binutils-2.46-glibc-2.46.0.tar.zst",
               sha256 = "e796366aca5bb03f1e082598b4c3824ad3c95e0001b961a6d339da8c19f836bb",
               extract = true,
             } | Source,
@@ -112,7 +115,10 @@ let version = "2.46.1" in
               # byte seal (bedrock-aarch64/stage0-binutils-2.41/stage0.answers).
               # ⚠️ THIS IS A VERSION DOWNGRADE: 2.46.0 -> 2.41. That is a real behaviour change,
               # not just a provenance swap, and it is the reason this lives on its own branch.
-              url = "gs://minimalmertic-hermetic-mirror/sha256/2c94c3d9ae665bcaacc52e4a6ea53d29e4d4904877b4d698f573d3e1d6356626/stage0-binutils-2.41-aarch64.tar.zst",
+              # BEDROCK ROOT: hex0-rooted artifact replacing the bootstrap-aarch64-bins
+              # (dockcross/crosstool-NG) prebuilt. Provenance + seals: minimermetic#16.
+              # Applied by bin/queue/update-bedrock-roots.py from bedrock-roots-manifest.txt.
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/2c94c3d9ae665bcaacc52e4a6ea53d29e4d4904877b4d698f573d3e1d6356626/stage0-binutils-2.41-aarch64.tar.zst",
               sha256 = "2c94c3d9ae665bcaacc52e4a6ea53d29e4d4904877b4d698f573d3e1d6356626",
               extract = true,
             } | Source,

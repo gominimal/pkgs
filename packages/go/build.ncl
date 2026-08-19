@@ -36,7 +36,7 @@ in
           # gate-passed twice, not byte-sealed (driver-only variance, proven non-propagating).
           # `extract = true` unpacks it to ./go — build.sh MUST move it aside before untarring
           # the go source tree into that same path.
-          url = "gs://minimalmertic-hermetic-mirror/sha256/fb0df54229ff3bf08ecde83e6095b07fbdb7d0b77c586ed4d468b7f546a8be56/go1.24.9-aarch64.tar.zst",
+          url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/fb0df54229ff3bf08ecde83e6095b07fbdb7d0b77c586ed4d468b7f546a8be56/go1.24.9-aarch64.tar.zst",
           sha256 = "fb0df54229ff3bf08ecde83e6095b07fbdb7d0b77c586ed4d468b7f546a8be56",
           extract = true,
         } | Source,

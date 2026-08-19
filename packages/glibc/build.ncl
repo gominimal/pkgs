@@ -108,7 +108,10 @@ let version = "2.43" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              url = "gs://minimalmertic-release-channel-stable/glibc-bedrock-2.42-2.42/glibc-bedrock-2.42-2.42.tar.zst",
+              # BEDROCK ROOT: hex0-rooted artifact replacing the bootstrap-aarch64-bins
+              # (dockcross/crosstool-NG) prebuilt. Provenance + seals: minimermetic#16.
+              # Applied by bin/queue/update-bedrock-roots.py from bedrock-roots-manifest.txt.
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/d0850b659687f160368bf87a57d02cfbbe0f1a5fe6ab4b623ca8296b5659126f/glibc-bedrock-2.42-2.42.tar.zst",
               sha256 = "d0850b659687f160368bf87a57d02cfbbe0f1a5fe6ab4b623ca8296b5659126f",
               extract = true,
             } | Source,
@@ -126,7 +129,7 @@ let version = "2.43" in
               # BEDROCK ROOT: hex0-rooted artifact replacing the bootstrap-aarch64-bins
               # (dockcross/crosstool-NG) prebuilt. Provenance + seals: minimermetic#16.
               # Applied by bin/queue/update-bedrock-roots.py from bedrock-roots-manifest.txt.
-              url = "gs://minimalmertic-hermetic-mirror/sha256/a1d40cb10e77670c3c1b00bf2ce28f45775146dfe0397d4c4c5468e955bb1cdc/stage0-glibc-2.42-aarch64.tar.zst",
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/a1d40cb10e77670c3c1b00bf2ce28f45775146dfe0397d4c4c5468e955bb1cdc/stage0-glibc-2.42-aarch64.tar.zst",
               sha256 = "a1d40cb10e77670c3c1b00bf2ce28f45775146dfe0397d4c4c5468e955bb1cdc",
               extract = true,
             } | Source,

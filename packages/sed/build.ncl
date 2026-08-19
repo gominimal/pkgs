@@ -81,7 +81,10 @@ let version = "4.10" in
               # GATED slot-compare vs the foreign slot. COMPILED BY our hex0-rooted gcc against our
               # hex0-rooted glibc; EXECUTED during its build by the VM's Debian tools -- exactly
               # R12's standing, NOT "built with no foreign tool present".
-              url = "gs://minimalmertic-hermetic-mirror/sha256/c3870ea3e87cc8fe28cc45df8fb21401cbb137097e86a7171396204adb4a82df/stage0-sed-bedrock-aarch64.tar.zst",
+              # BEDROCK ROOT: hex0-rooted artifact replacing the bootstrap-aarch64-bins
+              # (dockcross/crosstool-NG) prebuilt. Provenance + seals: minimermetic#16.
+              # Applied by bin/queue/update-bedrock-roots.py from bedrock-roots-manifest.txt.
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/c3870ea3e87cc8fe28cc45df8fb21401cbb137097e86a7171396204adb4a82df/stage0-sed-bedrock-aarch64.tar.zst",
               sha256 = "c3870ea3e87cc8fe28cc45df8fb21401cbb137097e86a7171396204adb4a82df",
               extract = true,
             } | Source,

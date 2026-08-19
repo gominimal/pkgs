@@ -87,7 +87,10 @@ let version = "10.47" in
               # BEDROCK ROOT (amd64): stage0-pcre2-amd, COLD-rebuilt. slot-compare -> SLOT_SUPERSET.
               # The warm rebuild replayed a cached capture and appeared to drop usr/bin/pcre2test;
               # outputs are not part of the spec hash, so widening globs alone changes nothing.
-              url = "gs://minimalmertic-hermetic-mirror/sha256/e43debe0442b2de6e863303c8af966f2146af3bb0d8b998f0539c9e3d5ac046a/stage0-pcre2-amd-x86_64.tar.zst",
+              # BEDROCK ROOT: hex0-rooted artifact replacing the bootstrap-aarch64-bins
+              # (dockcross/crosstool-NG) prebuilt. Provenance + seals: minimermetic#16.
+              # Applied by bin/queue/update-bedrock-roots.py from bedrock-roots-manifest.txt.
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/e43debe0442b2de6e863303c8af966f2146af3bb0d8b998f0539c9e3d5ac046a/stage0-pcre2-amd-x86_64.tar.zst",
               sha256 = "e43debe0442b2de6e863303c8af966f2146af3bb0d8b998f0539c9e3d5ac046a",
               extract = true,
             } | Source,
@@ -96,7 +99,7 @@ let version = "10.47" in
               # BEDROCK ROOT: hex0-rooted artifact replacing the bootstrap-aarch64-bins
               # (dockcross/crosstool-NG) prebuilt. Provenance + seals: minimermetic#16.
               # Applied by bin/queue/update-bedrock-roots.py from bedrock-roots-manifest.txt.
-              url = "gs://minimalmertic-hermetic-mirror/sha256/2b397d27964854fe25060e887bfbcb2153da540dfe4e2a6a529c424476073ff4/stage0-pcre2-arm-aarch64.tar.zst",
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/2b397d27964854fe25060e887bfbcb2153da540dfe4e2a6a529c424476073ff4/stage0-pcre2-arm-aarch64.tar.zst",
               sha256 = "2b397d27964854fe25060e887bfbcb2153da540dfe4e2a6a529c424476073ff4",
               extract = true,
             } | Source,

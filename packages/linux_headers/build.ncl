@@ -50,7 +50,10 @@ let version = "6.12.43" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              url = "gs://minimalmertic-release-channel-stable/stage0-linux-headers-6.12.43-6.12.43/stage0-linux-headers-6.12.43-6.12.43.tar.zst",
+              # BEDROCK ROOT: hex0-rooted artifact replacing the bootstrap-aarch64-bins
+              # (dockcross/crosstool-NG) prebuilt. Provenance + seals: minimermetic#16.
+              # Applied by bin/queue/update-bedrock-roots.py from bedrock-roots-manifest.txt.
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/083cdb678eb2a154373819a5b3511b2b0e73c6261a010dce896287c742be83c3/stage0-linux-headers-6.12.43-6.12.43.tar.zst",
               sha256 = "083cdb678eb2a154373819a5b3511b2b0e73c6261a010dce896287c742be83c3",
               extract = true,
             } | Source,
@@ -63,7 +66,7 @@ let version = "6.12.43" in
               # output check therefore cannot see a removal.
               # GENERATION 1: compiled in a sandbox populated by foreign prebuilts. Output is
               # from source; foreign packages are BUILD INPUTS and appear in provenance.
-              url = "gs://minimalmertic-hermetic-mirror/sha256/862f0245057fb5210c22ad09a537ab099d4672754052328a290a5c9b698dee76/stage0-linux-headers-arm-aarch64.tar.zst",
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/862f0245057fb5210c22ad09a537ab099d4672754052328a290a5c9b698dee76/stage0-linux-headers-arm-aarch64.tar.zst",
               sha256 = "862f0245057fb5210c22ad09a537ab099d4672754052328a290a5c9b698dee76",
               extract = true,
             } | Source,

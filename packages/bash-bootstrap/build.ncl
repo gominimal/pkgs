@@ -87,7 +87,7 @@ let version = "5.3" in
               # GATED slot-compare vs the foreign slot. COMPILED BY our hex0-rooted gcc against our
               # hex0-rooted glibc; EXECUTED during its build by the VM's Debian tools -- exactly
               # R12's standing, NOT "built with no foreign tool present".
-              url = "gs://minimalmertic-hermetic-mirror/sha256/d4c7f29a230757b87cd3372437026d812aa8baf7b2d7c468e073656710578abd/stage0-bash-bedrock-aarch64.tar.zst",
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/d4c7f29a230757b87cd3372437026d812aa8baf7b2d7c468e073656710578abd/stage0-bash-bedrock-aarch64.tar.zst",
               sha256 = "d4c7f29a230757b87cd3372437026d812aa8baf7b2d7c468e073656710578abd",
               extract = true,
             } | Source,

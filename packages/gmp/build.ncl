@@ -79,7 +79,7 @@ let version = "6.3.0" in
               # BEDROCK ROOT: hex0-rooted artifact replacing the bootstrap-aarch64-bins
               # (dockcross/crosstool-NG) prebuilt. Provenance + seals: minimermetic#16.
               # Applied by bin/queue/update-bedrock-roots.py from bedrock-roots-manifest.txt.
-              url = "gs://minimalmertic-hermetic-mirror/sha256/dcddd375997eb5b3d6d6fada06010667126145e2a92fc136af1ff8e06fa742a8/stage0-gmp-amd-x86_64.tar.zst",
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/dcddd375997eb5b3d6d6fada06010667126145e2a92fc136af1ff8e06fa742a8/stage0-gmp-amd-x86_64.tar.zst",
               sha256 = "dcddd375997eb5b3d6d6fada06010667126145e2a92fc136af1ff8e06fa742a8",
               extract = true,
             } | Source,
@@ -89,7 +89,7 @@ let version = "6.3.0" in
               # GATED slot-compare vs the foreign slot -> SLOT_SUPERSET.
               # GENERATION 1: compiled with foreign prebuilts in the sandbox; they are BUILD
               # INPUTS and appear in provenance. Not hex0-rooted.
-              url = "gs://minimalmertic-hermetic-mirror/sha256/2aad977c6f17f3564b8b3891ba5aa1f2af1062f9ba84f41f06e9067edf08e60a/stage0-gmp-arm-aarch64.tar.zst",
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/2aad977c6f17f3564b8b3891ba5aa1f2af1062f9ba84f41f06e9067edf08e60a/stage0-gmp-arm-aarch64.tar.zst",
               sha256 = "2aad977c6f17f3564b8b3891ba5aa1f2af1062f9ba84f41f06e9067edf08e60a",
               extract = true,
             } | Source,
