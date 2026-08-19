@@ -32,6 +32,7 @@ export CXXFLAGS="${CFLAGS}"
             ADJTIME_PATH=/var/lib/hwclock/adjtime \
             --docdir=/usr/share/doc/util-linux    \
             --disable-makeinstall-chown \
+            --disable-makeinstall-setuid \
             --disable-use-tty-group     \
 
 make -j$(nproc)
