@@ -115,8 +115,8 @@ let version = "2.47" in
               # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
               # gominimal/minimermetic#16. Applied by minimermetic's
               # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/2c94c3d9ae665bcaacc52e4a6ea53d29e4d4904877b4d698f573d3e1d6356626/stage0-binutils-2.41-aarch64.tar.zst",
-              sha256 = "2c94c3d9ae665bcaacc52e4a6ea53d29e4d4904877b4d698f573d3e1d6356626",
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/58fd82c720a3885df8d07341eb822a5eb880c204eff1b7b0b5017ea769067c6b/stage0-binutils-2.41-aarch64.tar.zst",
+              sha256 = "58fd82c720a3885df8d07341eb822a5eb880c204eff1b7b0b5017ea769067c6b",
               extract = true,
             } | Source,
         } target,
