@@ -119,9 +119,19 @@ def fetch(url: str) -> tuple[str, str, str]:
     fd, tmp = tempfile.mkstemp(prefix="docs-link-")
     os.close(fd)
     try:
+        # `--proto =https` already covers redirects -- it is a global restrictor
+        # curl applies to every hop ("Protocol "http" disabled (in redirect)"),
+        # not just the first request. `--proto-redir` is therefore redundant
+        # here and is passed only to state that intent at the call site, since
+        # the global-restrictor semantics are easy to misread. `--max-redirs`
+        # caps a chain that curl would otherwise follow 50 deep; the docs pages
+        # redirect at most once (`/start/` -> `/auth/login`), so 5 is slack.
+        # Args are a list, so no shell parses `url`, and `url` itself is
+        # regex-constrained to https://minimal.dev/ by extract_urls().
         p = subprocess.run(
             ["curl", "-sS", "-o", tmp, "-w", "%{http_code}\t%{url_effective}",
-             "--location", "--proto", "=https", "--tlsv1.2", "--max-time", "25",
+             "--location", "--proto", "=https", "--proto-redir", "=https",
+             "--max-redirs", "5", "--tlsv1.2", "--max-time", "25",
              "--user-agent", "gominimal-pkgs-docs-link-check/1.0", url],
             capture_output=True, text=True, timeout=45)
         code, _, final = p.stdout.strip().partition("\t")
