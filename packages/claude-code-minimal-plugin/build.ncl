@@ -6,7 +6,7 @@ let version = "0.3.0" in
 # Pinned to the head commit of gominimal/minimal-skills#3. Flip the url to
 # archive/refs/tags/v%{version}.tar.gz (and drop this pin) once v0.3.0 is
 # tagged upstream.
-let commit = "14ac8f720d95b08d54da074d762710ff2437539e" in
+let commit = "1991c9a75290c20afdf2c279e9465681e064d0b2" in
 {
   name = "claude-code-minimal-plugin",
 
@@ -14,7 +14,7 @@ let commit = "14ac8f720d95b08d54da074d762710ff2437539e" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/gominimal/minimal-skills/archive/%{commit}.tar.gz",
-      sha256 = "1e7de33358496a2872a327cc8f574942571fc2d7465e85e0f960d98640a26641",
+      sha256 = "3d3589d0332a9b443d28e9b8af6316c98f98e40854080de345aa24774cd3f061",
       extract = true,
       strip_prefix = "minimal-skills-%{commit}",
     } | Source,
