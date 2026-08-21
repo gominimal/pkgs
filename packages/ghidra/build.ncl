@@ -9,7 +9,7 @@ let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "12.1.2" in
+let version = "12.1.3" in
 {
   name = "ghidra",
   build_deps = [
@@ -39,8 +39,8 @@ let version = "12.1.2" in
     # SHA-256 is the one published in the release body, not one we computed:
     # https://github.com/NationalSecurityAgency/ghidra/releases/tag/Ghidra_%{version}_build
     {
-      url = "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_%{version}_build/ghidra_%{version}_PUBLIC_20260605.zip",
-      sha256 = "b62e81a0390618466c019c60d8c2f796ced2509c4c1aea4a37644a77272cf99d",
+      url = "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_%{version}_build/ghidra_%{version}_PUBLIC_20260817.zip",
+      sha256 = "93a5d11a9ad510622acaaf908c556a7b9b764d338e78a7567f3689bf5081fd54",
     } | Source,
     # The aarch64 7-Zip JNI native. Upstream's `-all-platforms` roll-up
     # deliberately excludes ARM ("WARNING: Not a part of -AllPlatform or
