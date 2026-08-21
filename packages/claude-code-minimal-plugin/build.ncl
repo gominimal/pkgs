@@ -1,14 +1,23 @@
-let { Attrs, BuildSpec, Local, OutputData, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let claude-code = import "../claude-code/build.ncl" in
 
+let version = "0.3.0" in
+# Pinned to the head commit of gominimal/minimal-skills#3. Flip the url to
+# archive/refs/tags/v%{version}.tar.gz (and drop this pin) once v0.3.0 is
+# tagged upstream.
+let commit = "14ac8f720d95b08d54da074d762710ff2437539e" in
 {
   name = "claude-code-minimal-plugin",
 
   build_deps = [
     { file = "build.sh" } | Local,
-    { file = "session-primer.sh" } | Local,
-    { file = "min-session.md" } | Local,
+    {
+      url = "https://github.com/gominimal/minimal-skills/archive/%{commit}.tar.gz",
+      sha256 = "1e7de33358496a2872a327cc8f574942571fc2d7465e85e0f960d98640a26641",
+      extract = true,
+      strip_prefix = "minimal-skills-%{commit}",
+    } | Source,
     base,
   ],
 
@@ -25,6 +34,26 @@ let claude-code = import "../claude-code/build.ncl" in
 
   attrs =
     {
-      license_spdx = "Apache-2.0",
+      upstream_version = version,
+      license_spdx = "MIT",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "gominimal",
+        repo = "minimal-skills",
+      },
     } | Attrs,
+
+  tests = {
+    layout_check =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          # The assembled plugin tree: manifest, hooks wiring, both hook
+          # scripts executable, and the in-sandbox skill. Host-facing skills
+          # must NOT be shipped.
+          ["/bin/bash", "-c", "set -e; d=/usr/share/claude/plugins/minimal; test -f $d/.claude-plugin/plugin.json; grep -q '\"name\": \"minimal\"' $d/.claude-plugin/plugin.json; test -f $d/hooks/hooks.json; grep -q denial-triage $d/hooks/hooks.json; test -x $d/hooks/session-primer.sh; test -x $d/hooks/denial-triage.sh; grep -q 'name: minimal-sandbox' $d/skills/minimal-sandbox/SKILL.md; test ! -e $d/skills/minimal-setup"],
+        ],
+      } | Test,
+  },
 } | BuildSpec

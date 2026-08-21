@@ -3,35 +3,20 @@ set -euo pipefail
 
 plugin_dir="$OUTPUT_DIR/usr/share/claude/plugins/minimal"
 
-mkdir -pv "$plugin_dir/.claude-plugin" "$plugin_dir/hooks" "$plugin_dir/skills/min-session"
+mkdir -pv "$plugin_dir/.claude-plugin" "$plugin_dir/hooks" "$plugin_dir/skills"
 
-cat > "$plugin_dir/.claude-plugin/plugin.json" << 'EOF'
-{
-  "name": "minimal",
-  "description": "Teaches Claude Code how to use the `min` tool inside a Minimal sandbox session.",
-  "version": "1.0.0"
-}
-EOF
+# The manifest comes from upstream, so the plugin version tracks the fetched
+# minimal-skills snapshot by construction.
+cp -v .claude-plugin/plugin.json "$plugin_dir/.claude-plugin/plugin.json"
 
-cat > "$plugin_dir/hooks/hooks.json" << 'EOF'
-{
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-primer.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
-  }
-}
-EOF
+# In-sandbox guidance only. The other skills in the repo are host-facing and
+# teach commands that do not exist inside a sandbox (min session, min init,
+# min bug, mip ...), so they are deliberately not shipped here.
+cp -Rv skills/minimal-sandbox "$plugin_dir/skills/minimal-sandbox"
 
-cp -v session-primer.sh "$plugin_dir/hooks/session-primer.sh"
-chmod -v +x "$plugin_dir/hooks/session-primer.sh"
-
-cp -v min-session.md "$plugin_dir/skills/min-session/SKILL.md"
+# Hook assets live under sandbox/ upstream so a marketplace install of the
+# repo never picks them up; in this build they become the plugin's hooks/.
+cp -v sandbox/hooks.json "$plugin_dir/hooks/hooks.json"
+cp -v sandbox/session-primer.sh "$plugin_dir/hooks/session-primer.sh"
+cp -v sandbox/denial-triage.sh "$plugin_dir/hooks/denial-triage.sh"
+chmod -v +x "$plugin_dir/hooks/session-primer.sh" "$plugin_dir/hooks/denial-triage.sh"
