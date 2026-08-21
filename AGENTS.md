@@ -696,7 +696,8 @@ and conforms to the schema.
 
 Build the package on its own. Prefer the patched build: it wires dependencies to the most recent
 available build of each package, so editing a package deep in the graph does not trigger a long
-rebuild chain.
+rebuild chain. The tradeoff is that those dependency builds come from cache and can be
+stale — run a full build when the result has to reflect a dependency's current sources.
 
 If the build fails:
 - Check that all build dependencies are in `build_deps`
