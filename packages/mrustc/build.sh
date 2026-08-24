@@ -29,12 +29,35 @@ SRC_SHA=1ad6521c90e47754c5e13bd9abd183f4cd953eb9faa8a25e7b104b6ffe701512
 # WARNS when it is unset, silently falling back to 1.29 mode.  That is a fail-open, so we pin it
 # and gate on 1.90 behaviour (samples/no_core-1_90.rs's 4-arg lang_start is 1.74+-only shape).
 TARGET_VER=1.90
-TRIPLE=x86_64-unknown-linux-gnu
-CCTRIPLE=x86_64-linux-gnu          # Target_GetCurSpec().m_backend_c.m_c_compiler (src/trans/target.cpp:440)
+# Arch dispatch (arm parity, 2026-08-24). Same recipe both arches; the aarch64
+# values mirror amd64's. ARCH_CFLAGS carries -mno-outline-atomics on aarch64:
+# mrustc emits compiler_builtins' asm!(noreturn) outline-atomics helpers as
+# UNCONSTRAINED __asm__ inside normal C functions — the embedded `ret` exits
+# with gcc's frame state inconsistent, and gcc's aarch64-default outline-atomics
+# CALLS those helpers (first victim: ThreadId::new's CAS during rt::init —
+# SIGSEGV; root-caused on tcc-r2-warm 2026-08-24, memory
+# rust_arm_wall2_root_cause_outline_atomics). Inlining the atomics at every
+# call site makes the broken helpers dead code. amd64 never outlines, and x86
+# gcc rejects the flag, so it stays aarch64-only.
+case "$(uname -m)" in
+  x86_64)
+    TRIPLE=x86_64-unknown-linux-gnu
+    CCTRIPLE=x86_64-linux-gnu      # Target_GetCurSpec().m_backend_c.m_c_compiler (src/trans/target.cpp:440)
+    LOADER_SO=ld-linux-x86-64.so.2
+    ARCH_CFLAGS=""
+    ;;
+  aarch64)
+    TRIPLE=aarch64-unknown-linux-gnu
+    CCTRIPLE=aarch64-linux-gnu
+    LOADER_SO=ld-linux-aarch64.so.1
+    ARCH_CFLAGS="-mno-outline-atomics"
+    ;;
+  *) echo "mrustc: unsupported arch $(uname -m)" >&2; exit 1 ;;
+esac
 
 GCC_VERSION=15.2.0
 SR=/usr/lib/glibc-bedrock-2.42     # B4 versioned sysroot: headers + crt + libs + co-located UAPI
-LOADER="${SR}/lib/ld-linux-x86-64.so.2"
+LOADER="${SR}/lib/${LOADER_SO}"
 
 # ============================================================================================
 # P0 — PRECONDITIONS.  Assert the ANCHOR, not just "a compiler".
@@ -121,7 +144,7 @@ grep -q '^#define VERSION_MINOR   12$' "${SRC}/src/version.cpp" || { echo "mrust
 # Regenerate a corrected copy and put it FIRST on the library path.  Verbatim shape from
 # gcc-15.2.0-glibc/build.sh:53-58, whose comment records that its own gate "bit exactly this".
 FIXLIB="${BUILDROOT}/glibc-fixlib"; mkdir -p "${FIXLIB}"
-sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@${SR}/lib/\1@g" \
+sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2|ld-linux-aarch64\.so\.1)@${SR}/lib/\1@g" \
   "${SR}/lib/libc.so" > "${FIXLIB}/libc.so"
 if grep -q '/build/output' "${FIXLIB}/libc.so"; then
   echo "mrustc infra: libc.so linker-script fixup failed (staging paths survive)" >&2; exit 1
@@ -155,9 +178,9 @@ cat > "${WRAP}/bedrock-c++" <<EOF
 #!/bin/sh
 # g++ pinned to the B5 C++ headers + B4 sysroot.  Compile-only invocations get includes only.
 case " \$* " in
-  *" -c "*) exec "${BGXX}" ${CXXINC} "\$@" ;;
+  *" -c "*) exec "${BGXX}" ${CXXINC} ${ARCH_CFLAGS} "\$@" ;;
 esac
-exec "${BGXX}" ${CXXINC} "\$@" ${LNK}
+exec "${BGXX}" ${CXXINC} ${ARCH_CFLAGS} "\$@" ${LNK}
 EOF
 
 # The CC mrustc shells out to at codegen time.  It also LOGS every invocation: the gate below
@@ -167,9 +190,9 @@ cat > "${WRAP}/bedrock-cc" <<EOF
 #!/bin/sh
 echo "cc \$*" >> "${BUILDROOT}/ccwrap.log"
 case " \$* " in
-  *" -c "*) exec "${BGCC}" ${CINC} "\$@" ;;
+  *" -c "*) exec "${BGCC}" ${CINC} ${ARCH_CFLAGS} "\$@" ;;
 esac
-exec "${BGCC}" ${CINC} "\$@" ${LNK}
+exec "${BGCC}" ${CINC} ${ARCH_CFLAGS} "\$@" ${LNK}
 EOF
 chmod 0755 "${WRAP}/bedrock-c++" "${WRAP}/bedrock-cc"
 
@@ -300,7 +323,7 @@ GATE="${BUILDROOT}/gate"; mkdir -p "${GATE}"
 export MRUSTC_TARGET_VER="${TARGET_VER}"
 # CC_<triple> takes priority over CC (codegen_c.cpp:1284-1292); set both so there is no path by
 # which mrustc reaches an ambient compiler.
-export CC_x86_64_linux_gnu="${WRAP}/bedrock-cc"
+export "CC_$(printf %s "${CCTRIPLE}" | tr - _)=${WRAP}/bedrock-cc"
 export CC="${WRAP}/bedrock-cc"
 
 # --- GATE 1: mrustc compiles a self-contained #![no_core] program, gcc links it, it RUNS -----

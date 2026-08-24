@@ -37,12 +37,33 @@ OUTDIR="output-${VERSION}"
 MTAR_SHA=1ad6521c90e47754c5e13bd9abd183f4cd953eb9faa8a25e7b104b6ffe701512
 RTAR_SHA=799a9f9cba4ed5351e071048bcf6b5560755d9009648def33a407dd4961f9b7e
 
-TRIPLE=x86_64-unknown-linux-gnu
-CCTRIPLE=x86_64-linux-gnu
+# Arch dispatch (arm parity, 2026-08-24). ARCH_CFLAGS carries
+# -mno-outline-atomics on aarch64: mrustc emits compiler_builtins'
+# asm!(noreturn) outline-atomics helpers as unconstrained __asm__ in normal C
+# functions (the embedded `ret` corrupts the frame), and gcc's aarch64-default
+# outline-atomics CALLS them — first victim is ThreadId::new's CAS in rt::init
+# (SIGSEGV; root-caused on tcc-r2-warm, memory
+# rust_arm_wall2_root_cause_outline_atomics). Inlining atomics at every call
+# site makes the broken helpers dead code. x86 gcc rejects the flag.
+case "$(uname -m)" in
+  x86_64)
+    TRIPLE=x86_64-unknown-linux-gnu
+    CCTRIPLE=x86_64-linux-gnu
+    LOADER_SO=ld-linux-x86-64.so.2
+    ARCH_CFLAGS=""
+    ;;
+  aarch64)
+    TRIPLE=aarch64-unknown-linux-gnu
+    CCTRIPLE=aarch64-linux-gnu
+    LOADER_SO=ld-linux-aarch64.so.1
+    ARCH_CFLAGS="-mno-outline-atomics"
+    ;;
+  *) echo "r190: unsupported arch $(uname -m)" >&2; exit 1 ;;
+esac
 TARGET_VER=1.90                      # NOT 1.90.0 — src/main.cpp:990-991 exit(1)s on unknown
 GCC_VERSION=15.2.0
 SR=/usr/lib/glibc-bedrock-2.42       # B4 versioned sysroot
-LOADER="${SR}/lib/ld-linux-x86-64.so.2"
+LOADER="${SR}/lib/${LOADER_SO}"
 
 MR=/usr/bin/mrustc                   # from packages/mrustc's rootfs
 MC=/usr/bin/minicargo
@@ -212,7 +233,7 @@ grep -qx '1.29.0' "${MSRC}/rust-version" || {
 
 # --- B4 libc.so linker-script fixup (verbatim from gcc-15.2.0-glibc/build.sh:53-58) ---------
 FIXLIB="${BUILDROOT}/glibc-fixlib"; mkdir -p "${FIXLIB}"
-sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@${SR}/lib/\1@g" \
+sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2|ld-linux-aarch64\.so\.1)@${SR}/lib/\1@g" \
   "${SR}/lib/libc.so" > "${FIXLIB}/libc.so"
 grep -q '/build/output' "${FIXLIB}/libc.so" && { echo "r190 infra: libc.so fixup failed" >&2; exit 1; }
 
@@ -246,17 +267,17 @@ cat > "${WRAP}/bedrock-cc" <<EOF
 #!/bin/sh
 echo "cc \$*" >> "${BUILDROOT}/ccwrap.log"
 case " \$* " in
-  *" -c "*) exec "${BGCC}" ${CINC} ${LPRE} "\$@" ;;
+  *" -c "*) exec "${BGCC}" ${CINC} ${ARCH_CFLAGS} ${LPRE} "\$@" ;;
 esac
-exec "${BGCC}" ${CINC} ${LPRE} "\$@" ${LPOST}
+exec "${BGCC}" ${CINC} ${ARCH_CFLAGS} ${LPRE} "\$@" ${LPOST}
 EOF
 cat > "${WRAP}/bedrock-c++" <<EOF
 #!/bin/sh
 echo "c++ \$*" >> "${BUILDROOT}/cxxwrap.log"
 case " \$* " in
-  *" -c "*) exec "${BGXX}" ${CXXINC} ${LPRE} "\$@" ;;
+  *" -c "*) exec "${BGXX}" ${CXXINC} ${ARCH_CFLAGS} ${LPRE} "\$@" ;;
 esac
-exec "${BGXX}" ${CXXINC} ${LPRE} "\$@" ${LPOST}
+exec "${BGXX}" ${CXXINC} ${ARCH_CFLAGS} ${LPRE} "\$@" ${LPOST}
 EOF
 chmod 0755 "${WRAP}/bedrock-cc" "${WRAP}/bedrock-c++"
 
@@ -274,7 +295,7 @@ export MRUSTC_TARGET_VER="${TARGET_VER}"
 export MRUSTC_PATH="${MR}"
 export CC="${CCW}"
 export CXX="${CXXW}"
-export CC_x86_64_linux_gnu="${CCW}"   # takes priority over CC (codegen_c.cpp:1284-1292)
+export "CC_$(printf %s "${CCTRIPLE}" | tr - _)=${CCW}"   # takes priority over CC (codegen_c.cpp:1284-1292)
 
 # 2026-07-22: the rustc mrustc BUILDS invokes a linker named `cc` by default (rustc's built-in
 # default is the literal "cc"; run_rustc/Makefile:172 links samples/hello.rs with no -C linker=).
@@ -478,7 +499,7 @@ rm -f "${DST}/bin/hello_world"
 cat > "${DST}/bin/rustc" <<'WRAPEOF'
 #!/bin/sh
 d="$(dirname "$0")"
-LD_LIBRARY_PATH="${d}/../lib:${d}/../lib/rustlib/x86_64-unknown-linux-gnu/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
+LD_LIBRARY_PATH="${d}/../lib:${d}/../lib/rustlib/${TRIPLE}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
   exec "${d}/rustc_binary" "$@"
 WRAPEOF
 chmod 0755 "${DST}/bin/rustc"
