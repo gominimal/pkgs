@@ -10,6 +10,7 @@ let jansson = import "../jansson/build.ncl" in
 let libxml2 = import "../libxml2/build.ncl" in
 let make = import "../make/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let tree-sitter = import "../tree-sitter/build.ncl" in
@@ -20,6 +21,9 @@ let version = "30.2" in
   build_deps = [
     { file = "build.sh" } | Local,
     { file = "fixrand.c" } | Local,
+    # Backport of Emacs master b0143530 (bug#79687): tree-sitter >= 0.26
+    # rejects the bare #match/#equal predicate names Emacs 30.2 emits.
+    { file = "treesit-predicates-0.26.patch" } | Local,
     {
       url = "https://ftpmirror.gnu.org/emacs/emacs-%{version}.tar.xz",
       sha256 = "b3f36f18a6dd2715713370166257de2fae01f9d38cfe878ced9b1e6ded5befd9",
@@ -29,6 +33,7 @@ let version = "30.2" in
     autoconf,
     base,
     make,
+    patch,
     pkgconf,
     toolchain,
   ],
@@ -94,6 +99,18 @@ let version = "30.2" in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "emacs --batch --eval '(message \"%s\" (treesit-available-p))' 2>&1 | grep -q t"],
+        ],
+      } | Test,
+
+    # Guards treesit-predicates-0.26.patch: sexp predicates must serialise
+    # with the ? suffix that libtree-sitter >= 0.26 requires, for both
+    # the legacy keywords and the new aliases.
+    treesit_predicate_syntax =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "out=$(emacs --batch --eval '(princ (treesit-query-expand (quote ((a) @x (:match \"^a\" @x) (:equal @x \"a\") (:match? @x \"^a\") (:eq? @x \"a\")))))' 2>/dev/null); echo \"$out\"; echo \"$out\" | grep -q '(#match? \"^a\" @x) (#eq? @x \"a\") (#match? @x \"^a\") (#eq? @x \"a\")'"],
         ],
       } | Test,
   },
