@@ -1,6 +1,12 @@
 #!/bin/sh
 set -ex
 
+# Install into a package-PRIVATE prefix (NOT the shared usr/lib/node_modules, which
+# the node/node-lts runtime owns); expose thin symlinks on PATH (pyright ships two
+# bins: pyright + pyright-langserver). The inner `#!/usr/bin/env node` shebang is
+# served by coreutils(env)+node, so no shell is needed. (twitchyliquid64 on #370.)
+PYRIGHT_PREFIX="$OUTPUT_DIR/usr/libexec/pyright"
+
 # CS-builder offline path: orch stage npm populates /npm-cache with pyright
 # + its deps; install from there with --offline. Outside CS (no /npm-cache),
 # fall back to the online registry.
@@ -35,14 +41,21 @@ if [ -d /npm-cache ]; then
         # --cache at a fresh writable dir — we don't need the read-only cache here.
         NPMCACHE="$(pwd)/.npmcache"; mkdir -p "$NPMCACHE"
         npm install -g --offline --cache="$NPMCACHE" \
-            --prefix=$OUTPUT_DIR/usr ./_pyright-install.tgz
+            --prefix="$PYRIGHT_PREFIX" ./_pyright-install.tgz
     else
         # Fallback: the packument path (will likely ENOTCACHE, but keep the
         # original behavior so a cache-layout change surfaces loudly).
         echo "=[pyright]= WARN: pyright tarball not found in content-store; packument path"
         npm install -g --offline --cache=/npm-cache \
-            --prefix=$OUTPUT_DIR/usr pyright@$MINIMAL_ARG_VERSION
+            --prefix="$PYRIGHT_PREFIX" pyright@$MINIMAL_ARG_VERSION
     fi
 else
-    npm install -g --prefix=$OUTPUT_DIR/usr pyright@$MINIMAL_ARG_VERSION
+    npm install -g --prefix="$PYRIGHT_PREFIX" pyright@$MINIMAL_ARG_VERSION
 fi
+
+mkdir -p "$OUTPUT_DIR/usr/bin"
+for _bin in "$PYRIGHT_PREFIX/bin/"*; do
+  [ -e "$_bin" ] || continue
+  _tool=${_bin##*/}
+  ln -s "../libexec/pyright/bin/$_tool" "$OUTPUT_DIR/usr/bin/$_tool"
+done

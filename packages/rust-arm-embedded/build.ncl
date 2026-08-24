@@ -31,6 +31,7 @@ let toolchain = import "../toolchain/build.ncl" in
   attrs =
     {
       upstream_version = rust.attrs.upstream_version,
+      license_spdx = "Apache-2.0",
       source_provenance = {
         category = 'GithubRepo,
         owner = "rust-lang",

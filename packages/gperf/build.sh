@@ -10,7 +10,7 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
-./configure --prefix=/usr --docdir=/usr/share/doc/gperf-3.1
+./configure --prefix=/usr --docdir=/usr/share/doc/gperf-3.3
 
 make -j$(nproc)
 make DESTDIR="$OUTPUT_DIR" install

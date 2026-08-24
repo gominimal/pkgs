@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.72.0" in
+let version = "0.74.2" in
 {
   name = "fzf",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/junegunn/fzf/v%{version}.tar.gz",
-      sha256 = "ca5ce083cec5187503ceb96d837c20d8efde85f03e62bba3a8890f8da526f2fc",
+      sha256 = "3ce36bd4fb0cde458a7f93c11ef534408d92c3bf19e6acc90e112f3e9e2acc60",
       extract = true,
       strip_prefix = "fzf-%{version}",
     } | Source,

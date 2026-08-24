@@ -1,6 +1,25 @@
 #!/bin/bash
 set -euo pipefail
 
+# `cabal update` (the hackage index) and `cabal build` (stack's full dependency
+# tree) both fetch from hackage.haskell.org live during the build, and those
+# downloads flake intermittently (truncated reads). cabal verifies sha256s and
+# caches deps under ~/.cabal, so a retry re-fetches only what failed and
+# resumes. The hermetic fix is a cabal.project.freeze + a vendored local
+# package repo (a bigger job) -- this retry is the cheap stopgap.
+retry() {
+    local -i attempt=1 max=4
+    until "$@"; do
+        if (( attempt >= max )); then
+            echo "retry: '$*' failed after $max attempts" >&2
+            return 1
+        fi
+        echo "retry: '$*' failed (attempt $attempt/$max) -- likely a transient hackage fetch; retrying in $(( attempt * 15 ))s" >&2
+        sleep $(( attempt * 15 ))
+        attempt+=1
+    done
+}
+
 if [ -f Setup.hs ]; then
   echo '{-# LANGUAGE CPP #-}' > Setup.hs.tmp
   while IFS= read -r line; do
@@ -67,8 +86,8 @@ if [ -d /cabal-cache ]; then
   cabal update
   cabal build --disable-tests --disable-benchmarks -j4
 else
-  cabal update
-  cabal build
+  retry cabal update
+  retry cabal build
 fi
 
 # Install stack binary

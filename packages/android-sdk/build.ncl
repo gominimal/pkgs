@@ -34,6 +34,8 @@ let version = "11076708" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "LicenseRef-Android-SDK-Terms",
+      binary_from = "https://dl.google.com/android/repository/",
     } | Attrs,
 
   tests = {

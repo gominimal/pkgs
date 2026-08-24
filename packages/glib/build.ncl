@@ -11,14 +11,14 @@ let zlib = import "../zlib/build.ncl" in
 let util-linux = import "../util-linux/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.86.4" in
+let version = "2.88.3" in
 {
   name = "glib",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/glib-%{version}.tar.xz",
-      sha256 = "d4e2b5d791d5015ffd8c6971ad8e975a0a55c1a14926cdb25cf843ff00682260",
+      sha256 = "ab24d24e698dfa1e408b7bcdb508f4aafc906185a8b8ce72fdf79bbbdc9b383b",
       extract = true,
       strip_prefix = "glib-%{version}",
     } | Source,
@@ -50,5 +50,6 @@ let version = "2.86.4" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "LGPL-2.1-or-later",
     } | Attrs,
 } | BuildSpec

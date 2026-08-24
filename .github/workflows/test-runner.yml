@@ -3,6 +3,9 @@ name: Test Self-Hosted Runner
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: minimal-ubuntu-latest

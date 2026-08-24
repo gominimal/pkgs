@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "4.30.2" in
+let version = "5.35.1" in
 {
   name = "railway",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/railwayapp/cli/v%{version}.tar.gz",
-      sha256 = "6bf10cdc6b57d025ee846c948633d9f596ea7d5842ed8edaa4e7af9fd58efd31",
+      sha256 = "faecc8d2adede53bf59db5a8509860fb9e1dd8048a1195908edac97c072b7b4f",
       extract = true,
       strip_prefix = "cli-%{version}",
     } | Source,
@@ -37,6 +37,7 @@ let version = "4.30.2" in
       # Wire up Railway's global state directory.
       env_dir_mappings = [{ read_only = false, path = "~/.railway", class = 'State }],
       upstream_version = version,
+      license_spdx = "MIT",
       source_provenance = {
         category = 'GithubRepo,
         owner = "railwayapp",

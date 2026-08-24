@@ -1,6 +1,25 @@
 #!/bin/bash
 set -euo pipefail
 
+# cabal's bootstrap fetches ~20 tarballs from hackage.haskell.org live during
+# the build, and those downloads flake intermittently (truncated reads ->
+# http.client.IncompleteRead). cabal verifies each tarball's sha256, so a
+# partial download is re-fetched cleanly, which makes a retry safe. The
+# hermetic fix is to vendor the bootstrap sources offline (see packages/ghc,
+# which passes --bootstrap-sources) -- this retry is the cheap stopgap.
+retry() {
+    local -i attempt=1 max=4
+    until "$@"; do
+        if (( attempt >= max )); then
+            echo "retry: '$*' failed after $max attempts" >&2
+            return 1
+        fi
+        echo "retry: '$*' failed (attempt $attempt/$max) -- likely a transient hackage fetch; retrying in $(( attempt * 15 ))s" >&2
+        sleep $(( attempt * 15 ))
+        attempt+=1
+    done
+}
+
 # Patch monorepo .cabal files to accept GHC 9.10.1's built-in Cabal-syntax-3.12.0.0
 # (cabal-install-3.12.1.0 expects ^>=3.12.1.0 but GHC 9.10.1 ships 3.12.0.0)
 for cabal_file in \
@@ -14,26 +33,46 @@ for cabal_file in \
     fi
 done
 
-# Offline bootstrap: use the pre-fetched hackage deps bundled at packaging
-# time (cabal's own `bootstrap.py fetch` vs GHC 9.10.3, each dep sha-verified).
-# The archive is a Source build_dep that hydrates next to the build dir;
-# bootstrap.py unpacks its plan-bootstrap.json + tarballs and compiles
-# cabal-install with ZERO network egress. (#51 Option B regenerates this on
-# the fetcher so it never touches local bandwidth.)
-# Locate the hydrated bootstrap-sources tarball ROBUSTLY. The old narrow `ls
-# cabal-bootstrap-sources.tar.gz ../...` assumed it sat in cwd or the parent;
-# minimal actually hardlinks Source build_deps to /build, and the path varies.
-# Worse, under `set -o pipefail` an empty `ls` exited 2 with NO output → opaque
-# "build.sh exited code 2, stderr empty" failure (2026-06-09). Search /build +
-# the tree, and fail LOUD so a real miss is diagnosable.
-BSRC=$(find /build . -maxdepth 4 -name 'cabal-bootstrap-sources.tar.gz' 2>/dev/null | head -1)
-if [ -z "$BSRC" ]; then
-  echo "FATAL: cabal-bootstrap-sources.tar.gz not found under /build or cwd" >&2
-  echo "/build contents:" >&2; ls -la /build 2>/dev/null >&2
+# Generate a bootstrap JSON that matches the actual GHC in the sandbox.
+#
+# The base plan is picked by cabal's OWN bootstrap/ directory, which ships a
+# fixed set of linux-<ghc>.json files per cabal release — it does NOT track the
+# GHC we build with. cabal 3.18.1.0 ships 9.6.7 / 9.8.4 / 9.10.3 / 9.12.4; the
+# 9.8.2 this used to name existed only in older cabals, so bumping cabal broke
+# it with a bare FileNotFoundError from our own script.
+#
+# Which one matters less than it looks: update_bootstrap_json.py REPLACES the
+# `builtin` list with the real `ghc-pkg list` output, so the compiler-package
+# half adapts to whatever GHC is on PATH. The base plan supplies the
+# `dependencies` (Hackage packages to build), so take the newest available.
+BOOTSTRAP_PLAN=bootstrap/linux-9.10.3.json
+[ -f "$BOOTSTRAP_PLAN" ] || {
+  echo "ERROR: $BOOTSTRAP_PLAN not found — cabal $(basename "$PWD") ships a different set of bootstrap plans." >&2
+  echo "Available:" >&2
+  ls bootstrap/linux-*.json >&2 || echo "  (none)" >&2
+  echo "Pick the newest and update BOOTSTRAP_PLAN in build.sh." >&2
   exit 1
+}
+python3 update_bootstrap_json.py "$BOOTSTRAP_PLAN" > bootstrap/linux-actual.json
+
+# Offline bootstrap (CS-builder path): use the pre-fetched hackage deps bundled
+# at packaging time (cabal's own `bootstrap.py fetch`, each dep sha-verified).
+# The archive is a Source build_dep hydrated to /build; bootstrap.py unpacks its
+# plan-bootstrap.json + tarballs and compiles cabal-install with ZERO network
+# egress. (#51 Option B regenerates this on the fetcher.) Search /build + the
+# tree ROBUSTLY (under `set -o pipefail` an empty `ls` exited 2 with NO output —
+# opaque failure, 2026-06-09). No archive → the online retry path for dev
+# iteration (fails in CS, where egress is blocked — which is the loud signal
+# that the bootstrap-sources archive needs restaging for this cabal version).
+BSRC=$(find /build . -maxdepth 4 -name 'cabal-bootstrap-sources.tar.gz' 2>/dev/null | head -1)
+if [ -n "$BSRC" ]; then
+  echo "[cabal build.sh] bootstrap-sources: $BSRC"
+  python3 bootstrap/bootstrap.py -w "$(command -v ghc)" -s "$BSRC"
+else
+  echo "[cabal build.sh] WARN: no cabal-bootstrap-sources.tar.gz staged; online bootstrap" >&2
+  # Run the bootstrap script with the generated JSON
+  retry python3 bootstrap/bootstrap.py -w "$(command -v ghc)" -d bootstrap/linux-actual.json
 fi
-echo "[cabal build.sh] bootstrap-sources: $BSRC"
-python3 bootstrap/bootstrap.py -w "$(command -v ghc)" -s "$BSRC"
 
 # The bootstrap script compiles cabal-install and installs to _build/bin
 mkdir -p "$OUTPUT_DIR"/usr/bin

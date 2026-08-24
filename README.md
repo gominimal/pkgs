@@ -1,3 +1,7 @@
+<p align="center">
+  <img src=".github/readme-packages.webp" alt="Minimal public packages" width="880">
+</p>
+
 # Minimal's Public Registry
 
 The MPR has build specifications for a curated, regularly-updated set of open source packages
@@ -44,3 +48,6 @@ Full text: [ICLA](./legal/ICLA.md) · [CCLA](./legal/CCLA.md)
 
 This project is licensed under the [Apache License Version 2.0](LICENSE)
 - see the [LICENSE](LICENSE) file for details.
+
+The *packages built from these recipes* remain under their own upstream
+licenses — see [LICENSING.md](LICENSING.md) for how the two relate.

@@ -5,14 +5,14 @@ let git = import "../git/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let ripgrep = import "../ripgrep/build.ncl" in
 
-let version = "1.14.20" in
+let version = "1.18.14" in
 {
   name = "opencode",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/anomalyco/opencode/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "cfa02650be42398be8b8f813ac4736a25d4a8d8a5f92b035bd98b66b4afcd34a",
+      sha256 = "3454d738eca7117099d6dc2a1d6330e0ac099da60cf3d8e40e8913ff3e38f656",
     } | Source,
     # #47: pre-materialized node_modules for the WHOLE workspace monorepo so
     # the offline `bun install --frozen-lockfile` is a NO-OP verify (zero
@@ -64,6 +64,7 @@ let version = "1.14.20" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT",
       build_cost_multiple = 3,
       source_provenance = {
         category = 'GithubRepo,

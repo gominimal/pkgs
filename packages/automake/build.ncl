@@ -47,6 +47,7 @@ let version = "1.18.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-2.0-only",
       repology_project = "automake",
       source_provenance = {
         category = 'GnuProject,

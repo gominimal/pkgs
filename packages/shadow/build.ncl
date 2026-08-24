@@ -4,19 +4,21 @@ let make = import "../make/build.ncl" in
 let acl = import "../acl/build.ncl" in
 let attr = import "../attr/build.ncl" in
 let libxcrypt = import "../libxcrypt/build.ncl" in
+let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "4.18.0" in
+let version = "4.20.2" in
 {
   name = "shadow",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/shadow-%{version}.tar.xz",
-      sha256 = "add4604d3bc410344433122a819ee4154b79dd8316a56298c60417e637c07608",
+      sha256 = "b89f432b75ae55a2d852b446d0365484795fdf533ab97d550e325fa15594a224",
     } | Source,
     base,
     make,
+    pkgconf,
     toolchain,
   ],
   runtime_deps = [
@@ -44,6 +46,7 @@ let version = "4.18.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-3-Clause",
       source_provenance = {
         category = 'GithubRepo,
         owner = "shadow-maint",

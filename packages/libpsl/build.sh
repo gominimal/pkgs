@@ -1,8 +1,8 @@
 #!/bin/sh
 set -ex
 
-tar -xof libpsl-0.21.5.tar.gz
-cd libpsl-0.21.5
+tar -xof libpsl-0.23.2.tar.gz
+cd libpsl-0.23.2
 
 mkdir build
 cd    build

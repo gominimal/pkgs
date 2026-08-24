@@ -1,6 +1,7 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
+let glib = import "../glib/build.ncl" in
 let libvips = import "../libvips/build.ncl" in
 let make = import "../make/build.ncl" in
 let node = import "../node/build.ncl" in
@@ -9,14 +10,14 @@ let pnpm = import "../pnpm/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "16.2.6" in
+let version = "16.3.0" in
 {
   name = "next",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/vercel/next.js/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "119c7afb3f19bf3de81283d4fab6b318f3b9ba3113acda83aee0de181be68a85",
+      sha256 = "9269716701c0aee3e8138530c01f11a22f5fc20c5dec0d3ce131b7e5741caa9b",
       extract = true,
       strip_prefix = "next.js-%{version}",
     } | Source,
@@ -31,6 +32,7 @@ let version = "16.2.6" in
       extract = false,
     } | Source,
     base,
+    glib,
     make,
     node,
     pkgconf,
@@ -40,6 +42,7 @@ let version = "16.2.6" in
   ],
   runtime_deps = [
     coreutils,
+    glib,
     libvips,
     node,
   ],

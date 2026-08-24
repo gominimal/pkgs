@@ -4,14 +4,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2026_01_20.386b5f5" in
+let version = "2026_07_28.f8df3f1" in
 {
   name = "pasta",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://passt.top/passt/snapshot/passt-%{version}.tar.gz",
-      sha256 = "b378b36cc6d17988fd8efdc9e432495afc96787c3ee231aee55bc7e50c4edf6d",
+      sha256 = "2b3effb3dcd1f6b1b46da3a2419c037508d24bc39f90513bbbb660e8eb6520e5",
       extract = true,
       strip_prefix = "passt-%{version}",
     } | Source,
@@ -34,5 +34,6 @@ let version = "2026_01_20.386b5f5" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-2.0-or-later",
     } | Attrs,
 } | BuildSpec

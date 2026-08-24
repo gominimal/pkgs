@@ -59,6 +59,7 @@ in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-2.0-only WITH Classpath-exception-2.0",
       source_provenance = {
         category = 'GithubRepo,
         owner = "adoptium",

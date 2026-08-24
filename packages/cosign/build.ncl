@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "3.0.6" in
+let version = "3.1.3" in
 {
   name = "cosign",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/sigstore/cosign/v%{version}.tar.gz",
-      sha256 = "ea2f4094d944d79671784ba3d7601d7fdf78c15b0d92cdc4ca31b4d5cff3cd89",
+      sha256 = "ab8fcb8e0b4c0b8d01aefa37790cdd5ad099366b2efb8636b7a0250915b93362",
       extract = true,
       strip_prefix = "cosign-%{version}",
     } | Source,

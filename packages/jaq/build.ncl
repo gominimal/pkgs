@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.3.0" in
+let version = "3.1.1" in
 {
   name = "jaq",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/01mf02/jaq/v%{version}.tar.gz",
-      sha256 = "80fae7c5bbbc244580ca77d3e5a4fc6e9c3ea08a5526d562e3c5300edd44fe8b",
+      sha256 = "9b8587436be48b5791c8276573321a3d4f404e0dc77ea6503d05725a55edd266",
       extract = true,
       strip_prefix = "jaq-%{version}",
     } | Source,
@@ -35,6 +35,7 @@ let version = "2.3.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT",
       source_provenance = {
         category = 'GithubRepo,
         owner = "01mf02",

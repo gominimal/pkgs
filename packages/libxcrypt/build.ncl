@@ -39,6 +39,7 @@ let version = "4.5.2" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "LGPL-2.1-or-later AND BSD-3-Clause AND BSD-2-Clause AND 0BSD",
       repology_project = "libxcrypt",
       source_provenance = {
         category = 'GithubRepo,

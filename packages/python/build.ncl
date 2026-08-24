@@ -17,14 +17,14 @@ let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let xz = import "../xz/build.ncl" in
 
-let version = "3.14.5" in
+let version = "3.14.7" in
 {
   name = "python",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/Python-%{version}.tar.xz",
-      sha256 = "7e32597b99e5d9a39abed35de4693fa169df3e5850d4c334337ffd6a19a36db6"
+      sha256 = "3b48dac8fb59f62eaa67ac83c1eb12bda1b7a08406dd286e252c11a66be27f81"
     } | Source,
     base,
     make,

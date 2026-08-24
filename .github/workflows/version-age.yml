@@ -1,0 +1,91 @@
+name: version-age
+
+# REPORT-ONLY, NON-BLOCKING. For each package changed by this PR, resolve the
+# upstream release date, compute its age, and post a job-summary table flagging
+# anything younger than the 7-day reference (gominimal/inbox#20). It writes
+# nothing to the tree, requires no secrets, and MUST NOT be added to
+# branch-protection required checks — keep it off required checks so it blocks
+# nothing. Steps are hardened to stay green, but "non-blocking" is guaranteed by
+# that branch-protection exclusion, not by the workflow itself.
+#
+# Sub-issue: gominimal/inbox#21 (branch-promotion building blocks).
+#
+# SECURITY: triggered on `pull_request` (NOT pull_request_target). Forks get a
+# read-only token and NO secrets, which is correct because this job evaluates
+# untrusted build.ncl via `minimal dump`. Network egress is read-only GitHub API
+# + ftp.gnu.org HEAD requests for release dates (both SSRF-guarded in the script).
+
+on:
+  pull_request:
+    branches: ["main"]
+
+# Least privilege. We post via GITHUB_STEP_SUMMARY, which needs no write scope.
+# No `checks: write` — a fork PR's token can't write a Check Run anyway, which is
+# why this is job-summary-only rather than a neutral Check Run.
+permissions:
+  contents: read
+
+concurrency:
+  group: version-age-${{ github.event.pull_request.number }}
+  cancel-in-progress: true # a superseded report run is worthless; drop it
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned to a SHA (matches aggregate-unstable.yml; zizmor unpinned-uses).
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0 # need base..head reachable for the changed-file diff
+
+      - uses: ./.github/actions/setup-minimal
+
+      - name: Detect changed packages
+        id: changed
+        env:
+          # Pass SHAs via env per repo convention (zizmor template-injection),
+          # not inline ${{ }} in run:.
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -uo pipefail
+          # Map each changed packages/<name>/build.ncl to its <name> dir.
+          # Tolerate a diff error (stay green; report 0 changes) — never block.
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'packages/*/build.ncl' \
+            | cut -d/ -f2 | sort -u > changed-packages.txt || : > changed-packages.txt
+          echo "count=$(wc -l < changed-packages.txt | tr -d ' ')" >> "$GITHUB_OUTPUT"
+          echo "Changed packages:"; cat changed-packages.txt || true
+
+      - name: Dump catalog (amd64)
+        if: steps.changed.outputs.count != '0'
+        run: |
+          set -uo pipefail
+          # attrs are arch-invariant, so one arch is enough for the date check.
+          # A broken (fork) build.ncl must NOT turn this report-only check red:
+          # on dump failure, warn and leave an empty dump.json for the script to
+          # no-op on. `dump` is hidden from --help but not science-gated.
+          if minimal dump -p --format json --arch amd64 > dump.json; then
+            echo "dumped $(jq 'length' dump.json) packages"
+          else
+            echo "::warning::minimal dump failed (non-blocking); skipping report"
+            : > dump.json
+          fi
+
+      - name: Version-age report
+        if: steps.changed.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ github.token }} # read-only; used for release-date lookups
+        run: |
+          set -uo pipefail
+          # Belt-and-suspenders: the script returns 0 for any policy verdict and
+          # no-ops on an empty/missing dump; a genuine programming error is
+          # downgraded to a warning so the check never goes red.
+          python3 .github/scripts/version_age_report.py \
+            --dump dump.json \
+            --packages-file changed-packages.txt \
+            --min-age-days 7 \
+          || echo "::warning::version-age report hit an internal error; see logs (non-blocking)"
+
+      - name: No package changes
+        if: steps.changed.outputs.count == '0'
+        run: echo "No packages/*/build.ncl changed in this PR — nothing to report." >> "$GITHUB_STEP_SUMMARY"

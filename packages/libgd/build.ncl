@@ -49,6 +49,7 @@ let version = "2.3.3" in
 
   attrs = {
     upstream_version = version,
+    license_spdx = "GD",
     source_provenance = {
       category = 'GithubRepo,
       owner = "libgd",

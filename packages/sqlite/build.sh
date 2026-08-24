@@ -1,8 +1,11 @@
 #!/bin/sh
 set -e
 
-tar -xof sqlite-autoconf-3500400.tar.gz
-cd sqlite-autoconf-3500400
+# Both names must match the archive in build.ncl. The 3.53.3 bump updated the
+# `cd` but not the `tar`, so this extracted 3.50.4 and then changed into a
+# directory that did not exist.
+tar -xof sqlite-autoconf-3530300.tar.gz
+cd sqlite-autoconf-3530300
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;

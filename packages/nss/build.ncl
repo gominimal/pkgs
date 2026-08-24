@@ -9,14 +9,14 @@ let zlib = import "../zlib/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "3.121" in
+let version = "3.126.1" in
 {
   name = "nss",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/nss-%{version}.tar.gz",
-      sha256 = "cb3a8f8781bea78b7b8edd3afb7a2cb58e4881bb0160d189a39b98216ba7632e",
+      sha256 = "d5fcd5e3ee92b9dd699070be6b9ff924490e61216e3726eef1c99564181784a8",
       extract = true,
       strip_prefix = "nss-%{version}",
     } | Source,
@@ -43,5 +43,6 @@ let version = "3.121" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MPL-2.0",
     } | Attrs,
 } | BuildSpec

@@ -13,7 +13,7 @@ export CXXFLAGS="${CFLAGS}"
 ./configure  --prefix=/usr      \
             --disable-static    \
             --sysconfdir=/etc   \
-            --docdir=/usr/share/doc/attr-2.5.2
+            --docdir=/usr/share/doc/attr-2.6.0
 
 make -j$(nproc)
 # make check # TODO

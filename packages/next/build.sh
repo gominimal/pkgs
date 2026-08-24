@@ -23,6 +23,17 @@ fi
 export CC=gcc
 export CXX=g++
 
+# pnpm 11 migration (belt, for the PATH-fallback pnpm): strictDepBuilds now
+# defaults to true, so a dependency with an unreviewed build script
+# (esbuild/sharp/…) aborts the install with ERR_PNPM_IGNORED_BUILDS instead of
+# just warning. We don't rely on those install-time native builds (sharp is
+# source-built separately below against system libvips), so demote it back to a
+# warning. Also disable the pre-script deps check, which otherwise reinstalls
+# before `pnpm exec turbo` and re-runs the husky prepare hook (which needs a
+# `.git` the source tarball doesn't have). No-ops on the pinned pnpm 9.6.0.
+export PNPM_CONFIG_STRICT_DEP_BUILDS=false
+export PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false
+
 # #53: next pins pnpm@9.6.0 and its lockfile is authored by it. Use that EXACT
 # pnpm — any pnpm 10.x re-resolves the 9.6.0 lockfile differently, so the offline
 # store (staged with 9.6.0 by the fetcher, which now honors packageManager) would
@@ -113,6 +124,32 @@ if [ -d /pnpm-store ]; then
 else
     $PNPM install --frozen-lockfile --config.engine-strict=false
 fi
+
+# --- Reproducibility patches to the extracted source, before building --------
+# L3 (the blocker): next overrides rspack's production-default moduleIds from
+# 'deterministic' to 'named' in the runtime webpack configs. With 'named', the
+# externalized trace/tracer module is keyed by whichever importer's relative
+# request ('./lib/...' vs '../lib/...') rspack processes first — unstable under
+# parallel module processing — cascading through the minified
+# dist/compiled/next-server/*.runtime.prod.js. Restore the deterministic default.
+sed -i "s/moduleIds: 'named',/moduleIds: 'deterministic',/" \
+  packages/next/next-runtime.webpack-config.js \
+  packages/next/next-devtools.webpack-config.js
+for file in \
+  packages/next/next-runtime.webpack-config.js \
+  packages/next/next-devtools.webpack-config.js
+do
+  grep -q "moduleIds: 'deterministic'" "$file" \
+    || { echo "ERROR: next moduleIds repro patch did not apply in $file (webpack config changed upstream)" >&2; exit 1; }
+done
+
+# L2: the bundle-analyzer fixture app is built during the build and bakes a
+# random Next.js buildId (nanoid) into dist/bundle-analyzer/* and the
+# _next/static/<buildId>/ dir names. Pin it deterministically.
+sed -i "s/output: 'export',/output: 'export', generateBuildId: () => 'minimal-reproducible-build',/" \
+  apps/bundle-analyzer/next.config.mjs
+grep -q "minimal-reproducible-build" apps/bundle-analyzer/next.config.mjs \
+  || { echo "ERROR: next bundle-analyzer generateBuildId repro patch did not apply" >&2; exit 1; }
 
 # Build next and all its workspace dependencies (e.g. @next/env)
 $PNPM exec turbo run build --filter=next...
@@ -229,12 +266,37 @@ if [ -f /usr/include/node/node_version.h ]; then
 else
     echo "[next build.sh] WARN: /usr/include/node/ headers absent — node-gyp will attempt a download (offline → ETIMEDOUT)"
 fi
+
+# sharp discovers our system libvips via `pkg-config vips-cpp`, but libvips's public
+# header <vips/vips8> #includes <glib-object.h> while vips-cpp.pc lists glib only under
+# Requires.private. A non-static `pkg-config --cflags/--libs vips-cpp` (what sharp's
+# node-gyp build uses) does not expand private requires, so glib's include/link paths
+# are never passed and the addon FTBFS on "glib-object.h: No such file". Surface glib's
+# include/lib dirs explicitly. CPATH/LIBRARY_PATH are read by gcc directly (independent
+# of node-gyp's Makefile flag handling); CXXFLAGS/LDFLAGS cover the conventional path.
+glib_inc=""
+for i in $(pkg-config --cflags-only-I glib-2.0 gobject-2.0); do
+  glib_inc="${glib_inc:+$glib_inc:}${i#-I}"
+done
+export CPATH="${glib_inc}${CPATH:+:$CPATH}"
+export LIBRARY_PATH="/usr/lib${LIBRARY_PATH:+:$LIBRARY_PATH}"
+glib_cflags="$(pkg-config --cflags glib-2.0 gobject-2.0)"
+glib_libs="$(pkg-config --libs glib-2.0 gobject-2.0)"
+export CFLAGS="${CFLAGS:-} ${glib_cflags}"
+export CXXFLAGS="${CXXFLAGS:-} ${glib_cflags}"
+export LDFLAGS="${LDFLAGS:-} ${glib_libs}"
+
 node install/build.js
 
-# Clean up native build artifacts, keeping only the final .node addon
-find src/build -name '*.o' -delete
-rm -rf src/build/Release/obj.target
-rm -rf src/build/Release/.deps
+# Clean up native build artifacts, keeping ONLY the final .node addon — the rest
+# of src/build is node-gyp scaffolding (Makefile, *.mk, config.gypi) that bakes
+# the random $(mktemp -d) staging path into cmd_regen_makefile / compile lines.
+if [ -d src/build ]; then
+  find src/build -mindepth 1 -maxdepth 1 ! -name Release -exec rm -rf {} +
+  if [ -d src/build/Release ]; then
+    find src/build/Release -mindepth 1 -maxdepth 1 ! -name '*.node' -exec rm -rf {} +
+  fi
+fi
 
 # Copy the source-built sharp into next's node_modules. NEXT_DIR now comes from
 # `pnpm deploy` (symlink layout: deps live under next/node_modules/.pnpm with

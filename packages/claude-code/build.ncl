@@ -11,9 +11,9 @@ let ripgrep = import "../ripgrep/build.ncl" in
 
 let { version, amd64_sha256, arm64_sha256, gcs_bucket } = {
   gcs_bucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases",
-  version = "2.1.145",
-  amd64_sha256 = "b3ffbc12689bfe81389d6577787fcea4cab81bd3b6bba9b719e73770b62d720e",
-  arm64_sha256 = "75ad61d690d79440c82b5841444e1b42caae55736af37c97dd0e068ef20ce390",
+  version = "2.1.233",
+  amd64_sha256 = "55d281096f57d411ebbdd94dbf5e9ff3accb7c05713e37348c2c11d4b83bf9d9",
+  arm64_sha256 = "42df1841f74e9b2ac13f2c1a2a820ef6b9ac5b2efb8646bb25c9a92b8bd69194",
 }
 in
 
@@ -63,12 +63,11 @@ in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "LicenseRef-Anthropic-Proprietary",
+      binary_from = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases",
       closed_source = true,
 
-      # Claude code needs two things to function properly:
-      #  - `.claude.json`, which contains anthropic credentials for the user
-      #  - `.claude`, which contains project state and recent context windows and such.
-      env_dir_mappings = [{ read_only = false, path = "~/.claude", class = 'State }],
+      # Claude code wires `.claude.json`, which contains anthropic credentials for the user
       env_file_mappings = [{ read_only = false, path = "~/.claude.json", class = 'Credential }],
     } | Attrs,
 } | BuildSpec

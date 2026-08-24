@@ -8,14 +8,14 @@ let file = import "../file/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "8.7" in
+let version = "9.2" in
 {
   name = "nano",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/nano-%{version}.tar.xz",
-      sha256 = "afd287aa672c48b8e1a93fdb6c6588453d527510d966822b687f2835f0d986e9",
+      sha256 = "05ecb99247b782e8a5b3a25ed4101dd034b0236902f7449bc9795b717642f7e9",
       extract = true,
       strip_prefix = "nano-%{version}",
     } | Source,
@@ -44,6 +44,7 @@ let version = "8.7" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "(GFDL-1.2-invariants-only AND GPL-3.0-only)",
       repology_project = "nano",
       source_provenance = {
         category = 'GnuProject,

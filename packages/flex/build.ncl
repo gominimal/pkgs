@@ -37,6 +37,7 @@ let version = "2.6.4" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-3-Clause-flex",
       source_provenance = {
         category = 'GithubRepo,
         owner = "westes",

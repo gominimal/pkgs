@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "3.239.0" in
+let version = "3.257.0" in
 {
   name = "pulumi",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/pulumi/pulumi/v%{version}.tar.gz",
-      sha256 = "de5c91b980619702c67451f8e5e8f3c3729b8f4b1f91ed6925261f2887d699fb",
+      sha256 = "e51055e520184b998b16bde14403dd2f95d3f1ca7aaaf1fe8be4c47ed95c40fa",
       extract = true,
       strip_prefix = "pulumi-%{version}",
     } | Source,
@@ -45,6 +45,7 @@ let version = "3.239.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Apache-2.0",
       repology_project = "pulumi",
       source_provenance = {
         category = 'GithubRepo,

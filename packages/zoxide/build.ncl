@@ -5,7 +5,7 @@ let glibc = import "../glibc/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "0.9.9" in
+let version = "0.10.0" in
 {
   name = "zoxide",
 
@@ -13,7 +13,7 @@ let version = "0.9.9" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/ajeetdsouza/zoxide/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "eddc76e94db58567503a3893ecac77c572f427f3a4eabdfc762f6773abf12c63",
+      sha256 = "4fcd4272b013a10b637dbcc299c58a9924b94470a9042677ca1a204cc2e9150e",
       extract = true,
       strip_prefix = "zoxide-%{version}",
     } | Source,

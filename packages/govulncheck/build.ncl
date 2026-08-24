@@ -4,14 +4,14 @@ let glibc = import "../glibc/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.1.4" in
+let version = "1.7.0" in
 {
   name = "govulncheck",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/golang/vuln/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "da1a7f3224cf874325814dd198eaa42897143fc871226a04944583cb121a15c9",
+      sha256 = "4fb7f0204b7e039f550d8938b714c5218d870694895585e0e19b2c0c4700e4c7",
       extract = true,
       # No strip_prefix here: minimal preserves the archive's top dir
       # (vuln-<version>) so build.sh can `cd vuln-<version>`. The fetcher's
@@ -42,6 +42,7 @@ let version = "1.1.4" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-3-Clause",
       source_provenance = {
         category = 'GithubRepo,
         owner = "golang",

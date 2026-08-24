@@ -13,7 +13,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let rustc-1-94-1 = import "../rustc-1.94.1/build.ncl" in # ★ THE STAGE0 — final chain rung, CS-attested
 
-let version = "1.95.0" in
+let version = "1.97.1" in
 {
   name = "rust",
   build_deps = [
@@ -21,7 +21,7 @@ let version = "1.95.0" in
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/rustc-%{version}-src.tar.xz",
-      sha256 = "62b67230754da642a264ca0cb9fc08820c54e2ed7b3baba0289876d4cdb48c08",
+      sha256 = "0ed06fdaffd4722a7702e0b4eebfafc897ab8f513e8e1b247cdd7e5c6df6ded2",
       extract = true,
       strip_prefix = "rustc-%{version}-src",
     } | Source,

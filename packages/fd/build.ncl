@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "10.3.0" in
+let version = "10.4.2" in
 {
   name = "fd",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/sharkdp/fd/v%{version}.tar.gz",
-      sha256 = "2edbc917a533053855d5b635dff368d65756ce6f82ddefd57b6c202622d791e9",
+      sha256 = "3a7e027af8c8e91c196ac259c703d78cd55c364706ddafbc66d02c326e57a456",
       extract = true,
       strip_prefix = "fd-%{version}",
     } | Source,
@@ -35,6 +35,7 @@ let version = "10.3.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT OR Apache-2.0",
       source_provenance = {
         category = 'GithubRepo,
         owner = "sharkdp",

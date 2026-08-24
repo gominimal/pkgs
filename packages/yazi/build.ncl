@@ -7,14 +7,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "26.1.22" in
+let version = "26.8.15" in
 {
   name = "yazi",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/sxyazi/yazi/v%{version}.tar.gz",
-      sha256 = "83b8a1bf166bfcb54b44b966fa3f34afa7c55584bf81d29275a1cdd99d1c9c4c",
+      sha256 = "60bd4ca56398f0f6ea6dcf88cc18e325583bf5328aeec51d396070944a9495c8",
       extract = true,
       strip_prefix = "yazi-%{version}",
     } | Source,
@@ -30,6 +30,11 @@ let version = "26.1.22" in
   ],
 
   cmd = "./build.sh",
+  # Surfaces `version` to build.sh as MINIMAL_ARG_VERSION, which stamps the
+  # build-time VERGEN_GIT_SHA yazi-version demands (no git in the sandbox).
+  build_args = {
+    include version,
+  },
 
   outputs = {
     yazi = { glob = "usr/bin/yazi" } | OutputLib,
@@ -38,6 +43,7 @@ let version = "26.1.22" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT",
       repology_project = "yazi",
       source_provenance = {
         category = 'GithubRepo,

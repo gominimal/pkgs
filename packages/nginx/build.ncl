@@ -13,14 +13,14 @@ let zlib = import "../zlib/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let pcre2 = import "../pcre2/build.ncl" in
 
-let version = "1.30.0" in
+let version = "1.31.3" in
 {
   name = "nginx",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://nginx.org/download/nginx-%{version}.tar.gz",
-      sha256 = "058188c64bf22baecaa72b809a6318a4f9ba623889c554feab03f7cb853ab31b",
+      sha256 = "a7657c50811c2d92d9895395e8b873ef60398142c4db21eb647811c38f6dd525",
       extract = true,
       strip_prefix = "nginx-%{version}",
     } | Source,
@@ -53,6 +53,7 @@ let version = "1.30.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "BSD-2-Clause",
       repology_project = "nginx",
       source_provenance = {
         category = 'GithubRepo,

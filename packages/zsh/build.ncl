@@ -11,14 +11,18 @@ let libcap = import "../libcap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
 
-let version = "5.9" in
+let version = "5.9.2" in
 {
   name = "zsh",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://www.zsh.org/pub/zsh-%{version}.tar.xz",
-      sha256 = "9b8d1ecedd5b5e81fbf1918e876752a7dd948e05c1a0dba10ab863842d45acd5",
+      # Sourced from the gs:// mirror so the pin stays fetchable: zsh moves the
+      # current release to /pub/old/ once superseded, so a hardcoded /pub/old/
+      # (or /pub/) URL rots. On update, pkgmgr re-mirrors from the canonical
+      # /pub/ (see upstream_sources.rs `zsh`). Mirror of the /pub/old/ tarball.
+      url = "gs://minimal-staging-archives/zsh-%{version}.tar.xz",
+      sha256 = "36fa734374b44783582cec09bcd67822e2f992c779ec1624ab5596df078d2f81",
       extract = true,
       strip_prefix = "zsh-%{version}",
     } | Source,
@@ -51,6 +55,7 @@ let version = "5.9" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT-Modern-Variant",
     } | Attrs,
 
   tests = {

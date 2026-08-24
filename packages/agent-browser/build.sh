@@ -14,9 +14,20 @@ if [ -f package.json ] && command -v node >/dev/null 2>&1; then
     node -e 'const f="package.json",fs=require("fs"),p=JSON.parse(fs.readFileSync(f));delete p.packageManager;if(p.engines)delete p.engines.pnpm;fs.writeFileSync(f,JSON.stringify(p,null,2))' || true
 fi
 
+# pnpm 11 migration: strictDepBuilds now defaults to true, so unreviewed
+# dependency build scripts (esbuild/geckodriver/…) are a hard error
+# (ERR_PNPM_IGNORED_BUILDS) rather than a warning — but this build deliberately
+# skips them (`--ignore-scripts`; the daemon ships a prebuilt binary), so demote
+# it back to a warning. Also disable the pre-script deps check, which otherwise
+# reinstalls before `pnpm build` and re-runs the husky postinstall (which needs
+# a `.git` the source tarball doesn't have).
+export PNPM_CONFIG_STRICT_DEP_BUILDS=false
+export PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false
+
 export CC=gcc
 export LD=gcc
-export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
+export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo -C codegen-units=1"
+export CONST_RANDOM_SEED=0   # pin ahash/const-random compile-time seed
 
 # Install JS deps (skip postinstall which downloads pre-built binary).
 # Use the hoisted node-linker so node_modules is a flat, self-contained
@@ -81,6 +92,10 @@ cp cli/target/release/agent-browser bin/agent-browser-${PLATFORM}
 install -d $OUTPUT_DIR/usr/bin
 install -d $OUTPUT_DIR/usr/libexec/agent-browser
 
+# pnpm bakes wall-clock timestamps into its node_modules state files
+# (.modules.yaml `prunedAt`, .pnpm-workspace-state-v1.json `lastValidatedTimestamp`)
+# — non-deterministic and not needed at runtime. Drop them before packaging.
+rm -f node_modules/.modules.yaml node_modules/.pnpm-workspace-state-v1.json
 cp -R dist bin node_modules package.json $OUTPUT_DIR/usr/libexec/agent-browser/
 
 cat > $OUTPUT_DIR/usr/bin/agent-browser << EOF

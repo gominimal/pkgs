@@ -64,6 +64,7 @@ let version = "1.4.21" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "GPL-3.0-only",
       source_provenance = {
         category = 'GnuProject,
         name = "m4",

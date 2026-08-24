@@ -5,14 +5,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.15.0" in
+let version = "1.18.0" in
 {
   name = "nghttp3",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/ngtcp2/nghttp3/releases/download/v%{version}/nghttp3-%{version}.tar.gz",
-      sha256 = "0e431c81eb2d3df5ced048d6e942925ff922ad053e76a0274eea7b164c9b776e",
+      sha256 = "2812e9c06583fa24c8dc46bdb5291310a69196352ceaca8fbe98106ff36ae7d8",
       extract = true,
       strip_prefix = "nghttp3-%{version}",
     } | Source,
@@ -37,6 +37,7 @@ let version = "1.15.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT",
       source_provenance = {
         category = 'GithubRepo,
         owner = "ngtcp2",

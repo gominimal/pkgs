@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -6,6 +6,7 @@ let git = import "../git/build.ncl" in
 
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let helix-grammars = import "../helix-grammars/build.ncl" in
 
 let version = "25.07.1" in
 {
@@ -33,6 +34,7 @@ let version = "25.07.1" in
   runtime_deps = [
     glibc,
     gcc,
+    helix-grammars,
   ],
 
   cmd = "./build.sh",
@@ -52,4 +54,20 @@ let version = "25.07.1" in
         repo = "helix",
       },
     } | Attrs,
+  tests = {
+    smoke =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "hx --version"],
+          # `--health <lang>` prints "Tree-sitter parser: ✓" only when the
+          # grammar .so from helix-grammars actually dlopens out of
+          # HELIX_DEFAULT_RUNTIME, so this covers the runtime dir wiring too.
+          ["/bin/bash", "-c", "hx --health rust | grep -q 'Tree-sitter parser:.*✓'"],
+          # yaml's scanner is C++ — exercises the libstdc++ link as well.
+          ["/bin/bash", "-c", "hx --health yaml | grep -q 'Tree-sitter parser:.*✓'"],
+        ],
+      } | Test,
+  },
 } | BuildSpec

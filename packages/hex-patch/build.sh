@@ -3,7 +3,8 @@ set -ex
 export CARGO_INCREMENTAL=0
 export CC=gcc
 export LD=gcc
-export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
+export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo -C codegen-units=1"
+export CONST_RANDOM_SEED=0   # pin ahash/const-random compile-time seed
 
 if [ -d /cargo-vendor ]; then
     mkdir -p .cargo

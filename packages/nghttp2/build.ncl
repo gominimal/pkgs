@@ -8,14 +8,14 @@ let glibc = import "../glibc/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "1.68.1" in
+let version = "1.70.0" in
 {
   name = "nghttp2",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/nghttp2/nghttp2/releases/download/v%{version}/nghttp2-%{version}.tar.gz",
-      sha256 = "ceb434c1f9dfe2a9d305b6b797786fb9227484dfa88508d14ca1c50263db55d3",
+      sha256 = "aa317e2cf9dca6afa0aed68f8fad6ff303ec6982e25a78c75c0b65e2b9b3ded5",
       extract = true,
       strip_prefix = "nghttp2-%{version}",
     } | Source,
@@ -45,6 +45,7 @@ let version = "1.68.1" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT",
       repology_project = "nghttp2",
       source_provenance = {
         category = 'GithubRepo,

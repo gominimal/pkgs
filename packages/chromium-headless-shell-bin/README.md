@@ -2,9 +2,10 @@
 
 Prebuilt Chromium headless-shell binary — the stripped headless build
 that Playwright's `chromium.launch()` and Puppeteer drive in default
-headless mode. amd64 comes from Google's Chrome for Testing bucket;
+headless mode. amd64 comes from Chromium's official snapshot bucket (true Chromium
+— Chrome for Testing is branded Chrome, ToS forbids redistribution);
 arm64 comes from Playwright's own arm64 build hosted on Microsoft's
-CDN (Google does not publish arm64 under CfT).
+CDN (Google publishes no linux-arm64 builds at all).
 
 Sibling package: [`chromium-bin`](../chromium-bin/) ships the full
 headed Chromium browser. Each pkg fetches and installs only its own

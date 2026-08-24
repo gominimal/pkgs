@@ -6,14 +6,14 @@ let meson = import "../meson/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let version = "0.21.5" in
+let version = "0.23.2" in
 {
   name = "libpsl",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libpsl-%{version}.tar.gz",
-      sha256 = "1dcc9ceae8b128f3c0b3f654decd0e1e891afc6ff81098f227ef260449dae208"
+      sha256 = "f2ea0e59bffb36597a872f6ef89893ffa4c30196c87eff7aeb2c47e4e8c98133"
     } | Source,
     base,
     meson,
@@ -41,6 +41,7 @@ let version = "0.21.5" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "MIT",
       source_provenance = {
         category = 'GithubRepo,
         owner = "rockdaboot",
