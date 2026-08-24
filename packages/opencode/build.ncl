@@ -24,7 +24,14 @@ let version = "1.14.20" in
     # fetcher VM, ~700M). build.sh extracts it into the source dir. extract=false.
     {
       url = "https://minimal.dev/generated/opencode-allnm-%{version}.tar.gz",
-      sha256 = "06a2ca8f1fee73deb617d87f2f812952f7c8f8a42d607f853195f53e76a89038",
+      sha256 = "de90c93e0b130a2b2515c3ded6f82c05184263eb21842189030562cbd7de754d",
+      extract = false,
+    } | Source,
+    # #47 offline: models.dev/api.json snapshot for script/generate.ts; build.sh
+    # exports MODELS_DEV_API_JSON pointing at this (hydrated to /build, extract=false).
+    {
+      url = "https://minimal.dev/generated/models-dev-api.json",
+      sha256 = "f0bee6e56f7c7d5f3cad5a9cc5117cf51a5437f371f3ebb6896acde078500719",
       extract = false,
     } | Source,
     base,

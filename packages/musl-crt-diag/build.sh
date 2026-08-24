@@ -52,7 +52,8 @@ trial "H  mes-crt + musl-libc"  "$TCC" -nostdlib -static $ME/crt1.o $ME/crti.o h
 cp "$WORK/rows.txt" "$OUTROOT/rows.txt.log" 2>/dev/null
 cp "$TCC" "$OUTROOT/tcc-0.9.27" 2>/dev/null   # satisfy build.ncl's `binaries` output glob (else build fails)
 {
-  echo "============ musl-crt-diag v23 R5-LINK-CANARY (CS real amd64) ============"
+  echo "============ musl-crt-diag v24 R5-LINK-CANARY [VIA PKG-OVERLAY] (CS real amd64) ============"
+  echo "OVERLAY-PROOF: if you see 'v24' + this line, the builder ran the OVERLAID build.sh (no image rebuild)."
   grep -E "DIAG-ENV|DIAG-CC|DIAG-LINK" "$WORK/rows.txt" 2>/dev/null
   echo "READ: if 'I explicit-MUSL' shows ran-OK>0 'CANARY-OK', the GOTPCREL wall was EMULATION-only -> R5"
   echo "      links musl fine in CS. If I built 0/6 like local, the tcc static-linker GOTPCREL bug is REAL"

@@ -46,19 +46,33 @@ export BUN_INSTALL_CACHE_DIR="$PWD/.bun-install-cache"
 [ -d "$BUN_INSTALL_CACHE_DIR" ] || { echo "FATAL #47: opencode .bun-install-cache missing in tarball" >&2; exit 1; }
 echo "[opencode build.sh] bun install cache: $(du -sh "$BUN_INSTALL_CACHE_DIR" 2>/dev/null | cut -f1)"
 
-# --filter=opencode scopes the install to the CLI subtree (opencode doesn't need
-# packages/app or the web apps). Kept as defense-in-depth; the cache above is the
-# actual offline fix. (Doesn't trip --frozen-lockfile — scoping ≠ workspaces edit.)
-bun install --frozen-lockfile --ignore-scripts --no-progress --filter=opencode
+# NO separate `bun install` (#47, 2026-06-16): opencode's build script below runs
+# with `--skip-install` and builds directly from the pre-materialized node_modules.
+# A standalone `bun install` (even --frozen) is REDUNDANT *and* it BLACKHOLES
+# offline — bun re-resolves `catalog:` + range (@types/node@*) + git/url
+# (ghostty-web, @solidjs/start) deps by fetching registry MANIFESTS regardless of
+# cache / resolved-lockfile / node_modules (proven via `container run --network
+# none`: every dep is a `@catalog`/range/git "failed to resolve"). The staged
+# node_modules (full `bun install` on the fetcher) is complete, so no install step
+# is needed — the build reads node_modules as-is.
 
 # The build script consults git for a channel name when these are unset;
 # set them explicitly so it doesn't shell out to git in the sandbox.
 export OPENCODE_VERSION="$MINIMAL_ARG_VERSION"
 export OPENCODE_CHANNEL="local"
 
+# #47 offline: script/generate.ts fetches https://models.dev/api.json for a model
+# snapshot; point it at the pre-staged file (generate.ts honors MODELS_DEV_API_JSON).
+# The api.json is a build.ncl Source hydrated to /build.
+export MODELS_DEV_API_JSON="$(ls /build/models-dev-api*.json 2>/dev/null | head -1)"
+[ -n "$MODELS_DEV_API_JSON" ] || { echo "FATAL #47: models.dev api.json not staged in /build" >&2; exit 1; }
+
 # Build a single-target native binary, matching the upstream nix recipe.
+# --skip-embed-web-ui: skip createEmbeddedWebUIBundle (it does `bun run --cwd
+# packages/app build`, pulling packages/app's offline-failing deps); the CLI runs
+# fine without the embedded web dashboard.
 cd packages/opencode
-bun --bun ./script/build.ts --single --skip-install
+bun --bun ./script/build.ts --single --skip-install --skip-embed-web-ui
 
 case "$(uname -m)" in
   x86_64)  DIST_ARCH=x64 ;;

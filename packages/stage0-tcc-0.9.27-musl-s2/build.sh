@@ -100,6 +100,22 @@ __asm__(".global _start\n_start:\n movq %rsp,%rdi\n call h\n movl %eax,%edi\n mo
 CC
 "$TM" -nostdinc -c -o ca.o ca.c 2>/tmp/cca; emit "S2-CC ca.o rc=$? $(head -1 /tmp/cca)"
 trial "COMPUTEDARG (sp[0]+10 via call, expect rc=11)" "$TM" -nostdlib -static ca.o
+# MINNONLEAF: minimal NON-LEAF C function (outer calls inner) — NO pointer, NO computation, NO args.
+# If this crashes -> the bug is purely tcc-0.9.27 non-leaf function codegen (prolog/epilog/stack frame).
+cat > nl.c <<'CC'
+int inner(void){ return 42; }
+int outer(void){ return inner(); }
+__asm__(".global _start\n_start:\n call outer\n movl %eax,%edi\n movl $60,%eax\n syscall\n");
+CC
+"$TM" -nostdinc -c -o nl.o nl.c 2>/tmp/cnl; emit "S2-CC nl.o rc=$? $(head -1 /tmp/cnl)"
+trial "MINNONLEAF (outer->inner, expect rc=42)" "$TM" -nostdlib -static nl.o
+# LEAFALIGN: leaf but with a 16-aligned _start call (rules out my _start's missing alignment as the cause)
+cat > la.c <<'CC'
+int lf(void){ return 42; }
+__asm__(".global _start\n_start:\n andq $-16,%rsp\n call lf\n movl %eax,%edi\n movl $60,%eax\n syscall\n");
+CC
+"$TM" -nostdinc -c -o la.o la.c 2>/tmp/cla; emit "S2-CC la.o rc=$? $(head -1 /tmp/cla)"
+trial "LEAFALIGN (aligned _start->leaf, expect rc=42)" "$TM" -nostdlib -static la.o
 
 cp /build/tm/rows.txt "$LOGOUT/rows.log"
 {

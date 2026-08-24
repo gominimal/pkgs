@@ -20,6 +20,16 @@ let version = "16.2.6" in
       extract = true,
       strip_prefix = "next.js-%{version}",
     } | Source,
+    # #53 offline: next pins pnpm@9.6.0 (its lockfile is authored by it). The build
+    # uses this EXACT pnpm + --frozen so it reads the 9.6.0-staged store correctly
+    # (any pnpm 10.x re-resolves the 9.6.0 lockfile differently → store misses).
+    # extract=false → hydrated to /build/pnpm-9.6.0.tgz; build.sh extracts + runs
+    # `node .../pnpm.cjs` (self-contained bundled CLI).
+    {
+      url = "https://registry.npmjs.org/pnpm/-/pnpm-9.6.0.tgz",
+      sha256 = "dae0f7e822c56b20979bb5965e3b73b8bdabb6b8b8ef121da6d857508599ca35",
+      extract = false,
+    } | Source,
     base,
     make,
     node,

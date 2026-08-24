@@ -1,0 +1,5 @@
+            /* And swap the argument back to it's original position.  */
+            tmp = vtop[0];
+            SValue *pvb = vtop - i;
+            vtop[0] = *pvb;
+            *pvb = tmp;
