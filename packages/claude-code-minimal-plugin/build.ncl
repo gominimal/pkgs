@@ -4,20 +4,18 @@ let claude-code = import "../claude-code/build.ncl" in
 let jq = import "../jq/build.ncl" in
 
 let version = "0.3.0" in
-# Pinned to the head commit of gominimal/minimal-skills#3. Flip the url to
-# archive/refs/tags/v%{version}.tar.gz (and drop this pin) once v0.3.0 is
-# tagged upstream.
-let commit = "98499380923898d526a0ad3472e0b18e4deafcff" in
 {
   name = "claude-code-minimal-plugin",
 
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/gominimal/minimal-skills/archive/%{commit}.tar.gz",
-      sha256 = "7bf6cd14f3ced48479ac4cdbf51f316603e1cdc8f917b7e775b593c182bcf028",
+      url = "https://github.com/gominimal/minimal-skills/archive/refs/tags/v%{version}.tar.gz",
+      sha256 = "2d53812d0f4c3a04c466bb9f0f06eef1b7ab3c13127835e19e2d06f46341f19c",
       extract = true,
-      strip_prefix = "minimal-skills-%{commit}",
+      # GitHub drops the leading `v` from the tag when naming the archive's
+      # top-level directory, so this is the bare version, not the tag.
+      strip_prefix = "minimal-skills-%{version}",
     } | Source,
     base,
   ],
