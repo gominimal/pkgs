@@ -3,6 +3,11 @@ set -ex
 
 BUILD_ROOT="$PWD"
 
+# Makes `-no-threaded-checker` serialise every compiler phase, not just the
+# procedure-body pass, so that odin can emit byte-identical binaries. Nothing in
+# the default build path changes; see the patch header for the full reasoning.
+patch -Np1 -i "$BUILD_ROOT/odin-deterministic-serial-thread-pool.patch"
+
 # build_odin.sh bakes ODIN_VERSION into the compiler. Without a .git directory
 # it falls back to `date +%Y-%m`, which reads the wall clock and would make the
 # build non-reproducible; pin it to the month of the release instead. Fail loudly
