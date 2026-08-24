@@ -62,13 +62,18 @@ LD_PRELOAD=$(pwd)/fixrand.so make MAKEINFO=true DESTDIR=$OUTPUT_DIR install
 rm "$OUTPUT_DIR/usr/bin/emacs"
 cat > "$OUTPUT_DIR/usr/bin/emacs" <<'WRAPPER'
 #!/bin/sh
+# .elc variants count as personal config: startup--load-user-init-file
+# strips the .el extension before `load', so Emacs picks up init.elc /
+# early-init.elc even without sources.
 dir="${XDG_CONFIG_HOME:-$HOME/.config}/emacs"
-if [ ! -f "$dir/init.el" ] && [ ! -f "$dir/init.elc" ] && [ ! -f "$dir/early-init.el" ]; then
+if [ ! -f "$dir/init.el" ] && [ ! -f "$dir/init.elc" ] \
+   && [ ! -f "$dir/early-init.el" ] && [ ! -f "$dir/early-init.elc" ]; then
   # Ephemeral fallback. Per-user under XDG_CACHE_HOME rather than a
   # shared, predictable /tmp path that another user could pre-seed with
-  # an init.el; a throwaway dir if even the cache isn't writable.
+  # an init.el; a throwaway dir if the cache is missing or not writable
+  # (mkdir -p succeeds on an existing read-only dir, hence the -w test).
   dir="${XDG_CACHE_HOME:-$HOME/.cache}/emacs.d"
-  mkdir -p "$dir" 2>/dev/null || dir="$(mktemp -d /tmp/emacs.d.XXXXXX)"
+  mkdir -p "$dir" 2>/dev/null && [ -w "$dir" ] || dir="$(mktemp -d /tmp/emacs.d.XXXXXX)"
 fi
 exec emacs-30.2 --init-directory "$dir" "$@"
 WRAPPER
