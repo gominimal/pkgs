@@ -24,7 +24,8 @@ let version = "1.18.14" in
     # fetcher VM, ~700M). build.sh extracts it into the source dir. extract=false.
     {
       url = "https://minimal.dev/generated/opencode-allnm-%{version}.tar.gz",
-      sha256 = "de90c93e0b130a2b2515c3ded6f82c05184263eb21842189030562cbd7de754d",
+      # restaged 2026-08-24 for 1.18.14 (orch stage bun opencode --node-modules)
+      sha256 = "a7b999efefbfbf0c0db1047a36a6aed85ff78e1aa56b8e01678b8eea28bab91c",
       extract = false,
     } | Source,
     # #47 offline: models.dev/api.json snapshot for script/generate.ts; build.sh
