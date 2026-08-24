@@ -63,9 +63,12 @@ rm "$OUTPUT_DIR/usr/bin/emacs"
 cat > "$OUTPUT_DIR/usr/bin/emacs" <<'WRAPPER'
 #!/bin/sh
 dir="${XDG_CONFIG_HOME:-$HOME/.config}/emacs"
-if [ ! -f "$dir/init.el" ] && [ ! -f "$dir/early-init.el" ]; then
-  dir="/tmp/emacs.d"
-  mkdir -p "$dir"
+if [ ! -f "$dir/init.el" ] && [ ! -f "$dir/init.elc" ] && [ ! -f "$dir/early-init.el" ]; then
+  # Ephemeral fallback. Per-user under XDG_CACHE_HOME rather than a
+  # shared, predictable /tmp path that another user could pre-seed with
+  # an init.el; a throwaway dir if even the cache isn't writable.
+  dir="${XDG_CACHE_HOME:-$HOME/.cache}/emacs.d"
+  mkdir -p "$dir" 2>/dev/null || dir="$(mktemp -d /tmp/emacs.d.XXXXXX)"
 fi
 exec emacs-30.2 --init-directory "$dir" "$@"
 WRAPPER

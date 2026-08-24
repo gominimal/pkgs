@@ -1,5 +1,5 @@
-#!/bin/sh
-set -ex
+#!/bin/bash
+set -euo pipefail
 
 # The release is a tarbomb (bin/, script/, meta/, locale/, main.lua, ...);
 # unpack it under /usr/share/lua-language-server.

@@ -1,5 +1,5 @@
-#!/bin/sh
-set -ex
+#!/bin/bash
+set -euo pipefail
 
 # Keep zig's caches inside the build tree: hermetic (no $HOME dependency)
 # and reproducible. The dependencies declared in build.zig.zon are fetched

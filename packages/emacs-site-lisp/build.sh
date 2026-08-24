@@ -1,5 +1,5 @@
-#!/bin/sh
-set -ex
+#!/bin/bash
+set -euo pipefail
 
 SITE_LISP="$OUTPUT_DIR/usr/share/emacs/site-lisp"
 mkdir -p "$SITE_LISP"
@@ -98,13 +98,21 @@ done
 # Ensure .elc files are newer than .el files.  Reproducible-build
 # settings (SOURCE_DATE_EPOCH=0) can cause byte-compiled files to
 # carry an epoch-0 timestamp, making Emacs think they are stale.
-find "$SITE_LISP" -name '*.elc' -exec touch {} +
+# A fixed instant (any date later than the newest upstream tarball
+# mtime) instead of the build clock, so nothing in the output depends
+# on when the build ran. Note the capture layer currently re-stamps
+# all output files with one uniform mtime anyway — verified by
+# comparing two independent builds (byte-identical content, single
+# uniform stamp) — so this is belt-and-braces for if that changes.
+find "$SITE_LISP" -name '*.elc' -exec touch --date=@2000000000 {} +
 
 # ── Tree-sitter grammars ─────────────────────────────────────────────
 TS_DIR="$OUTPUT_DIR/usr/lib/emacs/tree-sitter"
 mkdir -p "$TS_DIR"
 
-CFLAGS="-O2 -fPIC"
+# Deterministic compile/link settings per the repo reproducibility recipe.
+CFLAGS="-O2 -fPIC -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
+LDFLAGS="-Wl,--build-id=none"
 
 build_grammar() {
   name="$1"
@@ -114,7 +122,7 @@ build_grammar() {
   if [ -n "$scanner" ] && [ -f "$src_dir/src/$scanner" ]; then
     files="$files $src_dir/src/$scanner"
   fi
-  gcc $CFLAGS -shared -o "$TS_DIR/libtree-sitter-${name}.so" \
+  gcc $CFLAGS $LDFLAGS -shared -o "$TS_DIR/libtree-sitter-${name}.so" \
     -I "$src_dir/src" $files
 }
 
@@ -136,12 +144,12 @@ build_grammar haskell    tree-sitter-haskell-0.23.1      scanner.c
 build_grammar dockerfile tree-sitter-dockerfile-0.2.0    scanner.c
 
 # TypeScript repo has typescript and tsx in separate directories
-gcc $CFLAGS -shared -o "$TS_DIR/libtree-sitter-typescript.so" \
+gcc $CFLAGS $LDFLAGS -shared -o "$TS_DIR/libtree-sitter-typescript.so" \
   -I tree-sitter-typescript-0.23.2/typescript/src \
   tree-sitter-typescript-0.23.2/typescript/src/parser.c \
   tree-sitter-typescript-0.23.2/typescript/src/scanner.c
 
-gcc $CFLAGS -shared -o "$TS_DIR/libtree-sitter-tsx.so" \
+gcc $CFLAGS $LDFLAGS -shared -o "$TS_DIR/libtree-sitter-tsx.so" \
   -I tree-sitter-typescript-0.23.2/tsx/src \
   tree-sitter-typescript-0.23.2/tsx/src/parser.c \
   tree-sitter-typescript-0.23.2/tsx/src/scanner.c

@@ -1,5 +1,5 @@
-#!/bin/sh
-set -ex
+#!/bin/bash
+set -euo pipefail
 
 # Meta-package: the payload is the runtime_deps roster.
 mkdir -p "$OUTPUT_DIR/usr/share/doc/dev-language-servers"

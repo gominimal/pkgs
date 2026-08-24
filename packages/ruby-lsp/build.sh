@@ -1,13 +1,15 @@
-#!/bin/sh
-set -ex
+#!/bin/bash
+set -euo pipefail
 
-# Vendor the gem (and its dependencies, e.g. prism) into a dedicated
-# GEM_HOME under the package's own prefix.
+# Vendor the gem and its pinned dependency closure (the .gem Sources
+# fetched into the cwd) into a dedicated GEM_HOME under the package's
+# own prefix. --local resolves dependencies from the .gem files in the
+# working directory only — no rubygems.org access at build time.
 GEMS="$OUTPUT_DIR/usr/lib/ruby-lsp/gems"
 mkdir -p "$GEMS"
 export GEM_HOME="$GEMS"
 export GEM_PATH="$GEMS"
-gem install ruby-lsp -v "$MINIMAL_ARG_VERSION" --no-document
+gem install --local --no-document "ruby-lsp-$MINIMAL_ARG_VERSION.gem"
 
 # Drop install residue that is either non-reproducible (gem_make.out and
 # mkmf.log record a per-run temp dir name like .gem.20260823-3-k0190w)
