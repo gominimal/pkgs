@@ -50,7 +50,12 @@ case "$(uname -m)" in
     TRIPLE=aarch64-unknown-linux-gnu
     CCTRIPLE=aarch64-linux-gnu
     LOADER_SO=ld-linux-aarch64.so.1
-    ARCH_CFLAGS="-mno-outline-atomics"
+    # +crc: rustc compiles #[target_feature(enable="crc")] fns per-function;
+    # the C backend has no per-function targets, so enable the extension
+    # translation-unit-wide. Execution stays hwcaps-gated by the Rust code
+    # (zlib-rs crc32_acle et al probe at runtime). armv8-a is gcc's default
+    # baseline; this only ADDS the crc instructions the asm! blocks emit.
+    ARCH_CFLAGS="-mno-outline-atomics -march=armv8-a+crc"
     ;;
   *) echo "mrustc: unsupported arch $(uname -m)" >&2; exit 1 ;;
 esac
