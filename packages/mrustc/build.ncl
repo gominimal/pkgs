@@ -129,6 +129,7 @@ let commit = "2d14b09a7e75166bec4413f48f61e3b3cd4de8ca" in
     { file = "build.sh" } | Local,
     { file = "mrustc.answers" } | Local, # byte-seal slot; SELF-ARMS once populated (see build.sh)
     { file = "archive-zerolen-skip.sh" } | Local, # the rustc-1.90.0 0-byte-object fix, landed in git at last
+    { file = "hir-ord-unevaluated.patch" } | Local, # upstream d8cc2933+dad6c321 backport; aarch64 libcore blocker (see its header)
     { file = "gate.rs" } | Local,             # GATE 1's program; the ONLY copy -- never inline it in build.sh
     {
       # Deterministically re-derivable from the public repo — see the SOURCE PIN block above.

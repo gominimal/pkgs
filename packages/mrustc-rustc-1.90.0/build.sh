@@ -50,12 +50,14 @@ case "$(uname -m)" in
     TRIPLE=x86_64-unknown-linux-gnu
     CCTRIPLE=x86_64-linux-gnu
     LOADER_SO=ld-linux-x86-64.so.2
+    STD_ARCH=x86_64
     ARCH_CFLAGS=""
     ;;
   aarch64)
     TRIPLE=aarch64-unknown-linux-gnu
     CCTRIPLE=aarch64-linux-gnu
     LOADER_SO=ld-linux-aarch64.so.1
+    STD_ARCH=aarch64
     ARCH_CFLAGS="-mno-outline-atomics"
     ;;
   *) echo "r190: unsupported arch $(uname -m)" >&2; exit 1 ;;
@@ -317,7 +319,12 @@ command -v cc >/dev/null 2>&1 || { echo "mrustc-1.90.0: FATAL cc alias not on PA
 #                 we want the commands in the log.
 #   PARLEVEL    — minicargo.mk:32 and run_rustc/Makefile:16 BOTH default it to 1.  Left alone
 #                 this build is serial: a wall-clock blocker, not a correctness one.
+# RUSTC_TARGET + STD_ENV_ARCH: minicargo.mk DEFAULTS both to x86_64 — amd64 was
+# accidentally correct. On aarch64 the wrong STD_ENV_ARCH feeds libcore the x86
+# cfg paths (core::arch x86 SIMD const-generics) which trip an mrustc TODO at
+# hir.cpp:132 before any real work. Command-line make vars override the file.
 MKV="RUSTC_VERSION=${VERSION} OUTDIR_SUF=-${VERSION} MRUSTC=${MR} MINICARGO=${MC} \
+RUSTC_TARGET=${TRIPLE} STD_ENV_ARCH=${STD_ARCH} \
 CC=${CCW} CXX=${CXXW} PARLEVEL=${JOBS} V="
 
 cd "${MSRC}"

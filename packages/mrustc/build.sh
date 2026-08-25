@@ -139,6 +139,21 @@ done
 grep -q '^#define VERSION_MAJOR   0$' "${SRC}/src/version.cpp" || { echo "mrustc: FATAL VERSION_MAJOR != 0" >&2; exit 1; }
 grep -q '^#define VERSION_MINOR   12$' "${SRC}/src/version.cpp" || { echo "mrustc: FATAL VERSION_MINOR != 12 (not the 0.12 tree)" >&2; exit 1; }
 
+# --- upstream backport: ConstGeneric_Unevaluated::ord (d8cc2933 + dad6c321) ----------------
+# aarch64 libcore-1.90 aborts v0.12.0 with `hir.cpp:132 TODO: Compare non-expanded array
+# sizes (w/ MIR)`; upstream replaced the TODO with the deterministic string-compare fallback
+# (and fixed a self-compare typo in the same arm). See hir-ord-unevaluated.patch's header for
+# the full provenance. Guarded: refuse to continue if the patch does not apply or the TODO
+# survives — a half-patched tree must not build.
+# Conditional: master (post-dad6c321) trees already carry the fix; the v0.12.0
+# tag needs the backport. Either way the TODO must be GONE afterwards.
+if grep -q 'Compare non-expanded array sizes' "${SRC}/src/hir/hir.cpp"; then
+  patch -p1 -d "${SRC}" < hir-ord-unevaluated.patch \
+    || { echo "mrustc: FATAL hir-ord-unevaluated.patch did not apply" >&2; exit 1; }
+fi
+grep -q 'Compare non-expanded array sizes' "${SRC}/src/hir/hir.cpp" \
+  && { echo "mrustc: FATAL the ord TODO survives after patching" >&2; exit 1; }
+
 # --- B4 libc.so linker-script fixup -------------------------------------------------------
 # The sealed B4 versioned libc.so is a linker SCRIPT that baked /build/output/... staging paths.
 # Regenerate a corrected copy and put it FIRST on the library path.  Verbatim shape from
