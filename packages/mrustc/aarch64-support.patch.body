@@ -278,7 +278,7 @@ index 135d105..c5991d7 100644
                          TU_ARMA(Explicit, name) {
                              auto it = ::std::find(outputs.begin(), outputs.end(), &r);
 diff --git a/src/trans/target.cpp b/src/trans/target.cpp
-index 7522004..ff77f6b 100644
+index 7522004..a0f1a58 100644
 --- a/src/trans/target.cpp
 +++ b/src/trans/target.cpp
 @@ -817,7 +817,12 @@ bool Target_GetSizeAndAlignOf(const Span& sp, const StaticTraitResolve& resolve,
@@ -295,3 +295,44 @@ index 7522004..ff77f6b 100644
              return true;
          case ::HIR::CoreType::Str:
              DEBUG("sizeof on a `str` - unsized");
+@@ -1189,10 +1194,39 @@ namespace {
+             switch(str.m_repr)
+             {
+             case ::HIR::Struct::Repr::C:
+-            case ::HIR::Struct::Repr::Simd:
+                 // No sorting, no packing
+                 sorting = StructSorting::None;
+                 break;
++            case ::HIR::Struct::Repr::Simd: {
++                // No sorting, no packing
++                sorting = StructSorting::None;
++                // UNPACKED repr(simd) vector types (core_arch's NEON/SSE
++                // types) align to their size rounded up to a power of two,
++                // capped at 16 for the targets we emit C for. Treating them
++                // as repr(C) left e.g. uint8x16_t with element alignment —
++                // caught by zlib-rs's own
++                // `assert!(align_of::<uint8x16_t>() == 16)` failing in const
++                // eval on aarch64. `repr(simd, packed)` (core_simd's Simd —
++                // note the commented-out "packed() on simd?" assert in
++                // from_ast.cpp) keeps the packed/element alignment and must
++                // NOT be force-aligned.
++                if( max_alignment == 0 )
++                {
++                    size_t total = 0;
++                    bool known = true;
++                    for(const auto& e : ents) {
++                        if( e.size == SIZE_MAX ) { known = false; break; }
++                        total += e.size;
++                    }
++                    if( known && total > 0 ) {
++                        unsigned a = 1;
++                        while( a < total && a < 16 )
++                            a *= 2;
++                        if( a > forced_alignment )
++                            forced_alignment = a;
++                    }
++                }
++                break; }
+             case ::HIR::Struct::Repr::Transparent:
+             case ::HIR::Struct::Repr::Rust:
+                 if( str.m_struct_markings.dst_type != HIR::StructMarkings::DstType::None )
