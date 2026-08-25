@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # ============================================================================================
 # B5 — binutils-2.46-glibc  ★ THE GLIBC-LINKED ASSEMBLER/LINKER ★  (REVIEW-READY scaffold 2026-07-03)
 # The from-source, GLIBC-LINKED build of the EXACT binutils-2.46.0 minimal's production stdenv ships
@@ -51,15 +52,28 @@ let version = "2.46.0" in
   build_deps = [
     { file = "build.sh" } | Local,
     { file = "stage0.answers" } | Local, # NO byte-seal at B5 by design (different compiler than the prebuilt); functional-anchor placeholder
-    {
-      # PRODUCTION binutils-2.46.0 tarball — SAME source + sha as minimal's packages/binutils (already
-      # mirrored byte-identically; sha preserved -> sha-pinned resolvedDeps).  MIRROR-FIRST: no new
-      # upload needed — this is the exact slot production/packages/binutils/build.ncl already fetches.
-      # extract=false — build.sh runs `tar --no-same-owner -xf` (bedrock convention).
-      url = "gs://minimal-staging-archives/binutils-%{version}.tar.xz",
-      sha256 = "d75a94f4d73e7a4086f7513e67e439e8fcdcbb726ffe63f4661744e6256b2cf2",
-      extract = false,
-    } | Source,
+    match {
+      { arch = 'Amd64, .. } =>
+        {
+          # PRODUCTION binutils-2.46.0 tarball — SAME source + sha as minimal's packages/binutils (already
+          # mirrored byte-identically; sha preserved -> sha-pinned resolvedDeps).  MIRROR-FIRST: no new
+          # upload needed — this is the exact slot production/packages/binutils/build.ncl already fetches.
+          # extract=false — build.sh runs `tar --no-same-owner -xf` (bedrock convention).
+          url = "gs://minimal-staging-archives/binutils-%{version}.tar.xz",
+          sha256 = "d75a94f4d73e7a4086f7513e67e439e8fcdcbb726ffe63f4661744e6256b2cf2",
+          extract = false,
+        } | Source,
+      { arch = 'Arm64, .. } =>
+        {
+          # ARM: the SEALED bedrock-aarch64 ladder artifact — ⚠ binutils 2.41 (R10-line), NOT 2.46:
+          # the arm ladder sealed 2.41 and a 2.46 arm rung does not exist yet. The version skew is
+          # DELIBERATE and loud; close it by rebuilding 2.46 on the arm ladder (tracked follow-up).
+          # Root-shaped usr/ tree; build.sh extracts it verbatim.
+          url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/58fd82c720a3885df8d07341eb822a5eb880c204eff1b7b0b5017ea769067c6b/stage0-binutils-2.41-aarch64.tar.zst",
+          sha256 = "58fd82c720a3885df8d07341eb822a5eb880c204eff1b7b0b5017ea769067c6b",
+          extract = false,
+        } | Source,
+    } target,
     stage0-gcc, # R12: CC via the gcc-cc wrapper (glibc-targeted, no -static)
     stage0-binutils-r10, # R10: /usr/bin/{as,ld,ar,ranlib} — R12's gcc invokes these to assemble/archive
     glibc-bedrock, # B4: the TARGET glibc sysroot

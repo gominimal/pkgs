@@ -1,4 +1,21 @@
 #!/bin/sh
+# ── ARM SHORT-CIRCUIT (2026-08-25): this rung is DELIVERED from the sealed
+# bedrock-aarch64 ladder artifact (build.ncl's Arm64 Source — hex0-rooted on
+# the arm ladder). The amd64 path below builds from source in-sandbox;
+# in-sandbox arm parity is tracked follow-up work. Same delivery pattern as
+# the 42-slot bedrock-roots cutover.
+if [ "$(uname -m)" = "aarch64" ]; then
+  set -ex
+  ART=$(ls stage0-gcc-*-aarch64.tar.zst /build/stage0-gcc-*-aarch64.tar.zst 2>/dev/null | head -1)
+  [ -n "$ART" ] || { echo "FATAL: arm artifact not hydrated (stage0-gcc-*-aarch64.tar.zst)" >&2; exit 1; }
+  mkdir -p "$OUTPUT_DIR"
+  tar --zstd --no-same-owner -xf "$ART" -C "$OUTPUT_DIR"
+  [ -x "$OUTPUT_DIR/usr/bin/gcc" ] && [ -x "$OUTPUT_DIR/usr/bin/g++" ] \
+    || { echo "FATAL: gcc/g++ missing after extract" >&2; ls "$OUTPUT_DIR/usr/bin" >&2; exit 1; }
+  [ -f "$OUTPUT_DIR/usr/include/c++/15.2.0/aarch64-linux-gnu/bits/c++config.h" ] \
+    || { echo "FATAL: C++ headers missing after extract" >&2; exit 1; }
+  exit 0
+fi
 # ============================================================================================
 # build.sh — B5 (gcc-15.2.0-glibc) driver.  REVIEW-READY scaffold 2026-07-03.
 # ============================================================================================

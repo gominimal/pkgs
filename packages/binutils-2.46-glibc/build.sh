@@ -1,4 +1,20 @@
 #!/bin/sh
+# ── ARM SHORT-CIRCUIT (2026-08-25): this rung is DELIVERED from the sealed
+# bedrock-aarch64 ladder artifact (build.ncl's Arm64 Source — hex0-rooted on
+# the arm ladder). The amd64 path below builds from source in-sandbox;
+# in-sandbox arm parity is tracked follow-up work. Same delivery pattern as
+# the 42-slot bedrock-roots cutover.
+# ⚠ arm ships binutils 2.41 (the sealed R10-line rung) until a 2.46 arm rung exists.
+if [ "$(uname -m)" = "aarch64" ]; then
+  set -ex
+  ART=$(ls stage0-binutils-*-aarch64.tar.zst /build/stage0-binutils-*-aarch64.tar.zst 2>/dev/null | head -1)
+  [ -n "$ART" ] || { echo "FATAL: arm artifact not hydrated (stage0-binutils-*-aarch64.tar.zst)" >&2; exit 1; }
+  mkdir -p "$OUTPUT_DIR"
+  tar --zstd --no-same-owner -xf "$ART" -C "$OUTPUT_DIR"
+  LD=$(find "$OUTPUT_DIR" -name ld -type f -path '*/bin/*' | head -1)
+  [ -n "$LD" ] || { echo "FATAL: ld missing after extract" >&2; exit 1; }
+  exit 0
+fi
 # ============================================================================================
 # build.sh — B5 (binutils-2.46-glibc) driver.  REVIEW-READY scaffold 2026-07-03.
 # ============================================================================================

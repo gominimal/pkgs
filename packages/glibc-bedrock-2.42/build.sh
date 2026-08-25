@@ -1,4 +1,22 @@
 #!/bin/sh
+# ── ARM SHORT-CIRCUIT (2026-08-25): this rung is DELIVERED from the sealed
+# bedrock-aarch64 ladder artifact (build.ncl's Arm64 Source — R11 glibc-2.42,
+# hex0-rooted on the arm ladder). The amd64 path below builds from source
+# in-sandbox; in-sandbox arm parity is tracked follow-up work. Same delivery
+# pattern as the 42-slot bedrock-roots cutover.
+if [ "$(uname -m)" = "aarch64" ]; then
+  set -ex
+  ART=$(ls stage0-glibc-*-aarch64.tar.zst /build/stage0-glibc-*-aarch64.tar.zst 2>/dev/null | head -1)
+  [ -n "$ART" ] || { echo "FATAL: arm glibc artifact not hydrated" >&2; exit 1; }
+  mkdir -p "$OUTPUT_DIR"
+  tar --zstd --no-same-owner -xf "$ART" -C "$OUTPUT_DIR"
+  V="${MINIMAL_ARG_VERSION:-2.42}"
+  [ -e "$OUTPUT_DIR/usr/lib/glibc-bedrock-$V/lib/ld-linux-aarch64.so.1" ] \
+    || { echo "FATAL: arm loader missing after extract" >&2; ls "$OUTPUT_DIR/usr/lib" >&2; exit 1; }
+  [ -f "$OUTPUT_DIR/usr/lib/glibc-bedrock-$V/include/stdio.h" ] \
+    || { echo "FATAL: arm glibc headers missing after extract" >&2; exit 1; }
+  exit 0
+fi
 # ============================================================================================
 # B4 = packages/glibc-bedrock-2.42/build.sh  — COLD first-glibc-2.42 (scaffold 2026-07-02).
 # NOT a patch to production packages/glibc/build.sh (that 38-line file is the STEP-5 native-rebuild

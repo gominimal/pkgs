@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # ============================================================================================
 # B4 — glibc-bedrock-2.42  ★ THE COLD FIRST-GLIBC ★  (scaffolded 2026-07-02)
 # The seed-rooted, from-source build of the EXACT glibc-2.42 minimal's production stdenv ships
@@ -80,14 +81,27 @@ in
   name = "glibc-bedrock-2.42",
   build_deps = [
     { file = "build.sh" } | Local,
-    {
-      # PRODUCTION glibc-2.42 tarball — SAME source + sha as minimal's packages/glibc (byte-identical
-      # mirror; sha preserved -> sha-pinned resolvedDeps).  Already mirrored.  Downloadable from:
-      # https://ftp.gnu.org/gnu/glibc/ .  extract=false (build.sh untars with --no-same-owner).
-      url = "gs://minimal-staging-archives/glibc-%{version}.tar.xz",
-      sha256 = "d1775e32e4628e64ef930f435b67bb63af7599acb6be2b335b9f19f16509f17f",
-      extract = false,
-    } | Source,
+    match {
+      { arch = 'Amd64, .. } =>
+        {
+          # PRODUCTION glibc-2.42 tarball — SAME source + sha as minimal's packages/glibc (byte-identical
+          # mirror; sha preserved -> sha-pinned resolvedDeps).  Already mirrored.  Downloadable from:
+          # https://ftp.gnu.org/gnu/glibc/ .  extract=false (build.sh untars with --no-same-owner).
+          url = "gs://minimal-staging-archives/glibc-%{version}.tar.xz",
+          sha256 = "d1775e32e4628e64ef930f435b67bb63af7599acb6be2b335b9f19f16509f17f",
+          extract = false,
+        } | Source,
+      { arch = 'Arm64, .. } =>
+        {
+          # ARM: the SEALED bedrock-aarch64 ladder artifact (R11 glibc-2.42 with locale) —
+          # hex0-rooted on the arm ladder, publicly re-derivable (bedrock-roots-manifest.txt).
+          # Root-shaped usr/lib/glibc-bedrock-%{version}/ tree; build.sh extracts it verbatim.
+          # In-sandbox from-source arm parity (the amd64 path above) is tracked follow-up work.
+          url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/a1d40cb10e77670c3c1b00bf2ce28f45775146dfe0397d4c4c5468e955bb1cdc/stage0-glibc-2.42-aarch64.tar.zst",
+          sha256 = "a1d40cb10e77670c3c1b00bf2ce28f45775146dfe0397d4c4c5468e955bb1cdc",
+          extract = false,
+        } | Source,
+    } target,
     {
       # gcc-15.2.0 FULL tarball — REQUIRED ONLY for the OPTIONAL Pass-2 libgcc rebuild (B4_REBUILD_LIBGCC=1).
       # SAME source + sha as R12 (stage0-gcc-15.2.0).  build.sh only untars it inside the Pass-2 `if` block,

@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # ============================================================================================
 # B5 — gcc-15.2.0-glibc  ★ THE SELF-HOSTING FIXED POINT ★  (REVIEW-READY scaffold 2026-07-03)
 # The from-source, GLIBC-LINKED twin of R12 (stage0-gcc-15.2.0).  Same PRODUCTION gcc-15.2.0 source +
@@ -60,14 +61,27 @@ let version = "15.2.0" in
   build_deps = [
     { file = "build.sh" } | Local,
     { file = "stage0.answers" } | Local, # NO byte-seal at B5 by design; functional-anchor placeholder + B6 note
-    {
-      # PRODUCTION gcc-15.2.0 FULL tarball (.tar.xz) — SAME source + sha as R12 / packages/gcc.  So the
-      # glibc twin builds the EXACT ecosystem compiler, just seed-rooted + glibc-retargeted.  Already
-      # mirrored + sha-verified.  extract=false (build.sh untars with --no-same-owner).
-      url = "gs://minimal-staging-archives/gcc-%{version}.tar.xz",
-      sha256 = "438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e",
-      extract = false,
-    } | Source,
+    match {
+      { arch = 'Amd64, .. } =>
+        {
+          # PRODUCTION gcc-15.2.0 FULL tarball (.tar.xz) — SAME source + sha as R12 / packages/gcc.  So the
+          # glibc twin builds the EXACT ecosystem compiler, just seed-rooted + glibc-retargeted.  Already
+          # mirrored + sha-verified.  extract=false (build.sh untars with --no-same-owner).
+          url = "gs://minimal-staging-archives/gcc-%{version}.tar.xz",
+          sha256 = "438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e",
+          extract = false,
+        } | Source,
+      { arch = 'Arm64, .. } =>
+        {
+          # ARM: the SEALED bedrock-aarch64 ladder artifact (R12-line gcc-15.2.0 with glibc + g++) —
+          # hex0-rooted on the arm ladder (bedrock-roots-manifest.txt). Root-shaped usr/ tree with
+          # bin/{gcc,g++}, lib/gcc/aarch64-linux-gnu/15.2.0, include/c++/15.2.0; build.sh extracts it
+          # verbatim. In-sandbox from-source arm parity (the amd64 path) is tracked follow-up work.
+          url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/6715136640b3e12d04231c34d4b17f0f39e7e034b94450a27769ca49e91ce5ad/stage0-gcc-15.2.0-glibc-aarch64.tar.zst",
+          sha256 = "6715136640b3e12d04231c34d4b17f0f39e7e034b94450a27769ca49e91ce5ad",
+          extract = false,
+        } | Source,
+    } target,
     stage0-cc, # R12 (gcc-15.2.0): CC/CXX host compiler
     binutils-glibc, # B5: glibc-linked as/ld/ar/ranlib (the matched-set assembler)
     glibc-bedrock, # B4: the TARGET glibc sysroot
