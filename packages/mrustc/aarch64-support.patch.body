@@ -256,10 +256,26 @@ index 5aaadd1..cf14265 100644
  
          void visit_module(::HIR::ItemPath p, ::HIR::Module& mod) override {
 diff --git a/src/trans/codegen_c.cpp b/src/trans/codegen_c.cpp
-index 135d105..c5991d7 100644
+index 135d105..19619e7 100644
 --- a/src/trans/codegen_c.cpp
 +++ b/src/trans/codegen_c.cpp
-@@ -5699,6 +5699,8 @@ namespace {
+@@ -5654,6 +5654,15 @@ namespace {
+                         {
+                         case '\0':
+                             break;
++                        case 'w':
++                        case 'x':
++                            // aarch64: rustc's {N:w}/{N:x} (32/64-bit register
++                            // views) are the SAME letters as GCC's %wN/%xN.
++                            if( Target_GetCurSpec().m_arch.m_name == "aarch64" ) {
++                                m_of << f.modifier;
++                                break;
++                            }
++                            MIR_TODO(mir_res, "Asm2 GCC: modifier " << f.modifier << " - " << stmt);
+                         case 'r':
+                             m_of << 'q';    // x86: `q` selects rax explicitly
+                             break;
+@@ -5699,6 +5708,8 @@ namespace {
                          // riscv
                          case AsmCommon::RegisterClass::riscv_reg: m_of << "r"; break;
                          case AsmCommon::RegisterClass::riscv_freg: m_of << "f"; break;
@@ -268,7 +284,7 @@ index 135d105..c5991d7 100644
                          }
                      TU_ARMA(Explicit, name) {
                          m_of << "r";
-@@ -5740,6 +5742,8 @@ namespace {
+@@ -5740,6 +5751,8 @@ namespace {
                              // riscv
                              case AsmCommon::RegisterClass::riscv_reg: m_of << "r"; break;
                              case AsmCommon::RegisterClass::riscv_freg: m_of << "f"; break;
