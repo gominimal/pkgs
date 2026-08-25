@@ -1,0 +1,139 @@
+diff --git a/src/hir_expand/static_borrow_constants.cpp b/src/hir_expand/static_borrow_constants.cpp
+index 5aaadd1..639cf14 100644
+--- a/src/hir_expand/static_borrow_constants.cpp
++++ b/src/hir_expand/static_borrow_constants.cpp
+@@ -1102,7 +1102,34 @@ namespace static_borrow_constants {
+         void visit_crate(::HIR::Crate& crate) override {
+             ::HIR::Visitor::visit_crate(crate);
+ 
+-            // Once the crate is complete, add the newly created statics to the module tree
++            // Once the crate is complete, add the newly created statics to the module tree.
++            //
++            // NOTE on ordering: a new item's initializer can reference another
++            // NEW item that has not been inserted yet — within the same module
++            // OR in a module processed later (both observed with aarch64
++            // libcore 1.90's promoted borrows). A single in-order pass then
++            // throws `Defer` out of `evaluate_constant`, which used to escape
++            // as an uncaught exception and abort. So: evaluate+insert to a
++            // GLOBAL fixpoint across every module's list, retrying deferred
++            // entries while progress is made; a final round runs UNGUARDED so
++            // a genuine failure still aborts with its original message.
++            ::std::map<const HIR::Module*, ::std::vector<bool>>   inserted;
++            ::std::map<const HIR::Module*, size_t>   next_lifted_idx;
++            for(auto& mod_list : m_new_statics)
++            {
++                inserted[mod_list.first].resize(mod_list.second.size(), false);
++                next_lifted_idx[mod_list.first] = mod_list.second.size();
++            }
++            bool progress = true;
++            bool final_round = false;
++            for(;;)
++            {
++            if( !progress ) {
++                if( final_round )
++                    break;
++                final_round = true;
++            }
++            progress = false;
+             for(auto& mod_list : m_new_statics)
+             {
+                 auto& mod = *const_cast<HIR::Module*>(mod_list.first);
+@@ -1119,9 +1146,9 @@ namespace static_borrow_constants {
+ 
+                     ::HIR::SimplePath   m_current_module_path;
+                     ::HIR::Module&  m_current_module;
+-                    size_t m_next_idx;
++                    size_t& m_next_idx;   // persists across fixpoint rounds (name continuity)
+ 
+-                    Nvs(::HIR::SimplePath current_module_path, ::HIR::Module& current_module, size_t idx)
++                    Nvs(::HIR::SimplePath current_module_path, ::HIR::Module& current_module, size_t& idx)
+                         : m_current_module_path(::std::move(current_module_path))
+                         , m_current_module(current_module)
+                         , m_next_idx (idx)
+@@ -1147,10 +1174,27 @@ namespace static_borrow_constants {
+                             })) );
+                         return path;
+                     }
+-                } nvs { mod_path, mod, mod_list.second.size() };
+-
+-                for(auto& new_static_pair : mod_list.second)
++                } nvs { mod_path, mod, next_lifted_idx[mod_list.first] };
++
++                struct H {
++                    static HIR::Constant to_const(HIR::Static& s) {
++                        HIR::Constant rv { std::move(s.m_params), std::move(s.m_type), std::move(s.m_value) };
++                        if( s.m_value_generated ) {
++                            rv.m_value_state = HIR::Constant::ValueState::Known;
++                            rv.m_value_res = std::move(s.m_value_res);
++                        }
++                        else {
++                            rv.m_value_state = HIR::Constant::ValueState::Generic;
++                        }
++                        return rv;
++                    }
++                };
++                auto& ins = inserted[mod_list.first];
++                for(size_t idx = 0; idx < mod_list.second.size(); idx ++)
+                 {
++                    if( ins[idx] )
++                        continue;
++                    auto& new_static_pair = mod_list.second[idx];
+                     Span    sp;
+                     auto& new_static = new_static_pair.data;
+ 
+@@ -1158,24 +1202,27 @@ namespace static_borrow_constants {
+ 
+                     if( !new_static.m_params.is_generic() )
+                     {
+-                        new_static.m_value.m_state->stage = ::HIR::ExprState::Stage::Sbc;
+-                        new_static.m_value_res = ::HIR::Evaluator(sp, m_crate, nvs).evaluate_constant( new_static_pair.path, new_static.m_value, new_static.m_type.clone());
+-                        new_static.m_value_generated = true;
+-                    }
+-
+-                    struct H {
+-                        static HIR::Constant to_const(HIR::Static& s) {
+-                            HIR::Constant rv { std::move(s.m_params), std::move(s.m_type), std::move(s.m_value) };
+-                            if( s.m_value_generated ) {
+-                                rv.m_value_state = HIR::Constant::ValueState::Known;
+-                                rv.m_value_res = std::move(s.m_value_res);
+-                            }
+-                            else {
+-                                rv.m_value_state = HIR::Constant::ValueState::Generic;
++                        try {
++                            new_static.m_value.m_state->stage = ::HIR::ExprState::Stage::Sbc;
++                            new_static.m_value_res = ::HIR::Evaluator(sp, m_crate, nvs).evaluate_constant( new_static_pair.path, new_static.m_value, new_static.m_type.clone());
++                            new_static.m_value_generated = true;
++                        }
++                        catch(...) {
++                            if( !final_round ) {
++                                // Deferred (usually a not-yet-inserted sibling, possibly in
++                                // another module); retry on the next global round.
++                                continue;
+                             }
+-                            return rv;
++                            // Fixpoint stalled: the dependency is not one of the new
++                            // items (e.g. a constant the main const-eval pass itself
++                            // deferred to monomorphization time). Insert UNGENERATED:
++                            // m_value_generated stays false, so consts land as
++                            // ValueState::Generic (evaluated on use) — the same state
++                            // the generic-params path below produces.
++                            DEBUG("Deferred past fixpoint, inserting ungenerated: " << new_static_pair.path);
+                         }
+-                    };
++                    }
++
+                     auto new_ent = new_static_pair.is_const
+                         ? HIR::ValueItem(H::to_const(new_static))
+                         : HIR::ValueItem(std::move(new_static_pair.data));
+@@ -1183,8 +1230,11 @@ namespace static_borrow_constants {
+                         HIR::Publicity::new_none(), // Should really be private, but we're well after checking
+                         std::move(new_ent)
+                         })) );
++                    ins[idx] = true;
++                    progress = true;
+                 }
+             }
++            }
+         }
+ 
+         void visit_module(::HIR::ItemPath p, ::HIR::Module& mod) override {
