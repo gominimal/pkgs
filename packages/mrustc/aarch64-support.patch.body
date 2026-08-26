@@ -256,7 +256,7 @@ index 5aaadd1..cf14265 100644
  
          void visit_module(::HIR::ItemPath p, ::HIR::Module& mod) override {
 diff --git a/src/trans/codegen_c.cpp b/src/trans/codegen_c.cpp
-index 135d105..3e7f286 100644
+index 135d105..0aefe46 100644
 --- a/src/trans/codegen_c.cpp
 +++ b/src/trans/codegen_c.cpp
 @@ -2847,6 +2847,24 @@ namespace {
@@ -318,6 +318,22 @@ index 135d105..3e7f286 100644
                              }
                          TU_ARMA(Explicit, name) {
                              auto it = ::std::find(outputs.begin(), outputs.end(), &r);
+@@ -7238,6 +7269,15 @@ namespace {
+                         m_of << ".lo";
+                     }
+                 }
++                else if( params.m_types.at(0) == ::HIR::CoreType::U128 || params.m_types.at(0) == ::HIR::CoreType::I128 )
++                {
++                    // Native __int128: __builtin_popcountll takes a 64-bit argument, so passing the
++                    // value directly would silently truncate to the low half (ctpop(u128::MAX) == 64).
++                    // Count each half explicitly.
++                    m_of << "(__builtin_popcountll((uint64_t)("; emit_param(e.args.at(0));
++                    m_of << ")) + __builtin_popcountll((uint64_t)(((uint128_t)("; emit_param(e.args.at(0));
++                    m_of << ")) >> 64)))";
++                }
+                 else
+                 {
+                     m_of << "__builtin_popcountll("; emit_param(e.args.at(0)); m_of << ")";
 diff --git a/src/trans/target.cpp b/src/trans/target.cpp
 index 7522004..a0f1a58 100644
 --- a/src/trans/target.cpp
