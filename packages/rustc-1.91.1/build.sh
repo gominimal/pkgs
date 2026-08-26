@@ -36,7 +36,13 @@ set -ex
 
 VERSION=1.91.1
 STAGE0_VERSION=1.90.0
-TRIPLE=x86_64-unknown-linux-gnu
+# Arch dispatch (arm parity, 2026-08-26): the rung is otherwise arch-clean
+# (MARCH already dispatches below); stage0 supplies the matching-arch rustc.
+case "$(uname -m)" in
+  x86_64)  TRIPLE=x86_64-unknown-linux-gnu ;;
+  aarch64) TRIPLE=aarch64-unknown-linux-gnu ;;
+  *) echo "rustc rung: unsupported arch $(uname -m)" >&2; exit 1 ;;
+esac
 
 BUILDROOT="$(pwd)"
 PREFIX="/usr/lib/rustc-${VERSION}"        # PRIVATE versioned prefix (NOT /usr/bin)
