@@ -1,5 +1,5 @@
 #!/bin/sh
-# Imported from Wolfi `ruff` (0.16.3, rust) by pkgmgr import-wolfi.
+# Imported from Wolfi `ruff` (0.16.4, rust) by pkgmgr import-wolfi.
 set -eu
 export CC=gcc
 export LD=gcc
