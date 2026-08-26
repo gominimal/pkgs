@@ -18,6 +18,18 @@ GOROOT=/usr/go ./make.bash # TODO: do ./all.bash once we have /etc setup correct
 mkdir -p $OUTPUT_DIR/usr/{bin,go}
 cp -r ../* $OUTPUT_DIR/usr/go/
 
+# Registry resilience for EVERY Go build (pkgs#648): pipe (not comma) makes
+# the toolchain fall back to direct on ANY proxy error — proxy.golang.org
+# sheds load under module-download bursts with per-stream HTTP/2 resets that
+# go never retries, and the default comma form only falls back on 404/410.
+# $GOROOT/go.env is the sanctioned default (go >= 1.21); env vars still win.
+if grep -q '^GOPROXY=' "$OUTPUT_DIR/usr/go/go.env" 2>/dev/null; then
+    sed -i 's#^GOPROXY=.*#GOPROXY=https://proxy.golang.org|direct#' "$OUTPUT_DIR/usr/go/go.env"
+else
+    printf 'GOPROXY=https://proxy.golang.org|direct
+' >> "$OUTPUT_DIR/usr/go/go.env"
+fi
+
 for bin in ../bin/*; do
     ln -sv "../go/bin/$(basename "$bin")" "$OUTPUT_DIR/usr/bin/$(basename "$bin")";
 done
