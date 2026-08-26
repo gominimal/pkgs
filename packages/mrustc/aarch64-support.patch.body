@@ -256,10 +256,35 @@ index 5aaadd1..cf14265 100644
  
          void visit_module(::HIR::ItemPath p, ::HIR::Module& mod) override {
 diff --git a/src/trans/codegen_c.cpp b/src/trans/codegen_c.cpp
-index 135d105..19619e7 100644
+index 135d105..3e7f286 100644
 --- a/src/trans/codegen_c.cpp
 +++ b/src/trans/codegen_c.cpp
-@@ -5654,6 +5654,15 @@ namespace {
+@@ -2847,6 +2847,24 @@ namespace {
+                     }
+                     m_of << "\treturn ;\n";
+                 }
++                // AArch64 barriers (core_arch::arm_shared::barrier — hit at
++                // RUNTIME by e.g. std::time's counter reads, so a trap stub
++                // aborts the built rustc). The integer argument selects the
++                // domain/type; emitting the strongest (`sy`) variant is
++                // semantically safe for every option — it over-synchronises,
++                // never under-.
++                else if( item.m_linkage.name == "llvm.aarch64.isb" ) {
++                    m_of << "\t__asm__ __volatile__ (\"isb sy\" ::: \"memory\");\n";
++                    m_of << "\treturn ;\n";
++                }
++                else if( item.m_linkage.name == "llvm.aarch64.dmb" ) {
++                    m_of << "\t__asm__ __volatile__ (\"dmb sy\" ::: \"memory\");\n";
++                    m_of << "\treturn ;\n";
++                }
++                else if( item.m_linkage.name == "llvm.aarch64.dsb" ) {
++                    m_of << "\t__asm__ __volatile__ (\"dsb sy\" ::: \"memory\");\n";
++                    m_of << "\treturn ;\n";
++                }
+                 // AES functions
+                 else if( item.m_linkage.name.rfind("llvm.x86.aesni.", 0) == 0 )
+                 {
+@@ -5654,6 +5672,15 @@ namespace {
                          {
                          case '\0':
                              break;
@@ -275,7 +300,7 @@ index 135d105..19619e7 100644
                          case 'r':
                              m_of << 'q';    // x86: `q` selects rax explicitly
                              break;
-@@ -5699,6 +5708,8 @@ namespace {
+@@ -5699,6 +5726,8 @@ namespace {
                          // riscv
                          case AsmCommon::RegisterClass::riscv_reg: m_of << "r"; break;
                          case AsmCommon::RegisterClass::riscv_freg: m_of << "f"; break;
@@ -284,7 +309,7 @@ index 135d105..19619e7 100644
                          }
                      TU_ARMA(Explicit, name) {
                          m_of << "r";
-@@ -5740,6 +5751,8 @@ namespace {
+@@ -5740,6 +5769,8 @@ namespace {
                              // riscv
                              case AsmCommon::RegisterClass::riscv_reg: m_of << "r"; break;
                              case AsmCommon::RegisterClass::riscv_freg: m_of << "f"; break;
