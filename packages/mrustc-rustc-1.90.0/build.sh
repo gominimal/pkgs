@@ -508,11 +508,17 @@ cp -a "${RRP}/lib/." "${DST}/lib/"
 # run_rustc/Makefile:259 builds hello_world into BINDIR; it is a test artifact, not a tool.
 rm -f "${DST}/bin/hello_world"
 
-cat > "${DST}/bin/rustc" <<'WRAPEOF'
+# UNQUOTED heredoc: ${TRIPLE} must expand at INSTALL time (everything else is escaped).  The
+# 43197d4 arch-dispatch edit left it inside a quoted heredoc — literal at runtime, where TRIPLE
+# is never exported, so LD_LIBRARY_PATH degraded to lib/rustlib//lib and the installed rustc
+# could not find librustc_driver.so (rustlib/<triple>/lib is its ONLY location).  amd64 never
+# saw it: the pre-dispatch wrapper hardcoded the x86_64 triple.  This expansion regenerates
+# that wrapper byte-identically on amd64.
+cat > "${DST}/bin/rustc" <<WRAPEOF
 #!/bin/sh
-d="$(dirname "$0")"
-LD_LIBRARY_PATH="${d}/../lib:${d}/../lib/rustlib/${TRIPLE}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
-  exec "${d}/rustc_binary" "$@"
+d="\$(dirname "\$0")"
+LD_LIBRARY_PATH="\${d}/../lib:\${d}/../lib/rustlib/${TRIPLE}/lib\${LD_LIBRARY_PATH:+:\${LD_LIBRARY_PATH}}" \\
+  exec "\${d}/rustc_binary" "\$@"
 WRAPEOF
 chmod 0755 "${DST}/bin/rustc"
 
