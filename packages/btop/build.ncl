@@ -1,6 +1,7 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 
@@ -17,6 +18,7 @@ let version = "1.4.7" in
     } | Source,
     base,
     make,
+    patch,
     toolchain,
   ],
   runtime_deps = [ncurses],
