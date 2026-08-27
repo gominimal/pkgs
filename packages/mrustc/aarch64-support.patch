@@ -1,7 +1,9 @@
 aarch64 support series for mrustc, against master 1d552cadf1c58bce8b9b431a5714dcea113dde38
-(the pinned Source of this recipe).  Ten fixes, each root-caused on hardware (Axion C4A,
-tcc-r2-warm) during the arm rustc-1.90 chain campaign, 2026-08-24..26; the chain went
-R9A_CHAIN_GREEN (all 7 recipe gates) with exactly pin+this on 2026-08-26.
+(the pinned Source of this recipe).  Eleven fixes, each root-caused on hardware (Axion C4A
+lab, then the CS builder) during the arm rustc-1.90 chain campaign, 2026-08-24..27; the arm
+chain went R9A_CHAIN_GREEN (all 7 recipe gates) with pin+this on 2026-08-26, and the amd64
+revalidation build then caught fix 5's first draft (see below) — the series is measured on
+BOTH arches.
 
 Shared-code fixes (affect BOTH arches — the reason this patch applies unconditionally):
   1. static_borrow_constants: GLOBAL fixpoint across modules with interleaved insert +
@@ -11,7 +13,10 @@ Shared-code fixes (affect BOTH arches — the reason this patch applies uncondit
      were never visited -> undetected generics).
   3. Per-slot idempotence guards for double-visited nodes (incl. post-rebind TypeData insert).
   4. res_type sweep in the extract visitor.
-  5. f128 alignment = u128's (16), was f64's 8.
+  5. f128 alignment tracks u128's EFFECTIVE alignment (the emitted C f128 wraps uint128_t):
+     16 with native __int128 (aarch64 — f64's 8 failed TUP_2(f128,f32) 24-vs-32), 8 when
+     i128 is EMULATED (x86_64 — an unconditional 16 failed TUP_2(f128,i32) 32-vs-24 on the
+     first amd64 build; caught by the emitted sizeof_asserts both times).
   6. Unpacked repr(simd): pow2-size alignment capped at 16, guarded on max_alignment==0
      (core_simd's Simd is repr(simd,packed) and must keep element alignment).
  10. Native-__int128 ctpop: __builtin_popcountll takes a 64-bit argument, so the non-emulated
@@ -25,6 +30,12 @@ aarch64-only fixes:
   8. asm! template modifiers {N:w}/{N:x} -> GCC %wN/%xN (same letters, pass through).
   9. llvm.aarch64.{isb,dmb,dsb} intrinsics -> real __asm__ __volatile__ barrier instructions
      (strongest "sy" variant) instead of no-ops.
+
+(Numbering note: 11 = the emulated-i128 revision of 5, folded into 5's entry above.)
+
+Cross-cutting lesson encoded twice (5 and 10): mrustc's 128-bit story FORKS on
+m_backend_c.m_emulated_i128, and x86_64-linux-gnu is EMULATED while aarch64-linux-gnu is
+NATIVE — any layout or intrinsic touching 128-bit types must be written against BOTH modes.
 
 Upstream candidature: to be assessed against lb#470-style originality review before any
 public claim; fixes 1-6 and 10 are believed novel, 7-9 partially overlap upstream branches.
@@ -365,24 +376,32 @@ index 135d105..0aefe46 100644
                  {
                      m_of << "__builtin_popcountll("; emit_param(e.args.at(0)); m_of << ")";
 diff --git a/src/trans/target.cpp b/src/trans/target.cpp
-index 7522004..a0f1a58 100644
+index 7522004..cdfdcb3 100644
 --- a/src/trans/target.cpp
 +++ b/src/trans/target.cpp
-@@ -817,7 +817,12 @@ bool Target_GetSizeAndAlignOf(const Span& sp, const StaticTraitResolve& resolve,
+@@ -817,7 +817,20 @@ bool Target_GetSizeAndAlignOf(const Span& sp, const StaticTraitResolve& resolve,
              return true;
          case ::HIR::CoreType::F128:
              out_size = 16;
 -            out_align = g_target.m_arch.m_alignments.f64; //f128;
-+            // f128 is 16-aligned on the targets we emit C for (aarch64 long
-+            // double / _Float128, x86_64 _Float128) — using f64's 8 here made
-+            // gcc and mrustc disagree on tuple layouts containing f128, which
-+            // the emitted sizeof_assert correctly rejected (first hit: aarch64
-+            // libstd, TUP_2(f128,f32): mrustc 24 vs gcc 32).
-+            out_align = g_target.m_arch.m_alignments.u128;
++            // f128's emitted C type wraps uint128_t (codegen_c:
++            // `typedef struct f128 { uint128_t v; } f128;`), so its alignment
++            // must track u128's EFFECTIVE alignment — the same conditional as
++            // the U128 case above.  Native __int128 (aarch64): 16 — using
++            // f64's 8 made mrustc disagree with gcc on TUP_2(f128,f32)
++            // (24 vs 32), caught by the emitted sizeof_assert in aarch64
++            // libstd.  EMULATED i128 (x86_64 as configured): uint128_t is
++            // struct{uint64_t lo,hi}, align 8 — using the raw 16 failed
++            // TUP_2(f128,i32) the other way (mrustc 32 vs gcc 24) on the
++            // first amd64 build of the patched pin.
++            if( g_target.m_backend_c.m_emulated_i128 )
++                out_align = g_target.m_arch.m_alignments.u64;
++            else
++                out_align = g_target.m_arch.m_alignments.u128;
              return true;
          case ::HIR::CoreType::Str:
              DEBUG("sizeof on a `str` - unsized");
-@@ -1189,10 +1194,39 @@ namespace {
+@@ -1189,10 +1202,39 @@ namespace {
              switch(str.m_repr)
              {
              case ::HIR::Struct::Repr::C:
