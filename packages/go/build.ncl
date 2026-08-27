@@ -2,6 +2,7 @@ let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = impo
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+let git = import "../git/build.ncl" in
 
 let version = "1.26.6" in
 let variants = {
@@ -43,6 +44,12 @@ in
       dns = {},
       internet = {},
     } | Needs,
+
+  # git rides along wherever the Go toolchain goes: GOPROXY's `|direct`
+  # fallback (go.env above) fetches modules via VCS, and a sandbox without
+  # git turns the fallback into "exec: git: executable file not found"
+  # (observed pkgs#648: the fallback fired on a proxy reset and died here).
+  runtime_deps = [git],
 
   cmd = "./build.sh",
   build_args = {

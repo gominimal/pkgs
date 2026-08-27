@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.4.13" in
+let version = "0.4.14" in
 {
   name = "prek",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/j178/prek/v%{version}.tar.gz",
-      sha256 = "0b1286a5d7d167ed9c7a68ccee12d9f50520209081a6e6451007de9c98722af7",
+      sha256 = "6f0d3615690382d4a1339a81a2ada2330ac5141481eb79459ed8d63026efb9a0",
       extract = true,
       strip_prefix = "prek-%{version}",
     } | Source,
