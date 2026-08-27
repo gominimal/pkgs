@@ -129,6 +129,7 @@ let sed = import "../sed/build.ncl" in # Makefile determinism patch + the libc.s
 let grep = import "../grep/build.ncl" in # fail-shut assertions
 let coreutils = import "../coreutils/build.ncl" in # sha256sum/cp/mkdir/nproc/touch/cut/od/date/timeout
 let tar = import "../tar/build.ncl" in # plain .tar unpack (--no-same-owner)
+let patch = import "../patch/build.ncl" in # aarch64-support.patch is applied UNCONDITIONALLY (2026-08-27); the old hir-ord path was conditional and never exercised `patch` in CS
 let version = "0.12.0" in
 let commit = "1d552cadf1c58bce8b9b431a5714dcea113dde38" in
 {
@@ -157,6 +158,7 @@ let commit = "1d552cadf1c58bce8b9b431a5714dcea113dde38" in
     grep,
     coreutils,
     tar,
+    patch,
   ],
   build_args = {
     include version,
