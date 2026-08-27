@@ -6,14 +6,14 @@ let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let file = import "../file/build.ncl" in
 
-let version = "7.1" in
+let version = "7.2" in
 {
   name = "strace",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/strace-%{version}.tar.xz",
-      sha256 = "81743ecf2a5b44186b2f5038afdc8beda7e5c70aed15b4fbfbcc6e9ece24490f"
+      sha256 = "4bde6246926890dcee824f6e6ac42a06752f47d77e5097d86e3c0d6d4b709fe5"
     } | Source,
     base,
     make,

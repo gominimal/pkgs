@@ -5,13 +5,13 @@ let alsa-lib = import "../alsa-lib/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "21.0.10" in
-let build_num = "7" in
+let version = "21.0.12.1" in
+let build_num = "1" in
 let dl_base = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-%{version}+%{build_num}" in
 
 let { amd64_sha256, arm64_sha256 } = {
-  amd64_sha256 = "ea3b9bd464d6dd253e9a7accf59f7ccd2a36e4aa69640b7251e3370caef896a4",
-  arm64_sha256 = "357fee29fb0d5c079f6730db98b28942df13a6eed426f6c61cd4ad703ab27b9a",
+  amd64_sha256 = "ce79869e1307ed8ee1e2baa86a412b1eb5b75d10a01006d788a6f968bcfaee94",
+  arm64_sha256 = "23e37e026f12f3e706f18938ff611db3032d075b09d0879a25d06718c773e223",
 }
 in
 

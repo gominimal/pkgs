@@ -10,7 +10,12 @@ esac
 export CFLAGS="$MARCH -O3 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
 export LDFLAGS="-Wl,--build-id=none"
 
-make -j$(nproc) PREFIX=/usr MALLOC=libc
+# The aarch64 bedrock toolchain ships without LTO (its sealed binutils ld is static-musl and
+# cannot load linker plugins; a plugin-capable glibc-linked rung is future work — the disarmed
+# R12-GATE-LTO in that rung's recipe is the re-enable acceptance test). redis auto-enables
+# -flto at -O3; disable it via redis's own ENABLE_LTO variable. amd64 keeps LTO.
+case "$(uname -m)" in aarch64) LTO="ENABLE_LTO=" ;; *) LTO="" ;; esac
+make -j$(nproc) PREFIX=/usr MALLOC=libc $LTO
 
 mkdir -p $OUTPUT_DIR/usr/bin
 install -m 755 src/redis-server $OUTPUT_DIR/usr/bin/redis-server

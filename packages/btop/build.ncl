@@ -1,6 +1,7 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 
@@ -9,6 +10,7 @@ let version = "1.4.7" in
   name = "btop",
   build_deps = [
     { file = "build.sh" } | Local,
+    { file = "gcc12-seed.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/aristocratos/btop/v%{version}.tar.gz",
       sha256 = "933de2e4d1b2211a638be463eb6e8616891bfba73aef5d38060bd8319baeefc6",
@@ -16,6 +18,7 @@ let version = "1.4.7" in
     } | Source,
     base,
     make,
+    patch,
     toolchain,
   ],
   runtime_deps = [ncurses],

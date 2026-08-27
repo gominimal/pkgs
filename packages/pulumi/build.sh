@@ -11,6 +11,10 @@ fi
 
 export GOROOT=/usr/go
 export GOTOOLCHAIN=local
+# Pipe (not comma): fall back to direct on ANY proxy error — see cosign's
+# build.sh for the full story (pkgs#648: proxy.golang.org per-stream resets).
+# GUARDED so the CS offline file:///goproxy set above is never clobbered.
+[ -n "${GOPROXY:-}" ] || export GOPROXY="https://proxy.golang.org|direct"
 
 LDFLAGS="-buildid= -w -s -X 'github.com/pulumi/pulumi/sdk/v3/go/common/version.Version=${MINIMAL_ARG_VERSION}'"
 

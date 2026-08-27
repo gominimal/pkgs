@@ -4,17 +4,16 @@ let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 # THE LADDER-CLOSE (#19): amd64 bootstraps from our own hex0-rooted Go, not a go.dev bindist.
 # Chain: hex0 -> ... -> gcc-15.2.0-glibc -> go-1.4 (C only) -> 1.17.13 -> 1.20.14 -> 1.22.6 -> 1.24.9.
-# arm64 keeps the bindist: Go 1.5 was the first release with an arm64 port, so the C-hosted root
-# cannot produce an arm64 toolchain directly (separate cross-bootstrap track).
+# arm64's slot is the SEALED gccgo-rooted go1.24.9 from the arm ladder (the BEDROCK ROOT
+# Source below — #631 flipped it): Go 1.5 was the first release with an arm64 port, so the
+# C-hosted root cannot produce an arm64 toolchain directly; gccgo is the arm root instead.
 let go-1-24-9 = import "../go-1.24.9/build.ncl" in
+let git = import "../git/build.ncl" in
 
 let version = "1.26.6" in
 let variants = {
   amd64_url = "https://go.dev/dl/go%{version}.linux-amd64.tar.gz",
   amd64_sha256 = "708effb774be8237570d0add163225abbdfaf4fca28b2611df167beba4feef89",
-
-  arm64_url = "https://go.dev/dl/go%{version}.linux-arm64.tar.gz",
-  arm64_sha256 = "d0507e9e9d7fe012aae570108cbd76c15de879e17130ab8cb90d4d7445cb1f2e",
 
   source_url = "https://go.dev/dl/go%{version}.src.tar.gz",
   source_sha256 = "a0721c54c688901448d77ad9b3ec7ea7c474730755ff891382e92ecb93ff2cb1",
@@ -28,8 +27,17 @@ in
       { arch = 'Amd64, .. } => go-1-24-9,
       { arch = 'Arm64, .. } =>
         {
-          url = variants.arm64_url,
-          sha256 = variants.arm64_sha256,
+          # BEDROCK ROOT (arm64): this bootstrap Go is go1.24.9 from the hex0-rooted arm
+          # ladder (hex0 -> gccgo-15.2.0 -> go1.17.13 -> 1.20.14 -> 1.22.6 -> 1.24.9; gccgo is
+          # the Go frontend shipped inside the gcc source tarball, so no new trust root),
+          # replacing the go.dev linux-arm64 bindist. The three upper rungs reproduced
+          # byte-identically across two runs, and 1.17.13 reproduced under two independently
+          # built gccgo hosts. Seal transcripts and evidence: gominimal/minimermetic#16.
+          # `extract = true` unpacks it to ./go — build.sh MUST move it aside before untarring
+          # the go source tree into that same path.
+          url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/fb0df54229ff3bf08ecde83e6095b07fbdb7d0b77c586ed4d468b7f546a8be56/go1.24.9-aarch64.tar.zst",
+          sha256 = "fb0df54229ff3bf08ecde83e6095b07fbdb7d0b77c586ed4d468b7f546a8be56",
+          extract = true,
         } | Source,
     } target,
     {
@@ -44,6 +52,12 @@ in
       dns = {},
       internet = {},
     } | Needs,
+
+  # git rides along wherever the Go toolchain goes: GOPROXY's `|direct`
+  # fallback (go.env above) fetches modules via VCS, and a sandbox without
+  # git turns the fallback into "exec: git: executable file not found"
+  # (observed pkgs#648: the fallback fired on a proxy reset and died here).
+  runtime_deps = [git],
 
   cmd = "./build.sh",
   build_args = {

@@ -1,0 +1,30 @@
+Make -no-threaded-checker produce reproducible output.
+
+Odin numbers entities from a global counter as it parses and checks, and those
+ids decide the order procedures and globals are emitted into the LLVM module.
+Every phase that hands out ids runs on the thread pool, so the numbering -- and
+with it the layout of the final binary -- is a race: building the same source
+twice gives two different binaries.
+
+-no-threaded-checker already exists and already serialises check_procedure_bodies,
+but the parser, entity collection and export phases keep using the pool
+regardless, so the flag alone is not enough. Drop the pool to zero workers when
+it is set: thread_pool_wait then drains the queue on the main thread in push
+order, which serialises every phase at once rather than each of them needing its
+own opt-out.
+
+This is inert unless -no-threaded-checker is passed; the default build is
+untouched.
+
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -16,6 +16,9 @@
+ gb_internal void init_global_thread_pool(void) {
+ 	isize thread_count = gb_max(build_context.thread_count, 1);
+ 	isize worker_count = thread_count; // +1
++	if (build_context.no_threaded_checker) {
++		worker_count = 0;
++	}
+ 	thread_pool_init(&global_thread_pool, worker_count, "ThreadPoolWorker");
+ }
+ gb_internal bool thread_pool_add_task(WorkerTaskProc *proc, void *data) {

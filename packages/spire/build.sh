@@ -11,6 +11,12 @@ fi
 
 export GOROOT=/usr/go
 export GOTOOLCHAIN=local
+# Pipe (not comma) separator: fall back to direct on ANY proxy error —
+# proxy.golang.org sheds load with per-stream RST(INTERNAL_ERROR) under
+# module-burst, go does not retry, and the comma form only falls back on
+# 404/410 (pkgs#648). GUARDED so the CS offline file:///goproxy set above
+# is never clobbered.
+[ -n "${GOPROXY:-}" ] || export GOPROXY="https://proxy.golang.org|direct"
 
 LDFLAGS="-buildid= -s -w -X github.com/spiffe/spire/pkg/common/version.gittag=${MINIMAL_ARG_VERSION}"
 

@@ -50,14 +50,22 @@ let version = "6.12.43" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              url = "gs://minimalmertic-release-channel-stable/stage0-linux-headers-6.12.43-6.12.43/stage0-linux-headers-6.12.43-6.12.43.tar.zst",
+              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
+              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
+              # gominimal/minimermetic#16. Applied by minimermetic's
+              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/083cdb678eb2a154373819a5b3511b2b0e73c6261a010dce896287c742be83c3/stage0-linux-headers-6.12.43-6.12.43.tar.zst",
               sha256 = "083cdb678eb2a154373819a5b3511b2b0e73c6261a010dce896287c742be83c3",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/linux_headers/arm64-linux-gnu/linux_headers_6.12_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "4fcec0e44339af7c948a03100d2482a4f867e73708cbbeb44ed9ee461dcdf0ca",
+              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
+              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
+              # gominimal/minimermetic#16. Applied by minimermetic's
+              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/862f0245057fb5210c22ad09a537ab099d4672754052328a290a5c9b698dee76/stage0-linux-headers-arm-aarch64.tar.zst",
+              sha256 = "862f0245057fb5210c22ad09a537ab099d4672754052328a290a5c9b698dee76",
               extract = true,
             } | Source,
         } target,
