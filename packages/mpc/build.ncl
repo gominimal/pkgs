@@ -80,14 +80,22 @@ let version = "1.4.1" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/mpc/94ebf966b773423844ef6b2b620c062f31e8479bbe9e97ad808e414b558743a7.tar.zst",
-              sha256 = "a3bb4b9e9bfcb0e2018065dd0036f2943cf0b5fda8aebb56f477026531ba7fdd",
+              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
+              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
+              # gominimal/minimermetic#16. Applied by minimermetic's
+              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/a385e3fa185012d00bd68131f7fa8789c5207fefe89411b9f7ea4c3869469c53/mpc-glibc-1.4.0.tar.zst",
+              sha256 = "a385e3fa185012d00bd68131f7fa8789c5207fefe89411b9f7ea4c3869469c53",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              url = "gs://minimal-staging-archives/prebuilts/mpc/arm64-linux-gnu/mpc_1.3.1_arm64-linux-gnu_prebuilt.tar.zst",
-              sha256 = "8bbeb25848856021b15100d7bf1b2f08d7635d4cc6189c8441a465637b3493bd",
+              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
+              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
+              # gominimal/minimermetic#16. Applied by minimermetic's
+              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/bcb5eee02cfb28e3173c96ae3b1ca2c4f1a7ca4ba5537c5b4e18d248e11775bf/stage0-mpc-arm-aarch64.tar.zst",
+              sha256 = "bcb5eee02cfb28e3173c96ae3b1ca2c4f1a7ca4ba5537c5b4e18d248e11775bf",
               extract = true,
             } | Source,
         } target,
