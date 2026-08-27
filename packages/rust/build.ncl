@@ -11,7 +11,7 @@ let libffi = import "../libffi/build.ncl" in
 let libssh2 = import "../libssh2/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let rustc-1-94-1 = import "../rustc-1.94.1/build.ncl" in # ★ THE STAGE0 — final chain rung, CS-attested
+let rustc-1-96-0 = import "../rustc-1.96.0/build.ncl" in # ★ THE STAGE0 — final chain rung (ladder EXTENDED for 1.97.1)
 
 let version = "1.97.1" in
 {
@@ -25,21 +25,21 @@ let version = "1.97.1" in
       extract = true,
       strip_prefix = "rustc-%{version}-src",
     } | Source,
-    # ★ ATTESTED stage0 (issue #17 — the ladder CLOSED).  The stage0 rustc/cargo is now the
-    # CS-attested rustc-1.94.1 rung (a build_dep, installed at /usr/lib/rustc-1.94.1/bin), NOT the
-    # unattested seed-*.tar.gz tarballs this recipe used to consume.  build.sh points bootstrap.toml's
-    # [build] rustc/cargo at that prefix; x.py uses it directly and skips the src/stage0 download.
+    # ★ ATTESTED stage0 (issue #17 — the ladder CLOSED, then EXTENDED).  The stage0 rustc/cargo is
+    # the CS-attested rustc-1.96.0 rung (a build_dep, installed at /usr/lib/rustc-1.96.0/bin), NOT
+    # unattested seed tarballs.  build.sh points bootstrap.toml's [build] rustc/cargo at that
+    # prefix; x.py uses it directly and skips the src/stage0 download.
     #
-    # THE CHAIN, all phase=signed in Confidential Space (each rung built by its attested predecessor):
-    #   gcc-15.2.0 -> mrustc 0.12.0 -> rustc-1.90.0 -> 1.91.1 -> 1.92.0 -> 1.93.1 -> 1.94.1 -> (THIS)
+    # THE CHAIN (each rung built by its attested predecessor in Confidential Space):
+    #   gcc-15.2.0 -> mrustc 0.12.0 -> rustc-1.90.0 -> 1.91.1 -> 1.92.0 -> 1.93.1 -> 1.94.1
+    #     -> 1.95.0 -> 1.96.0 -> (THIS, 1.97.1)
     #
-    # ⚠ WHY 1.94.1, NOT the 1.94.0 pin: rust 1.95.0 compiles stage-0 crates with `--cfg=bootstrap`
-    #   (bootstrap cargo.rs:752), and its rustc_macros then references `proc_macro::tracked_env` — an
-    #   API 1.94.1 exposes but 1.94.0 does NOT (1.94.0 renamed the module to `tracked`).  A chain-built
-    #   1.94.0 stage0 fails with E0432 (proven).  The retired seed was 1.94.1 and built 1.95.0; matching
-    #   it (1.94.1 > the 1.94.0 pin — still same-or-one-minor per check_stage0_version) is the fix.  Our
-    #   chain build is FAITHFUL — 1.94.0 correctly produced 1.94.0's `tracked`; only the endpoint version
-    #   was wrong.  This RETIRES the old seed tarballs — trust moves off the unattested VM onto the chain.
+    # ⚠ LADDER EXTENSION (2026-08-27): the upstream 1.95.0 -> 1.97.1 version bump silently
+    #   combined with the 1.94.1-rung stage0 in a merge — a bootstrap-window violation
+    #   (1.97.1's src/stage0 pins compiler_version 1.96.0; check_stage0_version accepts
+    #   same-or-one-minor only, and --cfg=bootstrap API skew breaks even sooner, as the
+    #   1.94.0-vs-1.94.1 tracked_env incident proved in miniature).  Rungs rustc-1.95.0 and
+    #   rustc-1.96.0 (byte-clones of the 1.94.1 rung recipe) close the gap.
     #
     # ⚠ HONESTY BOUNDARY (do not overstate): the chain is ATTESTED (CS-signed at every rung), NOT
     # byte-SEALED — packages/mrustc ships `# UNPINNED` mrustc.answers.  And attested != hex0-rooted:
@@ -47,7 +47,7 @@ let version = "1.97.1" in
     # assess_dep_chain still returns None on a declaredSources hit, so CHAIN_ENFORCE=1 cannot fail-shut
     # this edge; proof is this recipe's stage0 assert + the predecessor rungs' own signatures.
     # amd64-only for now — arm64's seed-rooted gcc/rust stage0 is a separate track (#16).
-    rustc-1-94-1,
+    rustc-1-96-0,
     base,
     cmake,
     curl,

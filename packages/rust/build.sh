@@ -13,23 +13,23 @@ export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
 # ATTESTED stage0 (issue #17 — the ladder CLOSED): the stage0 rustc/cargo is the CS-attested
-# rustc-1.94.1 rung (a build_dep installed at /usr/lib/rustc-1.94.1), NOT the old unattested
+# rustc-1.96.0 rung (a build_dep installed at /usr/lib/rustc-1.96.0), NOT the old unattested
 # seed-*.tar.gz. x.py uses it directly (bootstrap.toml [build] rustc/cargo) and skips the
 # src/stage0 download — no network egress in Confidential Space. See build.ncl's header for the
-# full chain and WHY 1.94.1 not the 1.94.0 pin (the tracked_env --cfg=bootstrap skew).
-STAGE0_PREFIX=/usr/lib/rustc-1.94.1
+# full chain and the LADDER EXTENSION note (1.97.1's src/stage0 pins 1.96.0).
+STAGE0_PREFIX=/usr/lib/rustc-1.96.0
 SEED_RUSTC="${STAGE0_PREFIX}/bin/rustc"
 SEED_CARGO="${STAGE0_PREFIX}/bin/cargo"
-[ -x "$SEED_RUSTC" ] || { echo "rust: FATAL attested stage0 rustc missing at $SEED_RUSTC — the rustc-1.94.1 rung is THE anchor of this build" >&2; exit 1; }
+[ -x "$SEED_RUSTC" ] || { echo "rust: FATAL attested stage0 rustc missing at $SEED_RUSTC — the rustc-1.96.0 rung is THE anchor of this build" >&2; exit 1; }
 [ -x "$SEED_CARGO" ] || { echo "rust: FATAL attested stage0 cargo missing at $SEED_CARGO" >&2; exit 1; }
-# x.py parses the stage0 rustc's release (1.94.1) against src/stage0 (pins 1.94.0); 1.94.1 > pin is
+# x.py parses the stage0 rustc's release (1.96.0) against src/stage0 (pins 1.96.0); equal-to-pin is
 # accepted (check_stage0_version = same-or-one-minor) and sidesteps the tracked_env bootstrap skew.
 S0V="$("$SEED_RUSTC" --version 2>&1 || true)"
-echo "$S0V" | grep -qF "1.94.1" || { echo "rust: FATAL attested stage0 rustc --version = '$S0V', expected 1.94.1" >&2; exit 1; }
-echo "rust stage0: CS-ATTESTED rustc-1.94.1 -> $S0V"
+echo "$S0V" | grep -qF "1.96.0" || { echo "rust: FATAL attested stage0 rustc --version = '$S0V', expected 1.96.0" >&2; exit 1; }
+echo "rust stage0: CS-ATTESTED rustc-1.96.0 -> $S0V"
 
 # ★ DROP THE STAGE0's STRAY rust-src.  The rustc-1.94.x rung was built `extended = true`, so its
-# OutputData glob captured a bundled rust-src component (the stage0's OWN 1.94.1 source, which uses
+# OutputData glob captured a bundled rust-src component (the stage0's OWN source, which uses
 # the PRE-rename proc_macro::tracked_env API).  A filesystem locator PROVED x.py compiles THAT
 # rustc_macros/symbols.rs (old API, line 263) instead of the fresh in-tree /build source (new
 # proc_macro::tracked::env_var, line 262) → E0433 "could not find tracked_env".  The hydrated stage0
