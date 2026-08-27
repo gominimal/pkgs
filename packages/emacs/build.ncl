@@ -15,7 +15,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let tree-sitter = import "../tree-sitter/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
-let version = "30.2" in
+let version = "31.1" in
 {
   name = "emacs",
   build_deps = [
@@ -26,7 +26,7 @@ let version = "30.2" in
     { file = "treesit-predicates-0.26.patch" } | Local,
     {
       url = "https://ftpmirror.gnu.org/emacs/emacs-%{version}.tar.xz",
-      sha256 = "b3f36f18a6dd2715713370166257de2fae01f9d38cfe878ced9b1e6ded5befd9",
+      sha256 = "1da5790d9580c81932b5bf700633114468da7b3412d69faa767daebf974f4586",
       extract = true,
       strip_prefix = "emacs-%{version}",
     } | Source,
@@ -55,7 +55,7 @@ let version = "30.2" in
   outputs = {
     ebrowse = { glob = "usr/bin/ebrowse" } | OutputBin,
     ctags = { glob = "usr/bin/ctags" } | OutputBin,
-    "emacs-30.2" = { glob = "usr/bin/emacs-30.2" } | OutputBin,
+    "emacs-31.1" = { glob = "usr/bin/emacs-31.1" } | OutputBin,
     emacs = { glob = "usr/bin/emacs" } | OutputBin,
     etags = { glob = "usr/bin/etags" } | OutputBin,
     emacsclient = { glob = "usr/bin/emacsclient" } | OutputBin,

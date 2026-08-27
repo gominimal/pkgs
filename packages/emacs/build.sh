@@ -75,7 +75,7 @@ if [ ! -f "$dir/init.el" ] && [ ! -f "$dir/init.elc" ] \
   dir="${XDG_CACHE_HOME:-$HOME/.cache}/emacs.d"
   mkdir -p "$dir" 2>/dev/null && [ -w "$dir" ] || dir="$(mktemp -d /tmp/emacs.d.XXXXXX)"
 fi
-exec emacs-30.2 --init-directory "$dir" "$@"
+exec emacs-31.1 --init-directory "$dir" "$@"
 WRAPPER
 chmod +x "$OUTPUT_DIR/usr/bin/emacs"
 
