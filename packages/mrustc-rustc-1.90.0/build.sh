@@ -23,10 +23,10 @@ set -ex
 
 VERSION="${MINIMAL_ARG_VERSION:-1.90.0}"
 MRUSTC_VERSION="${MINIMAL_ARG_MRUSTC_VERSION:-0.12.0}"
-MRUSTC_COMMIT="${MINIMAL_ARG_MRUSTC_COMMIT:-2d14b09a7e75166bec4413f48f61e3b3cd4de8ca}"
+MRUSTC_COMMIT="${MINIMAL_ARG_MRUSTC_COMMIT:-1d552cadf1c58bce8b9b431a5714dcea113dde38}"
 
 BUILDROOT="$(pwd)"
-MTAR="mrustc-${MRUSTC_VERSION}.tar"
+MTAR="mrustc-${MRUSTC_VERSION}-git1d552ca.tar" # commit-qualified basename; archive PREFIX stays mrustc-${MRUSTC_VERSION}/
 MSRC="${BUILDROOT}/mrustc-${MRUSTC_VERSION}"
 RTAR="rustc-${VERSION}-src.tar.gz"
 RSRC="rustc-${VERSION}-src"          # relative to ${MSRC}; minicargo.mk hardcodes this shape
@@ -34,7 +34,7 @@ OUTDIR="output-${VERSION}"
 
 # Re-assert both Source shas here so a mirror swap cannot slip past the fetcher silently.
 # Defence in depth, not a substitute for the Source sha256 in build.ncl.
-MTAR_SHA=1ad6521c90e47754c5e13bd9abd183f4cd953eb9faa8a25e7b104b6ffe701512
+MTAR_SHA=1b8a2772e65b283ccbd42cb6a0e94dd2239e59bd4eb866d44405d6b5a0c33314
 RTAR_SHA=799a9f9cba4ed5351e071048bcf6b5560755d9009648def33a407dd4961f9b7e
 
 # Arch dispatch (arm parity, 2026-08-24). ARCH_CFLAGS carries

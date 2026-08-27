@@ -46,23 +46,31 @@ let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" i
 #
 #     git clone https://github.com/thepowersgang/mrustc && cd mrustc
 #     git archive --format=tar --prefix=mrustc-0.12.0/ \
-#         2d14b09a7e75166bec4413f48f61e3b3cd4de8ca > mrustc-0.12.0.tar
-#     sha256sum mrustc-0.12.0.tar
-#       -> 1ad6521c90e47754c5e13bd9abd183f4cd953eb9faa8a25e7b104b6ffe701512
-#     gcloud storage cp mrustc-0.12.0.tar gs://minimal-staging-archives/mrustc-0.12.0.tar
+#         1d552cadf1c58bce8b9b431a5714dcea113dde38 > mrustc-0.12.0-git1d552ca.tar
+#     sha256sum mrustc-0.12.0-git1d552ca.tar
+#       -> 1b8a2772e65b283ccbd42cb6a0e94dd2239e59bd4eb866d44405d6b5a0c33314
+#     gcloud storage cp mrustc-0.12.0-git1d552ca.tar \
+#         gs://minimal-staging-archives/mrustc-0.12.0-git1d552ca.tar
 #
-# 2d14b09a7e75166bec4413f48f61e3b3cd4de8ca IS the v0.12.0 tag ("Bump version to 0.12 with the
-# 1.90 merge").  PLAIN .tar on purpose — no gzip/zstd, because compressor output varies by
-# implementation and version while `git archive`'s tar stream is a pure function of the commit.
-# Anyone can re-derive this sha from the public repo with one command.  The commit sha is the
-# real anchor; the tarball sha is a derived convenience that build.sh re-asserts at build time.
+# 1d552cadf1c58bce8b9b431a5714dcea113dde38 is MASTER (2026-08 head, PR #420 merge); the tree
+# still identifies as 0.12 (src/version.cpp asserts below hold), hence the commit-qualified
+# basename — distinct from the retired mrustc-0.12.0.tar (tag 2d14b09a) so the two pins can
+# never collide in the mirror.  The archive prefix STAYS mrustc-0.12.0/ so every path in this
+# recipe and the 1.90 rung is unchanged.  PLAIN .tar on purpose — no gzip/zstd, because
+# compressor output varies by implementation and version while `git archive`'s tar stream is a
+# pure function of the commit.  Anyone can re-derive this sha from the public repo with one
+# command.  The commit sha is the real anchor; the tarball sha is a derived convenience that
+# build.sh re-asserts at build time.
 #
-# ── TAG vs MASTER (unresolved upstream fork, decided HERE) ────────────────────────────────────
-# docs/rust-seed-stage0-bridge.md:53-57 recommends building the durable stage0 from mrustc MASTER
-# (carrying UB fixes db7213b + aea331a) rather than v0.12.0 + our archive.rs patch-mask.  We pin
-# v0.12.0 for the FIRST landed recipe because v0.12.0 is what the de-risk actually measured, and
-# because "master" is a moving target that needs a commit pin anyway.  Revisit once this rung is
-# green; the swap is a one-line sha change plus a re-run of the same gate.
+# ── TAG vs MASTER (RESOLVED 2026-08-26: MASTER) ───────────────────────────────────────────────
+# docs/rust-seed-stage0-bridge.md:53-57 recommended master (UB fixes db7213b + aea331a) over
+# v0.12.0 + the archive.rs patch-mask; the first landed recipe pinned the tag anyway because the
+# tag was what the amd64 de-risk had measured.  The aarch64 campaign settled it: v0.12.0 cannot
+# build aarch64 libcore at all (the hir/hir.cpp:132 ord TODO abort, fixed upstream in
+# d8cc2933+dad6c321 — both IN this master pin, so hir-ord-unevaluated.patch's conditional
+# application is now a no-op), and the arm chain that went R9A_CHAIN_GREEN (2026-08-26, all 7
+# gates) was measured against THIS commit plus aarch64-support.patch.  amd64 moves to the same
+# pin for single-pin provenance; the amd64 rung revalidation this forces is the sanctioned cost.
 #
 # ── OFFLINE BY CONSTRUCTION ───────────────────────────────────────────────────────────────────
 # `needs` is deliberately ABSENT: there is no "no network" flag, absence IS the default and the
@@ -122,19 +130,21 @@ let grep = import "../grep/build.ncl" in # fail-shut assertions
 let coreutils = import "../coreutils/build.ncl" in # sha256sum/cp/mkdir/nproc/touch/cut/od/date/timeout
 let tar = import "../tar/build.ncl" in # plain .tar unpack (--no-same-owner)
 let version = "0.12.0" in
-let commit = "2d14b09a7e75166bec4413f48f61e3b3cd4de8ca" in
+let commit = "1d552cadf1c58bce8b9b431a5714dcea113dde38" in
 {
   name = "mrustc",
   build_deps = [
     { file = "build.sh" } | Local,
     { file = "mrustc.answers" } | Local, # byte-seal slot; SELF-ARMS once populated (see build.sh)
     { file = "archive-zerolen-skip.sh" } | Local, # the rustc-1.90.0 0-byte-object fix, landed in git at last
-    { file = "hir-ord-unevaluated.patch" } | Local, # upstream d8cc2933+dad6c321 backport; aarch64 libcore blocker (see its header)
+    { file = "hir-ord-unevaluated.patch" } | Local, # upstream d8cc2933+dad6c321 backport; IN the master pin, so its conditional application is a no-op (kept for tag builds)
+    { file = "aarch64-support.patch" } | Local, # the 10-fix aarch64 series vs THIS pin (SBC fixpoint, visitor chaining, i128 ctpop, asm!, barriers — see its header); applied BOTH arches
     { file = "gate.rs" } | Local,             # GATE 1's program; the ONLY copy -- never inline it in build.sh
     {
       # Deterministically re-derivable from the public repo — see the SOURCE PIN block above.
-      url = "gs://minimal-staging-archives/mrustc-%{version}.tar",
-      sha256 = "1ad6521c90e47754c5e13bd9abd183f4cd953eb9faa8a25e7b104b6ffe701512",
+      # Commit-qualified basename: the %{version} tree at master commit 1d552ca (still 0.12.0).
+      url = "gs://minimal-staging-archives/mrustc-%{version}-git1d552ca.tar",
+      sha256 = "1b8a2772e65b283ccbd42cb6a0e94dd2239e59bd4eb866d44405d6b5a0c33314",
       extract = false, # build.sh untars with --no-same-owner (chown-hostile sandbox: the R8 wall)
     } | Source,
     gcc-bedrock,

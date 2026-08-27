@@ -174,7 +174,7 @@ let findutils = import "../findutils/build.ncl" in # install-phase build-path sw
 let diffutils = import "../diffutils/build.ncl" in # `patch` hard-uses cmp on some paths
 let version = "1.90.0" in
 let mrustc_version = "0.12.0" in
-let mrustc_commit = "2d14b09a7e75166bec4413f48f61e3b3cd4de8ca" in
+let mrustc_commit = "1d552cadf1c58bce8b9b431a5714dcea113dde38" in
 {
   name = "mrustc-rustc-1.90.0",
   build_deps = [
@@ -194,10 +194,14 @@ let mrustc_commit = "2d14b09a7e75166bec4413f48f61e3b3cd4de8ca" in
       extract = false, # build.sh places it at the mrustc TREE ROOT; `make RUSTCSRC` extracts it
     } | Source,
     {
-      # The SAME bytes packages/mrustc pins (its build.ncl:136).  Consumed as DATA ONLY.
+      # The SAME bytes packages/mrustc pins (its SOURCE PIN block).  Consumed as DATA ONLY —
+      # this rung uses the tree's BUILD SYSTEM (minicargo.mk, run_rustc/, the rustc-src patch);
+      # the mrustc/minicargo BINARIES come from the signed anchor.  PRISTINE tree on purpose:
+      # packages/mrustc's aarch64-support.patch touches only compiler source (src/*.cpp,hpp),
+      # none of which this rung reads.
       # Re-derivable: git archive --format=tar --prefix=mrustc-0.12.0/ %{mrustc_commit}
-      url = "gs://minimal-staging-archives/mrustc-%{mrustc_version}.tar",
-      sha256 = "1ad6521c90e47754c5e13bd9abd183f4cd953eb9faa8a25e7b104b6ffe701512",
+      url = "gs://minimal-staging-archives/mrustc-%{mrustc_version}-git1d552ca.tar",
+      sha256 = "1b8a2772e65b283ccbd42cb6a0e94dd2239e59bd4eb866d44405d6b5a0c33314",
       extract = false,
     } | Source,
     mrustc,

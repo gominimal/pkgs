@@ -15,14 +15,14 @@
 set -ex
 
 VERSION="${MINIMAL_ARG_VERSION:-0.12.0}"
-COMMIT="${MINIMAL_ARG_COMMIT:-2d14b09a7e75166bec4413f48f61e3b3cd4de8ca}"
-TARBALL="mrustc-${VERSION}.tar"
+COMMIT="${MINIMAL_ARG_COMMIT:-1d552cadf1c58bce8b9b431a5714dcea113dde38}"
+TARBALL="mrustc-${VERSION}-git1d552ca.tar" # commit-qualified basename; archive PREFIX stays mrustc-${VERSION}/
 SRC="mrustc-${VERSION}"
 BUILDROOT="$(pwd)"
 
 # The tarball sha we pinned in build.ncl, re-asserted here so a mirror swap cannot slip past the
 # fetcher's check silently.  Defence in depth, not a substitute for the Source sha256.
-SRC_SHA=1ad6521c90e47754c5e13bd9abd183f4cd953eb9faa8a25e7b104b6ffe701512
+SRC_SHA=1b8a2772e65b283ccbd42cb6a0e94dd2239e59bd4eb866d44405d6b5a0c33314
 
 # mrustc runtime knobs.  RUSTC_VERSION/OUTDIR_SUF are NOT needed at this scope (no libstd, no
 # rustc source) but MRUSTC_TARGET_VER is: src/main.cpp:969 reads it and src/main.cpp:995 only
@@ -158,6 +158,18 @@ if grep -q 'Compare non-expanded array sizes' "${SRC}/src/hir/hir.cpp"; then
 fi
 grep -q 'Compare non-expanded array sizes' "${SRC}/src/hir/hir.cpp" \
   && { echo "mrustc: FATAL the ord TODO survives after patching" >&2; exit 1; }
+
+# --- the aarch64 support series (10 fixes vs master 1d552ca) --------------------------------
+# Applied on BOTH arches: the series patches SHARED code paths (the SBC Defer fixpoint, visitor
+# chaining, per-slot idempotence, the native-__int128 ctpop) alongside the aarch64-only asm!
+# lowering — a single patched tree is the pin; per-arch trees would fork provenance.  The arm
+# chain that went R9A_CHAIN_GREEN (2026-08-26) measured exactly pin+this; amd64 measures it via
+# the rung revalidation this swap forces.  Fail-shut: must apply, and the ctpop fix (the one
+# fix with a grep-stable signature in emitted-C source) must be present afterwards.
+patch -p1 -d "${SRC}" < aarch64-support.patch \
+  || { echo "mrustc: FATAL aarch64-support.patch did not apply" >&2; exit 1; }
+grep -q '__builtin_popcountll((uint64_t)(' "${SRC}/src/trans/codegen_c.cpp" \
+  || { echo "mrustc: FATAL aarch64-support.patch applied but the ctpop fix signature is missing" >&2; exit 1; }
 
 # --- B4 libc.so linker-script fixup -------------------------------------------------------
 # The sealed B4 versioned libc.so is a linker SCRIPT that baked /build/output/... staging paths.

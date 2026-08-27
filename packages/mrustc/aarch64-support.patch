@@ -1,3 +1,33 @@
+aarch64 support series for mrustc, against master 1d552cadf1c58bce8b9b431a5714dcea113dde38
+(the pinned Source of this recipe).  Ten fixes, each root-caused on hardware (Axion C4A,
+tcc-r2-warm) during the arm rustc-1.90 chain campaign, 2026-08-24..26; the chain went
+R9A_CHAIN_GREEN (all 7 recipe gates) with exactly pin+this on 2026-08-26.
+
+Shared-code fixes (affect BOTH arches — the reason this patch applies unconditionally):
+  1. static_borrow_constants: GLOBAL fixpoint across modules with interleaved insert +
+     insert-ungenerated, replacing the uncaught `Defer` escape (aarch64 libcore trigger,
+     shared machinery).
+  2. ArraySized visitor override chains to the default visitor (element exprs of [expr; N]
+     were never visited -> undetected generics).
+  3. Per-slot idempotence guards for double-visited nodes (incl. post-rebind TypeData insert).
+  4. res_type sweep in the extract visitor.
+  5. f128 alignment = u128's (16), was f64's 8.
+  6. Unpacked repr(simd): pow2-size alignment capped at 16, guarded on max_alignment==0
+     (core_simd's Simd is repr(simd,packed) and must keep element alignment).
+ 10. Native-__int128 ctpop: __builtin_popcountll takes a 64-bit argument, so the non-emulated
+     emission silently truncated a native u128/i128 to its low half (ctpop(u128::MAX) == 64,
+     surfacing as impossible E0080s in downstream const-eval).  Count both halves.  x86_64
+     never executed this path (emulated_i128=true -> the correct popcount128 helper).
+
+aarch64-only fixes:
+  7. asm!: aarch64 register classes (reg -> "r", vreg -> "w") in expand/asm.cpp, hir/asm.hpp,
+     trans/codegen_c.cpp.
+  8. asm! template modifiers {N:w}/{N:x} -> GCC %wN/%xN (same letters, pass through).
+  9. llvm.aarch64.{isb,dmb,dsb} intrinsics -> real __asm__ __volatile__ barrier instructions
+     (strongest "sy" variant) instead of no-ops.
+
+Upstream candidature: to be assessed against lb#470-style originality review before any
+public claim; fixes 1-6 and 10 are believed novel, 7-9 partially overlap upstream branches.
 diff --git a/src/expand/asm.cpp b/src/expand/asm.cpp
 index 95255cf..6080d4c 100644
 --- a/src/expand/asm.cpp
