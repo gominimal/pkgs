@@ -21,3 +21,10 @@ export CXXFLAGS="${CFLAGS}"
     # Note: --shared-lief is omitted; that configure option was not added until Node.js v25.
 make -j$(nproc)
 make DESTDIR=$OUTPUT_DIR install
+
+# npm's compiled-in global prefix is /usr, which is the read-only package
+# store at session time, so every `npm i -g` fails with ENOENT. Ship a
+# builtin npmrc (npm's lowest-precedence config source, overridable by any
+# user config) pointing globals at ~/.local, whose bin/ is already on the
+# session PATH. See gominimal/inbox#559.
+printf 'prefix=~/.local\n' > "$OUTPUT_DIR/usr/lib/node_modules/npm/npmrc"

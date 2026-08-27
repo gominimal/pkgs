@@ -103,5 +103,15 @@ let version = "25.8.2" in
           ["/bin/bash", "-c", "node -e 'console.log(10 * 5)' | grep -q '^50$'"],
         ],
       } | Test,
+    npm_global_prefix =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          # The builtin npmrc must redirect npm's global prefix away from the
+          # read-only /usr store (gominimal/inbox#559).
+          ["/bin/bash", "-c", "npm config get prefix | grep -q '/.local$'"],
+        ],
+      } | Test,
   },
 } | BuildSpec
