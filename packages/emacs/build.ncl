@@ -10,7 +10,6 @@ let jansson = import "../jansson/build.ncl" in
 let libxml2 = import "../libxml2/build.ncl" in
 let make = import "../make/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
-let patch = import "../patch/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let tree-sitter = import "../tree-sitter/build.ncl" in
@@ -23,7 +22,6 @@ let version = "31.1" in
     { file = "fixrand.c" } | Local,
     # Backport of Emacs master b0143530 (bug#79687): tree-sitter >= 0.26
     # rejects the bare #match/#equal predicate names Emacs 30.2 emits.
-    { file = "treesit-predicates-0.26.patch" } | Local,
     {
       url = "https://ftpmirror.gnu.org/emacs/emacs-%{version}.tar.xz",
       sha256 = "1da5790d9580c81932b5bf700633114468da7b3412d69faa767daebf974f4586",
@@ -33,7 +31,6 @@ let version = "31.1" in
     autoconf,
     base,
     make,
-    patch,
     pkgconf,
     toolchain,
   ],
@@ -54,7 +51,10 @@ let version = "31.1" in
 
   outputs = {
     ebrowse = { glob = "usr/bin/ebrowse" } | OutputBin,
-    ctags = { glob = "usr/bin/ctags" } | OutputBin,
+    # `ctags` was REMOVED in Emacs 31.1 — etc/NEWS: "Emacs's old 'ctags'
+    # program is no longer built or installed. You are encouraged to use
+    # Universal Ctags instead." `etags` below is unaffected and still ships;
+    # `etags --ctags` reproduces the old behaviour if anything needs it.
     "emacs-31.1" = { glob = "usr/bin/emacs-31.1" } | OutputBin,
     emacs = { glob = "usr/bin/emacs" } | OutputBin,
     etags = { glob = "usr/bin/etags" } | OutputBin,
@@ -102,9 +102,11 @@ let version = "31.1" in
         ],
       } | Test,
 
-    # Guards treesit-predicates-0.26.patch: sexp predicates must serialise
-    # with the ? suffix that libtree-sitter >= 0.26 requires, for both
-    # the legacy keywords and the new aliases.
+    # Guards the ?-suffix predicate serialisation that libtree-sitter >= 0.26
+    # requires, for both the legacy keywords and the new aliases. This used to
+    # guard our treesit-predicates-0.26.patch; 31.1 carries the fix upstream
+    # (master b0143530), so the test now guards UPSTREAM's behaviour. Keep it:
+    # it is the regression signal regardless of who supplies the fix.
     treesit_predicate_syntax =
       {
         class = 'Standalone,
