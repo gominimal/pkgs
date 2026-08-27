@@ -30,6 +30,21 @@ else
 ' >> "$OUTPUT_DIR/usr/go/go.env"
 fi
 
+# Two more network paths a build can die on (pkgs#648, same load-shedding):
+# - sum.golang.org is its OWN connection; integrity is already guaranteed by
+#   each package's go.sum inside its sha256-pinned source tarball, so the
+#   live checksum DB is a build-time availability risk with no added trust.
+# - GOTOOLCHAIN=auto silently DOWNLOADS a newer toolchain when a go.mod asks
+#   for one; builds must use the Go we ship.
+for kv in 'GOSUMDB=off' 'GOTOOLCHAIN=local'; do
+    k="${kv%%=*}"
+    if grep -q "^$k=" "$OUTPUT_DIR/usr/go/go.env" 2>/dev/null; then
+        sed -i "s#^$k=.*#$kv#" "$OUTPUT_DIR/usr/go/go.env"
+    else
+        echo "$kv" >> "$OUTPUT_DIR/usr/go/go.env"
+    fi
+done
+
 for bin in ../bin/*; do
     ln -sv "../go/bin/$(basename "$bin")" "$OUTPUT_DIR/usr/bin/$(basename "$bin")";
 done
