@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "4.53.3" in
+let version = "4.53.6" in
 {
   name = "yq",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/mikefarah/yq/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "fadf86d0ae3988bb40fa8aad424d0c71658493f6377285e711c7e7e313b3b238",
+      sha256 = "132a28a669526f99dba52486ac80de3bdafdf9a1a52a0c6bd6045301aca0cd25",
       extract = true,
       strip_prefix = "yq-%{version}",
     } | Source,

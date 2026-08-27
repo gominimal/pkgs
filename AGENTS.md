@@ -9,24 +9,32 @@ config-as-code declarations for an ecosystem of Linux software packages (like ni
 descriptions are fairly precise, describing both the dependencies of the software (in terms of
 other packages) as well as the exact steps to build it and what outputs are collected from a build.
 
-You are running in an environment with access to a few specialized tools to help you accomplish your
-goals. These tools are all subcommands of the `min` command.
- 
- * `min add [--session|--build|--runtime|--task <task name>] <package name>...` - Installs the package(s)
-    into your environment, letting you use the CLI tools they encapsulate. **With no flag it defaults to
-    `--session`**, which is ephemeral — it does not persist the dependency into any config. Use `--build` /
-    `--runtime` to record the package in the current package's `build_deps` / `runtime_deps`, or `--task` to
-    record it against a `minimal.toml` task. If you aren't sure of the right package name, you can use
-    `min search <term>` to help find it.
- * `min check [--packages] [--profiles] [--stacks] [--fix] [<name 1>[, <name N>]]` - Runs linters and static checks on the packages/profiles/stacks with the given names, or all if names are not specified. If none of --profiles, --stacks, and --packages are set, then checks are run for all three object kinds.
- * `min patched-pkg <package name>` - Runs the build for the named package. Unlike a full build, a patched build will wire dependencies to the most recent available version of the package with the same name, so you won't have long rebuilds when editing packages which are circularly dependent on a lot of other packages.
- * `min run <task name>` - Runs a task declared in `minimal.toml`. `min build` and `min test` are shorthand
-    for `min run build` / `min run test`. Tasks marked `interactive = true` (such as `shell` and `claude`)
-    can only be launched from the host — running one from inside a session fails with "cannot run
-    interactive tasks from within an environment".
+You are running in an environment with access to the in-sandbox `min` helper. Through it you can
+search for and install packages, record a package as a dependency, run tasks declared in
+`minimal.toml`, lint this repo's declarations, and build a package.
 
-Running `min` with no subcommand prints the authoritative list of what this session's `min` accepts. Trust
-that output over this file if the two ever disagree.
+**Do not run a `min` command from memory, and do not copy command spellings out of this file.**
+The helper is installed by the Minimal daemon, so its subcommands track the daemon's version and
+have changed between releases: verbs have been added, renamed, and removed. Resolve them at the
+point of use, from these two sources:
+
+ * **Run `min` with no subcommand** for the authoritative list of what this session accepts.
+ * **Read <https://minimal.dev/docs/reference/sandbox-operations>** for what each command does and
+   what its flags mean.
+
+Both win over anything written here or remembered from another machine. If you have no shell in
+your context and cannot check, say which command you would resolve rather than emitting a
+plausible-looking one that may not exist.
+
+Two behaviours to know before you start, because neither is guessable:
+
+ * **Installing a package and recording it as a dependency are different actions.** A bare install
+   need not persist anything, and what it records differs between a session and a task sandbox.
+   Check the reference for the flag that writes the package into `build_deps` / `runtime_deps`;
+   a package you installed ad hoc works for you and fails for everyone else.
+ * **Tasks marked `interactive = true`** (such as `shell` and `claude`) can only be launched from
+   the host. Running one from inside a session fails with "cannot run interactive tasks from
+   within an environment". That is a structural limit, not a misconfiguration; do not work around it.
 
 
 
@@ -39,7 +47,7 @@ Specifically:
  * Packages: `packages/<package name>/build.ncl`
  * Stacks: `stacks/<stack name>/stack.ncl`
 
-The repo-level config lives at `minimal.toml` (declares the minimum `stdlib` version and interactive `tasks` like `min run shell` / `min run claude`).
+The repo-level config lives at `minimal.toml` (declares the minimum `stdlib` version and interactive `tasks` such as `shell` and `claude`).
 
 ### Stacks
 
@@ -62,7 +70,7 @@ stack {
 Stacks were previously called "harnesses". The stdlib still exports `harness` as an alias for `stack`, but new
 stacks should use `stack` and live at `stacks/<name>/stack.ncl`.
 
-Current stacks cover: aeneas, bun, cabal, cmake, deno, go, gradle, make, maven, meson, npm, ocaml, pip, pnpm, pulumi-go, pulumi-nodejs, rust, shell, stack, uv, zig.
+Current stacks cover: aeneas, bun, cabal, cmake, deno, go, gradle, make, maven, meson, npm, ocaml, odin, pip, pnpm, pulumi-go, pulumi-nodejs, rust, shell, stack, uv, zig.
 
 
 
@@ -376,11 +384,11 @@ the correct approach is to create it — never install it on the host system.
 
 ### Step 0: Confirm it's missing
 
-```bash
-min search <name>
-```
+Search the registry for the name (the helper's search command; run bare `min` for its current
+spelling). It prints similarly-named packages.
 
-Which will print similarly-named packages. Check alternate names: `python` not `python3`, `node` not `nodejs`, `jdk` not `java`.
+Check alternate names before concluding a package is absent: `python` not `python3`, `node` not
+`nodejs`, `jdk` not `java`.
 
 
 ### Step 1: Create the package directory
@@ -680,18 +688,16 @@ build path, a random build-id) and the recipe above has the fix.
 
 ### Step 4: Validate
 
-```bash
-min check --packages <name>
-```
-
-This validates that the Nickel spec parses correctly and conforms to the schema.
+Run the config check against your package. This validates that the Nickel spec parses correctly
+and conforms to the schema.
 
 
 ### Step 5: Build
 
-```bash
-min patched-pkg <name>
-```
+Build the package on its own. Prefer the patched build: it wires dependencies to the most recent
+available build of each package, so editing a package deep in the graph does not trigger a long
+rebuild chain. The tradeoff is that those dependency builds come from cache and can be
+stale — run a full build when the result has to reflect a dependency's current sources.
 
 If the build fails:
 - Check that all build dependencies are in `build_deps`
@@ -699,19 +705,15 @@ If the build fails:
 - Check that `build.sh` installs to `$OUTPUT_DIR` (not `/usr/` directly)
 - Check the source URL and SHA256
 - Check that output globs match what `build.sh` actually installs
-- And keep iterating running the `patched-pkg` and `check` commands.
+- And keep iterating between the build and the check.
 
 
 ### Step 6: Validate again
 
-```bash
-min check --packages <name>
-```
-
 Some validation checkers run on the compiled output, and show up as skipped when a package hasn't been built yet.
 
-Run `min check` again to make sure these checkers are run, and iterate by fixing issues, running `patched-pkg`, and then
-running `min check` until all addressed.
+Run the check again after a successful build so those checkers actually run, and iterate by fixing
+issues, rebuilding, and re-checking until all are addressed.
 
 
 
@@ -719,20 +721,17 @@ running `min check` until all addressed.
 
 ### error: other: resolving dep '<package name>' by name: not found
 
-When using `min patched-pkg`, you can get an error if a package is not available locally, that looks
-like this:
+A patched build can fail if one of its dependencies is not available locally, like this:
 
 ```text
 error: other: resolving dep '<package>' by name: not found
 ```
 
-To fix this, you need to make the package available locally, typically by forcing it to be fetched:
+To fix it, make that package available locally by installing it, which forces a fetch.
 
-`min add <package>`
-
-If the package thats not found is one that you are presently trying to package, `min add` will fail
-because it does not yet exist upstream. Instead, you should get it building with `min patched-pkg` first,
-so the completed build populates the package locally, and only then move on to packages that depend on it.
+If the missing package is one you are presently writing, installing it will fail because it does
+not exist upstream yet. Build that package first, so the completed build populates it locally, and
+only then move on to the packages that depend on it.
 
 ### Rust build errors, `cc` not found
 

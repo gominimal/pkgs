@@ -35,6 +35,34 @@ fi
 mkdir -p "$OUTPUT_DIR/usr/lib/lean"
 cp -a "$STAGE/lib/lean/"*.a "$OUTPUT_DIR/usr/lib/lean/" 2>/dev/null || true
 cp -a "$STAGE/lib/lean/"*.so* "$OUTPUT_DIR/usr/lib/lean/" 2>/dev/null || true
+# The MODULE ROOTS: Init.olean, Std.olean, Lean.olean, Lake.olean sit directly
+# in lib/lean/, NOT in a subdirectory, so the per-directory loop below skips
+# them entirely. They are what `import Init` resolves, so without them lean
+# cannot compile ANY file — not even `#eval 1+1`:
+#
+#   error: object file '/usr/lib/lean/Init.olean' of module Init does not exist
+#
+# Hard to spot because everything else looked right: 586 oleans landed under
+# Init/ and Std/, and the root-level .a/.so came across in the two copies
+# above. The only missing class was the one file per module that makes all the
+# rest reachable.
+cp -a "$STAGE/lib/lean/"*.olean "$OUTPUT_DIR/usr/lib/lean/" 2>/dev/null || true
+
+# Then ASSERT they arrived. The copy above swallows errors (the `|| true` is
+# there so a layout change upstream doesn't hard-fail the copy), and a glob
+# happily matches the remaining files if one is absent — which is precisely how
+# this package shipped a lean that could not compile anything, for however long
+# it has been broken, with a green build the whole time. Turn a silent
+# incomplete publish into a loud build failure. (CR on #605.)
+for m in Init Std Lean Lake; do
+  if [ ! -f "$OUTPUT_DIR/usr/lib/lean/$m.olean" ]; then
+    echo "lean: module root $m.olean is MISSING from the install tree." >&2
+    echo "  Without it, 'import $m' cannot resolve and lean compiles nothing." >&2
+    echo "  Check whether upstream moved lib/lean/*.olean in this release." >&2
+    exit 1
+  fi
+done
+
 # Copy olean files and other lean lib data
 for d in "$STAGE/lib/lean/"*/; do
   [ -d "$d" ] && cp -r "$d" "$OUTPUT_DIR/usr/lib/lean/"

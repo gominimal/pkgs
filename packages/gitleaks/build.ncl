@@ -1,6 +1,6 @@
 # Imported from Wolfi `gitleaks` by `pkgmgr import-wolfi` (go build),
 # with outputs + runtime_deps refined from a verified `minimal package` build.
-let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -31,6 +31,9 @@ let version = "8.30.1" in
   },
   outputs = {
     gitleaks = { glob = "usr/bin/gitleaks" } | OutputBin,
+    bash_completion = { glob = "usr/share/bash-completion/completions/gitleaks" } | OutputData,
+    zsh_completion = { glob = "usr/share/zsh/site-functions/_gitleaks" } | OutputData,
+    fish_completion = { glob = "usr/share/fish/vendor_completions.d/gitleaks.fish" } | OutputData,
   },
   runtime_deps = [glibc],
   attrs =
