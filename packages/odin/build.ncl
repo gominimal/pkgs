@@ -10,9 +10,11 @@ let lua52 = import "../lua52/build.ncl" in
 let lua53 = import "../lua53/build.ncl" in
 let lua54 = import "../lua54/build.ncl" in
 let make = import "../make/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let raygui = import "../raygui/build.ncl" in
 let raylib = import "../raylib/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+let util-linux = import "../util-linux/build.ncl" in
 
 let version = "dev-2026-07a" in
 # Odin stamps its own `ODIN_VERSION` from the month of the release commit.
@@ -25,6 +27,7 @@ let box2d_version = "3.1.1" in
 
   build_deps = [
     { file = "build.sh" } | Local,
+    { file = "odin-deterministic-serial-thread-pool.patch" } | Local,
     {
       url = "https://github.com/odin-lang/Odin/archive/refs/tags/%{version}.tar.gz",
       sha256 = "8f4f02fd9a3426b441cd0dfbe0aca1b95fd93c95d86940fcb4417ef6044c83cd",
@@ -42,6 +45,7 @@ let box2d_version = "3.1.1" in
     cmake, # box2d
     llvm,
     make, # vendor/{stb,cgltf}/src ship Makefiles we build the bindings' C libs with
+    patch,
     # vendor/raylib carries bindings and checked-in binaries but no C source at
     # all, so unlike the other vendor libraries there is nothing to compile in
     # place -- the libraries come from these packages instead.
@@ -119,6 +123,27 @@ let box2d_version = "3.1.1" in
         cmds = [
           ["/bin/bash", "-c", "printf 'package main\\nimport \"core:fmt\"\\nmain :: proc() { fmt.println(\"ok\") }\\n' > hellope.odin"],
           ["/bin/odin", "run", "hellope.odin", "-file"],
+        ],
+      } | Test,
+
+    # Every Odin package in this registry gets its reproducibility from
+    # `-no-threaded-checker`, which the patch above turns into a full
+    # serialisation of the compiler. Upstream's flag only covers the
+    # procedure-body pass; the parser and entity-collection phases keep racing
+    # for entity ids, and those ids order the emitted module -- so the same
+    # source produces a differently laid out binary each run. `setarch -R` is
+    # the other half: codegen also walks pointer-keyed maps, so the order
+    # follows heap addresses too. Compile twice, require a byte-identical
+    # result, and this stops being something a consumer has to rediscover.
+    # Both compilations have to write to the same `-out:` path, which odin bakes
+    # into the binary -- two names, two different results, determinism or not.
+    deterministic_output =
+      {
+        class = 'Standalone,
+        test_deps = [base, glibc, util-linux],
+        cmds = [
+          ["/bin/bash", "-c", "printf 'package main\\nimport \"core:fmt\"\\nmain :: proc() { fmt.println(\"ok\") }\\n' > det.odin"],
+          ["/bin/bash", "-c", "set -eu; build() { setarch --addr-no-randomize /bin/odin build det.odin -file -out:det -o:speed -no-threaded-checker -extra-linker-flags:'-Wl,--build-id=none'; }; build; cp det det.first; build; test \"$(sha256sum < det)\" = \"$(sha256sum < det.first)\""],
         ],
       } | Test,
 
