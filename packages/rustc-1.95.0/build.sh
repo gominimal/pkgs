@@ -290,6 +290,14 @@ change-id = "ignore"
 [build]
 rustc = "${STAGE0_RUSTC}"
 cargo = "${STAGE0_CARGO}"
+# vendor=false (first needed at THIS rung): rust auto-enables build.vendor for tarball sources
+# with a vendor/ dir, making bootstrap pass cargo --frozen.  Stage0 cargo >= 1.94 wants a
+# deterministic offline lock refresh that --frozen aborts ("cannot update the lock file") —
+# the 1.91..1.94 rungs never saw it because their stage0 cargos predate the behavior.  Same
+# fix and same reasoning as packages/rust/bootstrap.toml: only the --frozen flag is gated
+# (bootstrap cargo.rs); the vendored-sources redirect lives in the in-tree .cargo config, so
+# the build stays fully offline and just refreshes lock metadata from vendor/.
+vendor = false
 build-stage = 2
 test-stage = 2
 doc-stage = 2
