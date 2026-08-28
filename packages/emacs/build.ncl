@@ -93,6 +93,67 @@ let version = "31.1" in
         ],
       } | Test,
 
+    # ── configure-flag coverage ────────────────────────────────────────
+    # build.sh configures --with-xml2 --with-zlib --with-modules
+    # --with-threads --with-file-notification=inotify. Each of those was
+    # previously unasserted: if a dependency shift left one out at configure
+    # time the build would still SUCCEED and no signal would fire. These are
+    # the cheapest possible guards — one predicate each.
+    libxml2_available =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "emacs --batch --eval '(message \"%s\" (libxml-available-p))' 2>&1 | grep -q t"],
+        ],
+      } | Test,
+
+    zlib_available =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "emacs --batch --eval '(message \"%s\" (zlib-available-p))' 2>&1 | grep -q t"],
+        ],
+      } | Test,
+
+    dynamic_modules =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "emacs --batch --eval '(message \"%s\" module-file-suffix)' 2>&1 | grep -q '[.]so'"],
+        ],
+      } | Test,
+
+    threads =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "emacs --batch --eval '(message \"%s\" (and (fboundp (quote make-thread)) t))' 2>&1 | grep -q t"],
+        ],
+      } | Test,
+
+    inotify_file_notify =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "emacs --batch --eval '(message \"%s\" (and (featurep (quote inotify)) t))' 2>&1 | grep -q t"],
+        ],
+      } | Test,
+
+    # emacsclient is a declared OutputBin that nothing exercised.
+    emacsclient_runs =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "emacsclient --version 2>&1 | grep -qi emacsclient"],
+        ],
+      } | Test,
+
     tree_sitter =
       {
         class = 'Standalone,
