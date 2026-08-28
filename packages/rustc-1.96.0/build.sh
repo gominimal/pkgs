@@ -371,6 +371,20 @@ echo "R191-CONFIG: bootstrap.toml generated (stage0 pinned, prefix ${PREFIX})" >
 # ============================================================================================
 # cwd is BUILDROOT (never changed outside subshells), so ./x.py resolves and finds bootstrap.toml.
 # Do NOT export RUSTC_BOOTSTRAP — x.py sets it per-invocation internally; a global value interferes.
+# ── Neutralize bootstrap's Vendor step (sixth 1.95-era lesson; verbatim from packages/rust) ──
+# The install-time generate-copyright Vendor step has is_default_step hardcoded true — NO
+# [dist]/[build] flag suppresses it (measured: [dist] vendor=false and the explicit tools list
+# both left it running).  Offline it dies ("no matching package named serde_core").  Gate the
+# exec behind an env flag with an early return BEFORE the Command is constructed (bootstrap's
+# drop-bomb panics on a built-but-unexecuted Command).  This patches BUILD TOOLING only
+# (bootstrap is compiled from this patched source on the next line); never shipped code.
+VENDOR_RS=src/bootstrap/src/core/build_steps/vendor.rs
+grep -q 'BOOTSTRAP_SKIP_VENDOR' "$VENDOR_RS" || {
+  sed -i 's|let _guard = builder.group(&format!("Vendoring sources|if std::env::var_os("BOOTSTRAP_SKIP_VENDOR").is_some() { return VendorOutput { config: String::new() }; }\n        let _guard = builder.group(\&format!("Vendoring sources|' "$VENDOR_RS"
+  grep -q 'BOOTSTRAP_SKIP_VENDOR' "$VENDOR_RS" || { echo "rung: FATAL vendor.rs early-return patch did not apply" >&2; exit 1; }
+}
+export BOOTSTRAP_SKIP_VENDOR=1
+
 ./x.py build -j "${JOBS}"
 
 # --- offline tripwire, checkpoint 1 (after the long build, before install) -----------------
@@ -390,7 +404,9 @@ echo "R191-OFFLINE: PASS (no curl/wget, no network-capable git verb, during the 
 # says ${PREFIX}/... — exactly where they sit after extraction to the real root.  rustc also
 # resolves its sysroot from /proc/self/exe, so it is relocatable regardless.
 # ============================================================================================
-DESTDIR="${OUTPUT_DIR}" ./x.py install
+# EXPLICIT components, never bare `x.py install` (same reasoning as packages/rust): a bare
+# install reaches the Src component's dist steps regardless of the [build] tools list.
+DESTDIR="${OUTPUT_DIR}" ./x.py install library/std compiler/rustc cargo clippy rustfmt rust-analyzer
 
 [ -x "${DST}/bin/rustc" ] || { echo "r191: FATAL install produced no ${DST}/bin/rustc" >&2; exit 1; }
 [ -x "${DST}/bin/cargo" ] || { echo "r191: FATAL install produced no ${DST}/bin/cargo (extended=true should install it)" >&2; exit 1; }
