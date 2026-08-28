@@ -49,7 +49,20 @@ git -c user.email=build@local -c user.name=build commit -q -m "v${MINIMAL_ARG_VE
 # deps, zig, linking, and strip). Outputs the stripped binary at build/release/bun.
 bun run build:release
 
-# Install
-mkdir -p "$OUTPUT_DIR/usr/bin"
-install -m 755 build/release/bun "$OUTPUT_DIR/usr/bin/bun"
-ln -s bun "$OUTPUT_DIR/usr/bin/bunx"
+# Install. The real binary lives in libexec; /usr/bin carries wrappers that
+# default BUN_INSTALL so `bun add -g` lands its bins in ~/.local/bin (on the
+# session PATH) rather than the off-PATH cache-derived default; a caller's own
+# BUN_INSTALL still wins. bunx stays an argv0 symlink next to the real binary
+# so bun's name-based multiplexing keeps working. See gominimal/inbox#584.
+mkdir -p "$OUTPUT_DIR/usr/bin" "$OUTPUT_DIR/usr/libexec/bun"
+install -m 755 build/release/bun "$OUTPUT_DIR/usr/libexec/bun/bun"
+ln -s bun "$OUTPUT_DIR/usr/libexec/bun/bunx"
+for cmd in bun bunx; do
+  cat > "$OUTPUT_DIR/usr/bin/$cmd" <<WRAPPER
+#!/bin/sh
+: "\${BUN_INSTALL:=\$HOME/.local}"
+export BUN_INSTALL
+exec /usr/libexec/bun/$cmd "\$@"
+WRAPPER
+  chmod +x "$OUTPUT_DIR/usr/bin/$cmd"
+done
