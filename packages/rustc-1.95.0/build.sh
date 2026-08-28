@@ -319,6 +319,17 @@ extended = true
 compiletest-use-stage0-libtest = false
 docs = false
 
+[dist]
+# vendor=false + src-tarball=false (fourth 1.95-era lesson, same pairing as
+# packages/rust/bootstrap.toml): `x.py install` runs a dist-side `cargo vendor
+# --sync src/tools/cargo/... generate-copyright-vendor` gated on
+# config.dist_vendor — offline it dies ("no matching package named serde_core
+# ... crates.io index").  We ship no vendored rust-src, so skip the vendoring
+# and the PlainSourceTarball assembly outright.  Fourth CS wall of this rung;
+# the full build had ALREADY succeeded when it fired.
+vendor = false
+src-tarball = false
+
 [llvm]
 link-shared = true
 
