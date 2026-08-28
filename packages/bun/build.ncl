@@ -82,7 +82,7 @@ in
   outputs = {
     bun = { glob = "usr/bin/bun" } | OutputBin,
     bunx = { glob = "usr/bin/bunx" } | OutputBin,
-    libexec = { glob = "usr/libexec/bun/**" } | OutputData,
+    libexec = { glob = "usr/libexec/bun/**", allow_executable = true } | OutputData,
   },
 
   attrs =

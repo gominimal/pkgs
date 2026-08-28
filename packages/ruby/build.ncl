@@ -54,6 +54,7 @@ let version = "4.0.6" in
     ruby_data = { glob = "usr/lib/ruby/**", allow_executable = true } | OutputData,
     includes = { glob = "usr/include/ruby*/**" } | OutputData,
     pkgconfigs = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
+    gemrc = { glob = "usr/etc/gemrc" } | OutputData,
   },
 
   attrs =
@@ -82,6 +83,17 @@ let version = "4.0.6" in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "ruby -e 'puts 1+1' | grep -q '^2$'"],
+        ],
+      } | Test,
+
+    gem_bindir_default =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          # The shipped system gemrc must redirect gem binstubs to ~/.local/bin,
+          # on the session PATH (gominimal/inbox#584).
+          ["/bin/bash", "-c", "grep -q -- '--bindir ~/.local/bin' /usr/etc/gemrc"],
         ],
       } | Test,
   },
