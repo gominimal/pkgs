@@ -1,5 +1,6 @@
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
 
@@ -41,6 +42,7 @@ let version = "11.21.0" in
     # a consumer later picks a different node.
     subsetOf node ["node"],
     coreutils,
+    bash, # the /usr/bin wrappers are #!/bin/sh scripts (bash provides bin/sh)
   ],
   needs =
     {
