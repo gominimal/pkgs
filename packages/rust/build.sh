@@ -74,7 +74,7 @@ export CARGO_NET_OFFLINE=true
 # `self`/`builder` stay used on the normal (env-unset) path so there are no unused/unreachable warns.
 VENDOR_RS=src/bootstrap/src/core/build_steps/vendor.rs
 grep -q 'BOOTSTRAP_SKIP_VENDOR' "$VENDOR_RS" || {
-  sed -i 's|let _guard = builder.group(&format!("Vendoring sources|if std::env::var_os("BOOTSTRAP_SKIP_VENDOR").is_some() { return VendorOutput { config: String::new() }; }\n        let _guard = builder.group(\&format!("Vendoring sources|' "$VENDOR_RS"
+  sed -i 's|let _guard = builder.group(&format!("Vendoring sources|if std::env::var_os("BOOTSTRAP_SKIP_VENDOR").is_some() { return VendorOutput { config: String::new(), config_library: String::new() }; }\n        let _guard = builder.group(\&format!("Vendoring sources|' "$VENDOR_RS"
   grep -q 'BOOTSTRAP_SKIP_VENDOR' "$VENDOR_RS" || { echo "rust: FATAL vendor.rs early-return patch did not apply (upstream changed the Vendoring-sources group line)" >&2; exit 1; }
 }
 export BOOTSTRAP_SKIP_VENDOR=1
