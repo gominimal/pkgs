@@ -13,23 +13,22 @@ export CXXFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -std=gnu++17 -ffile-p
 export LDFLAGS="-Wl,--build-id=none"
 export ARFLAGS=Drc
 
-# tree-sitter 0.26 renamed ts_language_version() -> ts_language_abi_version()
-# and removed the old declaration from api.h. Emacs 30.2's treesit.c still calls
-# the old name, so the build dies at src/treesit.c:749 with
-#   error: implicit declaration of function 'ts_language_version';
-#          did you mean 'ts_language_abi_version'?
-# Rename at the call sites. Word-anchored so it can't touch an already-correct
-# ts_language_abi_version, which makes it a no-op if Emacs upstream fixes this
-# in a later version bump.
-sed -i 's/\bts_language_version\b/ts_language_abi_version/g' src/treesit.c
-
-# tree-sitter >= 0.26 also rejects query predicates without a ?/! suffix,
-# but Emacs 30.2 emits "#match"/"#equal"/"#pred" and only accepts those
-# names back, so every :match font-lock rule (go-ts-mode, python-ts-mode,
-# typescript-ts-mode, ...) dies with treesit-query-error and the buffer
-# loses highlighting. Backport of the upstream fix (master b0143530,
-# bug#79687); see the patch header. Drop once an Emacs release has it.
-patch -Np1 -i treesit-predicates-0.26.patch
+# NOTE: two tree-sitter 0.26 workarounds lived here and were REMOVED at the
+# 30.2 -> 31.1 bump, because 31.1 carries both fixes upstream:
+#
+#   1. a `sed` renaming ts_language_version() -> ts_language_abi_version(),
+#      needed because 0.26 removed the old declaration and 30.2 still called
+#      it. 31.1 uses ts_language_abi_version natively (6 call sites), so the
+#      rename had nothing left to do.
+#   2. treesit-predicates-0.26.patch, a backport of upstream master b0143530
+#      ("Use ? suffix for tree-sitter query predicates", bug#79687), without
+#      which every :match font-lock rule died with treesit-query-error under
+#      libtree-sitter >= 0.26. 31.1 contains that commit, so 7 of its 8 hunks
+#      failed to apply against 31.1's treesit.c and the bump could not build.
+#
+# The patch's own header said "Drop this patch when bumping to an Emacs
+# release that contains the fix" — this is that bump. Do not reinstate either
+# without first checking whether upstream still needs them.
 
 # Build LD_PRELOAD shim that makes getrandom() and /dev/urandom reads
 # deterministic, fixing Emacs hash table seeding and thus .elc/.pdmp output.
@@ -75,7 +74,7 @@ if [ ! -f "$dir/init.el" ] && [ ! -f "$dir/init.elc" ] \
   dir="${XDG_CACHE_HOME:-$HOME/.cache}/emacs.d"
   mkdir -p "$dir" 2>/dev/null && [ -w "$dir" ] || dir="$(mktemp -d /tmp/emacs.d.XXXXXX)"
 fi
-exec emacs-30.2 --init-directory "$dir" "$@"
+exec emacs-31.1 --init-directory "$dir" "$@"
 WRAPPER
 chmod +x "$OUTPUT_DIR/usr/bin/emacs"
 
