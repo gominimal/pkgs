@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
@@ -48,4 +48,19 @@ let version = "11.21.0" in
         repo = "pnpm",
       },
     } | Attrs,
+
+  tests = {
+    global_bin_dir =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          # The wrapper must default PNPM_HOME so the derived global bin dir
+          # lands under ~/.local rather than an off-PATH location
+          # (gominimal/inbox#584). PATH is extended here because the test
+          # sandbox's PATH may not carry ~/.local/bin the way sessions do.
+          ["/bin/bash", "-c", "PATH=\"$PATH:$HOME/.local/bin\" pnpm bin -g | grep -q '/.local/bin$'"],
+        ],
+      } | Test,
+  },
 } | BuildSpec
