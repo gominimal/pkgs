@@ -1,0 +1,6 @@
+{
+  "package": "glibc-bedrock-2.42",
+  "version": "2.42",
+  "inputs": [],
+  "source_commit": "74815b2d117efb443dd519ff775aaea835a33a5b"
+}
