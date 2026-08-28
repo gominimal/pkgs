@@ -1,6 +1,7 @@
 let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash = import "../bash/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
@@ -69,6 +70,7 @@ in
   runtime_deps = [
     glibc,
     git,
+    bash, # the /usr/bin wrappers are #!/bin/sh scripts (bash provides bin/sh)
   ],
   needs =
     {
