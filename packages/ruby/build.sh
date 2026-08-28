@@ -20,3 +20,12 @@ export CXXFLAGS="${CFLAGS}"
 
 make -j$(nproc)
 make DESTDIR=$OUTPUT_DIR install
+
+# gem auto-falls back to user installs (the store is read-only), but its
+# binstubs then land in ~/.local/share/gem/ruby/<v>/bin — off PATH. RubyGems'
+# system-wide config lives inside the package at /usr/etc/gemrc, so ship one
+# redirecting binstubs to ~/.local/bin (on the session PATH); RubyGems expands
+# the ~, applies the flag to install and uninstall symmetrically, and user
+# config (GEMRC, ~/.gemrc, CLI flags) still wins. See gominimal/inbox#584.
+mkdir -p "$OUTPUT_DIR/usr/etc"
+printf 'gem: --bindir ~/.local/bin\n' > "$OUTPUT_DIR/usr/etc/gemrc"

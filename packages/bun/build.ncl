@@ -85,7 +85,7 @@ in
     bash_completion = { glob = "usr/share/bash-completion/completions/bun" } | OutputData,
     fish_completion = { glob = "usr/share/fish/vendor_completions.d/bun.fish" } | OutputData,
     zsh_completion = { glob = "usr/share/zsh/site-functions/_bun" } | OutputData,
-    libexec = { glob = "usr/libexec/bun/**" } | OutputData,
+    libexec = { glob = "usr/libexec/bun/**", allow_executable = true } | OutputData,
   },
 
   attrs =
