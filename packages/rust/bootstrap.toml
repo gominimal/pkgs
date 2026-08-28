@@ -1,6 +1,14 @@
 change-id = 154587
 
 [build]
+# vendor=false: rust auto-enables build.vendor for tarball sources with a vendor/ dir, which makes
+# bootstrap pass cargo --frozen (forbidding ANY Cargo.lock change).  Our CS-attested stage0 cargo
+# 1.94.0 (the src/stage0 pin) wants a deterministic offline lock refresh that the retired seed cargo
+# 1.94.1 did not — --frozen aborts it ("cannot update the lock file ... --frozen").  Disabling this
+# only gates the --frozen flag (bootstrap cargo.rs:1332); the vendored-sources redirect lives in the
+# in-tree .cargo/config.toml, so the build stays fully offline (no CS egress) and just updates the
+# lock from vendor/ (every crate pinned to one version → resolution unchanged, only lock metadata).
+vendor = false
 # When compiling from source, you almost always want a full stage 2 build,
 # which has all the latest optimizations from nightly.
 build-stage = 2
@@ -8,6 +16,15 @@ test-stage = 2
 doc-stage = 2
 # When compiling from source, you usually want all tools.
 extended = true
+# Explicit tool list WITHOUT "src": the rust-src INSTALL step is gated on
+# `extended && tools.contains("src")` (install.rs:332), so omitting "src" here skips installing a
+# rust-src component into the output.  (The actual `cargo vendor` failure is killed by [dist] vendor
+# =false below — that command is a dist-side PlainSourceTarball step, not the install step this list
+# gates.)  We do NOT want a bundled rust-src anyway: one in a rustc rung is exactly what polluted
+# x.py with the pre-rename proc_macro::tracked_env source (the E0433 wall).  Ship tools, not source.
+tools = ["cargo", "clippy", "rustfmt", "rust-analyzer"]
+# Use libtest built from the source tree instead of the precompiled one from stage 0.
+compiletest-use-stage0-libtest = false
 
 docs = false
 
@@ -23,12 +40,29 @@ download-rustc = false
 # through cc rather than a rust-lld we don't ship.
 lld = false
 llvm-bitcode-linker = false
+# remap-debuginfo=false is REQUIRED with `build.vendor = false` above: bootstrap's debuginfo-remap
+# path (cargo.rs:~1102) uses vendored_crates_path() ONLY when build.vendor is true; with it off it
+# falls to an else-branch that reads $CARGO_HOME/registry/src — which does not exist offline in CS,
+# so it panics (`read_dir(registry_src) ... No such file`). The vendor-path remap can't work with
+# vendor=false anyway (crates compile from vendor/, not the registry), so disabling it is correct,
+# not a regression. Reproducibility holds: the /build root is constant in CS. (Follow-up: re-add
+# path remapping via an explicit [rust] rustflags --remap-path-prefix if pristine debuginfo matters.)
+remap-debuginfo = false
 
 # lto = "thin"
 # codegen-units = 1
 
 [dist]
 compression-profile = "balanced"
+# vendor=false is the DIRECT cure for the install-stage failure.  `x.py install` (via the Src
+# component / PlainSourceTarball) runs `cargo vendor --sync src/tools/cargo/Cargo.toml …` ONLY inside
+# `if builder.config.dist_vendor` (dist.rs:1355).  With our attested stage0 cargo + build.vendor=false
+# that command dies ("failed to load lockfile for src/tools/cargo") and aborts install.  We do not
+# ship a vendored rust-src, so skip the vendoring entirely.  src-tarball=false additionally drops the
+# PlainSourceTarball default step (dist.rs:1232 gates on config.rust_dist_src) so no source tree is
+# even assembled — belt-and-suspenders with the [build] tools list that omits "src".
+vendor = false
+src-tarball = false
 
 [target.x86_64-unknown-linux-gnu]
 cc = "clang"

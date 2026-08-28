@@ -12,8 +12,84 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
+# ATTESTED stage0 (issue #17 — the ladder CLOSED): the stage0 rustc/cargo is the CS-attested
+# rustc-1.96.0 rung (a build_dep installed at /usr/lib/rustc-1.96.0), NOT the old unattested
+# seed-*.tar.gz. x.py uses it directly (bootstrap.toml [build] rustc/cargo) and skips the
+# src/stage0 download — no network egress in Confidential Space. See build.ncl's header for the
+# full chain and the LADDER EXTENSION note (1.97.1's src/stage0 pins 1.96.0).
+STAGE0_PREFIX=/usr/lib/rustc-1.96.0
+SEED_RUSTC="${STAGE0_PREFIX}/bin/rustc"
+SEED_CARGO="${STAGE0_PREFIX}/bin/cargo"
+[ -x "$SEED_RUSTC" ] || { echo "rust: FATAL attested stage0 rustc missing at $SEED_RUSTC — the rustc-1.96.0 rung is THE anchor of this build" >&2; exit 1; }
+[ -x "$SEED_CARGO" ] || { echo "rust: FATAL attested stage0 cargo missing at $SEED_CARGO" >&2; exit 1; }
+# x.py parses the stage0 rustc's release (1.96.0) against src/stage0 (pins 1.96.0); equal-to-pin is
+# accepted (check_stage0_version = same-or-one-minor) and sidesteps the tracked_env bootstrap skew.
+S0V="$("$SEED_RUSTC" --version 2>&1 || true)"
+echo "$S0V" | grep -qF "1.96.0" || { echo "rust: FATAL attested stage0 rustc --version = '$S0V', expected 1.96.0" >&2; exit 1; }
+echo "rust stage0: CS-ATTESTED rustc-1.96.0 -> $S0V"
+
+# ★ DROP THE STAGE0's STRAY rust-src.  The rustc-1.94.x rung was built `extended = true`, so its
+# OutputData glob captured a bundled rust-src component (the stage0's OWN source, which uses
+# the PRE-rename proc_macro::tracked_env API).  A filesystem locator PROVED x.py compiles THAT
+# rustc_macros/symbols.rs (old API, line 263) instead of the fresh in-tree /build source (new
+# proc_macro::tracked::env_var, line 262) → E0433 "could not find tracked_env".  The hydrated stage0
+# is READ-ONLY so we can't rm rustc-src in place; copy the stage0 to a WRITABLE prefix and drop
+# rust-src there, then point bootstrap.toml at the copy.  (Proper fix upstream: the rungs should
+# build with extended=false or prune lib/rustlib/{rustc-src,src} from their OutputData.)
+CLEAN0="$(pwd)/stage0-clean"
+rm -rf "${CLEAN0}" 2>/dev/null || true
+cp -a "${STAGE0_PREFIX}" "${CLEAN0}"
+rm -rf "${CLEAN0}/lib/rustlib/rustc-src" "${CLEAN0}/lib/rustlib/src" 2>/dev/null || true
+STAGE0_PREFIX="${CLEAN0}"
+SEED_RUSTC="${STAGE0_PREFIX}/bin/rustc"
+SEED_CARGO="${STAGE0_PREFIX}/bin/cargo"
+echo "rust: writable stage0 copy WITHOUT rust-src -> ${STAGE0_PREFIX}"
+echo "rust:   sysroot=$("$SEED_RUSTC" --print sysroot 2>&1)  |  remaining rustc-src symbols.rs on FS: $(find / -path '*rustlib/rustc-src*' -name symbols.rs 2>/dev/null | wc -l)"
+[ -x "$SEED_RUSTC" ] || { echo "rust: FATAL copied stage0 rustc not executable" >&2; exit 1; }
+# inject the stage0 override right after the [build] table header (order: rustc, cargo)
+sed -i "/^\[build\]/a cargo = \"$SEED_CARGO\"" bootstrap.toml
+sed -i "/^\[build\]/a rustc = \"$SEED_RUSTC\"" bootstrap.toml
+
+# bootstrap.toml sets `vendor = false` so bootstrap does NOT pass cargo --frozen (see the comment
+# there): our attested stage0 cargo 1.94.0 needs a deterministic offline Cargo.lock refresh from
+# vendor/ that --frozen would forbid. Belt-and-suspenders: force cargo offline so no path can reach
+# the network (there is no CS egress anyway; the .cargo/config.toml vendored-sources redirect keeps
+# every crate local).
+export CARGO_NET_OFFLINE=true
+
+# ── Neutralize bootstrap's `Vendor` step ────────────────────────────────────────────────────────
+# `x.py install` reaches bootstrap's Vendor step (vendor.rs), whose `is_default_step` is hardcoded
+# `true` and whose `run()` shells out to `cargo vendor --sync src/tools/cargo/Cargo.toml …` against
+# the tool workspaces, with root_dir = the source root (/build).  Offline in CS that dies with
+# "failed to load lockfile for /build/src/tools/cargo" (the cargo tool submodule has no resolvable
+# lock without network) and aborts install — AND it would clobber /build/vendor.  No [dist]/[build]
+# config flag suppresses it (it is neither the src-tarball PlainSourceTarball vendor nor gated by
+# dist_vendor for this default-step path).  We ship no vendored source, so gate the actual
+# `cargo vendor` exec behind an env flag and return an empty vendor config.  This patches BUILD
+# tooling only (bootstrap), never the rustc/cargo binaries we ship — x.py compiles bootstrap from
+# this patched source on the next line, before it is used.
+# Return from Vendor::run() BEFORE the cargo command is constructed.  bootstrap's `command()` wraps
+# a "drop bomb" (build_helper drop_bomb) that panics if the Command is built but never executed, so
+# we cannot merely skip the exec — we must not construct it.  Early-return an empty VendorOutput;
+# `self`/`builder` stay used on the normal (env-unset) path so there are no unused/unreachable warns.
+VENDOR_RS=src/bootstrap/src/core/build_steps/vendor.rs
+grep -q 'BOOTSTRAP_SKIP_VENDOR' "$VENDOR_RS" || {
+  sed -i 's|let _guard = builder.group(&format!("Vendoring sources|if std::env::var_os("BOOTSTRAP_SKIP_VENDOR").is_some() { return VendorOutput { config: String::new(), config_library: String::new() }; }\n        let _guard = builder.group(\&format!("Vendoring sources|' "$VENDOR_RS"
+  grep -q 'BOOTSTRAP_SKIP_VENDOR' "$VENDOR_RS" || { echo "rust: FATAL vendor.rs early-return patch did not apply (upstream changed the Vendoring-sources group line)" >&2; exit 1; }
+}
+export BOOTSTRAP_SKIP_VENDOR=1
+
 ./x.py build
 
-DESTDIR=$OUTPUT_DIR ./x.py install
+# Install EXPLICIT components, NOT a bare `./x.py install`.  A bare install installs the default set,
+# which includes the `src` (rust-src) component → dist::Src → PlainSourceTarball → a `cargo vendor
+# --sync src/tools/cargo/Cargo.toml …` that fails offline ("failed to load lockfile", no CS egress) and
+# aborts the whole install.  The [dist] vendor=false / src-tarball=false + [build] tools flags did NOT
+# suppress it (the Src step is reached regardless during a full install).  Naming components makes
+# x.py run ONLY these steps — the Src step's `should_run` is `run.path("src")`, which none of these
+# match, so PlainSourceTarball/Vendor never runs.  This is exactly the toolchain we ship: std +
+# compiler + cargo/clippy/rustfmt/rust-analyzer (no rust-src, which we explicitly do not want — a
+# bundled rust-src in a rustc rung is what polluted x.py with the pre-rename tracked_env source).
+DESTDIR=$OUTPUT_DIR ./x.py install library/std compiler/rustc cargo clippy rustfmt rust-analyzer
 
 rm $OUTPUT_DIR/usr/bin/rust-gdbgui
