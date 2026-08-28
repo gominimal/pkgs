@@ -260,18 +260,25 @@ let toolchain = import "../toolchain/build.ncl" in
         ],
       } | Test,
 
-    # Guards the build.sh patch that defines corfu-terminal-mode early:
-    # loading corfu-terminal must not emit a byte-compiler warning (the
-    # "Source file ... newer than byte-compiled file" notes come from the
-    # emacs package itself and are filtered out), and the early defvar
-    # must not stop define-minor-mode's defcustom from working, so the
-    # mode must still switch on.
+    # corfu-terminal must still LOAD and its mode must switch on. This is a
+    # load smoke test, not a patch guard: the early-defvar patch it used to
+    # guard was removed at the 31.1 bump (see build.sh), because 31.1 emits no
+    # "reference to free variable `corfu-terminal-mode'" warning even without
+    # it — verified by disabling the patch and inspecting the real output.
+    #
+    # It deliberately does not assert "no warnings": corfu emits an
+    # informational "`corfu-terminal' is not needed on Emacs 31", which says
+    # nothing about whether the package loads. That notice is worth acting on
+    # separately — but it keys on the Emacs VERSION, and our emacs is built
+    # --without-x, so 31 having TTY child frames does not prove OUR build does.
+    # Verify terminal completion works without corfu-terminal in a real TTY
+    # before dropping the package itself.
     corfu-terminal-loads-cleanly =
       {
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          ["/bin/bash", "-c", "out=$(emacs --batch --eval \"(progn (require 'corfu-terminal) (corfu-terminal-mode 1) (message \\\"corfu-terminal-mode=%s\\\" corfu-terminal-mode))\" 2>&1 | grep -v 'newer than byte-compiled'); echo \"$out\"; echo \"$out\" | grep -q 'corfu-terminal-mode=t' && ! echo \"$out\" | grep -qi warning"],
+          ["/bin/bash", "-c", "emacs --batch --eval \"(progn (require 'corfu-terminal) (corfu-terminal-mode 1) (message \\\"corfu-terminal-mode=%s\\\" corfu-terminal-mode))\" 2>&1 | grep -q 'corfu-terminal-mode=t'"],
         ],
       } | Test,
 
