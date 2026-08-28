@@ -1,0 +1,24 @@
+# R0 stage0-mescc byte-identity pins.  Checked from /build (CWD) by `sha256sum -c`.
+# These three are the CANONICAL upstream values from stage0-posix-1.9.1/amd64.answers
+# (AMD64/bin/{M1,hex2,kaem}); the mini phase produces them and the full/extra phases do
+# NOT rewrite bin/{M1,hex2,kaem} (verified: full-kaem only writes bin/{M2-Mesoplanet,
+# blood-elf,get_machine,M2-Planet}).  They are the leaves of the mini dependency graph,
+# so matching all three transitively gates every intermediate artifact below them.
+fc68c115384852b827a35b607de382592a475c324e1e11ca7cf5b9e840ce15a9  stage0-posix-1.9.1/AMD64/bin/M1
+f782df6d59f7ff930e67f34dde7ea62288b12d6d1a0b036ef465ad06b4a4b97a  stage0-posix-1.9.1/AMD64/bin/hex2
+6364de59b36f8575fd938779476a9a121878fc0e2d65cc01ae5372aad2d028b5  stage0-posix-1.9.1/AMD64/bin/kaem
+
+# OPTIONAL belt-and-suspenders (better failure localization, NOT required for trust):
+# the intermediate artifacts have no upstream-published sha, so they are RECORD-AT-PIN-TIME.
+# CAPTURE-THEN-PIN workflow (Q4): the first build already PRINTS these 8 shas (mescc.kaem's
+# capture step runs `sha256sum` on them before the gate). After the first GREEN cloud build,
+# read them from the build log and append below (uncomment), then re-commit + rebuild to
+# tighten the gate.  Order matches the capture line; paths are relative to /build (CWD):
+#   <sha>  stage0-posix-1.9.1/AMD64/artifact/hex2-0
+#   <sha>  stage0-posix-1.9.1/AMD64/artifact/catm
+#   <sha>  stage0-posix-1.9.1/AMD64/artifact/M0
+#   <sha>  stage0-posix-1.9.1/AMD64/artifact/cc_amd64
+#   <sha>  stage0-posix-1.9.1/AMD64/artifact/M2
+#   <sha>  stage0-posix-1.9.1/AMD64/artifact/blood-elf-0
+#   <sha>  stage0-posix-1.9.1/AMD64/artifact/M1-0
+#   <sha>  stage0-posix-1.9.1/AMD64/artifact/hex2-1

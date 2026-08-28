@@ -1,0 +1,20 @@
+# R6 stage0-gcc-4.0.4 byte-identity pins. Checked from $OUTPUT_DIR by `sha256sum -c` (set -e aborts).
+#
+# !! RECORD-AT-PIN-TIME (amd64) !! No upstream amd64 gcc-4.0.4 fixed point (live-bootstrap is i386).
+# Capture AFTER the first green amd64 CS build, paste the real shas below, then re-enable the gate at
+# the tail of build.sh.
+#
+# Canonical byte-identity anchors = the deliverable compiler + the C runtime (paths RELATIVE to
+# $OUTPUT_DIR; the exact 4.0.4/<target> path is x86_64-linux-gnu/4.0.4):
+# <sha>  usr/bin/gcc
+# <sha>  usr/bin/cpp
+# <sha>  usr/libexec/gcc/x86_64-linux-gnu/4.0.4/cc1
+# <sha>  usr/libexec/gcc/x86_64-linux-gnu/4.0.4/collect2
+# <sha>  usr/lib/gcc/x86_64-linux-gnu/4.0.4/libgcc.a
+# <sha>  usr/lib/gcc/x86_64-linux-gnu/4.0.4/crtbegin.o
+# <sha>  usr/lib/gcc/x86_64-linux-gnu/4.0.4/crtend.o
+# <sha>  usr/lib/gcc/x86_64-linux-gnu/4.0.4/specs
+#
+# NB: libgcc.a reproducibility depends on the archiver. If AR=tcc-musl2 -ar leaves nondeterministic
+# member timestamps, switch to R5 binutils `ar` (built with --enable-deterministic-archives) before
+# pinning. cc1/xgcc embed no __DATE__/__TIME__ (verified for the s4 fixed point); confirm at capture.

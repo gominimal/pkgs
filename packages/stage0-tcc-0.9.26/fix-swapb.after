@@ -1,0 +1,10 @@
+            /* And swap the argument back to it's original position.  */
+            tmp.type.t = vtop[0].type.t; tmp.type.ref = vtop[0].type.ref;
+            tmp.r = vtop[0].r; tmp.r2 = vtop[0].r2; tmp.c = vtop[0].c;
+            tmp.sym = vtop[0].sym; tmp.cmp_r = vtop[0].cmp_r;
+            vtop[0].type.t = vtop[-i].type.t; vtop[0].type.ref = vtop[-i].type.ref;
+            vtop[0].r = vtop[-i].r; vtop[0].r2 = vtop[-i].r2; vtop[0].c = vtop[-i].c;
+            vtop[0].sym = vtop[-i].sym; vtop[0].cmp_r = vtop[-i].cmp_r;
+            vtop[-i].type.t = tmp.type.t; vtop[-i].type.ref = tmp.type.ref;
+            vtop[-i].r = tmp.r; vtop[-i].r2 = tmp.r2; vtop[-i].c = tmp.c;
+            vtop[-i].sym = tmp.sym; vtop[-i].cmp_r = tmp.cmp_r;

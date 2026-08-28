@@ -1,0 +1,11 @@
+                if ((sbt & VT_BTYPE) == VT_LLONG) {
+                    if ((sbt & VT_UNSIGNED) || !(vtop->c.i >> 63))
+                        vtop->c.ld = vtop->c.i;
+                    else
+                        vtop->c.ld = -(long double)-vtop->c.i;
+                } else if(!sf) {
+                    if ((sbt & VT_UNSIGNED) || !(vtop->c.i >> 31))
+                        vtop->c.ld = (uint32_t)vtop->c.i;
+                    else
+                        vtop->c.ld = -(long double)-(uint32_t)vtop->c.i;
+                }

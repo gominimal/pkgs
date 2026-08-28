@@ -1,0 +1,16 @@
+amd64-only: skip the PIC crts (Scrt1.o = crt1.c -fPIC, rcrt1.o = static-PIE).
+tcc-0.9.27 segfaults compiling arch/x86_64/crt_arch.h's `lea _DYNAMIC(%rip),%rsi`
+under -fPIC (the GOTPCREL/PC-relative reloc path for a weak hidden symbol). i386
+never hit this (no %rip). Our static bootstrap links with crt1.o only — Scrt1.o
+(PIE) and rcrt1.o (static-PIE + dlstart dynamic linker) are unused, so drop them
+from CRT_OBJS. (live-bootstrap builds --host=i386 and so never needed this.)
+--- musl-1.1.24/Makefile	2019-10-13 22:58:27.000000000 +0100
++++ musl-1.1.24/Makefile	2026-06-25 00:00:00.000000000 +0000
+@@ -30,7 +30,7 @@
+ LIBC_OBJS = $(filter obj/src/%,$(ALL_OBJS))
+ LDSO_OBJS = $(filter obj/ldso/%,$(ALL_OBJS:%.o=%.lo))
+-CRT_OBJS = $(filter obj/crt/%,$(ALL_OBJS))
++CRT_OBJS = $(filter-out obj/crt/Scrt1.o obj/crt/rcrt1.o,$(filter obj/crt/%,$(ALL_OBJS)))
+ 
+ AOBJS = $(LIBC_OBJS)
+ LOBJS = $(LIBC_OBJS:.o=.lo)

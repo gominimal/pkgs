@@ -1,0 +1,27 @@
+# UNPINNED — record-at-pin-time placeholder (R11 stage0-gcc-10.5.0 ★ THE PIVOT ★).
+#
+# !! No upstream amd64 gcc-10.5.0 fixed point for THIS toolchain (musl-1.2.5-linked, built by the
+#    bedrock builder-gcc). Capture AFTER the first green CS build, paste the real shas below, then
+#    re-enable the `sha256sum -c` gate at the tail of build.sh. gcc is deterministic, so byte-identity
+#    is a real invariant (confirm cc1/cc1plus embed no __DATE__/__TIME__ at capture, as on s4/R7).
+#
+# ⚠ DO NOT PIN until the C++11 pivot (findings Q3) is resolved — the R9 (gcc-4.7.4) builder edge is a
+#   showstopper; R11 must be built by an intermediate gcc-4.8.5/4.9.4, or retargeted to gcc-10.4.0.
+#   Whatever the true builder + target version, capture shas from THAT green build.
+#
+# Canonical byte-identity anchors = the deliverable modern C/C++ compiler + its runtime (paths RELATIVE
+# to $OUTPUT_DIR; the exact <target>/<ver> path is x86_64-linux-gnu/10.5.0):
+# <sha>  usr/bin/gcc
+# <sha>  usr/bin/g++
+# <sha>  usr/bin/cpp
+# <sha>  usr/libexec/gcc/x86_64-linux-gnu/10.5.0/cc1
+# <sha>  usr/libexec/gcc/x86_64-linux-gnu/10.5.0/cc1plus
+# <sha>  usr/libexec/gcc/x86_64-linux-gnu/10.5.0/collect2
+# <sha>  usr/lib/gcc/x86_64-linux-gnu/10.5.0/libgcc.a
+# <sha>  usr/lib/gcc/x86_64-linux-gnu/10.5.0/crtbegin.o
+# <sha>  usr/lib/gcc/x86_64-linux-gnu/10.5.0/crtend.o
+# <sha>  usr/lib/libstdc++.a
+# <sha>  usr/lib/libsupc++.a
+#
+# NB: libgcc.a / libstdc++.a reproducibility depends on the archiver — use binutils `ar`
+# (--enable-deterministic-archives) so member timestamps don't perturb the sha before pinning.
