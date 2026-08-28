@@ -316,6 +316,13 @@ build-stage = 2
 test-stage = 2
 doc-stage = 2
 extended = true
+# Explicit tools WITHOUT "src" (fifth 1.95-era lesson; packages/rust's "ship tools, not
+# source"): with extended=true and no tools list, the default set includes the Src
+# component, whose install path runs the generate-copyright cargo-vendor step (vendor.rs:82)
+# REGARDLESS of [dist] vendor=false — offline it dies ("no matching package named
+# serde_core").  Omitting "src" also stops THIS rung from shipping a bundled rust-src, the
+# exact pollution CLEAN0 has to strip from the 1.94.1-era stage0s.
+tools = ["cargo", "clippy", "rustfmt", "rust-analyzer"]
 compiletest-use-stage0-libtest = false
 docs = false
 
