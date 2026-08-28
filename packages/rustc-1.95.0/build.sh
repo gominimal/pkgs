@@ -310,6 +310,12 @@ link-shared = true
 
 [rust]
 channel = "stable"
+# remap-debuginfo=false is REQUIRED with build.vendor=false above (same pairing as
+# packages/rust/bootstrap.toml): with vendoring off, bootstrap's debuginfo remap
+# enumerates \$CARGO_HOME/registry/src, which does not exist in the offline sandbox —
+# it panics (read_dir(registry_src) ... No such file). First hit: this rung's second
+# CS attempt, one step after the --frozen fix.
+remap-debuginfo = false
 download-rustc = false
 lld = false
 llvm-bitcode-linker = false
