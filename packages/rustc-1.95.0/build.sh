@@ -61,6 +61,20 @@ STAGE0_RUSTC="${STAGE0_PREFIX}/bin/rustc"  # RUNG 1: a POSIX-sh WRAPPER (sets LD
                                            # in-place because --print sysroot resolves either way.
 STAGE0_CARGO="${STAGE0_PREFIX}/bin/cargo"
 
+# CLEAN0 (ported from packages/rust/build.sh, first needed at THIS rung): the 1.94.1-era rung
+# artifacts ship a bundled rust-src (lib/rustlib/rustc-src -- the stage0's OWN compiler source).
+# x.py resolves rustc_macros through it and compiles the PRE-RENAME proc_macro::tracked_env
+# code, which the stage0's own libproc_macro no longer exports -> E0433 "could not find
+# tracked_env in proc_macro" (third CS wall of this rung, exactly the pollution the rust pkg's
+# CLEAN0 comment predicted).  Bootstrap from a source-stripped writable copy instead.
+CLEAN0="${BUILDROOT}/stage0-clean"
+rm -rf "${CLEAN0}" 2>/dev/null || true
+cp -a "${STAGE0_PREFIX}" "${CLEAN0}"
+rm -rf "${CLEAN0}/lib/rustlib/rustc-src" "${CLEAN0}/lib/rustlib/src" 2>/dev/null || true
+STAGE0_PREFIX="${CLEAN0}"
+STAGE0_RUSTC="${STAGE0_PREFIX}/bin/rustc"
+STAGE0_CARGO="${STAGE0_PREFIX}/bin/cargo"
+
 JOBS="$(nproc 2>/dev/null || echo 4)"
 
 case "$(uname -m)" in
