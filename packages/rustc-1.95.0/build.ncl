@@ -1,7 +1,7 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 # ============================================================================================
 # rustc-1.95.0 — RUNG 5 of 5 (endpoint) on the road to deleting packages/rust's unattested seed
-# tarballs (issue #17).  Clone of rustc-1.94.0 (same stage0=1.93.1) but version 1.95.0: rust 1.95.0's
+# tarballs (issue #17).  LADDER-EXTENSION rung (stage0=1.94.1) but version 1.95.0: rust 1.95.0's
 # stage-0 `--cfg=bootstrap` path references `proc_macro::tracked_env`, which 1.95.0 provides but 1.94.0
 # does NOT (1.94.0 renamed it to `tracked`).  The retired seed was 1.95.0 and BUILT 1.95.0; our
 # chain-built 1.94.0 could not (E0432).  So 1.95.0 — not 1.94.0 — is the correct endpoint.

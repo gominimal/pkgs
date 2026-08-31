@@ -12,6 +12,14 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
+# ★ ARCH SCOPE (pre-review fix, matches build.ncl): the attested-rung stage0 is AMD64-ONLY
+# in this PR.  On aarch64 the rung build_dep is not staged (the 1.91→1.96 arm rungs are not
+# built yet — next tranche), so arm keeps the pre-PR behavior: no [build] rustc/cargo
+# override, and x.py performs its standard src/stage0 download (`needs internet` covers it).
+if [ "$(uname -m)" = aarch64 ]; then
+  echo "rust stage0: arm64 — attested-rung stage0 not yet available on this arch; using x.py's standard stage0 download (see build.ncl ARCH SCOPE note)"
+else
+
 # ATTESTED stage0 (issue #17 — the ladder CLOSED): the stage0 rustc/cargo is the CS-attested
 # rustc-1.96.0 rung (a build_dep installed at /usr/lib/rustc-1.96.0), NOT the old unattested
 # seed-*.tar.gz. x.py uses it directly (bootstrap.toml [build] rustc/cargo) and skips the
@@ -49,9 +57,10 @@ echo "rust:   sysroot=$("$SEED_RUSTC" --print sysroot 2>&1)  |  remaining rustc-
 # inject the stage0 override right after the [build] table header (order: rustc, cargo)
 sed -i "/^\[build\]/a cargo = \"$SEED_CARGO\"" bootstrap.toml
 sed -i "/^\[build\]/a rustc = \"$SEED_RUSTC\"" bootstrap.toml
+fi
 
 # bootstrap.toml sets `vendor = false` so bootstrap does NOT pass cargo --frozen (see the comment
-# there): our attested stage0 cargo 1.94.0 needs a deterministic offline Cargo.lock refresh from
+# there): the attested rung cargo (>=1.94 behavior) needs a deterministic offline Cargo.lock refresh from
 # vendor/ that --frozen would forbid. Belt-and-suspenders: force cargo offline so no path can reach
 # the network (there is no CS egress anyway; the .cargo/config.toml vendored-sources redirect keeps
 # every crate local).

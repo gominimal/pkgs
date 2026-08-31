@@ -371,7 +371,7 @@ export CC="${WRAP}/bedrock-cc"
 # claiming bare mrustc cannot compile ANY standalone program -- it can, given that lang item.
 # Verified CAUSALLY: delete that one line and the wall returns verbatim.
 #
-# MEASURED OFFLINE, twice independently, at the pinned commit 2d14b09, on amd64 AND arm64, with
+# MEASURED OFFLINE, twice independently, at the former tag pin 2d14b09 (revalidated at the current master pin via the CS rebuild), on amd64 AND arm64, with
 # networking proven dead by raw-IP TCP probes AND the P0b abort-stubs on PATH (never fired).
 # Non-vacuity is causal too: neutering the four `!=` checks yields 49, not 42.
 cp "${BUILDROOT}/gate.rs" "${GATE}/gate.rs"

@@ -2,8 +2,8 @@ change-id = 154587
 
 [build]
 # vendor=false: rust auto-enables build.vendor for tarball sources with a vendor/ dir, which makes
-# bootstrap pass cargo --frozen (forbidding ANY Cargo.lock change).  Our CS-attested stage0 cargo
-# 1.94.0 (the src/stage0 pin) wants a deterministic offline lock refresh that the retired seed cargo
+# bootstrap pass cargo --frozen (forbidding ANY Cargo.lock change).  The attested rung cargo
+# (>=1.94 behavior) wants a deterministic offline lock refresh that the retired seed cargo
 # 1.94.1 did not — --frozen aborts it ("cannot update the lock file ... --frozen").  Disabling this
 # only gates the --frozen flag (bootstrap cargo.rs:1332); the vendored-sources redirect lives in the
 # in-tree .cargo/config.toml, so the build stays fully offline (no CS egress) and just updates the
