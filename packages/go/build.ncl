@@ -2,6 +2,12 @@ let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = impo
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+# THE LADDER-CLOSE (#19): amd64 bootstraps from our own hex0-rooted Go, not a go.dev bindist.
+# Chain: hex0 -> ... -> gcc-15.2.0-glibc -> go-1.4 (C only) -> 1.17.13 -> 1.20.14 -> 1.22.6 -> 1.24.9.
+# arm64's slot is the SEALED gccgo-rooted go1.24.9 from the arm ladder (the BEDROCK ROOT
+# Source below — #631 flipped it): Go 1.5 was the first release with an arm64 port, so the
+# C-hosted root cannot produce an arm64 toolchain directly; gccgo is the arm root instead.
+let go-1-24-9 = import "../go-1.24.9/build.ncl" in
 let git = import "../git/build.ncl" in
 
 let version = "1.26.6" in
@@ -18,11 +24,7 @@ in
   build_deps = [
     { file = "build.sh" } | Local,
     match {
-      { arch = 'Amd64, .. } =>
-        {
-          url = variants.amd64_url,
-          sha256 = variants.amd64_sha256,
-        } | Source,
+      { arch = 'Amd64, .. } => go-1-24-9,
       { arch = 'Arm64, .. } =>
         {
           # BEDROCK ROOT (arm64): this bootstrap Go is go1.24.9 from the hex0-rooted arm
