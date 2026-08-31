@@ -10,13 +10,15 @@ let toolchain = import "../toolchain/build.ncl" in
 let go-1-24-9 = import "../go-1.24.9/build.ncl" in
 let git = import "../git/build.ncl" in
 
-let version = "1.26.6" in
+let version = "1.27.0" in
 let variants = {
-  amd64_url = "https://go.dev/dl/go%{version}.linux-amd64.tar.gz",
-  amd64_sha256 = "708effb774be8237570d0add163225abbdfaf4fca28b2611df167beba4feef89",
-
+  # NOTE for the version updater: bumping go here means updating `version` and
+  # `source_sha256` ONLY.  There is no bindist to update — BOTH arches bootstrap from
+  # hex0-rooted pins (amd64: the go-1.24.9 rung build_dep; arm64: the sealed gs:// slot),
+  # and those change only when go's minBootstrap moves past 1.24 (src/cmd/dist/buildtool.go;
+  # 1.27.0 pins go1.24.6, so the 1.24.9 root stays valid).
   source_url = "https://go.dev/dl/go%{version}.src.tar.gz",
-  source_sha256 = "a0721c54c688901448d77ad9b3ec7ea7c474730755ff891382e92ecb93ff2cb1",
+  source_sha256 = "7002403d7cc44529ef6d26f69a44818263395ead7c16c05a5808ae047ebeb0e5",
 }
 in
 {
