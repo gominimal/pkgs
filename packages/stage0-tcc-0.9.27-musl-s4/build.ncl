@@ -1,5 +1,5 @@
 let { BuildSpec, Local, OutputBin, OutputLib, OutputData, .. } = import "minimal.ncl" in
-# DRAFT 2026-06-30 — operator review before wiring (spec: .staging-ctx/correctness-gate-2026-06-30.md).
+# wired 2026-08 (stage0-binutils-2.30 + stage0-gcc-4.0.4 consume this rung) (spec: .staging-ctx/correctness-gate-2026-06-30.md).
 # R4a STAGE 4 — THE CORRECTNESS GATE.  s3 produces tcc-musl2 (musl-linked), but the s1/s3 mes-libc
 # compile that BIRTHED it crashes ~95% and may ~5% of the time emit a WRONG-BUT-RUNNING tcc-musl2.
 # A seal gated only on "did it run / -version / hello.c" is NOT trust-grade — it cannot catch

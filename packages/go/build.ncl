@@ -49,6 +49,10 @@ in
     base,
     toolchain,
   ],
+  # WHY needs SURVIVES the offline flip: the CS builder has no egress and the attested
+  # builds above ran fully offline; `needs` is retained for (a) the arm64 stage0 download
+  # path (rust, until the arm rungs land) and (b) non-CS environments that build this
+  # recipe without pre-staged mirrors.  Dropping it is a follow-up once arm closes.
   needs =
     {
       dns = {},

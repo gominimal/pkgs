@@ -1,3 +1,7 @@
+# ★ RETAINED AS SUPERSEDED ENDPOINT EVIDENCE: nothing imports this rung — 1.95.0 consumes
+# rustc-1.94.1 (see the ENDPOINT DECISION in the 1.91.1 header; the 1.94.0-vs-1.94.1
+# tracked_env skew is why).  Kept because its CS attestation is part of the recorded
+# endpoint-decision evidence; delete once that history is archived elsewhere.
 let { subsetOf, Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 # ============================================================================================
 # rustc-1.94.0 — RUNG 5 of 5 on the road to deleting packages/rust's unattested seed tarballs

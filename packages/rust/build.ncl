@@ -1,4 +1,5 @@
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let curl = import "../curl/build.ncl" in
@@ -47,7 +48,6 @@ let version = "1.97.1" in
     # assess_dep_chain still returns None on a declaredSources hit, so CHAIN_ENFORCE=1 cannot fail-shut
     # this edge; proof is this recipe's stage0 assert + the predecessor rungs' own signatures.
     # amd64-only for now — arm64's seed-rooted gcc/rust stage0 is a separate track (#16).
-    rustc-1-96-0,
     base,
     cmake,
     curl,
@@ -57,7 +57,16 @@ let version = "1.97.1" in
     pkgconf,
     python,
     toolchain,
-  ],
+  ]
+  # ★ ARCH SCOPE (pre-review fix): the attested-rung stage0 is AMD64-ONLY in this PR.
+  # arm64's chain is green through the mrustc→1.90 rung (all 7 functional gates, lab
+  # hardware) but the 1.91→1.96 arm rungs have not been BUILT yet — next tranche.  Until
+  # then arm64 keeps the pre-PR behavior (x.py's stage0 download; `needs internet` below
+  # covers it).  Same per-arch honesty shape as packages/go's ladder-close.
+  @ (match {
+      { arch = 'Amd64, .. } => [rustc-1-96-0],
+      { arch = 'Arm64, .. } => [],
+    } target),
   runtime_deps = [
     # libssh2 must be a RUNTIME dep, not only a build dep: the shipped `cargo` binary
     # carries a DT_NEEDED on libssh2.so.1, so every consumer that runs cargo needs the
@@ -71,6 +80,10 @@ let version = "1.97.1" in
     sqlite,
     subsetOf gcc ["libgcc", "libstdcpp"],
   ],
+  # WHY needs SURVIVES the offline flip: the CS builder has no egress and the attested
+  # builds above ran fully offline; `needs` is retained for (a) the arm64 stage0 download
+  # path (rust, until the arm rungs land) and (b) non-CS environments that build this
+  # recipe without pre-staged mirrors.  Dropping it is a follow-up once arm closes.
   needs =
     {
       dns = {},
