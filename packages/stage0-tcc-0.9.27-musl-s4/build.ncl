@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputLib, OutputData, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 # wired 2026-08 (stage0-binutils-2.30 + stage0-gcc-4.0.4 consume this rung) (spec: .staging-ctx/correctness-gate-2026-06-30.md).
 # R4a STAGE 4 — THE CORRECTNESS GATE.  s3 produces tcc-musl2 (musl-linked), but the s1/s3 mes-libc
 # compile that BIRTHED it crashes ~95% and may ~5% of the time emit a WRONG-BUT-RUNNING tcc-musl2.
@@ -33,8 +33,8 @@ let { BuildSpec, Local, OutputBin, OutputLib, OutputData, .. } = import "minimal
 # DETERMINISTIC tcc-musl2-built musl), NOT the lottery-prone R4a.  R4b is correct-by-construction (no
 # float corruption), so the gate stops linking against a possibly-corrupt R4a libc.  No cycle: s4→R4b→s3
 # and s4→s3→s1→R4a all point toward the seed (R4b is a rung ABOVE R4a, not a replacement for it).
-let stage0-musl-r4b = import "../stage0-musl-1.1.24-cc2/build.ncl" in         # R4b — DETERMINISTIC musl libc.a + crt + headers (link target)
-let stage0-tcc-musl-s3 = import "../stage0-tcc-0.9.27-musl-s3/build.ncl" in   # tcc-musl2 (candidate) + libtcc1.a
+let stage0-musl-r4b = import "../stage0-musl-1.1.24-cc2/build.ncl" in # R4b — DETERMINISTIC musl libc.a + crt + headers (link target)
+let stage0-tcc-musl-s3 = import "../stage0-tcc-0.9.27-musl-s3/build.ncl" in # tcc-musl2 (candidate) + libtcc1.a
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
@@ -46,8 +46,21 @@ let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in
   name = "stage0-tcc-0.9.27-musl-s4",
   build_deps = [
     { file = "build.sh" } | Local,
-    { file = "tccsrc.tar.gz" } | Local,    # IDENTICAL to s3's source (GOT fixes A,B,C) — the fixed-point recompile MUST use the same tcc.c
-    { file = "torture.tar.gz" } | Local,   # torture/*.c + *.expected (expected stdout verified against gcc at authoring time)
+    {
+      # IDENTICAL to s3's source (GOT fixes A,B,C) — the fixed-point recompile MUST use the
+      # same tcc.c.  Same staged object as s3 (sha-pinned).
+      url = "gs://minimal-staging-archives/tccsrc-r3gotABC.tar.gz",
+      sha256 = "4267860f408f2df455116bc7e7ee9cee874cc81339841d0760a2a0261803ae79",
+      extract = false,
+    } | Source,
+    {
+      # torture/*.c + *.expected (expected stdout verified against gcc at authoring time).
+      # Sha-pinned staged Source; the torture/ directory in this package is the readable
+      # audit copy of the same content.
+      url = "gs://minimal-staging-archives/tcc-torture-s4.tar.gz",
+      sha256 = "8567511d499c73ded9432a07d9e0047a166efd3b32bc4a8d2cc31ec37ff8c705",
+      extract = false,
+    } | Source,
     stage0-musl-r4b,
     stage0-tcc-musl-s3,
     bash,
@@ -66,8 +79,8 @@ let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in
     # FAILED -> nothing is sealed/cached/published. Double-gated: explicit exit 1 + absent artifact.
     # Downstream R5 binutils imports s4 and uses /usr/bin/tcc-musl2 as CC — the gate is unbypassable.
     tcc = { glob = "usr/bin/tcc-musl2", allow_missing_interpreter = true } | OutputBin,
-    libtcc1 = { glob = "usr/lib/tcc/libtcc1.a" } | OutputLib,   # gate-validated (torture exercises __udivdi3/__va_start)
-    gatepass = { glob = "usr/share/tcc-musl-s4/GATE-PASS" } | OutputData,   # only written on full pass
+    libtcc1 = { glob = "usr/lib/tcc/libtcc1.a" } | OutputLib, # gate-validated (torture exercises __udivdi3/__va_start)
+    gatepass = { glob = "usr/share/tcc-musl-s4/GATE-PASS" } | OutputData, # only written on full pass
     manifest = { glob = "usr/share/tcc-musl-s4/MANIFEST.txt" } | OutputData,
     logs = { glob = "usr/share/tcc-musl-s4/rows.log" } | OutputData,
   },

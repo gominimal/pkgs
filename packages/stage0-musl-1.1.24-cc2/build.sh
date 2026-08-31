@@ -40,7 +40,7 @@ command -v tcc-musl2 >/dev/null 2>&1 || { echo "R4b infra error: tcc-musl2 not o
 cd "${BUILDROOT}"
 rm -rf "${SRC}"
 # --- unpack (Source is extract=false; we tar here per the bash-build convention) ---
-tar -xf "${SRC}.tar.gz"
+tar -xof "${SRC}.tar.gz"
 cd "${SRC}"
 
 # --- patches: ONLY the four ARCH-NEUTRAL live-bootstrap patches + the five amd64-net-new patches (the

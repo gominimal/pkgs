@@ -48,7 +48,7 @@ GCCCC="${BUILDROOT}/gcc-cc"
 # ============================================================================================
 cd "${BUILDROOT}"
 rm -rf "${SRC}"
-tar -xf "${SRC}.tar.gz"      # Source is extract=false; unpack per the bash-build convention
+tar -xof "${SRC}.tar.gz"      # Source is extract=false; unpack per the bash-build convention
 cd "${SRC}"
 
 # NO PATCHES.  (R4's makefile.patch/madvise/avoid_sys_clone/disable_ctype_headers/skip-pic-crt/

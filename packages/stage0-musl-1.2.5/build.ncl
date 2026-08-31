@@ -31,23 +31,23 @@ let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "min
 # (`make headers_install ARCH=x86`).  musl builds standalone without them; downstream rungs that
 # #include <linux/*.h> (likely R9 gcc-4.7.4) will need them — add as a second Source + install step then.
 # ============================================================================================
-let stage0-gcc = import "../stage0-gcc-4.0.4/build.ncl" in            # R6: CC (gcc/cc1/cpp + libgcc.a) driven via the gcc-cc wrapper
+let stage0-gcc = import "../stage0-gcc-4.0.4/build.ncl" in # R6: CC (gcc/cc1/cpp + libgcc.a) driven via the gcc-cc wrapper
 let stage0-musl-r4b = import "../stage0-musl-1.1.24-cc2/build.ncl" in # R4b: /usr/lib/musl-bedrock clean sysroot (bootstrap link libc for configure probes)
 let stage0-binutils-r5 = import "../stage0-binutils-2.30/build.ncl" in # R5: as/ld/ar/ranlib on PATH (gcc's driver assembles+links; archive index)
-let bash = import "../bash/build.ncl" in                             # ./build.sh driver + configure shell
-let make = import "../make/build.ncl" in                             # build engine
-let sed = import "../sed/build.ncl" in                               # configure: config.mak generation
-let grep = import "../grep/build.ncl" in                             # configure probes
-let coreutils = import "../coreutils/build.ncl" in                   # rm/mkdir/cp/ln/install/sha256sum
-let tar = import "../tar/build.ncl" in                               # build.sh `tar -xf`
-let gzip = import "../gzip/build.ncl" in                             # tar's .gz decompression
-let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in         # musl configure's awk
+let bash = import "../bash/build.ncl" in # ./build.sh driver + configure shell
+let make = import "../make/build.ncl" in # build engine
+let sed = import "../sed/build.ncl" in # configure: config.mak generation
+let grep = import "../grep/build.ncl" in # configure probes
+let coreutils = import "../coreutils/build.ncl" in # rm/mkdir/cp/ln/install/sha256sum
+let tar = import "../tar/build.ncl" in # build.sh `tar -xf`
+let gzip = import "../gzip/build.ncl" in # tar's .gz decompression
+let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # musl configure's awk
 let version = "1.2.5" in
 {
   name = "stage0-musl-1.2.5",
   build_deps = [
     { file = "build.sh" } | Local,
-    { file = "stage0.answers" } | Local,  # sha256sum -c byte-identity seal — record-at-pin-time (UNPINNED placeholder; gcc IS deterministic so promotable to fatal once pinned)
+    { file = "stage0.answers" } | Local, # sha256sum -c byte-identity seal — record-at-pin-time (UNPINNED placeholder; gcc IS deterministic so promotable to fatal once pinned)
     {
       # upstream musl 1.2.5 (byte-identical mirror; sha preserved -> sha-pinned resolvedDeps).
       # extract=false — build.sh runs `tar -xf` itself (bash-build convention).
@@ -55,9 +55,9 @@ let version = "1.2.5" in
       sha256 = "a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4",
       extract = false,
     } | Source,
-    stage0-gcc,          # R6: the CC (via gcc-cc wrapper) — brings R4b musl + binutils in its closure too
-    stage0-musl-r4b,     # R4b: explicit — the /usr/lib/musl-bedrock sysroot the wrapper links against
-    stage0-binutils-r5,  # R5: explicit — as/ld/ar/ranlib on PATH
+    stage0-gcc, # R6: the CC (via gcc-cc wrapper) — brings R4b musl + binutils in its closure too
+    stage0-musl-r4b, # R4b: explicit — the /usr/lib/musl-bedrock sysroot the wrapper links against
+    stage0-binutils-r5, # R5: explicit — as/ld/ar/ranlib on PATH
     bash,
     make,
     sed,

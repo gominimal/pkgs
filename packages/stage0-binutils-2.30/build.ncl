@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 # R5 (stage0-binutils-2.30) — SKELETON / WIP 2026-06-26.
 #
 # The first rung to LINK real executables (as/ld/ar/nm/objcopy/objdump/strip) against R4's musl, built
@@ -7,20 +7,20 @@ let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "min
 # ⚠️ UNRESOLVED: the tcc↔musl link bridge (R3 tcc bakes the mes crt prefix; binutils needs musl). See
 #    .staging-ctx/bedrock-R5-binutils-status-2026-06-26.md and the WALL block in build.sh. This package
 #    will NOT build green until that precursor (a musl-relinked tcc) lands + the GOTPCREL canary verdict.
-let stage0-tcc-musl-s4 = import "../stage0-tcc-0.9.27-musl-s4/build.ncl" in   # CC = the s4-SEALED tcc-musl2 (C2: C2==C3 fixed point + 12/12 torture validated) + gate-validated libtcc1.a. s3 (the C1 candidate) is s4's BUILD dep, not runtime → not extracted here, no /usr/bin/tcc-musl2 collision.
+let stage0-tcc-musl-s4 = import "../stage0-tcc-0.9.27-musl-s4/build.ncl" in # CC = the s4-SEALED tcc-musl2 (C2: C2==C3 fixed point + 12/12 torture validated) + gate-validated libtcc1.a. s3 (the C1 candidate) is s4's BUILD dep, not runtime → not extracted here, no /usr/bin/tcc-musl2 collision.
 # LINK TARGET REWIRED 2026-07-01: binutils links against R4b (stage0-musl-1.1.24-cc2 — the DETERMINISTIC
 # tcc-musl2-built musl), NOT the lottery-prone R4a.  Same /usr/lib/{libc.a,crt*.o} + /usr/include paths,
 # just sourced from the sealed-correct rung (build.sh needs no change).  No cycle (R4b is a rung above R4a).
 let stage0-musl-r4b = import "../stage0-musl-1.1.24-cc2/build.ncl" in # R4b — DETERMINISTIC musl libc.a + crt + headers (link target)
-let bash = import "../bash/build.ncl" in                         # ./build.sh driver + configure shell
-let make = import "../make/build.ncl" in                         # build engine
+let bash = import "../bash/build.ncl" in # ./build.sh driver + configure shell
+let make = import "../make/build.ncl" in # build engine
 let sed = import "../sed/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
-let xz = import "../xz/build.ncl" in                             # binutils ships as .tar.xz (R4 was .gz)
-let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in     # configure's awk
-let diffutils = import "../diffutils/build.ncl" in              # cmp — move-if-change / config.status use it
+let xz = import "../xz/build.ncl" in # binutils ships as .tar.xz (R4 was .gz)
+let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # configure's awk
+let diffutils = import "../diffutils/build.ncl" in # cmp — move-if-change / config.status use it
 let version = "2.30" in
 {
   name = "stage0-binutils-2.30",
@@ -39,8 +39,8 @@ let version = "2.30" in
       sha256 = "6e46b8aeae2f727a36f0bd9505e405768a72218f1796f0d09757d45209871ae6",
       extract = false,
     } | Source,
-    stage0-tcc-musl-s4,    # s4: /usr/bin/tcc-musl2 = the SEALED C2 + gate-validated /usr/lib/tcc/libtcc1.a
-    stage0-musl-r4b,   # R4b: /usr/lib/{libc.a,crt1.o,crti.o,crtn.o} + /usr/include/** (the link target)
+    stage0-tcc-musl-s4, # s4: /usr/bin/tcc-musl2 = the SEALED C2 + gate-validated /usr/lib/tcc/libtcc1.a
+    stage0-musl-r4b, # R4b: /usr/lib/{libc.a,crt1.o,crti.o,crtn.o} + /usr/include/** (the link target)
     bash,
     make,
     sed,

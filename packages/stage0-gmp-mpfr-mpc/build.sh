@@ -10,7 +10,7 @@ STAGE="${BUILDROOT}/gcc-math"            # WRITABLE build-local install (logical
 FINAL="${OUTPUT_DIR}/usr/lib/gcc-math"   # published output tree (R9 --with-gmp/mpfr/mpc => /usr/lib/gcc-math)
 
 # --no-same-owner: sandbox userns can't chown to the archived uid (gmp's tree is owned uid 1006) —
-# same reflex as R5/R6.  A plain `tar -xf` exits non-zero "Cannot change ownership ... Invalid argument".
+# same reflex as R5/R6.  A plain `tar -xof` exits non-zero "Cannot change ownership ... Invalid argument".
 untar() { tar --no-same-owner -xf "$1"; }
 
 command -v gcc >/dev/null 2>&1 || { echo "R8 infra: gcc (R6) not on PATH" >&2; exit 1; }

@@ -106,17 +106,17 @@ let stage0_version = "1.94.1" in
     # (not the mrustc shell wrapper RUNG 1 shipped).  build.sh points bootstrap.toml [build]
     # rustc/cargo at bin/rustc and bin/cargo; --print sysroot resolves the regular prefix.
     rustc-1-94-1,
-    base,     # bash/coreutils/tar/xz/sed/grep/gawk/findutils — the userland; xz extracts the src
-    cmake,    # some vendored -sys build scripts; also pulls a real curl (shadowed by P0b's stub)
-    curl,     # libcurl for curl-sys (offline: pkg-config path OR the P0c-marked vendored submodule)
-    libssh2,  # LIBSSH2_SYS_USE_PKG_CONFIG=1 -> cargo's libssh2-sys uses the system lib
-    pkgconf,  # ships usr/bin/pkg-config for the -sys probes
-    python,   # x.py is python
+    base, # bash/coreutils/tar/xz/sed/grep/gawk/findutils — the userland; xz extracts the src
+    cmake, # some vendored -sys build scripts; also pulls a real curl (shadowed by P0b's stub)
+    curl, # libcurl for curl-sys (offline: pkg-config path OR the P0c-marked vendored submodule)
+    libssh2, # LIBSSH2_SYS_USE_PKG_CONFIG=1 -> cargo's libssh2-sys uses the system lib
+    pkgconf, # ships usr/bin/pkg-config for the -sys probes
+    python, # x.py is python
     toolchain, # gcc/binutils/glibc/linux_headers — clang's sysroot (crt, libc, headers)
   ],
   runtime_deps = [
     libffi,
-    llvm,     # /usr/bin/{clang,clang++,llvm-config} + libLLVM-21.so (present at BUILD time too)
+    llvm, # /usr/bin/{clang,clang++,llvm-config} + libLLVM-21.so (present at BUILD time too)
     openssl,
     sqlite,
     subsetOf gcc ["libgcc", "libstdcpp"],

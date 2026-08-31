@@ -140,7 +140,7 @@ let commit = "1d552cadf1c58bce8b9b431a5714dcea113dde38" in
     { file = "archive-zerolen-skip.sh" } | Local, # the rustc-1.90.0 0-byte-object fix, landed in git at last
     { file = "hir-ord-unevaluated.patch" } | Local, # upstream d8cc2933+dad6c321 backport; IN the master pin, so its conditional application is a no-op (kept for tag builds)
     { file = "aarch64-support.patch" } | Local, # the 10-fix aarch64 series vs THIS pin (SBC fixpoint, visitor chaining, i128 ctpop, asm!, barriers — see its header); applied BOTH arches
-    { file = "gate.rs" } | Local,             # GATE 1's program; the ONLY copy -- never inline it in build.sh
+    { file = "gate.rs" } | Local, # GATE 1's program; the ONLY copy -- never inline it in build.sh
     {
       # Deterministically re-derivable from the public repo — see the SOURCE PIN block above.
       # Commit-qualified basename: the %{version} tree at master commit 1d552ca (still 0.12.0).

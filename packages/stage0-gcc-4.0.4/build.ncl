@@ -29,18 +29,18 @@ let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" i
 # config.sub: NO donor swap. The shipped 2005 config.sub canonicalizes x86_64-linux-gnu (verified) =>
 # the automake-1.16.3 distfile live-bootstrap pulls is DROPPED (it only existed to feed a regen we skip).
 # ============================================================================================
-let stage0-tcc-musl-s4 = import "../stage0-tcc-0.9.27-musl-s4/build.ncl" in   # R4a SEAL: gate-passed /usr/bin/tcc-musl2 + /usr/lib/tcc/libtcc1.a (CC + AR)
-let stage0-musl-r4 = import "../stage0-musl-1.1.24-cc2/build.ncl" in          # R4b (2026-07-01: was R4a) — DETERMINISTIC sealed-correct musl + /usr/lib/musl-bedrock clean sysroot (link target)
-let stage0-binutils-r5 = import "../stage0-binutils-2.30/build.ncl" in        # R5: as/ld/ar/ranlib/nm on PATH (xgcc->as for libgcc; archives) — MUST seal first
-let bash = import "../bash/build.ncl" in                                      # ./build.sh driver + configure shell
-let make = import "../make/build.ncl" in                                      # build engine
-let sed = import "../sed/build.ncl" in                                        # the 3 source seds + config.* edits
-let grep = import "../grep/build.ncl" in                                      # configure probes
-let coreutils = import "../coreutils/build.ncl" in                            # rm/mkdir/cp/ln/touch/sha256sum
-let tar = import "../tar/build.ncl" in                                        # build.sh `tar -xf`
-let bzip2 = import "../bzip2/build.ncl" in                                    # gcc-core ships .tar.bz2 (R4 was .gz, R5 .xz)
-let findutils = import "../findutils/build.ncl" in                            # mtime guard: find . -exec touch (Model-B regen avoidance)
-let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in                  # configure's awk
+let stage0-tcc-musl-s4 = import "../stage0-tcc-0.9.27-musl-s4/build.ncl" in # R4a SEAL: gate-passed /usr/bin/tcc-musl2 + /usr/lib/tcc/libtcc1.a (CC + AR)
+let stage0-musl-r4 = import "../stage0-musl-1.1.24-cc2/build.ncl" in # R4b (2026-07-01: was R4a) — DETERMINISTIC sealed-correct musl + /usr/lib/musl-bedrock clean sysroot (link target)
+let stage0-binutils-r5 = import "../stage0-binutils-2.30/build.ncl" in # R5: as/ld/ar/ranlib/nm on PATH (xgcc->as for libgcc; archives) — MUST seal first
+let bash = import "../bash/build.ncl" in # ./build.sh driver + configure shell
+let make = import "../make/build.ncl" in # build engine
+let sed = import "../sed/build.ncl" in # the 3 source seds + config.* edits
+let grep = import "../grep/build.ncl" in # configure probes
+let coreutils = import "../coreutils/build.ncl" in # rm/mkdir/cp/ln/touch/sha256sum
+let tar = import "../tar/build.ncl" in # build.sh `tar -xf`
+let bzip2 = import "../bzip2/build.ncl" in # gcc-core ships .tar.bz2 (R4 was .gz, R5 .xz)
+let findutils = import "../findutils/build.ncl" in # mtime guard: find . -exec touch (Model-B regen avoidance)
+let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # configure's awk
 let version = "4.0.4" in
 {
   name = "stage0-gcc-4.0.4",
@@ -59,9 +59,9 @@ let version = "4.0.4" in
       sha256 = "e9bf58c761a4f988311aef6b41f12fd5c7e51d09477468fb73826aecc1be32e7",
       extract = false,
     } | Source,
-    stage0-tcc-musl-s4,   # R4a SEAL: tcc-musl2 (CC via musl-cc wrapper) + libtcc1.a + AR="tcc-musl2 -ar"
-    stage0-musl-r4,       # R4: libc.a + crt1/crti/crtn + headers (the static link target)
-    stage0-binutils-r5,   # R5: as/ld/ar/ranlib/nm on PATH (xgcc->as for libgcc; archive index)
+    stage0-tcc-musl-s4, # R4a SEAL: tcc-musl2 (CC via musl-cc wrapper) + libtcc1.a + AR="tcc-musl2 -ar"
+    stage0-musl-r4, # R4: libc.a + crt1/crti/crtn + headers (the static link target)
+    stage0-binutils-r5, # R5: as/ld/ar/ranlib/nm on PATH (xgcc->as for libgcc; archive index)
     bash,
     make,
     sed,

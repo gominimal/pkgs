@@ -26,27 +26,27 @@ let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "min
 # Per forward map: R9 gcc-4.7.4, which builds 10.4.0 DIRECTLY (10.4 is C++98-bootstrappable — see
 # banner).  If an intermediate builder is ever preferred, change THIS ONE import to
 # `../stage0-gcc-4.8.5` (or 4.9.4/6.5.0/9.5.0).
-let stage0-cc = import "../stage0-gcc-4.7.4/build.ncl" in             # R9: CC=gcc, CXX=g++ (+ its musl libstdc++)
+let stage0-cc = import "../stage0-gcc-4.7.4/build.ncl" in # R9: CC=gcc, CXX=g++ (+ its musl libstdc++)
 let stage0-gmp-mpfr-mpc = import "../stage0-gmp-mpfr-mpc/build.ncl" in # R8: /usr/lib/gcc-math (libgmp/mpfr/mpc.a) — cc1's middle-end
-let stage0-musl-r7 = import "../stage0-musl-1.2.5/build.ncl" in        # R7: /usr/lib/musl-bedrock-1.2.5 sysroot (link libc)
+let stage0-musl-r7 = import "../stage0-musl-1.2.5/build.ncl" in # R7: /usr/lib/musl-bedrock-1.2.5 sysroot (link libc)
 # R10 = binutils-2.41 (SEALED 2026-07-02) — the ladder's assembler for the pivot; glibc later needs binutils>=2.39.
-let stage0-binutils = import "../stage0-binutils-2.41/build.ncl" in    # R10: as/ld/ar/ranlib
+let stage0-binutils = import "../stage0-binutils-2.41/build.ncl" in # R10: as/ld/ar/ranlib
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
 let grep = import "../grep/build.ncl" in
-let diffutils = import "../diffutils/build.ncl" in                     # configure's cmp/diff (R8 wall #4)
+let diffutils = import "../diffutils/build.ncl" in # configure's cmp/diff (R8 wall #4)
 let coreutils = import "../coreutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
-let xz = import "../xz/build.ncl" in                                   # gcc-10.4 ships .tar.xz (NOT bz2 — R9 was bz2)
-let findutils = import "../findutils/build.ncl" in                     # mtime guard: find . -exec touch
-let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in           # gcc build: options.c via awk, etc.
+let xz = import "../xz/build.ncl" in # gcc-10.4 ships .tar.xz (NOT bz2 — R9 was bz2)
+let findutils = import "../findutils/build.ncl" in # mtime guard: find . -exec touch
+let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # gcc build: options.c via awk, etc.
 let version = "10.4.0" in
 {
   name = "stage0-gcc-10.4.0",
   build_deps = [
     { file = "build.sh" } | Local,
-    { file = "stage0.answers" } | Local,   # record-at-pin-time byte-identity seal (UNPINNED placeholder)
+    { file = "stage0.answers" } | Local, # record-at-pin-time byte-identity seal (UNPINNED placeholder)
     {
       # upstream gcc-10.4.0 FULL tarball (.tar.xz — needs C++ → NOT gcc-core).  byte-identical mirror
       # (sha preserved → sha-pinned resolvedDeps).  extract=false (build.sh untars).
@@ -59,10 +59,10 @@ let version = "10.4.0" in
       sha256 = "c9297d5bcd7cb43f3dfc2fed5389e948c9312fd962ef6a4ce455cff963ebe4f1",
       extract = false,
     } | Source,
-    stage0-cc,            # R9 (intended): CC/CXX — see the swap-point above
-    stage0-gmp-mpfr-mpc,  # R8: gmp/mpfr/mpc (--with-gmp/mpfr/mpc=/usr/lib/gcc-math)
-    stage0-musl-r7,       # R7: musl-1.2.5 sysroot
-    stage0-binutils,      # R10 (binutils-2.41): as/ld/ar/ranlib
+    stage0-cc, # R9 (intended): CC/CXX — see the swap-point above
+    stage0-gmp-mpfr-mpc, # R8: gmp/mpfr/mpc (--with-gmp/mpfr/mpc=/usr/lib/gcc-math)
+    stage0-musl-r7, # R7: musl-1.2.5 sysroot
+    stage0-binutils, # R10 (binutils-2.41): as/ld/ar/ranlib
     bash,
     make,
     sed,

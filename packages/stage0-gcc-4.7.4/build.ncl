@@ -29,26 +29,26 @@ let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "min
 #       (R6 wall #5), -L $SR/lib for -lm (R6 wall #4)
 #   * -j1 (OOM pole, esp. cc1plus); diffutils on PATH for configure's cmp/diff (R8 saw them missing)
 # ============================================================================================
-let stage0-gcc-405 = import "../stage0-gcc-4.0.4/build.ncl" in         # R6: CC (gcc-4.0.4 via gcc-cc wrapper)
+let stage0-gcc-405 = import "../stage0-gcc-4.0.4/build.ncl" in # R6: CC (gcc-4.0.4 via gcc-cc wrapper)
 let stage0-gmp-mpfr-mpc = import "../stage0-gmp-mpfr-mpc/build.ncl" in # R8: /usr/lib/gcc-math (libgmp/libmpfr/libmpc.a + headers) — cc1's middle-end
-let stage0-musl-r7 = import "../stage0-musl-1.2.5/build.ncl" in        # R7: /usr/lib/musl-bedrock-1.2.5 sysroot (link libc)
+let stage0-musl-r7 = import "../stage0-musl-1.2.5/build.ncl" in # R7: /usr/lib/musl-bedrock-1.2.5 sysroot (link libc)
 let stage0-binutils-r5 = import "../stage0-binutils-2.30/build.ncl" in # R5: as/ld/ar/ranlib
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
 let grep = import "../grep/build.ncl" in
-let diffutils = import "../diffutils/build.ncl" in                     # configure's cmp/diff (R8 showed them missing)
+let diffutils = import "../diffutils/build.ncl" in # configure's cmp/diff (R8 showed them missing)
 let coreutils = import "../coreutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
-let bzip2 = import "../bzip2/build.ncl" in                             # gcc-4.7.4 ships .tar.bz2
-let findutils = import "../findutils/build.ncl" in                    # mtime guard: find . -exec touch
+let bzip2 = import "../bzip2/build.ncl" in # gcc-4.7.4 ships .tar.bz2
+let findutils = import "../findutils/build.ncl" in # mtime guard: find . -exec touch
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in
 let version = "4.7.4" in
 {
   name = "stage0-gcc-4.7.4",
   build_deps = [
     { file = "build.sh" } | Local,
-    { file = "stage0.answers" } | Local,   # record-at-pin-time byte-identity seal (UNPINNED placeholder)
+    { file = "stage0.answers" } | Local, # record-at-pin-time byte-identity seal (UNPINNED placeholder)
     {
       # upstream gcc-4.7.4 FULL tarball (.tar.bz2 — needs C++, so NOT gcc-core).  sha == ladder pin;
       # byte-identical mirror (sha preserved -> sha-pinned resolvedDeps).  extract=false (build.sh untars).
@@ -56,10 +56,10 @@ let version = "4.7.4" in
       sha256 = "92e61c6dc3a0a449e62d72a38185fda550168a86702dea07125ebd3ec3996282",
       extract = false,
     } | Source,
-    stage0-gcc-405,       # R6: CC
-    stage0-gmp-mpfr-mpc,  # R8: gmp/mpfr/mpc (--with-gmp/mpfr/mpc=/usr/lib/gcc-math)
-    stage0-musl-r7,       # R7: musl-1.2.5 sysroot
-    stage0-binutils-r5,   # R5: as/ld/ar/ranlib
+    stage0-gcc-405, # R6: CC
+    stage0-gmp-mpfr-mpc, # R8: gmp/mpfr/mpc (--with-gmp/mpfr/mpc=/usr/lib/gcc-math)
+    stage0-musl-r7, # R7: musl-1.2.5 sysroot
+    stage0-binutils-r5, # R5: as/ld/ar/ranlib
     bash,
     make,
     sed,

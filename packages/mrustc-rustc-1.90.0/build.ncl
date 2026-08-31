@@ -180,10 +180,10 @@ let mrustc_commit = "1d552cadf1c58bce8b9b431a5714dcea113dde38" in
   build_deps = [
     { file = "build.sh" } | Local,
     { file = "rustc-1.90.0.answers" } | Local, # byte-seal slot; SELF-ARMS once populated
-    { file = "gatelib.rs" } | Local,           # GATE-3a: the rlib crate — forces ArArchiveBuilder to WRITE an archive
-    { file = "gate190.rs" } | Local,           # GATE-3b: ten std constructs, computed 42, exit codes 111-120
-    { file = "gate_pm.rs" } | Local,           # GATE-4a: the proc-macro crate
-    { file = "gate_pm_use.rs" } | Local,       # GATE-4b: its consumer
+    { file = "gatelib.rs" } | Local, # GATE-3a: the rlib crate — forces ArArchiveBuilder to WRITE an archive
+    { file = "gate190.rs" } | Local, # GATE-3b: ten std constructs, computed 42, exit codes 111-120
+    { file = "gate_pm.rs" } | Local, # GATE-4a: the proc-macro crate
+    { file = "gate_pm_use.rs" } | Local, # GATE-4b: its consumer
     {
       # rustc 1.90.0 source.  .tar.gz IS MANDATORY: minicargo.mk:220 hardcodes
       # rustc-$(RUSTC_VERSION)-src.tar.gz and :226 is `tar -xzf`.  Every other rustc source we

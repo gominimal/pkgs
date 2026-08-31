@@ -26,25 +26,25 @@ let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "min
 #     the R8 "writable-staging-prefix" idiom does NOT transfer to a rung that installs prefix-baking
 #     BINARIES — it is only for library-only rungs whose deps' installed .la are read at build time.
 # ============================================================================================
-let stage0-gcc-474 = import "../stage0-gcc-4.7.4/build.ncl" in       # R9: CC/CXX (gcc-4.7.4 / g++ via the gcc-cc wrapper)
+let stage0-gcc-474 = import "../stage0-gcc-4.7.4/build.ncl" in # R9: CC/CXX (gcc-4.7.4 / g++ via the gcc-cc wrapper)
 let stage0-binutils-r5 = import "../stage0-binutils-2.30/build.ncl" in # R5: as/ld/ar/ranlib on PATH — R9's gcc SHELLS OUT to these to assemble/archive its output
-let stage0-musl-r7 = import "../stage0-musl-1.2.5/build.ncl" in      # R7: /usr/lib/musl-bedrock-1.2.5 sysroot (static link libc + crt + headers)
-let bash = import "../bash/build.ncl" in                            # ./build.sh driver + configure shell
-let make = import "../make/build.ncl" in                            # build engine
+let stage0-musl-r7 = import "../stage0-musl-1.2.5/build.ncl" in # R7: /usr/lib/musl-bedrock-1.2.5 sysroot (static link libc + crt + headers)
+let bash = import "../bash/build.ncl" in # ./build.sh driver + configure shell
+let make = import "../make/build.ncl" in # build engine
 let sed = import "../sed/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
-let xz = import "../xz/build.ncl" in                                # binutils-2.41 ships as .tar.xz
-let diffutils = import "../diffutils/build.ncl" in                  # configure's cmp/diff (R8 saw them missing)
-let findutils = import "../findutils/build.ncl" in                  # Model-B mtime guard: find . -exec touch
-let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in        # configure's awk
+let xz = import "../xz/build.ncl" in # binutils-2.41 ships as .tar.xz
+let diffutils = import "../diffutils/build.ncl" in # configure's cmp/diff (R8 saw them missing)
+let findutils = import "../findutils/build.ncl" in # Model-B mtime guard: find . -exec touch
+let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # configure's awk
 let version = "2.41" in
 {
   name = "stage0-binutils-2.41",
   build_deps = [
     { file = "build.sh" } | Local,
-    { file = "stage0.answers" } | Local,   # record-at-pin-time byte-identity seal (UNPINNED placeholder)
+    { file = "stage0.answers" } | Local, # record-at-pin-time byte-identity seal (UNPINNED placeholder)
     {
       # upstream binutils 2.41 (.tar.xz), mirrored byte-identically (sha preserved -> sha-pinned
       # resolvedDeps).  extract=false — build.sh runs `tar --no-same-owner -xf` (bedrock convention).
@@ -52,9 +52,9 @@ let version = "2.41" in
       sha256 = "ae9a5789e23459e59606e6714723f2d3ffc31c03174191ef0d015bdf06007450",
       extract = false,
     } | Source,
-    stage0-gcc-474,        # R9: CC (gcc-4.7.4) + CXX (g++) via the gcc-cc/gcc-cxx wrappers
-    stage0-binutils-r5,    # R5: /usr/bin/{as,ld,ar,ranlib} — R9's gcc invokes these; env sets no system AR/RANLIB
-    stage0-musl-r7,        # R7: /usr/lib/musl-bedrock-1.2.5 (libc.a + crt*.o + headers)
+    stage0-gcc-474, # R9: CC (gcc-4.7.4) + CXX (g++) via the gcc-cc/gcc-cxx wrappers
+    stage0-binutils-r5, # R5: /usr/bin/{as,ld,ar,ranlib} — R9's gcc invokes these; env sets no system AR/RANLIB
+    stage0-musl-r7, # R7: /usr/lib/musl-bedrock-1.2.5 (libc.a + crt*.o + headers)
     bash,
     make,
     sed,

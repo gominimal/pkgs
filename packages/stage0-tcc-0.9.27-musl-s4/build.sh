@@ -87,7 +87,7 @@ emit "S4-DETERM-INPUT-SHA tcc-musl2=$TM2SHA  (GATE 1: operator compares this acr
 # on BYTE-IDENTICAL compile flags (identical DEFS + TCC_VERSION="0.9.27musl2" + ONE_SOURCE=1); tcc.c
 # embeds no __DATE__/__TIME__ (verified), so compile_tcc() below fixes the flags for every generation.
 mkdir -p /build/g/tm; cd /build/g/tm
-tar --no-same-owner -xzf "$BUILDROOT/tccsrc.tar.gz" 2>/tmp/te || { gate_fail "extract tccsrc: $(head -1 /tmp/te)"; finish_fail; }
+tar --no-same-owner -xzf "$BUILDROOT/tccsrc-r3gotABC.tar.gz" 2>/tmp/te || { gate_fail "extract tccsrc: $(head -1 /tmp/te)"; finish_fail; }
 [ -d tccsrc ] || { gate_fail "no tccsrc dir (deterministic extract failure — fix the source, not a re-enqueue)"; finish_fail; }
 cd "$BUILDROOT"
 TCCSRC=/build/g/tm/tccsrc
@@ -177,7 +177,7 @@ fi
 # regression suite for the amd64 codegen bugs we already found by RUNNING binaries. $(...) strips
 # trailing newlines from BOTH sides (no diffutils needed; comparison is fair).
 mkdir -p /build/g/tort; cd /build/g/tort
-tar --no-same-owner -xzf "$BUILDROOT/torture.tar.gz" 2>/tmp/tte || { gate_fail "extract torture: $(head -1 /tmp/tte)"; finish_fail; }
+tar --no-same-owner -xzf "$BUILDROOT/tcc-torture-s4.tar.gz" 2>/tmp/tte || { gate_fail "extract torture: $(head -1 /tmp/tte)"; finish_fail; }
 [ -d torture ] || { gate_fail "no torture/ dir after extract"; finish_fail; }
 TESTS="t_shift t_mul t_args t_varargs t_struct t_float t_longlong t_recursion t_bigframe t_switch t_setjmp"
 pass=0; total=0

@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputLib, OutputData, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 # R4a STAGE 3 — stage0-tcc-0.9.27-musl-s3.  The MUSL-RELINK (two-stage stability).  s1's tcc-musl is
 # mes-linked -> flaky on big compiles/links (the mes-libc lottery).  Now that it LINKS running musl
 # binaries (fixes A+B+C), have it rebuild tcc.c against MUSL -> tcc-musl2, a MUSL-LINKED tcc that escapes
@@ -17,7 +17,13 @@ let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in
   name = "stage0-tcc-0.9.27-musl-s3",
   build_deps = [
     { file = "build.sh" } | Local,
-    { file = "tccsrc.tar.gz" } | Local,   # tcc-0.9.27 + R3 patches + GOT fixes A,B,C
+    {
+      # tcc-0.9.27 + R3 patches + GOT fixes A,B,C (shared byte-for-byte with s4).  Was an
+      # in-repo blob; now a sha-pinned staged Source — same rationale as s1.
+      url = "gs://minimal-staging-archives/tccsrc-r3gotABC.tar.gz",
+      sha256 = "4267860f408f2df455116bc7e7ee9cee874cc81339841d0760a2a0261803ae79",
+      extract = false,
+    } | Source,
     stage0-musl-r4,
     stage0-tcc-musl-s1,
     bash,
