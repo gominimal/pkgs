@@ -11,6 +11,19 @@ mkdir -p "$BINOUT" "$LIBOUT" "$LOGOUT" /build/tm
 MAN="$LOGOUT/MANIFEST.txt"
 emit(){ echo "$1"; echo "$1" >> /build/tm/rows.txt; }
 
+# LAYOUT ROLL (probe wf_81e7d78f, coreutils-probe 2026-09-01): mes-linked ELF behavior is a
+# DETERMINISTIC function of the env area (order AND byte length — arm B: every permutation
+# seed gave a distinct output sha; arm C: ±1 env byte changed the sha). "Deterministic within
+# a sandbox" therefore only holds while the env is fixed — so each retry below deliberately
+# perturbs the child env layout, turning the in-recipe loop into INDEPENDENT draws instead of
+# N replays of the same doomed layout. Try 1 always runs the canonical (unmodified) env, so a
+# first-try success is byte-identical to the pre-roll recipe.
+ROLL=""
+mesl_roll(){ # $1 = try number; sets ROLL (empty on try 1 = canonical env)
+  if [ "$1" = 1 ]; then ROLL=""; else ROLL=$(printf 'R%.0s' $(seq 1 $(( ($1 - 1) * 17 )))); fi
+}
+mesl_run(){ if [ -n "$ROLL" ]; then MESLROLL="$ROLL" "$@"; else "$@"; fi; }
+
 emit "S1-INFO build GOT-fixed tcc-musl (mes-linked, musl-configured) in clean MES env — $($TCC26 -version 2>&1 | head -1)"
 emit "S1-INFO mes crt: $(ls -la /usr/lib/mes/crt1.o 2>/dev/null | awk '{print $5}')B  mes libc.a: $(ls -la /usr/lib/mes/libc.a 2>/dev/null | awk '{print $5}')B  mes hdr stdlib.h: $(test -f /usr/include/stdlib.h && echo yes || echo NO)"
 
@@ -21,15 +34,24 @@ cd tccsrc || { emit "S1-FAIL no tccsrc dir"; cp /build/tm/rows.txt "$LOGOUT/rows
 : > config.h
 emit "S1-INFO extracted $(ls | wc -l | tr -d ' ') files; GOT fix: $(grep -c 'R5 amd64 static-GOT fix' tccelf.c) (fill_got@$(grep -n 'fill_got(s1)' tccelf.c | head -1 | cut -d: -f1) tidy@$(grep -n 'tidy_section_headers(s1, sec_order)' tccelf.c | head -1 | cut -d: -f1))"
 
-# libtcc1.a (x86_64) -> output (stage 2's TCC_LIBGCC=/usr/lib/tcc/libtcc1.a)
-$TCC26 -c -D TCC_TARGET_X86_64=1 -o /tmp/lt.o lib/libtcc1.c 2>/tmp/l1
-$TCC26 -c -D TCC_TARGET_X86_64=1 -o /tmp/va.o lib/va_list.c 2>/tmp/l2
+# libtcc1.a (x86_64) -> output (stage 2's TCC_LIBGCC=/usr/lib/tcc/libtcc1.a).
+# Rolled retries here too: a crashed unit compile used to fall through to an EMPTY archive
+# (the `: > libtcc1.a` backstop below), shipping a silent poison that only surfaced at s3.
+for i in $(seq 1 4); do
+  mesl_roll "$i"
+  rm -f /tmp/lt.o /tmp/va.o
+  mesl_run $TCC26 -c -D TCC_TARGET_X86_64=1 -o /tmp/lt.o lib/libtcc1.c 2>/tmp/l1
+  mesl_run $TCC26 -c -D TCC_TARGET_X86_64=1 -o /tmp/va.o lib/va_list.c 2>/tmp/l2
+  [ -f /tmp/lt.o ] && [ -f /tmp/va.o ] && break
+done
 $TCC26 -ar cr "$LIBOUT/libtcc1.a" /tmp/lt.o /tmp/va.o 2>/tmp/l3
 emit "S1-LIBTCC1 libtcc1.a=$(ls -la $LIBOUT/libtcc1.a 2>/dev/null | awk '{print $5}')B"
 
 # build tcc-musl PIECEWISE: tcc-0.9.26 compiles each tcc source as a SEPARATE small unit (NO ONE_SOURCE),
 # then links them. The mes-libc SIGSEGV scales with compile-unit SIZE — ~10 small units crash far less
-# often than the one giant ONE_SOURCE tcc.c (~5%/sandbox). This is the root-cause fix for the lottery.
+# often than the one giant ONE_SOURCE tcc.c (~5%/sandbox). (Frequency fix, NOT the root cause: the
+# root cause is env-layout-dependent mes-libc behavior — see the LAYOUT ROLL note above. The rolled
+# retries are the in-recipe escape hatch when a bad layout still bites.)
 TM=/build/tcc-musl
 # DEFS bake the MUSL config into the .o's (bash array so the -D "..." string literals survive intact);
 # tcc-0.9.26 links the .o's with its OWN (mes) crt -> mes-linked but musl-configured tcc-musl (unchanged).
@@ -54,22 +76,23 @@ INCS=(-I . -I /usr/include -I /usr/include/mes)
 # is its own small compilation unit.
 UNITS="libtcc tccpp tccgen tccelf tccrun x86_64-gen x86_64-link i386-asm tccasm tcc"
 built=0; bc=0; failunit=""
-for i in $(seq 1 3); do
+for i in $(seq 1 6); do
+  mesl_roll "$i"
   rm -f "$TM"; for u in $UNITS; do rm -f "$u.o"; done; : > /tmp/be
   ok=1
   for u in $UNITS; do
-    "$TCC26" -w -c "${DEFS[@]}" "${INCS[@]}" -o "$u.o" "$u.c" 2>>/tmp/be
+    mesl_run "$TCC26" -w -c "${DEFS[@]}" "${INCS[@]}" -o "$u.o" "$u.c" 2>>/tmp/be
     bc=$?
     { [ "$bc" = 0 ] && [ -f "$u.o" ]; } || { ok=0; failunit="$u"; break; }
   done
   [ "$ok" = 1 ] || continue
   objs=""; for u in $UNITS; do objs="$objs $u.o"; done
   # $objs MUST word-split into the .o args; tcc-0.9.26 supplies its own (mes) crt under -static
-  "$TCC26" -w -static -o "$TM" $objs 2>>/tmp/be
+  mesl_run "$TCC26" -w -static -o "$TM" $objs 2>>/tmp/be
   bc=$?
   { [ "$bc" = 0 ] && [ -x "$TM" ]; } && { built=1; break; }
 done
-emit "S1-BUILD tcc-musl built=$built piecewise (try $i/3 last-rc=$bc failunit=${failunit:-none} be=$(wc -c </tmp/be | tr -d ' '))"
+emit "S1-BUILD tcc-musl built=$built piecewise (try $i/6 roll=$((i-1)) last-rc=$bc failunit=${failunit:-none} be=$(wc -c </tmp/be | tr -d ' '))"
 if [ "$built" = 1 ]; then
   cp "$TM" "$BINOUT/tcc-musl"
   emit "S1-OK tcc-musl: $("$TM" -version 2>&1 | head -1)"
@@ -98,7 +121,7 @@ else
   # mechanism without naming it (this bit me while writing this very fix). (ASLR is separately disabled globally now, Dockerfile.prod:91
   # -> sandbox2 personality(ADDR_NO_RANDOMIZE), so the old "per-task ASLR" attribution is stale too.)
   if [ "$bc" = 139 ]; then
-    emit "S1-BUILD-ERR mes-libc SIGSEGV rc=139 in tcc-0.9.26 (a compiled ELF linked against mes-libc; no Scheme interpreter and no GC arena are in this process) compiling unit=${failunit:-link} — DETERMINISTIC, not retryable, do not re-enqueue: $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
+    emit "S1-BUILD-ERR mes-libc SIGSEGV rc=139 in tcc-0.9.26 (a compiled ELF linked against mes-libc; no Scheme interpreter and no GC arena are in this process) compiling unit=${failunit:-link} across ALL 6 INDEPENDENT env-layout draws — layout-independent means a REAL bug, not a draw; do not re-enqueue: $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
   else
     emit "S1-BUILD-ERR (non-lottery, rc=$bc unit=${failunit:-link}, deterministic — fix the recipe, not a re-enqueue): $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
   fi

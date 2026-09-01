@@ -10,6 +10,17 @@ OUT=/build/output; BINOUT=$OUT/usr/bin; LIBOUT=$OUT/usr/lib/tcc; LOGOUT=$OUT/usr
 mkdir -p "$BINOUT" "$LIBOUT" "$LOGOUT" /build/tm
 MAN="$LOGOUT/MANIFEST.txt"
 emit(){ echo "$1"; echo "$1" >> /build/tm/rows.txt; }
+
+# LAYOUT ROLL (probe wf_81e7d78f, coreutils-probe 2026-09-01): TM1 is MES-LINKED, and mes-linked
+# ELF behavior is a DETERMINISTIC function of the env area (order AND byte length — the probe's
+# permutation sweep gave a distinct output sha per env seed, and ±1 env byte changed it). So a
+# crash here is f(TM1 bytes, env layout): retrying under the SAME layout replays the same doom,
+# but each rolled retry below is an INDEPENDENT draw. Try 1 keeps the canonical env (first-try
+# success = byte-identical to the pre-roll recipe).
+ROLL=""
+mesl_roll(){ if [ "$1" = 1 ]; then ROLL=""; else ROLL=$(printf 'R%.0s' $(seq 1 $(( ($1 - 1) * 17 )))); fi; }
+mesl_run(){ if [ -n "$ROLL" ]; then MESLROLL="$ROLL" "$@"; else "$@"; fi; }
+
 emit "S3-INFO musl-relink — TM1(s1)=$("$TM1" -version 2>&1 | head -1)  musl libc.a=$(ls -la /usr/lib/libc.a 2>/dev/null | awk '{print $5}')B  stdio.h=$(test -f /usr/include/stdio.h && echo yes || echo NO)  libtcc1=$(ls -la $LT 2>/dev/null | awk '{print $5}')B"
 
 cd /build/tm
@@ -24,11 +35,13 @@ cp "$LT" "$LIBOUT/libtcc1.a"
 # libc.a TWICE for the libc<->libtcc1 abort cycle. Retry the mes-libc lottery.
 TM2=/build/tcc-musl2
 built=0
-# Lottery is deterministic within a sandbox, so a big in-task loop can't escape a bad-layout task —
-# keep it tiny and let `orch enqueue --retry-on-lottery N` (fresh sandbox per roll) do the real work.
-for i in $(seq 1 3); do
+# Rolled retries: the lottery is deterministic PER ENV LAYOUT (not per sandbox) — mesl_roll gives
+# each try its own layout, so the loop escapes a bad draw in-recipe. --retry-on-lottery (fresh
+# sandbox) and buildbot re-runs remain the outer fallback; 6 tries is cheap since crashes die fast.
+for i in $(seq 1 6); do
+  mesl_roll "$i"
   rm -f "$TM2"
-  "$TM1" -w -static -o "$TM2" \
+  mesl_run "$TM1" -w -static -o "$TM2" \
     -D TCC_TARGET_X86_64=1 \
     -D CONFIG_TCCDIR=\"/usr/lib/tcc\" \
     -D CONFIG_TCC_CRTPREFIX=\"/usr/lib\" \
@@ -44,7 +57,7 @@ for i in $(seq 1 3); do
   bc=$?
   [ "$bc" = 0 ] && [ -x "$TM2" ] && { built=1; break; }   # require a CLEAN compile exit (bc=0), not a partial +x binary from a crash
 done
-emit "S3-BUILD tcc-musl2 built=$built (try $i/3 last-rc=$bc be-bytes=$(wc -c </tmp/be | tr -d ' '))"
+emit "S3-BUILD tcc-musl2 built=$built (try $i/6 roll=$((i-1)) last-rc=$bc be-bytes=$(wc -c </tmp/be | tr -d ' '))"
 if [ "$built" != 1 ]; then
   # NO cache-poisoning fallback (cp TM1 -> tcc-musl2 would ship s1's flaky mes-linked compiler as the
   # supposedly-stable musl tcc-musl2 — s1:58-59 warns against exactly this). Leave tcc-musl2 absent.
@@ -58,7 +71,7 @@ if [ "$built" != 1 ]; then
     # no GC arena in this process. It also fired only after ALL 30 in-recipe tries failed, which is
     # evidence of DETERMINISM, not of a draw. The tokens are SUBSTRING-matched, so even writing
     # "NOT mes-m2" re-triggers the classifier -- describe the mechanism without naming it.
-    emit "S3-BUILD-ERR SIGSEGV rc=139 in tcc-musl (a compiled ELF; no Scheme interpreter or GC arena in this process) after ALL 30 in-recipe tries — 30 identical failures is DETERMINISTIC; do not re-enqueue: $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
+    emit "S3-BUILD-ERR SIGSEGV rc=139 in tcc-musl (a compiled ELF; no Scheme interpreter or GC arena in this process) across ALL 6 INDEPENDENT env-layout draws — layout-independent means TM1's BYTES are bad (a corrupt s1 draw shipped); rebuild s1 (invalidate its cache entry), do not re-enqueue this stage: $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
   else
     emit "S3-BUILD-ERR (non-lottery, rc=$bc, deterministic — fix the tcc<->musl link, not a re-enqueue): $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
   fi
