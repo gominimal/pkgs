@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.9.3" in
+let version = "1.9.4" in
 {
   name = "grpcurl",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/fullstorydev/grpcurl/v%{version}.tar.gz",
-      sha256 = "bb555087f279af156159c86d4d3d5dd3f2991129e4cd6b09114e6851a679340d",
+      sha256 = "bea899ba2f483a951bf40aa05d41e069dd2f7bfe52d2a229717abfdb5620cb7c",
       extract = true,
       strip_prefix = "grpcurl-%{version}",
     } | Source,
