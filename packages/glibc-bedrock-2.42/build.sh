@@ -186,7 +186,18 @@ cp -a "$OUTPUT_DIR/usr/lib/gconv" "$PUB/lib/gconv" 2>/dev/null || true
 # ⚠ use the RUNTIME install path (/$PUB_REL), NOT $PUB — $PUB is the build-time staging dir
 # ($OUTPUT_DIR/...); baking it produced dangling GROUP(/build/output/...) paths that broke every
 # consumer link ("C compiler cannot create executables" at B5 binutils configure, 2026-07-03).
-sed -i "s@/usr/lib/@/$PUB_REL/lib/@g" "$PUB/lib/libc.so" 2>/dev/null || true
+# ⚠ NOT ONLY libc.so: glibc installs libm.a AND libm.so as scripts too (GROUP(/usr/lib/
+# libm-2.42.a /usr/lib/libmvec...)). Sedding only libc.so was latent until the #631 anchor
+# flip — the old Debian anchor happened to ship /usr/lib/libm-2.42.a, so the un-rewritten
+# absolute path resolved from the ANCHOR (the wrong library) and GATE-CXX passed by accident;
+# the bedrock anchor ships it only inside the versioned sysroot, so buildbot exposed it
+# (2026-09-01, `ld: cannot find /usr/lib/libm-2.42.a`). Rewrite EVERY text linker script.
+for _ls in "$PUB"/lib/lib*.so "$PUB"/lib/lib*.a; do
+  [ -f "$_ls" ] || continue
+  head -c 64 "$_ls" | grep -qE 'GNU ld script|OUTPUT_FORMAT|GROUP' || continue
+  sed -i "s@/usr/lib/@/$PUB_REL/lib/@g" "$_ls"
+  echo "  repointed linker script: $_ls" >&2
+done
 
 # ============ locale generation (production commands).  Runs the JUST-BUILT localedef => needs AVX2 ====
 # (compiled -march=x86-64-v3, executed on the builder).  Non-fatal for the cold hop: the 368 pkgs need
