@@ -1,4 +1,4 @@
-let { BuildSpec, OutputBin, Source, Local, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 # hex0 — THE seed. The 229-byte hand-auditable hex0 monitor
 # (oriansj/stage0-posix Release_1.9.1, AMD64), the sole bedrock root of
 # trust for the attested-from-source toolchain ladder.
