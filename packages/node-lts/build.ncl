@@ -113,5 +113,25 @@ let version = "24.19.0" in
           ["/bin/bash", "-c", "npm config get prefix | grep -q '/.local$'"],
         ],
       } | Test,
+    npm_bundled_deps_load =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          # The exact module load that node 24.19.0 broke. Its bundled npm
+          # shipped minipass-flush (which imports minipass by its 7.x NAMED
+          # export) shadowed by a nested minipass@3.3.6 that only has a default
+          # export, so `class Flush extends undefined` threw and EVERY
+          # `npm install` died — see build.sh and gominimal/pkgs#665.
+          #
+          # Nothing caught it because the other tests only run `node`, and both
+          # `npm --version` and `npm config get` succeed on a broken tree. This
+          # requires the module graph, so it fails loudly if the shape returns.
+          ["/bin/bash", "-c", "node -e \"require('/usr/lib/node_modules/npm/node_modules/minipass-flush')\""],
+          # cacache is what actually threw in the traceback; it pulls
+          # minipass-flush, minipass-pipeline and fs-minipass together.
+          ["/bin/bash", "-c", "node -e \"require('/usr/lib/node_modules/npm/node_modules/cacache')\""],
+        ],
+      } | Test,
   },
 } | BuildSpec
