@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
@@ -29,7 +29,17 @@ let version = "11.21.0" in
     # beside a nested minipass@3.3.6 from npm 11.11.1 (default export only).
     # That tree has never existed upstream and cannot load — every
     # `npm install` died, which broke `next` for two days. See pkgs#665/#670.
-    node,
+    # ONLY the `node` binary — deliberately NOT npm/npx/node_modules.
+    #
+    # pnpm needs a node to interpret its `#!/usr/bin/env node` shebang and
+    # nothing else. Depending on the whole package dragged a SECOND npm into
+    # the closure of everything built with pnpm, and since the sandbox
+    # hardlinks closure members first-writer-wins PER FILE, the resulting
+    # /usr/lib/node_modules/npm was a blend of two npm versions that cannot
+    # load (see the commit message and pkgs#665). Taking the subset means pnpm
+    # can never contribute an npm tree at all, so that class is closed even if
+    # a consumer later picks a different node.
+    subsetOf node ["node"],
     coreutils,
   ],
   needs =
