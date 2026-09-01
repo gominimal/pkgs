@@ -12,20 +12,22 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
-# ★ ARCH SCOPE (pre-review fix, matches build.ncl): the attested-rung stage0 is AMD64-ONLY
-# in this PR.  On aarch64 the rung build_dep is not staged (the 1.91→1.96 arm rungs are not
-# built yet — next tranche), so arm keeps the pre-PR behavior: no [build] rustc/cargo
-# override, and x.py performs its standard src/stage0 download (`needs internet` covers it).
+# ATTESTED stage0 (issue #17 — the ladder CLOSED, now on BOTH arches): the stage0
+# rustc/cargo is the attested rustc-1.96.0 rung, NOT the old unattested seed-*.tar.gz and NOT
+# x.py's stage0 download (that fallback is deleted; a missing stage0 is now FATAL on both
+# arches).  amd64: the CS-attested rung build_dep, hydrated read-only at /usr/lib/rustc-1.96.0.
+# arm64: the SEALED arm-ladder tarball Source (see build.ncl's BEDROCK ROOT note) — extract=true
+# lands its topdir at ./rustc-1.96.0-aarch64 inside the source root ('rustc-1.96.0-aarch64'
+# collides with nothing in the rustc-src tree, and an in-tree toolchain dir is already proven
+# harmless by the stage0-clean copy below).  x.py uses it via bootstrap.toml [build] rustc/cargo
+# and never downloads.  Runtime note (arm): the rung links libLLVM.so.21.1 shared ([llvm]
+# link-shared, same shape as the amd64 rungs) — satisfied by this sandbox's llvm dep.
+# See build.ncl's header for the chain and the LADDER EXTENSION note (1.97.1 pins 1.96.0).
 if [ "$(uname -m)" = aarch64 ]; then
-  echo "rust stage0: arm64 — attested-rung stage0 not yet available on this arch; using x.py's standard stage0 download (see build.ncl ARCH SCOPE note)"
+  STAGE0_PREFIX="$(pwd)/rustc-1.96.0-aarch64"
 else
-
-# ATTESTED stage0 (issue #17 — the ladder CLOSED): the stage0 rustc/cargo is the CS-attested
-# rustc-1.96.0 rung (a build_dep installed at /usr/lib/rustc-1.96.0), NOT the old unattested
-# seed-*.tar.gz. x.py uses it directly (bootstrap.toml [build] rustc/cargo) and skips the
-# src/stage0 download — no network egress in Confidential Space. See build.ncl's header for the
-# full chain and the LADDER EXTENSION note (1.97.1's src/stage0 pins 1.96.0).
-STAGE0_PREFIX=/usr/lib/rustc-1.96.0
+  STAGE0_PREFIX=/usr/lib/rustc-1.96.0
+fi
 SEED_RUSTC="${STAGE0_PREFIX}/bin/rustc"
 SEED_CARGO="${STAGE0_PREFIX}/bin/cargo"
 [ -x "$SEED_RUSTC" ] || { echo "rust: FATAL attested stage0 rustc missing at $SEED_RUSTC — the rustc-1.96.0 rung is THE anchor of this build" >&2; exit 1; }
@@ -57,7 +59,6 @@ echo "rust:   sysroot=$("$SEED_RUSTC" --print sysroot 2>&1)  |  remaining rustc-
 # inject the stage0 override right after the [build] table header (order: rustc, cargo)
 sed -i "/^\[build\]/a cargo = \"$SEED_CARGO\"" bootstrap.toml
 sed -i "/^\[build\]/a rustc = \"$SEED_RUSTC\"" bootstrap.toml
-fi
 
 # bootstrap.toml sets `vendor = false` so bootstrap does NOT pass cargo --frozen (see the comment
 # there): the attested rung cargo (>=1.94 behavior) needs a deterministic offline Cargo.lock refresh from

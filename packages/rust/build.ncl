@@ -47,7 +47,7 @@ let version = "1.97.1" in
       # mrustc's own root provenance (see packages/mrustc) is the remaining boundary, not this edge.
       # assess_dep_chain still returns None on a declaredSources hit, so CHAIN_ENFORCE=1 cannot fail-shut
       # this edge; proof is this recipe's stage0 assert + the predecessor rungs' own signatures.
-      # amd64-only for now — arm64's seed-rooted gcc/rust stage0 is a separate track (#16).
+      # arm64's stage0 is the sealed arm-ladder rung (see the BEDROCK ROOT Source below).
       base,
       cmake,
       curl,
@@ -58,15 +58,31 @@ let version = "1.97.1" in
       python,
       toolchain,
     ]
-    # ★ ARCH SCOPE (pre-review fix): the attested-rung stage0 is AMD64-ONLY in this PR.
-    # arm64's chain is green through the mrustc→1.90 rung (all 7 functional gates, lab
-    # hardware) but the 1.91→1.96 arm rungs have not been BUILT yet — next tranche.  Until
-    # then arm64 keeps the pre-PR behavior (x.py's stage0 download; `needs internet` below
-    # covers it).  Same per-arch honesty shape as packages/go's ladder-close.
+    # ★ ATTESTED stage0 on BOTH arches (arm ladder closed 2026-09-01; x.py's stage0
+    # download fallback is DELETED from build.sh — a missing stage0 is now fatal).
     @ (
       match {
         { arch = 'Amd64, .. } => [rustc-1-96-0],
-        { arch = 'Arm64, .. } => [],
+        { arch = 'Arm64, .. } =>
+          [
+            # BEDROCK ROOT (arm64): rustc-1.96.0 from the hex0-rooted arm ladder — sealed
+            # arm bedrock toolchain (hex0→gcc-15.2) → mrustc (1d552ca + 11-fix) → 1.90.0 →
+            # 1.91.1 → … → 1.96.0, the SAME rung recipes this tree ships for amd64, run
+            # verbatim on lab hardware (driver rust-arm-19x.sh v27/R9B; artifacts, per-rung
+            # logs and publish provenance: gs://minimalmertic-bootstrap-evidence/
+            # arm-rust-ladder/).  Replaces x.py's rust-lang CDN stage0 download.  Known
+            # de-risk substitution, recorded loudly: the ladder's LLVM was apt.llvm.org
+            # 21.1.5 (no arm CS exists; the pkgs-llvm re-climb is the accepted follow-up).
+            # The rung links libLLVM.so.21.1 shared — satisfied by this sandbox's llvm dep
+            # (runtime deps are materialized at build time), same shape as the amd64 rungs.
+            # `extract = true` unpacks the topdir to ./rustc-1.96.0-aarch64 inside the
+            # source root; build.sh points bootstrap.toml [build] rustc/cargo at it.
+            {
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/51c984265ceabf3c49a41b6476ed74c6e8439da15b655e86ad79c61197c932ba/rustc-1.96.0-aarch64.tar.zst",
+              sha256 = "51c984265ceabf3c49a41b6476ed74c6e8439da15b655e86ad79c61197c932ba",
+              extract = true,
+            } | Source,
+          ],
       } target
     ),
   runtime_deps = [
@@ -83,9 +99,9 @@ let version = "1.97.1" in
     subsetOf gcc ["libgcc", "libstdcpp"],
   ],
   # WHY needs SURVIVES the offline flip: the CS builder has no egress and the attested
-  # builds above ran fully offline; `needs` is retained for (a) the arm64 stage0 download
-  # path (rust, until the arm rungs land) and (b) non-CS environments that build this
-  # recipe without pre-staged mirrors.  Dropping it is a follow-up once arm closes.
+  # builds above ran fully offline; with the arm stage0 flip the download path is gone on
+  # BOTH arches, so `needs` is retained only for (b) non-CS environments that build this
+  # recipe without pre-staged mirrors.  Dropping it entirely is a follow-up.
   needs =
     {
       dns = {},
