@@ -34,7 +34,9 @@ let version = "1.24.0" in
   outputs = {
     skopeo = { glob = "usr/bin/skopeo" } | OutputBin,
 
-    completions = { glob = "usr/share/bash-completion/completions/*" } | OutputData,
+    bash_completion = { glob = "usr/share/bash-completion/completions/skopeo" } | OutputData,
+    fish_completion = { glob = "usr/share/fish/vendor_completions.d/skopeo.fish" } | OutputData,
+    zsh_completion = { glob = "usr/share/zsh/site-functions/_skopeo" } | OutputData,
   },
   attrs =
     {
