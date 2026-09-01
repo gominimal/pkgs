@@ -77,82 +77,98 @@ let all_outputs = {
   sysroot_include = { glob = "usr/lib/glibc-bedrock-2.42/include/**" } | OutputData,
 }
 in
-{
-  name = "glibc-bedrock-2.42",
-  build_deps = [
-    { file = "build.sh" } | Local,
-    match {
-      { arch = 'Amd64, .. } =>
-        {
-          # PRODUCTION glibc-2.42 tarball — SAME source + sha as minimal's packages/glibc (byte-identical
-          # mirror; sha preserved -> sha-pinned resolvedDeps).  Already mirrored.  Downloadable from:
-          # https://ftp.gnu.org/gnu/glibc/ .  extract=false (build.sh untars with --no-same-owner).
-          url = "gs://minimal-staging-archives/glibc-%{version}.tar.xz",
-          sha256 = "d1775e32e4628e64ef930f435b67bb63af7599acb6be2b335b9f19f16509f17f",
-          extract = false,
-        } | Source,
-      { arch = 'Arm64, .. } =>
-        {
-          # ARM: the SEALED bedrock-aarch64 ladder artifact (R11 glibc-2.42 with locale) —
-          # hex0-rooted on the arm ladder, publicly re-derivable (bedrock-roots-manifest.txt).
-          # Root-shaped usr/lib/glibc-bedrock-%{version}/ tree; build.sh extracts it verbatim.
-          # In-sandbox from-source arm parity (the amd64 path above) is tracked follow-up work.
-          url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/a1d40cb10e77670c3c1b00bf2ce28f45775146dfe0397d4c4c5468e955bb1cdc/stage0-glibc-2.42-aarch64.tar.zst",
-          sha256 = "a1d40cb10e77670c3c1b00bf2ce28f45775146dfe0397d4c4c5468e955bb1cdc",
-          extract = false,
-        } | Source,
-    } target,
-    {
-      # gcc-15.2.0 FULL tarball — REQUIRED ONLY for the OPTIONAL Pass-2 libgcc rebuild (B4_REBUILD_LIBGCC=1).
-      # SAME source + sha as R12 (stage0-gcc-15.2.0).  build.sh only untars it inside the Pass-2 `if` block,
-      # so with the DEFAULT skip posture it is fetched-but-unused (cheap).  Declared here so the recipe is
-      # complete for BOTH postures without a re-stage.  ⚠ stage_internal_deps_gap: `orch stage` captures only
-      # the FIRST Source into manifest.json — this SECOND Source is hydrated by builder graph-traversal, NOT
-      # the queue task's audit chain.  extract=false.  (GCC version hardcoded to match R12 / build.sh GCCVER.)
-      url = "gs://minimal-staging-archives/gcc-15.2.0.tar.xz",
-      sha256 = "438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e",
-      extract = false,
-    } | Source,
-    # seed-rooted toolchain
-    stage0-gcc,
-    stage0-binutils,
-    stage0-linux-headers,
-    stage0-musl,
-    stage0-gmp-mpfr-mpc,
-    # base
-    bash,
-    bzip2,
-    coreutils,
-    diffutils,
-    file,
-    findutils,
-    gawk,
-    grep,
-    gzip,
-    make,
-    perl,
-    sed,
-    tar,
-    xz,
-    # other
-    bison,
-    m4,
-    python,
-  ],
+let amd64_spec =
+  {
+    name = "glibc-bedrock-2.42",
+    build_deps = [
+      { file = "build.sh" } | Local,
+      match {
+        { arch = 'Amd64, .. } =>
+          {
+            # PRODUCTION glibc-2.42 tarball — SAME source + sha as minimal's packages/glibc (byte-identical
+            # mirror; sha preserved -> sha-pinned resolvedDeps).  Already mirrored.  Downloadable from:
+            # https://ftp.gnu.org/gnu/glibc/ .  extract=false (build.sh untars with --no-same-owner).
+            url = "gs://minimal-staging-archives/glibc-%{version}.tar.xz",
+            sha256 = "d1775e32e4628e64ef930f435b67bb63af7599acb6be2b335b9f19f16509f17f",
+            extract = false,
+          } | Source,
+        { arch = 'Arm64, .. } =>
+          {
+            # ARM: the SEALED bedrock-aarch64 ladder artifact (R11 glibc-2.42 with locale) —
+            # hex0-rooted on the arm ladder, publicly re-derivable (bedrock-roots-manifest.txt).
+            # Root-shaped usr/lib/glibc-bedrock-%{version}/ tree; build.sh extracts it verbatim.
+            # In-sandbox from-source arm parity (the amd64 path above) is tracked follow-up work.
+            url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/a1d40cb10e77670c3c1b00bf2ce28f45775146dfe0397d4c4c5468e955bb1cdc/stage0-glibc-2.42-aarch64.tar.zst",
+            sha256 = "a1d40cb10e77670c3c1b00bf2ce28f45775146dfe0397d4c4c5468e955bb1cdc",
+            extract = false,
+          } | Source,
+      } target,
+      {
+        # gcc-15.2.0 FULL tarball — REQUIRED ONLY for the OPTIONAL Pass-2 libgcc rebuild (B4_REBUILD_LIBGCC=1).
+        # SAME source + sha as R12 (stage0-gcc-15.2.0).  build.sh only untars it inside the Pass-2 `if` block,
+        # so with the DEFAULT skip posture it is fetched-but-unused (cheap).  Declared here so the recipe is
+        # complete for BOTH postures without a re-stage.  ⚠ stage_internal_deps_gap: `orch stage` captures only
+        # the FIRST Source into manifest.json — this SECOND Source is hydrated by builder graph-traversal, NOT
+        # the queue task's audit chain.  extract=false.  (GCC version hardcoded to match R12 / build.sh GCCVER.)
+        url = "gs://minimal-staging-archives/gcc-15.2.0.tar.xz",
+        sha256 = "438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e",
+        extract = false,
+      } | Source,
+      # seed-rooted toolchain
+      stage0-gcc,
+      stage0-binutils,
+      stage0-linux-headers,
+      stage0-musl,
+      stage0-gmp-mpfr-mpc,
+      # base
+      bash,
+      bzip2,
+      coreutils,
+      diffutils,
+      file,
+      findutils,
+      gawk,
+      grep,
+      gzip,
+      make,
+      perl,
+      sed,
+      tar,
+      xz,
+      # other
+      bison,
+      m4,
+      python,
+    ],
 
-  cmd = "./build.sh",
-  build_args = {
-    include version,
-  },
+    cmd = "./build.sh",
+    build_args = {
+      include version,
+    },
 
-  outputs = all_outputs,
-  attrs =
+    outputs = all_outputs,
+    attrs =
+      {
+        upstream_version = version,
+        repology_project = "glibc",
+        source_provenance = {
+          category = 'GnuProject,
+          name = "glibc",
+        },
+      } | Attrs,
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      upstream_version = version,
-      repology_project = "glibc",
-      source_provenance = {
-        category = 'GnuProject,
-        name = "glibc",
-      },
-    } | Attrs,
-} | BuildSpec
+      name = "glibc-bedrock-2.42",
+      build_deps = [],
+    } | BuildSpec,
+} target

@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # R4 — stage0-musl-1.1.24.  The FIRST real C library in the bedrock climb: musl 1.1.24
 # (musl.libc.org/releases), compiled by R3's tcc-0.9.27 and INSTALLED as a static libc.a +
 # crt*.o + headers.  R5 (the gcc-mesboot / binutils rungs) builds ON this musl instead of the
@@ -73,74 +74,90 @@ let tar = import "../tar/build.ncl" in # build.sh `tar -xf` — a SEPARATE pkg, 
 let gzip = import "../gzip/build.ncl" in # tar's .gz decompression
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # musl's configure uses awk once (bootstrap variant = light closure, matches packages/make)
 let version = "1.1.24" in
-{
-  name = "stage0-musl-1.1.24",
-  build_deps = [
-    { file = "build.sh" } | Local, # the bash driver (derived from live-bootstrap pass1.sh, amd64-adapted)
-    { file = "stage0.answers" } | Local, # sha256sum -c byte-identity gate (RECORD-AT-PIN-TIME for amd64)
-    # ARCH-NEUTRAL patches, copied byte-identically from live-bootstrap steps/musl-1.1.24
-    # (verified to apply to the extracted x86_64 tree; the i386-only patches are intentionally
-    # NOT carried — see the build.ncl header):
-    { file = "makefile.patch" } | Local, # tcc -ar can't make empty archives -> `touch` the empty libs
-    { file = "madvise_preserve_errno.patch" } | Local, # preserve errno across __madvise in malloc
-    { file = "avoid_sys_clone.patch" } | Local, # posix_spawn: fork() instead of __clone (tcc/early-env safe)
-    { file = "disable_ctype_headers.patch" } | Local, # drop iswalpha/… decls meslibc can't regenerate tables for
-    # amd64-ONLY (net-new vs live-bootstrap's i386 path): skip the PIC crts (Scrt1.o/rcrt1.o) — tcc-0.9.27
-    # segfaults on arch/x86_64/crt_arch.h's `lea _DYNAMIC(%rip),%rsi` under -fPIC. Static bootstrap uses crt1.o only.
-    { file = "skip-pic-crt.patch" } | Local,
-    # amd64-ONLY (net-new): tcc-0.9.27 segfaults ASSEMBLING crt_arch.h's `lea _DYNAMIC(%rip),%rsi`
-    # (weak+hidden sym, RIP-rel reloc). Static crt1.c's _start_c uses only rdi, so rsi/_DYNAMIC is
-    # vestigial -> replace with `xor %esi,%esi`. (Every -f/-W flag probe passed; only this asm crashes.)
-    { file = "drop-dynamic-crt.patch" } | Local,
-    # amd64-ONLY (analog of live-bootstrap's i386 va_list.patch the scaffold dropped): tcc-0.9.27 has
-    # NO __builtin_va_list and SEGFAULTS on it (musl-crt-diag v4 pinned it: stdio.h -> the va_list
-    # typedef -> crash). Define it under __TINYC__ via tcc-0.9.27's OWN SysV __va_list_struct mechanism.
-    { file = "amd64-va-list.patch" } | Local,
-    # amd64-ONLY (net-new vs i386 live-bootstrap): rewrite __syscall4/5/6 in arch/x86_64/syscall_arch.h —
-    # tcc-0.9.27 cannot compile musl's GCC `register long r10 __asm__("r10")` arg-pinning; use explicit
-    # `movq %N,%%rN ; syscall`. src/env/__init_tls.o (SYS_mmap2, 6-arg) is the FIRST >=4-arg-syscall user
-    # in the build -> without this tcc SIGSEGVs there at compile time (proven via musl-crt-diag v22).
-    { file = "amd64-syscall-arch.patch" } | Local,
+let amd64_spec =
+  {
+    name = "stage0-musl-1.1.24",
+    build_deps = [
+      { file = "build.sh" } | Local, # the bash driver (derived from live-bootstrap pass1.sh, amd64-adapted)
+      { file = "stage0.answers" } | Local, # sha256sum -c byte-identity gate (RECORD-AT-PIN-TIME for amd64)
+      # ARCH-NEUTRAL patches, copied byte-identically from live-bootstrap steps/musl-1.1.24
+      # (verified to apply to the extracted x86_64 tree; the i386-only patches are intentionally
+      # NOT carried — see the build.ncl header):
+      { file = "makefile.patch" } | Local, # tcc -ar can't make empty archives -> `touch` the empty libs
+      { file = "madvise_preserve_errno.patch" } | Local, # preserve errno across __madvise in malloc
+      { file = "avoid_sys_clone.patch" } | Local, # posix_spawn: fork() instead of __clone (tcc/early-env safe)
+      { file = "disable_ctype_headers.patch" } | Local, # drop iswalpha/… decls meslibc can't regenerate tables for
+      # amd64-ONLY (net-new vs live-bootstrap's i386 path): skip the PIC crts (Scrt1.o/rcrt1.o) — tcc-0.9.27
+      # segfaults on arch/x86_64/crt_arch.h's `lea _DYNAMIC(%rip),%rsi` under -fPIC. Static bootstrap uses crt1.o only.
+      { file = "skip-pic-crt.patch" } | Local,
+      # amd64-ONLY (net-new): tcc-0.9.27 segfaults ASSEMBLING crt_arch.h's `lea _DYNAMIC(%rip),%rsi`
+      # (weak+hidden sym, RIP-rel reloc). Static crt1.c's _start_c uses only rdi, so rsi/_DYNAMIC is
+      # vestigial -> replace with `xor %esi,%esi`. (Every -f/-W flag probe passed; only this asm crashes.)
+      { file = "drop-dynamic-crt.patch" } | Local,
+      # amd64-ONLY (analog of live-bootstrap's i386 va_list.patch the scaffold dropped): tcc-0.9.27 has
+      # NO __builtin_va_list and SEGFAULTS on it (musl-crt-diag v4 pinned it: stdio.h -> the va_list
+      # typedef -> crash). Define it under __TINYC__ via tcc-0.9.27's OWN SysV __va_list_struct mechanism.
+      { file = "amd64-va-list.patch" } | Local,
+      # amd64-ONLY (net-new vs i386 live-bootstrap): rewrite __syscall4/5/6 in arch/x86_64/syscall_arch.h —
+      # tcc-0.9.27 cannot compile musl's GCC `register long r10 __asm__("r10")` arg-pinning; use explicit
+      # `movq %N,%%rN ; syscall`. src/env/__init_tls.o (SYS_mmap2, 6-arg) is the FIRST >=4-arg-syscall user
+      # in the build -> without this tcc SIGSEGVs there at compile time (proven via musl-crt-diag v22).
+      { file = "amd64-syscall-arch.patch" } | Local,
+      {
+        # upstream musl 1.1.24.  sha256 from live-bootstrap steps/musl-1.1.24/sources
+        # (https://musl.libc.org/releases/musl-1.1.24.tar.gz); mirrored byte-identically to our
+        # archives bucket (the .tar.gz sha is preserved).  extract=false — build.sh runs `tar -xf`
+        # itself (the bash-build convention; matches packages/make, packages/coreutils).
+        url = "gs://minimal-staging-archives/musl-%{version}.tar.gz",
+        sha256 = "1370c9a812b2cf2a7d92802510cca0058cc37e66a7bedd70051f0a34015022a3",
+        extract = false,
+      } | Source,
+      # compiler-spine predecessor edge (chain-enforce) + environment:
+      stage0-tcc-r3, # R3: /usr/bin/tcc (CC + `tcc -ar`) + libtcc1.a + /usr/lib/mes
+      stage0-mes, # R1: /usr/include/** (mes headers for configure probes)
+      bash, # ./build.sh driver
+      make, # build engine
+      sed, # configure wrapper/config.mak
+      grep, # configure probes
+      patch, # apply the 4 patches
+      coreutils, # rm/mkdir/cp/chmod/install/cat/sort/tr/sha256sum
+      tar, # build.sh `tar -xf musl-1.1.24.tar.gz`
+      gzip, # tar's .gz decompression
+      gawk-bootstrap, # musl configure's awk
+    ],
+    build_args = {
+      include version,
+    },
+    # build.sh re-enters the shell (vs R0-R3's kaem); minimal runs it via the project bash-build path.
+    cmd = "./build.sh",
+    outputs = {
+      # the static libc R5 links against:
+      libc = { glob = "usr/lib/libc.a" } | OutputLib,
+      # crt startup objects (crt1.o/crti.o/crtn.o/Scrt1.o/rcrt1.o — assembled by tcc from x86_64 crt*.s/.c):
+      crt = { glob = "usr/lib/*.o" } | OutputLib,
+      # the empty stub archives (libm/libpthread/librt/… are EMPTY on musl — `touch`ed via makefile.patch):
+      libs = { glob = "usr/lib/*.a" } | OutputLib,
+      # musl headers (the libc interface R5's compilers compile against):
+      includes = { glob = "usr/include/**" } | OutputData,
+    },
+    attrs =
+      {
+        upstream_version = version,
+        repology_project = "musl",
+      } | Attrs,
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      # upstream musl 1.1.24.  sha256 from live-bootstrap steps/musl-1.1.24/sources
-      # (https://musl.libc.org/releases/musl-1.1.24.tar.gz); mirrored byte-identically to our
-      # archives bucket (the .tar.gz sha is preserved).  extract=false — build.sh runs `tar -xf`
-      # itself (the bash-build convention; matches packages/make, packages/coreutils).
-      url = "gs://minimal-staging-archives/musl-%{version}.tar.gz",
-      sha256 = "1370c9a812b2cf2a7d92802510cca0058cc37e66a7bedd70051f0a34015022a3",
-      extract = false,
-    } | Source,
-    # compiler-spine predecessor edge (chain-enforce) + environment:
-    stage0-tcc-r3, # R3: /usr/bin/tcc (CC + `tcc -ar`) + libtcc1.a + /usr/lib/mes
-    stage0-mes, # R1: /usr/include/** (mes headers for configure probes)
-    bash, # ./build.sh driver
-    make, # build engine
-    sed, # configure wrapper/config.mak
-    grep, # configure probes
-    patch, # apply the 4 patches
-    coreutils, # rm/mkdir/cp/chmod/install/cat/sort/tr/sha256sum
-    tar, # build.sh `tar -xf musl-1.1.24.tar.gz`
-    gzip, # tar's .gz decompression
-    gawk-bootstrap, # musl configure's awk
-  ],
-  build_args = {
-    include version,
-  },
-  # build.sh re-enters the shell (vs R0-R3's kaem); minimal runs it via the project bash-build path.
-  cmd = "./build.sh",
-  outputs = {
-    # the static libc R5 links against:
-    libc = { glob = "usr/lib/libc.a" } | OutputLib,
-    # crt startup objects (crt1.o/crti.o/crtn.o/Scrt1.o/rcrt1.o — assembled by tcc from x86_64 crt*.s/.c):
-    crt = { glob = "usr/lib/*.o" } | OutputLib,
-    # the empty stub archives (libm/libpthread/librt/… are EMPTY on musl — `touch`ed via makefile.patch):
-    libs = { glob = "usr/lib/*.a" } | OutputLib,
-    # musl headers (the libc interface R5's compilers compile against):
-    includes = { glob = "usr/include/**" } | OutputData,
-  },
-  attrs =
-    {
-      upstream_version = version,
-      repology_project = "musl",
-    } | Attrs,
-} | BuildSpec
+      name = "stage0-musl-1.1.24",
+      build_deps = [],
+    } | BuildSpec,
+} target

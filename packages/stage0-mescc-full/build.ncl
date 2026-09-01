@@ -1,4 +1,5 @@
 let { BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let stage0-mescc = import "../stage0-mescc/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 # R0.5 — stage0-mescc-full. The rung BETWEEN R0 (stage0-mescc, the kaem-minimal-driven mini
@@ -38,69 +39,85 @@ let coreutils = import "../coreutils/build.ncl" in
 # byte-identical to R0's (M1/hex2/kaem are the SEEDED leaves, gate-re-asserted to the canonical
 # shas; catm is the canonical M2-Mesoplanet-built c13daf05). Re-export is unambiguous because
 # the dep model leaves only R0's full kaem + coreutils in this rootfs (no self-import).
-{
-  name = "stage0-mescc-full",
-  build_deps = [
-    { file = "mescc-full.kaem" } | Local, # full-kaem-driven Phase 12-23 port of AMD64/kaem.run
-    { file = "stage0.answers" } | Local, # sha256sum -c gate: 19 canonical pins + simple-patch (RAP)
-    { file = "simple-patch.c" } | Local, # live-bootstrap helper source (steps/simple-patch-1.0)
+let amd64_spec =
+  {
+    name = "stage0-mescc-full",
+    build_deps = [
+      { file = "mescc-full.kaem" } | Local, # full-kaem-driven Phase 12-23 port of AMD64/kaem.run
+      { file = "stage0.answers" } | Local, # sha256sum -c gate: 19 canonical pins + simple-patch (RAP)
+      { file = "simple-patch.c" } | Local, # live-bootstrap helper source (steps/simple-patch-1.0)
+      {
+        url = "gs://minimal-staging-archives/stage0-posix-1.9.1.tar.zst",
+        sha256 = "33108c8c1271a12c3eae9509dff4c10c55b7475548cf5d370778eaf7138194df", # S3, reused
+        extract = true,
+      } | Source,
+      # R0: the mini toolchain. Provides the DRIVER /usr/bin/kaem (full C kaem, 6364de59) AND the
+      # five SEED inputs mescc-full.kaem plants in-tree: /usr/bin/M2-Planet (== artifact/M2,
+      # bootstrap M2), /usr/bin/blood-elf (== artifact/blood-elf-0, no-debug), /usr/bin/{M1,hex2,
+      # kaem}. Imported WHOLE as the seed source — UNCHANGED by the §A ratification (R0.5's own
+      # build has no collision: only R0 + coreutils are in this rootfs, R0's eight exports share
+      # no path with coreutils, and R0.5 stages its outputs to /build/output, never /usr). The §A
+      # decision changes only R0.5's OUTPUT surface (re-export kaem/catm/M1/hex2), not this import.
+      stage0-mescc,
+      coreutils, # /usr/bin/{mkdir,cp,chmod,sha256sum} — seed/gate/stage ops, by absolute path
+    ],
+    cmds = [
+      # Single handoff to R0's attested full C kaem, --strict (fail-fast) + --verbose (trace).
+      ["/usr/bin/kaem", "--strict", "--verbose", "--file", "mescc-full.kaem"],
+    ],
+    outputs = {
+      # ── THE R0.5 -> R1/R2 CONTRACT (CONTRACTS §B): the EXACT 10-tool durable surface those ──
+      # ── rungs import. All are usr/bin/* static ELFs (allow_missing_interpreter). Output KEYS ──
+      # ── are contract handles — renaming a key breaks a downstream import. ──
+      #
+      # The six FINAL tools (this rung produces them):
+      # R1 imports m2planet for the FINAL self-hosted M2-Planet that compiles mes-m2 (live-
+      # bootstrap builds mes-m2 with the final bin/M2-Planet, NOT R0's bootstrap artifact/M2).
+      m2planet = { glob = "usr/bin/M2-Planet", allow_missing_interpreter = true } | OutputBin, # 7cf19de2
+      # R2 imports m2mesoplanet for the M2-Mesoplanet cc-driver (compiles the extra tools +
+      # simple-patch; tcc.kaem uses it for the self-contained simple-patch fallback compile).
+      m2mesoplanet = { glob = "usr/bin/M2-Mesoplanet", allow_missing_interpreter = true } | OutputBin, # f2485588
+      # R2 imports match_tool for `match` (the `if match ${ARCH} …` arch blocks in tcc.kaem).
+      # (key is `match_tool`: `match` is a Nickel reserved keyword; the glob sets the path.)
+      match_tool = { glob = "usr/bin/match", allow_missing_interpreter = true } | OutputBin, # 962d44ad
+      # R2 imports simple_patch for `simple-patch` (the two tcctools.c fopen relocations).
+      simple_patch = { glob = "usr/bin/simple-patch", allow_missing_interpreter = true } | OutputBin, # RAP
+      # FINAL debuggable blood-elf (6d1c5342). R1 + R2 consume THIS (supersedes R0's no-debug
+      # blood-elf-0); live-bootstrap uses the final blood-elf for all post-full-kaem builds.
+      bloodelf = { glob = "usr/bin/blood-elf", allow_missing_interpreter = true } | OutputBin, # 6d1c5342
+      # get_machine (379cb35a): not consumed by R1/R2; part of the canonical set, for later rungs.
+      get_machine = { glob = "usr/bin/get_machine", allow_missing_interpreter = true } | OutputBin,
+      #
+      # The four RE-EXPORTED durable R0-owned tools (CONTRACTS §A/§B, the `+` rows). R1/R2 take
+      # the ENTIRE toolchain from THIS single whole-Build import and never import R0 directly, so
+      # nothing in /usr/bin collides. Each is byte-identical to R0's:
+      #   kaem/M1/hex2 — the SEEDED leaves, re-asserted by the 19-leaf gate to the canonical shas.
+      #   catm         — the canonical M2-Mesoplanet-built catm (c13daf05), built by the extra phase.
+      # R0.5-NOTES §2's "catm ownership wrinkle" is hereby resolved: R1/R2 take catm from R0.5,
+      # the single gate-asserted owner (c13daf05), NOT R0's hex2-built artifact/catm.
+      kaem = { glob = "usr/bin/kaem", allow_missing_interpreter = true } | OutputBin, # 6364de59 (driver, re-export)
+      catm = { glob = "usr/bin/catm", allow_missing_interpreter = true } | OutputBin, # c13daf05 (canonical)
+      m1 = { glob = "usr/bin/M1", allow_missing_interpreter = true } | OutputBin, # fc68c115 (re-export)
+      hex2 = { glob = "usr/bin/hex2", allow_missing_interpreter = true } | OutputBin, # f782df6d (re-export)
+      # DELIBERATELY NOT exported: the coreutils-colliding extra tools (chmod/cp/mkdir/rm/
+      # sha256sum/ungz/unbz2/unxz/untar/replace/wrap). All are BUILT + GATED in-tree (part of the
+      # 19-leaf fixed point) but staging them would shadow the consumer's coreutils. None of the
+      # 10 exported keys above is a coreutils tool name, so R1/R2 keep coreutils as a build_dep
+      # with no shadow.
+    },
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      url = "gs://minimal-staging-archives/stage0-posix-1.9.1.tar.zst",
-      sha256 = "33108c8c1271a12c3eae9509dff4c10c55b7475548cf5d370778eaf7138194df", # S3, reused
-      extract = true,
-    } | Source,
-    # R0: the mini toolchain. Provides the DRIVER /usr/bin/kaem (full C kaem, 6364de59) AND the
-    # five SEED inputs mescc-full.kaem plants in-tree: /usr/bin/M2-Planet (== artifact/M2,
-    # bootstrap M2), /usr/bin/blood-elf (== artifact/blood-elf-0, no-debug), /usr/bin/{M1,hex2,
-    # kaem}. Imported WHOLE as the seed source — UNCHANGED by the §A ratification (R0.5's own
-    # build has no collision: only R0 + coreutils are in this rootfs, R0's eight exports share
-    # no path with coreutils, and R0.5 stages its outputs to /build/output, never /usr). The §A
-    # decision changes only R0.5's OUTPUT surface (re-export kaem/catm/M1/hex2), not this import.
-    stage0-mescc,
-    coreutils, # /usr/bin/{mkdir,cp,chmod,sha256sum} — seed/gate/stage ops, by absolute path
-  ],
-  cmds = [
-    # Single handoff to R0's attested full C kaem, --strict (fail-fast) + --verbose (trace).
-    ["/usr/bin/kaem", "--strict", "--verbose", "--file", "mescc-full.kaem"],
-  ],
-  outputs = {
-    # ── THE R0.5 -> R1/R2 CONTRACT (CONTRACTS §B): the EXACT 10-tool durable surface those ──
-    # ── rungs import. All are usr/bin/* static ELFs (allow_missing_interpreter). Output KEYS ──
-    # ── are contract handles — renaming a key breaks a downstream import. ──
-    #
-    # The six FINAL tools (this rung produces them):
-    # R1 imports m2planet for the FINAL self-hosted M2-Planet that compiles mes-m2 (live-
-    # bootstrap builds mes-m2 with the final bin/M2-Planet, NOT R0's bootstrap artifact/M2).
-    m2planet = { glob = "usr/bin/M2-Planet", allow_missing_interpreter = true } | OutputBin, # 7cf19de2
-    # R2 imports m2mesoplanet for the M2-Mesoplanet cc-driver (compiles the extra tools +
-    # simple-patch; tcc.kaem uses it for the self-contained simple-patch fallback compile).
-    m2mesoplanet = { glob = "usr/bin/M2-Mesoplanet", allow_missing_interpreter = true } | OutputBin, # f2485588
-    # R2 imports match_tool for `match` (the `if match ${ARCH} …` arch blocks in tcc.kaem).
-    # (key is `match_tool`: `match` is a Nickel reserved keyword; the glob sets the path.)
-    match_tool = { glob = "usr/bin/match", allow_missing_interpreter = true } | OutputBin, # 962d44ad
-    # R2 imports simple_patch for `simple-patch` (the two tcctools.c fopen relocations).
-    simple_patch = { glob = "usr/bin/simple-patch", allow_missing_interpreter = true } | OutputBin, # RAP
-    # FINAL debuggable blood-elf (6d1c5342). R1 + R2 consume THIS (supersedes R0's no-debug
-    # blood-elf-0); live-bootstrap uses the final blood-elf for all post-full-kaem builds.
-    bloodelf = { glob = "usr/bin/blood-elf", allow_missing_interpreter = true } | OutputBin, # 6d1c5342
-    # get_machine (379cb35a): not consumed by R1/R2; part of the canonical set, for later rungs.
-    get_machine = { glob = "usr/bin/get_machine", allow_missing_interpreter = true } | OutputBin,
-    #
-    # The four RE-EXPORTED durable R0-owned tools (CONTRACTS §A/§B, the `+` rows). R1/R2 take
-    # the ENTIRE toolchain from THIS single whole-Build import and never import R0 directly, so
-    # nothing in /usr/bin collides. Each is byte-identical to R0's:
-    #   kaem/M1/hex2 — the SEEDED leaves, re-asserted by the 19-leaf gate to the canonical shas.
-    #   catm         — the canonical M2-Mesoplanet-built catm (c13daf05), built by the extra phase.
-    # R0.5-NOTES §2's "catm ownership wrinkle" is hereby resolved: R1/R2 take catm from R0.5,
-    # the single gate-asserted owner (c13daf05), NOT R0's hex2-built artifact/catm.
-    kaem = { glob = "usr/bin/kaem", allow_missing_interpreter = true } | OutputBin, # 6364de59 (driver, re-export)
-    catm = { glob = "usr/bin/catm", allow_missing_interpreter = true } | OutputBin, # c13daf05 (canonical)
-    m1 = { glob = "usr/bin/M1", allow_missing_interpreter = true } | OutputBin, # fc68c115 (re-export)
-    hex2 = { glob = "usr/bin/hex2", allow_missing_interpreter = true } | OutputBin, # f782df6d (re-export)
-    # DELIBERATELY NOT exported: the coreutils-colliding extra tools (chmod/cp/mkdir/rm/
-    # sha256sum/ungz/unbz2/unxz/untar/replace/wrap). All are BUILT + GATED in-tree (part of the
-    # 19-leaf fixed point) but staging them would shadow the consumer's coreutils. None of the
-    # 10 exported keys above is a coreutils tool name, so R1/R2 keep coreutils as a build_dep
-    # with no shadow.
-  },
-} | BuildSpec
+      name = "stage0-mescc-full",
+      build_deps = [],
+    } | BuildSpec,
+} target

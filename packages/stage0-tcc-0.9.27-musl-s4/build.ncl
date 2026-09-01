@@ -1,4 +1,5 @@
 let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # wired 2026-08 (stage0-binutils-2.30 + stage0-gcc-4.0.4 consume this rung) (spec: .staging-ctx/correctness-gate-2026-06-30.md).
 # R4a STAGE 4 — THE CORRECTNESS GATE.  s3 produces tcc-musl2 (musl-linked), but the s1/s3 mes-libc
 # compile that BIRTHED it crashes ~95% and may ~5% of the time emit a WRONG-BUT-RUNNING tcc-musl2.
@@ -42,46 +43,62 @@ let gzip = import "../gzip/build.ncl" in
 let sed = import "../sed/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in
-{
-  name = "stage0-tcc-0.9.27-musl-s4",
-  build_deps = [
-    { file = "build.sh" } | Local,
+let amd64_spec =
+  {
+    name = "stage0-tcc-0.9.27-musl-s4",
+    build_deps = [
+      { file = "build.sh" } | Local,
+      {
+        # IDENTICAL to s3's source (GOT fixes A,B,C) — the fixed-point recompile MUST use the
+        # same tcc.c.  Same staged object as s3 (sha-pinned).
+        url = "gs://minimal-staging-archives/tccsrc-r3gotABC.tar.gz",
+        sha256 = "4267860f408f2df455116bc7e7ee9cee874cc81339841d0760a2a0261803ae79",
+        extract = false,
+      } | Source,
+      {
+        # torture/*.c + *.expected (expected stdout verified against gcc at authoring time).
+        # Sha-pinned staged Source; the torture/ directory in this package is the readable
+        # audit copy of the same content.
+        url = "gs://minimal-staging-archives/tcc-torture-s4.tar.gz",
+        sha256 = "8567511d499c73ded9432a07d9e0047a166efd3b32bc4a8d2cc31ec37ff8c705",
+        extract = false,
+      } | Source,
+      stage0-musl-r4b,
+      stage0-tcc-musl-s3,
+      bash,
+      coreutils,
+      tar,
+      gzip,
+      sed,
+      grep,
+      gawk-bootstrap,
+    ],
+    cmd = "./build.sh",
+    outputs = {
+      # THE SEAL TARGET. This binary is a byte-identical copy of tcc-musl2 that PHYSICALLY CANNOT EXIST
+      # unless every gate passed (build.sh cp's it only after GATEFAIL==0). On any gate failure the build
+      # exits 1 AND leaves this absent -> the OutputBin glob matches nothing -> minimal marks the build
+      # FAILED -> nothing is sealed/cached/published. Double-gated: explicit exit 1 + absent artifact.
+      # Downstream R5 binutils imports s4 and uses /usr/bin/tcc-musl2 as CC — the gate is unbypassable.
+      tcc = { glob = "usr/bin/tcc-musl2", allow_missing_interpreter = true } | OutputBin,
+      libtcc1 = { glob = "usr/lib/tcc/libtcc1.a" } | OutputLib, # gate-validated (torture exercises __udivdi3/__va_start)
+      gatepass = { glob = "usr/share/tcc-musl-s4/GATE-PASS" } | OutputData, # only written on full pass
+      manifest = { glob = "usr/share/tcc-musl-s4/MANIFEST.txt" } | OutputData,
+      logs = { glob = "usr/share/tcc-musl-s4/rows.log" } | OutputData,
+    },
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      # IDENTICAL to s3's source (GOT fixes A,B,C) — the fixed-point recompile MUST use the
-      # same tcc.c.  Same staged object as s3 (sha-pinned).
-      url = "gs://minimal-staging-archives/tccsrc-r3gotABC.tar.gz",
-      sha256 = "4267860f408f2df455116bc7e7ee9cee874cc81339841d0760a2a0261803ae79",
-      extract = false,
-    } | Source,
-    {
-      # torture/*.c + *.expected (expected stdout verified against gcc at authoring time).
-      # Sha-pinned staged Source; the torture/ directory in this package is the readable
-      # audit copy of the same content.
-      url = "gs://minimal-staging-archives/tcc-torture-s4.tar.gz",
-      sha256 = "8567511d499c73ded9432a07d9e0047a166efd3b32bc4a8d2cc31ec37ff8c705",
-      extract = false,
-    } | Source,
-    stage0-musl-r4b,
-    stage0-tcc-musl-s3,
-    bash,
-    coreutils,
-    tar,
-    gzip,
-    sed,
-    grep,
-    gawk-bootstrap,
-  ],
-  cmd = "./build.sh",
-  outputs = {
-    # THE SEAL TARGET. This binary is a byte-identical copy of tcc-musl2 that PHYSICALLY CANNOT EXIST
-    # unless every gate passed (build.sh cp's it only after GATEFAIL==0). On any gate failure the build
-    # exits 1 AND leaves this absent -> the OutputBin glob matches nothing -> minimal marks the build
-    # FAILED -> nothing is sealed/cached/published. Double-gated: explicit exit 1 + absent artifact.
-    # Downstream R5 binutils imports s4 and uses /usr/bin/tcc-musl2 as CC — the gate is unbypassable.
-    tcc = { glob = "usr/bin/tcc-musl2", allow_missing_interpreter = true } | OutputBin,
-    libtcc1 = { glob = "usr/lib/tcc/libtcc1.a" } | OutputLib, # gate-validated (torture exercises __udivdi3/__va_start)
-    gatepass = { glob = "usr/share/tcc-musl-s4/GATE-PASS" } | OutputData, # only written on full pass
-    manifest = { glob = "usr/share/tcc-musl-s4/MANIFEST.txt" } | OutputData,
-    logs = { glob = "usr/share/tcc-musl-s4/rows.log" } | OutputData,
-  },
-} | BuildSpec
+      name = "stage0-tcc-0.9.27-musl-s4",
+      build_deps = [],
+    } | BuildSpec,
+} target

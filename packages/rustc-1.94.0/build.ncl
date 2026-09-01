@@ -3,6 +3,7 @@
 # tracked_env skew is why).  Kept because its CS attestation is part of the recorded
 # endpoint-decision evidence; delete once that history is archived elsewhere.
 let { subsetOf, Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # ============================================================================================
 # rustc-1.94.0 — RUNG 5 of 5 on the road to deleting packages/rust's unattested seed tarballs
 # (issue #17).  Byte-identical clone of RUNG 4 (packages/rustc-1.93.1, its predecessor) per its
@@ -87,71 +88,87 @@ let gcc = import "../gcc/build.ncl" in
 
 let version = "1.94.0" in
 let stage0_version = "1.93.1" in
-{
-  name = "rustc-%{version}",
-  build_deps = [
-    { file = "build.sh" } | Local,
-    # rustc 1.91.1 source.  SELF-CONTAINED for offline: ships src/.cargo config + bundled vendor/
-    # (measured on the staged tarball: `tar tJ` shows rustc-1.91.1-src/.cargo and vendor/).  So
-    # NO goproxy/cargo-vendor inputs are needed, unlike the amd64 cargo pkgs.
-    # ⚠ sha256 is task-provided; GCS stores only crc32c/md5, so it is verified by the fetcher's
-    # re-hash at stage time (as RUNG 1 does defence-in-depth).  build.sh cannot re-sha an
-    # already-extracted tree, so it instead asserts src/version == 1.91.1 and
-    # src/stage0 pins compiler_version == 1.90.0 — a STRONGER "right source" check than a sha.
-    {
-      url = "gs://minimal-staging-archives/rustc-%{version}-src.tar.xz",
-      sha256 = "0b53ae34f5c0c3612cfe1de139f9167a018cd5737bc2205664fd69ba9b25f600",
-      extract = true,
-      strip_prefix = "rustc-%{version}-src",
-    } | Source,
-    # ★ stage0 = the PREVIOUS rung's installed prefix, consumed as a build_dep.  RUNG 4's layout is
-    # /usr/lib/rustc-1.93.1/bin/{rustc,cargo} + lib/rustlib/<triple>/lib (std) — a real ELF rustc
-    # (not the mrustc shell wrapper RUNG 1 shipped).  build.sh points bootstrap.toml [build]
-    # rustc/cargo at bin/rustc and bin/cargo; --print sysroot resolves the regular prefix.
-    rustc-1-93-1,
-    base, # bash/coreutils/tar/xz/sed/grep/gawk/findutils — the userland; xz extracts the src
-    cmake, # some vendored -sys build scripts; also pulls a real curl (shadowed by P0b's stub)
-    curl, # libcurl for curl-sys (offline: pkg-config path OR the P0c-marked vendored submodule)
-    libssh2, # LIBSSH2_SYS_USE_PKG_CONFIG=1 -> cargo's libssh2-sys uses the system lib
-    pkgconf, # ships usr/bin/pkg-config for the -sys probes
-    python, # x.py is python
-    toolchain, # gcc/binutils/glibc/linux_headers — clang's sysroot (crt, libc, headers)
-  ],
-  runtime_deps = [
-    libffi,
-    llvm, # /usr/bin/{clang,clang++,llvm-config} + libLLVM-21.so (present at BUILD time too)
-    openssl,
-    sqlite,
-    subsetOf gcc ["libgcc", "libstdcpp"],
-  ],
-  # ── NO `needs` block.  A chain rung MUST be strictly offline and fail SHUT. ──
+let amd64_spec =
+  {
+    name = "rustc-%{version}",
+    build_deps = [
+      { file = "build.sh" } | Local,
+      # rustc 1.91.1 source.  SELF-CONTAINED for offline: ships src/.cargo config + bundled vendor/
+      # (measured on the staged tarball: `tar tJ` shows rustc-1.91.1-src/.cargo and vendor/).  So
+      # NO goproxy/cargo-vendor inputs are needed, unlike the amd64 cargo pkgs.
+      # ⚠ sha256 is task-provided; GCS stores only crc32c/md5, so it is verified by the fetcher's
+      # re-hash at stage time (as RUNG 1 does defence-in-depth).  build.sh cannot re-sha an
+      # already-extracted tree, so it instead asserts src/version == 1.91.1 and
+      # src/stage0 pins compiler_version == 1.90.0 — a STRONGER "right source" check than a sha.
+      {
+        url = "gs://minimal-staging-archives/rustc-%{version}-src.tar.xz",
+        sha256 = "0b53ae34f5c0c3612cfe1de139f9167a018cd5737bc2205664fd69ba9b25f600",
+        extract = true,
+        strip_prefix = "rustc-%{version}-src",
+      } | Source,
+      # ★ stage0 = the PREVIOUS rung's installed prefix, consumed as a build_dep.  RUNG 4's layout is
+      # /usr/lib/rustc-1.93.1/bin/{rustc,cargo} + lib/rustlib/<triple>/lib (std) — a real ELF rustc
+      # (not the mrustc shell wrapper RUNG 1 shipped).  build.sh points bootstrap.toml [build]
+      # rustc/cargo at bin/rustc and bin/cargo; --print sysroot resolves the regular prefix.
+      rustc-1-93-1,
+      base, # bash/coreutils/tar/xz/sed/grep/gawk/findutils — the userland; xz extracts the src
+      cmake, # some vendored -sys build scripts; also pulls a real curl (shadowed by P0b's stub)
+      curl, # libcurl for curl-sys (offline: pkg-config path OR the P0c-marked vendored submodule)
+      libssh2, # LIBSSH2_SYS_USE_PKG_CONFIG=1 -> cargo's libssh2-sys uses the system lib
+      pkgconf, # ships usr/bin/pkg-config for the -sys probes
+      python, # x.py is python
+      toolchain, # gcc/binutils/glibc/linux_headers — clang's sysroot (crt, libc, headers)
+    ],
+    runtime_deps = [
+      libffi,
+      llvm, # /usr/bin/{clang,clang++,llvm-config} + libLLVM-21.so (present at BUILD time too)
+      openssl,
+      sqlite,
+      subsetOf gcc ["libgcc", "libstdcpp"],
+    ],
+    # ── NO `needs` block.  A chain rung MUST be strictly offline and fail SHUT. ──
 
-  cmd = "./build.sh",
-  outputs = {
-    # ONE recursive OutputData glob over the whole private prefix.  OutputData (raw capture, no
-    # PATH/symlink wiring, no interp rewrite) is correct because this toolchain is consumed AS
-    # DATA by the next rung via absolute path — it must NOT land on /usr/bin (that is packages/
-    # rust's slot).  allow_executable covers the ELF rustc/cargo + the .so's.  Precedent:
-    # mrustc-rustc-1.90.0/build.ncl (OutputData+allow_executable over a versioned prefix).
-    # build.sh prunes the prefix to bin/ + lib/ + BUILDINFO so this glob is non-empty and there
-    # are no uncaptured files (share/man/doc/libexec are removed — the next rung needs none).
-    toolchain = { glob = "usr/lib/rustc-%{version}/**", allow_executable = true } | OutputData,
-  },
+    cmd = "./build.sh",
+    outputs = {
+      # ONE recursive OutputData glob over the whole private prefix.  OutputData (raw capture, no
+      # PATH/symlink wiring, no interp rewrite) is correct because this toolchain is consumed AS
+      # DATA by the next rung via absolute path — it must NOT land on /usr/bin (that is packages/
+      # rust's slot).  allow_executable covers the ELF rustc/cargo + the .so's.  Precedent:
+      # mrustc-rustc-1.90.0/build.ncl (OutputData+allow_executable over a versioned prefix).
+      # build.sh prunes the prefix to bin/ + lib/ + BUILDINFO so this glob is non-empty and there
+      # are no uncaptured files (share/man/doc/libexec are removed — the next rung needs none).
+      toolchain = { glob = "usr/lib/rustc-%{version}/**", allow_executable = true } | OutputData,
+    },
 
-  attrs =
+    attrs =
+      {
+        upstream_version = version,
+        license_spdx = "MIT OR Apache-2.0",
+        source_provenance = {
+          category = 'GithubRepo,
+          owner = "rust-lang",
+          repo = "rust",
+        },
+        env_state_wiring = {
+          env_var = "CARGO_HOME",
+          prefix = "cargo",
+        },
+        # System LLVM + clang -> the same order of magnitude as packages/rust (3), NOT RUNG 1's 40.
+        build_cost_multiple = 4,
+      } | Attrs,
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      upstream_version = version,
-      license_spdx = "MIT OR Apache-2.0",
-      source_provenance = {
-        category = 'GithubRepo,
-        owner = "rust-lang",
-        repo = "rust",
-      },
-      env_state_wiring = {
-        env_var = "CARGO_HOME",
-        prefix = "cargo",
-      },
-      # System LLVM + clang -> the same order of magnitude as packages/rust (3), NOT RUNG 1's 40.
-      build_cost_multiple = 4,
-    } | Attrs,
-} | BuildSpec
+      name = "rustc-%{version}",
+      build_deps = [],
+    } | BuildSpec,
+} target

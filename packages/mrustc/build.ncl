@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # ============================================================================================
 # mrustc 0.12.0 — ★ THE JOINT ★  (issue #17)
 #
@@ -132,56 +133,72 @@ let tar = import "../tar/build.ncl" in # plain .tar unpack (--no-same-owner)
 let patch = import "../patch/build.ncl" in # aarch64-support.patch is applied UNCONDITIONALLY (2026-08-27); the old hir-ord path was conditional and never exercised `patch` in CS
 let version = "0.12.0" in
 let commit = "1d552cadf1c58bce8b9b431a5714dcea113dde38" in
-{
-  name = "mrustc",
-  build_deps = [
-    { file = "build.sh" } | Local,
-    { file = "mrustc.answers" } | Local, # byte-seal slot; SELF-ARMS once populated (see build.sh)
-    { file = "archive-zerolen-skip.sh" } | Local, # the rustc-1.90.0 0-byte-object fix, landed in git at last
-    { file = "hir-ord-unevaluated.patch" } | Local, # upstream d8cc2933+dad6c321 backport; IN the master pin, so its conditional application is a no-op (kept for tag builds)
-    { file = "aarch64-support.patch" } | Local, # the 10-fix aarch64 series vs THIS pin (SBC fixpoint, visitor chaining, i128 ctpop, asm!, barriers — see its header); applied BOTH arches
-    { file = "gate.rs" } | Local, # GATE 1's program; the ONLY copy -- never inline it in build.sh
+let amd64_spec =
+  {
+    name = "mrustc",
+    build_deps = [
+      { file = "build.sh" } | Local,
+      { file = "mrustc.answers" } | Local, # byte-seal slot; SELF-ARMS once populated (see build.sh)
+      { file = "archive-zerolen-skip.sh" } | Local, # the rustc-1.90.0 0-byte-object fix, landed in git at last
+      { file = "hir-ord-unevaluated.patch" } | Local, # upstream d8cc2933+dad6c321 backport; IN the master pin, so its conditional application is a no-op (kept for tag builds)
+      { file = "aarch64-support.patch" } | Local, # the 10-fix aarch64 series vs THIS pin (SBC fixpoint, visitor chaining, i128 ctpop, asm!, barriers — see its header); applied BOTH arches
+      { file = "gate.rs" } | Local, # GATE 1's program; the ONLY copy -- never inline it in build.sh
+      {
+        # Deterministically re-derivable from the public repo — see the SOURCE PIN block above.
+        # Commit-qualified basename: the %{version} tree at master commit 1d552ca (still 0.12.0).
+        url = "gs://minimal-staging-archives/mrustc-%{version}-git1d552ca.tar",
+        sha256 = "1b8a2772e65b283ccbd42cb6a0e94dd2239e59bd4eb866d44405d6b5a0c33314",
+        extract = false, # build.sh untars with --no-same-owner (chown-hostile sandbox: the R8 wall)
+      } | Source,
+      gcc-bedrock,
+      binutils-bedrock,
+      glibc-bedrock,
+      zlib,
+      bash,
+      make,
+      sed,
+      grep,
+      coreutils,
+      tar,
+      patch,
+    ],
+    build_args = {
+      include version,
+      include commit,
+    },
+    cmd = "./build.sh",
+    outputs = {
+      # OutputData + allow_executable, NOT OutputBin: these link against the B4 sysroot loader at a
+      # non-standard .interp path, and binutils-2.46-glibc sets the precedent of shipping bedrock
+      # /usr/bin content as OutputData to keep the interpreter checker out of the loop.
+      bins = { glob = "usr/bin/{mrustc,minicargo}", allow_executable = true } | OutputData,
+      # the landed strand + this rung's self-describing provenance record:
+      patches = { glob = "usr/share/mrustc/patches/*", allow_executable = true } | OutputData,
+      buildinfo = { glob = "usr/share/mrustc/BUILDINFO" } | OutputData,
+    },
+    attrs =
+      {
+        upstream_version = version,
+        source_provenance = {
+          category = 'GithubRepo,
+          owner = "thepowersgang",
+          repo = "mrustc",
+        },
+        build_cost_multiple = 2,
+      } | Attrs,
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      # Deterministically re-derivable from the public repo — see the SOURCE PIN block above.
-      # Commit-qualified basename: the %{version} tree at master commit 1d552ca (still 0.12.0).
-      url = "gs://minimal-staging-archives/mrustc-%{version}-git1d552ca.tar",
-      sha256 = "1b8a2772e65b283ccbd42cb6a0e94dd2239e59bd4eb866d44405d6b5a0c33314",
-      extract = false, # build.sh untars with --no-same-owner (chown-hostile sandbox: the R8 wall)
-    } | Source,
-    gcc-bedrock,
-    binutils-bedrock,
-    glibc-bedrock,
-    zlib,
-    bash,
-    make,
-    sed,
-    grep,
-    coreutils,
-    tar,
-    patch,
-  ],
-  build_args = {
-    include version,
-    include commit,
-  },
-  cmd = "./build.sh",
-  outputs = {
-    # OutputData + allow_executable, NOT OutputBin: these link against the B4 sysroot loader at a
-    # non-standard .interp path, and binutils-2.46-glibc sets the precedent of shipping bedrock
-    # /usr/bin content as OutputData to keep the interpreter checker out of the loop.
-    bins = { glob = "usr/bin/{mrustc,minicargo}", allow_executable = true } | OutputData,
-    # the landed strand + this rung's self-describing provenance record:
-    patches = { glob = "usr/share/mrustc/patches/*", allow_executable = true } | OutputData,
-    buildinfo = { glob = "usr/share/mrustc/BUILDINFO" } | OutputData,
-  },
-  attrs =
-    {
-      upstream_version = version,
-      source_provenance = {
-        category = 'GithubRepo,
-        owner = "thepowersgang",
-        repo = "mrustc",
-      },
-      build_cost_multiple = 2,
-    } | Attrs,
-} | BuildSpec
+      name = "mrustc",
+      build_deps = [],
+    } | BuildSpec,
+} target

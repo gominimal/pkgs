@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # R2 — stage0-tcc-0.9.26 (mes-tcc). The FIRST "real" C compiler in the bedrock climb:
 # janneke's tcc-0.9.26 fork, compiled by MesCC (mes-m2 + mescc.scm, from R1) and linked
 # against R1's mes-libc, then bootstrapped through tcc-mes -> tcc-boot0 -> boot1 -> boot2
@@ -45,101 +46,117 @@ let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "mini
 let stage0-mes = import "../stage0-mes/build.ncl" in # R1 — mes-m2, mescc.scm, mes-libc, headers, module trees
 let stage0-mescc-full = import "../stage0-mescc-full/build.ncl" in # R0.5 — kaem(driver)+catm+M1+hex2 + M2-Mesoplanet+match+simple-patch+blood-elf
 let coreutils = import "../coreutils/build.ncl" in # /usr/bin/{cp,chmod,mkdir,rm,sha256sum} — bare-name generic ops
-{
-  name = "stage0-tcc-0.9.26",
-  build_deps = [
-    { file = "tcc.kaem" } | Local, # the kaem driver (derived from pass1.kaem)
-    { file = "stage0.answers" } | Local, # sha256sum -c byte-identity gate (RECORD-AT-PIN-TIME for amd64)
-    { file = "remove-fileopen.before" } | Local, # verbatim live-bootstrap simple-patch pattern
-    { file = "remove-fileopen.after" } | Local,
-    { file = "addback-fileopen.before" } | Local,
-    { file = "addback-fileopen.after" } | Local,
-    # amd64 gfunc_call fix (asm-probe-confirmed) — per-field SValue swap dodges mescc's broken
-    # whole-struct copy that corrupted the 4th+ arg type.t. All 4 crashers compile clean with this.
-    { file = "fix-swapf.before" } | Local,
-    { file = "fix-swapf.after" } | Local,
-    { file = "fix-swapb.before" } | Local,
-    { file = "fix-swapb.after" } | Local,
-    # amd64 BUG1 static-PLT crash (tccelf.c, gcc-verified genuine tcc -static defect) + BUG2
-    # strength-reduction log2 miscompile (tccgen.c). workflow wf_9d59a528, byte-exact + unique.
-    { file = "fix-plt.before" } | Local,
-    { file = "fix-plt.after" } | Local,
-    { file = "fix-mul.before" } | Local,
-    { file = "fix-mul.after" } | Local,
-    # BUG5: mes-libc setjmp basic-asm rewrite (extended-asm output operand miscompiled by tcc-mes).
-    { file = "fix-setjmp.before" } | Local,
-    { file = "fix-setjmp.after" } | Local,
-    # BUG6: variadic-call %al setup (x86_64-gen.c) — mescc miscompiles the chained deref + ternary.
-    { file = "fix-vararg.before" } | Local,
-    { file = "fix-vararg.after" } | Local,
-    # ROOT: mescc miscompiles gen_opi constant shift-count -> shr/shl $0 (o() infinite-loops, gen_le*
-    # emit wrong bytes, parser corrupts). Decompose so the count survives. THE fix that makes tcc-boot0
-    # compile fn bodies (D3a hello=42, D4 crt1=0 verified in tcc-boot0-diag). (Same root fix-mul band-aided.)
-    { file = "fix-shift.before" } | Local,
-    { file = "fix-shift.after" } | Local,
-    # BUG6-ROOT: mes amd64 stdarg.h stack-based va_list incompatible with tcc-mes SysV -> __builtin_va_*.
-    { file = "fix-stdarg.before" } | Local,
-    { file = "fix-stdarg.after" } | Local,
-    # NOTE (§simple-patch): simple-patch.c is shipped too but is INERT by default — the PRIMARY
-    # plan (CONTRACTS §B) consumes /usr/bin/simple-patch from R0.5. It is kept only for the
-    # self-contained fallback (compile here via M2-Mesoplanet + the reused stage0-posix M2libc).
-    { file = "simple-patch.c" } | Local,
+let amd64_spec =
+  {
+    name = "stage0-tcc-0.9.26",
+    build_deps = [
+      { file = "tcc.kaem" } | Local, # the kaem driver (derived from pass1.kaem)
+      { file = "stage0.answers" } | Local, # sha256sum -c byte-identity gate (RECORD-AT-PIN-TIME for amd64)
+      { file = "remove-fileopen.before" } | Local, # verbatim live-bootstrap simple-patch pattern
+      { file = "remove-fileopen.after" } | Local,
+      { file = "addback-fileopen.before" } | Local,
+      { file = "addback-fileopen.after" } | Local,
+      # amd64 gfunc_call fix (asm-probe-confirmed) — per-field SValue swap dodges mescc's broken
+      # whole-struct copy that corrupted the 4th+ arg type.t. All 4 crashers compile clean with this.
+      { file = "fix-swapf.before" } | Local,
+      { file = "fix-swapf.after" } | Local,
+      { file = "fix-swapb.before" } | Local,
+      { file = "fix-swapb.after" } | Local,
+      # amd64 BUG1 static-PLT crash (tccelf.c, gcc-verified genuine tcc -static defect) + BUG2
+      # strength-reduction log2 miscompile (tccgen.c). workflow wf_9d59a528, byte-exact + unique.
+      { file = "fix-plt.before" } | Local,
+      { file = "fix-plt.after" } | Local,
+      { file = "fix-mul.before" } | Local,
+      { file = "fix-mul.after" } | Local,
+      # BUG5: mes-libc setjmp basic-asm rewrite (extended-asm output operand miscompiled by tcc-mes).
+      { file = "fix-setjmp.before" } | Local,
+      { file = "fix-setjmp.after" } | Local,
+      # BUG6: variadic-call %al setup (x86_64-gen.c) — mescc miscompiles the chained deref + ternary.
+      { file = "fix-vararg.before" } | Local,
+      { file = "fix-vararg.after" } | Local,
+      # ROOT: mescc miscompiles gen_opi constant shift-count -> shr/shl $0 (o() infinite-loops, gen_le*
+      # emit wrong bytes, parser corrupts). Decompose so the count survives. THE fix that makes tcc-boot0
+      # compile fn bodies (D3a hello=42, D4 crt1=0 verified in tcc-boot0-diag). (Same root fix-mul band-aided.)
+      { file = "fix-shift.before" } | Local,
+      { file = "fix-shift.after" } | Local,
+      # BUG6-ROOT: mes amd64 stdarg.h stack-based va_list incompatible with tcc-mes SysV -> __builtin_va_*.
+      { file = "fix-stdarg.before" } | Local,
+      { file = "fix-stdarg.after" } | Local,
+      # NOTE (§simple-patch): simple-patch.c is shipped too but is INERT by default — the PRIMARY
+      # plan (CONTRACTS §B) consumes /usr/bin/simple-patch from R0.5. It is kept only for the
+      # self-contained fallback (compile here via M2-Mesoplanet + the reused stage0-posix M2libc).
+      { file = "simple-patch.c" } | Local,
+      {
+        # janneke's lilypond tcc-0.9.26 fork (the mes-tcc base). Upstream sha256 from
+        # live-bootstrap steps/tcc-0.9.26/sources (lilypond.org/janneke/tcc/tcc-0.9.26-1147-gee75a10c.tar.gz);
+        # PINNABLE NOW (byte-identical mirroring preserves the .tar.gz sha — memory
+        # feedback_mirror_to_staging). Extracts to /build/tcc-0.9.26-1147-gee75a10c/ (= TCC_PKG).
+        url = "gs://minimal-staging-archives/tcc-0.9.26-1147-gee75a10c.tar.gz",
+        sha256 = "6b8cbd0a5fed0636d4f0f763a603247bc1935e206e1cc5bda6a2818bab6e819f",
+        extract = true,
+      } | Source,
+      {
+        # mes-0.27.1 SOURCE — re-extracted so tcc rebuilds mes-libc (lib/*.c, lib/libtcc1.c,
+        # lib/posix/getopt.c) from source with tcc-mes. SAME upstream sha as R1's mes Source
+        # (live-bootstrap steps/mes-0.27.1/sources). Extracts to /build/mes-0.27.1/ (= MES_PKG).
+        url = "gs://minimal-staging-archives/mes-0.27.1.tar.gz",
+        sha256 = "183a40ea47ea49f8a1e3bd1b9d12e676374d64d63bc79e7bc1ae7d673dfdf25d",
+        extract = true,
+      } | Source,
+      # compiler-spine predecessor edges (chain-enforce) — toolchain taken WHOLE from R0.5+R1 only:
+      stage0-mes, # R1: /usr/bin/{mes-m2,mescc.scm} + /usr/lib/x86_64-mes/** + /usr/include/** + /usr/share/{mes,nyacc}/**
+      stage0-mescc-full, # R0.5: /usr/bin/{kaem(=driver),catm,M1,hex2,blood-elf,match,M2-Mesoplanet,simple-patch}
+      coreutils, # /usr/bin/{cp,chmod,mkdir,rm,sha256sum} (no name collision with the R0.5 export set)
+    ],
+    # tcc-mes/tcc-boot*/tcc are STATIC ELF (CONFIG_TCC_STATIC=1, linked against mes-libc) — no
+    # .interp / DT_NEEDED — so allow_missing_interpreter=true and there are no runtime_deps.
+    cmds = [
+      # Single handoff to R0.5's attested full C kaem. --file (NOT positional — the full kaem
+      # rejects positional args; it routes the script ONLY via -f/--file); --strict + --verbose
+      # for parity with R0.5/R1. tcc.kaem ALSO opens `set -ex` (belt-and-suspenders).
+      ["/usr/bin/kaem", "--strict", "--verbose", "--file", "tcc.kaem"],
+    ],
+    outputs = {
+      # the deliverable R3 (tcc-0.9.27) builds on (CONSUMER /usr path baked — see tcc.kaem §LIBDIR):
+      tcc = { glob = "usr/bin/tcc", allow_missing_interpreter = true } | OutputBin,
+      tcc_ver = { glob = "usr/bin/tcc-0.9.26", allow_missing_interpreter = true } | OutputBin,
+      # RECORD-AT-PIN-TIME intermediate compilers (kept for audit / failure localization). NB:
+      # these bake the STAGING libdir (/build/output/usr/lib/mes) — the deterministic OUTPUT_DIR —
+      # so the self-referential boot loop resolves its freshly-built libc under read-only /usr
+      # (CONTRACTS §D refinement; reproducible because OUTPUT_DIR is fixed). tcc-boot2 is NOT
+      # exported (it is rm'd after it links the deliverable tcc).
+      tcc_mes = { glob = "usr/bin/tcc-mes", allow_missing_interpreter = true } | OutputBin,
+      tcc_boot0 = { glob = "usr/bin/tcc-boot0", allow_missing_interpreter = true } | OutputBin,
+      tcc_boot1 = { glob = "usr/bin/tcc-boot1", allow_missing_interpreter = true } | OutputBin,
+      # the tcc-rebuilt mes-libc that tcc-0.9.27 (R3) links against (crt1.o + libc.a + libgetopt.a;
+      # crti.o/crtn.o are EMPTY on amd64 — the x86-only branch is skipped — but are captured if present):
+      mes_libc = { glob = "usr/lib/mes/*.{a,o}" } | OutputLib,
+      tcc_lib = { glob = "usr/lib/mes/tcc/libtcc1.a" } | OutputLib,
+    },
+    # attrs: upstream_version + repology_project (advisory String metadata). source_provenance is
+    # DROPPED — its schema (attr_classes.ncl) admits only 'GnuProject/'GithubRepo/'Sourceforge/
+    # 'Website; the draft's 'OtherSource is not a valid category, and the janneke/lilypond mes-tcc
+    # fork (tarball at lilypond.org/janneke/tcc/) fits none cleanly. The AUTHORITATIVE provenance
+    # is the sha-pinned tcc Source build_dep (recorded as a resolvedDependency), so the advisory
+    # attr is unnecessary. (R0/R0.5/R1 likewise omit source_provenance.)
+    attrs =
+      {
+        upstream_version = "0.9.26",
+        repology_project = "tinycc",
+      } | Attrs,
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      # janneke's lilypond tcc-0.9.26 fork (the mes-tcc base). Upstream sha256 from
-      # live-bootstrap steps/tcc-0.9.26/sources (lilypond.org/janneke/tcc/tcc-0.9.26-1147-gee75a10c.tar.gz);
-      # PINNABLE NOW (byte-identical mirroring preserves the .tar.gz sha — memory
-      # feedback_mirror_to_staging). Extracts to /build/tcc-0.9.26-1147-gee75a10c/ (= TCC_PKG).
-      url = "gs://minimal-staging-archives/tcc-0.9.26-1147-gee75a10c.tar.gz",
-      sha256 = "6b8cbd0a5fed0636d4f0f763a603247bc1935e206e1cc5bda6a2818bab6e819f",
-      extract = true,
-    } | Source,
-    {
-      # mes-0.27.1 SOURCE — re-extracted so tcc rebuilds mes-libc (lib/*.c, lib/libtcc1.c,
-      # lib/posix/getopt.c) from source with tcc-mes. SAME upstream sha as R1's mes Source
-      # (live-bootstrap steps/mes-0.27.1/sources). Extracts to /build/mes-0.27.1/ (= MES_PKG).
-      url = "gs://minimal-staging-archives/mes-0.27.1.tar.gz",
-      sha256 = "183a40ea47ea49f8a1e3bd1b9d12e676374d64d63bc79e7bc1ae7d673dfdf25d",
-      extract = true,
-    } | Source,
-    # compiler-spine predecessor edges (chain-enforce) — toolchain taken WHOLE from R0.5+R1 only:
-    stage0-mes, # R1: /usr/bin/{mes-m2,mescc.scm} + /usr/lib/x86_64-mes/** + /usr/include/** + /usr/share/{mes,nyacc}/**
-    stage0-mescc-full, # R0.5: /usr/bin/{kaem(=driver),catm,M1,hex2,blood-elf,match,M2-Mesoplanet,simple-patch}
-    coreutils, # /usr/bin/{cp,chmod,mkdir,rm,sha256sum} (no name collision with the R0.5 export set)
-  ],
-  # tcc-mes/tcc-boot*/tcc are STATIC ELF (CONFIG_TCC_STATIC=1, linked against mes-libc) — no
-  # .interp / DT_NEEDED — so allow_missing_interpreter=true and there are no runtime_deps.
-  cmds = [
-    # Single handoff to R0.5's attested full C kaem. --file (NOT positional — the full kaem
-    # rejects positional args; it routes the script ONLY via -f/--file); --strict + --verbose
-    # for parity with R0.5/R1. tcc.kaem ALSO opens `set -ex` (belt-and-suspenders).
-    ["/usr/bin/kaem", "--strict", "--verbose", "--file", "tcc.kaem"],
-  ],
-  outputs = {
-    # the deliverable R3 (tcc-0.9.27) builds on (CONSUMER /usr path baked — see tcc.kaem §LIBDIR):
-    tcc = { glob = "usr/bin/tcc", allow_missing_interpreter = true } | OutputBin,
-    tcc_ver = { glob = "usr/bin/tcc-0.9.26", allow_missing_interpreter = true } | OutputBin,
-    # RECORD-AT-PIN-TIME intermediate compilers (kept for audit / failure localization). NB:
-    # these bake the STAGING libdir (/build/output/usr/lib/mes) — the deterministic OUTPUT_DIR —
-    # so the self-referential boot loop resolves its freshly-built libc under read-only /usr
-    # (CONTRACTS §D refinement; reproducible because OUTPUT_DIR is fixed). tcc-boot2 is NOT
-    # exported (it is rm'd after it links the deliverable tcc).
-    tcc_mes = { glob = "usr/bin/tcc-mes", allow_missing_interpreter = true } | OutputBin,
-    tcc_boot0 = { glob = "usr/bin/tcc-boot0", allow_missing_interpreter = true } | OutputBin,
-    tcc_boot1 = { glob = "usr/bin/tcc-boot1", allow_missing_interpreter = true } | OutputBin,
-    # the tcc-rebuilt mes-libc that tcc-0.9.27 (R3) links against (crt1.o + libc.a + libgetopt.a;
-    # crti.o/crtn.o are EMPTY on amd64 — the x86-only branch is skipped — but are captured if present):
-    mes_libc = { glob = "usr/lib/mes/*.{a,o}" } | OutputLib,
-    tcc_lib = { glob = "usr/lib/mes/tcc/libtcc1.a" } | OutputLib,
-  },
-  # attrs: upstream_version + repology_project (advisory String metadata). source_provenance is
-  # DROPPED — its schema (attr_classes.ncl) admits only 'GnuProject/'GithubRepo/'Sourceforge/
-  # 'Website; the draft's 'OtherSource is not a valid category, and the janneke/lilypond mes-tcc
-  # fork (tarball at lilypond.org/janneke/tcc/) fits none cleanly. The AUTHORITATIVE provenance
-  # is the sha-pinned tcc Source build_dep (recorded as a resolvedDependency), so the advisory
-  # attr is unnecessary. (R0/R0.5/R1 likewise omit source_provenance.)
-  attrs =
-    {
-      upstream_version = "0.9.26",
-      repology_project = "tinycc",
-    } | Attrs,
-} | BuildSpec
+      name = "stage0-tcc-0.9.26",
+      build_deps = [],
+    } | BuildSpec,
+} target

@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # ============================================================================================
 # R10 — stage0-binutils-2.41.  A MODERN assembler/linker (as/ld/ar/nm/objcopy/objdump/ranlib/
 # readelf/strip), built BY the from-source gcc-4.7.4 (R9), linked static against musl-1.2.5 (R7).
@@ -40,48 +41,64 @@ let diffutils = import "../diffutils/build.ncl" in # configure's cmp/diff (R8 sa
 let findutils = import "../findutils/build.ncl" in # Model-B mtime guard: find . -exec touch
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # configure's awk
 let version = "2.41" in
-{
-  name = "stage0-binutils-2.41",
-  build_deps = [
-    { file = "build.sh" } | Local,
-    { file = "stage0.answers" } | Local, # record-at-pin-time byte-identity seal (UNPINNED placeholder)
+let amd64_spec =
+  {
+    name = "stage0-binutils-2.41",
+    build_deps = [
+      { file = "build.sh" } | Local,
+      { file = "stage0.answers" } | Local, # record-at-pin-time byte-identity seal (UNPINNED placeholder)
+      {
+        # upstream binutils 2.41 (.tar.xz), mirrored byte-identically (sha preserved -> sha-pinned
+        # resolvedDeps).  extract=false — build.sh runs `tar --no-same-owner -xf` (bedrock convention).
+        url = "gs://minimal-staging-archives/binutils-%{version}.tar.xz",
+        sha256 = "ae9a5789e23459e59606e6714723f2d3ffc31c03174191ef0d015bdf06007450",
+        extract = false,
+      } | Source,
+      stage0-gcc-474, # R9: CC (gcc-4.7.4) + CXX (g++) via the gcc-cc/gcc-cxx wrappers
+      stage0-binutils-r5, # R5: /usr/bin/{as,ld,ar,ranlib} — R9's gcc invokes these; env sets no system AR/RANLIB
+      stage0-musl-r7, # R7: /usr/lib/musl-bedrock-1.2.5 (libc.a + crt*.o + headers)
+      bash,
+      make,
+      sed,
+      grep,
+      coreutils,
+      tar,
+      xz,
+      diffutils,
+      findutils,
+      gawk-bootstrap,
+    ],
+    build_args = {
+      include version,
+    },
+    cmd = "./build.sh",
+    outputs = {
+      # the deliverable binutils tools (R11 gcc-10.5.0 needs a MODERN as/ld on PATH; env sets no AR/RANLIB):
+      # as ld ar nm objcopy objdump ranlib readelf strip + addr2line c++filt size strings + the triplet symlinks
+      bin = { glob = "usr/bin/*" } | OutputData,
+      # the static libs downstream rungs may link (libbfd.a / libopcodes.a / libctf.a / libsframe.a / libiberty.a):
+      libs = { glob = "usr/lib/*.a" } | OutputLib,
+      # bfd.h / ansidecl.h / etc (installed by --enable-install-libbfd):
+      headers = { glob = "usr/include/**" } | OutputData,
+    },
+    attrs =
+      {
+        upstream_version = version,
+        repology_project = "binutils",
+      } | Attrs,
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      # upstream binutils 2.41 (.tar.xz), mirrored byte-identically (sha preserved -> sha-pinned
-      # resolvedDeps).  extract=false — build.sh runs `tar --no-same-owner -xf` (bedrock convention).
-      url = "gs://minimal-staging-archives/binutils-%{version}.tar.xz",
-      sha256 = "ae9a5789e23459e59606e6714723f2d3ffc31c03174191ef0d015bdf06007450",
-      extract = false,
-    } | Source,
-    stage0-gcc-474, # R9: CC (gcc-4.7.4) + CXX (g++) via the gcc-cc/gcc-cxx wrappers
-    stage0-binutils-r5, # R5: /usr/bin/{as,ld,ar,ranlib} — R9's gcc invokes these; env sets no system AR/RANLIB
-    stage0-musl-r7, # R7: /usr/lib/musl-bedrock-1.2.5 (libc.a + crt*.o + headers)
-    bash,
-    make,
-    sed,
-    grep,
-    coreutils,
-    tar,
-    xz,
-    diffutils,
-    findutils,
-    gawk-bootstrap,
-  ],
-  build_args = {
-    include version,
-  },
-  cmd = "./build.sh",
-  outputs = {
-    # the deliverable binutils tools (R11 gcc-10.5.0 needs a MODERN as/ld on PATH; env sets no AR/RANLIB):
-    # as ld ar nm objcopy objdump ranlib readelf strip + addr2line c++filt size strings + the triplet symlinks
-    bin = { glob = "usr/bin/*" } | OutputData,
-    # the static libs downstream rungs may link (libbfd.a / libopcodes.a / libctf.a / libsframe.a / libiberty.a):
-    libs = { glob = "usr/lib/*.a" } | OutputLib,
-    # bfd.h / ansidecl.h / etc (installed by --enable-install-libbfd):
-    headers = { glob = "usr/include/**" } | OutputData,
-  },
-  attrs =
-    {
-      upstream_version = version,
-      repology_project = "binutils",
-    } | Attrs,
-} | BuildSpec
+      name = "stage0-binutils-2.41",
+      build_deps = [],
+    } | BuildSpec,
+} target

@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # ============================================================================================
 # R7 — stage0-musl-1.2.5.  The MODERN libc, and the FIRST bedrock rung whose CC is a real gcc.
 # ============================================================================================
@@ -43,48 +44,64 @@ let tar = import "../tar/build.ncl" in # build.sh `tar -xf`
 let gzip = import "../gzip/build.ncl" in # tar's .gz decompression
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # musl configure's awk
 let version = "1.2.5" in
-{
-  name = "stage0-musl-1.2.5",
-  build_deps = [
-    { file = "build.sh" } | Local,
-    { file = "stage0.answers" } | Local, # sha256sum -c byte-identity seal — record-at-pin-time (UNPINNED placeholder; gcc IS deterministic so promotable to fatal once pinned)
+let amd64_spec =
+  {
+    name = "stage0-musl-1.2.5",
+    build_deps = [
+      { file = "build.sh" } | Local,
+      { file = "stage0.answers" } | Local, # sha256sum -c byte-identity seal — record-at-pin-time (UNPINNED placeholder; gcc IS deterministic so promotable to fatal once pinned)
+      {
+        # upstream musl 1.2.5 (byte-identical mirror; sha preserved -> sha-pinned resolvedDeps).
+        # extract=false — build.sh runs `tar -xf` itself (bash-build convention).
+        url = "gs://minimal-staging-archives/musl-%{version}.tar.gz",
+        sha256 = "a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4",
+        extract = false,
+      } | Source,
+      stage0-gcc, # R6: the CC (via gcc-cc wrapper) — brings R4b musl + binutils in its closure too
+      stage0-musl-r4b, # R4b: explicit — the /usr/lib/musl-bedrock sysroot the wrapper links against
+      stage0-binutils-r5, # R5: explicit — as/ld/ar/ranlib on PATH
+      bash,
+      make,
+      sed,
+      grep,
+      coreutils,
+      tar,
+      gzip,
+      gawk-bootstrap,
+    ],
+    build_args = {
+      include version,
+    },
+    cmd = "./build.sh",
+    outputs = {
+      # SAME shape as R4b — the static libc + crt + stub archives + headers downstream rungs consume:
+      libc = { glob = "usr/lib/libc.a" } | OutputLib,
+      crt = { glob = "usr/lib/*.o" } | OutputLib,
+      libs = { glob = "usr/lib/*.a" } | OutputLib,
+      includes = { glob = "usr/include/**" } | OutputData,
+      # VERSIONED clean single-writer sysroot (see header §SYSROOT).  Single-level usr/lib/*.{a,o} globs
+      # above do NOT match this nested path (literal_separator), so it is not double-captured.
+      sysroot_inc = { glob = "usr/lib/musl-bedrock-1.2.5/include/**" } | OutputData,
+      sysroot_lib = { glob = "usr/lib/musl-bedrock-1.2.5/lib/**" } | OutputLib,
+    },
+    attrs =
+      {
+        upstream_version = version,
+        repology_project = "musl",
+      } | Attrs,
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      # upstream musl 1.2.5 (byte-identical mirror; sha preserved -> sha-pinned resolvedDeps).
-      # extract=false — build.sh runs `tar -xf` itself (bash-build convention).
-      url = "gs://minimal-staging-archives/musl-%{version}.tar.gz",
-      sha256 = "a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4",
-      extract = false,
-    } | Source,
-    stage0-gcc, # R6: the CC (via gcc-cc wrapper) — brings R4b musl + binutils in its closure too
-    stage0-musl-r4b, # R4b: explicit — the /usr/lib/musl-bedrock sysroot the wrapper links against
-    stage0-binutils-r5, # R5: explicit — as/ld/ar/ranlib on PATH
-    bash,
-    make,
-    sed,
-    grep,
-    coreutils,
-    tar,
-    gzip,
-    gawk-bootstrap,
-  ],
-  build_args = {
-    include version,
-  },
-  cmd = "./build.sh",
-  outputs = {
-    # SAME shape as R4b — the static libc + crt + stub archives + headers downstream rungs consume:
-    libc = { glob = "usr/lib/libc.a" } | OutputLib,
-    crt = { glob = "usr/lib/*.o" } | OutputLib,
-    libs = { glob = "usr/lib/*.a" } | OutputLib,
-    includes = { glob = "usr/include/**" } | OutputData,
-    # VERSIONED clean single-writer sysroot (see header §SYSROOT).  Single-level usr/lib/*.{a,o} globs
-    # above do NOT match this nested path (literal_separator), so it is not double-captured.
-    sysroot_inc = { glob = "usr/lib/musl-bedrock-1.2.5/include/**" } | OutputData,
-    sysroot_lib = { glob = "usr/lib/musl-bedrock-1.2.5/lib/**" } | OutputLib,
-  },
-  attrs =
-    {
-      upstream_version = version,
-      repology_project = "musl",
-    } | Attrs,
-} | BuildSpec
+      name = "stage0-musl-1.2.5",
+      build_deps = [],
+    } | BuildSpec,
+} target

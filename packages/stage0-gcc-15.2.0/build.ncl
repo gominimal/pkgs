@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # ============================================================================================
 # R12 — stage0-gcc-15.2.0  — the FIRST from-source MODERN PRODUCTION compiler.  Built BY the R11 pivot
 # (gcc-10.4.0), using R8's gmp-6.2.1/mpfr-4.1.0/mpc-1.2.1 (/usr/lib/gcc-math), linked musl-1.2.5 (R7),
@@ -39,56 +40,72 @@ let xz = import "../xz/build.ncl" in # gcc-10.4 ships .tar.xz (NOT bz2 — R9 wa
 let findutils = import "../findutils/build.ncl" in # mtime guard: find . -exec touch
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # gcc build: options.c via awk, etc.
 let version = "15.2.0" in
-{
-  name = "stage0-gcc-15.2.0",
-  build_deps = [
-    { file = "build.sh" } | Local,
-    { file = "stage0.answers" } | Local, # record-at-pin-time byte-identity seal (UNPINNED placeholder)
+let amd64_spec =
+  {
+    name = "stage0-gcc-15.2.0",
+    build_deps = [
+      { file = "build.sh" } | Local,
+      { file = "stage0.answers" } | Local, # record-at-pin-time byte-identity seal (UNPINNED placeholder)
+      {
+        # PRODUCTION gcc-15.2.0 FULL tarball (.tar.xz — needs C++).  SAME source + sha as minimal's
+        # production packages/gcc (version 15.2.0) → R12 builds the EXACT ecosystem compiler, just
+        # seed-rooted (musl-linked, built by the R11 pivot) instead of debian-prebuilt-seeded.  So B4/B5
+        # re-root the stdenv onto R12 with the 368 pkg recipes UNCHANGED.  Already mirrored + sha-verified.
+        # extract=false (build.sh untars with --no-same-owner).
+        url = "gs://minimal-staging-archives/gcc-%{version}.tar.xz",
+        sha256 = "438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e",
+        extract = false,
+      } | Source,
+      stage0-cc, # R11 pivot (gcc-10.4.0): CC/CXX — see the swap-point above
+      stage0-gmp-mpfr-mpc, # R8: gmp/mpfr/mpc (--with-gmp/mpfr/mpc=/usr/lib/gcc-math)
+      stage0-musl-r7, # R7: musl-1.2.5 sysroot
+      stage0-binutils, # R10 (binutils-2.41): as/ld/ar/ranlib
+      bash,
+      make,
+      sed,
+      grep,
+      diffutils,
+      coreutils,
+      tar,
+      xz,
+      findutils,
+      gawk-bootstrap,
+    ],
+    build_args = {
+      include version,
+    },
+    cmd = "./build.sh",
+    outputs = {
+      # the gcc-10.4 drivers the ecosystem uses as CC/CXX (gcc/g++/cpp + the x86_64-linux-gnu- driver):
+      bin = { glob = "usr/bin/*" } | OutputData,
+      # cc1 + cc1plus + collect2 (the C and C++ compilers + link wrapper):
+      libexec = { glob = "usr/libexec/**" } | OutputData,
+      # libgcc.a + crtbegin/crtend.o + specs + gcc's internal + libstdc++ target headers:
+      internals = { glob = "usr/lib/gcc/**" } | OutputData,
+      # ★ NET-NEW vs R9: capture the C++ standard library + its headers (g++ is useless without them).
+      #   libstdc++.a / libsupc++.a install to $(libdir)=/usr/lib under --disable-shared:
+      cxx_libs = { glob = "usr/lib/*.a" } | OutputLib,
+      #   the <vector>/<memory>/… headers install to /usr/include/c++/15.2.0/:
+      cxx_headers = { glob = "usr/include/c++/**" } | OutputData,
+    },
+    attrs =
+      {
+        upstream_version = version,
+        repology_project = "gcc",
+      } | Attrs,
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      # PRODUCTION gcc-15.2.0 FULL tarball (.tar.xz — needs C++).  SAME source + sha as minimal's
-      # production packages/gcc (version 15.2.0) → R12 builds the EXACT ecosystem compiler, just
-      # seed-rooted (musl-linked, built by the R11 pivot) instead of debian-prebuilt-seeded.  So B4/B5
-      # re-root the stdenv onto R12 with the 368 pkg recipes UNCHANGED.  Already mirrored + sha-verified.
-      # extract=false (build.sh untars with --no-same-owner).
-      url = "gs://minimal-staging-archives/gcc-%{version}.tar.xz",
-      sha256 = "438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e",
-      extract = false,
-    } | Source,
-    stage0-cc, # R11 pivot (gcc-10.4.0): CC/CXX — see the swap-point above
-    stage0-gmp-mpfr-mpc, # R8: gmp/mpfr/mpc (--with-gmp/mpfr/mpc=/usr/lib/gcc-math)
-    stage0-musl-r7, # R7: musl-1.2.5 sysroot
-    stage0-binutils, # R10 (binutils-2.41): as/ld/ar/ranlib
-    bash,
-    make,
-    sed,
-    grep,
-    diffutils,
-    coreutils,
-    tar,
-    xz,
-    findutils,
-    gawk-bootstrap,
-  ],
-  build_args = {
-    include version,
-  },
-  cmd = "./build.sh",
-  outputs = {
-    # the gcc-10.4 drivers the ecosystem uses as CC/CXX (gcc/g++/cpp + the x86_64-linux-gnu- driver):
-    bin = { glob = "usr/bin/*" } | OutputData,
-    # cc1 + cc1plus + collect2 (the C and C++ compilers + link wrapper):
-    libexec = { glob = "usr/libexec/**" } | OutputData,
-    # libgcc.a + crtbegin/crtend.o + specs + gcc's internal + libstdc++ target headers:
-    internals = { glob = "usr/lib/gcc/**" } | OutputData,
-    # ★ NET-NEW vs R9: capture the C++ standard library + its headers (g++ is useless without them).
-    #   libstdc++.a / libsupc++.a install to $(libdir)=/usr/lib under --disable-shared:
-    cxx_libs = { glob = "usr/lib/*.a" } | OutputLib,
-    #   the <vector>/<memory>/… headers install to /usr/include/c++/15.2.0/:
-    cxx_headers = { glob = "usr/include/c++/**" } | OutputData,
-  },
-  attrs =
-    {
-      upstream_version = version,
-      repology_project = "gcc",
-    } | Attrs,
-} | BuildSpec
+      name = "stage0-gcc-15.2.0",
+      build_deps = [],
+    } | BuildSpec,
+} target

@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # ============================================================================================
 # go-1.4 — THE GO JOINT (issue #19): the last C-hosted Go toolchain, built by the seed-rooted
 # gcc-15.2.0 (B5).  This is the rung that retires the trust-by-fiat go.dev bindist.
@@ -47,45 +48,61 @@ let grep = import "../grep/build.ncl" in # fail-shut assertions
 let coreutils = import "../coreutils/build.ncl" in # sha256sum/cp/mkdir/uname/timeout/find/wc
 let tar = import "../tar/build.ncl" in
 let version = "1.4" in
-{
-  name = "go-1.4",
-  build_deps = [
-    { file = "build.sh" } | Local,
+let amd64_spec =
+  {
+    name = "go-1.4",
+    build_deps = [
+      { file = "build.sh" } | Local,
+      {
+        url = "gs://minimal-staging-archives/go1.4-bootstrap-20171003.tar.gz",
+        sha256 = "f4ff5b5eb3a3cae1c993723f3eab519c5bae18866b5e5f96fe1102f0cb5c3e52",
+        extract = false, # build.sh untars with --no-same-owner (chown-hostile sandbox: the R8 wall)
+      } | Source,
+      gcc-bedrock,
+      binutils-bedrock,
+      glibc-bedrock,
+      bash,
+      make,
+      sed,
+      grep,
+      coreutils,
+      tar,
+    ],
+    build_args = {
+      include version,
+    },
+    cmd = "./build.sh",
+    outputs = {
+      # OutputData + allow_executable, NOT OutputBin: these link against the B4 sysroot loader at a
+      # non-standard .interp path (the binutils-2.46-glibc precedent), which keeps the interpreter
+      # checker out of the loop.  The WHOLE GOROOT ships — bin + pkg + src + lib — because a Go
+      # toolchain compiles the stdlib sources of its own GOROOT, and the next rung consumes this
+      # tree as GOROOT_BOOTSTRAP.
+      goroot = { glob = "usr/lib/go-1.4/**", allow_executable = true } | OutputData,
+      buildinfo = { glob = "usr/share/go-1.4/BUILDINFO" } | OutputData,
+    },
+    attrs =
+      {
+        upstream_version = version,
+        source_provenance = {
+          category = 'GithubRepo,
+          owner = "golang",
+          repo = "go",
+        },
+      } | Attrs,
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      url = "gs://minimal-staging-archives/go1.4-bootstrap-20171003.tar.gz",
-      sha256 = "f4ff5b5eb3a3cae1c993723f3eab519c5bae18866b5e5f96fe1102f0cb5c3e52",
-      extract = false, # build.sh untars with --no-same-owner (chown-hostile sandbox: the R8 wall)
-    } | Source,
-    gcc-bedrock,
-    binutils-bedrock,
-    glibc-bedrock,
-    bash,
-    make,
-    sed,
-    grep,
-    coreutils,
-    tar,
-  ],
-  build_args = {
-    include version,
-  },
-  cmd = "./build.sh",
-  outputs = {
-    # OutputData + allow_executable, NOT OutputBin: these link against the B4 sysroot loader at a
-    # non-standard .interp path (the binutils-2.46-glibc precedent), which keeps the interpreter
-    # checker out of the loop.  The WHOLE GOROOT ships — bin + pkg + src + lib — because a Go
-    # toolchain compiles the stdlib sources of its own GOROOT, and the next rung consumes this
-    # tree as GOROOT_BOOTSTRAP.
-    goroot = { glob = "usr/lib/go-1.4/**", allow_executable = true } | OutputData,
-    buildinfo = { glob = "usr/share/go-1.4/BUILDINFO" } | OutputData,
-  },
-  attrs =
-    {
-      upstream_version = version,
-      source_provenance = {
-        category = 'GithubRepo,
-        owner = "golang",
-        repo = "go",
-      },
-    } | Attrs,
-} | BuildSpec
+      name = "go-1.4",
+      build_deps = [],
+    } | BuildSpec,
+} target

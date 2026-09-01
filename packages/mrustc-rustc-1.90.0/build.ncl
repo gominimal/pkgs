@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # ============================================================================================
 # mrustc-rustc-1.90.0 — RUNG 1 of 5 on the road to deleting packages/rust's unattested seeds.
 #
@@ -175,92 +176,108 @@ let diffutils = import "../diffutils/build.ncl" in # `patch` hard-uses cmp on so
 let version = "1.90.0" in
 let mrustc_version = "0.12.0" in
 let mrustc_commit = "1d552cadf1c58bce8b9b431a5714dcea113dde38" in
-{
-  name = "mrustc-rustc-1.90.0",
-  build_deps = [
-    { file = "build.sh" } | Local,
-    { file = "rustc-1.90.0.answers" } | Local, # byte-seal slot; SELF-ARMS once populated
-    { file = "gatelib.rs" } | Local, # GATE-3a: the rlib crate — forces ArArchiveBuilder to WRITE an archive
-    { file = "gate190.rs" } | Local, # GATE-3b: ten std constructs, computed 42, exit codes 111-120
-    { file = "gate_pm.rs" } | Local, # GATE-4a: the proc-macro crate
-    { file = "gate_pm_use.rs" } | Local, # GATE-4b: its consumer
+let amd64_spec =
+  {
+    name = "mrustc-rustc-1.90.0",
+    build_deps = [
+      { file = "build.sh" } | Local,
+      { file = "rustc-1.90.0.answers" } | Local, # byte-seal slot; SELF-ARMS once populated
+      { file = "gatelib.rs" } | Local, # GATE-3a: the rlib crate — forces ArArchiveBuilder to WRITE an archive
+      { file = "gate190.rs" } | Local, # GATE-3b: ten std constructs, computed 42, exit codes 111-120
+      { file = "gate_pm.rs" } | Local, # GATE-4a: the proc-macro crate
+      { file = "gate_pm_use.rs" } | Local, # GATE-4b: its consumer
+      {
+        # rustc 1.90.0 source.  .tar.gz IS MANDATORY: minicargo.mk:220 hardcodes
+        # rustc-$(RUSTC_VERSION)-src.tar.gz and :226 is `tar -xzf`.  Every other rustc source we
+        # have staged is .tar.xz and therefore useless here.
+        # sha256 + byte count independently re-derived from the bucket object in this workflow.
+        url = "gs://minimal-staging-archives/rustc-%{version}-src.tar.gz",
+        sha256 = "799a9f9cba4ed5351e071048bcf6b5560755d9009648def33a407dd4961f9b7e",
+        extract = false, # build.sh places it at the mrustc TREE ROOT; `make RUSTCSRC` extracts it
+      } | Source,
+      {
+        # The SAME bytes packages/mrustc pins (its SOURCE PIN block).  Consumed as DATA ONLY —
+        # this rung uses the tree's BUILD SYSTEM (minicargo.mk, run_rustc/, the rustc-src patch);
+        # the mrustc/minicargo BINARIES come from the signed anchor.  PRISTINE tree on purpose:
+        # packages/mrustc's aarch64-support.patch touches only compiler source (src/*.cpp,hpp),
+        # none of which this rung reads.
+        # Re-derivable: git archive --format=tar --prefix=mrustc-0.12.0/ %{mrustc_commit}
+        url = "gs://minimal-staging-archives/mrustc-%{mrustc_version}-git1d552ca.tar",
+        sha256 = "1b8a2772e65b283ccbd42cb6a0e94dd2239e59bd4eb866d44405d6b5a0c33314",
+        extract = false,
+      } | Source,
+      mrustc,
+      gcc-bedrock,
+      binutils-bedrock,
+      glibc-bedrock,
+      zlib,
+      cmake,
+      python,
+      perl,
+      patch,
+      pkgconf,
+      gzip,
+      bash,
+      make,
+      sed,
+      grep,
+      coreutils,
+      tar,
+      findutils,
+      diffutils,
+    ],
+    build_args = {
+      include version,
+      include mrustc_version,
+      include mrustc_commit,
+    },
+    cmd = "./build.sh",
+    outputs = {
+      # OutputData + allow_executable throughout, NOT OutputBin: these link against the B4 sysroot
+      # loader at a non-standard .interp, and bin/rustc is a SHELL SCRIPT wrapper
+      # (run_rustc/Makefile:227) which the interpreter checker would reject.  Precedent:
+      # packages/mrustc/build.ncl:156-159 and binutils-2.46-glibc.
+      #
+      # Private versioned prefix so this does NOT collide with packages/rust's usr/bin/rustc.
+      # NOTE on glob semantics (checked against binutils-2.46-glibc/build.ncl:88 and
+      # gcc-15.2.0-glibc/build.ncl:97): `*` is non-recursive, `**` is recursive.
+      # NOTE: an EMPTY glob FAILS enumeration ("output globs did not match any files"), see
+      # binutils-2.46-glibc/build.ncl:93-94.  `dylibs` is the one at risk — it is non-empty only
+      # if run_rustc/Makefile:218 (`cp $(LIBDIR_2)*.$(DYLIB_EXT) $(PREFIX)lib`) really produced
+      # dylib std.  That is exactly what GATE-4 proves, so a red `dylibs` glob and a red GATE-4
+      # mean the same thing.
+      bins = { glob = "usr/lib/mrustc-rust-1.90.0/bin/*", allow_executable = true } | OutputData,
+      dylibs = { glob = "usr/lib/mrustc-rust-1.90.0/lib/*.so*", allow_executable = true } | OutputData,
+      rustlib = { glob = "usr/lib/mrustc-rust-1.90.0/lib/rustlib/**", allow_executable = true } | OutputData,
+      buildinfo = { glob = "usr/share/mrustc-rust-1.90.0/BUILDINFO" } | OutputData,
+    },
+    attrs =
+      {
+        upstream_version = version,
+        license_spdx = "MIT OR Apache-2.0",
+        source_provenance = {
+          category = 'GithubRepo,
+          owner = "rust-lang",
+          repo = "rust",
+        },
+        # A GUESS, not a measurement.  LLVM via cmake + LIBS + rustc lowered to C by mrustc +
+        # cargo + four run_rustc stages.  See the SCHEDULE blocker in README.md — this number is
+        # the single most likely thing in this file to be wrong.
+        build_cost_multiple = 40,
+      } | Attrs,
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      # rustc 1.90.0 source.  .tar.gz IS MANDATORY: minicargo.mk:220 hardcodes
-      # rustc-$(RUSTC_VERSION)-src.tar.gz and :226 is `tar -xzf`.  Every other rustc source we
-      # have staged is .tar.xz and therefore useless here.
-      # sha256 + byte count independently re-derived from the bucket object in this workflow.
-      url = "gs://minimal-staging-archives/rustc-%{version}-src.tar.gz",
-      sha256 = "799a9f9cba4ed5351e071048bcf6b5560755d9009648def33a407dd4961f9b7e",
-      extract = false, # build.sh places it at the mrustc TREE ROOT; `make RUSTCSRC` extracts it
-    } | Source,
-    {
-      # The SAME bytes packages/mrustc pins (its SOURCE PIN block).  Consumed as DATA ONLY —
-      # this rung uses the tree's BUILD SYSTEM (minicargo.mk, run_rustc/, the rustc-src patch);
-      # the mrustc/minicargo BINARIES come from the signed anchor.  PRISTINE tree on purpose:
-      # packages/mrustc's aarch64-support.patch touches only compiler source (src/*.cpp,hpp),
-      # none of which this rung reads.
-      # Re-derivable: git archive --format=tar --prefix=mrustc-0.12.0/ %{mrustc_commit}
-      url = "gs://minimal-staging-archives/mrustc-%{mrustc_version}-git1d552ca.tar",
-      sha256 = "1b8a2772e65b283ccbd42cb6a0e94dd2239e59bd4eb866d44405d6b5a0c33314",
-      extract = false,
-    } | Source,
-    mrustc,
-    gcc-bedrock,
-    binutils-bedrock,
-    glibc-bedrock,
-    zlib,
-    cmake,
-    python,
-    perl,
-    patch,
-    pkgconf,
-    gzip,
-    bash,
-    make,
-    sed,
-    grep,
-    coreutils,
-    tar,
-    findutils,
-    diffutils,
-  ],
-  build_args = {
-    include version,
-    include mrustc_version,
-    include mrustc_commit,
-  },
-  cmd = "./build.sh",
-  outputs = {
-    # OutputData + allow_executable throughout, NOT OutputBin: these link against the B4 sysroot
-    # loader at a non-standard .interp, and bin/rustc is a SHELL SCRIPT wrapper
-    # (run_rustc/Makefile:227) which the interpreter checker would reject.  Precedent:
-    # packages/mrustc/build.ncl:156-159 and binutils-2.46-glibc.
-    #
-    # Private versioned prefix so this does NOT collide with packages/rust's usr/bin/rustc.
-    # NOTE on glob semantics (checked against binutils-2.46-glibc/build.ncl:88 and
-    # gcc-15.2.0-glibc/build.ncl:97): `*` is non-recursive, `**` is recursive.
-    # NOTE: an EMPTY glob FAILS enumeration ("output globs did not match any files"), see
-    # binutils-2.46-glibc/build.ncl:93-94.  `dylibs` is the one at risk — it is non-empty only
-    # if run_rustc/Makefile:218 (`cp $(LIBDIR_2)*.$(DYLIB_EXT) $(PREFIX)lib`) really produced
-    # dylib std.  That is exactly what GATE-4 proves, so a red `dylibs` glob and a red GATE-4
-    # mean the same thing.
-    bins = { glob = "usr/lib/mrustc-rust-1.90.0/bin/*", allow_executable = true } | OutputData,
-    dylibs = { glob = "usr/lib/mrustc-rust-1.90.0/lib/*.so*", allow_executable = true } | OutputData,
-    rustlib = { glob = "usr/lib/mrustc-rust-1.90.0/lib/rustlib/**", allow_executable = true } | OutputData,
-    buildinfo = { glob = "usr/share/mrustc-rust-1.90.0/BUILDINFO" } | OutputData,
-  },
-  attrs =
-    {
-      upstream_version = version,
-      license_spdx = "MIT OR Apache-2.0",
-      source_provenance = {
-        category = 'GithubRepo,
-        owner = "rust-lang",
-        repo = "rust",
-      },
-      # A GUESS, not a measurement.  LLVM via cmake + LIBS + rustc lowered to C by mrustc +
-      # cargo + four run_rustc stages.  See the SCHEDULE blocker in README.md — this number is
-      # the single most likely thing in this file to be wrong.
-      build_cost_multiple = 40,
-    } | Attrs,
-} | BuildSpec
+      name = "mrustc-rustc-1.90.0",
+      build_deps = [],
+    } | BuildSpec,
+} target

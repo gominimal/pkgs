@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # ============================================================================================
 # R8 — stage0-gmp-mpfr-mpc.  gcc's exact-arithmetic trio (cc1's middle-end links libgmp/libmpfr/
 # libmpc for constant folding).  Built by the from-source gcc-4.0.4 (R6), linked against musl-1.2.5
@@ -29,48 +30,64 @@ let xz = import "../xz/build.ncl" in # gmp + mpfr are .tar.xz
 let gzip = import "../gzip/build.ncl" in # mpc is .tar.gz
 let m4 = import "../m4/build.ncl" in # gmp's configure/build may want m4 (present even w/ --disable-assembly)
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in
-{
-  name = "stage0-gmp-mpfr-mpc",
-  build_deps = [
-    { file = "build.sh" } | Local,
+let amd64_spec =
+  {
+    name = "stage0-gmp-mpfr-mpc",
+    build_deps = [
+      { file = "build.sh" } | Local,
+      {
+        url = "gs://minimal-staging-archives/gmp-6.2.1.tar.xz",
+        sha256 = "fd4829912cddd12f84181c3451cc752be224643e87fac497b69edddadc49b4f2",
+        extract = false,
+      } | Source,
+      {
+        url = "gs://minimal-staging-archives/mpfr-4.1.0.tar.xz",
+        sha256 = "0c98a3f1732ff6ca4ea690552079da9c597872d30e96ec28414ee23c95558a7f",
+        extract = false,
+      } | Source,
+      {
+        url = "gs://minimal-staging-archives/mpc-1.2.1.tar.gz",
+        sha256 = "17503d2c395dfcf106b622dc142683c1199431d095367c6aacba6eec30340459",
+        extract = false,
+      } | Source,
+      stage0-gcc, # R6: CC (via gcc-cc libc-using wrapper) — brings R7 musl + binutils in closure
+      stage0-musl-r7, # R7: explicit — the /usr/lib/musl-bedrock-1.2.5 sysroot the wrapper links
+      stage0-binutils-r5, # R5: explicit — as/ld/ar/ranlib on PATH
+      bash,
+      make,
+      sed,
+      grep,
+      coreutils,
+      tar,
+      xz,
+      gzip,
+      m4,
+      gawk-bootstrap,
+    ],
+    cmd = "./build.sh",
+    outputs = {
+      # clean single-writer math tree (R9 --with-gmp/mpfr/mpc points here):
+      libs = { glob = "usr/lib/gcc-math/lib/*.a" } | OutputLib,
+      includes = { glob = "usr/lib/gcc-math/include/**" } | OutputData,
+    },
+    attrs =
+      {
+        upstream_version = "6.2.1", # gmp-anchored; mpfr-4.1.0 + mpc-1.2.1 pinned in Sources above. NB: sign-staging forbids '+' in versions.
+        repology_project = "gmp",
+      } | Attrs,
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      url = "gs://minimal-staging-archives/gmp-6.2.1.tar.xz",
-      sha256 = "fd4829912cddd12f84181c3451cc752be224643e87fac497b69edddadc49b4f2",
-      extract = false,
-    } | Source,
-    {
-      url = "gs://minimal-staging-archives/mpfr-4.1.0.tar.xz",
-      sha256 = "0c98a3f1732ff6ca4ea690552079da9c597872d30e96ec28414ee23c95558a7f",
-      extract = false,
-    } | Source,
-    {
-      url = "gs://minimal-staging-archives/mpc-1.2.1.tar.gz",
-      sha256 = "17503d2c395dfcf106b622dc142683c1199431d095367c6aacba6eec30340459",
-      extract = false,
-    } | Source,
-    stage0-gcc, # R6: CC (via gcc-cc libc-using wrapper) — brings R7 musl + binutils in closure
-    stage0-musl-r7, # R7: explicit — the /usr/lib/musl-bedrock-1.2.5 sysroot the wrapper links
-    stage0-binutils-r5, # R5: explicit — as/ld/ar/ranlib on PATH
-    bash,
-    make,
-    sed,
-    grep,
-    coreutils,
-    tar,
-    xz,
-    gzip,
-    m4,
-    gawk-bootstrap,
-  ],
-  cmd = "./build.sh",
-  outputs = {
-    # clean single-writer math tree (R9 --with-gmp/mpfr/mpc points here):
-    libs = { glob = "usr/lib/gcc-math/lib/*.a" } | OutputLib,
-    includes = { glob = "usr/lib/gcc-math/include/**" } | OutputData,
-  },
-  attrs =
-    {
-      upstream_version = "6.2.1", # gmp-anchored; mpfr-4.1.0 + mpc-1.2.1 pinned in Sources above. NB: sign-staging forbids '+' in versions.
-      repology_project = "gmp",
-    } | Attrs,
-} | BuildSpec
+      name = "stage0-gmp-mpfr-mpc",
+      build_deps = [],
+    } | BuildSpec,
+} target

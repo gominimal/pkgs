@@ -1,4 +1,5 @@
 let { BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # R5 (stage0-binutils-2.30) — SKELETON / WIP 2026-06-26.
 #
 # The first rung to LINK real executables (as/ld/ar/nm/objcopy/objdump/strip) against R4's musl, built
@@ -22,44 +23,60 @@ let xz = import "../xz/build.ncl" in # binutils ships as .tar.xz (R4 was .gz)
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # configure's awk
 let diffutils = import "../diffutils/build.ncl" in # cmp — move-if-change / config.status use it
 let version = "2.30" in
-{
-  name = "stage0-binutils-2.30",
-  build_deps = [
-    { file = "build.sh" } | Local,
-    { file = "stage0.answers" } | Local,
-    # The 3 upstream patches are ALL Model-A-only NO-OPs — carried for provenance, intentionally NOT
-    # applied on the Model-B path (build.sh does not patch). See pass1.sh src_prepare.
-    { file = "libiberty-add-missing-config-directory-reference.patch" } | Local,
-    { file = "new-gettext.patch" } | Local,
-    { file = "opcodes-ensure-i386-init-dependencies-are-satisfied.patch" } | Local,
+let amd64_spec =
+  {
+    name = "stage0-binutils-2.30",
+    build_deps = [
+      { file = "build.sh" } | Local,
+      { file = "stage0.answers" } | Local,
+      # The 3 upstream patches are ALL Model-A-only NO-OPs — carried for provenance, intentionally NOT
+      # applied on the Model-B path (build.sh does not patch). See pass1.sh src_prepare.
+      { file = "libiberty-add-missing-config-directory-reference.patch" } | Local,
+      { file = "new-gettext.patch" } | Local,
+      { file = "opcodes-ensure-i386-init-dependencies-are-satisfied.patch" } | Local,
+      {
+        # upstream binutils 2.30 (.tar.xz), mirrored byte-identically (sha preserved). extract=false —
+        # build.sh runs `tar -xf` (bash-build convention).
+        url = "gs://minimal-staging-archives/binutils-%{version}.tar.xz",
+        sha256 = "6e46b8aeae2f727a36f0bd9505e405768a72218f1796f0d09757d45209871ae6",
+        extract = false,
+      } | Source,
+      stage0-tcc-musl-s4, # s4: /usr/bin/tcc-musl2 = the SEALED C2 + gate-validated /usr/lib/tcc/libtcc1.a
+      stage0-musl-r4b, # R4b: /usr/lib/{libc.a,crt1.o,crti.o,crtn.o} + /usr/include/** (the link target)
+      bash,
+      make,
+      sed,
+      grep,
+      coreutils,
+      tar,
+      xz,
+      gawk-bootstrap,
+      diffutils,
+    ],
+    build_args = {
+      include version,
+    },
+    cmd = "./build.sh",
+    outputs = {
+      # the binutils tools R6 (gcc-4.0.4) needs on PATH (env sets no AR/RANLIB -> R5 must seal first):
+      bin = { glob = "usr/bin/*" } | OutputData,
+      # the static libs other rungs may link (libbfd.a / libopcodes.a / libiberty.a):
+      libs = { glob = "usr/lib/*.a" } | OutputLib,
+      headers = { glob = "usr/include/**" } | OutputData,
+    },
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      # upstream binutils 2.30 (.tar.xz), mirrored byte-identically (sha preserved). extract=false —
-      # build.sh runs `tar -xf` (bash-build convention).
-      url = "gs://minimal-staging-archives/binutils-%{version}.tar.xz",
-      sha256 = "6e46b8aeae2f727a36f0bd9505e405768a72218f1796f0d09757d45209871ae6",
-      extract = false,
-    } | Source,
-    stage0-tcc-musl-s4, # s4: /usr/bin/tcc-musl2 = the SEALED C2 + gate-validated /usr/lib/tcc/libtcc1.a
-    stage0-musl-r4b, # R4b: /usr/lib/{libc.a,crt1.o,crti.o,crtn.o} + /usr/include/** (the link target)
-    bash,
-    make,
-    sed,
-    grep,
-    coreutils,
-    tar,
-    xz,
-    gawk-bootstrap,
-    diffutils,
-  ],
-  build_args = {
-    include version,
-  },
-  cmd = "./build.sh",
-  outputs = {
-    # the binutils tools R6 (gcc-4.0.4) needs on PATH (env sets no AR/RANLIB -> R5 must seal first):
-    bin = { glob = "usr/bin/*" } | OutputData,
-    # the static libs other rungs may link (libbfd.a / libopcodes.a / libiberty.a):
-    libs = { glob = "usr/lib/*.a" } | OutputLib,
-    headers = { glob = "usr/include/**" } | OutputData,
-  },
-} | BuildSpec
+      name = "stage0-binutils-2.30",
+      build_deps = [],
+    } | BuildSpec,
+} target

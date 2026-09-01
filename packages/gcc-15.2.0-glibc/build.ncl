@@ -56,86 +56,102 @@ let xz = import "../xz/build.ncl" in # gcc-15.2.0 ships .tar.xz
 let findutils = import "../findutils/build.ncl" in # Model-B mtime guard: find . -exec touch
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # gcc build: options.cc via awk, etc.
 let version = "15.2.0" in
-{
-  name = "gcc-15.2.0-glibc",
-  build_deps = [
-    { file = "build.sh" } | Local,
-    { file = "stage0.answers" } | Local, # NO byte-seal at B5 by design; functional-anchor placeholder + B6 note
-    match {
-      { arch = 'Amd64, .. } =>
-        {
-          # PRODUCTION gcc-15.2.0 FULL tarball (.tar.xz) — SAME source + sha as R12 / packages/gcc.  So the
-          # glibc twin builds the EXACT ecosystem compiler, just seed-rooted + glibc-retargeted.  Already
-          # mirrored + sha-verified.  extract=false (build.sh untars with --no-same-owner).
-          url = "gs://minimal-staging-archives/gcc-%{version}.tar.xz",
-          sha256 = "438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e",
-          extract = false,
-        } | Source,
-      { arch = 'Arm64, .. } =>
-        {
-          # ARM: the SEALED bedrock-aarch64 ladder artifact (R12-line gcc-15.2.0 with glibc + g++) —
-          # hex0-rooted on the arm ladder (bedrock-roots-manifest.txt). Root-shaped usr/ tree with
-          # bin/{gcc,g++}, lib/gcc/aarch64-linux-gnu/15.2.0, include/c++/15.2.0; build.sh extracts it
-          # verbatim. In-sandbox from-source arm parity (the amd64 path) is tracked follow-up work.
-          url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/6715136640b3e12d04231c34d4b17f0f39e7e034b94450a27769ca49e91ce5ad/stage0-gcc-15.2.0-glibc-aarch64.tar.zst",
-          sha256 = "6715136640b3e12d04231c34d4b17f0f39e7e034b94450a27769ca49e91ce5ad",
-          extract = false,
-        } | Source,
-    } target,
-    stage0-cc, # R12 (gcc-15.2.0): CC/CXX host compiler
-    binutils-glibc, # B5: glibc-linked as/ld/ar/ranlib (the matched-set assembler)
-    glibc-bedrock, # B4: the TARGET glibc sysroot
-    stage0-gmp-mpfr-mpc, # R8: gmp/mpfr/mpc middle-end (--with-gmp/mpfr/mpc=/usr/lib/gcc-math)
-    stage0-linux-headers, # kernel UAPI at /usr/include (glibc headers need <linux/...>)
-    bash,
-    make,
-    sed,
-    grep,
-    diffutils,
-    coreutils,
-    tar,
-    xz,
-    findutils,
-    gawk-bootstrap,
-  ],
-  build_args = {
-    include version,
-  },
-  cmd = "./build.sh",
-  # outputs — model on production packages/gcc/build.ncl so the glibc SHARED runtime libs are captured.
-  outputs = {
-    # the gcc/g++/gfortran/cpp drivers (+ the x86_64-linux-gnu- driver):
-    bins = { glob = "usr/bin/*" } | OutputBin,
+let amd64_spec =
+  {
+    name = "gcc-15.2.0-glibc",
+    build_deps = [
+      { file = "build.sh" } | Local,
+      { file = "stage0.answers" } | Local, # NO byte-seal at B5 by design; functional-anchor placeholder + B6 note
+      match {
+        { arch = 'Amd64, .. } =>
+          {
+            # PRODUCTION gcc-15.2.0 FULL tarball (.tar.xz) — SAME source + sha as R12 / packages/gcc.  So the
+            # glibc twin builds the EXACT ecosystem compiler, just seed-rooted + glibc-retargeted.  Already
+            # mirrored + sha-verified.  extract=false (build.sh untars with --no-same-owner).
+            url = "gs://minimal-staging-archives/gcc-%{version}.tar.xz",
+            sha256 = "438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e",
+            extract = false,
+          } | Source,
+        { arch = 'Arm64, .. } =>
+          {
+            # ARM: the SEALED bedrock-aarch64 ladder artifact (R12-line gcc-15.2.0 with glibc + g++) —
+            # hex0-rooted on the arm ladder (bedrock-roots-manifest.txt). Root-shaped usr/ tree with
+            # bin/{gcc,g++}, lib/gcc/aarch64-linux-gnu/15.2.0, include/c++/15.2.0; build.sh extracts it
+            # verbatim. In-sandbox from-source arm parity (the amd64 path) is tracked follow-up work.
+            url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/6715136640b3e12d04231c34d4b17f0f39e7e034b94450a27769ca49e91ce5ad/stage0-gcc-15.2.0-glibc-aarch64.tar.zst",
+            sha256 = "6715136640b3e12d04231c34d4b17f0f39e7e034b94450a27769ca49e91ce5ad",
+            extract = false,
+          } | Source,
+      } target,
+      stage0-cc, # R12 (gcc-15.2.0): CC/CXX host compiler
+      binutils-glibc, # B5: glibc-linked as/ld/ar/ranlib (the matched-set assembler)
+      glibc-bedrock, # B4: the TARGET glibc sysroot
+      stage0-gmp-mpfr-mpc, # R8: gmp/mpfr/mpc middle-end (--with-gmp/mpfr/mpc=/usr/lib/gcc-math)
+      stage0-linux-headers, # kernel UAPI at /usr/include (glibc headers need <linux/...>)
+      bash,
+      make,
+      sed,
+      grep,
+      diffutils,
+      coreutils,
+      tar,
+      xz,
+      findutils,
+      gawk-bootstrap,
+    ],
+    build_args = {
+      include version,
+    },
+    cmd = "./build.sh",
+    # outputs — model on production packages/gcc/build.ncl so the glibc SHARED runtime libs are captured.
+    outputs = {
+      # the gcc/g++/gfortran/cpp drivers (+ the x86_64-linux-gnu- driver):
+      bins = { glob = "usr/bin/*" } | OutputBin,
 
-    # ★ the GLIBC-LINKED SHARED runtime libs the 368 pkgs dynamically link (NET-NEW vs R12 --disable-shared):
-    libs = { glob = "usr/lib/**/*.{a,o,so*}", allow_data = true } | OutputLib, # allow_data: a few .so's are ld scripts/stubs
-    libatomic = { glob = "usr/lib/libatomic.so*" } | OutputLib,
-    libgcc = { glob = "usr/lib/libgcc_s.so*", allow_data = true } | OutputLib, # libgcc_s.so is a stub that does not parse in the checker
-    libgomp = { glob = "usr/lib/libgomp.so*" } | OutputLib,
-    libstdcpp = { glob = "usr/lib/libstdc++*.so*", allow_data = true } | OutputLib,
-    libquadmath = { glob = "usr/lib/libquadmath*.so*" } | OutputLib, # amd64 (fortran/quad); harmless-empty if c,c++ only
+      # ★ the GLIBC-LINKED SHARED runtime libs the 368 pkgs dynamically link (NET-NEW vs R12 --disable-shared):
+      libs = { glob = "usr/lib/**/*.{a,o,so*}", allow_data = true } | OutputLib, # allow_data: a few .so's are ld scripts/stubs
+      libatomic = { glob = "usr/lib/libatomic.so*" } | OutputLib,
+      libgcc = { glob = "usr/lib/libgcc_s.so*", allow_data = true } | OutputLib, # libgcc_s.so is a stub that does not parse in the checker
+      libgomp = { glob = "usr/lib/libgomp.so*" } | OutputLib,
+      libstdcpp = { glob = "usr/lib/libstdc++*.so*", allow_data = true } | OutputLib,
+      libquadmath = { glob = "usr/lib/libquadmath*.so*" } | OutputLib, # amd64 (fortran/quad); harmless-empty if c,c++ only
 
-    # cc1 + cc1plus + collect2 + lto1 + lto-wrapper (+ f951 if fortran):
-    libexec_bins = { glob = "usr/libexec/gcc/*/*/{cc1,cc1plus,f951,collect2,lto1,lto-wrapper}" } | OutputBin,
-    liblto_plugin = { glob = "usr/libexec/gcc/*/*/liblto_plugin.so" } | OutputLib,
-    # libgcc.a + crtbegin/crtend.o + specs + gcc's internal + libstdc++ target headers:
-    internals = { glob = "usr/lib/gcc/**", allow_executable = true } | OutputData,
-    libs_all = { glob = "usr/lib/**", allow_executable = true } | OutputData,
-    ltconfigs = { glob = "usr/lib/**/*.la" } | OutputData,
+      # cc1 + cc1plus + collect2 + lto1 + lto-wrapper (+ f951 if fortran):
+      libexec_bins = { glob = "usr/libexec/gcc/*/*/{cc1,cc1plus,f951,collect2,lto1,lto-wrapper}" } | OutputBin,
+      liblto_plugin = { glob = "usr/libexec/gcc/*/*/liblto_plugin.so" } | OutputLib,
+      # libgcc.a + crtbegin/crtend.o + specs + gcc's internal + libstdc++ target headers:
+      internals = { glob = "usr/lib/gcc/**", allow_executable = true } | OutputData,
+      libs_all = { glob = "usr/lib/**", allow_executable = true } | OutputData,
+      ltconfigs = { glob = "usr/lib/**/*.la" } | OutputData,
 
-    # the C++ standard headers (<vector>/<memory>/…) install to /usr/include/c++/15.2.0/:
-    cxx_headers = { glob = "usr/include/c++/**" } | OutputData,
-    includes = { glob = "usr/include/**" } | OutputData,
-    share_data = { glob = "usr/share/gcc-*/**" } | OutputData,
-  },
-  attrs =
+      # the C++ standard headers (<vector>/<memory>/…) install to /usr/include/c++/15.2.0/:
+      cxx_headers = { glob = "usr/include/c++/**" } | OutputData,
+      includes = { glob = "usr/include/**" } | OutputData,
+      share_data = { glob = "usr/share/gcc-*/**" } | OutputData,
+    },
+    attrs =
+      {
+        upstream_version = version,
+        repology_project = "gcc",
+        source_provenance = {
+          category = 'GnuProject,
+          name = "gcc",
+        },
+        build_cost_multiple = 2,
+      } | Attrs,
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      upstream_version = version,
-      repology_project = "gcc",
-      source_provenance = {
-        category = 'GnuProject,
-        name = "gcc",
-      },
-      build_cost_multiple = 2,
-    } | Attrs,
-} | BuildSpec
+      name = "gcc-15.2.0-glibc",
+      build_deps = [],
+    } | BuildSpec,
+} target

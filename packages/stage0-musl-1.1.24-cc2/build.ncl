@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # R4b — stage0-musl-1.1.24-cc2.  The DETERMINISTIC SECOND-PASS musl: byte-identical source + patches to
 # R4a (stage0-musl-1.1.24), but compiled by the CACHED, LOTTERY-FREE tcc-musl2 (from s3) instead of the
 # R3 mes-linked tcc-0.9.27.  This is the musl the downstream rungs (s4 correctness gate, R5 binutils) link
@@ -54,66 +55,82 @@ let tar = import "../tar/build.ncl" in # build.sh `tar -xf` — a SEPARATE pkg, 
 let gzip = import "../gzip/build.ncl" in # tar's .gz decompression
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # musl's configure uses awk once (bootstrap variant = light closure)
 let version = "1.1.24" in # SOURCE tarball version (the musl-%{version}.tar.gz URL/sha); the -cc2 rung suffix lives in `name`
-{
-  name = "stage0-musl-1.1.24-cc2",
-  build_deps = [
-    { file = "build.sh" } | Local, # the bash driver (R4a's, with the lottery retry REMOVED + gate fail-shut)
-    { file = "stage0.answers" } | Local, # sha256sum -c byte-identity seal — RECORD-AT-PIN-TIME; for R4b a REAL reproducibility invariant (deterministic build), promotable to fatal once pinned. Ships an UNPINNED placeholder.
-    # ARCH-NEUTRAL + amd64 patches — BYTE-IDENTICAL to R4a (same musl source, same tcc-0.9.27 codegen
-    # limits for tcc-musl2).  See stage0-musl-1.1.24/build.ncl for the per-patch rationale.
-    { file = "makefile.patch" } | Local, # tcc -ar can't make empty archives -> `touch` the empty libs
-    { file = "madvise_preserve_errno.patch" } | Local, # preserve errno across __madvise in malloc
-    { file = "avoid_sys_clone.patch" } | Local, # posix_spawn: fork() instead of __clone (tcc/early-env safe)
-    { file = "disable_ctype_headers.patch" } | Local, # drop iswalpha/… decls (no table regen)
-    { file = "skip-pic-crt.patch" } | Local, # amd64: skip Scrt1.o/rcrt1.o (tcc segfaults on -fPIC %rip crt)
-    { file = "drop-dynamic-crt.patch" } | Local, # amd64: drop _DYNAMIC lea from crt_arch.h (tcc asm segfault)
-    { file = "amd64-va-list.patch" } | Local, # amd64: define __builtin_va_list via tcc's SysV __va_list_struct
-    { file = "amd64-syscall-arch.patch" } | Local, # amd64: rewrite __syscall4/5/6 (tcc can't do GCC register-asm arg-pinning)
+let amd64_spec =
+  {
+    name = "stage0-musl-1.1.24-cc2",
+    build_deps = [
+      { file = "build.sh" } | Local, # the bash driver (R4a's, with the lottery retry REMOVED + gate fail-shut)
+      { file = "stage0.answers" } | Local, # sha256sum -c byte-identity seal — RECORD-AT-PIN-TIME; for R4b a REAL reproducibility invariant (deterministic build), promotable to fatal once pinned. Ships an UNPINNED placeholder.
+      # ARCH-NEUTRAL + amd64 patches — BYTE-IDENTICAL to R4a (same musl source, same tcc-0.9.27 codegen
+      # limits for tcc-musl2).  See stage0-musl-1.1.24/build.ncl for the per-patch rationale.
+      { file = "makefile.patch" } | Local, # tcc -ar can't make empty archives -> `touch` the empty libs
+      { file = "madvise_preserve_errno.patch" } | Local, # preserve errno across __madvise in malloc
+      { file = "avoid_sys_clone.patch" } | Local, # posix_spawn: fork() instead of __clone (tcc/early-env safe)
+      { file = "disable_ctype_headers.patch" } | Local, # drop iswalpha/… decls (no table regen)
+      { file = "skip-pic-crt.patch" } | Local, # amd64: skip Scrt1.o/rcrt1.o (tcc segfaults on -fPIC %rip crt)
+      { file = "drop-dynamic-crt.patch" } | Local, # amd64: drop _DYNAMIC lea from crt_arch.h (tcc asm segfault)
+      { file = "amd64-va-list.patch" } | Local, # amd64: define __builtin_va_list via tcc's SysV __va_list_struct
+      { file = "amd64-syscall-arch.patch" } | Local, # amd64: rewrite __syscall4/5/6 (tcc can't do GCC register-asm arg-pinning)
+      {
+        # SAME upstream musl 1.1.24 tarball + sha as R4a (byte-identical mirror; sha preserved).
+        # extract=false — build.sh runs `tar -xf` itself (bash-build convention).
+        url = "gs://minimal-staging-archives/musl-%{version}.tar.gz",
+        sha256 = "1370c9a812b2cf2a7d92802510cca0058cc37e66a7bedd70051f0a34015022a3",
+        extract = false,
+      } | Source,
+      # compiler edge (this rung's DETERMINISTIC compiler) + environment (dep pattern mirrors s4):
+      stage0-tcc-musl-s3, # tcc-musl2 (CC + `tcc-musl2 -ar`) at /usr/bin + libtcc1.a at /usr/lib/tcc/libtcc1.a
+      stage0-musl-r4, # R4a: bootstrap musl headers at /usr/include (configure probes only) — NO R1/mes
+      bash, # ./build.sh driver
+      make, # build engine
+      sed, # configure wrapper/config.mak
+      grep, # configure probes
+      patch, # apply the patches
+      coreutils, # rm/mkdir/cp/chmod/install/cat/sort/tr/sha256sum
+      tar, # build.sh `tar -xf musl-1.1.24.tar.gz`
+      gzip, # tar's .gz decompression
+      gawk-bootstrap, # musl configure's awk
+    ],
+    build_args = {
+      include version,
+    },
+    cmd = "./build.sh",
+    outputs = {
+      # SAME outputs as R4a — the static libc + crt + stub archives + headers the downstream rungs consume:
+      libc = { glob = "usr/lib/libc.a" } | OutputLib,
+      crt = { glob = "usr/lib/*.o" } | OutputLib,
+      libs = { glob = "usr/lib/*.a" } | OutputLib,
+      includes = { glob = "usr/include/**" } | OutputData,
+      # CLEAN SINGLE-WRITER MUSL SYSROOT (bedrock anti-pollution — see build.sh §SYSROOT).  A byte-identical
+      # COPY of the musl headers + static libc/crt above, published at a path NO OTHER package writes.  The
+      # /usr copies above collide, in the merged sandbox rootfs, with the glibc-linked shell tools' `glibc`
+      # runtime_dep (which ships the same usr/include/** + usr/lib/libc.a); minimal's rootfs overlay is an
+      # UNORDERED hash-set with FIRST-writer-wins collision handling, so which of {musl,glibc} owns
+      # /usr/include/stdio.h + /usr/lib/libc.a is a nondeterministic per-build coin-flip.  Downstream rungs
+      # (s4 fixed-point gate, R5 binutils) point their compiler at THIS clean tree with -nostdinc + explicit
+      # crt/libc, so the coin-flip can never feed them glibc.  Single-level `usr/lib/*.{a,o}` globs above do
+      # NOT match this nested path (literal_separator), so it is not double-captured.
+      sysroot_inc = { glob = "usr/lib/musl-bedrock/include/**" } | OutputData,
+      sysroot_lib = { glob = "usr/lib/musl-bedrock/lib/**" } | OutputLib,
+    },
+    attrs =
+      {
+        upstream_version = version,
+        repology_project = "musl",
+      } | Attrs,
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      # SAME upstream musl 1.1.24 tarball + sha as R4a (byte-identical mirror; sha preserved).
-      # extract=false — build.sh runs `tar -xf` itself (bash-build convention).
-      url = "gs://minimal-staging-archives/musl-%{version}.tar.gz",
-      sha256 = "1370c9a812b2cf2a7d92802510cca0058cc37e66a7bedd70051f0a34015022a3",
-      extract = false,
-    } | Source,
-    # compiler edge (this rung's DETERMINISTIC compiler) + environment (dep pattern mirrors s4):
-    stage0-tcc-musl-s3, # tcc-musl2 (CC + `tcc-musl2 -ar`) at /usr/bin + libtcc1.a at /usr/lib/tcc/libtcc1.a
-    stage0-musl-r4, # R4a: bootstrap musl headers at /usr/include (configure probes only) — NO R1/mes
-    bash, # ./build.sh driver
-    make, # build engine
-    sed, # configure wrapper/config.mak
-    grep, # configure probes
-    patch, # apply the patches
-    coreutils, # rm/mkdir/cp/chmod/install/cat/sort/tr/sha256sum
-    tar, # build.sh `tar -xf musl-1.1.24.tar.gz`
-    gzip, # tar's .gz decompression
-    gawk-bootstrap, # musl configure's awk
-  ],
-  build_args = {
-    include version,
-  },
-  cmd = "./build.sh",
-  outputs = {
-    # SAME outputs as R4a — the static libc + crt + stub archives + headers the downstream rungs consume:
-    libc = { glob = "usr/lib/libc.a" } | OutputLib,
-    crt = { glob = "usr/lib/*.o" } | OutputLib,
-    libs = { glob = "usr/lib/*.a" } | OutputLib,
-    includes = { glob = "usr/include/**" } | OutputData,
-    # CLEAN SINGLE-WRITER MUSL SYSROOT (bedrock anti-pollution — see build.sh §SYSROOT).  A byte-identical
-    # COPY of the musl headers + static libc/crt above, published at a path NO OTHER package writes.  The
-    # /usr copies above collide, in the merged sandbox rootfs, with the glibc-linked shell tools' `glibc`
-    # runtime_dep (which ships the same usr/include/** + usr/lib/libc.a); minimal's rootfs overlay is an
-    # UNORDERED hash-set with FIRST-writer-wins collision handling, so which of {musl,glibc} owns
-    # /usr/include/stdio.h + /usr/lib/libc.a is a nondeterministic per-build coin-flip.  Downstream rungs
-    # (s4 fixed-point gate, R5 binutils) point their compiler at THIS clean tree with -nostdinc + explicit
-    # crt/libc, so the coin-flip can never feed them glibc.  Single-level `usr/lib/*.{a,o}` globs above do
-    # NOT match this nested path (literal_separator), so it is not double-captured.
-    sysroot_inc = { glob = "usr/lib/musl-bedrock/include/**" } | OutputData,
-    sysroot_lib = { glob = "usr/lib/musl-bedrock/lib/**" } | OutputLib,
-  },
-  attrs =
-    {
-      upstream_version = version,
-      repology_project = "musl",
-    } | Attrs,
-} | BuildSpec
+      name = "stage0-musl-1.1.24-cc2",
+      build_deps = [],
+    } | BuildSpec,
+} target

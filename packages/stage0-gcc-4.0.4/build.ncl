@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # ============================================================================================
 # R6 — stage0-gcc-4.0.4 (core, pass1) — DRAFT 2026-06-30. NOT BUILDABLE UNTIL R5 IS GREEN.
 # ============================================================================================
@@ -42,55 +43,71 @@ let bzip2 = import "../bzip2/build.ncl" in # gcc-core ships .tar.bz2 (R4 was .gz
 let findutils = import "../findutils/build.ncl" in # mtime guard: find . -exec touch (Model-B regen avoidance)
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # configure's awk
 let version = "4.0.4" in
-{
-  name = "stage0-gcc-4.0.4",
-  build_deps = [
-    { file = "build.sh" } | Local,
-    # RECORD-AT-PIN-TIME byte-identity pins (no upstream amd64 gcc-4.0.4 fixed point; live-bootstrap
-    # is i386). Capture cc1/xgcc/cpp/libgcc.a shas after the first green CS build, then re-enable the
-    # `sha256sum -c` gate at the tail of build.sh.
-    { file = "stage0.answers" } | Local,
+let amd64_spec =
+  {
+    name = "stage0-gcc-4.0.4",
+    build_deps = [
+      { file = "build.sh" } | Local,
+      # RECORD-AT-PIN-TIME byte-identity pins (no upstream amd64 gcc-4.0.4 fixed point; live-bootstrap
+      # is i386). Capture cc1/xgcc/cpp/libgcc.a shas after the first green CS build, then re-enable the
+      # `sha256sum -c` gate at the tail of build.sh.
+      { file = "stage0.answers" } | Local,
+      {
+        # upstream gcc-core 4.0.4 (.tar.bz2). sha256 from live-bootstrap steps/gcc-4.0.4/sources,
+        # mirrored byte-identically to our archives bucket (sha preserved -> sha-pinned resolvedDeps;
+        # confirmed present 2026-06-30: gs://minimal-staging-archives/gcc-core-4.0.4.tar.bz2 15583411B).
+        # extract=false — build.sh runs `tar -xf` itself (bash-build convention; extracts to gcc-4.0.4/).
+        url = "gs://minimal-staging-archives/gcc-core-%{version}.tar.bz2",
+        sha256 = "e9bf58c761a4f988311aef6b41f12fd5c7e51d09477468fb73826aecc1be32e7",
+        extract = false,
+      } | Source,
+      stage0-tcc-musl-s4, # R4a SEAL: tcc-musl2 (CC via musl-cc wrapper) + libtcc1.a + AR="tcc-musl2 -ar"
+      stage0-musl-r4, # R4: libc.a + crt1/crti/crtn + headers (the static link target)
+      stage0-binutils-r5, # R5: as/ld/ar/ranlib/nm on PATH (xgcc->as for libgcc; archive index)
+      bash,
+      make,
+      sed,
+      grep,
+      coreutils,
+      tar,
+      bzip2,
+      findutils,
+      gawk-bootstrap,
+    ],
+    build_args = {
+      include version,
+    },
+    cmd = "./build.sh",
+    outputs = {
+      # the gcc drivers R7+ use as CC (gcc/cpp/gcov + the x86_64-linux-gnu-prefixed driver). OutputData
+      # (not OutputBin) mirrors R5 binutils: these are static-musl execs whose interpreter check we skip.
+      bin = { glob = "usr/bin/*" } | OutputData,
+      # cc1 + collect2 (the real compiler + link wrapper):
+      libexec = { glob = "usr/libexec/**" } | OutputData,
+      # libgcc.a + crtbegin/crtend.o + specs + gcc's internal headers (the C runtime R7+ links against).
+      # ONE non-overlapping glob (mirrors R5 binutils' disjoint outputs): libgcc.a lives UNDER this tree
+      # at usr/lib/gcc/<target>/<ver>/ and is found via gcc's own internal search path, not a global lib
+      # path, so OutputData over the whole subtree is sufficient (no separate OutputLib needed).
+      internals = { glob = "usr/lib/gcc/**" } | OutputData,
+    },
+    attrs =
+      {
+        upstream_version = version,
+        repology_project = "gcc",
+      } | Attrs,
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      # upstream gcc-core 4.0.4 (.tar.bz2). sha256 from live-bootstrap steps/gcc-4.0.4/sources,
-      # mirrored byte-identically to our archives bucket (sha preserved -> sha-pinned resolvedDeps;
-      # confirmed present 2026-06-30: gs://minimal-staging-archives/gcc-core-4.0.4.tar.bz2 15583411B).
-      # extract=false — build.sh runs `tar -xf` itself (bash-build convention; extracts to gcc-4.0.4/).
-      url = "gs://minimal-staging-archives/gcc-core-%{version}.tar.bz2",
-      sha256 = "e9bf58c761a4f988311aef6b41f12fd5c7e51d09477468fb73826aecc1be32e7",
-      extract = false,
-    } | Source,
-    stage0-tcc-musl-s4, # R4a SEAL: tcc-musl2 (CC via musl-cc wrapper) + libtcc1.a + AR="tcc-musl2 -ar"
-    stage0-musl-r4, # R4: libc.a + crt1/crti/crtn + headers (the static link target)
-    stage0-binutils-r5, # R5: as/ld/ar/ranlib/nm on PATH (xgcc->as for libgcc; archive index)
-    bash,
-    make,
-    sed,
-    grep,
-    coreutils,
-    tar,
-    bzip2,
-    findutils,
-    gawk-bootstrap,
-  ],
-  build_args = {
-    include version,
-  },
-  cmd = "./build.sh",
-  outputs = {
-    # the gcc drivers R7+ use as CC (gcc/cpp/gcov + the x86_64-linux-gnu-prefixed driver). OutputData
-    # (not OutputBin) mirrors R5 binutils: these are static-musl execs whose interpreter check we skip.
-    bin = { glob = "usr/bin/*" } | OutputData,
-    # cc1 + collect2 (the real compiler + link wrapper):
-    libexec = { glob = "usr/libexec/**" } | OutputData,
-    # libgcc.a + crtbegin/crtend.o + specs + gcc's internal headers (the C runtime R7+ links against).
-    # ONE non-overlapping glob (mirrors R5 binutils' disjoint outputs): libgcc.a lives UNDER this tree
-    # at usr/lib/gcc/<target>/<ver>/ and is found via gcc's own internal search path, not a global lib
-    # path, so OutputData over the whole subtree is sufficient (no separate OutputLib needed).
-    internals = { glob = "usr/lib/gcc/**" } | OutputData,
-  },
-  attrs =
-    {
-      upstream_version = version,
-      repology_project = "gcc",
-    } | Attrs,
-} | BuildSpec
+      name = "stage0-gcc-4.0.4",
+      build_deps = [],
+    } | BuildSpec,
+} target

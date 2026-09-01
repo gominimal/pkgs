@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # ============================================================================================
 # B4.1 — stage0-linux-headers-6.12.43  ★ THE BRIDGE PROOF ★  (2026-07-02)
 # The FIRST B4 rung and the FIRST consumer of the R11 pivot (gcc-10.4.0) AS A COMPILER.  Re-roots
@@ -28,48 +29,64 @@ let xz = import "../xz/build.ncl" in # linux-6.12.43 ships .tar.xz
 let findutils = import "../findutils/build.ncl" in
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # kernel Makefiles use awk in places
 let version = "6.12.43" in
-{
-  name = "stage0-linux-headers-6.12.43",
-  build_deps = [
-    { file = "build.sh" } | Local,
+let amd64_spec =
+  {
+    name = "stage0-linux-headers-6.12.43",
+    build_deps = [
+      { file = "build.sh" } | Local,
+      {
+        # SAME source + sha as production packages/linux_headers (byte-identical mirror; sha preserved ->
+        # sha-pinned resolvedDeps).  extract=false (build.sh untars with --no-same-owner).
+        url = "gs://minimal-staging-archives/linux-%{version}.tar.xz",
+        sha256 = "0fcbbbbcd456e87bbbfc8bf37af541fda62ccfcce76903503424fd101ef7bdee",
+        extract = false,
+      } | Source,
+      stage0-gcc-10-4-0, # R11 pivot: HOSTCC (via the gcc-cc wrapper in build.sh)
+      stage0-binutils, # R10: as/ld/ar/ranlib
+      stage0-musl-r7, # R7: static musl sysroot
+      bash,
+      make,
+      sed,
+      grep,
+      diffutils,
+      coreutils,
+      tar,
+      xz,
+      findutils,
+      gawk-bootstrap,
+    ],
+    build_args = {
+      include version,
+    },
+    cmd = "./build.sh",
+    outputs = {
+      # the exported kernel UAPI tree: usr/include/{linux,asm,asm-generic,drm,misc,...}.  Match
+      # production linux_headers' glob exactly (kernel UAPI has only subdirs, no top-level *.h).
+      includes = { glob = "usr/include/*/**" } | OutputData,
+    },
+    attrs =
+      {
+        upstream_version = version,
+        repology_project = "linux",
+        source_provenance = {
+          category = 'GithubRepo,
+          owner = "torvalds",
+          repo = "linux",
+        },
+      } | Attrs,
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      # SAME source + sha as production packages/linux_headers (byte-identical mirror; sha preserved ->
-      # sha-pinned resolvedDeps).  extract=false (build.sh untars with --no-same-owner).
-      url = "gs://minimal-staging-archives/linux-%{version}.tar.xz",
-      sha256 = "0fcbbbbcd456e87bbbfc8bf37af541fda62ccfcce76903503424fd101ef7bdee",
-      extract = false,
-    } | Source,
-    stage0-gcc-10-4-0, # R11 pivot: HOSTCC (via the gcc-cc wrapper in build.sh)
-    stage0-binutils, # R10: as/ld/ar/ranlib
-    stage0-musl-r7, # R7: static musl sysroot
-    bash,
-    make,
-    sed,
-    grep,
-    diffutils,
-    coreutils,
-    tar,
-    xz,
-    findutils,
-    gawk-bootstrap,
-  ],
-  build_args = {
-    include version,
-  },
-  cmd = "./build.sh",
-  outputs = {
-    # the exported kernel UAPI tree: usr/include/{linux,asm,asm-generic,drm,misc,...}.  Match
-    # production linux_headers' glob exactly (kernel UAPI has only subdirs, no top-level *.h).
-    includes = { glob = "usr/include/*/**" } | OutputData,
-  },
-  attrs =
-    {
-      upstream_version = version,
-      repology_project = "linux",
-      source_provenance = {
-        category = 'GithubRepo,
-        owner = "torvalds",
-        repo = "linux",
-      },
-    } | Attrs,
-} | BuildSpec
+      name = "stage0-linux-headers-6.12.43",
+      build_deps = [],
+    } | BuildSpec,
+} target

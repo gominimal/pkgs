@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # ============================================================================================
 # go-1.20.14 — the FIRST self-hosted rung of the Go ladder (issue #19).
 #
@@ -35,45 +36,61 @@ let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in # sha256sum/cp/mkdir/uname/timeout/rm
 let tar = import "../tar/build.ncl" in
 let version = "1.20.14" in
-{
-  name = "go-1.20.14",
-  build_deps = [
-    { file = "build.sh" } | Local,
+let amd64_spec =
+  {
+    name = "go-1.20.14",
+    build_deps = [
+      { file = "build.sh" } | Local,
+      {
+        url = "gs://minimal-staging-archives/go%{version}.src.tar.gz",
+        sha256 = "1aef321a0e3e38b7e91d2d7eb64040666cabdcc77d383de3c9522d0d69b67f4e",
+        extract = false, # build.sh untars with --no-same-owner (chown-hostile sandbox)
+      } | Source,
+      go-prev,
+      gcc-bedrock,
+      binutils-bedrock,
+      glibc-bedrock,
+      bash,
+      make,
+      sed,
+      grep,
+      coreutils,
+      tar,
+    ],
+    build_args = {
+      include version,
+    },
+    cmd = "./build.sh",
+    outputs = {
+      # ONE recursive OutputData glob over the whole versioned prefix (the rustc-1.94.1 precedent):
+      # consumed AS DATA by the next rung via absolute path, so it must NOT land on /usr/bin (that
+      # is packages/go's slot).  The WHOLE GOROOT ships — bin + pkg + src + lib — because a Go
+      # toolchain compiles the stdlib sources of its own GOROOT and the next rung needs it complete.
+      goroot = { glob = "usr/lib/go-1.20.14/**", allow_executable = true } | OutputData,
+      buildinfo = { glob = "usr/share/go-1.20.14/BUILDINFO" } | OutputData,
+    },
+    attrs =
+      {
+        upstream_version = version,
+        source_provenance = {
+          category = 'GithubRepo,
+          owner = "golang",
+          repo = "go",
+        },
+      } | Attrs,
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      url = "gs://minimal-staging-archives/go%{version}.src.tar.gz",
-      sha256 = "1aef321a0e3e38b7e91d2d7eb64040666cabdcc77d383de3c9522d0d69b67f4e",
-      extract = false, # build.sh untars with --no-same-owner (chown-hostile sandbox)
-    } | Source,
-    go-prev,
-    gcc-bedrock,
-    binutils-bedrock,
-    glibc-bedrock,
-    bash,
-    make,
-    sed,
-    grep,
-    coreutils,
-    tar,
-  ],
-  build_args = {
-    include version,
-  },
-  cmd = "./build.sh",
-  outputs = {
-    # ONE recursive OutputData glob over the whole versioned prefix (the rustc-1.94.1 precedent):
-    # consumed AS DATA by the next rung via absolute path, so it must NOT land on /usr/bin (that
-    # is packages/go's slot).  The WHOLE GOROOT ships — bin + pkg + src + lib — because a Go
-    # toolchain compiles the stdlib sources of its own GOROOT and the next rung needs it complete.
-    goroot = { glob = "usr/lib/go-1.20.14/**", allow_executable = true } | OutputData,
-    buildinfo = { glob = "usr/share/go-1.20.14/BUILDINFO" } | OutputData,
-  },
-  attrs =
-    {
-      upstream_version = version,
-      source_provenance = {
-        category = 'GithubRepo,
-        owner = "golang",
-        repo = "go",
-      },
-    } | Attrs,
-} | BuildSpec
+      name = "go-1.20.14",
+      build_deps = [],
+    } | BuildSpec,
+} target

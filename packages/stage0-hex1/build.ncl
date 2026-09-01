@@ -1,4 +1,5 @@
 let { BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let hex0 = import "../hex0/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -24,24 +25,40 @@ let coreutils = import "../coreutils/build.ncl" in
 # Outputs are static ELFs (no DT_NEEDED, no .interp) -> no runtime_deps and
 # allow_missing_interpreter=true on each OutputBin. hex0 is a pure byte
 # transform (no timestamps, no -j) so both outputs are bit-reproducible.
-{
-  name = "stage0-hex1",
-  build_deps = [
-    { file = "build.sh" } | Local,
+let amd64_spec =
+  {
+    name = "stage0-hex1",
+    build_deps = [
+      { file = "build.sh" } | Local,
+      {
+        url = "gs://minimal-staging-archives/stage0-posix-1.9.1.tar.zst",
+        sha256 = "33108c8c1271a12c3eae9509dff4c10c55b7475548cf5d370778eaf7138194df",
+        extract = true,
+      } | Source,
+      hex0, # Build dep -> seed hardlinked into rootfs at /usr/bin/hex0
+      bash, # build.sh interpreter (attested base; folded under CHAIN_ENFORCE)
+      coreutils, # sha256sum/cut/head/od/tr/cp/mkdir/chmod (attested base)
+    ],
+    cmd = "./build.sh",
+    outputs = {
+      # self-reproduced, audited monitor (byte-identical to the seed):
+      hex0 = { glob = "usr/bin/hex0", allow_missing_interpreter = true } | OutputBin,
+      # the first net-new from-source tool:
+      hex1 = { glob = "usr/bin/hex1", allow_missing_interpreter = true } | OutputBin,
+    },
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      url = "gs://minimal-staging-archives/stage0-posix-1.9.1.tar.zst",
-      sha256 = "33108c8c1271a12c3eae9509dff4c10c55b7475548cf5d370778eaf7138194df",
-      extract = true,
-    } | Source,
-    hex0, # Build dep -> seed hardlinked into rootfs at /usr/bin/hex0
-    bash, # build.sh interpreter (attested base; folded under CHAIN_ENFORCE)
-    coreutils, # sha256sum/cut/head/od/tr/cp/mkdir/chmod (attested base)
-  ],
-  cmd = "./build.sh",
-  outputs = {
-    # self-reproduced, audited monitor (byte-identical to the seed):
-    hex0 = { glob = "usr/bin/hex0", allow_missing_interpreter = true } | OutputBin,
-    # the first net-new from-source tool:
-    hex1 = { glob = "usr/bin/hex1", allow_missing_interpreter = true } | OutputBin,
-  },
-} | BuildSpec
+      name = "stage0-hex1",
+      build_deps = [],
+    } | BuildSpec,
+} target

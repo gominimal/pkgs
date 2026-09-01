@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 # ============================================================================================
 # R9 — stage0-gcc-4.7.4.  The FIRST C++ compiler in the bedrock climb (cc1plus / g++), and the
 # highest-risk upper-spine rung.  Built by the from-source gcc-4.0.4 (R6), linked musl-1.2.5 (R7),
@@ -44,55 +45,71 @@ let bzip2 = import "../bzip2/build.ncl" in # gcc-4.7.4 ships .tar.bz2
 let findutils = import "../findutils/build.ncl" in # mtime guard: find . -exec touch
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in
 let version = "4.7.4" in
-{
-  name = "stage0-gcc-4.7.4",
-  build_deps = [
-    { file = "build.sh" } | Local,
-    { file = "stage0.answers" } | Local, # record-at-pin-time byte-identity seal (UNPINNED placeholder)
+let amd64_spec =
+  {
+    name = "stage0-gcc-4.7.4",
+    build_deps = [
+      { file = "build.sh" } | Local,
+      { file = "stage0.answers" } | Local, # record-at-pin-time byte-identity seal (UNPINNED placeholder)
+      {
+        # upstream gcc-4.7.4 FULL tarball (.tar.bz2 — needs C++, so NOT gcc-core).  sha == ladder pin;
+        # byte-identical mirror (sha preserved -> sha-pinned resolvedDeps).  extract=false (build.sh untars).
+        url = "gs://minimal-staging-archives/gcc-%{version}.tar.bz2",
+        sha256 = "92e61c6dc3a0a449e62d72a38185fda550168a86702dea07125ebd3ec3996282",
+        extract = false,
+      } | Source,
+      stage0-gcc-405, # R6: CC
+      stage0-gmp-mpfr-mpc, # R8: gmp/mpfr/mpc (--with-gmp/mpfr/mpc=/usr/lib/gcc-math)
+      stage0-musl-r7, # R7: musl-1.2.5 sysroot
+      stage0-binutils-r5, # R5: as/ld/ar/ranlib
+      bash,
+      make,
+      sed,
+      grep,
+      diffutils,
+      coreutils,
+      tar,
+      bzip2,
+      findutils,
+      gawk-bootstrap,
+    ],
+    build_args = {
+      include version,
+    },
+    cmd = "./build.sh",
+    outputs = {
+      # the gcc-4.7.4 drivers R10/R11 use as CC (gcc/g++/cpp + the x86_64-linux-gnu-prefixed driver):
+      bin = { glob = "usr/bin/*" } | OutputData,
+      # cc1 + cc1plus + collect2 (the C and C++ compilers + link wrapper):
+      libexec = { glob = "usr/libexec/**" } | OutputData,
+      # libgcc.a + crtbegin/crtend.o + specs + gcc's internal headers (under usr/lib/gcc/<tgt>/<ver>/):
+      internals = { glob = "usr/lib/gcc/**" } | OutputData,
+      # CRITICAL: the C++ standard library (static, --disable-shared) installs to usr/lib/, NOT
+      # usr/lib/gcc/ — libstdc++.a + libsupc++.a. WITHOUT these R9's g++ links nothing and is unusable
+      # as R11's builder (workflow-caught 2026-07-01). Single-level usr/lib/*.a is disjoint from
+      # usr/lib/gcc/** (literal_separator), so no double-capture with `internals`.
+      cxx_libs = { glob = "usr/lib/*.a" } | OutputLib,
+      # the C++ standard headers (<vector>, bits/, the target subdir) at usr/include/c++/<ver>/**:
+      cxx_includes = { glob = "usr/include/c++/**" } | OutputData,
+    },
+    attrs =
+      {
+        upstream_version = version,
+        repology_project = "gcc",
+      } | Attrs,
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      # upstream gcc-4.7.4 FULL tarball (.tar.bz2 — needs C++, so NOT gcc-core).  sha == ladder pin;
-      # byte-identical mirror (sha preserved -> sha-pinned resolvedDeps).  extract=false (build.sh untars).
-      url = "gs://minimal-staging-archives/gcc-%{version}.tar.bz2",
-      sha256 = "92e61c6dc3a0a449e62d72a38185fda550168a86702dea07125ebd3ec3996282",
-      extract = false,
-    } | Source,
-    stage0-gcc-405, # R6: CC
-    stage0-gmp-mpfr-mpc, # R8: gmp/mpfr/mpc (--with-gmp/mpfr/mpc=/usr/lib/gcc-math)
-    stage0-musl-r7, # R7: musl-1.2.5 sysroot
-    stage0-binutils-r5, # R5: as/ld/ar/ranlib
-    bash,
-    make,
-    sed,
-    grep,
-    diffutils,
-    coreutils,
-    tar,
-    bzip2,
-    findutils,
-    gawk-bootstrap,
-  ],
-  build_args = {
-    include version,
-  },
-  cmd = "./build.sh",
-  outputs = {
-    # the gcc-4.7.4 drivers R10/R11 use as CC (gcc/g++/cpp + the x86_64-linux-gnu-prefixed driver):
-    bin = { glob = "usr/bin/*" } | OutputData,
-    # cc1 + cc1plus + collect2 (the C and C++ compilers + link wrapper):
-    libexec = { glob = "usr/libexec/**" } | OutputData,
-    # libgcc.a + crtbegin/crtend.o + specs + gcc's internal headers (under usr/lib/gcc/<tgt>/<ver>/):
-    internals = { glob = "usr/lib/gcc/**" } | OutputData,
-    # CRITICAL: the C++ standard library (static, --disable-shared) installs to usr/lib/, NOT
-    # usr/lib/gcc/ — libstdc++.a + libsupc++.a. WITHOUT these R9's g++ links nothing and is unusable
-    # as R11's builder (workflow-caught 2026-07-01). Single-level usr/lib/*.a is disjoint from
-    # usr/lib/gcc/** (literal_separator), so no double-capture with `internals`.
-    cxx_libs = { glob = "usr/lib/*.a" } | OutputLib,
-    # the C++ standard headers (<vector>, bits/, the target subdir) at usr/include/c++/<ver>/**:
-    cxx_includes = { glob = "usr/include/c++/**" } | OutputData,
-  },
-  attrs =
-    {
-      upstream_version = version,
-      repology_project = "gcc",
-    } | Attrs,
-} | BuildSpec
+      name = "stage0-gcc-4.7.4",
+      build_deps = [],
+    } | BuildSpec,
+} target

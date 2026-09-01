@@ -47,73 +47,89 @@ let diffutils = import "../diffutils/build.ncl" in # configure's cmp/diff
 let findutils = import "../findutils/build.ncl" in # Model-B mtime guard: find . -exec touch
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # configure's awk
 let version = "2.46.0" in
-{
-  name = "binutils-2.46-glibc",
-  build_deps = [
-    { file = "build.sh" } | Local,
-    { file = "stage0.answers" } | Local, # NO byte-seal at B5 by design (different compiler than the prebuilt); functional-anchor placeholder
-    match {
-      { arch = 'Amd64, .. } =>
-        {
-          # PRODUCTION binutils-2.46.0 tarball — SAME source + sha as minimal's packages/binutils (already
-          # mirrored byte-identically; sha preserved -> sha-pinned resolvedDeps).  MIRROR-FIRST: no new
-          # upload needed — this is the exact slot production/packages/binutils/build.ncl already fetches.
-          # extract=false — build.sh runs `tar --no-same-owner -xf` (bedrock convention).
-          url = "gs://minimal-staging-archives/binutils-%{version}.tar.xz",
-          sha256 = "d75a94f4d73e7a4086f7513e67e439e8fcdcbb726ffe63f4661744e6256b2cf2",
-          extract = false,
-        } | Source,
-      { arch = 'Arm64, .. } =>
-        {
-          # ARM: the SEALED bedrock-aarch64 ladder artifact — ⚠ binutils 2.41 (R10-line), NOT 2.46:
-          # the arm ladder sealed 2.41 and a 2.46 arm rung does not exist yet. The version skew is
-          # DELIBERATE and loud; close it by rebuilding 2.46 on the arm ladder (tracked follow-up).
-          # Root-shaped usr/ tree; build.sh extracts it verbatim.
-          url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/58fd82c720a3885df8d07341eb822a5eb880c204eff1b7b0b5017ea769067c6b/stage0-binutils-2.41-aarch64.tar.zst",
-          sha256 = "58fd82c720a3885df8d07341eb822a5eb880c204eff1b7b0b5017ea769067c6b",
-          extract = false,
-        } | Source,
-    } target,
-    stage0-gcc, # R12: CC via the gcc-cc wrapper (glibc-targeted, no -static)
-    stage0-binutils-r10, # R10: /usr/bin/{as,ld,ar,ranlib} — R12's gcc invokes these to assemble/archive
-    glibc-bedrock, # B4: the TARGET glibc sysroot
-    bash,
-    make,
-    sed,
-    grep,
-    coreutils,
-    tar,
-    xz,
-    diffutils,
-    findutils,
-    gawk-bootstrap,
-  ],
-  build_args = {
-    include version,
-  },
-  cmd = "./build.sh",
-  outputs = {
-    # the deliverable glibc-linked binutils tools (as/ld/ar/nm/objcopy/objdump/ranlib/readelf/strip +
-    # addr2line/c++filt/size/strings + the x86_64-linux-gnu-<tool> triplet symlinks):
-    bin = { glob = "usr/bin/*" } | OutputData,
-    # shared + static libs (libbfd.so*/libopcodes.so* from --enable-shared, plus the .a):
-    libs = { glob = "usr/lib/*.{a,so*}" } | OutputLib,
-    # bfd-plugins dir (--enable-plugins) + ldscripts:
-    bfdplugins = { glob = "usr/lib/bfd-plugins/**" } | OutputLib,
-    ldscripts = { glob = "usr/lib/ldscripts/*" } | OutputData,
-    # bfd.h / ansidecl.h / etc:
-    headers = { glob = "usr/include/**" } | OutputData,
-    # NO etcs output: production's etc/* comes from gprofng (gprofng.rc), which we --disable-gprofng
-    # (C++/musl-libstdc++ mixing avoidance) -> nothing lands under etc/ and an empty glob FAILS
-    # enumeration ("output globs did not match any files: etcs", 2026-07-03).
-  },
-  attrs =
+let amd64_spec =
+  {
+    name = "binutils-2.46-glibc",
+    build_deps = [
+      { file = "build.sh" } | Local,
+      { file = "stage0.answers" } | Local, # NO byte-seal at B5 by design (different compiler than the prebuilt); functional-anchor placeholder
+      match {
+        { arch = 'Amd64, .. } =>
+          {
+            # PRODUCTION binutils-2.46.0 tarball — SAME source + sha as minimal's packages/binutils (already
+            # mirrored byte-identically; sha preserved -> sha-pinned resolvedDeps).  MIRROR-FIRST: no new
+            # upload needed — this is the exact slot production/packages/binutils/build.ncl already fetches.
+            # extract=false — build.sh runs `tar --no-same-owner -xf` (bedrock convention).
+            url = "gs://minimal-staging-archives/binutils-%{version}.tar.xz",
+            sha256 = "d75a94f4d73e7a4086f7513e67e439e8fcdcbb726ffe63f4661744e6256b2cf2",
+            extract = false,
+          } | Source,
+        { arch = 'Arm64, .. } =>
+          {
+            # ARM: the SEALED bedrock-aarch64 ladder artifact — ⚠ binutils 2.41 (R10-line), NOT 2.46:
+            # the arm ladder sealed 2.41 and a 2.46 arm rung does not exist yet. The version skew is
+            # DELIBERATE and loud; close it by rebuilding 2.46 on the arm ladder (tracked follow-up).
+            # Root-shaped usr/ tree; build.sh extracts it verbatim.
+            url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/58fd82c720a3885df8d07341eb822a5eb880c204eff1b7b0b5017ea769067c6b/stage0-binutils-2.41-aarch64.tar.zst",
+            sha256 = "58fd82c720a3885df8d07341eb822a5eb880c204eff1b7b0b5017ea769067c6b",
+            extract = false,
+          } | Source,
+      } target,
+      stage0-gcc, # R12: CC via the gcc-cc wrapper (glibc-targeted, no -static)
+      stage0-binutils-r10, # R10: /usr/bin/{as,ld,ar,ranlib} — R12's gcc invokes these to assemble/archive
+      glibc-bedrock, # B4: the TARGET glibc sysroot
+      bash,
+      make,
+      sed,
+      grep,
+      coreutils,
+      tar,
+      xz,
+      diffutils,
+      findutils,
+      gawk-bootstrap,
+    ],
+    build_args = {
+      include version,
+    },
+    cmd = "./build.sh",
+    outputs = {
+      # the deliverable glibc-linked binutils tools (as/ld/ar/nm/objcopy/objdump/ranlib/readelf/strip +
+      # addr2line/c++filt/size/strings + the x86_64-linux-gnu-<tool> triplet symlinks):
+      bin = { glob = "usr/bin/*" } | OutputData,
+      # shared + static libs (libbfd.so*/libopcodes.so* from --enable-shared, plus the .a):
+      libs = { glob = "usr/lib/*.{a,so*}" } | OutputLib,
+      # bfd-plugins dir (--enable-plugins) + ldscripts:
+      bfdplugins = { glob = "usr/lib/bfd-plugins/**" } | OutputLib,
+      ldscripts = { glob = "usr/lib/ldscripts/*" } | OutputData,
+      # bfd.h / ansidecl.h / etc:
+      headers = { glob = "usr/include/**" } | OutputData,
+      # NO etcs output: production's etc/* comes from gprofng (gprofng.rc), which we --disable-gprofng
+      # (C++/musl-libstdc++ mixing avoidance) -> nothing lands under etc/ and an empty glob FAILS
+      # enumeration ("output globs did not match any files: etcs", 2026-07-03).
+    },
+    attrs =
+      {
+        upstream_version = version,
+        repology_project = "binutils",
+        source_provenance = {
+          category = 'GnuProject,
+          name = "binutils",
+        },
+      } | Attrs,
+  } | BuildSpec
+in
+# ARCH SCOPE (buildbot builds every member on BOTH arches): this rung exists on
+# amd64 only — it belongs to the hex0-rooted amd64 bootstrap ladder. arm64's
+# equivalents are the SEALED bedrock artifacts consumed as sha-pinned Sources
+# by the flip specs (#631/#667), so on arm64 this spec collapses to an
+# explicitly-EMPTY collection: no build runs, nothing ships, and nothing on the
+# arm graph depends on it.
+match {
+  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Arm64, .. } =>
     {
-      upstream_version = version,
-      repology_project = "binutils",
-      source_provenance = {
-        category = 'GnuProject,
-        name = "binutils",
-      },
-    } | Attrs,
-} | BuildSpec
+      name = "binutils-2.46-glibc",
+      build_deps = [],
+    } | BuildSpec,
+} target
