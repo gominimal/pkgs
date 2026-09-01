@@ -7,14 +7,14 @@ let perl = import "../perl/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.16.0" in
+let version = "1.17.0" in
 {
   name = "libvpx",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/webmproject/libvpx/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "7a479a3c66b9f5d5542a4c6a1b7d3768a983b1e5c14c60a9396edc9b649e015c",
+      sha256 = "1020f184046187baa2985dbde38e0691f49c44088bca7a1842b0236c6081dc0a",
       extract = true,
       strip_prefix = "libvpx-%{version}",
     } | Source,
