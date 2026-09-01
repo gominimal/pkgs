@@ -26,6 +26,11 @@ mesl_run(){ if [ -n "$ROLL" ]; then MESLROLL="$ROLL" "$@"; else "$@"; fi; }
 
 emit "S1-INFO build GOT-fixed tcc-musl (mes-linked, musl-configured) in clean MES env — $($TCC26 -version 2>&1 | head -1)"
 emit "S1-INFO mes crt: $(ls -la /usr/lib/mes/crt1.o 2>/dev/null | awk '{print $5}')B  mes libc.a: $(ls -la /usr/lib/mes/libc.a 2>/dev/null | awk '{print $5}')B  mes hdr stdlib.h: $(test -f /usr/include/stdlib.h && echo yes || echo NO)"
+# WHICH stdio.h won the merged /usr/include? Diagnostic only (INCS below puts the uncontended
+# /usr/include/mes FIRST, so the compile no longer cares): the glibc runtime anchor races this
+# rung's headers first-writer-wins per sandbox; a glibc draw made tcc die in bits/*.h with the
+# mes-libc error reporter eating the diagnostic (rc=139, be=0) — the historical "s1 lottery".
+emit "S1-HDR stdio.h=$(sha256sum /usr/include/stdio.h 2>/dev/null | cut -c1-16) alltypes=$(test -f /usr/include/bits/alltypes.h && echo musl-present || echo no-musl) stdio_lim=$(test -f /usr/include/bits/stdio_lim.h && echo GLIBC-PRESENT || echo clean)"
 
 cd /build/tm
 tar --no-same-owner -xzf "$BUILDROOT/tccsrc-r3got-s1.tar.gz" 2>/tmp/te; xrc=$?
@@ -70,7 +75,10 @@ DEFS=(
   -D CONFIG_USE_LIBGCC=1
   -D 'TCC_VERSION="0.9.27PW2"'
 )
-INCS=(-I . -I /usr/include -I /usr/include/mes)
+# mes FIRST: mes installs its headers under /usr/include/mes/ ONLY (an uncontended dir), while
+# /usr/include/stdio.h is whatever the rootfs draw gave (glibc's kills tcc — see S1-HDR above).
+# With the mes dir first, every contended name resolves to mes-libc regardless of the draw.
+INCS=(-I . -I /usr/include/mes -I /usr/include)
 # x86_64 units: matches libtcc.c's ONE_SOURCE includes for TCC_TARGET_X86_64 + CONFIG_TCC_ASM, plus
 # tcc.c (the CLI, which unconditionally #includes tcctools.c -> carries `-ar`). NO ONE_SOURCE => each
 # is its own small compilation unit.

@@ -96,9 +96,21 @@ export BOOTSTRAP_SKIP_VENDOR=1
 # aborts the whole install.  The [dist] vendor=false / src-tarball=false + [build] tools flags did NOT
 # suppress it (the Src step is reached regardless during a full install).  Naming components makes
 # x.py run ONLY these steps — the Src step's `should_run` is `run.path("src")`, which none of these
-# match, so PlainSourceTarball/Vendor never runs.  This is exactly the toolchain we ship: std +
-# compiler + cargo/clippy/rustfmt/rust-analyzer (no rust-src, which we explicitly do not want — a
-# bundled rust-src in a rustc rung is what polluted x.py with the pre-rename tracked_env source).
+# match, so PlainSourceTarball/Vendor never runs.  This is the toolchain: std + compiler +
+# cargo/clippy/rustfmt/rust-analyzer.  (rust-src is shipped too, but via the direct copy below,
+# never via the src install step — a bundled rust-src in a rustc RUNG is what polluted x.py
+# with the pre-rename tracked_env source; the final rust is not a rung stage0.)
 DESTDIR=$OUTPUT_DIR ./x.py install library/std compiler/rustc cargo clippy rustfmt rust-analyzer
+
+# rust-src for -Zbuild-std consumers (rust-arm-embedded reads {sysroot}/lib/rustlib/src/rust/
+# library/ — buildbot arm64 caught its absence once the flip made THIS recipe the shipping
+# rust; the old bindists bundled rust-src).  Installed by DIRECT COPY of this build's own
+# library tree (functionally the rust-src component: library/** including its Cargo.lock and
+# the vendored stdarch/backtrace subtrees), deliberately NOT via `x.py install src` — that
+# path reaches PlainSourceTarball/Vendor exactly as the note above explains.  The rung
+# stage0s still ship NO rustlib/src (the CLEAN0 lesson); shipping it in the FINAL rust is
+# fine because nothing consumes packages/rust as a bootstrap stage0.
+mkdir -p "$OUTPUT_DIR/usr/lib/rustlib/src/rust"
+cp -a library "$OUTPUT_DIR/usr/lib/rustlib/src/rust/library"
 
 rm $OUTPUT_DIR/usr/bin/rust-gdbgui

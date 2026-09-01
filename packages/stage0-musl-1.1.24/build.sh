@@ -111,3 +111,17 @@ sha256sum -c "${BUILDROOT}/stage0.answers"   # SEALED 2026-06-26: 4 amd64 shas p
 #   usr/lib/libc.a · usr/lib/*.o (crt1/crti/crtn/Scrt1/rcrt1) · usr/lib/*.a (incl. empty stubs)
 #   usr/include/**  (musl headers)
 ###########################################################################
+
+###########################################################################
+# §E SINGLE-WRITER SYSROOT (versioned; mirrors R4b's /usr/lib/musl-bedrock without colliding
+# with it): the merged /usr/{include,lib} in any CONSUMER sandbox is a first-writer-wins draw
+# against the glibc runtime anchor's usr/include/** + usr/lib/{*.a,crt*.o} (see R5's musl-cc
+# ANTI-POLLUTION note — minimal's rootfs overlay is an unordered hash-set, so /usr/include/
+# stdio.h is a musl-vs-glibc coin flip per sandbox). s3 consumes THIS uncontended copy with
+# -nostdinc/-nostdlib and becomes draw-immune. Copied AFTER the byte-identity gate above, so
+# the sysroot carries the exact sealed bytes.
+###########################################################################
+SR="${OUTPUT_DIR}/usr/lib/musl-bedrock-1.1.24"
+mkdir -p "$SR/lib"
+cp -a "${OUTPUT_DIR}/usr/include" "$SR/include"
+cp -a "${OUTPUT_DIR}"/usr/lib/*.o "${OUTPUT_DIR}"/usr/lib/*.a "$SR/lib/"

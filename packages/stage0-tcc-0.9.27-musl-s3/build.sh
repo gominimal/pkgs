@@ -23,6 +23,23 @@ mesl_run(){ if [ -n "$ROLL" ]; then MESLROLL="$ROLL" "$@"; else "$@"; fi; }
 
 emit "S3-INFO musl-relink — TM1(s1)=$("$TM1" -version 2>&1 | head -1)  musl libc.a=$(ls -la /usr/lib/libc.a 2>/dev/null | awk '{print $5}')B  stdio.h=$(test -f /usr/include/stdio.h && echo yes || echo NO)  libtcc1=$(ls -la $LT 2>/dev/null | awk '{print $5}')B"
 
+# WHICH stdio.h won the merged /usr/include? Diagnostic only (the compile below no longer cares):
+# minimal's rootfs overlay is an unordered hash-set with first-writer-wins collisions, so the
+# glibc runtime anchor races this rung's musl for /usr/include/** and /usr/lib/{*.a,crt*.o}.
+# When glibc's stdio.h won, TM1 died in glibc's bits/*.h chain and the mes-libc error reporter
+# SIGSEGV'd eating the diagnostic (rc=139, be=0) — the entire historical "s3 lottery" (2026-08-04
+# core: rdi="In file ", stack in bits/stdio_lim.h). Read the draw here instead of inferring it.
+emit "S3-HDR stdio.h=$(sha256sum /usr/include/stdio.h 2>/dev/null | cut -c1-16) alltypes=$(test -f /usr/include/bits/alltypes.h && echo musl-present || echo no-musl) stdio_lim=$(test -f /usr/include/bits/stdio_lim.h && echo GLIBC-PRESENT || echo clean)"
+
+# DRAW IMMUNITY: compile+link against R4a's single-writer sysroot (uncontended paths published
+# by stage0-musl-1.1.24 §E), never the merged /usr — the same cure R5's musl-cc wrapper uses
+# with R4b's /usr/lib/musl-bedrock. -nostdinc/-nostdlib + explicit crt/libc below.
+SR=/usr/lib/musl-bedrock-1.1.24
+if [ ! -f "$SR/include/stdio.h" ] || [ ! -f "$SR/lib/libc.a" ]; then
+  emit "S3-FAIL sysroot $SR is missing — stage0-musl-1.1.24 §E did not publish it (stale musl artifact?); deterministic, fix the dep, not a re-enqueue"
+  cp /build/tm/rows.txt "$LOGOUT/rows.log" 2>/dev/null; grep S3- /build/tm/rows.txt | tee "$MAN"; exit 1
+fi
+
 cd /build/tm
 tar --no-same-owner -xzf "$BUILDROOT/tccsrc-r3gotABC.tar.gz" 2>/tmp/te || emit "S3-FAIL extract: $(head -1 /tmp/te)"
 cd tccsrc || { emit "S3-FAIL no tccsrc (deterministic extract failure — NOT the lottery; fix the source, not a re-enqueue)"; cp /build/tm/rows.txt "$LOGOUT/rows.log"; echo fail | tee "$MAN"; exit 1; }
@@ -41,7 +58,11 @@ built=0
 for i in $(seq 1 6); do
   mesl_roll "$i"
   rm -f "$TM2"
-  mesl_run "$TM1" -w -static -o "$TM2" \
+  # -nostdinc/-nostdlib + explicit sysroot crt/libc (R5 musl-cc order: crt1 crti <obj> libc
+  # libtcc1 libc crtn — libc twice around libtcc1 for the abort<->libc cycle). The -D's bake
+  # TM2's OWN runtime config (unchanged); this invocation just no longer READS the drawn /usr.
+  mesl_run "$TM1" -w -static -nostdinc -nostdlib -o "$TM2" \
+    "$SR/lib/crt1.o" "$SR/lib/crti.o" \
     -D TCC_TARGET_X86_64=1 \
     -D CONFIG_TCCDIR=\"/usr/lib/tcc\" \
     -D CONFIG_TCC_CRTPREFIX=\"/usr/lib\" \
@@ -52,8 +73,9 @@ for i in $(seq 1 6); do
     -D CONFIG_USE_LIBGCC=1 \
     -D TCC_VERSION=\"0.9.27musl2\" \
     -D ONE_SOURCE=1 \
-    -I . -I /usr/include \
-    tcc.c 2>/tmp/be
+    -I . -I "$SR/include" \
+    tcc.c \
+    "$SR/lib/libc.a" "$LT" "$SR/lib/libc.a" "$SR/lib/crtn.o" 2>/tmp/be
   bc=$?
   [ "$bc" = 0 ] && [ -x "$TM2" ] && { built=1; break; }   # require a CLEAN compile exit (bc=0), not a partial +x binary from a crash
 done
@@ -88,8 +110,15 @@ emit "S3-RUN tcc-musl2 -version rc=$rc : $(head -1 /tmp/v2)"
 # Does tcc-musl2 (MUSL-linked, stable) link a RUNNING musl hello? (5x — should be reliable, no mes lottery)
 printf '#include <stdio.h>\nint main(void){ printf("MUSL2-RUNS %%d\\n", 40+2); return 0; }\n' > hello.c
 b=0; r=0; out=""
+# Same sysroot-explicit link as the main build: TM2's BAKED paths point at the drawn /usr
+# (correct for its sealed consumers, which wrap it — see R5's musl-cc), so the selftest must
+# not read them either.
 for i in 1 2 3 4 5; do
-  rm -f h; "$TM2" -static -o h hello.c >/tmp/le 2>&1; lc=$?
+  rm -f h
+  "$TM2" -static -nostdinc -nostdlib -o h \
+    "$SR/lib/crt1.o" "$SR/lib/crti.o" \
+    -I "$SR/include" hello.c \
+    "$SR/lib/libc.a" "$LIBOUT/libtcc1.a" "$SR/lib/libc.a" "$SR/lib/crtn.o" >/tmp/le 2>&1; lc=$?
   if [ "$lc" = 0 ]; then b=$((b+1)); timeout 10 ./h >/tmp/lo 2>&1; [ "$?" = 0 ] && r=$((r+1)); out="$(head -1 /tmp/lo)"; fi
 done
 emit "S3-SELFTEST tcc-musl2 links hello: built $b/5 ran-OK $r/5 run='$out'  $([ "$b" -gt 0 ] || head -1 /tmp/le)"

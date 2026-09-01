@@ -139,6 +139,11 @@ let amd64_spec =
       libs = { glob = "usr/lib/*.a" } | OutputLib,
       # musl headers (the libc interface R5's compilers compile against):
       includes = { glob = "usr/include/**" } | OutputData,
+      # §E single-writer sysroot: an UNCONTENDED copy of the sealed headers+libs (the merged
+      # /usr/{include,lib} is a first-writer-wins draw vs the glibc runtime anchor in every
+      # consumer sandbox). s3 compiles+links against these paths with -nostdinc/-nostdlib.
+      sysroot_inc = { glob = "usr/lib/musl-bedrock-1.1.24/include/**" } | OutputData,
+      sysroot_lib = { glob = "usr/lib/musl-bedrock-1.1.24/lib/**" } | OutputLib,
     },
     attrs =
       {
