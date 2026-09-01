@@ -11,13 +11,14 @@ mkdir -p "$BINOUT" "$LIBOUT" "$LOGOUT" /build/tm
 MAN="$LOGOUT/MANIFEST.txt"
 emit(){ echo "$1"; echo "$1" >> /build/tm/rows.txt; }
 
-# LAYOUT ROLL (probe wf_81e7d78f, coreutils-probe 2026-09-01): mes-linked ELF behavior is a
-# DETERMINISTIC function of the env area (order AND byte length — arm B: every permutation
-# seed gave a distinct output sha; arm C: ±1 env byte changed the sha). "Deterministic within
-# a sandbox" therefore only holds while the env is fixed — so each retry below deliberately
-# perturbs the child env layout, turning the in-recipe loop into INDEPENDENT draws instead of
-# N replays of the same doomed layout. Try 1 always runs the canonical (unmodified) env, so a
-# first-try success is byte-identical to the pre-roll recipe.
+# LAYOUT ROLL — cheap insurance only. The env-layout probe (wf_81e7d78f, coreutils-probe,
+# 2026-09-01) ran 91 trials across permutation/length/arena sweeps and reproduced NOTHING
+# (verdict MESL_ALL_ARMS_CLEAN; it hashed environments, not outputs, so it carries no output-
+# determinism evidence either). The PROVEN cause of this rung's historical rc=139/be=0 was
+# the rootfs header race — cured by the mes-first INCS below, not by these rolls. Each retry
+# perturbs the child env layout anyway (uninit-memory reads of the env area remain plausible
+# per the mes-m2 dossier, and a roll costs nothing on the success path): try 1 always runs
+# the canonical env, so a first-try success is byte-identical to the pre-roll recipe.
 ROLL=""
 mesl_roll(){ # $1 = try number; sets ROLL (empty on try 1 = canonical env)
   if [ "$1" = 1 ]; then ROLL=""; else ROLL=$(printf 'R%.0s' $(seq 1 $(( ($1 - 1) * 17 )))); fi

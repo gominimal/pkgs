@@ -11,12 +11,14 @@ mkdir -p "$BINOUT" "$LIBOUT" "$LOGOUT" /build/tm
 MAN="$LOGOUT/MANIFEST.txt"
 emit(){ echo "$1"; echo "$1" >> /build/tm/rows.txt; }
 
-# LAYOUT ROLL (probe wf_81e7d78f, coreutils-probe 2026-09-01): TM1 is MES-LINKED, and mes-linked
-# ELF behavior is a DETERMINISTIC function of the env area (order AND byte length — the probe's
-# permutation sweep gave a distinct output sha per env seed, and ±1 env byte changed it). So a
-# crash here is f(TM1 bytes, env layout): retrying under the SAME layout replays the same doom,
-# but each rolled retry below is an INDEPENDENT draw. Try 1 keeps the canonical env (first-try
-# success = byte-identical to the pre-roll recipe).
+# LAYOUT ROLL — cheap insurance only. The env-layout probe (wf_81e7d78f, coreutils-probe,
+# 2026-09-01) ran 91 trials across permutation/length/arena sweeps and reproduced NOTHING
+# (verdict MESL_ALL_ARMS_CLEAN; it hashed environments, not outputs, so it carries no output-
+# determinism evidence either). The PROVEN cause of this rung's rc=139/be=0 was the rootfs
+# header race — cured by the -nostdinc/-nostdlib sysroot compile below, not by these rolls.
+# Each retry perturbs the child env layout anyway (uninit-memory reads of the env area remain
+# plausible per the mes-m2 dossier, and a roll costs nothing on the success path): try 1 keeps
+# the canonical env, so a first-try success is byte-identical to the pre-roll recipe.
 ROLL=""
 mesl_roll(){ if [ "$1" = 1 ]; then ROLL=""; else ROLL=$(printf 'R%.0s' $(seq 1 $(( ($1 - 1) * 17 )))); fi; }
 mesl_run(){ if [ -n "$ROLL" ]; then MESLROLL="$ROLL" "$@"; else "$@"; fi; }
