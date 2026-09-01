@@ -221,6 +221,13 @@ mkdir -vp "$OUTPUT_DIR/usr/lib/locale"
 # anywhere yet).  FAIL-SHUT: any mismatch => exit 1 (no seal).
 # ============================================================================================
 GATE="$BUILDROOT/b4gate"; rm -rf "$GATE"; mkdir -p "$GATE"
+# BUILD-TIME BRIDGE for the repointed linker scripts: they carry the RUNTIME path
+# (/$PUB_REL/lib/... — correct for every consumer, whose hydration installs the sysroot
+# there), but at GATE time nothing is installed at / yet, so ld's absolute-path chase
+# (libm.a -> GROUP(/$PUB_REL/lib/libm-2.42.a ...)) dangles. A sandbox-local symlink maps the
+# runtime path onto the staging tree; it lives outside $OUTPUT_DIR so it cannot ship.
+# (Pre-#631 the Debian anchor masked this by providing /usr/lib/libm-2.42.a — see above.)
+[ -e "/$PUB_REL" ] || ln -s "$PUB" "/$PUB_REL"
 GINC="-nostdinc -isystem $GI -isystem $PUB/include"     # gcc freestanding + fresh-glibc headers (UAPI co-located)
 # -no-pie forces the classic crt1.o static link (NOT static-pie via rcrt1.o) regardless of R12's default-PIE
 # posture (design "STILL TO CONFIRM"); crt1.o/crti.o/crtn.o are the startfiles Pass 1 installed.
