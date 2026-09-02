@@ -296,8 +296,8 @@ tcc-mes \
     -D HAVE_LONG_LONG=1 \
     -D HAVE_SETJMP=1 \
     -I . \
-    -I ${PREFIX}/include \
-    -I ${PREFIX}/include/mes \
+    -I /usr/lib/mes-bedrock/include \
+    -I /usr/lib/mes-bedrock/include/mes \
     -D TCC_TARGET_${TCC_TARGET_ARCH}=1 \
     -D CONFIG_TCCDIR=\"${LIBDIR}/tcc\" \
     -D CONFIG_TCC_CRTPREFIX=\"${LIBDIR}\" \
@@ -354,8 +354,8 @@ tcc-boot0 \
     -D HAVE_LONG_LONG=1 \
     -D HAVE_SETJMP=1 \
     -I . \
-    -I ${PREFIX}/include \
-    -I ${PREFIX}/include/mes \
+    -I /usr/lib/mes-bedrock/include \
+    -I /usr/lib/mes-bedrock/include/mes \
     -D TCC_TARGET_${TCC_TARGET_ARCH}=1 \
     -D CONFIG_TCCDIR=\"${LIBDIR}/tcc\" \
     -D CONFIG_TCC_CRTPREFIX=\"${LIBDIR}\" \
@@ -410,8 +410,8 @@ tcc-boot1 \
     -D HAVE_LONG_LONG=1 \
     -D HAVE_SETJMP=1 \
     -I . \
-    -I ${PREFIX}/include \
-    -I ${PREFIX}/include/mes \
+    -I /usr/lib/mes-bedrock/include \
+    -I /usr/lib/mes-bedrock/include/mes \
     -D TCC_TARGET_${TCC_TARGET_ARCH}=1 \
     -D CONFIG_TCCDIR=\"${LIBDIR}/tcc\" \
     -D CONFIG_TCC_CRTPREFIX=\"${LIBDIR}\" \
@@ -474,8 +474,8 @@ tcc-boot2 \
     -D HAVE_LONG_LONG=1 \
     -D HAVE_SETJMP=1 \
     -I . \
-    -I ${PREFIX}/include \
-    -I ${PREFIX}/include/mes \
+    -I /usr/lib/mes-bedrock/include \
+    -I /usr/lib/mes-bedrock/include/mes \
     -D TCC_TARGET_${TCC_TARGET_ARCH}=1 \
     -D CONFIG_TCCDIR=\"/usr/lib/mes/tcc\" \
     -D CONFIG_TCC_CRTPREFIX=\"/usr/lib/mes\" \
