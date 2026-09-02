@@ -10,13 +10,6 @@ if [ "$(uname -m)" = "aarch64" ]; then
   ART=$(ls stage0-binutils-*-aarch64.tar.zst /build/stage0-binutils-*-aarch64.tar.zst 2>/dev/null | head -1)
   [ -n "$ART" ] || { echo "FATAL: arm artifact not hydrated (stage0-binutils-*-aarch64.tar.zst)" >&2; exit 1; }
   mkdir -p "$OUTPUT_DIR"
-# ...and the BUILD/SOURCE trees: make tracks mtimes, not flags — a tree that lived through
-# tonight's recipe iterations carries mixed-environment objects (the xdso stack-smash came
-# from exactly that: target libs part-compiled under the broken-sort round). Inputs re-hydrate
-# per round as top-level FILES; every top-level DIRECTORY here is derived state — drop them
-# for a genuinely cold single-environment build. (One-time cost: once green, the artifact
-# cache serves; the make-tree ratchet only mattered while these recipes were iterating.)
-for _d in ./*/; do [ -d "$_d" ] && find "$_d" -delete; done
   tar --zstd --no-same-owner -xf "$ART" -C "$OUTPUT_DIR"
   LD=$(find "$OUTPUT_DIR" -name ld -type f -path '*/bin/*' | head -1)
   [ -n "$LD" ] || { echo "FATAL: ld missing after extract" >&2; exit 1; }
@@ -30,6 +23,13 @@ fi
 # build from an EMPTY output; the make trees stay warm for the incremental ratchet.
 [ -n "$OUTPUT_DIR" ] && [ -d "$OUTPUT_DIR" ] && find "$OUTPUT_DIR" -mindepth 1 -delete
 mkdir -p "$OUTPUT_DIR"
+# ...and the BUILD/SOURCE trees: make tracks mtimes, not flags — a tree that lived through
+# tonight's recipe iterations carries mixed-environment objects (the xdso stack-smash came
+# from exactly that: target libs part-compiled under the broken-sort round). Inputs re-hydrate
+# per round as top-level FILES; every top-level DIRECTORY here is derived state — drop them
+# for a genuinely cold single-environment build. (One-time cost: once green, the artifact
+# cache serves; the make-tree ratchet only mattered while these recipes were iterating.)
+for _d in ./*/; do [ -d "$_d" ] && find "$_d" -delete; done
 # ============================================================================================
 # build.sh — B5 (binutils-2.46-glibc) driver.  REVIEW-READY scaffold 2026-07-03.
 # ============================================================================================
