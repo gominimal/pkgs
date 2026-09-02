@@ -53,6 +53,8 @@ LIBDIR=/build/output/usr/lib/mes
 # env var below repoints the implicit system include dir too (kaem exports its variables).
 INCDIR=/usr/lib/mes-bedrock/include/mes
 includedir=/usr/lib/mes-bedrock/include
+# The boot0/boot1/boot2/deliverable self-links below pass the same two sysroot dirs explicitly
+# (upstream's `-I ${PREFIX}/include -I ${PREFIX}/include/mes`), for the same reason.
 # R1's installed MesCC driver script (consumer location, read-only).  Upstream reads
 # `${BINDIR}/mescc.scm`; under §D BINDIR is the staging path, so the R1 read is made explicit
 # (CONTRACTS §D concrete example: "read R1's at /usr/bin/mescc.scm, not the staging path").
