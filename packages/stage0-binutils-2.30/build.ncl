@@ -62,7 +62,10 @@ let amd64_spec =
       bin = { glob = "usr/bin/*" } | OutputData,
       # the static libs other rungs may link (libbfd.a / libopcodes.a / libiberty.a):
       libs = { glob = "usr/lib/*.a" } | OutputLib,
-      headers = { glob = "usr/include/**" } | OutputData,
+      # EXPLICIT list (2026-09-02, #667 review batch): bfd.h-class names only — never a wildcard
+      # over usr/include, so this rung can never contend for a libc header name in a consumer
+      # sandbox.  Names absent in this release simply match nothing.
+      headers = { glob = "usr/include/{ansidecl,bfd,bfdlink,symcat,dis-asm,plugin-api,diagnostics,ctf,ctf-api,sframe,sframe-api}.h" } | OutputData,
     },
   } | BuildSpec
 in

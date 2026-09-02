@@ -96,11 +96,12 @@ let amd64_spec =
     },
     cmd = "./build.sh",
     outputs = {
-      # SAME outputs as R4a — the static libc + crt + stub archives + headers the downstream rungs consume:
-      libc = { glob = "usr/lib/libc.a" } | OutputLib,
-      crt = { glob = "usr/lib/*.o" } | OutputLib,
-      libs = { glob = "usr/lib/*.a" } | OutputLib,
-      includes = { glob = "usr/include/**" } | OutputData,
+      # ★ SYSROOT-ONLY (2026-09-02, #667 review batch).  The former top-level captures
+      # (usr/lib/libc.a, usr/lib/*.o, usr/lib/*.a, usr/include/**) are GONE.  Consumer audit:
+      # s4 and R5 binutils-2.30 use -nostdinc -I $MB/include + explicit $MB/lib crt/libc;
+      # gcc-4.0.4 sets CPATH/LIBRARY_PATH/LIBGCC2_INCLUDES to /usr/lib/musl-bedrock.  Nothing
+      # reads the merged /usr copies, and shipping them only added a contender to the
+      # first-writer-wins header draw in every downstream sandbox.
       # CLEAN SINGLE-WRITER MUSL SYSROOT (bedrock anti-pollution — see build.sh §SYSROOT).  A byte-identical
       # COPY of the musl headers + static libc/crt above, published at a path NO OTHER package writes.  The
       # /usr copies above collide, in the merged sandbox rootfs, with the glibc-linked shell tools' `glibc`

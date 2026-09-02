@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# RE-CAPTURE BUMP (2026-09-02, #667 review batch): output globs are NOT part of the spec hash, so the
+# R10 explicit-headers narrowing needs this build.sh change to force a fresh capture (see build.ncl outputs).
 # ============================================================================================
 # build.sh — R10 (stage0-binutils-2.41) driver.  DRAFT 2026-07-01.
 # ============================================================================================

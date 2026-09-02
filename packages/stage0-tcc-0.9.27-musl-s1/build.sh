@@ -76,9 +76,14 @@ DEFS=(
   -D CONFIG_USE_LIBGCC=1
   -D 'TCC_VERSION="0.9.27PW2"'
 )
-# mes FIRST: mes installs its headers under /usr/include/mes/ ONLY (an uncontended dir), while
-# /usr/include/stdio.h is whatever the rootfs draw gave (glibc's kills tcc — see S1-HDR above).
-# With the mes dir first, every contended name resolves to mes-libc regardless of the draw.
+# mes FIRST — but read this honestly (corrected 2026-09-02 after the #667 audit): mes installs its
+# libc headers at the TOP LEVEL of /usr/include (stdio.h, stdlib.h, ...) and only a handful
+# (9 names) under the uncontended /usr/include/mes/.  So `-I /usr/include/mes` first insulates
+# ONLY those 9; every other contended name (stdio.h included) still resolves to whatever the
+# merged-rootfs first-writer-wins draw put at /usr/include — the S1-HDR line above records which.
+# A glibc draw kills tcc; that is exactly why the mesl_roll retries below re-roll the sandbox.
+# The real fix is a kaem-era single-writer copy of the mes headers (the s3 §E pattern), which
+# this rung does not have yet.
 INCS=(-I . -I /usr/include/mes -I /usr/include)
 # x86_64 units: matches libtcc.c's ONE_SOURCE includes for TCC_TARGET_X86_64 + CONFIG_TCC_ASM, plus
 # tcc.c (the CLI, which unconditionally #includes tcctools.c -> carries `-ar`). NO ONE_SOURCE => each

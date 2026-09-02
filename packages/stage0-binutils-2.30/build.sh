@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# RE-CAPTURE BUMP (2026-09-02, #667 review batch): output globs are NOT part of the spec hash, so the
+# R5 explicit-headers narrowing needs this build.sh change to force a fresh capture (see build.ncl outputs).
 # build.sh — R5 (stage0-binutils-2.30) driver. SKELETON / WIP 2026-06-26.
 # Model-B adaptation of live-bootstrap steps/binutils-2.30/pass1.sh: ship ALL generated files, skip the
 # autoreconf/bison/flex/perl regen (none exist in bedrock). First rung to LINK executables (as/ld/ar/nm/

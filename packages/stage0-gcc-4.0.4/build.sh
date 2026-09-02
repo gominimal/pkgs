@@ -158,7 +158,8 @@ sed -i 's/C_alloca/alloca/g' include/libiberty.h
 
 # ============================================================================================
 # src_compile — Model-B: NO explicit `make gengtype-yacc.c` prestep (it's shipped + mtime-guarded).
-#   LIBGCC2_INCLUDES=-I/usr/include : libgcc2.c finds musl headers.
+#   LIBGCC2_INCLUDES=-I/usr/lib/musl-bedrock/include : libgcc2.c finds the R4b sysroot's musl headers
+#     (NOT the merged /usr/include — that is the first-writer-wins draw; R4a/R4b no longer publish it).
 #   STMP_FIXINC=  : disable the fixincludes stamp (musl headers are clean; no fixinc).
 #   MAKEINFO=true : skip texinfo (shipped .info kept; rule won't run under the mtime guard anyway).
 #   -j1 throughout (OOM pole). CC/AR/RANLIB were baked into each Makefile by configure (not re-passed,

@@ -1,4 +1,6 @@
 #!/bin/sh
+# RE-CAPTURE BUMP (2026-09-02, #667 review batch): output globs are NOT part of the spec hash, so the
+# R4b sysroot-only narrowing needs this build.sh change to force a fresh capture (see build.ncl outputs).
 # build.sh — R4b (stage0-musl-1.1.24-cc2) driver.  The DETERMINISTIC second-pass musl.
 #
 # DERIVED from R4a (stage0-musl-1.1.24/build.sh) with ONE architectural change: the compiler is the

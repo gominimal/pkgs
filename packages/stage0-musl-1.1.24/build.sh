@@ -1,4 +1,6 @@
 #!/bin/sh
+# RE-CAPTURE BUMP (2026-09-02, #667 review batch): output globs are NOT part of the spec hash, so the
+# R4a sysroot-only narrowing needs this build.sh change to force a fresh capture (see build.ncl outputs).
 # build.sh — R4 (stage0-musl-1.1.24) driver, DERIVED from live-bootstrap
 # steps/musl-1.1.24/pass1.sh (master @ 2026-06).  This is the FIRST bedrock rung driven by the
 # SHELL instead of the attested kaem: musl builds via `./configure` + `make`, neither of which

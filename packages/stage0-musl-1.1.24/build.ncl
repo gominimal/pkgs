@@ -131,14 +131,12 @@ let amd64_spec =
     # build.sh re-enters the shell (vs R0-R3's kaem); minimal runs it via the project bash-build path.
     cmd = "./build.sh",
     outputs = {
-      # the static libc R5 links against:
-      libc = { glob = "usr/lib/libc.a" } | OutputLib,
-      # crt startup objects (crt1.o/crti.o/crtn.o/Scrt1.o/rcrt1.o — assembled by tcc from x86_64 crt*.s/.c):
-      crt = { glob = "usr/lib/*.o" } | OutputLib,
-      # the empty stub archives (libm/libpthread/librt/… are EMPTY on musl — `touch`ed via makefile.patch):
-      libs = { glob = "usr/lib/*.a" } | OutputLib,
-      # musl headers (the libc interface R5's compilers compile against):
-      includes = { glob = "usr/include/**" } | OutputData,
+      # ★ SYSROOT-ONLY (2026-09-02, #667 review batch).  The former top-level captures
+      # (usr/lib/libc.a, usr/lib/*.o, usr/lib/*.a, usr/include/**) are GONE: every consumer now
+      # reads the §E versioned sysroot below — s3 compiles+links -nostdinc/-nostdlib against it
+      # (96026d35), R4b (cc2) builds -nostdinc -Iinclude from its own tree, s4 uses R4b's sysroot.
+      # A top-level usr/include/** here only ever added a contender to the merged-rootfs
+      # first-writer-wins header draw in every downstream sandbox (the s1/s3 "lottery").
       # §E single-writer sysroot: an UNCONTENDED copy of the sealed headers+libs (the merged
       # /usr/{include,lib} is a first-writer-wins draw vs the glibc runtime anchor in every
       # consumer sandbox). s3 compiles+links against these paths with -nostdinc/-nostdlib.
