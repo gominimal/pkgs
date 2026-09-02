@@ -129,8 +129,10 @@ let amd64_spec =
       tcc_boot0 = { glob = "usr/bin/tcc-boot0", allow_missing_interpreter = true } | OutputBin,
       tcc_boot1 = { glob = "usr/bin/tcc-boot1", allow_missing_interpreter = true } | OutputBin,
       # the tcc-rebuilt mes-libc that tcc-0.9.27 (R3) links against (crt1.o + libc.a + libgetopt.a;
-      # crti.o/crtn.o are EMPTY on amd64 — the x86-only branch is skipped — but are captured if present):
-      mes_libc = { glob = "usr/lib/mes/*.{a,o}" } | OutputLib,
+      # crti.o/crtn.o are EMPTY on amd64 — the x86-only branch is skipped — but are captured if present).
+      # allow_data: those empty .o's have no ELF magic, and the "output types valid" checker rejects an
+      # OutputLib member it cannot parse (pkgs CI 2026-09-02). Outputs are not in the spec hash — no rebuild.
+      mes_libc = { glob = "usr/lib/mes/*.{a,o}", allow_data = true } | OutputLib,
       tcc_lib = { glob = "usr/lib/mes/tcc/libtcc1.a" } | OutputLib,
     },
     # attrs: upstream_version + repology_project (advisory String metadata). source_provenance is

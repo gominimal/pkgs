@@ -127,8 +127,10 @@ let amd64_spec =
       tcc = { glob = "usr/bin/tcc", allow_missing_interpreter = true } | OutputBin,
       tcc_ver = { glob = "usr/bin/tcc-0.9.27", allow_missing_interpreter = true } | OutputBin,
       # the tcc-0.9.27-rebuilt mes-libc that musl's build links against (crt1.o + libc.a + libgetopt.a;
-      # crtn.o/crti.o are EMPTY on amd64 — no x86_64 crtn.c/crti.c — so not enumerated):
-      mes_libc = { glob = "usr/lib/mes/*.{a,o}" } | OutputLib,
+      # crtn.o/crti.o are EMPTY on amd64 — no x86_64 crtn.c/crti.c — so not enumerated).
+      # allow_data: those empty .o's have no ELF magic, and the "output types valid" checker rejects an
+      # OutputLib member it cannot parse (pkgs CI 2026-09-02). Outputs are not in the spec hash — no rebuild.
+      mes_libc = { glob = "usr/lib/mes/*.{a,o}", allow_data = true } | OutputLib,
       tcc_lib = { glob = "usr/lib/mes/tcc/libtcc1.a" } | OutputLib,
     },
     attrs =
