@@ -192,11 +192,18 @@ cp -a "$OUTPUT_DIR/usr/lib/gconv" "$PUB/lib/gconv" 2>/dev/null || true
 # absolute path resolved from the ANCHOR (the wrong library) and GATE-CXX passed by accident;
 # the bedrock anchor ships it only inside the versioned sysroot, so buildbot exposed it
 # (2026-09-01, `ld: cannot find /usr/lib/libm-2.42.a`). Rewrite EVERY text linker script.
+# TWO-PASS rewrite (buildbot's /usr is READ-ONLY, so no symlink bridge is possible):
+# pass 1 (here, pre-gate) points scripts at the BUILD-TIME staging path so the gate's ld can
+# resolve them; pass 2 (after the gate, below) flips them to the runtime install path that
+# consumers need, and ASSERTS no staging path survives into the artifact (the 2026-07-03
+# dangling-GROUP hazard, now fail-shut instead of by-convention).
+LDSCRIPTS=""
 for _ls in "$PUB"/lib/lib*.so "$PUB"/lib/lib*.a; do
   [ -f "$_ls" ] || continue
   head -c 64 "$_ls" | grep -qE 'GNU ld script|OUTPUT_FORMAT|GROUP' || continue
-  sed -i "s@/usr/lib/@/$PUB_REL/lib/@g" "$_ls"
-  echo "  repointed linker script: $_ls" >&2
+  sed -i "s@/usr/lib/@$PUB/lib/@g" "$_ls"
+  LDSCRIPTS="$LDSCRIPTS $_ls"
+  echo "  repointed linker script (build-time pass): $_ls" >&2
 done
 
 # ============ locale generation (production commands).  Runs the JUST-BUILT localedef => needs AVX2 ====
@@ -221,13 +228,6 @@ mkdir -vp "$OUTPUT_DIR/usr/lib/locale"
 # anywhere yet).  FAIL-SHUT: any mismatch => exit 1 (no seal).
 # ============================================================================================
 GATE="$BUILDROOT/b4gate"; rm -rf "$GATE"; mkdir -p "$GATE"
-# BUILD-TIME BRIDGE for the repointed linker scripts: they carry the RUNTIME path
-# (/$PUB_REL/lib/... — correct for every consumer, whose hydration installs the sysroot
-# there), but at GATE time nothing is installed at / yet, so ld's absolute-path chase
-# (libm.a -> GROUP(/$PUB_REL/lib/libm-2.42.a ...)) dangles. A sandbox-local symlink maps the
-# runtime path onto the staging tree; it lives outside $OUTPUT_DIR so it cannot ship.
-# (Pre-#631 the Debian anchor masked this by providing /usr/lib/libm-2.42.a — see above.)
-[ -e "/$PUB_REL" ] || ln -s "$PUB" "/$PUB_REL"
 GINC="-nostdinc -isystem $GI -isystem $PUB/include"     # gcc freestanding + fresh-glibc headers (UAPI co-located)
 # -no-pie forces the classic crt1.o static link (NOT static-pie via rcrt1.o) regardless of R12's default-PIE
 # posture (design "STILL TO CONFIRM"); crt1.o/crti.o/crtn.o are the startfiles Pass 1 installed.
@@ -321,5 +321,18 @@ if [ $ehrc -eq 0 ]; then
 else
   echo "B4-GATE-CXX: FAIL (compile rc=$xrc, run rc=$ehrc) — see design risk [high] libgcc coupling; tail:" >&2
   tail -20 "$GATE/cxx.err" >&2 || true
+  exit 1
+fi
+
+# ============ linker-script rewrite, PASS 2 (post-gate): staging path -> RUNTIME path ============
+# Consumers hydrate the sysroot at /$PUB_REL, so shipped scripts must carry that path. The
+# assert makes the 2026-07-03 dangling-GROUP hazard fail-shut: no staging path may survive.
+for _ls in $LDSCRIPTS; do
+  sed -i "s@$PUB/lib/@/$PUB_REL/lib/@g" "$_ls"
+  echo "  repointed linker script (runtime pass): $_ls" >&2
+done
+if [ -n "$LDSCRIPTS" ] && grep -l "$BUILDROOT\|/build/output" $LDSCRIPTS >/dev/null 2>&1; then
+  echo "B4-FATAL: a linker script still carries a build-time path after pass 2:" >&2
+  grep -l "$BUILDROOT\|/build/output" $LDSCRIPTS >&2
   exit 1
 fi
