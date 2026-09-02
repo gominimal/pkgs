@@ -1,4 +1,4 @@
-let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -82,6 +82,9 @@ in
   outputs = {
     bun = { glob = "usr/bin/bun" } | OutputBin,
     bunx = { glob = "usr/bin/bunx" } | OutputBin,
+    bash_completion = { glob = "usr/share/bash-completion/completions/bun" } | OutputData,
+    fish_completion = { glob = "usr/share/fish/vendor_completions.d/bun.fish" } | OutputData,
+    zsh_completion = { glob = "usr/share/zsh/site-functions/_bun" } | OutputData,
   },
 
   attrs =
