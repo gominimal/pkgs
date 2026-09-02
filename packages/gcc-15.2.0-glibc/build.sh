@@ -286,6 +286,20 @@ else
     echo "  dtags $_l: $(readelf -d "$_l" 2>/dev/null | grep -iE 'RPATH|RUNPATH|NEEDED' | tr -s ' ' | tr '\n' ';')" >&2
   done
   echo "  stack-protector default: $("$XGXX" -Q --help=common 2>/dev/null | grep -E 'fstack-protector' | tr -s ' ' | tr '\n' ';')" >&2
+  # CET / shadow-stack discrimination (CS builders are AMD SEV — no SHSTK; res-server-amd64 is
+  # Intel c4 with CET hardware; glibc-bedrock carries production's --enable-cet):
+  echo "  cpu shstk flag: $(grep -c -w shstk /proc/cpuinfo 2>/dev/null) cores; kernel thread features: $(grep -i x86_Thread_features /proc/self/status 2>/dev/null | tr -s ' ')" >&2
+  for _l in "$GATE/xdso" "$GATE/libthrower.so" "$OUTPUT_DIR"/usr/lib/libstdc++.so.6 "$OUTPUT_DIR"/usr/lib/libgcc_s.so.1 "$SR/lib/libc.so.6"; do
+    echo "  cet-notes $_l: $(readelf -n "$_l" 2>/dev/null | grep -iE 'x86 feature|IBT|SHSTK' | tr -s ' ' | tr '\n' ';')" >&2
+  done
+  set +e
+  _v1=$(GLIBC_TUNABLES=glibc.cpu.x86_shstk=off:glibc.cpu.x86_ibt=off timeout 30 "$SR/lib/ld-linux-x86-64.so.2" --library-path "$GATE:$GRUN_LIBS" "$GATE/xdso" 2>&1); _r1=$?
+  echo "  variant A (same binaries, SHSTK/IBT tunables OFF): rc=$_r1 out='$_v1'" >&2
+  "$XGXX" -std=gnu++14 -fPIC -shared -fno-stack-protector -fcf-protection=none $GXXINC $GLNK "$GATE/thrower.cpp" -o "$GATE/libthrower2.so" 2>/dev/null \
+    && "$XGXX" -std=gnu++14 -fno-stack-protector -fcf-protection=none $GXXINC $GLNK -L "$GATE" "$GATE/main.cpp" -l:libthrower2.so -o "$GATE/xdso2" 2>/dev/null \
+    && { _v2=$(timeout 30 "$SR/lib/ld-linux-x86-64.so.2" --library-path "$GATE:$GRUN_LIBS" "$GATE/xdso2" 2>&1); _r2=$?; echo "  variant B (-fno-stack-protector -fcf-protection=none): rc=$_r2 out='$_v2'" >&2; } \
+    || echo "  variant B: compile failed" >&2
+  set -e
   exit 1
 fi
 
