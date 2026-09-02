@@ -239,7 +239,14 @@ GIX="$("${XGXX}" -print-file-name=include)"
 GXXINC="-nostdinc -nostdinc++ -isystem ${CB} -isystem ${CB}/${TARGET} -isystem ${CB}/backward -isystem ${GIX} -isystem ${SR}/include"
 # -L$FIXLIB FIRST: the freshly-installed g++/gcc resolve -lc like every other link path in this
 # recipe -> they hit the poisoned $SR/lib/libc.so without it (gate bit exactly this, 2026-07-04).
-GLNK="-L${FIXLIB} -B${SR}/lib -L${SR}/lib -L${OUTPUT_DIR}/usr/lib"
+# --dynamic-linker baked so the gate binary execs DIRECTLY through its own PT_INTERP, the way
+# every production consumer runs — NOT via `ld.so --library-path` with the loader as the program.
+# That distinction decided the 2026-09-02 smash: with ld.so as the executable the kernel takes
+# CET enablement from the LOADER's properties (glibc-bedrock is --enable-cet), shadow stacks
+# come on for the process on Intel hardware (res-server-amd64 is a c4; CS builders are AMD SEV
+# and never see this), and the unmarked fresh libgcc_s unwinder trips a canary on cross-DSO
+# throw. Identical binaries passed with GLIBC_TUNABLES x86_shstk/ibt=off (variant A).
+GLNK="-L${FIXLIB} -B${SR}/lib -L${SR}/lib -L${OUTPUT_DIR}/usr/lib -Wl,--dynamic-linker=${LOADER}"
 GRUN_LIBS="${OUTPUT_DIR}/usr/lib:${SR}/lib"
 
 # --- shared lib: throws across the DSO boundary ---
@@ -273,7 +280,8 @@ src=$?
 mrc=$?
 COUT="<compile-failed>"
 if [ $src -eq 0 ] && [ $mrc -eq 0 ]; then
-  COUT="$(LD_LIBRARY_PATH="${GATE}:${GRUN_LIBS}" timeout 30 "${LOADER}" --library-path "${GATE}:${GRUN_LIBS}" "${GATE}/xdso" 2>>"${GATE}/cxx.err")"
+  # production-faithful: direct exec via the baked interp (kernel reads xdso's OWN CET properties)
+  COUT="$(LD_LIBRARY_PATH="${GATE}:${GRUN_LIBS}" timeout 30 "${GATE}/xdso" 2>>"${GATE}/cxx.err")"
 fi
 set -e
 if [ "${COUT}" = "OK" ]; then
