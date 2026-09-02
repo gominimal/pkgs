@@ -246,7 +246,14 @@ GXXINC="-nostdinc -nostdinc++ -isystem ${CB} -isystem ${CB}/${TARGET} -isystem $
 # come on for the process on Intel hardware (res-server-amd64 is a c4; CS builders are AMD SEV
 # and never see this), and the unmarked fresh libgcc_s unwinder trips a canary on cross-DSO
 # throw. Identical binaries passed with GLIBC_TUNABLES x86_shstk/ibt=off (variant A).
-GLNK="-L${FIXLIB} -B${SR}/lib -L${SR}/lib -L${OUTPUT_DIR}/usr/lib -Wl,--dynamic-linker=${LOADER}"
+# PRODUCTION SHAPE (2026-09-02, gate v5): bedrock interp + RUNPATH into the fresh target libs and
+# the bedrock sysroot, exec'd directly with NO LD_LIBRARY_PATH — exactly how every consumer of
+# this compiler's output runs (B5's own wrappers bake -rpath). Rounds 1-4 tested a shape production
+# never uses (no rpath + LD_LIBRARY_PATH): without rpath the bedrock ld.so reached the merged
+# /usr/lib and loaded the Debian 2.43 libc (variant I: __pointer_chk_guard GLIBC_PRIVATE), and with
+# LD_LIBRARY_PATH in interpreter mode a canary tripped even for plain C (variant H). Buildbot's B4
+# is byte-identical to CS's (ld.so 0043a12d…, libc cf43fa79…) — not a miscompile.
+GLNK="-L${FIXLIB} -B${SR}/lib -L${SR}/lib -L${OUTPUT_DIR}/usr/lib -Wl,--dynamic-linker=${LOADER} -Wl,-rpath,${OUTPUT_DIR}/usr/lib:${SR}/lib"
 GRUN_LIBS="${OUTPUT_DIR}/usr/lib:${SR}/lib"
 
 # --- shared lib: throws across the DSO boundary ---
@@ -283,12 +290,12 @@ EOF
 set +e
 "${XGXX}" -std=gnu++14 -fPIC -shared ${GXXINC} ${GLNK} "${GATE}/thrower.cpp" -o "${GATE}/libthrower.so" 2>"${GATE}/cxx.err"
 src=$?
-"${XGXX}" -std=gnu++14 ${GXXINC} ${GLNK} -L "${GATE}" "${GATE}/main.cpp" -lthrower -o "${GATE}/xdso" 2>>"${GATE}/cxx.err"
+"${XGXX}" -std=gnu++14 ${GXXINC} ${GLNK} -L "${GATE}" -Wl,-rpath,"${GATE}" "${GATE}/main.cpp" -lthrower -o "${GATE}/xdso" 2>>"${GATE}/cxx.err"
 mrc=$?
 COUT="<compile-failed>"
 if [ $src -eq 0 ] && [ $mrc -eq 0 ]; then
-  # production-faithful: direct exec via the baked interp (kernel reads xdso's OWN CET properties)
-  COUT="$(LD_LIBRARY_PATH="${GATE}:${GRUN_LIBS}" timeout 30 "${GATE}/xdso" 2>>"${GATE}/cxx.err")"
+  # production shape: direct exec, RUNPATH-resolved, NO LD_LIBRARY_PATH (libthrower via -rpath $GATE)
+  COUT="$(timeout 30 "${GATE}/xdso" 2>>"${GATE}/cxx.err" | tail -1)"
 fi
 set -e
 if [ "${COUT}" = "OK" ]; then
@@ -332,6 +339,8 @@ else
          _i=$(timeout 30 "$GATE/hello" 2>&1 | tail -1); echo "  variant I (plain C hello, direct exec, no env): out='$_i'" >&2; } \
     || echo "  variant H/I: hello compile failed" >&2
   echo "  ld.so identity: $(sha256sum "$SR/lib/ld-linux-x86-64.so.2" | cut -c1-16)  libc: $(sha256sum "$SR/lib/libc.so.6" | cut -c1-16)  build-id: $(readelf -n "$SR/lib/ld-linux-x86-64.so.2" 2>/dev/null | grep -i 'Build ID' | tr -s ' ')" >&2
+  echo "  LD_DEBUG (hello, direct exec + LD_LIBRARY_PATH) search paths:" >&2
+  LD_LIBRARY_PATH="$GATE:$GRUN_LIBS" LD_DEBUG=libs timeout 30 "$GATE/hello" 2>&1 | grep -E 'search path|trying file|initialize' | head -6 | cut -c1-200 >&2 || true
   echo "  VERDICT-KEY: F=loader-noenv G=loader+bogusLDLP H=C-hello+LDLP I=C-hello-noenv (A/B passed with no LD_LIBRARY_PATH; C/D/E + primary smashed with it)" >&2
   set -e
   exit 1
