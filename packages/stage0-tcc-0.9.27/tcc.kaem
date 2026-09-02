@@ -78,9 +78,11 @@ catm ${MES_PKG}/include/mes/config.h
 # mes-libc at the read-only consumer /usr/lib/mes.  The -D CONFIG_* strings below are baked INTO
 # tcc-0.9.27 (where IT will look when run) — set to the CONSUMER /usr/lib/mes for R4, since R3
 # only uses tcc-0.9.27 for -c/-ar (no self-link to resolve, unlike R2's boot loop).
-# -I additions: R1 installs the mes libc headers at /usr/include (top-level) + a few mes-internal
-# under /usr/include/mes, so tcc.c's `#include <stdlib.h>` resolves via -I /usr/include (same fix
-# R2/boot0 applied).  `.` first preserves tcc's own headers ahead of the system tree.
+# -I additions: R1's mes libc headers, read from its §E SINGLE-WRITER sysroot /usr/lib/mes-bedrock/
+# include (+ /mes) — never the merged /usr/include, whose owner is a first-writer-wins draw vs the
+# glibc runtime dep of this sandbox's coreutils (the R2/s1 header lottery, buildbot 2026-09-02).
+# `.` first preserves tcc's own headers ahead of the libc tree; -I dirs precede tcc-0.9.26's baked
+# sysinclude (/usr/include/mes, uncontended), so the merged tree is never consulted.
 cd ${TCC_PKG}
 # -w: tcc-0.9.26's deliverable is a correct compiler (its PARSER is fine), but its error/warning
 # FORMATTER rides the mes-libc va_list path that crashes on the first warning (the R2 error-varargs
@@ -105,8 +107,8 @@ tcc-0.9.26 \
     -D TCC_VERSION=\"0.9.27\" \
     -D ONE_SOURCE=1 \
     -I . \
-    -I ${PREFIX}/include \
-    -I ${PREFIX}/include/mes \
+    -I /usr/lib/mes-bedrock/include \
+    -I /usr/lib/mes-bedrock/include/mes \
     tcc.c
 chmod 755 ${BINDIR}/tcc
 cp ${BINDIR}/tcc ${BINDIR}/tcc-0.9.27

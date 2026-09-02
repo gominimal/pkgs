@@ -44,8 +44,15 @@ OUTPUT_DIR=/build/output
 # (MESCC / INCDIR / mescc.scm's built-in %libdir), NOT from /build/output.
 BINDIR=/build/output/usr/bin
 LIBDIR=/build/output/usr/lib/mes
-# R1's installed mes-libc HEADERS (consumer location, read-only) — the upstream `${PREFIX}/include/mes`.
-INCDIR=/usr/include/mes
+# R1's installed mes-libc HEADERS — read from R1's §E SINGLE-WRITER sysroot (usr/lib/mes-bedrock/
+# include, a byte-identical copy of its /usr/include install), NOT the merged /usr/include.  This
+# sandbox carries coreutils, whose glibc runtime dep also ships usr/include/**; minimal's rootfs
+# overlay is first-writer-wins, so /usr/include/stddef.h was a per-sandbox DRAW.  A glibc draw
+# makes mescc's nyacc die "parse failed at state 410, on input size_t" then SIGSEGV (buildbot
+# 2026-09-02, twice).  mescc.scm's built-in %includedir is `(getenv "includedir")` first, so the
+# env var below repoints the implicit system include dir too (kaem exports its variables).
+INCDIR=/usr/lib/mes-bedrock/include/mes
+includedir=/usr/lib/mes-bedrock/include
 # R1's installed MesCC driver script (consumer location, read-only).  Upstream reads
 # `${BINDIR}/mescc.scm`; under §D BINDIR is the staging path, so the R1 read is made explicit
 # (CONTRACTS §D concrete example: "read R1's at /usr/bin/mescc.scm, not the staging path").
