@@ -256,11 +256,18 @@ void do_throw(int x){ throw E{x}; }
 EOF
 # --- main: catches the cross-DSO throw + backtrace(3) ---
 cat > "${GATE}/main.cpp" <<'EOF'
+#include <string.h>
+#include <stdio.h>
 #include <cstdio>
 #include <execinfo.h>
 struct E { int v; };
 void do_throw(int);
-int main(){
+int main(int, char**, char** envp){
+  { FILE* f = fopen("/proc/self/status", "r"); char l[256];
+    while (f && fgets(l, sizeof l, f)) if (strstr(l, "x86_Thread_features")) fputs(l, stderr);
+    if (f) fclose(f);
+    size_t n = 0; for (char** e = envp; *e; ++e) n += strlen(*e) + 1;
+    fprintf(stderr, "GATE env bytes=%zu\n", n); }
   int fails = 0;
   try { do_throw(7); }
   catch (const E& e){ if (e.v != 7){ fprintf(stderr, "GATE xdso-eh: v=%d want 7\n", e.v); fails++; } }
@@ -307,6 +314,13 @@ else
     && "$XGXX" -std=gnu++14 -fno-stack-protector -fcf-protection=none $GXXINC $GLNK -L "$GATE" "$GATE/main.cpp" -l:libthrower2.so -o "$GATE/xdso2" 2>/dev/null \
     && { _v2=$(timeout 30 "$SR/lib/ld-linux-x86-64.so.2" --library-path "$GATE:$GRUN_LIBS" "$GATE/xdso2" 2>&1); _r2=$?; echo "  variant B (-fno-stack-protector -fcf-protection=none): rc=$_r2 out='$_v2'" >&2; } \
     || echo "  variant B: compile failed" >&2
+  _v3=$(GLIBC_TUNABLES=glibc.malloc.check=0 LD_LIBRARY_PATH="$GATE:$GRUN_LIBS" timeout 30 "$GATE/xdso" 2>&1 | tail -1); _r3=${PIPESTATUS:-$?}
+  echo "  variant C (direct exec, INERT tunable — env-layout control): out='$_v3'" >&2
+  _v4=$(GLIBC_TUNABLES=glibc.cpu.x86_shstk=off LD_LIBRARY_PATH="$GATE:$GRUN_LIBS" timeout 30 "$GATE/xdso" 2>&1 | tail -1)
+  echo "  variant D (direct exec, shstk=off only): out='$_v4'" >&2
+  _v5=$(LD_LIBRARY_PATH="$GATE:$GRUN_LIBS" XXXPAD=$(printf 'x%.0s' $(seq 1 64)) timeout 30 "$GATE/xdso" 2>&1 | tail -1)
+  echo "  variant E (direct exec, +64-byte junk env var): out='$_v5'" >&2
+  echo "  VERDICT-KEY: A=loader+tunables-off B=no-protector-no-cfprot C=inert-tunable D=shstk-off E=env-pad; kernel: $(grep -i x86_Thread_features /proc/self/status 2>/dev/null | tr -s ' ') cpu-shstk-cores=$(grep -c -w shstk /proc/cpuinfo 2>/dev/null)" >&2
   set -e
   exit 1
 fi
