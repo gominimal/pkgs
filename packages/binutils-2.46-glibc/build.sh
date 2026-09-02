@@ -86,7 +86,7 @@ GI="${GI}"; SR="${SR}"
 for a in "\$@"; do case "\$a" in -c|-S|-E) exec /usr/bin/gcc -nostdinc -isystem "\$GI" -isystem "\$SR/include" "\$@" ;; esac; done
 # --dynamic-linker: the sandbox has NO /lib64 (gcc's default interp path); the B4 loader is hydrated
 # in the versioned sysroot -> bake it so configure's conftest (and every produced bin) can exec in-sandbox.
-exec /usr/bin/gcc -nostdinc -isystem "\$GI" -isystem "\$SR/include" -L "${FIXLIB}" -B "\$SR/lib" -L "\$SR/lib" -Wl,--dynamic-linker="\$SR/lib/ld-linux-x86-64.so.2" "\$@"
+exec /usr/bin/gcc -nostdinc -isystem "\$GI" -isystem "\$SR/include" -L "${FIXLIB}" -B "\$SR/lib" -L "\$SR/lib" -Wl,--dynamic-linker="\$SR/lib/ld-linux-x86-64.so.2" -Wl,-rpath,"\$SR/lib" "\$@"
 WRAP
 chmod +x "${BUILDROOT}/gcc-cc"
 GCCCC="${BUILDROOT}/gcc-cc"
@@ -98,7 +98,7 @@ cat > "${BUILDROOT}/gcc-cxx" <<WRAP
 #!/bin/sh
 GI="${GXX_GI}"; SR="${SR}"
 for a in "\$@"; do case "\$a" in -c|-S|-E) exec /usr/bin/g++ -nostdinc -isystem "\$GI" -isystem "\$SR/include" "\$@" ;; esac; done
-exec /usr/bin/g++ -nostdinc -isystem "\$GI" -isystem "\$SR/include" -L "${FIXLIB}" -B "\$SR/lib" -L "\$SR/lib" -Wl,--dynamic-linker="\$SR/lib/ld-linux-x86-64.so.2" "\$@"
+exec /usr/bin/g++ -nostdinc -isystem "\$GI" -isystem "\$SR/include" -L "${FIXLIB}" -B "\$SR/lib" -L "\$SR/lib" -Wl,--dynamic-linker="\$SR/lib/ld-linux-x86-64.so.2" -Wl,-rpath,"\$SR/lib" "\$@"
 WRAP
 chmod +x "${BUILDROOT}/gcc-cxx"
 GXXCC="${BUILDROOT}/gcc-cxx"

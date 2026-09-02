@@ -106,7 +106,7 @@ cat > "${BUILDROOT}/gcc-cc" <<WRAP
 #!/bin/sh
 INC="-isystem ${GI} -isystem ${SR}/include"
 for a in "\$@"; do case "\$a" in -c|-S|-E) exec "${BUILDER_GCC}" -nostdinc \$INC "\$@" ;; esac; done
-exec "${BUILDER_GCC}" -nostdinc \$INC -L "${FIXLIB}" -B "${SR}/lib" -L "${SR}/lib" -Wl,--dynamic-linker="${SR}/lib/ld-linux-x86-64.so.2" "\$@"
+exec "${BUILDER_GCC}" -nostdinc \$INC -L "${FIXLIB}" -B "${SR}/lib" -L "${SR}/lib" -Wl,--dynamic-linker="${SR}/lib/ld-linux-x86-64.so.2" -Wl,-rpath,"${SR}/lib" "\$@"
 WRAP
 chmod +x "${BUILDROOT}/gcc-cc"
 GCCCC="${BUILDROOT}/gcc-cc"
@@ -119,7 +119,7 @@ cat > "${BUILDROOT}/gcc-cxx" <<WRAP
 #!/bin/sh
 INC="-isystem ${CXX_BASE_DIR} -isystem ${CXX_TGT_DIR} -isystem ${CXX_BASE_DIR}/backward -isystem ${GI} -isystem ${SR}/include"
 for a in "\$@"; do case "\$a" in -c|-S|-E) exec "${BUILDER_GXX}" -nostdinc -nostdinc++ \$INC "\$@" ;; esac; done
-exec "${BUILDER_GXX}" -nostdinc -nostdinc++ \$INC -L "${FIXLIB}" -B "${SR}/lib" -L "${SR}/lib" -Wl,--dynamic-linker="${SR}/lib/ld-linux-x86-64.so.2" "\$@"
+exec "${BUILDER_GXX}" -nostdinc -nostdinc++ \$INC -L "${FIXLIB}" -B "${SR}/lib" -L "${SR}/lib" -Wl,--dynamic-linker="${SR}/lib/ld-linux-x86-64.so.2" -Wl,-rpath,"${SR}/lib" "\$@"
 WRAP
 chmod +x "${BUILDROOT}/gcc-cxx"
 GCCCXX="${BUILDROOT}/gcc-cxx"
@@ -195,7 +195,7 @@ export LIBRARY_PATH="${SR}/lib"
 # (inert for -shared libs; only affects throwaway conftest exes).
 # NO space after -L/-B: libtool's link mode rejects the two-token form ("require no space between
 # -L and ...", libssp Error 1) even though gcc/ld accept it.  Joined form works everywhere.
-FT="-g -O2 -L${FIXLIB} -B${SR}/lib -L${SR}/lib -Wl,--dynamic-linker=${SR}/lib/ld-linux-x86-64.so.2"
+FT="-g -O2 -L${FIXLIB} -B${SR}/lib -L${SR}/lib -Wl,--dynamic-linker=${SR}/lib/ld-linux-x86-64.so.2 -Wl,-rpath,${SR}/lib"
 make -j"$(nproc)" MAKEINFO=true CFLAGS_FOR_TARGET="${FT}" CXXFLAGS_FOR_TARGET="${FT}"
 make -j"$(nproc)" MAKEINFO=true CFLAGS_FOR_TARGET="${FT}" CXXFLAGS_FOR_TARGET="${FT}" DESTDIR="${OUTPUT_DIR}" install
 
