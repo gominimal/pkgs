@@ -9,7 +9,10 @@ GEMS="$OUTPUT_DIR/usr/lib/ruby-lsp/gems"
 mkdir -p "$GEMS"
 export GEM_HOME="$GEMS"
 export GEM_PATH="$GEMS"
-gem install --local --no-document "ruby-lsp-$MINIMAL_ARG_VERSION.gem"
+# --bindir is explicit because the ruby package ships a system gemrc
+# defaulting binstubs to ~/.local/bin (gominimal/inbox#584); CLI flags
+# beat gemrc, keeping this vendored install self-contained.
+gem install --local --no-document --bindir "$GEMS/bin" "ruby-lsp-$MINIMAL_ARG_VERSION.gem"
 
 # Drop install residue that is either non-reproducible (gem_make.out and
 # mkmf.log record a per-run temp dir name like .gem.20260823-3-k0190w)

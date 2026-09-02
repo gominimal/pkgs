@@ -1,6 +1,7 @@
-let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let python = import "../python/build.ncl" in
@@ -28,12 +29,14 @@ let version = "2.9.5" in
   runtime_deps = [
     glibc,
     subsetOf gcc ["libgcc"],
+    bash, # the /usr/bin wrapper is a #!/bin/sh script (bash provides bin/sh)
   ],
 
   cmd = "./build.sh",
 
   outputs = {
     deno = { glob = "usr/bin/deno" } | OutputBin,
+    libexec = { glob = "usr/libexec/deno/**", allow_executable = true } | OutputData,
   },
 
   attrs =
@@ -52,7 +55,9 @@ let version = "2.9.5" in
     } | Attrs,
 
   tests = {
-    smoketest = standaloneTest "/usr/bin/deno --version",
+    # The raw ELF, not the /usr/bin wrapper: standaloneTest runs with no shell
+    # in the sandbox, so a #!/bin/sh wrapper would ENOENT there.
+    smoketest = standaloneTest "/usr/libexec/deno/deno --version",
 
     eval =
       {
@@ -60,6 +65,17 @@ let version = "2.9.5" in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "deno eval 'console.log(1+1)' | grep -q '^2$'"],
+        ],
+      } | Test,
+    global_install_default =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          # The wrapper must default DENO_INSTALL_ROOT so `deno install -g`
+          # bins land in ~/.local/bin, on the session PATH
+          # (gominimal/inbox#584).
+          ["/bin/bash", "-c", "deno eval \"console.log(Deno.env.get('DENO_INSTALL_ROOT'))\" | grep -q '/.local$'"],
         ],
       } | Test,
   },
