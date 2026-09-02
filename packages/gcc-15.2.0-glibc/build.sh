@@ -31,6 +31,7 @@ mkdir -p "$OUTPUT_DIR"
 # for a genuinely cold single-environment build. (One-time cost: once green, the artifact
 # cache serves; the make-tree ratchet only mattered while these recipes were iterating.)
 for _d in ./*/; do [ -d "$_d" ] && find "$_d" -delete; done
+echo "B5 COLD-TREE GUARD ran: remaining top-level dirs: $(ls -d ./*/ 2>/dev/null | tr '\n' ' ')" >&2
 # ============================================================================================
 # build.sh — B5 (gcc-15.2.0-glibc) driver.  REVIEW-READY scaffold 2026-07-03.
 # ============================================================================================
@@ -210,7 +211,10 @@ export LIBRARY_PATH="${SR}/lib"
 # (inert for -shared libs; only affects throwaway conftest exes).
 # NO space after -L/-B: libtool's link mode rejects the two-token form ("require no space between
 # -L and ...", libssp Error 1) even though gcc/ld accept it.  Joined form works everywhere.
-FT="-g -O2 -L${FIXLIB} -B${SR}/lib -L${SR}/lib -Wl,--dynamic-linker=${SR}/lib/ld-linux-x86-64.so.2 -Wl,-rpath,${SR}/lib"
+# NOTE (2026-09-02): do NOT add -Wl,-rpath here. Adding it to the TARGET-lib flags correlated
+# 1:1 with the b5gate xdso stack-smash (gate passed in the 6b0e7cc round without it, smashed in
+# every round with it); the wrapper conftest rpaths above are sufficient and stay.
+FT="-g -O2 -L${FIXLIB} -B${SR}/lib -L${SR}/lib -Wl,--dynamic-linker=${SR}/lib/ld-linux-x86-64.so.2"
 make -j"$(nproc)" MAKEINFO=true CFLAGS_FOR_TARGET="${FT}" CXXFLAGS_FOR_TARGET="${FT}"
 make -j"$(nproc)" MAKEINFO=true CFLAGS_FOR_TARGET="${FT}" CXXFLAGS_FOR_TARGET="${FT}" DESTDIR="${OUTPUT_DIR}" install
 
