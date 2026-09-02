@@ -31,7 +31,9 @@ let version = "0.14.12" in
 
   outputs = {
     procs = { glob = "usr/bin/procs" } | OutputBin,
-    completions = { glob = "usr/share/bash-completion/completions/*" } | OutputData,
+    bash_completion = { glob = "usr/share/bash-completion/completions/procs" } | OutputData,
+    fish_completion = { glob = "usr/share/fish/vendor_completions.d/procs.fish" } | OutputData,
+    zsh_completion = { glob = "usr/share/zsh/site-functions/_procs" } | OutputData,
   },
   attrs =
     {
