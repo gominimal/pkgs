@@ -9,6 +9,13 @@ if [ "$(uname -m)" = "aarch64" ]; then
   ART=$(ls stage0-glibc-*-aarch64.tar.zst /build/stage0-glibc-*-aarch64.tar.zst 2>/dev/null | head -1)
   [ -n "$ART" ] || { echo "FATAL: arm glibc artifact not hydrated" >&2; exit 1; }
   mkdir -p "$OUTPUT_DIR"
+# ...and the BUILD/SOURCE trees: make tracks mtimes, not flags — a tree that lived through
+# tonight's recipe iterations carries mixed-environment objects (the xdso stack-smash came
+# from exactly that: target libs part-compiled under the broken-sort round). Inputs re-hydrate
+# per round as top-level FILES; every top-level DIRECTORY here is derived state — drop them
+# for a genuinely cold single-environment build. (One-time cost: once green, the artifact
+# cache serves; the make-tree ratchet only mattered while these recipes were iterating.)
+for _d in ./*/; do [ -d "$_d" ] && find "$_d" -delete; done
   tar --zstd --no-same-owner -xf "$ART" -C "$OUTPUT_DIR"
   V="${MINIMAL_ARG_VERSION:-2.42}"
   [ -e "$OUTPUT_DIR/usr/lib/glibc-bedrock-$V/lib/ld-linux-aarch64.so.1" ] \
