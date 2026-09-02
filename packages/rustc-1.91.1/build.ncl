@@ -67,6 +67,7 @@ let { target, .. } = import "config.ncl" in
 #    Treat the first CS run as diagnostic — the P0b/P0c tripwires NAME the offending argv/path.
 # ============================================================================================
 let rustc-1-90-0 = import "../mrustc-rustc-1.90.0/build.ncl" in # ★ THE STAGE0 — attested in CS
+let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # B4: the stage0's ELF interpreter lives in its sysroot
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let curl = import "../curl/build.ncl" in
@@ -105,6 +106,17 @@ let amd64_spec =
       # points bootstrap.toml [build] rustc/cargo at bin/rustc (a POSIX-sh wrapper that sets
       # LD_LIBRARY_PATH and execs rustc_binary) and bin/cargo — NOT at rustc_binary directly.
       rustc-1-90-0,
+      # The 1.90 rung's rustc_binary/cargo are bedrock-interp ELFs: PT_INTERP =
+      # /usr/lib/glibc-bedrock-2.42/lib/ld-linux-x86-64.so.2 and RUNPATH = that sysroot first
+      # (see mrustc-rustc-1.90.0/build.sh LPOST + GATE-6).  Without the loader FILE in THIS
+      # sandbox the wrapper dies "rustc_binary: cannot execute: required file not found"
+      # (buildbot amd64, 2026-09-02).  CS never noticed: the toolchain anchor prebuilt is
+      # extracted wholesale there, and the anchor tarball happens to carry the same versioned
+      # sysroot.  Buildbot hydrates from output globs, and packages/glibc's do not cover
+      # usr/lib/glibc-bedrock-2.42/**.  Take ONLY the sysroot lib output (loader + libc 2.42):
+      # B4's usr/bin and usr/include would overlap the toolchain's, and this rung is the sole
+      # consumer of bedrock-interp binaries (1.92+ consume clang-linked, standard-interp rungs).
+      subsetOf glibc-bedrock ["sysroot_lib"],
       base, # bash/coreutils/tar/xz/sed/grep/gawk/findutils — the userland; xz extracts the src
       cmake, # some vendored -sys build scripts; also pulls a real curl (shadowed by P0b's stub)
       curl, # libcurl for curl-sys (offline: pkg-config path OR the P0c-marked vendored submodule)
