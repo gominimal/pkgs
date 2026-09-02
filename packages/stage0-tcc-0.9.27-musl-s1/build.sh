@@ -32,6 +32,12 @@ emit "S1-INFO mes crt: $(ls -la /usr/lib/mes/crt1.o 2>/dev/null | awk '{print $5
 # rung's headers first-writer-wins per sandbox; a glibc draw made tcc die in bits/*.h with the
 # mes-libc error reporter eating the diagnostic (rc=139, be=0) — the historical "s1 lottery".
 emit "S1-HDR stdio.h=$(sha256sum /usr/include/stdio.h 2>/dev/null | cut -c1-16) alltypes=$(test -f /usr/include/bits/alltypes.h && echo musl-present || echo no-musl) stdio_lim=$(test -f /usr/include/bits/stdio_lim.h && echo GLIBC-PRESENT || echo clean)"
+# §E: the compile below reads ONLY R1's single-writer header sysroot (-nostdinc), so the draw
+# recorded by S1-HDR is now diagnostic-only.  Fail shut if the sysroot is missing: falling back
+# to the merged /usr/include would silently reintroduce the lottery.
+MB=/usr/lib/mes-bedrock/include
+[ -f "$MB/stdio.h" ] && [ -f "$MB/mes/lib.h" ] || { emit "S1-FAIL mes header sysroot missing at $MB (stage0-mes must publish mes_sysroot_inc)"; cp /build/tm/rows.txt "$LOGOUT/rows.log" 2>/dev/null; echo fail | tee "$MAN"; exit 1; }
+emit "S1-INFO header sysroot $MB: $(ls "$MB" | wc -l | tr -d ' ') entries, stdio.h=$(sha256sum "$MB/stdio.h" | cut -c1-16)"
 
 cd /build/tm
 tar --no-same-owner -xzf "$BUILDROOT/tccsrc-r3got-s1.tar.gz" 2>/tmp/te; xrc=$?
@@ -76,15 +82,14 @@ DEFS=(
   -D CONFIG_USE_LIBGCC=1
   -D 'TCC_VERSION="0.9.27PW2"'
 )
-# mes FIRST — but read this honestly (corrected 2026-09-02 after the #667 audit): mes installs its
-# libc headers at the TOP LEVEL of /usr/include (stdio.h, stdlib.h, ...) and only a handful
-# (9 names) under the uncontended /usr/include/mes/.  So `-I /usr/include/mes` first insulates
-# ONLY those 9; every other contended name (stdio.h included) still resolves to whatever the
-# merged-rootfs first-writer-wins draw put at /usr/include — the S1-HDR line above records which.
-# A glibc draw kills tcc; that is exactly why the mesl_roll retries below re-roll the sandbox.
-# The real fix is a kaem-era single-writer copy of the mes headers (the s3 §E pattern), which
-# this rung does not have yet.
-INCS=(-I . -I /usr/include/mes -I /usr/include)
+# HEADERS: -nostdinc + R1's §E single-writer sysroot ($MB, a byte-identical copy of mes's
+# installed include tree at a path nothing else writes).  History: mes installs its libc headers
+# at the TOP LEVEL of /usr/include and only 9 names under /usr/include/mes/, so the old
+# `-I /usr/include/mes -I /usr/include` still read stdio.h from whatever the merged-rootfs
+# first-writer-wins draw provided; a glibc draw crashed tcc-0.9.26 in bits/*.h (rc=139, be=0)
+# through all six layout rolls — buildbot 2026-09-02 (S1-HDR stdio_lim=GLIBC-PRESENT).  With
+# -nostdinc the merged /usr/include is never searched, so the draw cannot reach this compile.
+INCS=(-nostdinc -I . -I "$MB/mes" -I "$MB")
 # x86_64 units: matches libtcc.c's ONE_SOURCE includes for TCC_TARGET_X86_64 + CONFIG_TCC_ASM, plus
 # tcc.c (the CLI, which unconditionally #includes tcctools.c -> carries `-ar`). NO ONE_SOURCE => each
 # is its own small compilation unit.
@@ -135,7 +140,7 @@ else
   # mechanism without naming it (this bit me while writing this very fix). (ASLR is separately disabled globally now, Dockerfile.prod:91
   # -> sandbox2 personality(ADDR_NO_RANDOMIZE), so the old "per-task ASLR" attribution is stale too.)
   if [ "$bc" = 139 ]; then
-    emit "S1-BUILD-ERR mes-libc SIGSEGV rc=139 in tcc-0.9.26 (a compiled ELF linked against mes-libc; no Scheme interpreter and no GC arena are in this process) compiling unit=${failunit:-link} across ALL 6 INDEPENDENT env-layout draws — layout-independent means a REAL bug, not a draw; do not re-enqueue: $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
+    emit "S1-BUILD-ERR mes-libc SIGSEGV rc=139 in tcc-0.9.26 (a compiled ELF linked against mes-libc; no Scheme interpreter and no GC arena are in this process) compiling unit=${failunit:-link} across ALL 6 env-layout rolls (rolls re-roll the ENV, not the sandbox — read the S1-HDR/S1-INFO header-sysroot lines first; with -nostdinc a header draw is ruled out, so this is a real bug, not a re-enqueue): $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
   else
     emit "S1-BUILD-ERR (non-lottery, rc=$bc unit=${failunit:-link}, deterministic — fix the recipe, not a re-enqueue): $(tail -4 /tmp/be 2>/dev/null | tr '\n' '|')"
   fi

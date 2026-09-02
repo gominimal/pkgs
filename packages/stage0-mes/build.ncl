@@ -81,6 +81,10 @@ let amd64_spec =
       mes_linux_libs = { glob = "usr/lib/linux/x86_64-mes/**" } | OutputData,
       # mes-libc headers (include/{mes,sys,linux,arch}/ + top-level) — R2's mescc -I include path.
       mes_includes = { glob = "usr/include/**" } | OutputData,
+      # §E single-writer copy of the SAME headers at an uncontended path (see mes.kaem's ADAPT
+      # block): shell-driven consumers (s1) compile -nostdinc against this, never the merged
+      # /usr/include whose owner is a first-writer-wins draw vs the glibc runtime anchor.
+      mes_sysroot_inc = { glob = "usr/lib/mes-bedrock/include/**" } | OutputData,
       # Scheme module trees (mes core + mescc + REGENERATED nyacc c99 tables).  NOT installed by
       # upstream pass1.kaem — a hermetic-model addition so R2's MesCC can set GUILE_LOAD_PATH to
       # these (live-bootstrap keeps them in its persistent build tree).  See R1-mes-draft.md §9.

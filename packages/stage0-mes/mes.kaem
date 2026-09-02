@@ -443,6 +443,23 @@ mescc libc+tcc.c
 
 ############################################################
 # [ADAPT — hermetic-model ADDITION, NOT in pass1.kaem]     #
+# §E SINGLE-WRITER HEADER SYSROOT (2026-09-02).  The       #
+# top-level /usr/include install above is CONTENDED in any #
+# consumer sandbox that also carries glibc-linked shell    #
+# tools (their `glibc` runtime dep ships usr/include/**):  #
+# minimal's rootfs overlay is first-writer-wins, so which  #
+# stdio.h a downstream rung sees is a per-sandbox draw —   #
+# a glibc draw crashes mes-linked tcc (s1, buildbot        #
+# 2026-09-02, S1-HDR stdio_lim=GLIBC-PRESENT).  Publish a  #
+# byte-identical copy at a path NO other package writes;   #
+# shell-driven consumers compile -nostdinc against it.     #
+# Same pattern as stage0-musl-1.1.24 §E and glibc-bedrock. #
+############################################################
+/usr/bin/mkdir -p /build/output/usr/lib/mes-bedrock
+/usr/bin/cp -rT /build/output/usr/include /build/output/usr/lib/mes-bedrock/include
+
+############################################################
+# [ADAPT — hermetic-model ADDITION, NOT in pass1.kaem]     #
 # Export the Scheme module trees so R2's MesCC can find    #
 # them.  live-bootstrap keeps these in the persistent      #
 # build tree (GUILE_LOAD_PATH points there); minimal       #
