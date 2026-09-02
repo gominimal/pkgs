@@ -3,9 +3,10 @@ let base = import "../base/build.ncl" in
 let claude-code = import "../claude-code/build.ncl" in
 let claude-code-minimal-plugin = import "../claude-code-minimal-plugin/build.ncl" in
 
-# A metapackage: `min add claude` gets the agent *and* the Minimal session
-# plugin, which is the combination you almost always want in a sandbox. It
-# builds nothing and owns no files; the two deps below are its entire content.
+# A metapackage: `min add --session claude` gets the agent *and* the Minimal
+# session plugin, which is the combination you almost always want in a sandbox.
+# It builds nothing and owns no files; the two deps below are its entire
+# content.
 #
 # `claude-code-minimal-plugin` already depends on `claude-code`, so naming both
 # here is redundant today. It is deliberate: this package's meaning should not
