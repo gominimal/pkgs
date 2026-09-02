@@ -22,6 +22,12 @@
 # SAME C23 trap family as the aarch64 ladder's musl basename() and libiberty K&R malloc() walls.
 # ============================================================================================
 set -ex
+
+# ── STALE-STATE GUARD (2026-09-01): buildbot's res-server persists /build across rounds; a
+# failed round's partial install in $OUTPUT_DIR would be swallowed by the capture globs.
+# Start from an EMPTY output (build trees stay warm for the incremental ratchet).
+[ -n "$OUTPUT_DIR" ] && [ -d "$OUTPUT_DIR" ] && find "$OUTPUT_DIR" -mindepth 1 -delete
+mkdir -p "$OUTPUT_DIR"
 VERSION="${MINIMAL_ARG_VERSION:-1.4}"
 SRC_TARBALL="go1.4-bootstrap-20171003.tar.gz"
 SRC_SHA=f4ff5b5eb3a3cae1c993723f3eab519c5bae18866b5e5f96fe1102f0cb5c3e52

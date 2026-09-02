@@ -20,6 +20,12 @@
 #     same class as the rust ladder's read-only-stage0 wall, pre-empted here with a writable copy.
 # ============================================================================================
 set -ex
+
+# ── STALE-STATE GUARD (2026-09-01): buildbot's res-server persists /build across rounds; a
+# failed round's partial install in $OUTPUT_DIR would be swallowed by the capture globs.
+# Start from an EMPTY output (build trees stay warm for the incremental ratchet).
+[ -n "$OUTPUT_DIR" ] && [ -d "$OUTPUT_DIR" ] && find "$OUTPUT_DIR" -mindepth 1 -delete
+mkdir -p "$OUTPUT_DIR"
 VERSION="${MINIMAL_ARG_VERSION:-1.20.14}"
 SRC_TARBALL="go${VERSION}.src.tar.gz"
 SRC_SHA=1aef321a0e3e38b7e91d2d7eb64040666cabdcc77d383de3c9522d0d69b67f4e

@@ -34,6 +34,12 @@
 # ============================================================================================
 set -ex
 
+# ── STALE-STATE GUARD (2026-09-01): buildbot's res-server persists /build across rounds; a
+# failed round's partial install in $OUTPUT_DIR would be swallowed by the capture globs.
+# Start from an EMPTY output (build trees stay warm for the incremental ratchet).
+[ -n "$OUTPUT_DIR" ] && [ -d "$OUTPUT_DIR" ] && find "$OUTPUT_DIR" -mindepth 1 -delete
+mkdir -p "$OUTPUT_DIR"
+
 VERSION=1.92.0
 STAGE0_VERSION=1.91.1
 # Arch dispatch (arm parity, 2026-08-26): the rung is otherwise arch-clean
