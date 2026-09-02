@@ -16,6 +16,14 @@ if [ "$(uname -m)" = "aarch64" ]; then
     || { echo "FATAL: C++ headers missing after extract" >&2; exit 1; }
   exit 0
 fi
+
+# ── STALE-STATE GUARD (2026-09-01, buildbot): the res-server persists /build across rounds,
+# so $OUTPUT_DIR accumulated debris from earlier FAILED rounds (a mid-libstdc++ partial
+# install poisoned the b5gate's --library-path with a stale lib -> stack-smash; CS never saw
+# this because its sandboxes are always fresh — the CUA_PASS dirty-tree class). Start every
+# build from an EMPTY output; the make trees stay warm for the incremental ratchet.
+[ -n "$OUTPUT_DIR" ] && [ -d "$OUTPUT_DIR" ] && find "$OUTPUT_DIR" -mindepth 1 -delete
+mkdir -p "$OUTPUT_DIR"
 # ============================================================================================
 # build.sh — B5 (gcc-15.2.0-glibc) driver.  REVIEW-READY scaffold 2026-07-03.
 # ============================================================================================
