@@ -192,6 +192,8 @@ cp -a "$OUTPUT_DIR/usr/lib/gconv" "$PUB/lib/gconv" 2>/dev/null || true
 # absolute path resolved from the ANCHOR (the wrong library) and GATE-CXX passed by accident;
 # the bedrock anchor ships it only inside the versioned sysroot, so buildbot exposed it
 # (2026-09-01, `ld: cannot find /usr/lib/libm-2.42.a`). Rewrite EVERY text linker script.
+# (re-capture bump 2026-09-01: output globs narrowed to sysroot-only — globs are not in the
+# spec hash, so this comment exists to invalidate the cached wide capture. See build.ncl.)
 # TWO-PASS rewrite (buildbot's /usr is READ-ONLY, so no symlink bridge is possible):
 # pass 1 (here, pre-gate) points scripts at the BUILD-TIME staging path so the gate's ld can
 # resolve them; pass 2 (after the gate, below) flips them to the runtime install path that

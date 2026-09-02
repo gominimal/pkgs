@@ -75,11 +75,18 @@ let version = "1.97.1" in
             # 21.1.5 (no arm CS exists; the pkgs-llvm re-climb is the accepted follow-up).
             # The rung links libLLVM.so.21.1 shared — satisfied by this sandbox's llvm dep
             # (runtime deps are materialized at build time), same shape as the amd64 rungs.
+            # LLVM BUNDLE (2026-09-01, first buildbot contact): the rung links
+            # libLLVM.so.21.1 built with ALL targets (apt.llvm.org); minimal's llvm pkg
+            # omits experimental targets, so the sandbox lib lacked
+            # LLVMInitializeM68kTarget@LLVM_21.1 (symbol lookup error). The tarball now
+            # bundles apt libLLVM 21.1.8 + its non-glibc closure in lib/ (RUNPATH
+            # $ORIGIN/../lib) — self-contained, verified to run with no system LLVM.
+            # The pkgs-llvm re-climb removes the bundle.
             # `extract = true` unpacks the topdir to ./rustc-1.96.0-aarch64 inside the
             # source root; build.sh points bootstrap.toml [build] rustc/cargo at it.
             {
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/51c984265ceabf3c49a41b6476ed74c6e8439da15b655e86ad79c61197c932ba/rustc-1.96.0-aarch64.tar.zst",
-              sha256 = "51c984265ceabf3c49a41b6476ed74c6e8439da15b655e86ad79c61197c932ba",
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/c0f099a5cdda7888bb51d60dc0fe38d18f467ed7280658603075aa1e136c3ecb/rustc-1.96.0-aarch64.tar.zst",
+              sha256 = "c0f099a5cdda7888bb51d60dc0fe38d18f467ed7280658603075aa1e136c3ecb",
               extract = true,
             } | Source,
           ],

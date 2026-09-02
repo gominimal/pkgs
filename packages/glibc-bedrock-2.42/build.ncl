@@ -57,8 +57,16 @@ let all_outputs = {
   sbins = { glob = "usr/sbin/**" } | OutputBin,
   etc = { glob = "etc/**/*" } | OutputData,
 
-  libs = { glob = "usr/lib/*.{so*,a}", allow_data = true } | OutputLib, # libc.so is a linker script, not an ELF binary
-  crts = { glob = "usr/lib/{crt,gcrt,grcrt,Mcrt,rcrt,Scrt}*.o" } | OutputLib,
+  # ★ NO top-level usr/lib/*.{so,a} or crt*.o globs (2026-09-01, buildbot B5 wall): as a
+  # BUILD DEP this pkg's fresh libc.so.6 shadowed the sandbox's runtime libc in the /usr/lib
+  # draw, and Debian-toolchain-linked userland (sort, GLIBC_2.43) died mid-B5, taking
+  # libtool's dedup with it. Every in-tree consumer (B5, binutils-2.46, mrustc) uses ONLY the
+  # versioned sysroot below (-B/-L/-nostdinc; verified 2026-09-01). The ANCHOR role — plain
+  # /usr layout incl. the top-level libs — is served by the published PREBUILT tarball
+  # (packages/glibc, d0850b65…), not by this pkg's outputs; if that tarball is ever
+  # regenerated from a fresh artifact, re-add these globs FOR THAT PACKAGING RUN ONLY:
+  #   libs = usr/lib/*.{so*,a} (allow_data: libc.so is a linker script)
+  #   crts = usr/lib/{crt,gcrt,grcrt,Mcrt,rcrt,Scrt}*.o
   lib_audit = { glob = "usr/lib/audit/*.so*" } | OutputLib,
   lib_locale = { glob = "usr/lib/locale/**" } | OutputData,
   lib_gconv = { glob = "usr/lib/gconv/**", allow_data = true } | OutputLib,
