@@ -26,7 +26,10 @@ set -ex
 # ── STALE-STATE GUARD (2026-09-01): buildbot's res-server persists /build across rounds; a
 # failed round's partial install in $OUTPUT_DIR would be swallowed by the capture globs.
 # Start from an EMPTY output (build trees stay warm for the incremental ratchet).
-[ -n "$OUTPUT_DIR" ] && [ -d "$OUTPUT_DIR" ] && find "$OUTPUT_DIR" -mindepth 1 -delete
+# (pure coreutils: no findutils in every chain sandbox — mrustc died on `find: command not found`)
+if [ -n "$OUTPUT_DIR" ] && [ -d "$OUTPUT_DIR" ]; then
+  for _e in "$OUTPUT_DIR"/* "$OUTPUT_DIR"/.[!.]* "$OUTPUT_DIR"/..?*; do [ -e "$_e" ] || [ -L "$_e" ] && rm -r "$_e"; done
+fi
 mkdir -p "$OUTPUT_DIR"
 VERSION="${MINIMAL_ARG_VERSION:-1.4}"
 SRC_TARBALL="go1.4-bootstrap-20171003.tar.gz"
