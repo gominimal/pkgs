@@ -106,17 +106,6 @@ let amd64_spec =
       # points bootstrap.toml [build] rustc/cargo at bin/rustc (a POSIX-sh wrapper that sets
       # LD_LIBRARY_PATH and execs rustc_binary) and bin/cargo — NOT at rustc_binary directly.
       rustc-1-90-0,
-      # The 1.90 rung's rustc_binary/cargo are bedrock-interp ELFs: PT_INTERP =
-      # /usr/lib/glibc-bedrock-2.42/lib/ld-linux-x86-64.so.2 and RUNPATH = that sysroot first
-      # (see mrustc-rustc-1.90.0/build.sh LPOST + GATE-6).  Without the loader FILE in THIS
-      # sandbox the wrapper dies "rustc_binary: cannot execute: required file not found"
-      # (buildbot amd64, 2026-09-02).  CS never noticed: the toolchain anchor prebuilt is
-      # extracted wholesale there, and the anchor tarball happens to carry the same versioned
-      # sysroot.  Buildbot hydrates from output globs, and packages/glibc's do not cover
-      # usr/lib/glibc-bedrock-2.42/**.  Take ONLY the sysroot lib output (loader + libc 2.42):
-      # B4's usr/bin and usr/include would overlap the toolchain's, and this rung is the sole
-      # consumer of bedrock-interp binaries (1.92+ consume clang-linked, standard-interp rungs).
-      subsetOf glibc-bedrock ["sysroot_lib"],
       base, # bash/coreutils/tar/xz/sed/grep/gawk/findutils — the userland; xz extracts the src
       cmake, # some vendored -sys build scripts; also pulls a real curl (shadowed by P0b's stub)
       curl, # libcurl for curl-sys (offline: pkg-config path OR the P0c-marked vendored submodule)
@@ -126,6 +115,20 @@ let amd64_spec =
       toolchain, # gcc/binutils/glibc/linux_headers — clang's sysroot (crt, libc, headers)
     ],
     runtime_deps = [
+      # ★ B4 sysroot_lib — needed at BUILD time (runtime_deps are hydrated into this sandbox
+      # too, exactly as llvm below is).  The 1.90 rung's rustc_binary/cargo are bedrock-interp
+      # ELFs: PT_INTERP = /usr/lib/glibc-bedrock-2.42/lib/ld-linux-x86-64.so.2, RUNPATH = that
+      # sysroot first (mrustc-rustc-1.90.0/build.sh LPOST + GATE-6).  Without the loader FILE
+      # the wrapper dies "rustc_binary: cannot execute: required file not found" (buildbot
+      # amd64 2026-09-02).  CS never noticed: its toolchain anchor prebuilt is extracted
+      # wholesale and carries the same versioned sysroot; buildbot hydrates from output globs
+      # and packages/glibc's don't cover usr/lib/glibc-bedrock-2.42/**.  ONLY sysroot_lib:
+      # the full B4 would lay 2.42 usr/include + usr/bin beside the toolchain's 2.44 (header
+      # race).  Listed here, not in build_deps, because `subsetOf` in build_deps panics
+      # "not yet implemented: input: Subset" on the res-server (2026-09-02).  The 1.91.1
+      # binaries themselves are clang-linked standard-interp; 1.92+ inherit only this
+      # harmless sysroot directory.
+      subsetOf glibc-bedrock ["sysroot_lib"],
       libffi,
       llvm, # /usr/bin/{clang,clang++,llvm-config} + libLLVM-21.so (present at BUILD time too)
       openssl,
