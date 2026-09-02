@@ -320,7 +320,19 @@ else
   echo "  variant D (direct exec, shstk=off only): out='$_v4'" >&2
   _v5=$(LD_LIBRARY_PATH="$GATE:$GRUN_LIBS" XXXPAD=$(printf 'x%.0s' $(seq 1 64)) timeout 30 "$GATE/xdso" 2>&1 | tail -1)
   echo "  variant E (direct exec, +64-byte junk env var): out='$_v5'" >&2
-  echo "  VERDICT-KEY: A=loader+tunables-off B=no-protector-no-cfprot C=inert-tunable D=shstk-off E=env-pad; kernel: $(grep -i x86_Thread_features /proc/self/status 2>/dev/null | tr -s ' ') cpu-shstk-cores=$(grep -c -w shstk /proc/cpuinfo 2>/dev/null)" >&2
+  # Round-4 discriminators: every smashing run had LD_LIBRARY_PATH in the env; both passing runs did
+  # not. Isolate the env var from launch form and from C++ entirely:
+  _f=$(timeout 30 "$SR/lib/ld-linux-x86-64.so.2" --library-path "$GATE:$GRUN_LIBS" "$GATE/xdso" 2>&1 | tail -1)
+  echo "  variant F (loader form, NO env vars at all): out='$_f'" >&2
+  _g=$(LD_LIBRARY_PATH=/nonexistent timeout 30 "$SR/lib/ld-linux-x86-64.so.2" --library-path "$GATE:$GRUN_LIBS" "$GATE/xdso" 2>&1 | tail -1)
+  echo "  variant G (loader form + LD_LIBRARY_PATH=/nonexistent): out='$_g'" >&2
+  printf '#include <stdio.h>\nint main(){ puts("HELLO-OK"); return 0; }\n' > "$GATE/hello.c"
+  "$OUTPUT_DIR/usr/bin/gcc" -nostdinc -isystem "$GIX" -isystem "$SR/include" $GLNK "$GATE/hello.c" -o "$GATE/hello" 2>/dev/null \
+    && { _h=$(LD_LIBRARY_PATH="$GATE:$GRUN_LIBS" timeout 30 "$GATE/hello" 2>&1 | tail -1); echo "  variant H (plain C hello, direct exec, LD_LIBRARY_PATH set): out='$_h'" >&2; \
+         _i=$(timeout 30 "$GATE/hello" 2>&1 | tail -1); echo "  variant I (plain C hello, direct exec, no env): out='$_i'" >&2; } \
+    || echo "  variant H/I: hello compile failed" >&2
+  echo "  ld.so identity: $(sha256sum "$SR/lib/ld-linux-x86-64.so.2" | cut -c1-16)  libc: $(sha256sum "$SR/lib/libc.so.6" | cut -c1-16)  build-id: $(readelf -n "$SR/lib/ld-linux-x86-64.so.2" 2>/dev/null | grep -i 'Build ID' | tr -s ' ')" >&2
+  echo "  VERDICT-KEY: F=loader-noenv G=loader+bogusLDLP H=C-hello+LDLP I=C-hello-noenv (A/B passed with no LD_LIBRARY_PATH; C/D/E + primary smashed with it)" >&2
   set -e
   exit 1
 fi
