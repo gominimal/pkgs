@@ -80,13 +80,16 @@ let version = "1.97.1" in
             # omits experimental targets, so the sandbox lib lacked
             # LLVMInitializeM68kTarget@LLVM_21.1 (symbol lookup error). The tarball now
             # bundles apt libLLVM 21.1.8 + its non-glibc closure in lib/ (RUNPATH
-            # $ORIGIN/../lib) — self-contained, verified to run with no system LLVM.
+            # $ORIGIN/../lib) — self-contained. v2: every bundled lib also carries rpath
+            # $ORIGIN (RUNPATH is NOT transitive — libLLVM's own deps resolved via ITS
+            # runpath, and libtinfo.so.6 failed in-sandbox); verified with the OS copies
+            # of every bundled dep MASKED: rustc runs, compiles, cargo runs.
             # The pkgs-llvm re-climb removes the bundle.
             # `extract = true` unpacks the topdir to ./rustc-1.96.0-aarch64 inside the
             # source root; build.sh points bootstrap.toml [build] rustc/cargo at it.
             {
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/c0f099a5cdda7888bb51d60dc0fe38d18f467ed7280658603075aa1e136c3ecb/rustc-1.96.0-aarch64.tar.zst",
-              sha256 = "c0f099a5cdda7888bb51d60dc0fe38d18f467ed7280658603075aa1e136c3ecb",
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/1602ba71cc33ebb82b9b9817196fe846447bd45cd8beb424b4d3f3335db0ed81/rustc-1.96.0-aarch64.tar.zst",
+              sha256 = "1602ba71cc33ebb82b9b9817196fe846447bd45cd8beb424b4d3f3335db0ed81",
               extract = true,
             } | Source,
           ],
