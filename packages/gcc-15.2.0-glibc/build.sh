@@ -211,10 +211,11 @@ export LIBRARY_PATH="${SR}/lib"
 # (inert for -shared libs; only affects throwaway conftest exes).
 # NO space after -L/-B: libtool's link mode rejects the two-token form ("require no space between
 # -L and ...", libssp Error 1) even though gcc/ld accept it.  Joined form works everywhere.
-# NOTE (2026-09-02): do NOT add -Wl,-rpath here. Adding it to the TARGET-lib flags correlated
-# 1:1 with the b5gate xdso stack-smash (gate passed in the 6b0e7cc round without it, smashed in
-# every round with it); the wrapper conftest rpaths above are sufficient and stay.
-FT="-g -O2 -L${FIXLIB} -B${SR}/lib -L${SR}/lib -Wl,--dynamic-linker=${SR}/lib/ld-linux-x86-64.so.2"
+# -rpath IS load-bearing here (2026-09-02, cold-tree round): without it the target-lib
+# configures (libbacktrace/libatomic/libgomp/libssp/libquadmath) die "cannot run C compiled
+# programs" — xgcc conftests get the bedrock interp but resolve libc from the /usr draw. The
+# earlier "gate passed without it" was a stale-configure pass on an incremental tree.
+FT="-g -O2 -L${FIXLIB} -B${SR}/lib -L${SR}/lib -Wl,--dynamic-linker=${SR}/lib/ld-linux-x86-64.so.2 -Wl,-rpath,${SR}/lib"
 make -j"$(nproc)" MAKEINFO=true CFLAGS_FOR_TARGET="${FT}" CXXFLAGS_FOR_TARGET="${FT}"
 make -j"$(nproc)" MAKEINFO=true CFLAGS_FOR_TARGET="${FT}" CXXFLAGS_FOR_TARGET="${FT}" DESTDIR="${OUTPUT_DIR}" install
 
@@ -279,6 +280,12 @@ if [ "${COUT}" = "OK" ]; then
   echo "B5-GATE-CXX: PASS (cross-DSO C++ EH via libgcc_s.so.1 + backtrace against fresh glibc)" >&2
 else
   echo "B5-GATE-CXX: FAIL (thrower rc=$src main rc=$mrc out='${COUT}'); tail:" >&2; tail -20 "${GATE}/cxx.err" >&2 || true
+  echo "B5-GATE-CXX diag: loaded libs (ld.so --list):" >&2
+  "$SR/lib/ld-linux-x86-64.so.2" --library-path "$GATE:$GRUN_LIBS" --list "$GATE/xdso" >&2 2>&1 || true
+  for _l in "$OUTPUT_DIR"/usr/lib/libstdc++.so.6 "$OUTPUT_DIR"/usr/lib/libgcc_s.so.1 "$GATE/xdso" "$GATE/libthrower.so"; do
+    echo "  dtags $_l: $(readelf -d "$_l" 2>/dev/null | grep -iE 'RPATH|RUNPATH|NEEDED' | tr -s ' ' | tr '\n' ';')" >&2
+  done
+  echo "  stack-protector default: $("$XGXX" -Q --help=common 2>/dev/null | grep -E 'fstack-protector' | tr -s ' ' | tr '\n' ';')" >&2
   exit 1
 fi
 
