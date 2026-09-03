@@ -1,0 +1,545 @@
+# tcc.kaem — R2 (stage0-tcc-0.9.26) driver, DERIVED from live-bootstrap
+# steps/tcc-0.9.26/pass1.kaem (master @ 2026-06-20). Driven by the ATTESTED full
+# C kaem (/usr/bin/kaem, 6364de59…, re-exported by R0.5): `kaem --strict` aborts HARD
+# on any non-zero child, so every line below is also an assertion (no bash — the B1.5
+# no-bash-driver property is preserved for the mes/tcc rungs; bash re-enters only
+# at R5/binutils where configure+make demand a shell). MesCC (mes-m2 + mescc.scm,
+# from R1) compiles janneke's tcc-0.9.26 fork to assembly, then links it against
+# R1's mes-libc; the resulting tcc-mes rebuilds mes-libc and boot-straps tcc
+# through boot0→boot1→boot2 to the final /usr/bin/tcc.
+#
+# The `if match ${ARCH} …` conditionals + the giant unified-libc.c catm + every
+# tcc-mes/tcc-boot* -D flag list below are VERBATIM from upstream pass1.kaem (the
+# full kaem supports if/match; `match` is from R0.5). Only env/unpack/gate/staging
+# scaffolding was adapted. amd64 selects MES_ARCH=x86_64 / TCC_TARGET_ARCH=X86_64 /
+# HAVE_LONG_LONG=1.
+#
+# ── CONTRACTS.md edits applied vs the draft ───────────────────────────────────────────────
+# §A  toolchain comes WHOLE from R0.5 (kaem/catm/M1/hex2/blood-elf/match/M2-Mesoplanet/
+#     simple-patch at /usr/bin) + R1 (mes-m2/mescc.scm/mes-libc/headers/modules); no R0 import.
+# §C  MES_PREFIX=/usr (was /usr/share/mes — WRONG: it redirected mescc.scm's %libdir/%includedir
+#     to /usr/share/mes/{lib,include} where R1 installs nothing).  GUILE_LOAD_PATH's third root
+#     is /usr/share/nyacc/module (was /usr/share/mes/nyacc/module — WRONG path).  R1 installs
+#     mescc.scm→/usr/bin, mes-libc→/usr/lib/x86_64-mes, headers→/usr/include, modules→the three
+#     roots below, so with MES_PREFIX=/usr mescc.scm's built-in %libdir=/usr/lib (+ /x86_64-mes
+#     subdir) and %includedir=/usr/include resolve R1's tree exactly.
+# §D  writable-/usr: minimal mounts /usr READ-ONLY.  R2 WRITES its tcc binaries + tcc-rebuilt
+#     mes-libc to OUTPUT_DIR=/build/output (BINDIR/LIBDIR redirected), READS R1's mes in place
+#     at the consumer /usr/..., and bakes the consumer /usr/lib/mes into the DELIVERABLE tcc.
+#     See §LIBDIR below.
+set -ex
+
+# --- env that live-bootstrap supplies globally (steps/env + seed/seed.kaem), CONTRACTS-adapted ---
+# kaem has `set -a` on by default, so these assignments are exported to the mes-m2 / mescc / tcc
+# children (mescc + the mes interpreter read MES_PREFIX, GUILE_LOAD_PATH, MES_ARENA/STACK from
+# the environment).
+ARCH=amd64
+PREFIX=/usr
+# OUTPUT_DIR (= minimal's capture dir).  build.ncl's `outputs` globs are relative to it.
+OUTPUT_DIR=/build/output
+# §D writable-/usr: BINDIR / LIBDIR are minimal's STAGING paths under /build/output — that is
+# where R2 WRITES the freshly-built tcc-mes/tcc-boot*/tcc AND its own tcc-rebuilt mes-libc
+# (/usr is read-only; the draft's BINDIR=/usr/bin + `mkdir /usr/lib/mes` would fail at the first
+# write).  R1's mescc.scm / mes-libc / headers are read from the CONSUMER /usr/... in place
+# (MESCC / INCDIR / mescc.scm's built-in %libdir), NOT from /build/output.
+BINDIR=/build/output/usr/bin
+LIBDIR=/build/output/usr/lib/mes
+# R1's installed mes-libc HEADERS — read from R1's §E SINGLE-WRITER sysroot (usr/lib/mes-bedrock/
+# include, a byte-identical copy of its /usr/include install), NOT the merged /usr/include.  This
+# sandbox carries coreutils, whose glibc runtime dep also ships usr/include/**; minimal's rootfs
+# overlay is first-writer-wins, so /usr/include/stddef.h was a per-sandbox DRAW.  A glibc draw
+# makes mescc's nyacc die "parse failed at state 410, on input size_t" then SIGSEGV (buildbot
+# 2026-09-02, twice).  mescc.scm's built-in %includedir is `(getenv "includedir")` first, so the
+# env var below repoints the implicit system include dir too (kaem exports its variables).
+INCDIR=/usr/lib/mes-bedrock/include/mes
+includedir=/usr/lib/mes-bedrock/include
+# The boot0/boot1/boot2/deliverable self-links below pass the same two sysroot dirs explicitly
+# (upstream's `-I ${PREFIX}/include -I ${PREFIX}/include/mes`), for the same reason.
+# R1's installed MesCC driver script (consumer location, read-only).  Upstream reads
+# `${BINDIR}/mescc.scm`; under §D BINDIR is the staging path, so the R1 read is made explicit
+# (CONTRACTS §D concrete example: "read R1's at /usr/bin/mescc.scm, not the staging path").
+MESCC=/usr/bin/mescc.scm
+# PATH carries BOTH the consumer /usr/bin (R0.5 tools: kaem/catm/M1/hex2/match/blood-elf/
+# simple-patch/M2-Mesoplanet + R1's mes-m2 + coreutils) AND the staging bin where the freshly
+# built tcc-mes/tcc-boot*/tcc land (so the bare-name `tcc-mes …` / `tcc-boot0 …` resolve).
+PATH=/build/output/usr/bin:/usr/bin
+# §C MES module trees — R1's EXPORTED, regenerated trees at the three CONTRACTS §C-1 roots
+# (psyntax.pp + nyacc c99 tables are regenerated DURING R1 and are NOT in a pristine tarball).
+MES_PREFIX=/usr
+GUILE_LOAD_PATH=/usr/share/mes/mes/module:/usr/share/mes/module:/usr/share/nyacc/module
+# Arena: MES_ARENA == MES_MAX_ARENA (NO GROWTH) is MANDATORY. The 2026-06-22 mes-m2-stability-sweep
+# workflow proved (gc.c source + 3-build evidence) that the prior 100M/300M GROWTH config (ARENA <
+# MAX_ARENA) ARMED gc_up_arena() — a realloc + pointer-relocating memcpy that does NOT rebase
+# g_news/g_free and (under M2-Planet's 32-bit size_t) overflows the arena-byte multiply on doubling
+# -> that was the SIGSEGV, NOT a too-small arena. Upstream live-bootstrap uses 30M/30M no-growth for
+# tcc on 32-bit; amd64 cells are ~2x bytes (no upstream amd64 reference exists), so 50M no-growth
+# gives GC copy-headroom while staying well under BOTH the ~80M (signed) and ~162M (unsigned) 32-bit
+# overflow ceilings. NEVER set MES_MAX_ARENA > MES_ARENA. (mes-stability-sweep refines the value.)
+MES_STACK=15000000
+MES_ARENA=50000000
+MES_MAX_ARENA=50000000
+MES=/usr/bin/mes-m2
+TCC_TAR=tcc-0.9.26
+TCC_PKG=tcc-0.9.26-1147-gee75a10c
+MES_PKG=mes-0.27.1
+
+# amd64 (verbatim values from the `if match ${ARCH} amd64` arm of upstream):
+MES_ARCH=x86_64
+TCC_TARGET_ARCH=X86_64
+HAVE_LONG_LONG=1
+
+# §D the staging dirs must exist before the first write (BINDIR before `cp tcc-mes ${BINDIR}/`,
+# LIBDIR before the first `-o ${LIBDIR}/crt1.o`).  Both are under /build/output (writable).
+mkdir -p ${BINDIR}
+mkdir -p ${LIBDIR}
+
+# --- unpack: Source{extract=true} already placed both trees at /build (CWD), so
+# upstream's `mkdir build; cd build; ungz; ungz; untar; untar` is unnecessary.
+# Build directly at /build (the trees are siblings, so the relative `cd ../${MES_PKG}`
+# / `cd ../${TCC_PKG}` hops in the verbatim core below resolve exactly as upstream).
+
+# --- the two tcctools.c simple-patches (verbatim live-bootstrap pattern files) ---
+# `simple-patch` is the live-bootstrap helper (steps/simple-patch-1.0): a ~150-line M2
+# program doing ONE literal before->after substring replacement.  It is NOT part of
+# stage0-posix; CONTRACTS §B has R0.5 (stage0-mescc-full) compile it once with M2-Mesoplanet
+# and export /usr/bin/simple-patch.  R2 just USES it (PATH-resolved).  These two relocate a
+# fopen() in tcc's `-ar` archiver so mes-libc's fopen ordering works; tcctools.c IS compiled
+# (ONE_SOURCE=1) so the patch is load-bearing on amd64.  (The extracted tcc tree is at /build,
+# which is writable, so the in-place edit succeeds — only /usr is read-only.)
+simple-patch ${TCC_PKG}/tcctools.c remove-fileopen.before remove-fileopen.after
+simple-patch ${TCC_PKG}/tcctools.c addback-fileopen.before addback-fileopen.after
+
+# amd64 mes-tcc gfunc_call fix (2026-06-22, ASM-PROBE-CONFIRMED): mescc miscompiles the WHOLE-STRUCT
+# SValue swap copy in gfunc_call's run loop -> the freshly-built tcc-mes corrupts the >=4th call
+# argument's type.t -> SIGSEGV (assert x86_64-gen.c:1318) on EVERY >=4-arg call (27/258 libc files
+# crash; tip execve.c = a bare _sys_call3 4-arg call). FIX: replace the two whole-struct SValue swaps
+# (fwd swap @1276, swap-back @1348) with PER-FIELD copies. mes-tcc-asm-probe verified all 4 crashers
+# (execve/fcntl/wait4/snprintf) compile CLEAN with this. (The earlier vtop-i addressing-cache failed.)
+simple-patch ${TCC_PKG}/x86_64-gen.c fix-swapf.before fix-swapf.after
+simple-patch ${TCC_PKG}/x86_64-gen.c fix-swapb.before fix-swapb.after
+# BUG1 (the tcc-boot0 first-use SIGSEGV): a GENUINE tcc -static defect (gcc-reproduced, NOT a mescc
+# miscompile) — gotplt_entry_type returns ALWAYS_GOTPLT for R_X86_64_PLT32 + relocate_plt is skipped
+# for static links, so a defined fn's call goes through an unpatched lazy PLT stub -> jump to garbage.
+# Fix: build_got_entries converts PLT32/PC32 -> direct PC32 for defined syms in a static link (no PLT).
+simple-patch ${TCC_PKG}/tccelf.c fix-plt.before fix-plt.after
+# BUG2 (wrong value): mescc miscompiles the power-of-two strength-reduction log2 loop (b*2 -> shll $0).
+# Rewrite the loop mescc-safe (fresh var, explicit compare, no compound-assign-in-condition).
+simple-patch ${TCC_PKG}/tccgen.c fix-mul.before fix-mul.after
+# BUG (6th): tcc-mes miscompiles VARIADIC calls — gfunc_call's %al (SysV variadic SSE-arg count)
+# setup uses a chained deref `vtop->type.ref->c` + a ternary that mescc mis-emits, so variadic
+# callees (snprintf, fprintf — which tcc uses to build the output path) read phantom SSE regs and
+# crash. tcc-boot0 died on EVERY compile because of this. Decompose the %al setup mescc-safe.
+simple-patch ${TCC_PKG}/x86_64-gen.c fix-vararg.before fix-vararg.after
+# ROOT FIX: mescc miscompiles gen_opi's constant shift-count `g(vtop->c.i & (ll?63:31))` -> the count
+# collapses to 0, so tcc-mes emits `shr/shl $0` for EVERY x>>N/x<<N. That makes o()'s `c=c>>8` an
+# infinite loop (tcc-boot0 hangs emitting any fn body) + gen_le16/32/64 emit wrong bytes + corrupts the
+# parser. Decompose the ternary/AND/union-read so mescc keeps the count. (Same root fix-mul band-aided.)
+simple-patch ${TCC_PKG}/x86_64-gen.c fix-shift.before fix-shift.after
+
+# empty config.h for both trees (upstream: BOOTSTRAP defines arrive via -D, not config.h)
+catm ${TCC_PKG}/config.h
+catm ${MES_PKG}/include/mes/config.h
+
+
+cd ${TCC_PKG}
+
+if match ${ARCH} x86; then
+    MES_ARCH=x86
+    TCC_TARGET_ARCH=I386
+    HAVE_LONG_LONG=0
+fi
+if match ${ARCH} amd64; then
+    MES_ARCH=x86_64
+    TCC_TARGET_ARCH=X86_64
+    HAVE_LONG_LONG=1
+fi
+if match ${ARCH} riscv64; then
+    MES_ARCH=riscv64
+    TCC_TARGET_ARCH=RISCV64
+    HAVE_LONG_LONG=1
+fi
+
+# ── §LIBDIR (CONTRACTS §D, the self-referential refinement) ────────────────────────────────
+# The boot loop below is byte-verbatim upstream pass1.kaem.  Its -D CONFIG_*/TCC_LIBGCC strings
+# reference ${LIBDIR}, which under §D expands to the STAGING path /build/output/usr/lib/mes —
+# so tcc-mes/tcc-boot0/tcc-boot1/tcc-boot2 each bake the path where R2 PHYSICALLY writes its
+# tcc-rebuilt mes-libc (crt1.o/libc.a/libtcc1.a).  This is what makes the self-build resolve:
+# every in-build tcc finds the libc it JUST built at its own baked CRTPREFIX/TCC_LIBGCC =
+# ${LIBDIR}, which is mandatory because /usr/lib/mes (the consumer path) is read-only & empty at
+# build time.  No -L/-B additions to the verbatim boot links are needed; only ${LIBDIR}'s VALUE
+# changed.  The DELIVERABLE tcc is then re-baked with the CONSUMER /usr/lib/mes (see the final
+# block) so R3 (tcc-0.9.27) resolves R2's installed libc at /usr/lib/mes.
+
+${MES} --no-auto-compile -e main ${MESCC} -- \
+    -S \
+    -o tcc.s \
+    -I ${INCDIR} \
+    -D BOOTSTRAP=1 \
+    -D HAVE_LONG_LONG=${HAVE_LONG_LONG} \
+    -I . \
+    -D TCC_TARGET_${TCC_TARGET_ARCH}=1 \
+    -D inline= \
+    -D CONFIG_TCCDIR=\"${LIBDIR}/tcc\" \
+    -D CONFIG_SYSROOT=\"/\" \
+    -D CONFIG_TCC_CRTPREFIX=\"${LIBDIR}\" \
+    -D CONFIG_TCC_ELFINTERP=\"/mes/loader\" \
+    -D CONFIG_TCC_SYSINCLUDEPATHS=\"${PREFIX}/include/mes\" \
+    -D TCC_LIBGCC=\"${LIBDIR}/libc.a\" \
+    -D CONFIG_TCC_LIBTCC1_MES=0 \
+    -D CONFIG_TCCBOOT=1 \
+    -D CONFIG_TCC_STATIC=1 \
+    -D CONFIG_USE_LIBGCC=1 \
+    -D TCC_VERSION=\"0.9.26\" \
+    -D ONE_SOURCE=1 \
+    tcc.c
+${MES} --no-auto-compile -e main ${MESCC} -- \
+    --base-address 0x08048000 \
+    -o tcc-mes \
+    -L ${LIBDIR} \
+    tcc.s \
+    -l c+tcc
+cp tcc-mes ${BINDIR}/
+chmod 755 ${BINDIR}/tcc-mes
+
+# test tcc-mes
+tcc-mes -version
+
+# Recompile the mes C library
+cd ../${MES_PKG}
+
+# Populate include/arch/ exactly as upstream mes configure.sh does (configure.sh:267-270).
+# This manual libc rebuild bypasses mes's configure, so dirent.h's `#include <arch/syscall.h>`
+# (resolved via `-I include` -> include/arch/syscall.h) had no target -> "arch/syscall.h not
+# found" when tcc-mes compiles unified-libc.c. mes_kernel=linux, mes_cpu=${MES_ARCH}.
+mkdir -p include/arch
+cp include/linux/${MES_ARCH}/kernel-stat.h include/arch/kernel-stat.h
+cp include/linux/${MES_ARCH}/signal.h include/arch/signal.h
+cp include/linux/${MES_ARCH}/syscall.h include/arch/syscall.h
+
+# BUG (5th, the tcc-boot0 first-use SIGSEGV): mes-libc setjmp uses an EXTENDED-asm OUTPUT operand
+# (`asm("mov %%rbp,%0":"=r"(p))`) that the amd64 mes-built tcc miscompiles -> tcc-boot0 crashes at
+# libtcc.c:638 `if(setjmp(error_jmp_buf))` on EVERY compile (-version skips setjmp, so it ran). The
+# construct battery proved tcc-mes compiles all common constructs correctly EXCEPT this. Rewrite
+# setjmp.c to pure BASIC asm (env = tcc's spilled arg0 at -0x8(%rbp); read rbp/[rbp]/[rbp+8]).
+# NOTE: cwd is ${MES_PKG} here (cd ../${MES_PKG} above), but the Local patch files live in the build
+# root (/build, one level up) — so the patch-content args need ../ (the file-to-patch is mes-relative).
+simple-patch lib/${MES_ARCH}-mes-gcc/setjmp.c ../fix-setjmp.before ../fix-setjmp.after
+# BUG (THE varargs ROOT CAUSE): mes-libc's amd64 stdarg.h uses a STACK-based va_list (char*, &last+8)
+# — the mescc/i386 convention where all varargs sit contiguous on the stack. But tcc-mes emits the
+# SysV amd64 ABI (varargs in registers rdi-r9, then stack), so tcc-mes-compiled vfprintf/snprintf
+# read phantom stack slots -> garbage-ptr crash -> tcc-boot0 died on every compile (it snprintf's the
+# output path). Make stdarg.h use tcc's SysV-correct __builtin_va_* under __TINYC__ (mescc keeps the
+# stack version, so R1 is unaffected). NOT a codegen miscompile — a calling-convention mismatch.
+simple-patch include/stdarg.h ../fix-stdarg.before ../fix-stdarg.after
+
+# Create unified libc file
+cd lib
+catm ../unified-libc.c ctype/isalnum.c ctype/isalpha.c ctype/isascii.c ctype/iscntrl.c ctype/isdigit.c ctype/isgraph.c ctype/islower.c ctype/isnumber.c ctype/isprint.c ctype/ispunct.c ctype/isspace.c ctype/isupper.c ctype/isxdigit.c ctype/tolower.c ctype/toupper.c dirent/closedir.c dirent/__getdirentries.c dirent/opendir.c linux/readdir.c linux/access.c linux/brk.c linux/chdir.c linux/chmod.c linux/clock_gettime.c linux/close.c linux/dup2.c linux/dup.c linux/execve.c linux/fcntl.c linux/fork.c linux/fsync.c linux/fstat.c linux/_getcwd.c linux/getdents.c linux/getegid.c linux/geteuid.c linux/getgid.c linux/getpid.c linux/getppid.c linux/getrusage.c linux/gettimeofday.c linux/getuid.c linux/ioctl.c linux/ioctl3.c linux/kill.c linux/link.c linux/lseek.c linux/lstat.c linux/malloc.c linux/mkdir.c linux/mknod.c linux/nanosleep.c linux/_open3.c linux/pipe.c linux/_read.c linux/readlink.c linux/rename.c linux/rmdir.c linux/setgid.c linux/settimer.c linux/setuid.c linux/signal.c linux/sigprogmask.c linux/symlink.c linux/stat.c linux/time.c linux/unlink.c linux/waitpid.c linux/wait4.c linux/${MES_ARCH}-mes-gcc/_exit.c linux/${MES_ARCH}-mes-gcc/syscall.c linux/${MES_ARCH}-mes-gcc/_write.c math/ceil.c math/fabs.c math/floor.c mes/abtod.c mes/abtol.c mes/__assert_fail.c mes/assert_msg.c mes/__buffered_read.c mes/__init_io.c mes/cast.c mes/dtoab.c mes/eputc.c mes/eputs.c mes/fdgetc.c mes/fdgets.c mes/fdputc.c mes/fdputs.c mes/fdungetc.c mes/globals.c mes/itoa.c mes/ltoab.c mes/ltoa.c mes/__mes_debug.c mes/mes_open.c mes/ntoab.c mes/oputc.c mes/oputs.c mes/search-path.c mes/ultoa.c mes/utoa.c posix/alarm.c posix/buffered-read.c posix/execl.c posix/execlp.c posix/execv.c posix/execvp.c posix/getcwd.c posix/getenv.c posix/isatty.c posix/mktemp.c posix/open.c posix/pathconf.c posix/raise.c posix/sbrk.c posix/setenv.c posix/sleep.c posix/unsetenv.c posix/wait.c posix/write.c stdio/clearerr.c stdio/fclose.c stdio/fdopen.c stdio/feof.c stdio/ferror.c stdio/fflush.c stdio/fgetc.c stdio/fgets.c stdio/fileno.c stdio/fopen.c stdio/fprintf.c stdio/fputc.c stdio/fputs.c stdio/fread.c stdio/freopen.c stdio/fscanf.c stdio/fseek.c stdio/ftell.c stdio/fwrite.c stdio/getc.c stdio/getchar.c stdio/perror.c stdio/printf.c stdio/putc.c stdio/putchar.c stdio/remove.c stdio/snprintf.c stdio/sprintf.c stdio/sscanf.c stdio/ungetc.c stdio/vfprintf.c stdio/vfscanf.c stdio/vprintf.c stdio/vsnprintf.c stdio/vsprintf.c stdio/vsscanf.c stdlib/abort.c stdlib/abs.c stdlib/alloca.c stdlib/atexit.c stdlib/atof.c stdlib/atoi.c stdlib/atol.c stdlib/calloc.c stdlib/__exit.c stdlib/exit.c stdlib/free.c stdlib/mbstowcs.c stdlib/puts.c stdlib/qsort.c stdlib/realloc.c stdlib/strtod.c stdlib/strtof.c stdlib/strtol.c stdlib/strtold.c stdlib/strtoll.c stdlib/strtoul.c stdlib/strtoull.c string/bcmp.c string/bcopy.c string/bzero.c string/index.c string/memchr.c string/memcmp.c string/memcpy.c string/memmem.c string/memmove.c string/memset.c string/rindex.c string/strcat.c string/strchr.c string/strcmp.c string/strcpy.c string/strcspn.c string/strdup.c string/strerror.c string/strlen.c string/strlwr.c string/strncat.c string/strncmp.c string/strncpy.c string/strpbrk.c string/strrchr.c string/strspn.c string/strstr.c string/strupr.c stub/atan2.c stub/bsearch.c stub/chown.c stub/__cleanup.c stub/cos.c stub/ctime.c stub/exp.c stub/fpurge.c stub/freadahead.c stub/frexp.c stub/getgrgid.c stub/getgrnam.c stub/getlogin.c stub/getpgid.c stub/getpgrp.c stub/getpwnam.c stub/getpwuid.c stub/gmtime.c stub/ldexp.c stub/localtime.c stub/log.c stub/mktime.c stub/modf.c stub/mprotect.c stub/pclose.c stub/popen.c stub/pow.c stub/putenv.c stub/rand.c stub/realpath.c stub/rewind.c stub/setbuf.c stub/setgrent.c stub/setlocale.c stub/setvbuf.c stub/sigaction.c stub/sigaddset.c stub/sigblock.c stub/sigdelset.c stub/sigemptyset.c stub/sigsetmask.c stub/sin.c stub/sys_siglist.c stub/system.c stub/sqrt.c stub/strftime.c stub/times.c stub/ttyname.c stub/umask.c stub/utime.c ${MES_ARCH}-mes-gcc/setjmp.c
+cd ..
+
+# crt1.o
+tcc-mes -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o ${LIBDIR}/crt1.o lib/linux/${MES_ARCH}-mes-gcc/crt1.c
+
+catm ${LIBDIR}/crtn.o
+catm ${LIBDIR}/crti.o
+if match ${ARCH} x86; then
+    # crtn.o
+    tcc-mes -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o ${LIBDIR}/crtn.o lib/linux/${MES_ARCH}-mes-gcc/crtn.c
+
+    # crti.o
+    tcc-mes -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o ${LIBDIR}/crti.o lib/linux/${MES_ARCH}-mes-gcc/crti.c
+fi
+
+# libc+gcc.a
+tcc-mes -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o unified-libc.o unified-libc.c
+tcc-mes -ar cr ${LIBDIR}/libc.a unified-libc.o
+
+# libtcc1.a
+mkdir ${LIBDIR}/tcc
+tcc-mes -c -D HAVE_CONFIG_H=1 -D HAVE_LONG_LONG=1 -D HAVE_FLOAT=1 -I include -I include/linux/${MES_ARCH} -o libtcc1.o lib/libtcc1.c
+# BUG6-RUNTIME: tcc-0.9.26's amd64 SysV stdarg.h (struct va_list) calls __va_start/__va_arg, which live
+# in lib/va_list.c.  lib/libtcc1.c does NOT contain them; the real tcc Makefile builds va_list.o into
+# libtcc1.a (OBJ-x86_64 = ... va_list.o ...).  Without it, every link of unified-libc.o (vfprintf et al)
+# fails "undefined symbol __va_start".  Put it in libtcc1.a ONLY (auto-linked) — adding to libc.a too
+# makes tcc pull it twice -> "'__va_start' defined twice".  __SIZE_TYPE__ is predefined by tcc.
+tcc-mes -c -D TCC_TARGET_${TCC_TARGET_ARCH}=1 -o va_list.o ../${TCC_PKG}/lib/va_list.c
+if match ${ARCH} riscv64; then
+    tcc-mes -c -D HAVE_CONFIG_H=1 -D HAVE_LONG_LONG=1 -D HAVE_FLOAT=1 -I include -I include/linux/${MES_ARCH} -o lib-arm64.o ../${TCC_PKG}/lib/lib-arm64.c
+    tcc-mes -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o lib-arm64.o va_list.o
+else
+    tcc-mes -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o va_list.o
+fi
+
+# libgetopt.a
+tcc-mes -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} lib/posix/getopt.c
+tcc-mes -ar cr ${LIBDIR}/libgetopt.a getopt.o
+
+cd ../${TCC_PKG}
+
+# boot0 (ref comments here for all boot*)
+# amd64 header-path fix (2026-06-22): R1/stage0-mes installs the mes libc headers (stdlib.h,
+# stdio.h, string.h, … — 65 of them) to ${PREFIX}/include (top-level), with only 9 mes-INTERNAL
+# headers under ${PREFIX}/include/mes.  The mescc step above resolves <stdlib.h> via mes's builtin
+# MES_PREFIX=/usr search (${PREFIX}/include); tcc-mes has NO such builtin and only searches its -I
+# + SYSINCLUDEPATHS, so `tcc.h:27: #include <stdlib.h>` -> "not found" -> abort.  Add the top-level
+# ${PREFIX}/include to every tcc.c self-compile's -I (boot0/1/2 + deliverable); purely additive, so
+# the `.` then mes-internal search order is preserved.  (SYSINCLUDEPATHS left as-is: R3 passes -I.)
+# compile
+tcc-mes \
+    -g \
+    -v \
+    -static \
+    -o tcc-boot0 \
+    -D BOOTSTRAP=1 \
+    -D HAVE_FLOAT=1 \
+    -D HAVE_BITFIELD=1 \
+    -D HAVE_LONG_LONG=1 \
+    -D HAVE_SETJMP=1 \
+    -I . \
+    -I /usr/lib/mes-bedrock/include \
+    -I /usr/lib/mes-bedrock/include/mes \
+    -D TCC_TARGET_${TCC_TARGET_ARCH}=1 \
+    -D CONFIG_TCCDIR=\"${LIBDIR}/tcc\" \
+    -D CONFIG_TCC_CRTPREFIX=\"${LIBDIR}\" \
+    -D CONFIG_TCC_ELFINTERP=\"/mes/loader\" \
+    -D CONFIG_TCC_LIBPATHS=\"${LIBDIR}:${LIBDIR}/tcc\" \
+    -D CONFIG_TCC_SYSINCLUDEPATHS=\"${PREFIX}/include/mes\" \
+    -D TCC_LIBGCC=\"${LIBDIR}/libc.a\" \
+    -D TCC_LIBTCC1=\"libtcc1.a\" \
+    -D CONFIG_TCCBOOT=1 \
+    -D CONFIG_TCC_STATIC=1 \
+    -D CONFIG_USE_LIBGCC=1 \
+    -D TCC_VERSION=\"0.9.26\" \
+    -D ONE_SOURCE=1 \
+    -L . \
+    -L ${LIBDIR} \
+    tcc.c
+# Install
+cp tcc-boot0 ${BINDIR}/
+chmod 755 ${BINDIR}/tcc-boot0
+cd ../${MES_PKG}
+# Recompile libc: crt{1,n,i}, libtcc.a, libc.a
+tcc-boot0 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o ${LIBDIR}/crt1.o lib/linux/${MES_ARCH}-mes-gcc/crt1.c
+if match ${ARCH} x86; then
+    tcc-boot0 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o ${LIBDIR}/crtn.o lib/linux/${MES_ARCH}-mes-gcc/crtn.c
+    tcc-boot0 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o ${LIBDIR}/crti.o lib/linux/${MES_ARCH}-mes-gcc/crti.c
+fi
+
+tcc-boot0 -c -D HAVE_CONFIG_H=1 -D HAVE_LONG_LONG=1 -D HAVE_FLOAT=1 -I include -I include/linux/${MES_ARCH} -o libtcc1.o lib/libtcc1.c
+# va_list.o into libtcc1.a (see tcc-mes libc build above for rationale).
+tcc-boot0 -c -D TCC_TARGET_${TCC_TARGET_ARCH}=1 -o va_list.o ../${TCC_PKG}/lib/va_list.c
+if match ${ARCH} riscv64; then
+    tcc-boot0 -c -D HAVE_CONFIG_H=1 -D HAVE_LONG_LONG=1 -D HAVE_FLOAT=1 -I include -I include/linux/${MES_ARCH} -o lib-arm64.o ../${TCC_PKG}/lib/lib-arm64.c
+    tcc-boot0 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o lib-arm64.o va_list.o
+else
+    tcc-boot0 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o va_list.o
+fi
+
+tcc-boot0 -w -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o unified-libc.o unified-libc.c
+tcc-boot0 -ar cr ${LIBDIR}/libc.a unified-libc.o
+cd ../${TCC_PKG}
+
+# Test boot0
+tcc-boot0 -version
+
+# boot1
+tcc-boot0 \
+    -g \
+    -v \
+    -static \
+    -o tcc-boot1 \
+    -D BOOTSTRAP=1 \
+    -D HAVE_FLOAT=1 \
+    -D HAVE_BITFIELD=1 \
+    -D HAVE_LONG_LONG=1 \
+    -D HAVE_SETJMP=1 \
+    -I . \
+    -I /usr/lib/mes-bedrock/include \
+    -I /usr/lib/mes-bedrock/include/mes \
+    -D TCC_TARGET_${TCC_TARGET_ARCH}=1 \
+    -D CONFIG_TCCDIR=\"${LIBDIR}/tcc\" \
+    -D CONFIG_TCC_CRTPREFIX=\"${LIBDIR}\" \
+    -D CONFIG_TCC_ELFINTERP=\"/mes/loader\" \
+    -D CONFIG_TCC_LIBPATHS=\"${LIBDIR}:${LIBDIR}/tcc\" \
+    -D CONFIG_TCC_SYSINCLUDEPATHS=\"${PREFIX}/include/mes\" \
+    -D TCC_LIBGCC=\"${LIBDIR}/libc.a\" \
+    -D TCC_LIBTCC1=\"libtcc1.a\" \
+    -D CONFIG_TCCBOOT=1 \
+    -D CONFIG_TCC_STATIC=1 \
+    -D CONFIG_USE_LIBGCC=1 \
+    -D TCC_VERSION=\"0.9.26\" \
+    -D ONE_SOURCE=1 \
+    -L . \
+    -L ${LIBDIR} \
+    tcc.c
+cp tcc-boot1 ${BINDIR}
+chmod 755 ${BINDIR}/tcc-boot1
+cd ../${MES_PKG}
+tcc-boot1 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o ${LIBDIR}/crt1.o lib/linux/${MES_ARCH}-mes-gcc/crt1.c
+if match ${ARCH} x86; then
+    tcc-boot1 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o ${LIBDIR}/crtn.o lib/linux/${MES_ARCH}-mes-gcc/crtn.c
+    tcc-boot1 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o ${LIBDIR}/crti.o lib/linux/${MES_ARCH}-mes-gcc/crti.c
+fi
+
+tcc-boot1 -c -D HAVE_CONFIG_H=1 -D HAVE_LONG_LONG=1 -D HAVE_FLOAT=1 -I include -I include/linux/${MES_ARCH} -o libtcc1.o lib/libtcc1.c
+# va_list.o into libtcc1.a (see tcc-mes libc build above for rationale).
+tcc-boot1 -c -D TCC_TARGET_${TCC_TARGET_ARCH}=1 -o va_list.o ../${TCC_PKG}/lib/va_list.c
+if match ${ARCH} riscv64; then
+    tcc-boot1 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o lib-arm64.o ../${TCC_PKG}/lib/lib-arm64.c
+    tcc-boot1 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o lib-arm64.o va_list.o
+else
+    tcc-boot1 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o va_list.o
+fi
+
+tcc-boot1 -w -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o unified-libc.o unified-libc.c
+tcc-boot1 -ar cr ${LIBDIR}/libc.a unified-libc.o
+cd ../${TCC_PKG}
+
+# Test boot1
+tcc-boot1 -version
+
+# boot2
+tcc-boot1 \
+    -g \
+    -v \
+    -static \
+    -o tcc-boot2 \
+    -D BOOTSTRAP=1 \
+    -D HAVE_BITFIELD=1 \
+    -D HAVE_FLOAT=1 \
+    -D HAVE_LONG_LONG=1 \
+    -D HAVE_SETJMP=1 \
+    -I . \
+    -I /usr/lib/mes-bedrock/include \
+    -I /usr/lib/mes-bedrock/include/mes \
+    -D TCC_TARGET_${TCC_TARGET_ARCH}=1 \
+    -D CONFIG_TCCDIR=\"${LIBDIR}/tcc\" \
+    -D CONFIG_TCC_CRTPREFIX=\"${LIBDIR}\" \
+    -D CONFIG_TCC_ELFINTERP=\"/mes/loader\" \
+    -D CONFIG_TCC_LIBPATHS=\"${LIBDIR}:${LIBDIR}/tcc\" \
+    -D CONFIG_TCC_SYSINCLUDEPATHS=\"${PREFIX}/include/mes\" \
+    -D TCC_LIBGCC=\"${LIBDIR}/libc.a\" \
+    -D TCC_LIBTCC1=\"libtcc1.a\" \
+    -D CONFIG_TCCBOOT=1 \
+    -D CONFIG_TCC_STATIC=1 \
+    -D CONFIG_USE_LIBGCC=1 \
+    -D TCC_VERSION=\"0.9.26\" \
+    -D ONE_SOURCE=1 \
+    -L . \
+    -L ${LIBDIR} \
+    tcc.c
+cp tcc-boot2 ${BINDIR}
+chmod 755 ${BINDIR}/tcc-boot2
+cd ../${MES_PKG}
+tcc-boot2 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o ${LIBDIR}/crt1.o lib/linux/${MES_ARCH}-mes-gcc/crt1.c
+if match ${ARCH} x86; then
+    tcc-boot2 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o ${LIBDIR}/crtn.o lib/linux/${MES_ARCH}-mes-gcc/crtn.c
+    tcc-boot2 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o ${LIBDIR}/crti.o lib/linux/${MES_ARCH}-mes-gcc/crti.c
+fi
+
+tcc-boot2 -c -D HAVE_CONFIG_H=1 -D HAVE_LONG_LONG=1 -D HAVE_FLOAT=1 -I include -I include/linux/${MES_ARCH} -o libtcc1.o lib/libtcc1.c
+# va_list.o into libtcc1.a (see tcc-mes libc build above for rationale).
+tcc-boot2 -c -D TCC_TARGET_${TCC_TARGET_ARCH}=1 -o va_list.o ../${TCC_PKG}/lib/va_list.c
+if match ${ARCH} riscv64; then
+    tcc-boot2 -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o lib-arm64.o ../${TCC_PKG}/lib/lib-arm64.c
+    tcc-boot2 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o lib-arm64.o va_list.o
+else
+    tcc-boot2 -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o va_list.o
+fi
+
+tcc-boot2 -w -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o unified-libc.o unified-libc.c
+tcc-boot2 -ar cr ${LIBDIR}/libc.a unified-libc.o
+cd ../${TCC_PKG}
+
+# Test boot2
+tcc-boot2 -version
+
+# ── We have our final tcc 0.9.26! ──────────────────────────────────────────────────────────
+# [R2-adapt — CONTRACTS §D, the self-referential refinement; replaces upstream `cp tcc-boot2
+# tcc`].  The boot loop above baked the STAGING libdir (${LIBDIR}=/build/output/usr/lib/mes)
+# into every intermediate so the self-build resolves under read-only /usr.  The DELIVERABLE
+# tcc, however, must bake the CONSUMER /usr/lib/mes — that is where minimal installs R2's
+# tcc-rebuilt mes-libc in R3's rootfs (R3/tcc-0.9.27 compiles + links against it).  So compile
+# the final tcc once more with tcc-boot2 (which LINKS it by finding the staged libc via its OWN
+# staging-baked paths + -L ${LIBDIR}), baking the /usr/lib/mes literals.  Byte-divergence from
+# `cp tcc-boot2 tcc` is acceptable: amd64 has NO upstream fixed point (record-at-pin-time).
+tcc-boot2 \
+    -g \
+    -v \
+    -static \
+    -o ${BINDIR}/tcc \
+    -D BOOTSTRAP=1 \
+    -D HAVE_BITFIELD=1 \
+    -D HAVE_FLOAT=1 \
+    -D HAVE_LONG_LONG=1 \
+    -D HAVE_SETJMP=1 \
+    -I . \
+    -I /usr/lib/mes-bedrock/include \
+    -I /usr/lib/mes-bedrock/include/mes \
+    -D TCC_TARGET_${TCC_TARGET_ARCH}=1 \
+    -D CONFIG_TCCDIR=\"/usr/lib/mes/tcc\" \
+    -D CONFIG_TCC_CRTPREFIX=\"/usr/lib/mes\" \
+    -D CONFIG_TCC_ELFINTERP=\"/mes/loader\" \
+    -D CONFIG_TCC_LIBPATHS=\"/usr/lib/mes:/usr/lib/mes/tcc\" \
+    -D CONFIG_TCC_SYSINCLUDEPATHS=\"${PREFIX}/include/mes\" \
+    -D TCC_LIBGCC=\"/usr/lib/mes/libc.a\" \
+    -D TCC_LIBTCC1=\"libtcc1.a\" \
+    -D CONFIG_TCCBOOT=1 \
+    -D CONFIG_TCC_STATIC=1 \
+    -D CONFIG_USE_LIBGCC=1 \
+    -D TCC_VERSION=\"0.9.26\" \
+    -D ONE_SOURCE=1 \
+    -L . \
+    -L ${LIBDIR} \
+    tcc.c
+chmod 755 ${BINDIR}/tcc
+cp ${BINDIR}/tcc ${BINDIR}/tcc-0.9.26
+chmod 755 ${BINDIR}/tcc-0.9.26
+# tcc-boot2 was only the linker for the deliverable; it is not an exported output.
+rm ${BINDIR}/tcc-boot2
+
+# Also recompile getopt, we don't need to do this during the boot* stages
+# because nothing is linked against it.  `-c`/`-ar` only (no crt/lib link), so the
+# consumer-baked final tcc is fine here.
+cd ../${MES_PKG}
+tcc -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} lib/posix/getopt.c
+tcc -ar cr ${LIBDIR}/libgetopt.a getopt.o
+
+# [R2-adapt] upstream `cd ../..` returned to its step dir from build/${MES_PKG};
+# our trees sit directly at /build (one level shallower — no `build/` subdir), and the
+# Local files (stage0.answers + the *.before/.after pattern files) are at /build, so
+# return there ABSOLUTELY rather than `cd ../..` (which would land at filesystem root).
+cd /build
+
+# Checksums
+
+###########################################################################
+# BYTE-IDENTITY GATE.  kaem --strict aborts HARD on mismatch.  amd64 has NO
+# upstream fixed point (live-bootstrap ships only x86/riscv64 tcc-0.9.26
+# checksums — its canonical path is 32-bit x86), so these are RECORD-AT-PIN-TIME
+# (captured after the first green amd64 build).  The check paths are the STAGING
+# paths /build/output/usr/... (CONTRACTS §D: the build writes there, not /usr).
+# FIRST-BUILD NOTE: stage0.answers ships with ONLY commented lines, so this `-c`
+# will fail ("no properly formatted checksum lines") until the amd64 shas are
+# pinned.  For the capture run, comment this line out (or run minimal's update-
+# checksums flow), record the shas from /build/output/usr/..., fill stage0.answers,
+# re-enable.  See BUILD-RUNBOOK.md §capture.
+###########################################################################
+# BYTE-IDENTITY GATE — RE-ENABLED 2026-06-24 after the first green amd64 build pinned the 8 shas into
+# stage0.answers (see that file). kaem --strict ABORTS HARD on any mismatch, so this verifies the
+# whole spine (tcc-mes/boot0/boot1/deliverable tcc + libc/libgetopt/crt1/libtcc1) reproduces
+# byte-identically — the L4 fixed-point property for R2.
+# DIAGNOSTIC (2026-09-03, permanent): print the COMPUTED shas before the gate.  `sha256sum -c`
+# prints only OK/FAILED, so a broken pin used to cost a whole extra round just to learn the new
+# values.  These lines make every seal break self-documenting: the log carries the re-pin values.
+sha256sum /build/output/usr/bin/tcc-mes /build/output/usr/bin/tcc-boot0 /build/output/usr/bin/tcc-boot1 /build/output/usr/bin/tcc /build/output/usr/lib/mes/libc.a /build/output/usr/lib/mes/libgetopt.a /build/output/usr/lib/mes/crt1.o /build/output/usr/lib/mes/tcc/libtcc1.a
+sha256sum -c stage0.answers
+
+###########################################################################
+# §D STAGING: the build wrote every output directly into OUTPUT_DIR=/build/output
+# (BINDIR=/build/output/usr/bin, LIBDIR=/build/output/usr/lib/mes), so there is NO
+# separate copy step — build.ncl's `outputs` globs already match the on-disk tree:
+#   usr/bin/{tcc,tcc-0.9.26,tcc-mes,tcc-boot0,tcc-boot1}
+#   usr/lib/mes/{crt1.o,crti.o,crtn.o,libc.a,libgetopt.a}  +  usr/lib/mes/tcc/libtcc1.a
+# (minimal copies only the enumerated outputs from /build/output into the cache.)
+###########################################################################

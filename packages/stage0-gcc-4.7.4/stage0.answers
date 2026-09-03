@@ -1,0 +1,3 @@
+# UNPINNED — record-at-pin-time placeholder (R9 stage0-gcc-4.7.4).
+# After the first green CS build, capture cc1/cc1plus/xgcc/libgcc.a hashes and pin here (gcc is
+# deterministic, so byte-identity is a real invariant). Drop this sentinel once pinned.

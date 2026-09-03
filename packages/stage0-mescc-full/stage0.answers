@@ -1,0 +1,49 @@
+# R0.5 stage0-mescc-full byte-identity pins. Checked from /build (CWD) by
+# `/usr/bin/sha256sum -c stage0.answers` (coreutils, attested from a prior rung).
+#
+# These 19 values are the CANONICAL upstream checksums from
+# stage0-posix-1.9.1/amd64.answers, with each path prefixed `stage0-posix-1.9.1/`
+# (minimal extracts the Source to /build/stage0-posix-1.9.1 and the gate runs from
+# CWD=/build). Mechanically transcribed (no hand entry):
+#   tar xO …/amd64.answers | sed 's#  AMD64/#  stage0-posix-1.9.1/AMD64/#'
+#
+# Provenance per line:
+#   - mini/R0 (SEEDED into the tree, re-asserted here):   M1, hex2, kaem
+#   - full-kaem Phase 12-15 (produced by this rung):      M2-Mesoplanet, blood-elf,
+#                                                         get_machine, M2-Planet
+#   - mescc-tools-extra Phase 16-23 (produced this rung): catm, chmod, cp, match,
+#                                                         mkdir, replace, rm,
+#                                                         sha256sum, ungz, unbz2,
+#                                                         unxz, untar
+# ALL 19 are pinnable NOW (canonical upstream amd64 values); kaem ABORTS HARD on any
+# mismatch (--strict). The 4 full-kaem + 12 extra leaves close over the seeded M2/
+# blood-elf-0/M1/hex2/kaem inputs: any byte-drift in a seed or an intermediate breaks a
+# leaf, so the 19-way gate transitively asserts the whole full+extra graph (same
+# fixed-point logic as R0's 3-leaf gate, widened to the canonical 19).
+6d1c534225ac7a3e74e29cb17579f5dd720547c19e7eea6bfe742326fb4a0bc7  stage0-posix-1.9.1/AMD64/bin/blood-elf
+c13daf05065008a1e7bc4852fcce016df24edb1c633961f462421b8b0ab176ca  stage0-posix-1.9.1/AMD64/bin/catm
+55e78986bd1a5641f6a665ecb8be51aff06ce805b700b246821a001e9afc60e8  stage0-posix-1.9.1/AMD64/bin/chmod
+aa8eb71e83570f84b3fe13c08f28e3861e59681b178e38b6fd8f0a4cafaebc27  stage0-posix-1.9.1/AMD64/bin/cp
+379cb35a87bd7a9c190d79d3141af897869aae5e4cb0ac9e03235c78b84e1be7  stage0-posix-1.9.1/AMD64/bin/get_machine
+f782df6d59f7ff930e67f34dde7ea62288b12d6d1a0b036ef465ad06b4a4b97a  stage0-posix-1.9.1/AMD64/bin/hex2
+6364de59b36f8575fd938779476a9a121878fc0e2d65cc01ae5372aad2d028b5  stage0-posix-1.9.1/AMD64/bin/kaem
+fc68c115384852b827a35b607de382592a475c324e1e11ca7cf5b9e840ce15a9  stage0-posix-1.9.1/AMD64/bin/M1
+f24855886c8a7e63015b8c8b6aeb4a03556540be16baab62d234deb4c57625b4  stage0-posix-1.9.1/AMD64/bin/M2-Mesoplanet
+7cf19de29a4ae63637898f6093d0526b73108040ab3634f11232030439602fc1  stage0-posix-1.9.1/AMD64/bin/M2-Planet
+962d44ad6cc75ee1f51fbb0d07c5e4fdf9479540d46ceae26d1bb34558feaa2f  stage0-posix-1.9.1/AMD64/bin/match
+c8bdd424b1e588714c654de9e1df3de690301cf2ff883e93da1f01b86806cc20  stage0-posix-1.9.1/AMD64/bin/mkdir
+88bfafe232428196a056b1ef517d4f797c68f0eaabc3dce84f66194899dbf864  stage0-posix-1.9.1/AMD64/bin/replace
+c7ac6f9ca26a0b771c130b43c8b536b300445f696e04b5db4f0f4eb949613459  stage0-posix-1.9.1/AMD64/bin/rm
+f7c0fcae688ec01050d836771392f4d81f5ad6788590278ec76ccd17cdd89e48  stage0-posix-1.9.1/AMD64/bin/sha256sum
+0769b2c0af733b62db727a73c04cbdadafa747ed15c0ade42c6c613c18e165ec  stage0-posix-1.9.1/AMD64/bin/ungz
+2e2ff2ae38b2d4e9ca2268b3265b0d82b79a931ce25aa91daf36c006537f2d45  stage0-posix-1.9.1/AMD64/bin/unbz2
+1960964e6d73cdc3b55f2bb3b2f2c33668025a802d86cef48f39bdaa9a5ea201  stage0-posix-1.9.1/AMD64/bin/unxz
+8100ef93f3f078fb825d97eb53773f9f3d6e420d5bd40f8b0e3285e405544e9c  stage0-posix-1.9.1/AMD64/bin/untar
+
+# RECORD-AT-PIN-TIME (no upstream stage0-posix value — simple-patch is a live-bootstrap
+# helper, NOT part of stage0-posix's amd64.answers). Built by THIS rung with the same
+# M2-Mesoplanet + M2libc as the extra tools. live-bootstrap's amd64 reference value is
+# f07472c09834572a3162f0978e8e69523f285f3048310f9d43e54ca7bef1d7e5 (built under lb's OWN
+# M2-Mesoplanet/M2libc — NOT guaranteed byte-identical to ours; provenance only). After
+# the first GREEN build, capture our value and uncomment to pin:
+#   <sha>  stage0-posix-1.9.1/AMD64/bin/simple-patch

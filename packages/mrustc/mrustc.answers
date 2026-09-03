@@ -1,0 +1,33 @@
+# mrustc.answers — byte-seal pins for packages/mrustc.
+#
+# STATUS: UNPINNED.  This rung is GREEN, not SEALED.  Do not describe it as sealed anywhere.
+#
+# This file is SELF-ARMING, unlike the bedrock rungs' inert placeholders (whose `sha256sum -c`
+# line is commented out in build.sh and therefore stays dead until a human remembers it).  The
+# gate at the bottom of build.sh checks for a line matching `^<64 hex>  ` and, the moment one is
+# present, runs `sha256sum -c` FAIL-SHUT from ${OUTPUT_DIR}.  Sealing this rung is a data edit,
+# not a code edit.
+#
+# TO SEAL, once two independent CS builds have produced byte-identical output:
+#   1. take the shas from either build's ${OUTPUT_DIR}:
+#        cd ${OUTPUT_DIR} && sha256sum usr/bin/mrustc usr/bin/minicargo
+#   2. paste them below, uncommented, in `sha256sum` format (two spaces between sha and path)
+#   3. re-run.  Any drift now aborts the build.
+#
+# Deliberately NOT pinned here: usr/share/mrustc/** .  Those are copies of Local inputs and of a
+# constant-only BUILDINFO, already covered by their own input shas; pinning them would add seal
+# churn without adding evidence about the compiler.
+#
+# Known nondeterminism status for the two binaries (see build.ncl's DETERMINISM block):
+#   - Makefile:190 VERSION_BUILDTIME + 4 git shell-outs .... PATCHED, and proven in-build by a
+#     later-wall-clock version.o rebuild + byte-compare.
+#   - .note.gnu.build-id ..................................... suppressed (-Wl,--build-id=none)
+#   - debug info paths ....................................... stable (cwd is always /build/...)
+#   - --add-gnu-debuglink CRC ................................ derived, therefore stable
+#   - ar member mtimes in bin/*.a ............................ do not reach the linked binaries
+# Nothing else in mrustc's makefiles shells out to date/git (verified by grep over Makefile,
+# minicargo.mk, tools/*/Makefile, run_rustc/Makefile: exactly one hit, Makefile:190).
+#
+# UNPINNED
+# usr/bin/mrustc
+# usr/bin/minicargo

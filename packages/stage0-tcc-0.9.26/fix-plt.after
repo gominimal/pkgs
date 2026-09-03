@@ -1,0 +1,19 @@
+#ifdef TCC_TARGET_X86_64
+            if (type == R_X86_64_PLT32 || type == R_X86_64_PC32) {
+                int can_pcrel = 0;
+                int sym_vis = ELFW(ST_VISIBILITY)(sym->st_other);
+                int sym_bind = ELFW(ST_BIND)(sym->st_info);
+                if (sym_vis != STV_DEFAULT)
+                    can_pcrel = 1;
+                if (sym_bind == STB_LOCAL)
+                    can_pcrel = 1;
+                if (s1->static_link) {
+                    if (sym->st_shndx != SHN_UNDEF)
+                        can_pcrel = 1;
+                }
+                if (can_pcrel) {
+                    rel->r_info = ELFW(R_INFO)(sym_index, R_X86_64_PC32);
+                    continue;
+                }
+            }
+#endif
