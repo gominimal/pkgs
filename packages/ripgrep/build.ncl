@@ -32,7 +32,9 @@ let version = "15.2.0" in
   outputs = {
     rg = { glob = "usr/bin/rg" } | OutputBin,
 
-    completions = { glob = "usr/share/bash-completion/completions/*" } | OutputData,
+    bash_completion = { glob = "usr/share/bash-completion/completions/rg" } | OutputData,
+    fish_completion = { glob = "usr/share/fish/vendor_completions.d/rg.fish" } | OutputData,
+    zsh_completion = { glob = "usr/share/zsh/site-functions/_rg" } | OutputData,
   },
   attrs =
     {

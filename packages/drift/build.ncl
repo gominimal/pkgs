@@ -7,14 +7,14 @@ let gcc = import "../gcc/build.ncl" in
 let git = import "../git/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.0.6" in
+let version = "0.0.8" in
 {
   name = "drift",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/aymanbagabas/drift/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "814c26bcb8973423534d2a31ccc0a03383e4aa8d4a0d847eecca1e427f6ac5d3",
+      sha256 = "d17924f24b5df5fd692ed511cea72d91af7bd23e9e44cbe14e53bfa4b4385fa6",
       extract = true,
       strip_prefix = "drift-%{version}",
     } | Source,
