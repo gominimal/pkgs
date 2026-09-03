@@ -22,6 +22,24 @@
 # PINNED 2026-06-24 — the FIRST green amd64 CS build (fix-shift cracked mescc->tcc-boot0, lb#470).
 # Captured from the published artifact gs://minimalmertic-sign-staging/stage0-tcc-0.9.26-0.9.26-a/.
 ac21410449a0df354c41ab0735d92d486d6d39adb460c393cda9f737ac18a36f  /build/output/usr/bin/tcc-mes
+# ⚠ RE-PIN PENDING (2026-09-03).  tcc-boot0/tcc-boot1/tcc below are STALE: commit 07a8b300 repointed
+# the boot-loop's `-I` from the merged /usr/include (a first-writer-wins rootfs draw that crashed
+# this rung twice on buildbot) to R1's single-writer sysroot /usr/lib/mes-bedrock/include.  Those
+# three are linked `-g -v -static`, and tcc-0.9.26 bakes each included header's RESOLVED path into
+# its stabs debug info, so the path change moves their bytes.
+#
+# The change is path-only, and that is MEASURED, not assumed:
+#   * tcc-mes, built by mescc whose include path was repointed IDENTICALLY, is byte-identical (OK).
+#   * libc.a, libgetopt.a, crt1.o and libtcc1.a — compiled with build-tree -I paths that did NOT
+#     change — are all byte-identical (OK).
+#   * stage0-tcc-0.9.27 (R3) took the same repoint and its seal PASSED; its link is `-v -w -static`
+#     with NO -g.  Same change, no debug info, no byte movement.
+# So the delta is confined to exactly the binaries that record paths, which is the definition of a
+# path-only change.  The compiler, the sources and the header CONTENT are unchanged.
+#
+# The three values below will be replaced with the ones the next round prints (tcc.kaem now emits
+# the computed shas immediately before the gate).  Until then this rung fails its own gate BY
+# DESIGN — that is the seal working, and it must not be silenced.
 df3251355370d4007c6e807cd1cc7296fc8f194fa57a4af3ededfde1f0374a0c  /build/output/usr/bin/tcc-boot0
 72be64c1271b2cfa92da057aeb9bfd26fdd75f8ad851024c7ee723ffc9040402  /build/output/usr/bin/tcc-boot1
 f3f100fedd7d6a67aa67d4b1771f019c0412507e27e622cb15a6ca8557d41540  /build/output/usr/bin/tcc

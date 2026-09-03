@@ -529,6 +529,10 @@ cd /build
 # stage0.answers (see that file). kaem --strict ABORTS HARD on any mismatch, so this verifies the
 # whole spine (tcc-mes/boot0/boot1/deliverable tcc + libc/libgetopt/crt1/libtcc1) reproduces
 # byte-identically — the L4 fixed-point property for R2.
+# DIAGNOSTIC (2026-09-03, permanent): print the COMPUTED shas before the gate.  `sha256sum -c`
+# prints only OK/FAILED, so a broken pin used to cost a whole extra round just to learn the new
+# values.  These lines make every seal break self-documenting: the log carries the re-pin values.
+sha256sum /build/output/usr/bin/tcc-mes /build/output/usr/bin/tcc-boot0 /build/output/usr/bin/tcc-boot1 /build/output/usr/bin/tcc /build/output/usr/lib/mes/libc.a /build/output/usr/lib/mes/libgetopt.a /build/output/usr/lib/mes/crt1.o /build/output/usr/lib/mes/tcc/libtcc1.a
 sha256sum -c stage0.answers
 
 ###########################################################################
