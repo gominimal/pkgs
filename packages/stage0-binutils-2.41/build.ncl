@@ -75,7 +75,10 @@ let amd64_spec =
     outputs = {
       # the deliverable binutils tools (R11 gcc-10.5.0 needs a MODERN as/ld on PATH; env sets no AR/RANLIB):
       # as ld ar nm objcopy objdump ranlib readelf strip + addr2line c++filt size strings + the triplet symlinks
-      bin = { glob = "usr/bin/*" } | OutputData,
+      # allow_executable (pkgs CI 2026-09-02): real ELF programs, kept as OutputData rather than
+      # OutputBin because they carry the stage0/B4 interpreter; the "output types valid" checker
+      # rejects a data output that matches a binary.
+      bin = { glob = "usr/bin/*", allow_executable = true } | OutputData,
       # the static libs downstream rungs may link (libbfd.a / libopcodes.a / libctf.a / libsframe.a / libiberty.a):
       libs = { glob = "usr/lib/*.a" } | OutputLib,
       # bfd.h / ansidecl.h / etc (installed by --enable-install-libbfd) — EXPLICIT list (2026-09-02,

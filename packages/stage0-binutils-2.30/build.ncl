@@ -59,7 +59,10 @@ let amd64_spec =
     cmd = "./build.sh",
     outputs = {
       # the binutils tools R6 (gcc-4.0.4) needs on PATH (env sets no AR/RANLIB -> R5 must seal first):
-      bin = { glob = "usr/bin/*" } | OutputData,
+      # allow_executable (pkgs CI 2026-09-02): real ELF programs, kept as OutputData rather than
+      # OutputBin because they carry the stage0/B4 interpreter; the "output types valid" checker
+      # rejects a data output that matches a binary.
+      bin = { glob = "usr/bin/*", allow_executable = true } | OutputData,
       # the static libs other rungs may link (libbfd.a / libopcodes.a / libiberty.a):
       libs = { glob = "usr/lib/*.a" } | OutputLib,
       # EXPLICIT list (2026-09-02, #667 review batch): bfd.h-class names only — never a wildcard

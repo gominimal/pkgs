@@ -82,11 +82,14 @@ let amd64_spec =
     cmd = "./build.sh",
     outputs = {
       # the gcc-10.4 drivers the ecosystem uses as CC/CXX (gcc/g++/cpp + the x86_64-linux-gnu- driver):
-      bin = { glob = "usr/bin/*" } | OutputData,
+      # allow_executable (pkgs CI 2026-09-02): these are real ELF programs kept as OutputData rather
+      # than OutputBin because they link against the stage0 musl sysroot and carry a non-default
+      # interpreter; the "output types valid" checker rejects a data output that matches a binary.
+      bin = { glob = "usr/bin/*", allow_executable = true } | OutputData,
       # cc1 + cc1plus + collect2 (the C and C++ compilers + link wrapper):
-      libexec = { glob = "usr/libexec/**" } | OutputData,
+      libexec = { glob = "usr/libexec/**", allow_executable = true } | OutputData,
       # libgcc.a + crtbegin/crtend.o + specs + gcc's internal + libstdc++ target headers:
-      internals = { glob = "usr/lib/gcc/**" } | OutputData,
+      internals = { glob = "usr/lib/gcc/**", allow_executable = true } | OutputData,
       # ★ NET-NEW vs R9: capture the C++ standard library + its headers (g++ is useless without them).
       #   libstdc++.a / libsupc++.a install to $(libdir)=/usr/lib under --disable-shared:
       cxx_libs = { glob = "usr/lib/*.a" } | OutputLib,

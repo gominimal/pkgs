@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # ============================================================================================
 # B5 — binutils-2.46-glibc  ★ THE GLIBC-LINKED ASSEMBLER/LINKER ★  (REVIEW-READY scaffold 2026-07-03)
@@ -92,11 +92,23 @@ let amd64_spec =
     build_args = {
       include version,
     },
+    # RUNTIME: these binaries are glibc-dynamic against B4 (interp + rpath = /usr/lib/glibc-bedrock-2.42/lib),
+    # so libc.so.6 / libm.so.6 / ld-linux-x86-64.so.2 must be declared or the "missing runtime_deps"
+    # checker fails (pkgs CI 2026-09-02).  ONLY sysroot_lib: the full B4 would put its 2.42 usr/include
+    # and usr/bin beside the toolchain glibc 2.44 in every consumer sandbox (the header race).
+    # find_lib_in_deps globs `**/<soname>`, so the versioned sysroot path matches.
+    runtime_deps = [
+      subsetOf glibc-bedrock ["sysroot_lib"],
+    ],
+
     cmd = "./build.sh",
     outputs = {
       # the deliverable glibc-linked binutils tools (as/ld/ar/nm/objcopy/objdump/ranlib/readelf/strip +
       # addr2line/c++filt/size/strings + the x86_64-linux-gnu-<tool> triplet symlinks):
-      bin = { glob = "usr/bin/*" } | OutputData,
+      # allow_executable (pkgs CI 2026-09-02): real ELF programs, kept as OutputData rather than
+      # OutputBin because they carry the stage0/B4 interpreter; the "output types valid" checker
+      # rejects a data output that matches a binary.
+      bin = { glob = "usr/bin/*", allow_executable = true } | OutputData,
       # shared + static libs (libbfd.so*/libopcodes.so* from --enable-shared, plus the .a):
       libs = { glob = "usr/lib/*.{a,so*}" } | OutputLib,
       # bfd-plugins dir (--enable-plugins) + ldscripts:

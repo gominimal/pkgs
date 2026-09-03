@@ -141,7 +141,10 @@ let amd64_spec =
       # /usr/{include,lib} is a first-writer-wins draw vs the glibc runtime anchor in every
       # consumer sandbox). s3 compiles+links against these paths with -nostdinc/-nostdlib.
       sysroot_inc = { glob = "usr/lib/musl-bedrock-1.1.24/include/**" } | OutputData,
-      sysroot_lib = { glob = "usr/lib/musl-bedrock-1.1.24/lib/**" } | OutputLib,
+      # allow_data: libm/libpthread/librt/libcrypt/libutil/libxnet/libresolv/libdl.a are ZERO-BYTE stubs
+      # (musl folds them into libc; makefile.patch `touch`es them), so the checker cannot read a file
+      # magic and rejects them as malformed members of an executable output (pkgs CI 2026-09-02).
+      sysroot_lib = { glob = "usr/lib/musl-bedrock-1.1.24/lib/**", allow_data = true } | OutputLib,
     },
     attrs =
       {

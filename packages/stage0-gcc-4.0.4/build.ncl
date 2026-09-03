@@ -81,14 +81,17 @@ let amd64_spec =
     outputs = {
       # the gcc drivers R7+ use as CC (gcc/cpp/gcov + the x86_64-linux-gnu-prefixed driver). OutputData
       # (not OutputBin) mirrors R5 binutils: these are static-musl execs whose interpreter check we skip.
-      bin = { glob = "usr/bin/*" } | OutputData,
+      # allow_executable (pkgs CI 2026-09-02): these are real ELF programs kept as OutputData rather
+      # than OutputBin because they link against the stage0 musl sysroot and carry a non-default
+      # interpreter; the "output types valid" checker rejects a data output that matches a binary.
+      bin = { glob = "usr/bin/*", allow_executable = true } | OutputData,
       # cc1 + collect2 (the real compiler + link wrapper):
-      libexec = { glob = "usr/libexec/**" } | OutputData,
+      libexec = { glob = "usr/libexec/**", allow_executable = true } | OutputData,
       # libgcc.a + crtbegin/crtend.o + specs + gcc's internal headers (the C runtime R7+ links against).
       # ONE non-overlapping glob (mirrors R5 binutils' disjoint outputs): libgcc.a lives UNDER this tree
       # at usr/lib/gcc/<target>/<ver>/ and is found via gcc's own internal search path, not a global lib
       # path, so OutputData over the whole subtree is sufficient (no separate OutputLib needed).
-      internals = { glob = "usr/lib/gcc/**" } | OutputData,
+      internals = { glob = "usr/lib/gcc/**", allow_executable = true } | OutputData,
     },
     attrs =
       {

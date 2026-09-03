@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # ============================================================================================
 # B5 — gcc-15.2.0-glibc  ★ THE SELF-HOSTING FIXED POINT ★  (REVIEW-READY scaffold 2026-07-03)
@@ -102,6 +102,15 @@ let amd64_spec =
     build_args = {
       include version,
     },
+    # RUNTIME: these binaries are glibc-dynamic against B4 (interp + rpath = /usr/lib/glibc-bedrock-2.42/lib),
+    # so libc.so.6 / libm.so.6 / ld-linux-x86-64.so.2 must be declared or the "missing runtime_deps"
+    # checker fails (pkgs CI 2026-09-02).  ONLY sysroot_lib: the full B4 would put its 2.42 usr/include
+    # and usr/bin beside the toolchain glibc 2.44 in every consumer sandbox (the header race).
+    # find_lib_in_deps globs `**/<soname>`, so the versioned sysroot path matches.
+    runtime_deps = [
+      subsetOf glibc-bedrock ["sysroot_lib"],
+    ],
+
     cmd = "./build.sh",
     # outputs — model on production packages/gcc/build.ncl so the glibc SHARED runtime libs are captured.
     outputs = {

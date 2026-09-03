@@ -112,7 +112,9 @@ let amd64_spec =
       # crt/libc, so the coin-flip can never feed them glibc.  Single-level `usr/lib/*.{a,o}` globs above do
       # NOT match this nested path (literal_separator), so it is not double-captured.
       sysroot_inc = { glob = "usr/lib/musl-bedrock/include/**" } | OutputData,
-      sysroot_lib = { glob = "usr/lib/musl-bedrock/lib/**" } | OutputLib,
+      # allow_data: the empty stub archives (see R4a) have no file magic and the checker rejects them
+      # as malformed members of an executable output (pkgs CI 2026-09-02).
+      sysroot_lib = { glob = "usr/lib/musl-bedrock/lib/**", allow_data = true } | OutputLib,
     },
     attrs =
       {

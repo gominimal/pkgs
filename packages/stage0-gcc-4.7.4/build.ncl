@@ -79,11 +79,14 @@ let amd64_spec =
     cmd = "./build.sh",
     outputs = {
       # the gcc-4.7.4 drivers R10/R11 use as CC (gcc/g++/cpp + the x86_64-linux-gnu-prefixed driver):
-      bin = { glob = "usr/bin/*" } | OutputData,
+      # allow_executable (pkgs CI 2026-09-02): these are real ELF programs kept as OutputData rather
+      # than OutputBin because they link against the stage0 musl sysroot and carry a non-default
+      # interpreter; the "output types valid" checker rejects a data output that matches a binary.
+      bin = { glob = "usr/bin/*", allow_executable = true } | OutputData,
       # cc1 + cc1plus + collect2 (the C and C++ compilers + link wrapper):
-      libexec = { glob = "usr/libexec/**" } | OutputData,
+      libexec = { glob = "usr/libexec/**", allow_executable = true } | OutputData,
       # libgcc.a + crtbegin/crtend.o + specs + gcc's internal headers (under usr/lib/gcc/<tgt>/<ver>/):
-      internals = { glob = "usr/lib/gcc/**" } | OutputData,
+      internals = { glob = "usr/lib/gcc/**", allow_executable = true } | OutputData,
       # CRITICAL: the C++ standard library (static, --disable-shared) installs to usr/lib/, NOT
       # usr/lib/gcc/ — libstdc++.a + libsupc++.a. WITHOUT these R9's g++ links nothing and is unusable
       # as R11's builder (workflow-caught 2026-07-01). Single-level usr/lib/*.a is disjoint from
