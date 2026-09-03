@@ -589,8 +589,9 @@ let bash = import "../bash/build.ncl" in
 The build script must install everything to `$OUTPUT_DIR`.
 
 **Every package must be reproducible** — layer the determinism flags from
-[Reproducibility (required)](#reproducibility-required) below onto whichever pattern you
-use. The patterns below show the minimal shape; they are not complete without those flags.
+[Reproducibility (required)](#reproducibility-required) below (which routes to
+<https://minimal.dev/docs/reference/reproducibility>) onto whichever pattern you use. The
+patterns below show the minimal shape; they are not complete without those flags.
 
 #### Autotools pattern
 
@@ -658,32 +659,25 @@ cp target/release/my-tool $OUTPUT_DIR/usr/bin/
 
 ### Reproducibility (required)
 
-Two builds of the same source must produce **byte-identical** output — the build cache is
-content-addressed and can't trust non-reproducible artifacts. The build sandbox already
-exports `SOURCE_DATE_EPOCH=0` and `PYTHONHASHSEED=0` for you, so **do not set those
-yourself** — `minimal-check` rejects it. Compiler/linker determinism flags are otherwise
-`build.sh`'s responsibility. Apply **only the bullet that matches your build system** —
-these are per-stack recipes, not a checklist to run all of. Background and the full
-taxonomy of non-determinism: <https://reproducible-builds.org/>.
+**Every package in this repo must build byte-reproducibly.** The per-toolchain determinism
+flags — C/C++, Go, Rust, the Linux kernel, and builds that stamp their own wall-clock time —
+are documented once, publicly, at:
 
-- **C / C++:** `CFLAGS="… -ffile-prefix-map=$(pwd)=/builddir -gno-record-gcc-switches"`,
-  `CXXFLAGS="$CFLAGS"`, `LDFLAGS="-Wl,--build-id=none"`, `export ARFLAGS=Drc`
-  (autotools: also pass `--enable-deterministic-archives` to `./configure`; post-install,
-  drop libtool archives with `find "$OUTPUT_DIR" -name '*.la' -delete`).
-- **Go:** every `go build`/`go install`: `-trimpath -ldflags "-buildid="`
-  (add `-buildvcs=false` if the source tree contains a `.git` directory).
-- **Rust:** `RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"`;
-  if the binary still differs in `.text`/`.rodata`, also add `-C codegen-units=1` and
-  `export CONST_RANDOM_SEED=0`.
-- **Linux kernel:** `export KBUILD_BUILD_TIMESTAMP=@0 KBUILD_BUILD_USER=builder KBUILD_BUILD_HOST=minimal`.
-- **A build that bakes in its own wall-clock time** despite `SOURCE_DATE_EPOCH` (version
-  strings, generated headers): pin that specific stamp rather than re-exporting
-  `SOURCE_DATE_EPOCH`. For example `nspr` overrides the make variables its version header
-  is generated from (`SH_DATE` from `$SOURCE_DATE_EPOCH`, `SH_NOW=` to omit the build time).
+**<https://minimal.dev/docs/reference/reproducibility>**
 
-**Verify:** build the package twice and compare the two `$OUTPUT_DIR` trees — they must be
-byte-for-byte identical. When they differ, the diff points at the cause (a timestamp, a
-build path, a random build-id) and the recipe above has the fix.
+Read that page rather than a copy of it here. It also covers what the build sandbox already
+sets for you (`SOURCE_DATE_EPOCH=0`, `PYTHONHASHSEED=0`, both of which the checker **rejects**
+if you set them again), and how to verify: build twice, diff the two `$OUTPUT_DIR` trees.
+
+Two things specific to this repo, which the public page does not carry:
+
+- **Rust in this sandbox also needs `-C linker=gcc`.** The build sandbox has no `cc` symlink,
+  so the documented `RUSTFLAGS` must be extended, not used verbatim:
+  `RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"`.
+  See [Rust build errors, `cc` not found](#rust-build-errors-cc-not-found) in the FAQ.
+- **A worked example of the wall-clock case lives here:** `packages/nspr/build.sh` overrides the
+  make variables its version header is generated from (`SH_DATE` from `$SOURCE_DATE_EPOCH`,
+  `SH_NOW=` to omit the build time) rather than re-exporting `SOURCE_DATE_EPOCH`.
 
 
 ### Step 4: Validate
