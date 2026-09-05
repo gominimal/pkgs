@@ -1,0 +1,444 @@
+aarch64 support series for mrustc, against master 1d552cadf1c58bce8b9b431a5714dcea113dde38
+(the pinned Source of this recipe).  Eleven fixes, each root-caused on hardware (Axion C4A
+lab, then the CS builder) during the arm rustc-1.90 chain campaign, 2026-08-24..27; the arm
+chain went R9A_CHAIN_GREEN (all 7 recipe gates) with pin+this on 2026-08-26, and the amd64
+revalidation build then caught fix 5's first draft (see below) — the series is measured on
+BOTH arches.
+
+Shared-code fixes (affect BOTH arches — the reason this patch applies unconditionally):
+  1. static_borrow_constants: GLOBAL fixpoint across modules with interleaved insert +
+     insert-ungenerated, replacing the uncaught `Defer` escape (aarch64 libcore trigger,
+     shared machinery).
+  2. ArraySized visitor override chains to the default visitor (element exprs of [expr; N]
+     were never visited -> undetected generics).
+  3. Per-slot idempotence guards for double-visited nodes (incl. post-rebind TypeData insert).
+  4. res_type sweep in the extract visitor.
+  5. f128 alignment tracks u128's EFFECTIVE alignment (the emitted C f128 wraps uint128_t):
+     16 with native __int128 (aarch64 — f64's 8 failed TUP_2(f128,f32) 24-vs-32), 8 when
+     i128 is EMULATED (x86_64 — an unconditional 16 failed TUP_2(f128,i32) 32-vs-24 on the
+     first amd64 build; caught by the emitted sizeof_asserts both times).
+  6. Unpacked repr(simd): pow2-size alignment capped at 16, guarded on max_alignment==0
+     (core_simd's Simd is repr(simd,packed) and must keep element alignment).
+ 10. Native-__int128 ctpop: __builtin_popcountll takes a 64-bit argument, so the non-emulated
+     emission silently truncated a native u128/i128 to its low half (ctpop(u128::MAX) == 64,
+     surfacing as impossible E0080s in downstream const-eval).  Count both halves.  x86_64
+     never executed this path (emulated_i128=true -> the correct popcount128 helper).
+
+aarch64-only fixes:
+  7. asm!: aarch64 register classes (reg -> "r", vreg -> "w") in expand/asm.cpp, hir/asm.hpp,
+     trans/codegen_c.cpp.
+  8. asm! template modifiers {N:w}/{N:x} -> GCC %wN/%xN (same letters, pass through).
+  9. llvm.aarch64.{isb,dmb,dsb} intrinsics -> real __asm__ __volatile__ barrier instructions
+     (strongest "sy" variant) instead of no-ops.
+
+(Numbering note: 11 = the emulated-i128 revision of 5, folded into 5's entry above.)
+
+Cross-cutting lesson encoded twice (5 and 10): mrustc's 128-bit story FORKS on
+m_backend_c.m_emulated_i128, and x86_64-linux-gnu is EMULATED while aarch64-linux-gnu is
+NATIVE — any layout or intrinsic touching 128-bit types must be written against BOTH modes.
+
+Upstream candidature: to be assessed against lb#470-style originality review before any
+public claim; fixes 1-6 and 10 are believed novel, 7-9 partially overlap upstream branches.
+diff --git a/src/expand/asm.cpp b/src/expand/asm.cpp
+index 95255cf..6080d4c 100644
+--- a/src/expand/asm.cpp
++++ b/src/expand/asm.cpp
+@@ -226,6 +226,13 @@ namespace {
+         ERROR(sp, E0000, "Unknown register for riscv64 - `" << str << "`");
+     }
+ 
++    AsmCommon::RegisterClass get_reg_class_aarch64(const Span &sp, const RcString& str)
++    {
++        if(str == "reg"    )    return AsmCommon::RegisterClass::aarch64_reg;
++        if(str == "vreg"   )    return AsmCommon::RegisterClass::aarch64_vreg;
++        ERROR(sp, E0000, "Unknown register for aarch64 - `" << str << "`");
++    }
++
+     AsmCommon::RegisterClass get_reg_class(const Span& sp, const RcString& str)
+     {
+         if(Target_GetCurSpec().m_arch.m_name == "x86_64")
+@@ -234,6 +241,8 @@ namespace {
+             return get_reg_class_x8664(sp, str);
+         if (Target_GetCurSpec().m_arch.m_name == "riscv64")
+             return get_reg_class_riscv(sp, str);
++        if (Target_GetCurSpec().m_arch.m_name == "aarch64")
++            return get_reg_class_aarch64(sp, str);
+         ERROR(sp, E0000, "Unknown architecture for asm!");
+     }
+ }
+diff --git a/src/hir/asm.hpp b/src/hir/asm.hpp
+index c518022..cefa9d3 100644
+--- a/src/hir/asm.hpp
++++ b/src/hir/asm.hpp
+@@ -56,6 +56,9 @@ namespace AsmCommon {
+         
+         riscv_reg,
+         riscv_freg,
++
++        aarch64_reg,
++        aarch64_vreg,
+         
+         //hexagon_reg,
+         
+@@ -108,6 +111,8 @@ namespace AsmCommon {
+         case RegisterClass::x86_kreg:   return "kreg";
+         case RegisterClass::riscv_reg:  return "reg";
+         case RegisterClass::riscv_freg: return "freg";
++        case RegisterClass::aarch64_reg:    return "reg";
++        case RegisterClass::aarch64_vreg:   return "vreg";
+         }
+         throw "";
+     }
+diff --git a/src/hir_expand/static_borrow_constants.cpp b/src/hir_expand/static_borrow_constants.cpp
+index 5aaadd1..cf14265 100644
+--- a/src/hir_expand/static_borrow_constants.cpp
++++ b/src/hir_expand/static_borrow_constants.cpp
+@@ -839,15 +839,27 @@ namespace static_borrow_constants {
+                     , is_generic(false)
+                 {}
+ 
++                // A node can be visited TWICE: once via visit_node_ptr and once
++                // via a parent's direct `child->visit(*this)` call — so every
++                // in-place remap below must be idempotent, or an already-
++                // remapped ref gets remapped again (observed: LEN M:2 -> M:5 ->
++                // OOR assert). Track processed storage by address, and ALSO
++                // record the post-rebind TypeData so re-encounters are skipped.
++                ::std::set<const void*> visited_slots;
+                 void visit_type(HIR::TypeRef& ty) override {
++                    if( !visited_slots.insert(&ty.data()).second )
++                        return;
+                     if( monomorphise_type_needed(ty) ) {
+                         this->is_generic = true;
+                         auto new_ty = this->resolve.monomorph_expand(sp, ty, this->monomorph);
+                         DEBUG(ty << " -> " << new_ty);
+                         ty = std::move(new_ty);
++                        visited_slots.insert(&ty.data());
+                     }
+                 }
+                 void visit_path_params(HIR::PathParams& pp) override {
++                    if( !visited_slots.insert(&pp).second )
++                        return;
+                     if( monomorphise_pathparams_needed(pp) ) {
+                         this->is_generic = true;
+                         auto new_pp = this->monomorph.monomorph_path_params(sp, pp, false);
+@@ -894,19 +906,39 @@ namespace static_borrow_constants {
+                     }
+                 }
+                 void visit(HIR::ExprNode_ConstParam& node) override {
++                    if( !visited_slots.insert(&node).second )
++                        return;
+                     node.m_binding = monomorph.get_value(node.span(), HIR::GenericRef("", node.m_binding)).as_Generic().binding;
+                     is_generic = true;
+                 }
+                 void visit(HIR::ExprNode_ArraySized& node) override {
++                    // MUST chain: without it the ELEMENT expression is never
++                    // visited, so a generic inside `[expr; N]` (e.g. a NEON
++                    // `[N as i8; 8]` splat) goes undetected — the lifted item
++                    // then lands as "Concrete static" with un-remapped M:*
++                    // refs and no params, and aborts at Trans Monomorph.
++                    HIR::ExprVisitorDef::visit(node);
+                     if( auto* n = node.m_size.opt_Unevaluated() )
+                     {
+                         if( auto* g = n->opt_Generic() )
+                         {
++                            if( !visited_slots.insert(g).second )
++                                return;
+                             *g = monomorph.get_value(node.span(), *g).as_Generic();
+                             is_generic = true;
+                         }
+                     }
+                 }
++                void visit_node_ptr(::HIR::ExprNodeP& node_ptr) override {
++                    HIR::ExprVisitorDef::visit_node_ptr(node_ptr);
++                    // Every node's RESULT type can carry generics too (e.g. a
++                    // `[T; N]` array size in aarch64 NEON code) — without this
++                    // sweep such entries pass as "concrete", keep un-remapped
++                    // M:* refs in their MIR, and assert at Trans Monomorph
++                    // ("Value param N out of range"). Same idiom as
++                    // closures.cpp's visit_node_ptr res_type sweep.
++                    visit_type(node_ptr->m_res_type);
++                }
+             } v(resolve, monomorph);
+             node->visit(v);
+             v.visit_type(node->m_res_type);
+@@ -1102,7 +1134,34 @@ namespace static_borrow_constants {
+         void visit_crate(::HIR::Crate& crate) override {
+             ::HIR::Visitor::visit_crate(crate);
+ 
+-            // Once the crate is complete, add the newly created statics to the module tree
++            // Once the crate is complete, add the newly created statics to the module tree.
++            //
++            // NOTE on ordering: a new item's initializer can reference another
++            // NEW item that has not been inserted yet — within the same module
++            // OR in a module processed later (both observed with aarch64
++            // libcore 1.90's promoted borrows). A single in-order pass then
++            // throws `Defer` out of `evaluate_constant`, which used to escape
++            // as an uncaught exception and abort. So: evaluate+insert to a
++            // GLOBAL fixpoint across every module's list, retrying deferred
++            // entries while progress is made; a final round runs UNGUARDED so
++            // a genuine failure still aborts with its original message.
++            ::std::map<const HIR::Module*, ::std::vector<bool>>   inserted;
++            ::std::map<const HIR::Module*, size_t>   next_lifted_idx;
++            for(auto& mod_list : m_new_statics)
++            {
++                inserted[mod_list.first].resize(mod_list.second.size(), false);
++                next_lifted_idx[mod_list.first] = mod_list.second.size();
++            }
++            bool progress = true;
++            bool final_round = false;
++            for(;;)
++            {
++            if( !progress ) {
++                if( final_round )
++                    break;
++                final_round = true;
++            }
++            progress = false;
+             for(auto& mod_list : m_new_statics)
+             {
+                 auto& mod = *const_cast<HIR::Module*>(mod_list.first);
+@@ -1119,9 +1178,9 @@ namespace static_borrow_constants {
+ 
+                     ::HIR::SimplePath   m_current_module_path;
+                     ::HIR::Module&  m_current_module;
+-                    size_t m_next_idx;
++                    size_t& m_next_idx;   // persists across fixpoint rounds (name continuity)
+ 
+-                    Nvs(::HIR::SimplePath current_module_path, ::HIR::Module& current_module, size_t idx)
++                    Nvs(::HIR::SimplePath current_module_path, ::HIR::Module& current_module, size_t& idx)
+                         : m_current_module_path(::std::move(current_module_path))
+                         , m_current_module(current_module)
+                         , m_next_idx (idx)
+@@ -1147,10 +1206,27 @@ namespace static_borrow_constants {
+                             })) );
+                         return path;
+                     }
+-                } nvs { mod_path, mod, mod_list.second.size() };
+-
+-                for(auto& new_static_pair : mod_list.second)
++                } nvs { mod_path, mod, next_lifted_idx[mod_list.first] };
++
++                struct H {
++                    static HIR::Constant to_const(HIR::Static& s) {
++                        HIR::Constant rv { std::move(s.m_params), std::move(s.m_type), std::move(s.m_value) };
++                        if( s.m_value_generated ) {
++                            rv.m_value_state = HIR::Constant::ValueState::Known;
++                            rv.m_value_res = std::move(s.m_value_res);
++                        }
++                        else {
++                            rv.m_value_state = HIR::Constant::ValueState::Generic;
++                        }
++                        return rv;
++                    }
++                };
++                auto& ins = inserted[mod_list.first];
++                for(size_t idx = 0; idx < mod_list.second.size(); idx ++)
+                 {
++                    if( ins[idx] )
++                        continue;
++                    auto& new_static_pair = mod_list.second[idx];
+                     Span    sp;
+                     auto& new_static = new_static_pair.data;
+ 
+@@ -1158,24 +1234,27 @@ namespace static_borrow_constants {
+ 
+                     if( !new_static.m_params.is_generic() )
+                     {
+-                        new_static.m_value.m_state->stage = ::HIR::ExprState::Stage::Sbc;
+-                        new_static.m_value_res = ::HIR::Evaluator(sp, m_crate, nvs).evaluate_constant( new_static_pair.path, new_static.m_value, new_static.m_type.clone());
+-                        new_static.m_value_generated = true;
+-                    }
+-
+-                    struct H {
+-                        static HIR::Constant to_const(HIR::Static& s) {
+-                            HIR::Constant rv { std::move(s.m_params), std::move(s.m_type), std::move(s.m_value) };
+-                            if( s.m_value_generated ) {
+-                                rv.m_value_state = HIR::Constant::ValueState::Known;
+-                                rv.m_value_res = std::move(s.m_value_res);
+-                            }
+-                            else {
+-                                rv.m_value_state = HIR::Constant::ValueState::Generic;
++                        try {
++                            new_static.m_value.m_state->stage = ::HIR::ExprState::Stage::Sbc;
++                            new_static.m_value_res = ::HIR::Evaluator(sp, m_crate, nvs).evaluate_constant( new_static_pair.path, new_static.m_value, new_static.m_type.clone());
++                            new_static.m_value_generated = true;
++                        }
++                        catch(...) {
++                            if( !final_round ) {
++                                // Deferred (usually a not-yet-inserted sibling, possibly in
++                                // another module); retry on the next global round.
++                                continue;
+                             }
+-                            return rv;
++                            // Fixpoint stalled: the dependency is not one of the new
++                            // items (e.g. a constant the main const-eval pass itself
++                            // deferred to monomorphization time). Insert UNGENERATED:
++                            // m_value_generated stays false, so consts land as
++                            // ValueState::Generic (evaluated on use) — the same state
++                            // the generic-params path below produces.
++                            DEBUG("Deferred past fixpoint, inserting ungenerated: " << new_static_pair.path);
+                         }
+-                    };
++                    }
++
+                     auto new_ent = new_static_pair.is_const
+                         ? HIR::ValueItem(H::to_const(new_static))
+                         : HIR::ValueItem(std::move(new_static_pair.data));
+@@ -1183,8 +1262,11 @@ namespace static_borrow_constants {
+                         HIR::Publicity::new_none(), // Should really be private, but we're well after checking
+                         std::move(new_ent)
+                         })) );
++                    ins[idx] = true;
++                    progress = true;
+                 }
+             }
++            }
+         }
+ 
+         void visit_module(::HIR::ItemPath p, ::HIR::Module& mod) override {
+diff --git a/src/trans/codegen_c.cpp b/src/trans/codegen_c.cpp
+index 135d105..0aefe46 100644
+--- a/src/trans/codegen_c.cpp
++++ b/src/trans/codegen_c.cpp
+@@ -2847,6 +2847,24 @@ namespace {
+                     }
+                     m_of << "\treturn ;\n";
+                 }
++                // AArch64 barriers (core_arch::arm_shared::barrier — hit at
++                // RUNTIME by e.g. std::time's counter reads, so a trap stub
++                // aborts the built rustc). The integer argument selects the
++                // domain/type; emitting the strongest (`sy`) variant is
++                // semantically safe for every option — it over-synchronises,
++                // never under-.
++                else if( item.m_linkage.name == "llvm.aarch64.isb" ) {
++                    m_of << "\t__asm__ __volatile__ (\"isb sy\" ::: \"memory\");\n";
++                    m_of << "\treturn ;\n";
++                }
++                else if( item.m_linkage.name == "llvm.aarch64.dmb" ) {
++                    m_of << "\t__asm__ __volatile__ (\"dmb sy\" ::: \"memory\");\n";
++                    m_of << "\treturn ;\n";
++                }
++                else if( item.m_linkage.name == "llvm.aarch64.dsb" ) {
++                    m_of << "\t__asm__ __volatile__ (\"dsb sy\" ::: \"memory\");\n";
++                    m_of << "\treturn ;\n";
++                }
+                 // AES functions
+                 else if( item.m_linkage.name.rfind("llvm.x86.aesni.", 0) == 0 )
+                 {
+@@ -5654,6 +5672,15 @@ namespace {
+                         {
+                         case '\0':
+                             break;
++                        case 'w':
++                        case 'x':
++                            // aarch64: rustc's {N:w}/{N:x} (32/64-bit register
++                            // views) are the SAME letters as GCC's %wN/%xN.
++                            if( Target_GetCurSpec().m_arch.m_name == "aarch64" ) {
++                                m_of << f.modifier;
++                                break;
++                            }
++                            MIR_TODO(mir_res, "Asm2 GCC: modifier " << f.modifier << " - " << stmt);
+                         case 'r':
+                             m_of << 'q';    // x86: `q` selects rax explicitly
+                             break;
+@@ -5699,6 +5726,8 @@ namespace {
+                         // riscv
+                         case AsmCommon::RegisterClass::riscv_reg: m_of << "r"; break;
+                         case AsmCommon::RegisterClass::riscv_freg: m_of << "f"; break;
++                        case AsmCommon::RegisterClass::aarch64_reg: m_of << "r"; break;
++                        case AsmCommon::RegisterClass::aarch64_vreg: m_of << "w"; break;
+                         }
+                     TU_ARMA(Explicit, name) {
+                         m_of << "r";
+@@ -5740,6 +5769,8 @@ namespace {
+                             // riscv
+                             case AsmCommon::RegisterClass::riscv_reg: m_of << "r"; break;
+                             case AsmCommon::RegisterClass::riscv_freg: m_of << "f"; break;
++                        case AsmCommon::RegisterClass::aarch64_reg: m_of << "r"; break;
++                        case AsmCommon::RegisterClass::aarch64_vreg: m_of << "w"; break;
+                             }
+                         TU_ARMA(Explicit, name) {
+                             auto it = ::std::find(outputs.begin(), outputs.end(), &r);
+@@ -7238,6 +7269,15 @@ namespace {
+                         m_of << ".lo";
+                     }
+                 }
++                else if( params.m_types.at(0) == ::HIR::CoreType::U128 || params.m_types.at(0) == ::HIR::CoreType::I128 )
++                {
++                    // Native __int128: __builtin_popcountll takes a 64-bit argument, so passing the
++                    // value directly would silently truncate to the low half (ctpop(u128::MAX) == 64).
++                    // Count each half explicitly.
++                    m_of << "(__builtin_popcountll((uint64_t)("; emit_param(e.args.at(0));
++                    m_of << ")) + __builtin_popcountll((uint64_t)(((uint128_t)("; emit_param(e.args.at(0));
++                    m_of << ")) >> 64)))";
++                }
+                 else
+                 {
+                     m_of << "__builtin_popcountll("; emit_param(e.args.at(0)); m_of << ")";
+diff --git a/src/trans/target.cpp b/src/trans/target.cpp
+index 7522004..cdfdcb3 100644
+--- a/src/trans/target.cpp
++++ b/src/trans/target.cpp
+@@ -817,7 +817,20 @@ bool Target_GetSizeAndAlignOf(const Span& sp, const StaticTraitResolve& resolve,
+             return true;
+         case ::HIR::CoreType::F128:
+             out_size = 16;
+-            out_align = g_target.m_arch.m_alignments.f64; //f128;
++            // f128's emitted C type wraps uint128_t (codegen_c:
++            // `typedef struct f128 { uint128_t v; } f128;`), so its alignment
++            // must track u128's EFFECTIVE alignment — the same conditional as
++            // the U128 case above.  Native __int128 (aarch64): 16 — using
++            // f64's 8 made mrustc disagree with gcc on TUP_2(f128,f32)
++            // (24 vs 32), caught by the emitted sizeof_assert in aarch64
++            // libstd.  EMULATED i128 (x86_64 as configured): uint128_t is
++            // struct{uint64_t lo,hi}, align 8 — using the raw 16 failed
++            // TUP_2(f128,i32) the other way (mrustc 32 vs gcc 24) on the
++            // first amd64 build of the patched pin.
++            if( g_target.m_backend_c.m_emulated_i128 )
++                out_align = g_target.m_arch.m_alignments.u64;
++            else
++                out_align = g_target.m_arch.m_alignments.u128;
+             return true;
+         case ::HIR::CoreType::Str:
+             DEBUG("sizeof on a `str` - unsized");
+@@ -1189,10 +1202,39 @@ namespace {
+             switch(str.m_repr)
+             {
+             case ::HIR::Struct::Repr::C:
+-            case ::HIR::Struct::Repr::Simd:
+                 // No sorting, no packing
+                 sorting = StructSorting::None;
+                 break;
++            case ::HIR::Struct::Repr::Simd: {
++                // No sorting, no packing
++                sorting = StructSorting::None;
++                // UNPACKED repr(simd) vector types (core_arch's NEON/SSE
++                // types) align to their size rounded up to a power of two,
++                // capped at 16 for the targets we emit C for. Treating them
++                // as repr(C) left e.g. uint8x16_t with element alignment —
++                // caught by zlib-rs's own
++                // `assert!(align_of::<uint8x16_t>() == 16)` failing in const
++                // eval on aarch64. `repr(simd, packed)` (core_simd's Simd —
++                // note the commented-out "packed() on simd?" assert in
++                // from_ast.cpp) keeps the packed/element alignment and must
++                // NOT be force-aligned.
++                if( max_alignment == 0 )
++                {
++                    size_t total = 0;
++                    bool known = true;
++                    for(const auto& e : ents) {
++                        if( e.size == SIZE_MAX ) { known = false; break; }
++                        total += e.size;
++                    }
++                    if( known && total > 0 ) {
++                        unsigned a = 1;
++                        while( a < total && a < 16 )
++                            a *= 2;
++                        if( a > forced_alignment )
++                            forced_alignment = a;
++                    }
++                }
++                break; }
+             case ::HIR::Struct::Repr::Transparent:
+             case ::HIR::Struct::Repr::Rust:
+                 if( str.m_struct_markings.dst_type != HIR::StructMarkings::DstType::None )

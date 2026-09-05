@@ -1,0 +1,5 @@
+                    || sym->st_info == 0x12
+                    || sym->st_info == 0x20
+                    || sym->st_info == 0x21
+                    || sym->st_info == 0x22
+                    )) {
