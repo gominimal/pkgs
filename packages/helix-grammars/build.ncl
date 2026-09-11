@@ -315,5 +315,17 @@ let version = "25.07.1" in
       license_spdx = "MIT AND Apache-2.0 AND WTFPL",
       # source_provenance is deliberately absent: there is no single upstream to
       # point at, the package aggregates the 43 repositories pinned above.
+      #
+      # The VERSION, though, is helix's (25.07.1 = the helix release whose
+      # grammar pin-set this is), so the version check must read helix — not
+      # the first grammar repo. Without this, pkgmgr fell back to the first
+      # build_dep's source (tree-sitter/tree-sitter-bash, v0.25.1), compared it
+      # against 25.07.1 and clamped it as a "downgrade" every day (pkgmgr#773):
+      # a real helix release would have been invisible.
+      version_check_url = "https://api.github.com/repos/helix-editor/helix/releases/latest",
+      # No quotes or backslashes in the pattern on purpose: they do not survive
+      # the Nickel → pkgmgr round trip intact (the pattern arrived as a lone
+      # backslash). `.` stands in for the JSON quote characters.
+      version_check_regex = "tag_name.: *.([0-9]+[.][0-9]+([.][0-9]+)?)",
     } | Attrs,
 } | BuildSpec
