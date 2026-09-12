@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
@@ -54,7 +54,13 @@ let version = "4.33.0" in
     lean = { glob = "usr/bin/lean" } | OutputBin,
     libs = { glob = "usr/lib/lean/*.{a,so*}" } | OutputLib,
     includes = { glob = "usr/include/**" } | OutputData,
-    data = { glob = "usr/lib/lean/**/*.olean" } | OutputData,
+    # `*.olean*`: Lean >= 4.2x ships every module as `.olean` +
+    # `.olean.server` + `.olean.private`, and lean will not load a module whose
+    # sidecars are missing. The plain `*.olean` glob silently dropped the other
+    # two at packaging, so pkgs#605's root fix was necessary but not sufficient.
+    # `.ilean` is the language-server index (small; makes `lean --server` work).
+    data = { glob = "usr/lib/lean/**/*.olean*" } | OutputData,
+    ilean = { glob = "usr/lib/lean/**/*.ilean" } | OutputData,
     # The MODULE ROOTS — `Init.olean`, `Std.olean`, `Lean.olean`, `Lake.olean`
     # — sit directly in `usr/lib/lean/`, and `**/` requires at least one
     # directory level, so the glob above matches `.../Init/Core.olean` but
@@ -69,7 +75,24 @@ let version = "4.33.0" in
     # oleans ship under Init/ and Std/, and the root-level `.a`/`.so` arrive
     # via the `libs` glob above — the only absent class is the one file per
     # module that makes the rest reachable.
-    module_roots = { glob = "usr/lib/lean/*.olean" } | OutputData,
+    module_roots = { glob = "usr/lib/lean/*.olean*" } | OutputData,
+    module_root_ileans = { glob = "usr/lib/lean/*.ilean" } | OutputData,
+  },
+
+  # The check that has now failed twice for two different missing-file
+  # classes (pkgs#605: no roots; this PR: no sidecars). If lean cannot
+  # compile `#eval 1+1`, it cannot compile anything, and no other output of
+  # this package matters.
+  tests = {
+    compiles_hello =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "printf '#eval 1+1\\n' > /tmp/t.lean && lean /tmp/t.lean"],
+          ["/bin/bash", "-c", "printf 'theorem t : 1 + 1 = 2 := rfl\\n' > /tmp/u.lean && lean /tmp/u.lean"],
+        ],
+      } | Test,
   },
   attrs =
     {
