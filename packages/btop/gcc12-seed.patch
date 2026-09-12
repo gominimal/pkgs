@@ -1,0 +1,95 @@
+diff -ruN a/src/btop_tools.hpp b/src/btop_tools.hpp
+--- a/src/btop_tools.hpp	2026-08-26 14:28:56
++++ b/src/btop_tools.hpp	2026-08-26 14:28:56
+@@ -275,9 +275,12 @@
+ 	}
+ 
+ 	//* Split <string> at all occurrences of <delim> and return as vector of strings
+-	constexpr auto ssplit(std::string_view str, char delim = ' ') {
+-		return str | std::views::split(delim) | std::views::filter([](auto&& range) { return !std::ranges::empty(range); }) |
+-			   std::ranges::to<std::vector<std::string>>();
++	inline auto ssplit(std::string_view str, char delim = ' ') {
++		std::vector<std::string> out;
++		for (auto&& range : str | std::views::split(delim)) {
++			if (!std::ranges::empty(range)) out.emplace_back(range.begin(), range.end());
++		}
++		return out;
+ 	}
+ 
+ 	//* Put current thread to sleep for <ms> milliseconds
+diff -ruN a/src/linux/btop_collect.cpp b/src/linux/btop_collect.cpp
+--- a/src/linux/btop_collect.cpp	2026-08-26 14:28:56
++++ b/src/linux/btop_collect.cpp	2026-08-26 14:28:56
+@@ -1046,35 +1046,46 @@
+ 		return watts;
+ 	}
+ 
+-    static constexpr auto to_int(std::string_view view) {
++    static auto to_int(std::string_view view) {
+         std::uint32_t value {};
+         std::from_chars(view.data(), view.data() + view.size(), value);
+         return value;
+     }
+ 
+-    static constexpr auto detect_active_cpus() {
++    static auto detect_active_cpus() {
+         auto stream = std::ifstream { "/sys/fs/cgroup/cpuset.cpus.effective" };
+         auto buf = std::string { std::istreambuf_iterator<char> { stream }, {} };
+ 
++        std::vector<std::int32_t> cpus;
++
+         if (buf.empty()) {
+-            return std::views::iota(0, Shared::coreCount) | std::ranges::to<std::vector<std::int32_t>>();
++            for (std::int32_t i = 0; i < Shared::coreCount; ++i) {
++                cpus.push_back(i);
++            }
++            return cpus;
+         }
+ 
+-        return buf | std::views::split(',') | std::views::transform([](auto&& range) -> auto {
+-                   auto view = std::string_view { range };
+-                   auto dash = view.find('-');
++        std::string_view rest { buf };
++        while (!rest.empty()) {
++            auto comma = rest.find(',');
++            auto view = rest.substr(0, comma);
++            auto dash = view.find('-');
+ 
+-                   if (dash == std::string_view::npos) {
+-                       // Single CPU, return iota of single element
+-                       auto value = to_int(view);
+-                       return std::views::iota(value, value + 1);
+-                   }
++            if (dash == std::string_view::npos) {
++                // Single CPU
++                cpus.push_back(static_cast<std::int32_t>(to_int(view)));
++            } else {
++                auto start = to_int(view.substr(0, dash));
++                auto end = to_int(view.substr(dash + 1));
++                for (auto i = start; i <= end; ++i) {
++                    cpus.push_back(static_cast<std::int32_t>(i));
++                }
++            }
+ 
+-                   auto start = to_int(view.substr(0, dash));
+-                   auto end = to_int(view.substr(dash + 1));
+-                   return std::views::iota(start, end + 1);
+-               }) |
+-               std::views::join | std::ranges::to<std::vector<std::int32_t>>();
++            if (comma == std::string_view::npos) break;
++            rest.remove_prefix(comma + 1);
++        }
++        return cpus;
+     }
+ 
+ 	auto collect(bool no_update) -> cpu_info& {
+diff -ruN a/src/main.cpp b/src/main.cpp
+--- a/src/main.cpp	2026-08-26 14:28:56
++++ b/src/main.cpp	2026-08-26 14:28:56
+@@ -8,5 +8,5 @@
+ #include <vector>
+ 
+ auto main(int argc, const char* argv[]) -> int {
+-	return btop_main(std::views::counted(std::next(argv), argc - 1) | std::ranges::to<std::vector<std::string_view>>());
++	return btop_main(std::vector<std::string_view>(argv + 1, argv + argc));
+ }

@@ -39,7 +39,9 @@ let version = "0.19.2" in
 
   outputs = {
     delta = { glob = "usr/bin/delta" } | OutputBin,
-    completions = { glob = "usr/share/bash-completion/completions/*" } | OutputData,
+    bash_completion = { glob = "usr/share/bash-completion/completions/delta" } | OutputData,
+    fish_completion = { glob = "usr/share/fish/vendor_completions.d/delta.fish" } | OutputData,
+    zsh_completion = { glob = "usr/share/zsh/site-functions/_delta" } | OutputData,
   },
   attrs =
     {

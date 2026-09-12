@@ -7,14 +7,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let version = "1.8.1" in
+let version = "1.9.0" in
 {
   name = "tealdeer",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/tealdeer-rs/tealdeer/v%{version}.tar.gz",
-      sha256 = "8b9ea7ef8dd594d6fb8b452733b0c883a68153cec266b23564ce185bdf22fcfa",
+      sha256 = "1387a04ddba714668ff0925377a2de0d0ab14533d44dd0766d673fbbd71e3119",
       extract = true,
       strip_prefix = "tealdeer-%{version}",
     } | Source,
@@ -37,7 +37,7 @@ let version = "1.8.1" in
     {
       upstream_version = version,
       source_provenance = { category = 'GithubRepo, owner = "tealdeer-rs", repo = "tealdeer" },
-      # Dual-licensed: v1.8.1 Cargo.toml declares "MIT OR Apache-2.0" and ships
+      # Dual-licensed: v1.9.0 Cargo.toml declares "MIT OR Apache-2.0" and ships
       # both LICENSE-MIT and LICENSE-APACHE.
       license_spdx = "MIT OR Apache-2.0",
     } | Attrs,

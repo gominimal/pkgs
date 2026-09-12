@@ -11,14 +11,14 @@ let node = import "../node/build.ncl" in
 # ships an npm-shrinkwrap.json, so installing it locks the transitive
 # dependency tree and keeps the build reproducible. The `#!/usr/bin/env node`
 # shebang of the installed bin is served by coreutils(env) + node.
-let version = "0.84.2" in
+let version = "0.84.4" in
 {
   name = "pi",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-%{version}.tgz",
-      sha256 = "95b899cd7b1a0c1f0174c7bf33ab427435e3553a7d1f4756661aa9c7f1a68ffa",
+      sha256 = "5bce766d19c3ceba18f3fbaad91c449c9f9d73981f9e3400ecef932006f06968",
     } | Source,
     base,
     node,

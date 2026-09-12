@@ -12,14 +12,14 @@ let node = import "../node/build.ncl" in
 # full headed chromium browser.
 let chromium-headless-shell-bin = import "../chromium-headless-shell-bin/build.ncl" in
 
-let version = "11.16.0" in
+let version = "11.17.0" in
 {
   name = "mermaid-cli",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/mermaid-js/mermaid-cli/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "c95d8b32a604e8393d9cfea9ee54060752b1cf4ff291be80a0b749e96a42c0c2",
+      sha256 = "b5213dd373f09d0bfbc1ae839114246edecfe4e78248d50577f330af266d18ca",
     } | Source,
     base,
     curl,

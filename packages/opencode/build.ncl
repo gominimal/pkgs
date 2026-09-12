@@ -5,14 +5,14 @@ let git = import "../git/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let ripgrep = import "../ripgrep/build.ncl" in
 
-let version = "1.18.14" in
+let version = "1.18.25" in
 {
   name = "opencode",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/anomalyco/opencode/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "3454d738eca7117099d6dc2a1d6330e0ac099da60cf3d8e40e8913ff3e38f656",
+      sha256 = "44e9530d7be172005c7d60aef317440eecb85d557d94cce7fa35c5a7b9d9da0b",
     } | Source,
     base,
     bun,

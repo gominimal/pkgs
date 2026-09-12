@@ -20,3 +20,10 @@ export CXXFLAGS="${CFLAGS}"
     --shared-nghttp2 --shared-nghttp3 --shared-ngtcp2 --shared-gtest  --shared-lief --shared-cares
 make -j$(nproc)
 make DESTDIR=$OUTPUT_DIR install
+
+# npm's compiled-in global prefix is /usr, which is the read-only package
+# store at session time, so every `npm i -g` fails with ENOENT. Ship a
+# builtin npmrc (npm's lowest-precedence config source, overridable by any
+# user config) pointing globals at ~/.local, whose bin/ is already on the
+# session PATH. See gominimal/inbox#559.
+printf 'prefix=~/.local\n' > "$OUTPUT_DIR/usr/lib/node_modules/npm/npmrc"

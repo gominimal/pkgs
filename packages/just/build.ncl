@@ -32,7 +32,9 @@ let version = "1.58.0" in
   outputs = {
     just = { glob = "usr/bin/just" } | OutputBin,
 
-    completions = { glob = "usr/share/bash-completion/completions/*" } | OutputData,
+    bash_completion = { glob = "usr/share/bash-completion/completions/just" } | OutputData,
+    fish_completion = { glob = "usr/share/fish/vendor_completions.d/just.fish" } | OutputData,
+    zsh_completion = { glob = "usr/share/zsh/site-functions/_just" } | OutputData,
   },
   attrs =
     {

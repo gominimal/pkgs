@@ -31,7 +31,9 @@ let version = "0.14.8" in
 
   outputs = {
     btm = { glob = "usr/bin/btm" } | OutputLib,
-    completions = { glob = "usr/share/bash-completion/completions/*" } | OutputData,
+    bash_completion = { glob = "usr/share/bash-completion/completions/btm" } | OutputData,
+    fish_completion = { glob = "usr/share/fish/vendor_completions.d/btm.fish" } | OutputData,
+    zsh_completion = { glob = "usr/share/zsh/site-functions/_btm" } | OutputData,
   },
 
   attrs =

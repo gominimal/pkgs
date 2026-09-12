@@ -19,14 +19,14 @@ let gtest = import "../gtest/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "24.14.1" in
+let version = "24.19.0" in
 {
   name = "node-lts",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://nodejs.org/dist/v%{version}/node-v%{version}.tar.gz",
-      sha256 = "8298cf1f5774093ca819f41b8dd392fd2cff058688b4d5c8805026352e2d31b3",
+      sha256 = "16fe258006a6e86844fbe05b3b5e1e5623ca8d3da54e32d98d9e83234bf25b01",
     } | Source,
     base,
     make,
@@ -101,6 +101,16 @@ let version = "24.14.1" in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "node -e 'console.log(10 * 5)' | grep -q '^50$'"],
+        ],
+      } | Test,
+    npm_global_prefix =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          # The builtin npmrc must redirect npm's global prefix away from the
+          # read-only /usr store (gominimal/inbox#559).
+          ["/bin/bash", "-c", "npm config get prefix | grep -q '/.local$'"],
         ],
       } | Test,
   },

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -37,6 +37,9 @@ let version = "2.97.0" in
 
   outputs = {
     gh = { glob = "usr/bin/gh" } | OutputBin,
+    bash_completion = { glob = "usr/share/bash-completion/completions/gh" } | OutputData,
+    fish_completion = { glob = "usr/share/fish/vendor_completions.d/gh.fish" } | OutputData,
+    zsh_completion = { glob = "usr/share/zsh/site-functions/_gh" } | OutputData,
   },
 
   attrs =
