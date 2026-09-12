@@ -1,4 +1,4 @@
-let { standaloneTest, subsetOf, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let rust = import "../rust/build.ncl" in
@@ -31,6 +31,7 @@ let version = "2.5.8" in
   ],
 
   cmd = "./build.sh",
+  build_args = { include version },
 
   outputs = {
     bins = { glob = "usr/bin/biome" } | OutputBin,
@@ -52,5 +53,14 @@ let version = "2.5.8" in
 
   tests = {
     smoketest = standaloneTest "/usr/bin/biome --version",
+    version_is_exact =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "test \"$(/usr/bin/biome --version)\" = \"Version: %{version}\""],
+        ],
+      }
+        | Test,
   },
 } | BuildSpec
