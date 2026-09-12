@@ -1,0 +1,24 @@
+# UNPINNED — record-at-pin-time placeholder (R10 stage0-binutils-2.41).
+# Checked from $OUTPUT_DIR by `sha256sum -c` (set -e aborts) once the gate at the tail of build.sh
+# is re-enabled.
+#
+# !! RECORD-AT-PIN-TIME (amd64) !! No upstream amd64 binutils-2.41 fixed point (live-bootstrap is
+# i386; this ladder is amd64-direct).  Capture AFTER the first green amd64 CS build, paste the real
+# shas below, then re-enable the gate.  --enable-deterministic-archives makes the .a members
+# reproducible (zeroed ar timestamps/uids); confirm as/ld embed no __DATE__/__TIME__ at capture.
+#
+# Canonical byte-identity anchors = the deliverable tools + the installed static libs (paths RELATIVE
+# to $OUTPUT_DIR):
+# <sha>  usr/bin/as
+# <sha>  usr/bin/ld
+# <sha>  usr/bin/ar
+# <sha>  usr/bin/nm
+# <sha>  usr/bin/objcopy
+# <sha>  usr/bin/objdump
+# <sha>  usr/bin/ranlib
+# <sha>  usr/bin/readelf
+# <sha>  usr/bin/strip
+# <sha>  usr/lib/libbfd.a
+# <sha>  usr/lib/libopcodes.a
+#
+# NB: the x86_64-linux-gnu-<tool> entries are symlinks (not pinned).

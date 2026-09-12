@@ -1,0 +1,4 @@
+            /* And swap the argument back to it's original position.  */
+            tmp = vtop[0];
+            vtop[0] = vtop[-i];
+            vtop[-i] = tmp;
