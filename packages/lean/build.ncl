@@ -5,6 +5,7 @@ let cmake = import "../cmake/build.ncl" in
 let make = import "../make/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let libuv = import "../libuv/build.ncl" in
+let openssl = import "../openssl/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let git = import "../git/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -33,6 +34,12 @@ let version = "4.33.0" in
     subsetOf gcc ["libgcc", "libstdcpp"],
     gmp,
     libuv,
+    # `lean` and `libleanshared.so` link libssl.so.3 / libcrypto.so.3 (lake's
+    # HTTP client). Without this the binary does not START in a closure that
+    # lacks openssl — `lean --version` exits 127 from the loader — which the
+    # standalone test below now catches. Every session that had run lean so
+    # far carried openssl through some other package, which is how it hid.
+    openssl,
   ],
 
   needs =
