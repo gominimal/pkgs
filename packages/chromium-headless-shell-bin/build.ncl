@@ -61,12 +61,12 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # branched from); arm64 from Playwright's own arm64 build.
 #
 # `revision` is the Playwright browser-revision number from
-# packages/playwright-core/browsers.json. Revision 1237 ↔ Chrome 152.0.7977.8
+# packages/playwright-core/browsers.json. Revision 1243 ↔ Chrome 153.0.8010.12
 # ↔ playwright-core ^1.59. `snapshot_position` must be re-derived whenever
 # `browser_version` bumps. Keep all three in lockstep with chromium-bin.
-let revision = "1237" in
-let browser_version = "152.0.7977.8" in
-let snapshot_position = "1669021" in
+let revision = "1243" in
+let browser_version = "153.0.8010.12" in
+let snapshot_position = "1681086" in
 {
   name = "chromium-headless-shell-bin",
   build_deps =
@@ -76,12 +76,12 @@ let snapshot_position = "1669021" in
         { arch = 'Amd64, .. } =>
           {
             url = "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/headless-shell.zip",
-            sha256 = "efd7bdeac429d8728e39eeb70b5de3355b276f134b159db61ffc7f6980e2b76c",
+            sha256 = "83bc994d5d08518718e3c1750190fbbba4fd4b4db027ad1540b2d7b681a8fbc7",
           } | Source,
         { arch = 'Arm64, .. } =>
           {
             url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-headless-shell-linux-arm64.zip",
-            sha256 = "b3daa6584a2fcf8349d096e4b6c0706652ef1f87afd209455de509f17e7094d8",
+            sha256 = "3a2bc2c354fb66615ee329c2ab13cd1312b40294798bea04c5dc0053caa6b881",
           } | Source,
       } target,
       base,
@@ -97,7 +97,7 @@ let snapshot_position = "1669021" in
           [
             {
               url = "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/chrome-linux.zip",
-              sha256 = "89a52b393189c7ab7ee0f1ebdaf8279c2c97d0c0e83708abe84292b57337da19",
+              sha256 = "4cd65eb42af4eb7942b0af2a328af13b3808db672ad62b2d4af84e27aa17ba3b",
             } | Source,
             # headless_command_resources.pak (the pak implementing --dump-dom &
             # friends in standalone headless) ships in NO snapshot artifact —
@@ -107,7 +107,7 @@ let snapshot_position = "1669021" in
             # artifact, same pin).
             {
               url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-headless-shell-linux-arm64.zip",
-              sha256 = "b3daa6584a2fcf8349d096e4b6c0706652ef1f87afd209455de509f17e7094d8",
+              sha256 = "3a2bc2c354fb66615ee329c2ab13cd1312b40294798bea04c5dc0053caa6b881",
             } | Source,
           ],
         # Playwright's arm64 bundle is already complete.
