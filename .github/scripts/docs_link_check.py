@@ -134,6 +134,10 @@ def fetch(url: str) -> tuple[str, str, str]:
              "--max-redirs", "5", "--tlsv1.2", "--max-time", "25",
              "--user-agent", "gominimal-pkgs-docs-link-check/1.0", url],
             capture_output=True, text=True, timeout=45)
+        # A transfer that fails after the status line (timeout mid-body, reset)
+        # still prints a 2xx in -w; do not hash a partial page as "ok".
+        if p.returncode != 0:
+            return "unknown", f"curl exited {p.returncode}", ""
         code, _, final = p.stdout.strip().partition("\t")
         # Auth-gating masquerades as success: /start/ pages answer 200 at
         # /auth/login. Check the landing URL, not just the code.
