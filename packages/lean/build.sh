@@ -54,6 +54,15 @@ cp -a "$STAGE/lib/lean/"*.so* "$OUTPUT_DIR/usr/lib/lean/" 2>/dev/null || true
 # `.olean` and lean STILL compiled nothing — this is the other half.
 cp -a "$STAGE/lib/lean/"*.olean* "$OUTPUT_DIR/usr/lib/lean/" 2>/dev/null || true
 cp -a "$STAGE/lib/lean/"*.ilean "$OUTPUT_DIR/usr/lib/lean/" 2>/dev/null || true
+# `.ir` / `.ir.sig`: the compiled IR of each module, a separate file since
+# Lean 4.2x. `lean` elaborates and `#eval`s without them, so a compile test
+# passes — but `lake` COMPILES the definitions in a lakefile and fails its
+# "compiler IR check" on the first private `Init` declaration they touch:
+#   failed to compile definition, compiler IR check failed at `config…`:
+#   depends on declaration '_private.Init.Data.Array.Basic…'
+# so without these no Lake project can even be configured. (Found building
+# aeneas-latest; the reference toolchain ships 2,483 of them.)
+cp -a "$STAGE/lib/lean/"*.ir "$STAGE/lib/lean/"*.ir.sig "$OUTPUT_DIR/usr/lib/lean/" 2>/dev/null || true
 
 # Then ASSERT they arrived. The copy above swallows errors (the `|| true` is
 # there so a layout change upstream doesn't hard-fail the copy), and a glob
@@ -70,6 +79,10 @@ for m in Init Std Lean Lake; do
   fi
   # The sidecars are load-bearing too; a root whose .olean.server is absent
   # fails `import` exactly like a missing .olean (Lean >= 4.2x layout).
+  if [ ! -f "$OUTPUT_DIR/usr/lib/lean/$m.ir" ]; then
+    echo "lean: $m.ir is MISSING — lake needs each module's compiled IR to configure any project." >&2
+    exit 1
+  fi
   if [ ! -f "$OUTPUT_DIR/usr/lib/lean/$m.olean.server" ]; then
     echo "lean: $m.olean.server is MISSING — Lean splits modules into .olean/.olean.server/.olean.private; lean cannot load $m without all three." >&2
     exit 1

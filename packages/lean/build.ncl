@@ -68,6 +68,10 @@ let version = "4.33.0" in
     # `.ilean` is the language-server index (small; makes `lean --server` work).
     data = { glob = "usr/lib/lean/**/*.olean*" } | OutputData,
     ilean = { glob = "usr/lib/lean/**/*.ilean" } | OutputData,
+    # Compiled IR per module (`X.ir` + `X.ir.sig`). `lean` alone runs without
+    # them; `lake` cannot configure a project without them (see build.sh).
+    ir = { glob = "usr/lib/lean/**/*.ir" } | OutputData,
+    ir_sig = { glob = "usr/lib/lean/**/*.ir.sig" } | OutputData,
     # The MODULE ROOTS — `Init.olean`, `Std.olean`, `Lean.olean`, `Lake.olean`
     # — sit directly in `usr/lib/lean/`, and `**/` requires at least one
     # directory level, so the glob above matches `.../Init/Core.olean` but
@@ -84,6 +88,8 @@ let version = "4.33.0" in
     # module that makes the rest reachable.
     module_roots = { glob = "usr/lib/lean/*.olean*" } | OutputData,
     module_root_ileans = { glob = "usr/lib/lean/*.ilean" } | OutputData,
+    module_root_irs = { glob = "usr/lib/lean/*.ir" } | OutputData,
+    module_root_ir_sigs = { glob = "usr/lib/lean/*.ir.sig" } | OutputData,
   },
 
   # The check that has now failed twice for two different missing-file
@@ -98,6 +104,9 @@ let version = "4.33.0" in
         cmds = [
           ["/bin/bash", "-c", "printf '#eval 1+1\\n' > /tmp/t.lean && lean /tmp/t.lean"],
           ["/bin/bash", "-c", "printf 'theorem t : 1 + 1 = 2 := rfl\\n' > /tmp/u.lean && lean /tmp/u.lean"],
+          # `lake` must be able to configure and build a project: this is what
+          # the missing `.ir` files broke while `lean` itself still worked.
+          ["/bin/bash", "-c", "mkdir -p /tmp/lk && cd /tmp/lk && printf 'import Lake\\nopen Lake DSL\\npackage t\\n@[default_target] lean_lib T\\n' > lakefile.lean && mkdir -p T && printf 'def hello := 42\\n' > T.lean && LAKE_NO_CACHE=1 HOME=/tmp/lk lake build"],
         ],
       } | Test,
   },
