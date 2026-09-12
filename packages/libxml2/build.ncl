@@ -9,14 +9,14 @@ let icu = import "../icu/build.ncl" in
 let xz = import "../xz/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "2.15.3" in
+let version = "2.15.4" in
 {
   name = "libxml2",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/GNOME/libxml2/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "5c6060277173270356c3f1c321a640ab629bdabc5e5ba9095b99e00759ba0c39",
+      sha256 = "bb01bd9ac9a7403f9706816fd6d3e7888041d32b0211075feb20e755d2a9f29d",
       extract = true,
       strip_prefix = "libxml2-%{version}",
     } | Source,
