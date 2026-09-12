@@ -12,14 +12,14 @@ let openjpeg = import "../openjpeg/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "10.07.1" in
+let version = "10.08.0" in
 {
   name = "ghostscript",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10071/ghostscript-%{version}.tar.xz",
-      sha256 = "1cdb766de8db8f1e589c817f09c5855ea5f65dfc8540e465a69ac14c18416025",
+      url = "https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10080/ghostscript-%{version}.tar.xz",
+      sha256 = "c20492bc8ebb96c87fa2e52a0926e1cda8cde95d66145e018ac713fed5da38cf",
       extract = true,
       strip_prefix = "ghostscript-%{version}",
     } | Source,
