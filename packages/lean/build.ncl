@@ -10,6 +10,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let git = import "../git/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let cadical = import "../cadical/build.ncl" in
 
 let version = "4.33.0" in
 {
@@ -34,6 +35,11 @@ let version = "4.33.0" in
     subsetOf gcc ["libgcc", "libstdcpp"],
     gmp,
     libuv,
+    # `bv_decide` shells out to the `cadical` SAT solver by name on PATH. An
+    # official Lean release bundles it in `bin/`; built from source we don't
+    # get one, and `bv_decide` fails with "could not execute external process
+    # 'cadical'" (found building aeneas-latest). Same release Lean pins.
+    cadical,
     # `lean` and `libleanshared.so` link libssl.so.3 / libcrypto.so.3 (lake's
     # HTTP client). Without this the binary does not START in a closure that
     # lacks openssl — `lean --version` exits 127 from the loader — which the
