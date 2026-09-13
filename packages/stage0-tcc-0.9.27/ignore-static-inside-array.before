@@ -1,0 +1,2 @@
+        if (tok == TOK_RESTRICT1)
+            next();
