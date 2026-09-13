@@ -2,6 +2,7 @@ let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = 
 let base = import "../base/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 # isahc (static-ssl) vendors and builds OpenSSL from source (perl Configure + make)
 let make = import "../make/build.ncl" in
 let perl = import "../perl/build.ncl" in
@@ -30,6 +31,9 @@ let version = "0.4.12" in
   runtime_deps = [
     glibc,
     subsetOf gcc ["libgcc"],
+    # isahc's vendored OpenSSL resolves the CA bundle at runtime via
+    # openssl-probe, which reads the system store from /etc/ssl/certs.
+    ca-certificates,
   ],
 
   needs =
