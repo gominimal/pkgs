@@ -1,0 +1,62 @@
+name: blast-radius
+
+# REPORT-ONLY, NON-BLOCKING. For each package a PR changes, reports its
+# blast radius: TRUE LEAF (nothing depends on it — the safest possible
+# update), leaf-but-referenced (a stack/profile names it), or its direct +
+# transitive dependent counts. Writes nothing, needs no secrets, and MUST
+# NOT be a branch-protection required check. Complements trivial-update.yml
+# (diff shape) — together they identify the "trivial bump to a true leaf"
+# class that inbox#20's fast path is about: a change whose worst case is
+# confined to the package itself.
+#
+# Pure checkout scan: recipe `import "../<pkg>/build.ncl"` edges plus
+# quoted name references in non-package .ncl files (stacks reference
+# packages by NAME, not import — an import-only scan would misclassify
+# every stack's tools as leaves). No `minimal dump`, no network.
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: blast-radius-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned to a SHA (matches trivial-update.yml / dwell.yml).
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0 # base..head reachable for the changed-file diff
+
+      - name: Detect changed packages
+        id: changed
+        env:
+          # SHAs via env per repo convention (zizmor template-injection).
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -uo pipefail
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'packages/' \
+            | cut -d/ -f2 | sort -u > pkgs.txt || : > pkgs.txt
+          echo "count=$(wc -l < pkgs.txt | tr -d ' ')" >> "$GITHUB_OUTPUT"
+
+      - name: Blast-radius report
+        if: steps.changed.outputs.count != '0'
+        run: |
+          set -uo pipefail
+          # Report-only: a genuine error is downgraded to a warning so the
+          # check never reds.
+          python3 .github/scripts/blast_radius_report.py \
+            --packages-file pkgs.txt \
+          || echo "::warning::blast-radius report hit an internal error; see logs (non-blocking)"
+
+      - name: No package changes
+        if: steps.changed.outputs.count == '0'
+        run: echo "No packages/ changes in this PR — nothing to report." >> "$GITHUB_STEP_SUMMARY"
