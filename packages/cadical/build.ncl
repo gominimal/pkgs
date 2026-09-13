@@ -1,6 +1,7 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+let make = import "../make/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
@@ -22,6 +23,7 @@ let version = "2.1.2" in
     } | Source,
     base,
     toolchain,
+    make,
   ],
 
   runtime_deps = [
