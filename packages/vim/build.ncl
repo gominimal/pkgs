@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let acl = import "../acl/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 
-let version = "9.2.1001" in
+let version = "9.2.1036" in
 {
   name = "vim",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/vim-%{version}.tar.gz",
-      sha256 = "e3a36210b5411e2c46785f81cb7f3ed6072dd9690ef930e3529744112899e155"
+      sha256 = "9bd2223a305667d1b19e21d370432c8aa2250a92e6af14fe9313ecc985353d04"
     } | Source,
     base,
     make,
