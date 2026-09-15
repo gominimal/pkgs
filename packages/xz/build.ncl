@@ -5,14 +5,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "5.8.3" in
+let version = "5.8.4" in
 {
   name = "xz",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/xz-%{version}.tar.xz",
-      sha256 = "fff1ffcf2b0da84d308a14de513a1aa23d4e9aa3464d17e64b9714bfdd0bbfb6"
+      sha256 = "4ce24038fd4221e0d13bc1a2de7a4db56e90b92b3bf75321f6c14be73f65de4b"
     } | Source,
     base-bootstrap,
     make,
