@@ -1,0 +1,141 @@
+# stage0-mescc-full / mescc-full.kaem — R0.5 rung driver (FINAL).
+#
+# Driven by R0's OUTPUT full C kaem (/usr/bin/kaem, 6364de59…) run --strict (see build.ncl
+# cmds). UNLIKE the kaem-minimal that drove B1.5/R0, the full C kaem only fails-fast on a
+# non-zero child under --strict / `set -e` (verified in kaem.c, R2-tcc-draft §0A); so this,
+# the FIRST rung the full kaem drives, MUST be invoked --strict — then every line is also a
+# build-failing assertion (the gate, the seeds, every compile).
+#
+# The full kaem HAS cd / variables / ${VAR} expansion / set -a-export-to-children, so this
+# is a faithful PORT of upstream stage0-posix-1.9.1/AMD64/kaem.run (the Phase 12-23
+# orchestrator) — run verbatim INSIDE the extracted tree — with three adaptations:
+#   [SEED]  R0/mini built artifact/M2, artifact/blood-elf-0, bin/{M1,hex2,kaem} IN-TREE;
+#           a pristine Source extraction has none of them, so we copy R0's installed
+#           /usr/bin/{M2-Planet,blood-elf,M1,hex2,kaem} back to the exact tree paths
+#           kaem.run + full-kaem consume. This is the byte-exact inverse of R0's staging
+#           tail, so the seeded tree == what live-bootstrap has after running mini in place.
+#   [GATE]  upstream's `./AMD64/bin/sha256sum -c amd64.answers` (self-checking, in-tree) is
+#           replaced by our `/usr/bin/sha256sum -c stage0.answers` from /build (coreutils,
+#           attested from a prior rung — no self-reference; same path-prefixed pin list).
+#   [SP]    simple-patch (a live-bootstrap helper, NOT in stage0-posix) is compiled with the
+#           SAME M2-Mesoplanet/M2libc/CWD as the extra tools, then staged. + a /build/output
+#           staging tail. The Phase 12-15 (full-kaem) and Phase 16-23 (extra.kaem) sub-kaem
+#           scripts are run UNMODIFIED from the Source tree (load-bearing steps untouched).
+#
+# CONTRACTS §B re-export: the staging tail also copies the four durable R0-owned tools R1/R2
+# need — kaem (driver), catm, M1, hex2 — so R0.5 is the single /usr/bin toolchain supplier and
+# R1/R2 never import R0 directly (no /usr/bin collision; no R0 rebuild). CONTRACTS §D: every
+# write lands in the extracted tree or /build/output; /usr is read-only at build time.
+
+#####################################################################
+# [SEED] Plant R0/mini's outputs into the freshly-extracted tree    #
+# (CWD=/build; paths prefixed for the /build root, no cd yet).       #
+# /usr/bin/{M2-Planet,blood-elf,M1,hex2,kaem} are R0's exports:      #
+#   M2-Planet == artifact/M2 (bootstrap M2)   blood-elf == artifact/blood-elf-0 (no-debug) #
+#   M1/hex2/kaem == the canonical mini leaves (R0-gated to amd64.answers).#
+# (R0 is NOT renamed — CONTRACTS §A — so these seed paths are R0's current export names.)    #
+#####################################################################
+/usr/bin/mkdir -p stage0-posix-1.9.1/AMD64/bin
+/usr/bin/mkdir -p stage0-posix-1.9.1/AMD64/artifact
+/usr/bin/cp /usr/bin/M2-Planet stage0-posix-1.9.1/AMD64/artifact/M2
+/usr/bin/cp /usr/bin/blood-elf stage0-posix-1.9.1/AMD64/artifact/blood-elf-0
+/usr/bin/cp /usr/bin/M1        stage0-posix-1.9.1/AMD64/bin/M1
+/usr/bin/cp /usr/bin/hex2      stage0-posix-1.9.1/AMD64/bin/hex2
+/usr/bin/cp /usr/bin/kaem      stage0-posix-1.9.1/AMD64/bin/kaem
+# Guarantee executability regardless of cp's mode semantics (content is unchanged → gate-safe).
+/usr/bin/chmod 0755 stage0-posix-1.9.1/AMD64/artifact/M2 stage0-posix-1.9.1/AMD64/artifact/blood-elf-0 stage0-posix-1.9.1/AMD64/bin/M1 stage0-posix-1.9.1/AMD64/bin/hex2 stage0-posix-1.9.1/AMD64/bin/kaem
+
+#####################################################################
+# Enter the tree and run kaem.run's body verbatim.                  #
+# (full kaem has cd; CWD becomes the stage0-posix root, exactly as  #
+# upstream kaem.amd64 invokes `kaem --file ./AMD64/kaem.run`.)       #
+#####################################################################
+cd stage0-posix-1.9.1
+
+# --- env preamble: VERBATIM from AMD64/kaem.run (set -a default exports these to sub-kaems) ---
+ARCH="amd64"
+ARCH_DIR="AMD64"
+M2LIBC="../M2libc"
+TOOLS="../AMD64/bin"
+BLOOD_FLAG="--64"
+BASE_ADDRESS="0x00600000"
+ENDIAN_FLAG="--little-endian"
+BINDIR="../AMD64/bin"
+BUILDDIR="../AMD64/artifact"
+TMPDIR="../AMD64/artifact"
+OPERATING_SYSTEM="Linux"
+
+################################################
+# Phase 12-15  Rebuild M2-Planet from C sources#
+# (FINAL self-hosted M2-Planet + M2-Mesoplanet #
+#  + final blood-elf + get_machine).           #
+# Sub-kaem script run UNMODIFIED from the tree. #
+################################################
+./AMD64/bin/kaem --verbose --strict --file AMD64/mescc-tools-full-kaem.kaem
+
+######################################################
+# Phase 16-23  Build mescc-tools-extra from M2-Planet#
+# (catm/chmod/cp/match/mkdir/replace/rm/sha256sum/   #
+#  ungz/unbz2/unxz/untar/wrap). Sub-kaem UNMODIFIED. #
+# kaem.run's own `cd mescc-tools-extra … cd ..` live #
+# in THIS (parent) script — keep them.               #
+######################################################
+cd mescc-tools-extra
+../AMD64/bin/kaem --verbose --strict --file mescc-tools-extra.kaem
+
+#####################################################################
+# [SP] simple-patch — live-bootstrap helper, NOT part of stage0-    #
+# posix (so NOT in amd64.answers; RECORD-AT-PIN-TIME in our gate).   #
+# Built HERE, inside mescc-tools-extra (CWD), with the SAME env the  #
+# extra tools used (M2LIBC=../M2libc, TOOLS/BINDIR=../AMD64/bin,     #
+# OPERATING_SYSTEM=Linux) so its `#include "M2libc/bootstrappable.h"`#
+# resolves identically to its sibling tools (cf. live-bootstrap      #
+# steps/simple-patch-1.0/pass1.kaem: `M2-Mesoplanet --architecture   #
+# ${ARCH} -f src/simple-patch.c -o ${BINDIR}/simple-patch`).         #
+# simple-patch.c is a Local at /build → ../../simple-patch.c here.   #
+# M2-Mesoplanet's find_executable (cc_spawn.c:54) REQUIRES PATH and  #
+# :-searches it for its M2-Planet/M1/hex2/blood-elf sub-tools, and   #
+# reads M2LIBC_PATH for libc — extra.kaem set these in ITS subprocess #
+# (now exited), so set them HERE so simple-patch builds against the   #
+# SAME final tools + M2libc the extra tools did (else wrong toolchain #
+# or "No PATH found"). Mirrors mescc-tools-extra.kaem's env exactly.  #
+#####################################################################
+/usr/bin/cp ../../simple-patch.c simple-patch.c
+M2LIBC_PATH=../M2libc
+PATH=../AMD64/bin
+../AMD64/bin/M2-Mesoplanet --operating-system Linux --architecture amd64 -f simple-patch.c -o ../AMD64/bin/simple-patch
+cd ..
+
+# back to /build for the gate (kaem.run's after.kaem hook is dropped — it is a no-op echo).
+cd ..
+
+#####################################################################
+# BYTE-IDENTITY GATE — /usr/bin/sha256sum (coreutils) -c our pin    #
+# list (19 canonical upstream amd64 leaves + simple-patch as RAP).  #
+# --strict ⇒ kaem ABORTS the build on any mismatch.                 #
+#####################################################################
+/usr/bin/sha256sum -c stage0.answers
+
+#####################################################################
+# Stage the DURABLE export surface into minimal's OUTPUT_DIR.        #
+# The 10-tool R0.5 -> R1/R2 contract (CONTRACTS §B):                 #
+#   6 FINAL tools produced this rung (M2-Planet, M2-Mesoplanet,      #
+#     blood-elf, get_machine, match, simple-patch)                  #
+# + 4 RE-EXPORTED durable R0-owned tools (kaem, catm, M1, hex2) so   #
+#     R0.5 is the single /usr/bin toolchain supplier to R1/R2.       #
+# (NOT staged: the coreutils-colliding extra tools — would shadow    #
+#  the consumer's coreutils. See build.ncl outputs.)                 #
+#####################################################################
+/usr/bin/mkdir -p /build/output/usr/bin
+# 6 final tools:
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/M2-Planet     /build/output/usr/bin/M2-Planet
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/M2-Mesoplanet /build/output/usr/bin/M2-Mesoplanet
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/blood-elf     /build/output/usr/bin/blood-elf
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/get_machine   /build/output/usr/bin/get_machine
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/match         /build/output/usr/bin/match
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/simple-patch  /build/output/usr/bin/simple-patch
+# 4 re-exported durable R0-owned tools (CONTRACTS §A/§B):
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/kaem          /build/output/usr/bin/kaem
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/catm          /build/output/usr/bin/catm
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/M1            /build/output/usr/bin/M1
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/hex2          /build/output/usr/bin/hex2

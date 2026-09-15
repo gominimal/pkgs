@@ -1,0 +1,8 @@
+# UNPINNED — R4b (stage0-musl-1.1.24-cc2) byte-identity seal, record-at-pin-time.
+#
+# R4b is DETERMINISTIC (built by the lottery-free tcc-musl2), so byte-identity is a REAL reproducibility
+# invariant.  On the FIRST green build, build.sh detects this '# UNPINNED' sentinel and only RECORDS
+# (it does not check).  To pin: from a gate-passing build, in $OUTPUT_DIR run
+#     sha256sum usr/lib/libc.a usr/lib/*.o
+# paste the output BELOW (replacing this whole comment block), then set SEAL_FATAL=1 in build.sh to
+# promote the seal to fail-shut.  Format is standard `sha256sum -c` (paths RELATIVE to $OUTPUT_DIR).

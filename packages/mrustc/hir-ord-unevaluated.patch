@@ -1,0 +1,56 @@
+# hir-ord-unevaluated.patch — upstream mrustc commits d8cc2933 + dad6c321,
+# squashed, against the v0.12.0 pin (2d14b09a).
+#
+#   d8cc2933 hir: Fix ConstGeneric_Unevaluated::ord self-compare typo
+#   dad6c321 hir: Drop TODO in ConstGeneric_Unevaluated::ord, reuse
+#            string-compare fallback
+#
+# WHY (aarch64 blocker, 2026-08-24): building rustc-1.90.0's libcore for
+# aarch64 hits `BUG: src/hir/hir.cpp:132: TODO: ord - Compare non-expanded
+# array sizes - (w/ MIR)` — two Unevaluated const-generic array sizes with
+# populated MIR reach ord() (aarch64's core::arch const-generic lane types);
+# the x86_64 libcore never exercises this arm of the comparison, which is why
+# the amd64 rung sailed. v0.12.0's fmt() already prints populated MIR in a
+# deterministic pointer-free form (the BUG message itself proves it), so the
+# string-compare fallback upstream switched to is stable here too.
+#
+# Re-derive: git diff 2d14b09a dad6c321 -- src/hir/hir.cpp
+# (dad6c321 is on mrustc master; both commits by Ajrat Makhmutov, 2026-05-19.)
+diff --git a/src/hir/hir.cpp b/src/hir/hir.cpp
+index e4485c9..1affa75 100644
+--- a/src/hir/hir.cpp
++++ b/src/hir/hir.cpp
+@@ -112,7 +112,7 @@ namespace HIR {
+     {
+         if( this->expr.get() != x.expr.get() ) {
+             // If only one has populated MIR, they can't be equal (sort populated MIR after)
+-            if( !this->expr->m_mir != !this->expr->m_mir ) {
++            if( !this->expr->m_mir != !x.expr->m_mir ) {
+                 return (this->expr->m_mir ? OrdGreater : OrdLess);
+             }
+ 
+@@ -126,18 +126,12 @@ namespace HIR {
+                 return ::ord(tn->m_binding, xn->m_binding);
+             }
+ 
+-            // If the MIR is populated
+-            if( this->expr->m_mir )
+-            {
+-                TODO(Span(), "Compare non-expanded array sizes - (w/ MIR) " << *this << " and " << x);
+-            }
+-            else {
+-                // EVIL OPTION: Just compare the string representations
+-                // - Hopefully there's no pointers printed involved.
+-                auto v_t = FMT(*this);
+-                auto v_x = FMT(x);
+-                return ::ord(v_t, v_x);
+-            }
++            // EVIL OPTION: Just compare the string representations
++            // - The fmt() routine prints MIR blocks (when populated) or the source expression
++            //   (when not) in a deterministic, pointer-free form, so this gives a stable order.
++            auto v_t = FMT(*this);
++            auto v_x = FMT(x);
++            return ::ord(v_t, v_x);
+         }
+         if(auto cmp = this->params_impl.ord(x.params_impl)) return cmp;
+         if(auto cmp = this->params_item.ord(x.params_item)) return cmp;
