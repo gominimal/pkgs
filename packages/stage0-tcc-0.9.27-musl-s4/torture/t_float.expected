@@ -1,0 +1,9 @@
+add 3.75
+mul 0.2500
+div 3.500
+f7 7.000000
+strtod 3.5
+toint 15
+cmp 1
+half 21.0
+flt 4.00

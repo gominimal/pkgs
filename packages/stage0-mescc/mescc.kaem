@@ -1,0 +1,325 @@
+# stage0-mescc / mescc.kaem  — R0 rung driver (R0-final, B1.5 idiom).
+#
+# Driven by the ATTESTED kaem-minimal (/usr/bin/kaem, 153b8915… from stage0-kaem):
+# kaem aborts HARD on any non-zero child, so each line is also an assertion. No env
+# expansion, no cd, no PATH search, no redirection: /build is the CWD, the source tree
+# lives at /build/stage0-posix-1.9.1, and every tool is named by absolute path or a
+# path relative to /build. This is upstream AMD64/mescc-tools-mini-kaem.kaem (Phases
+# 1-11) with: Phase-1 hex1-self-rebuild removed (we consume the attested hex1), every
+# ./relative path prefixed with the extracted-tree root, and a CAPTURE + sha256sum -c
+# gate + output-staging tail appended. Phases 2-11 are byte-identical to the upstream
+# script under the documented transform (verified by mechanical regen+diff). Produces
+# the from-source mescc-tools mini set: bin/{M1,hex2,kaem} (canonically pinned) +
+# artifact/{M2(=M2-Planet),blood-elf-0,catm,M0,cc_amd64}. M2-Planet is the from-source
+# C compiler that R1 (mes) builds on.
+#
+# No chmod is needed DURING the chain: every binary kaem execve's (hex1/hex2-0/catm/M0/
+# cc_amd64/M2/blood-elf-0/M1-0/M1/hex2-1/hex2) is produced by hex1 or hex2, which open
+# their output 0700 (owner-RWX) — so they are already executable. The chmod 0755 in the
+# staging tail is on the OUTPUT_DIR copies only (the cross-rung /usr/bin output contract;
+# mode is content-independent so it does not perturb any sha or the byte-identity gate).
+
+#################################
+# Phase-1 Build hex1 from hex0  #
+#################################
+# [R0] hex0+hex1 consumed ATTESTED from stage0-kaem (/usr/bin/{hex0,hex1});
+# upstream Phase-1 self-rebuild of hex1 is skipped (we trust the prior rung).
+# hex1 adds support for single character labels and is available in various forms
+# in mescc-tools/amd64_bootstrap to allow you various ways to verify correctness
+
+#################################
+# Phase-2 Build hex2 from hex1  #
+#################################
+/usr/bin/hex1 stage0-posix-1.9.1/AMD64/hex2_AMD64.hex1 stage0-posix-1.9.1/AMD64/artifact/hex2-0
+# hex2 adds support for long labels and absolute addresses thus allowing it
+# to function as an effective linker for later stages of the bootstrap
+# This is a minimal version which will be used to bootstrap a much more advanced
+# version in a later stage.
+
+#################################
+# Phase-2b Build catm from hex2 #
+#################################
+stage0-posix-1.9.1/AMD64/artifact/hex2-0 stage0-posix-1.9.1/AMD64/catm_AMD64.hex2 stage0-posix-1.9.1/AMD64/artifact/catm
+# catm removes the need for cat or shell support for redirection by providing
+# equivalent functionality via catm output_file input1 input2 ... inputN
+
+###############################
+# Phase-3 Build M0 from hex2  #
+###############################
+stage0-posix-1.9.1/AMD64/artifact/catm stage0-posix-1.9.1/AMD64/artifact/M0.hex2 stage0-posix-1.9.1/AMD64/ELF-amd64.hex2 stage0-posix-1.9.1/AMD64/M0_AMD64.hex2
+stage0-posix-1.9.1/AMD64/artifact/hex2-0 stage0-posix-1.9.1/AMD64/artifact/M0.hex2 stage0-posix-1.9.1/AMD64/artifact/M0
+# M0 is the architecture specific version of M1 and is by design single
+# architecture only and will be replaced by the C code version of M1
+
+###################################
+# Phase-4 Build cc_amd64 from M0  #
+###################################
+stage0-posix-1.9.1/AMD64/artifact/M0 stage0-posix-1.9.1/AMD64/cc_amd64.M1 stage0-posix-1.9.1/AMD64/artifact/cc_amd64.hex2
+stage0-posix-1.9.1/AMD64/artifact/catm stage0-posix-1.9.1/AMD64/artifact/cc_amd64-0.hex2 stage0-posix-1.9.1/AMD64/ELF-amd64.hex2 stage0-posix-1.9.1/AMD64/artifact/cc_amd64.hex2
+stage0-posix-1.9.1/AMD64/artifact/hex2-0 stage0-posix-1.9.1/AMD64/artifact/cc_amd64-0.hex2 stage0-posix-1.9.1/AMD64/artifact/cc_amd64
+
+
+#########################################
+# Phase-5 Build M2-Planet from cc_amd64 #
+#########################################
+stage0-posix-1.9.1/AMD64/artifact/catm stage0-posix-1.9.1/AMD64/artifact/M2-0.c \
+	stage0-posix-1.9.1/M2libc/amd64/linux/bootstrap.c \
+	stage0-posix-1.9.1/M2-Planet/cc.h \
+	stage0-posix-1.9.1/M2libc/bootstrappable.c \
+	stage0-posix-1.9.1/M2-Planet/cc_globals.c \
+	stage0-posix-1.9.1/M2-Planet/cc_reader.c \
+	stage0-posix-1.9.1/M2-Planet/cc_strings.c \
+	stage0-posix-1.9.1/M2-Planet/cc_types.c \
+	stage0-posix-1.9.1/M2-Planet/cc_emit.c \
+	stage0-posix-1.9.1/M2-Planet/cc_core.c \
+	stage0-posix-1.9.1/M2-Planet/cc_macro.c \
+	stage0-posix-1.9.1/M2-Planet/cc.c
+stage0-posix-1.9.1/AMD64/artifact/cc_amd64 stage0-posix-1.9.1/AMD64/artifact/M2-0.c stage0-posix-1.9.1/AMD64/artifact/M2-0.M1
+stage0-posix-1.9.1/AMD64/artifact/catm stage0-posix-1.9.1/AMD64/artifact/M2-0-0.M1 stage0-posix-1.9.1/AMD64/amd64_defs.M1 stage0-posix-1.9.1/AMD64/libc-core.M1 stage0-posix-1.9.1/AMD64/artifact/M2-0.M1
+stage0-posix-1.9.1/AMD64/artifact/M0 stage0-posix-1.9.1/AMD64/artifact/M2-0-0.M1 stage0-posix-1.9.1/AMD64/artifact/M2-0.hex2
+stage0-posix-1.9.1/AMD64/artifact/catm stage0-posix-1.9.1/AMD64/artifact/M2-0-0.hex2 stage0-posix-1.9.1/AMD64/ELF-amd64.hex2 stage0-posix-1.9.1/AMD64/artifact/M2-0.hex2
+stage0-posix-1.9.1/AMD64/artifact/hex2-0 stage0-posix-1.9.1/AMD64/artifact/M2-0-0.hex2 stage0-posix-1.9.1/AMD64/artifact/M2
+
+#############################################
+# Phase-6 Build blood-elf-0 from C sources  #
+#############################################
+stage0-posix-1.9.1/AMD64/artifact/M2 --architecture amd64 \
+	-f stage0-posix-1.9.1/M2libc/amd64/linux/bootstrap.c \
+	-f stage0-posix-1.9.1/M2libc/bootstrappable.c \
+	-f stage0-posix-1.9.1/mescc-tools/stringify.c \
+	-f stage0-posix-1.9.1/mescc-tools/blood-elf.c \
+	--bootstrap-mode\
+	-o stage0-posix-1.9.1/AMD64/artifact/blood-elf-0.M1
+
+stage0-posix-1.9.1/AMD64/artifact/catm stage0-posix-1.9.1/AMD64/artifact/blood-elf-0-0.M1 stage0-posix-1.9.1/M2libc/amd64/amd64_defs.M1 stage0-posix-1.9.1/M2libc/amd64/libc-core.M1 stage0-posix-1.9.1/AMD64/artifact/blood-elf-0.M1
+stage0-posix-1.9.1/AMD64/artifact/M0 stage0-posix-1.9.1/AMD64/artifact/blood-elf-0-0.M1 stage0-posix-1.9.1/AMD64/artifact/blood-elf-0.hex2
+stage0-posix-1.9.1/AMD64/artifact/catm stage0-posix-1.9.1/AMD64/artifact/blood-elf-0-0.hex2 stage0-posix-1.9.1/M2libc/amd64/ELF-amd64.hex2 stage0-posix-1.9.1/AMD64/artifact/blood-elf-0.hex2
+stage0-posix-1.9.1/AMD64/artifact/hex2-0 stage0-posix-1.9.1/AMD64/artifact/blood-elf-0-0.hex2 stage0-posix-1.9.1/AMD64/artifact/blood-elf-0
+# This is the last stage where the binaries will not have debug info
+# and the last piece built that isn't part of the output binaries
+
+#####################################
+# Phase-7 Build M1-0 from C sources #
+#####################################
+stage0-posix-1.9.1/AMD64/artifact/M2 --architecture amd64 \
+	-f stage0-posix-1.9.1/M2libc/amd64/linux/bootstrap.c \
+	-f stage0-posix-1.9.1/M2libc/bootstrappable.c \
+	-f stage0-posix-1.9.1/mescc-tools/stringify.c \
+	-f stage0-posix-1.9.1/mescc-tools/M1-macro.c \
+	--bootstrap-mode\
+	--debug \
+	-o stage0-posix-1.9.1/AMD64/artifact/M1-macro-0.M1
+
+stage0-posix-1.9.1/AMD64/artifact/blood-elf-0 --64 --little-endian -f stage0-posix-1.9.1/AMD64/artifact/M1-macro-0.M1 -o stage0-posix-1.9.1/AMD64/artifact/M1-macro-0-footer.M1
+stage0-posix-1.9.1/AMD64/artifact/catm stage0-posix-1.9.1/AMD64/artifact/M1-macro-0-0.M1 stage0-posix-1.9.1/M2libc/amd64/amd64_defs.M1 stage0-posix-1.9.1/M2libc/amd64/libc-core.M1 stage0-posix-1.9.1/AMD64/artifact/M1-macro-0.M1 stage0-posix-1.9.1/AMD64/artifact/M1-macro-0-footer.M1
+stage0-posix-1.9.1/AMD64/artifact/M0 stage0-posix-1.9.1/AMD64/artifact/M1-macro-0-0.M1 stage0-posix-1.9.1/AMD64/artifact/M1-macro-0.hex2
+stage0-posix-1.9.1/AMD64/artifact/catm stage0-posix-1.9.1/AMD64/artifact/M1-macro-0-0.hex2 stage0-posix-1.9.1/M2libc/amd64/ELF-amd64-debug.hex2 stage0-posix-1.9.1/AMD64/artifact/M1-macro-0.hex2
+stage0-posix-1.9.1/AMD64/artifact/hex2-0 stage0-posix-1.9.1/AMD64/artifact/M1-macro-0-0.hex2 stage0-posix-1.9.1/AMD64/artifact/M1-0
+
+# This is the last stage where catm will need to be used and the last stage where
+# M0 is used, as we will being using it's much more powerful and cross-platform
+# version with a bunch of extra goodies.
+
+#######################################
+# Phase-8 Build hex2-1 from C sources #
+#######################################
+stage0-posix-1.9.1/AMD64/artifact/M2 --architecture amd64 \
+	-f stage0-posix-1.9.1/M2libc/sys/types.h \
+	-f stage0-posix-1.9.1/M2libc/stddef.h \
+	-f stage0-posix-1.9.1/M2libc/sys/utsname.h \
+	-f stage0-posix-1.9.1/M2libc/amd64/linux/unistd.c \
+	-f stage0-posix-1.9.1/M2libc/amd64/linux/fcntl.c \
+	-f stage0-posix-1.9.1/M2libc/fcntl.c \
+	-f stage0-posix-1.9.1/M2libc/amd64/linux/sys/stat.c \
+	-f stage0-posix-1.9.1/M2libc/ctype.c \
+	-f stage0-posix-1.9.1/M2libc/stdlib.c \
+	-f stage0-posix-1.9.1/M2libc/stdarg.h \
+	-f stage0-posix-1.9.1/M2libc/stdio.h \
+	-f stage0-posix-1.9.1/M2libc/stdio.c \
+	-f stage0-posix-1.9.1/M2libc/bootstrappable.c \
+	-f stage0-posix-1.9.1/mescc-tools/hex2.h \
+	-f stage0-posix-1.9.1/mescc-tools/hex2_linker.c \
+	-f stage0-posix-1.9.1/mescc-tools/hex2_word.c \
+	-f stage0-posix-1.9.1/mescc-tools/hex2.c \
+	--debug \
+	-o stage0-posix-1.9.1/AMD64/artifact/hex2_linker-1.M1
+
+stage0-posix-1.9.1/AMD64/artifact/blood-elf-0 --64 --little-endian -f stage0-posix-1.9.1/AMD64/artifact/hex2_linker-1.M1 -o stage0-posix-1.9.1/AMD64/artifact/hex2_linker-1-footer.M1
+stage0-posix-1.9.1/AMD64/artifact/M1-0 --architecture amd64 \
+	--little-endian \
+	-f stage0-posix-1.9.1/M2libc/amd64/amd64_defs.M1 \
+	-f stage0-posix-1.9.1/M2libc/amd64/libc-full.M1 \
+	-f stage0-posix-1.9.1/AMD64/artifact/hex2_linker-1.M1 \
+	-f stage0-posix-1.9.1/AMD64/artifact/hex2_linker-1-footer.M1 \
+	-o stage0-posix-1.9.1/AMD64/artifact/hex2_linker-1.hex2
+
+stage0-posix-1.9.1/AMD64/artifact/catm stage0-posix-1.9.1/AMD64/artifact/hex2_linker-1-0.hex2 stage0-posix-1.9.1/M2libc/amd64/ELF-amd64-debug.hex2 stage0-posix-1.9.1/AMD64/artifact/hex2_linker-1.hex2
+stage0-posix-1.9.1/AMD64/artifact/hex2-0 stage0-posix-1.9.1/AMD64/artifact/hex2_linker-1-0.hex2 stage0-posix-1.9.1/AMD64/artifact/hex2-1
+
+# This is the last stage where we will be using the handwritten hex2 and instead
+# be using the far more powerful, cross-platform version with a bunch more goodies
+
+###################################
+# Phase-9 Build M1 from C sources #
+###################################
+stage0-posix-1.9.1/AMD64/artifact/M2 --architecture amd64 \
+	-f stage0-posix-1.9.1/M2libc/sys/types.h \
+	-f stage0-posix-1.9.1/M2libc/stddef.h \
+	-f stage0-posix-1.9.1/M2libc/amd64/linux/fcntl.c \
+	-f stage0-posix-1.9.1/M2libc/fcntl.c \
+	-f stage0-posix-1.9.1/M2libc/sys/utsname.h \
+	-f stage0-posix-1.9.1/M2libc/amd64/linux/unistd.c \
+	-f stage0-posix-1.9.1/M2libc/stdarg.h \
+	-f stage0-posix-1.9.1/M2libc/string.c \
+	-f stage0-posix-1.9.1/M2libc/ctype.c \
+	-f stage0-posix-1.9.1/M2libc/stdlib.c \
+	-f stage0-posix-1.9.1/M2libc/stdio.h \
+	-f stage0-posix-1.9.1/M2libc/stdio.c \
+	-f stage0-posix-1.9.1/M2libc/bootstrappable.c \
+	-f stage0-posix-1.9.1/mescc-tools/stringify.c \
+	-f stage0-posix-1.9.1/mescc-tools/M1-macro.c \
+	--debug \
+	-o stage0-posix-1.9.1/AMD64/artifact/M1-macro-1.M1
+
+stage0-posix-1.9.1/AMD64/artifact/blood-elf-0 --64 --little-endian -f stage0-posix-1.9.1/AMD64/artifact/M1-macro-1.M1 -o stage0-posix-1.9.1/AMD64/artifact/M1-macro-1-footer.M1
+
+stage0-posix-1.9.1/AMD64/artifact/M1-0 --architecture amd64 \
+	--little-endian \
+	-f stage0-posix-1.9.1/M2libc/amd64/amd64_defs.M1 \
+	-f stage0-posix-1.9.1/M2libc/amd64/libc-full.M1 \
+	-f stage0-posix-1.9.1/AMD64/artifact/M1-macro-1.M1 \
+	-f stage0-posix-1.9.1/AMD64/artifact/M1-macro-1-footer.M1 \
+	-o stage0-posix-1.9.1/AMD64/artifact/M1-macro-1.hex2
+
+stage0-posix-1.9.1/AMD64/artifact/hex2-1 --architecture amd64 \
+	--little-endian \
+	--base-address 0x00600000 \
+	-f stage0-posix-1.9.1/M2libc/amd64/ELF-amd64-debug.hex2 \
+	-f stage0-posix-1.9.1/AMD64/artifact/M1-macro-1.hex2 \
+	-o stage0-posix-1.9.1/AMD64/bin/M1
+
+######################################
+# Phase-10 Build hex2 from C sources #
+######################################
+stage0-posix-1.9.1/AMD64/artifact/M2 --architecture amd64 \
+	-f stage0-posix-1.9.1/M2libc/sys/types.h \
+	-f stage0-posix-1.9.1/M2libc/stddef.h \
+	-f stage0-posix-1.9.1/M2libc/sys/utsname.h \
+	-f stage0-posix-1.9.1/M2libc/amd64/linux/unistd.c \
+	-f stage0-posix-1.9.1/M2libc/amd64/linux/fcntl.c \
+	-f stage0-posix-1.9.1/M2libc/fcntl.c \
+	-f stage0-posix-1.9.1/M2libc/amd64/linux/sys/stat.c \
+	-f stage0-posix-1.9.1/M2libc/ctype.c \
+	-f stage0-posix-1.9.1/M2libc/stdlib.c \
+	-f stage0-posix-1.9.1/M2libc/stdarg.h \
+	-f stage0-posix-1.9.1/M2libc/stdio.h \
+	-f stage0-posix-1.9.1/M2libc/stdio.c \
+	-f stage0-posix-1.9.1/M2libc/bootstrappable.c \
+	-f stage0-posix-1.9.1/mescc-tools/hex2.h \
+	-f stage0-posix-1.9.1/mescc-tools/hex2_linker.c \
+	-f stage0-posix-1.9.1/mescc-tools/hex2_word.c \
+	-f stage0-posix-1.9.1/mescc-tools/hex2.c \
+	--debug \
+	-o stage0-posix-1.9.1/AMD64/artifact/hex2_linker-2.M1
+
+stage0-posix-1.9.1/AMD64/artifact/blood-elf-0 --64 --little-endian -f stage0-posix-1.9.1/AMD64/artifact/hex2_linker-2.M1 -o stage0-posix-1.9.1/AMD64/artifact/hex2_linker-2-footer.M1
+
+stage0-posix-1.9.1/AMD64/bin/M1 --architecture amd64 \
+	--little-endian \
+	-f stage0-posix-1.9.1/M2libc/amd64/amd64_defs.M1 \
+	-f stage0-posix-1.9.1/M2libc/amd64/libc-full.M1 \
+	-f stage0-posix-1.9.1/AMD64/artifact/hex2_linker-2.M1 \
+	-f stage0-posix-1.9.1/AMD64/artifact/hex2_linker-2-footer.M1 \
+	-o stage0-posix-1.9.1/AMD64/artifact/hex2_linker-2.hex2
+
+stage0-posix-1.9.1/AMD64/artifact/hex2-1 --architecture amd64 \
+	--little-endian \
+	--base-address 0x00600000 \
+	-f stage0-posix-1.9.1/M2libc/amd64/ELF-amd64-debug.hex2 \
+	-f stage0-posix-1.9.1/AMD64/artifact/hex2_linker-2.hex2 \
+	-o stage0-posix-1.9.1/AMD64/bin/hex2
+
+
+#####################################
+# Phase-11 Build kaem from C sources#
+#####################################
+stage0-posix-1.9.1/AMD64/artifact/M2 --architecture amd64 \
+	-f stage0-posix-1.9.1/M2libc/sys/types.h \
+	-f stage0-posix-1.9.1/M2libc/stddef.h \
+	-f stage0-posix-1.9.1/M2libc/sys/utsname.h \
+	-f stage0-posix-1.9.1/M2libc/amd64/linux/unistd.c \
+	-f stage0-posix-1.9.1/M2libc/amd64/linux/fcntl.c \
+	-f stage0-posix-1.9.1/M2libc/fcntl.c \
+	-f stage0-posix-1.9.1/M2libc/ctype.c \
+	-f stage0-posix-1.9.1/M2libc/stdlib.c \
+	-f stage0-posix-1.9.1/M2libc/string.c \
+	-f stage0-posix-1.9.1/M2libc/stdarg.h \
+	-f stage0-posix-1.9.1/M2libc/stdio.h \
+	-f stage0-posix-1.9.1/M2libc/stdio.c \
+	-f stage0-posix-1.9.1/M2libc/bootstrappable.c \
+	-f stage0-posix-1.9.1/mescc-tools/Kaem/kaem.h \
+	-f stage0-posix-1.9.1/mescc-tools/Kaem/variable.c \
+	-f stage0-posix-1.9.1/mescc-tools/Kaem/kaem_globals.c \
+	-f stage0-posix-1.9.1/mescc-tools/Kaem/kaem.c \
+	--debug \
+	-o stage0-posix-1.9.1/AMD64/artifact/kaem.M1
+
+stage0-posix-1.9.1/AMD64/artifact/blood-elf-0 --64 --little-endian -f stage0-posix-1.9.1/AMD64/artifact/kaem.M1 -o stage0-posix-1.9.1/AMD64/artifact/kaem-footer.M1
+
+stage0-posix-1.9.1/AMD64/bin/M1 --architecture amd64 \
+	--little-endian \
+	-f stage0-posix-1.9.1/M2libc/amd64/amd64_defs.M1 \
+	-f stage0-posix-1.9.1/M2libc/amd64/libc-full.M1 \
+	-f stage0-posix-1.9.1/AMD64/artifact/kaem.M1 \
+	-f stage0-posix-1.9.1/AMD64/artifact/kaem-footer.M1 \
+	-o stage0-posix-1.9.1/AMD64/artifact/kaem.hex2
+
+stage0-posix-1.9.1/AMD64/bin/hex2 --architecture amd64 \
+	--little-endian \
+	--base-address 0x00600000 \
+	-f stage0-posix-1.9.1/M2libc/amd64/ELF-amd64-debug.hex2 \
+	-f stage0-posix-1.9.1/AMD64/artifact/kaem.hex2 \
+	-o stage0-posix-1.9.1/AMD64/bin/kaem
+
+##########################################################################
+# CAPTURE (record-at-pin-time).  Print the intermediate-artifact shas to #
+# the build log so the operator can append them to stage0.answers in a   #
+# follow-up commit (failure localization; NOT a trust requirement — the  #
+# 3 leaf pins below already close the whole graph).  sha256sum (no -c)    #
+# returns 0 when every file is readable, so this never aborts the build;  #
+# by here all intermediates exist (kaem would have aborted earlier if a   #
+# producing step failed).  Grep the log for these 8 paths to harvest.    #
+##########################################################################
+/usr/bin/sha256sum stage0-posix-1.9.1/AMD64/artifact/hex2-0 stage0-posix-1.9.1/AMD64/artifact/catm stage0-posix-1.9.1/AMD64/artifact/M0 stage0-posix-1.9.1/AMD64/artifact/cc_amd64 stage0-posix-1.9.1/AMD64/artifact/M2 stage0-posix-1.9.1/AMD64/artifact/blood-elf-0 stage0-posix-1.9.1/AMD64/artifact/M1-0 stage0-posix-1.9.1/AMD64/artifact/hex2-1
+
+##########################################################################
+# BYTE-IDENTITY GATE  (sha256sum -c returns !=0 on any mismatch -> kaem  #
+# ABORTS the build).  The three pinned bin/ binaries are the END of the  #
+# mini dependency graph, so matching them transitively asserts every     #
+# intermediate (hex2-0, M0, cc_amd64, M2, blood-elf-0, M1-0, hex2-1).    #
+##########################################################################
+/usr/bin/sha256sum -c stage0.answers
+
+##########################################################################
+# Stage outputs into minimal's fixed OUTPUT_DIR (=/build/output), then   #
+# chmod 0755 (the binaries arrive 0700 from hex2's open; 0755 is the     #
+# /usr/bin output-contract norm matched by every other catalogue bin —   #
+# mode only, so it changes neither the gate above nor any artifact sha). #
+##########################################################################
+/usr/bin/mkdir -p /build/output/usr/bin
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/M1            /build/output/usr/bin/M1
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/hex2          /build/output/usr/bin/hex2
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/kaem          /build/output/usr/bin/kaem
+/usr/bin/cp stage0-posix-1.9.1/AMD64/artifact/M2       /build/output/usr/bin/M2-Planet
+/usr/bin/cp stage0-posix-1.9.1/AMD64/artifact/blood-elf-0 /build/output/usr/bin/blood-elf
+/usr/bin/cp stage0-posix-1.9.1/AMD64/artifact/catm     /build/output/usr/bin/catm
+/usr/bin/cp stage0-posix-1.9.1/AMD64/artifact/M0       /build/output/usr/bin/M0
+/usr/bin/cp stage0-posix-1.9.1/AMD64/artifact/cc_amd64 /build/output/usr/bin/cc_amd64
+/usr/bin/chmod 0755 /build/output/usr/bin/M1
+/usr/bin/chmod 0755 /build/output/usr/bin/hex2
+/usr/bin/chmod 0755 /build/output/usr/bin/kaem
+/usr/bin/chmod 0755 /build/output/usr/bin/M2-Planet
+/usr/bin/chmod 0755 /build/output/usr/bin/blood-elf
+/usr/bin/chmod 0755 /build/output/usr/bin/catm
+/usr/bin/chmod 0755 /build/output/usr/bin/M0
+/usr/bin/chmod 0755 /build/output/usr/bin/cc_amd64
