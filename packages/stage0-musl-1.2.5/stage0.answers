@@ -1,0 +1,3 @@
+# UNPINNED: build.sh sees this first line and only prints the hashes instead of checking.
+# To pin: in $OUTPUT_DIR of a passing build run `sha256sum usr/lib/libc.a usr/lib/*.o`, replace this
+# file with the output (paths relative to $OUTPUT_DIR), then set SEAL_FATAL=1 in build.sh.

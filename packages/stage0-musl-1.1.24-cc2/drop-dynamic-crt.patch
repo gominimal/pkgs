@@ -1,0 +1,16 @@
+amd64: replace `lea _DYNAMIC(%rip),%rsi` in crt_arch.h with `xor %esi,%esi`.
+tcc-0.9.27 crashes assembling the RIP-relative reloc to the weak hidden _DYNAMIC symbol.
+The static crt1's _start_c uses only rdi; rsi/_DYNAMIC only matters for Scrt1/rcrt1, which are not built.
+--- musl-1.1.24/arch/x86_64/crt_arch.h
++++ musl-1.1.24/arch/x86_64/crt_arch.h
+@@ -4,9 +4,7 @@
+ START ": \n"
+ "	xor %rbp,%rbp \n"
+ "	mov %rsp,%rdi \n"
+-".weak _DYNAMIC \n"
+-".hidden _DYNAMIC \n"
+-"	lea _DYNAMIC(%rip),%rsi \n"
++"	xor %esi,%esi \n"
+ "	andq $-16,%rsp \n"
+ "	call " START "_c \n"
+ );
