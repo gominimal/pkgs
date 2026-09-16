@@ -70,7 +70,7 @@ let version = "1.19.0" in
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          ["/bin/bash", "-c", "varlock --version | grep -q '1.17.0'"],
+          ["/bin/bash", "-c", "varlock --version | grep -q '%{version}'"],
           ["/bin/bash", "-c", "varlock --help"],
         ],
       }
