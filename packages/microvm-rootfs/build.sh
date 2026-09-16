@@ -64,13 +64,27 @@ for a in "${apks[@]}"; do
   # and an Alpine version contain hyphens ("libcom_err-1.47.4-r0",
   # "ncurses-terminfo-base-6.6_p20260516-r0"), so the split point is ambiguous
   # from the filename alone but explicit in .PKGINFO.
-  if [ -f "$SCRATCH/.PKGINFO" ]; then
-    awk -F' = ' '
-      $1 == "pkgname" { n = $2 }
-      $1 == "pkgver"  { v = $2 }
-      END { if (n != "" && v != "") print n " " v }
-    ' "$SCRATCH/.PKGINFO" >> "$OVERLAID"
-  fi
+  #
+  # FAIL CLOSED PER PACKAGE, not in aggregate. Skipping one unreadable .PKGINFO
+  # and checking only that the manifest ended up non-empty would let any other
+  # package satisfy the check while the skipped one bypassed reconciliation
+  # entirely — and if THAT one is an override, the db keeps its old version and
+  # the image misreports itself. "Some of the series applied" is the failure,
+  # so every package must yield a name and a version.
+  [ -f "$SCRATCH/.PKGINFO" ] || {
+    echo "ERROR: $a has no .PKGINFO — cannot tell what it installs" >&2
+    exit 1
+  }
+  meta="$(awk -F' = ' '
+    $1 == "pkgname" { n = $2 }
+    $1 == "pkgver"  { v = $2 }
+    END { if (n != "" && v != "") print n " " v }
+  ' "$SCRATCH/.PKGINFO")"
+  [ -n "$meta" ] || {
+    echo "ERROR: $a has a .PKGINFO without both pkgname and pkgver" >&2
+    exit 1
+  }
+  printf '%s\n' "$meta" >> "$OVERLAID"
   find "$SCRATCH" -mindepth 1 -maxdepth 1 -name '.*' -exec rm -rf {} +
   tar -cf - -C "$SCRATCH" . | tar -xof - -C "$STAGE"
 done
@@ -93,17 +107,22 @@ rm -rf "$SCRATCH"
 # verification pass inside the guest, whereas a stale `V:` actively misreports
 # the image's security state. The version is the field with consequences.
 DB="$STAGE/lib/apk/db/installed"
-# Refuse to skip this silently. Every .apk carries a .PKGINFO, so an empty
-# manifest means the metadata read broke — and the skip path is invisible: the
-# image would build clean with its database still naming the versions the
-# overlay replaced. An override that quietly does not get recorded is the whole
-# failure this block exists to prevent.
-if [ ! -s "$OVERLAID" ]; then
-  echo "ERROR: no .PKGINFO metadata read from ${#apks[@]} .apk sources — cannot reconcile the apk db" >&2
+# One manifest line per .apk, exactly. The loop above already fails on any
+# package it could not read, so a short manifest means something subtler went
+# wrong (a duplicate name collapsing, a write that did not land) — and the
+# consequence is the same either way: an override that is never reconciled, in
+# an image that builds clean and misreports itself.
+manifest_lines="$(wc -l < "$OVERLAID" | tr -d ' ')"
+if [ "$manifest_lines" -ne "${#apks[@]}" ]; then
+  echo "ERROR: read metadata for $manifest_lines of ${#apks[@]} .apk sources — refusing to reconcile a partial set" >&2
   exit 1
 fi
-if [ ! -f "$DB" ]; then
-  echo "ERROR: no apk database at lib/apk/db/installed — the minirootfs layout changed" >&2
+# -s, not -f: an EMPTY installed file passes -f, and then the rewrite emits an
+# empty database, every overlay reads back as an unrecorded addition, and the
+# verification loop below waves the build through. The stated contract is
+# missing-or-empty, so test for it.
+if [ ! -s "$DB" ]; then
+  echo "ERROR: apk database at lib/apk/db/installed is missing or empty — the minirootfs layout changed" >&2
   exit 1
 fi
 awk -v pairfile="$OVERLAID" '
