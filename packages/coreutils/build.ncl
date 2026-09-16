@@ -26,14 +26,14 @@ let attr = import "../attr/build.ncl" in
 let libcap = import "../libcap/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 
-let version = "9.11" in
+let version = "9.12" in
 {
   name = "coreutils",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/coreutils-%{version}.tar.xz",
-      sha256 = "394024eda0a5955217ceda9cd1201e65dc8fa3aa29c2951135a49521d57c3cc3"
+      sha256 = "a480198559733e9b3da999e90543ac6f888a2caa544d8d664c5a1f17e528e210"
     } | Source,
     # base
     bash-bootstrap,
