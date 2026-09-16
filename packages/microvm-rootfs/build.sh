@@ -53,14 +53,92 @@ if [ "${#apks[@]}" -eq 0 ]; then
   exit 1
 fi
 SCRATCH="$(pwd)/apk-payload"
+OVERLAID="$(pwd)/overlaid.txt"
+: > "$OVERLAID"
 for a in "${apks[@]}"; do
   rm -rf "$SCRATCH"
   mkdir -p "$SCRATCH"
   tar --warning=no-unknown-keyword -xzf "$a" -C "$SCRATCH"
+  # Record name and version from the package's OWN metadata, before the
+  # dotfiles are pruned. Parsing the filename would not do: both a package name
+  # and an Alpine version contain hyphens ("libcom_err-1.47.4-r0",
+  # "ncurses-terminfo-base-6.6_p20260516-r0"), so the split point is ambiguous
+  # from the filename alone but explicit in .PKGINFO.
+  if [ -f "$SCRATCH/.PKGINFO" ]; then
+    awk -F' = ' '
+      $1 == "pkgname" { n = $2 }
+      $1 == "pkgver"  { v = $2 }
+      END { if (n != "" && v != "") print n " " v }
+    ' "$SCRATCH/.PKGINFO" >> "$OVERLAID"
+  fi
   find "$SCRATCH" -mindepth 1 -maxdepth 1 -name '.*' -exec rm -rf {} +
   tar -cf - -C "$SCRATCH" . | tar -xof - -C "$STAGE"
 done
 rm -rf "$SCRATCH"
+
+# Reconcile the apk database with what the overlay actually installed.
+#
+# Most of the closure ADDS packages the base layer never had; those stay
+# unrecorded, which is the long-standing behaviour (the minirootfs db lists 16
+# packages, the image ships ~49). But a security override REPLACES a package
+# the base layer does record — openssl is the first — and that leaves the
+# database contradicting the filesystem: patched libraries on disk, the old
+# vulnerable version still written in `installed`. Anything reading the db then
+# reports CVEs that are no longer present, indefinitely, and nothing
+# distinguishes that from a real finding.
+#
+# So rewrite `V:` for any overlaid package the base layer also recorded. The
+# stanza's per-file checksums stay the base layer's and are now stale; that is
+# acceptable here because the root mounts read-only and apk never runs a
+# verification pass inside the guest, whereas a stale `V:` actively misreports
+# the image's security state. The version is the field with consequences.
+DB="$STAGE/lib/apk/db/installed"
+# Refuse to skip this silently. Every .apk carries a .PKGINFO, so an empty
+# manifest means the metadata read broke — and the skip path is invisible: the
+# image would build clean with its database still naming the versions the
+# overlay replaced. An override that quietly does not get recorded is the whole
+# failure this block exists to prevent.
+if [ ! -s "$OVERLAID" ]; then
+  echo "ERROR: no .PKGINFO metadata read from ${#apks[@]} .apk sources — cannot reconcile the apk db" >&2
+  exit 1
+fi
+if [ ! -f "$DB" ]; then
+  echo "ERROR: no apk database at lib/apk/db/installed — the minirootfs layout changed" >&2
+  exit 1
+fi
+awk -v pairfile="$OVERLAID" '
+  BEGIN {
+    while ((getline line < pairfile) > 0) {
+      split(line, f, " ")
+      if (f[1] != "") want[f[1]] = f[2]
+    }
+  }
+  /^P:/ { cur = substr($0, 3) }
+  /^V:/ && (cur in want) { print "V:" want[cur]; next }
+  { print }
+' "$DB" > "$DB.new"
+mv "$DB.new" "$DB"
+
+# FAIL CLOSED. A rewrite that silently does not land would ship an image
+# claiming a version it does not have — the same failure mode as a patch series
+# that applies short. Check every overlaid package the db records and refuse to
+# build an image that misdescribes itself.
+while read -r name ver; do
+  [ -n "$name" ] || continue
+  recorded="$(awk -v p="$name" '
+    $0 == "P:" p { found = 1; next }
+    found && /^V:/ { print substr($0, 3); exit }
+  ' "$DB")"
+  # Empty means the base layer never recorded it: an addition, not an override,
+  # and nothing to reconcile.
+  [ -n "$recorded" ] || continue
+  [ "$recorded" = "$ver" ] || {
+    echo "ERROR: apk db records $name $recorded but the overlay installed $ver" >&2
+    exit 1
+  }
+  echo "reconciled apk db: $name -> $ver (superseded the base layer)"
+done < "$OVERLAID"
+rm -f "$OVERLAID"
 
 # Per-VM writable volume mountpoint. The guest minimald mounts /dev/vdb here on
 # first boot (after formatting it with mkfs.ext4). The root image is mounted
