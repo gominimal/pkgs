@@ -135,9 +135,9 @@ EMIT_ROOT="$(sed -n 's|^import-dirs: *\(.*\)/libraries/base/dist-install/build$|
 [ -n "${EMIT_ROOT}" ] || { echo "ghc-${VERSION}: cannot read the emitting tree's root from the bundle's base.conf" >&2; exit 1; }
 if [ "${EMIT_ROOT}" != "${BUILDROOT}/T" ]; then
   grep -rl "${EMIT_ROOT}/" --include=package-data.mk --include='package.conf*' --include='*.conf' --include='*.mk' . | xargs -r sed -i "s|${EMIT_ROOT}/|${BUILDROOT}/T/|g"
+  rm -f inplace/lib/package.conf.d/package.cache   # binary copy of the old paths; regenerated once ghc-pkg exists
   [ "$(grep -rl "${EMIT_ROOT}/" . | wc -l)" = 0 ] || { echo "ghc-${VERSION}: emitting-tree paths survive in the bundle" >&2; exit 1; }
 fi
-[ -x inplace/bin/ghc-pkg ] && inplace/bin/ghc-pkg recache >/dev/null 2>&1 || true
 # The emitting tree builds the compiler as stage2 and the boot libraries twice (dist-boot by its
 # boot compiler, dist-install as .hc); an hc-boot tree wants the compiler as stage1 and the boot
 # libraries from dist-boot. Mirror the .hc/.hi/generated sources into the expected dist dirs.
@@ -224,6 +224,7 @@ make ${TOOLS} inplace/bin/ghc-pkg inplace/lib/unlit inplace/lib/ghc-split > ../m
 BASEA=$(ls libraries/base/dist-install/build/libHSbase-*.a | head -1)
 ar q "$BASEA" hcstubs/*.o
 [ -x inplace/lib/ghc-stage2 ] || { echo "ghc-${VERSION}: inplace/lib/ghc-stage2 missing" >&2; exit 1; }
+inplace/bin/ghc-pkg recache
 [ -x inplace/lib/unlit ] || { echo "ghc-${VERSION}: unlit missing" >&2; exit 1; }
 printf 'main = putStrLn ("GHC-GATE:" ++ show (product [1..5 :: Integer] - (2^(70::Int) - 2^(70::Int))))\n' > ../gate0.hs
 inplace/bin/ghc-stage2 -O -o ../gate0 ../gate0.hs -outputdir ../gate0.d > ../gate0.log 2>&1 && OUT="$(../gate0)" || { cat ../gate0.log >&2; echo "ghc-${VERSION}: in-tree compiler failed the gate" >&2; exit 1; }
