@@ -222,7 +222,7 @@ sed -i 's/((void (\*)(void \*))__gmpz_init)/((void (*)(void *))gmpfix_init)/g' "
 
 # --- P4 make ---
 make -j"${JOBS}" ${TOOLS} all_ghc_stage2 > ../make.log 2>&1 || { grep -n -B3 -m3 -E ' error: |undefined reference|No rule to make' ../make.log >&2; tail -20 ../make.log >&2; echo "ghc-${VERSION}: make failed" >&2; exit 1; }
-make ${TOOLS} inplace/bin/ghc-pkg inplace/lib/unlit inplace/lib/ghc-split > ../make-tools.log 2>&1 || { tail -20 ../make-tools.log >&2; echo "ghc-${VERSION}: ghc-pkg/unlit did not build" >&2; exit 1; }
+make ${TOOLS} inplace/bin/ghc-pkg inplace/lib/unlit > ../make-tools.log 2>&1 || { tail -20 ../make-tools.log >&2; echo "ghc-${VERSION}: ghc-pkg/unlit did not build" >&2; exit 1; }
 # The capi wrapper objects belong in libHSbase so every later link finds them.
 BASEA=$(ls libraries/base/dist-install/build/libHSbase-*.a | head -1)
 ar q "$BASEA" hcstubs/*.o
