@@ -225,6 +225,35 @@ in
       "zstd-libs-1.5.7-r2"
       "2bb5136c89f5b0bbe1554c8915a3b520d5aa63ae2a51d4d821eb81698db5a818"
       "23c6065b0049b2406441564bcf0032515a43f78e80d76fcb85535a3803ef5d4e",
+
+    # SECURITY OVERRIDES OF THE BASE LAYER.
+    #
+    # Unlike every entry above, these do not ADD a package — they REPLACE one
+    # the minirootfs tarball already ships. alpine-minirootfs-3.24.1 carries
+    # openssl 3.5.7-r0 (see `lib/apk/db/installed`, `o:openssl`), which has ten
+    # unfixed CVEs: CVE-2026-14456, -14457, -18798, -54874, -63072, -63073,
+    # -63074, -63075, -63076, -75803. Alpine fixed them in 3.5.8-r0, in v3.24
+    # main — but the newest minirootfs RELEASE is still 3.24.1, so bumping
+    # `alpine_release` cannot pick the fix up. There is no 3.24.2 to move to.
+    #
+    # Both packages install to the same `usr/lib/libcrypto.so.3` /
+    # `usr/lib/libssl.so.3` the base layer uses, so the overlay replaces the
+    # vulnerable objects outright. build.sh reconciles the recorded version in
+    # `lib/apk/db/installed` afterwards — without that the image would carry
+    # patched libraries while its own database still claimed 3.5.7-r0, and
+    # every scanner reading it would report ten CVEs that are no longer there.
+    #
+    # DROP THESE the moment `alpine_release` reaches a minirootfs carrying
+    # >= 3.5.8-r0; keeping a stale override is how an image ends up pinned
+    # BELOW its base layer.
+    apk
+      "libcrypto3-3.5.8-r0"
+      "35b892813c23664a3592e4fc8c12a03538a22c579057655361c7043305272a9a"
+      "161223a16f042b8e469e9441291e071464fd91d4f4bbe6f496ee8d0abd4e0701",
+    apk
+      "libssl3-3.5.8-r0"
+      "d6ec970cc10e01539e41626f720c4e0ac69016eaa2079a10ef776ffd3243db5b"
+      "aca521e5ae4a321322a9d47ed64a1775f5ab1ffd215d1e9fc0433c58f7bfd037",
   ],
 
   cmd = "./build.sh",
