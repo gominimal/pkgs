@@ -1,0 +1,80 @@
+Adapt node's Mach-O SEA injection to the LIEF 1.x Section API.
+
+LIEF 1.0.0 made the MachO::Section constructors non-public and replaced them
+with static factories. 0.17.6 had public Section(std::string name) and
+Section(std::string name, content_t content) (MachO/Section.hpp:112-113); in
+1.0.0 the default and copy constructors moved to `protected:`
+(MachO/Section.hpp:352-356) and creation goes through:
+
+  static std::unique_ptr<Section> create(std::string name,
+                                         const content_t& content,
+                                         TYPE type = TYPE::REGULAR);
+
+Building node 25.8.2 against a shared LIEF 1.0.0 therefore fails twice:
+
+  ../src/node_sea_bin.cc:184: error: no matching function for call to
+    'LIEF::MachO::Section::Section(const std::string&,
+                                   const std::vector<unsigned char>&)'
+  ../src/node_sea_bin.cc:169: error: 'LIEF::MachO::Section::Section()'
+    is protected within this context      (after a naive setter-based fix)
+
+Rewritten to use the factory. `add_section` still takes `const Section&` on
+both SegmentCommand (SegmentCommand.hpp:248) and Binary (Binary.hpp:438), so
+the call sites just dereference the unique_ptr. Semantically identical.
+
+Two call sites, both in InjectIntoMachO: the create-new-segment branch and the
+existing-segment branch.
+
+WHY THIS MATTERS ON LINUX: node_sea_bin.cc compiles the ELF, Mach-O and PE
+injectors unconditionally — the format is chosen at RUNTIME
+(`if (LIEF::ELF::is_elf(exe)) … else if (LIEF::MachO::is_macho(exe)) …`), and
+the only #ifdefs in the file are HAVE_LIEF and DEBUG. So a Mach-O API break
+fails a Linux build. That is deliberate upstream: node's SEA can cross-target,
+so compiling the Mach-O path out would remove a real capability rather than
+dead weight.
+
+Node upstream has not migrated — node main still vendors LIEF 0.17.0 — so this
+is a local divergence until it does. Drop it when node moves to LIEF 1.x.
+
+Diff generated with `git diff` against the v25.8.2 file rather than
+hand-written, so the context lines are well-formed.
+
+diff --git a/src/node_sea_bin.cc b/src/node_sea_bin.cc
+index ef5dab3..1429e4d 100644
+--- a/src/node_sea_bin.cc
++++ b/src/node_sea_bin.cc
+@@ -163,12 +163,15 @@ InjectOutput InjectIntoMachO(const std::vector<uint8_t>& executable,
+       // Use SegmentCommand::VM_PROTECTIONS enum values (READ)
+       new_segment.max_protection(static_cast<uint32_t>(
+           LIEF::MachO::SegmentCommand::VM_PROTECTIONS::READ));
+       new_segment.init_protection(static_cast<uint32_t>(
+           LIEF::MachO::SegmentCommand::VM_PROTECTIONS::READ));
+-      LIEF::MachO::Section section(section_name, data);
+-      new_segment.add_section(section);
++      // LIEF 1.0.0 made the Section constructors protected and replaced
++      // them with a static factory returning unique_ptr.
++      std::unique_ptr<LIEF::MachO::Section> section =
++          LIEF::MachO::Section::create(section_name, data);
++      new_segment.add_section(*section);
+       binary.add(new_segment);
+     } else {
+       // Check if the section exists
+       LIEF::MachO::Section* existing_section =
+           segment->get_section(section_name);
+@@ -179,12 +182,14 @@ InjectOutput InjectIntoMachO(const std::vector<uint8_t>& executable,
+                 SPrintF("Segment/section %s/%s already exists in the Mach-O "
+                         "executable",
+                         segment_name,
+                         section_name)};
+       }
+-      LIEF::MachO::Section section(section_name, data);
+-      binary.add_section(*segment, section);
++      // LIEF 1.0.0: see the note above — factory instead of constructor.
++      std::unique_ptr<LIEF::MachO::Section> section =
++          LIEF::MachO::Section::create(section_name, data);
++      binary.add_section(*segment, *section);
+     }
+ 
+     // It will need to be signed again anyway, so remove the signature
+     if (binary.has_code_signature()) {
+       DebugLog("Removing existing code signature\n");
