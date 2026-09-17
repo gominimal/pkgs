@@ -105,13 +105,16 @@ HADRIAN="${PWD}/_build/bin/hadrian"
 # --- P3 configure + build ---
 ./configure --prefix="${PREFIX}" GHC="${BOOT}" CC="${CC}" > ../configure.log 2>&1 \
   || { tail -30 ../configure.log >&2; echo "ghc-${VERSION}: configure failed" >&2; exit 1; }
-# Flags must match between build and install: Hadrian does not encode the flavour in _build paths.
-# quick = -O0 compiler, -O1 libraries: enough for a boot compiler.
-HADRIAN_FLAGS=(-j"${JOBS}" --flavour=quick --docs=none)
-"${HADRIAN}" "${HADRIAN_FLAGS[@]}" > ../make.log 2>&1 || { grep -n -m5 -iE 'error|Segmentation' ../make.log >&2; tail -20 ../make.log >&2; echo "ghc-${VERSION}: hadrian build failed" >&2; exit 1; }
+# quick = -O0 compiler, -O1 libraries: enough for a boot compiler. binary-dist-dir with docs off
+# leaves haddock out (the boot ships no xhtml); the bindist's own configure/make install then lays
+# the tree out, configured against the same C wrapper so `settings` records it.
+"${HADRIAN}" -j"${JOBS}" --flavour=quick --docs=none binary-dist-dir > ../make.log 2>&1 || { grep -n -m5 -iE 'error|Segmentation' ../make.log >&2; tail -20 ../make.log >&2; echo "ghc-${VERSION}: hadrian build failed" >&2; exit 1; }
 
 # --- P4 install ---
-DESTDIR="${OUTPUT_DIR}" "${HADRIAN}" "${HADRIAN_FLAGS[@]}" install --prefix="${PREFIX}" > ../install.log 2>&1 || { tail -20 ../install.log >&2; echo "ghc-${VERSION}: install failed" >&2; exit 1; }
+BD="$(ls -d _build/bindist/ghc-* | head -1)"
+[ -n "${BD}" ] && [ -x "${BD}/configure" ] || { echo "ghc-${VERSION}: no bindist under _build/bindist" >&2; exit 1; }
+( cd "${BD}" && ./configure --prefix="${PREFIX}" CC="${CC}" > "${BUILDROOT}/bindist-configure.log" 2>&1 && make install DESTDIR="${OUTPUT_DIR}" > "${BUILDROOT}/install.log" 2>&1 ) \
+  || { tail -20 "${BUILDROOT}/bindist-configure.log" "${BUILDROOT}/install.log" >&2; echo "ghc-${VERSION}: bindist install failed" >&2; exit 1; }
 SETTINGS="$(find "${DST}" -type f -name settings | head -1)"
 [ -n "${SETTINGS}" ] || { echo "ghc-${VERSION}: no settings file under ${DST}" >&2; exit 1; }
 LIBD="$(dirname "${SETTINGS}")"
