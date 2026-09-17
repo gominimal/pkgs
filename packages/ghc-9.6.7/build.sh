@@ -97,10 +97,10 @@ tar -czf ../hbs-boot.tar.gz -C ../hbs .
 STUB="${BUILDROOT}/stub-bin"; mkdir -p "${STUB}"
 printf '#!/bin/sh\nexit 0\n' > "${STUB}/cabal"; chmod +x "${STUB}/cabal"
 export PATH="${STUB}:${PWD}/_build/bin:${PATH}"
-python3 hadrian/bootstrap/bootstrap.py -w "${BOOT}" --bootstrap-sources ../hbs-boot.tar.gz > ../hadrian-bootstrap.log 2>&1 \
+python3 hadrian/bootstrap/bootstrap.py -w "${BOOT}" --bootstrap-sources ../hbs-boot.tar.gz --no-archive > ../hadrian-bootstrap.log 2>&1 \
   || { tail -30 ../hadrian-bootstrap.log >&2; echo "ghc-${VERSION}: hadrian bootstrap failed" >&2; exit 1; }
-HADRIAN="$(find hadrian/bootstrap -type f -name hadrian -perm -u+x | head -1)"
-[ -n "${HADRIAN}" ] || { echo "ghc-${VERSION}: no hadrian binary after bootstrap" >&2; exit 1; }
+HADRIAN="${PWD}/_build/bin/hadrian"
+[ -x "${HADRIAN}" ] || { echo "ghc-${VERSION}: no hadrian binary at ${HADRIAN} after bootstrap" >&2; exit 1; }
 
 # --- P3 configure + build ---
 ./configure --prefix="${PREFIX}" GHC="${BOOT}" CC="${CC}" > ../configure.log 2>&1 \
