@@ -247,7 +247,7 @@ for conf in inplace/lib/package.conf.d/*.conf; do
     for d in $(sed -n "s/^${field}: *//p" "$conf"); do [ -d "$d" ] && ( cd "$d" && find . \( -name '*.hi' -o -name '*.a' -o -name '*.h' -o -name '*.hs-boot' \) -exec cp --parents -n {} "$dest/" \; ); done
   done
   for d in $(sed -n 's/^include-dirs: *//p' "$conf"); do [ -d "$d" ] && mkdir -p "$dest/include" && ( cd "$d" && find . -name '*.h' -exec cp --parents -n {} "$dest/include/" \; ); done
-  sed -E "s|^(import-dirs|library-dirs):.*|\1: ${TOPDIR}/${pkgid}|; s|^include-dirs:.*|include-dirs: ${TOPDIR}/${pkgid}/include|; s|^(haddock-interfaces|haddock-html):.*|\1:|" "$conf" > "${LIBD}/package.conf.d/$(basename "$conf")"
+  sed -E "s#^(import-dirs|library-dirs):.*#\1: ${TOPDIR}/${pkgid}#; s#^include-dirs:.*#include-dirs: ${TOPDIR}/${pkgid}/include#; s#^(haddock-interfaces|haddock-html):.*#\1:#" "$conf" > "${LIBD}/package.conf.d/$(basename "$conf")"
 done
 # The generated headers live in includes/dist-*/header/ but are included by bare name; the RTS
 # package's include dir gets flat copies, plus the RTS build headers. This compiler goes through C
