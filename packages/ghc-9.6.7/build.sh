@@ -6,6 +6,7 @@
 # phases: P0 preconditions, P1 sysroot CC wrapper, P2 bootstrap Hadrian, P3 configure + build,
 # P4 install, P5 gate.
 set -eu
+trap 'echo "ghc-${VERSION}: failed at line $LINENO: $BASH_COMMAND" >&2' ERR
 
 if [ -n "$OUTPUT_DIR" ] && [ -d "$OUTPUT_DIR" ]; then
   for _e in "$OUTPUT_DIR"/* "$OUTPUT_DIR"/.[!.]* "$OUTPUT_DIR"/..?*; do [ -e "$_e" ] || [ -L "$_e" ] && rm -r "$_e"; done

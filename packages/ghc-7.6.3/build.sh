@@ -6,6 +6,7 @@
 # into the tree and fill the gaps hc-boot mode leaves, P4 make, P5 install (relocate the in-tree
 # package db), P6 gate.
 set -eu
+trap 'echo "ghc-${VERSION}: failed at line $LINENO: $BASH_COMMAND" >&2' ERR
 
 if [ -n "$OUTPUT_DIR" ] && [ -d "$OUTPUT_DIR" ]; then
   for _e in "$OUTPUT_DIR"/* "$OUTPUT_DIR"/.[!.]* "$OUTPUT_DIR"/..?*; do [ -e "$_e" ] || [ -L "$_e" ] && rm -r "$_e"; done

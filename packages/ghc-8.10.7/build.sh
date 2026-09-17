@@ -4,6 +4,7 @@
 # boot compiler and installs the whole compiler to /usr/lib/ghc-8.10.7 for the next rung.
 # phases: P0 preconditions, P1 sysroot CC wrapper, P2 configure + make, P3 install, P4 gate.
 set -eu
+trap 'echo "ghc-${VERSION}: failed at line $LINENO: $BASH_COMMAND" >&2' ERR
 
 if [ -n "$OUTPUT_DIR" ] && [ -d "$OUTPUT_DIR" ]; then
   for _e in "$OUTPUT_DIR"/* "$OUTPUT_DIR"/.[!.]* "$OUTPUT_DIR"/..?*; do [ -e "$_e" ] || [ -L "$_e" ] && rm -r "$_e"; done
