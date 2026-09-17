@@ -62,10 +62,33 @@ chmod +x "$STUB_DIR/sphinx-build"
 # Ensure stubs and build-produced tools are in PATH
 export PATH="$STUB_DIR:$PWD/_build/bin:$PATH"
 
-# Bootstrap Hadrian
-# We must explicitly pass the bootstrap GHC path and also pass --bootstrap-sources to force
-# the bootstrap.py script to use the local offline tarballs instead of downloading them.
-python3 hadrian/bootstrap/bootstrap.py -w "$(command -v ghc)" --bootstrap-sources ../hadrian-bootstrap-sources-9.8.1.tar.gz
+# Boot compiler: the ghc-9.6.7 ladder rung when present (amd64), else the prebuilt ghc on PATH.
+if [ -x /usr/lib/ghc-9.6.7/bin/ghc ]; then
+  BOOT=/usr/lib/ghc-9.6.7/bin/ghc; BOOT_PKG=/usr/lib/ghc-9.6.7/bin/ghc-pkg
+else
+  BOOT="$(command -v ghc)"; BOOT_PKG="$(command -v ghc-pkg)"
+fi
+echo "boot compiler: ${BOOT} ($("${BOOT}" --numeric-version))"
+
+# Bootstrap Hadrian from the offline sources tarball (one per boot: 9.6.4's plan for the 9.6.7
+# rung, 9.8.1's for the bindist). Its plan-bootstrap.json pins the versions of the packages bundled
+# with the boot it was generated for and bootstrap.py checks them against the boot's ghc-pkg
+# exactly, so rewrite them to what this boot ships and repack before passing --bootstrap-sources.
+HBS="$(ls ../hadrian-bootstrap-sources-*.tar.gz | head -1)"
+mkdir -p ../hbs && tar -xzf "${HBS}" -C ../hbs --no-same-owner
+python3 - ../hbs/plan-bootstrap.json "${BOOT_PKG}" <<'PY'
+import json, subprocess, sys
+plan, ghcpkg = sys.argv[1], sys.argv[2]
+d = json.load(open(plan)); n = 0
+for b in d.get('builtin', []):
+    v = subprocess.run([ghcpkg, '--simple-output', 'field', b['package'], 'version'], capture_output=True, text=True).stdout.split()
+    if v and v[-1] != b['version']:
+        b['version'] = v[-1]; n += 1
+json.dump(d, open(plan, 'w'), indent=1)
+print(n, 'builtin versions rewritten')
+PY
+tar -czf ../hbs-boot.tar.gz -C ../hbs .
+python3 hadrian/bootstrap/bootstrap.py -w "${BOOT}" --bootstrap-sources ../hbs-boot.tar.gz
 
 # Add pseudostore lib dirs to LD_LIBRARY_PATH so bootstrapped tools can find their dependencies
 PSEUDO_LIBS="$(find _build/pseudostore -name "*.so*" -exec dirname {} \; | sort -u | paste -sd : || true)"
@@ -80,7 +103,7 @@ fi
 # Now we can configure GHC.
 ./configure \
   --prefix=/usr \
-  GHC=ghc
+  GHC="${BOOT}"
 
 # Hadrian flags. These MUST be identical for the build and the install invocation:
 # hadrian does not encode the flavour in the _build tree paths, so an install run
