@@ -9,6 +9,7 @@ let coreutils = import "../coreutils/build.ncl" in
 let c-ares = import "../c-ares/build.ncl" in
 let icu = import "../icu/build.ncl" in
 let lief = import "../lief/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let libuv = import "../libuv/build.ncl" in
 let nghttp2 = import "../nghttp2/build.ncl" in
 let nghttp3 = import "../nghttp3/build.ncl" in
@@ -29,9 +30,13 @@ let version = "25.8.2" in
       url = "gs://minimal-staging-archives/node-%{version}.tar.gz",
       sha256 = "f4351a409f84e94c1dbd772194491f12c4d2a38f747ed8bc330ba4404675719f",
     } | Source,
+    # Adapts the Mach-O SEA injection to the LIEF 1.x Section API — see
+    # the patch header. Build-time only: it rewrites the source tree.
+    { file = "lief-1.x-macho-section-ctor.patch" } | Local,
     base,
     make,
     pkgconf,
+    patch,
     python,
     toolchain,
   ],
