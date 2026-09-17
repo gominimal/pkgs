@@ -159,16 +159,18 @@ for pd in $(find . -name package-data.mk -path '*dist*'); do d=$(dirname "$pd");
 for d in $(find . -type d \( -name 'dist' -o -name 'dist-*' -o -name 'stage[123]' \) ! -path '*/build/*' ! -path './bootstrapping/*'); do stubdeps "${d#./}"; done
 grep -rhoE 'call (build-prog|build-package|manual-package-config),[^,)]+,[^,)]+' --include=ghc.mk . | awk -F, '{print $2"/"$3}' | sort -u | while read -r d; do stubdeps "$d"; done
 find . \( -name '*.hc' -o -name '*.hi' -o -name '.depend-v.haskell' -o -name 'Config.hs' -o -name 'package-data.mk' \) | xargs -r touch
-# Link stanzas: ghc/ghc.mk's hc-boot stanza adds the libraries and RTS to the stage2 program, but
-# an hc-boot tree links the compiler as stage1. `main` is normally a stub GHC's driver writes at
-# link time; hcboot_main.o supplies it. --start-group lets the static archives resolve in any
-# order. -ltinfo is terminfo's extra library, which the gcc link rule does not collect.
+# Link stanzas for the compiler under either stage spelling the tree picks: `main` is normally a
+# stub GHC's driver writes at link time, so hcboot_main.o supplies it; --start-group lets the static
+# archives resolve in any order; -ltinfo is terminfo's extra library, which the gcc link rule does
+# not collect.
 cat >> mk/build.mk <<'EOF'
 OMIT_PHASE_0 = YES
 OMIT_PHASE_1 = YES
 GHC = false
 NO_GENERATED_MAKEFILE_RULES = YES
 GhcStage2HcOpts = -O0
+ghc_stage2_OTHER_OBJS += ghc/stage1/build/hcboot_main.o
+ghc_stage2_v_EXTRA_CC_OPTS += -Wl,--start-group $(compiler_stage2_v_LIB) $(ALL_STAGE1_LIBS) $(ALL_RTS_LIBS) $(libffi_STATIC_LIB) $(wildcard hcstubs/libhcstubs.a) -Wl,--end-group -lgmp -lm -lutil -lrt -ldl -lpthread -ltinfo
 ghc_stage1_OTHER_OBJS += ghc/stage1/build/hcboot_main.o
 ghc_stage1_v_EXTRA_CC_OPTS += -Wl,--start-group $(compiler_stage1_v_LIB) $(ALL_STAGE1_LIBS) $(ALL_RTS_LIBS) $(libffi_STATIC_LIB) $(wildcard hcstubs/libhcstubs.a) -Wl,--end-group -lgmp -lm -lutil -lrt -ldl -lpthread -ltinfo
 utils/ghc-pkg_dist-install_OTHER_OBJS += utils/ghc-pkg/dist-install/build/hcboot_main.o
