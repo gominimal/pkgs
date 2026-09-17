@@ -288,7 +288,7 @@ if grep -l "${BUILDROOT}" "${LIBD}"/package.conf.d/*.conf "${LIBD}/settings" "${
 # --- P6 gate on the installed layout ---
 # The install lives under ${DST}, not ${PREFIX}, until the package is placed; point the db at
 # ${DST} for the gate and back afterwards. The settings still name the build-time wrapper here.
-GATEDB="${BUILDROOT}/gatedb"; cp -r "${LIBD}/package.conf.d" "${GATEDB}"
+GATEDB="${LIBD}/gate.conf.d"; cp -r "${LIBD}/package.conf.d" "${GATEDB}"
 sed -i "s|${PREFIX}|${DST}|g" "${GATEDB}"/*.conf
 cp "${LIBD}/settings" "${BUILDROOT}/settings.shipped"
 sed -i "s|${PREFIX}/bin/ghc-cc|${CCDIR}/gcc|" "${LIBD}/settings"
@@ -299,6 +299,7 @@ printf 'import Data.List\nmain = putStrLn ("GHC-GATE:" ++ show (product [1..5 ::
 cp "${BUILDROOT}/settings.shipped" "${LIBD}/settings"
 "${LIBD}/ghc-pkg" --global-package-db "${LIBD}/package.conf.d" recache
 "${LIBD}/ghc" -B"${LIBD}" --info | grep -q '"Unregisterised","YES"' || { echo "ghc-${VERSION}: not the unregisterised compiler" >&2; exit 1; }
+find "${GATEDB}" -delete
 
 mkdir -p "${OUTPUT_DIR}/usr/share/ghc-${VERSION}"
 cat > "${OUTPUT_DIR}/usr/share/ghc-${VERSION}/BUILDINFO" <<EOF

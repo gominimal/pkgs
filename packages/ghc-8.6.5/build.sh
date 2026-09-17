@@ -116,7 +116,7 @@ if grep -rl "${BUILDROOT}" "${DST}/bin" "${LIBD}"/settings "${DB}" -q 2>/dev/nul
 # --- P4 gate on the installed layout ---
 # The install lives under ${DST}, not ${PREFIX}, until the package is placed: gate with a copy of
 # the db pointed at ${DST} and with the build-time wrapper as the C compiler.
-GATEDB="${BUILDROOT}/gatedb"; cp -r "${DB}" "${GATEDB}"
+GATEDB="${LIBD}/gate.conf.d"; cp -r "${DB}" "${GATEDB}"   # beside the real db: ${pkgroot}-relative confs resolve
 sed -i "s|${PREFIX}|${DST}|g" "${GATEDB}"/*.conf
 "${PKGBIN}" --global-package-db "${GATEDB}" recache
 cp "${BUILDROOT}/settings.build" "${SETTINGS}"
@@ -126,6 +126,7 @@ printf 'import Data.List\nmain = putStrLn ("GHC-GATE:" ++ show (product [1..5 ::
 "${GHCBIN}" -B"${LIBD}" --info | grep -q '"Unregisterised","NO"' || { echo "ghc-${VERSION}: not a registerised compiler" >&2; exit 1; }
 [ "$("${GHCBIN}" -B"${LIBD}" --numeric-version)" = "${VERSION}" ] || { echo "ghc-${VERSION}: wrong compiler version installed" >&2; exit 1; }
 sed -i "s|${CCDIR}/gcc|${PREFIX}/bin/ghc-cc|g" "${SETTINGS}"
+find "${GATEDB}" -delete
 
 mkdir -p "${OUTPUT_DIR}/usr/share/ghc-${VERSION}"
 cat > "${OUTPUT_DIR}/usr/share/ghc-${VERSION}/BUILDINFO" <<EOF
