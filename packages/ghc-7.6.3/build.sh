@@ -239,6 +239,10 @@ inplace/bin/ghc-stage2 -O -o ../gate0 ../gate0.hs -outputdir ../gate0.d > ../gat
 LIBD="${DST}/lib/ghc-${VERSION}"; mkdir -p "${DST}/bin" "${LIBD}/package.conf.d"
 for f in inplace/lib/*; do [ -f "$f" ] && cp "$f" "${LIBD}/"; done
 mv "${LIBD}/ghc-stage2" "${LIBD}/ghc"
+# ghc-pkg is installed inplace as the binary itself, not behind a wrapper
+iself() { [ -f "$1" ] && [ "$(head -c 4 "$1" | tr -d '\0')" = $'\x7fELF' ]; }
+for c in inplace/lib/ghc-pkg inplace/bin/ghc-pkg utils/ghc-pkg/dist-install/build/tmp/ghc-pkg; do iself "$c" && cp "$c" "${LIBD}/ghc-pkg" && break; done
+[ -x "${LIBD}/ghc-pkg" ] || { echo "ghc-${VERSION}: no ghc-pkg binary found" >&2; exit 1; }
 mkdir -p "${BUILDROOT}/confs"
 for orig in inplace/lib/package.conf.d/*.conf; do
   # field values may continue on indented lines; fold each field onto one line first
