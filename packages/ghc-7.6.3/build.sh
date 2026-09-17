@@ -239,7 +239,10 @@ inplace/bin/ghc-stage2 -O -o ../gate0 ../gate0.hs -outputdir ../gate0.d > ../gat
 LIBD="${DST}/lib/ghc-${VERSION}"; mkdir -p "${DST}/bin" "${LIBD}/package.conf.d"
 for f in inplace/lib/*; do [ -f "$f" ] && cp "$f" "${LIBD}/"; done
 mv "${LIBD}/ghc-stage2" "${LIBD}/ghc"
-for conf in inplace/lib/package.conf.d/*.conf; do
+mkdir -p "${BUILDROOT}/confs"
+for orig in inplace/lib/package.conf.d/*.conf; do
+  # field values may continue on indented lines; fold each field onto one line first
+  conf="${BUILDROOT}/confs/$(basename "$orig")"; sed -e ':a' -e 'N' -e '$!ba' -e 's/\n[[:space:]][[:space:]]*/ /g' "$orig" > "$conf"
   pkgid=$(sed -n 's/^id: *//p' "$conf" | head -1); name=$(sed -n 's/^name: *//p' "$conf" | head -1)
   [ "$name" = bin-package-db ] && continue   # only useful to the tree that built it
   dest="${LIBD}/${pkgid}"; mkdir -p "$dest"
@@ -275,8 +278,8 @@ mkfixlib "${DST}/lib/glibc-fixlib"
 mkwrapper "${DST}/bin/ghc-cc" "${PREFIX}/lib/glibc-fixlib"
 sed -i "s|${CCDIR}/gcc|${PREFIX}/bin/ghc-cc|g; s|${BUILDROOT}/T/inplace/lib|${TOPDIR}|g" "${LIBD}/settings"
 grep -q "${PREFIX}/bin/ghc-cc" "${LIBD}/settings" || { echo "ghc-${VERSION}: settings does not name the shipped C compiler" >&2; exit 1; }
-if grep -rl "${BUILDROOT}" "${DST}" --include='*.conf' --include=settings --include='ghc*' -q 2>/dev/null; then
-  grep -rl "${BUILDROOT}" "${DST}" --include='*.conf' --include=settings --include='ghc*' >&2; echo "ghc-${VERSION}: build paths survive in the install" >&2; exit 1; fi
+if grep -l "${BUILDROOT}" "${LIBD}"/package.conf.d/*.conf "${LIBD}/settings" "${DST}"/bin/* -q 2>/dev/null; then
+  grep -l "${BUILDROOT}" "${LIBD}"/package.conf.d/*.conf "${LIBD}/settings" "${DST}"/bin/* >&2; echo "ghc-${VERSION}: build paths survive in the install" >&2; exit 1; fi
 
 # --- P6 gate on the installed layout ---
 # The install lives under ${DST}, not ${PREFIX}, until the package is placed; point the db at
