@@ -148,7 +148,7 @@ fi
 for db in $(find . -type d -name dist-boot); do lib=${db%/dist-boot}; [ -d "$lib/dist-install/build" ] || continue; mkdir -p "$db/build"
   ( cd "$lib/dist-install/build" && find . \( -name '*.hc' -o -name '*.hi' -o -name '*.hs' -o -name '*_hsc.[ch]' \) -exec cp --parents -n {} ../../dist-boot/build/ \; ); done
 # -keep-hc-files drops autogen modules' .hc next to their source; the only .hc rules look in build/.
-for f in $(find . -path '*/build/autogen/*.hc'); do cp -n "$f" "$(dirname "$(dirname "$f")")/"; done
+for f in $(find . -path '*/build/autogen/*.hc'); do t="$(dirname "$(dirname "$f")")/$(basename "$f")"; [ -e "$t" ] || cp "$f" "$t"; done
 # .depend files come from `ghc -M`; the .hc -> .o rules need no module order, so stubs that only
 # declare the *_EXISTS variables satisfy rules/build-dependencies.mk. Every (dir, distdir) pair
 # the ghc.mk files name gets both spellings.
@@ -207,7 +207,7 @@ RTSDEFS="-DNO_REGS -DUSE_MINIINTERPRETER -D__GLASGOW_HASKELL__=706"
 mkdir -p ghc/stage1/build utils/ghc-pkg/dist-install/build
 "${CC}" -c hcboot_main.c -o ghc/stage1/build/hcboot_main.o -Iincludes -Iincludes/dist-derivedconstants/header -Iincludes/dist-ghcconstants/header -Irts/dist/build ${RTSDEFS}
 cp ghc/stage1/build/hcboot_main.o utils/ghc-pkg/dist-install/build/hcboot_main.o
-INCS=$(for d in includes includes/dist-derivedconstants/header includes/dist-ghcconstants/header rts/dist/build libraries/*/include libraries/*/dist-install/build libraries/*/dist-install/build/autogen; do [ -d "$d" ] && printf ' -I%s' "$d"; done)
+INCS=$(for d in includes includes/dist-derivedconstants/header includes/dist-ghcconstants/header rts/dist/build libraries/*/include libraries/*/dist-install/build libraries/*/dist-install/build/autogen; do [ -d "$d" ] && printf ' -I%s' "$d" || true; done)
 for c in hcstubs/*.c; do "${CC}" -c "$c" -o "${c%.c}.o" ${INCS} ${RTSDEFS} -w; done
 ar q hcstubs/libhcstubs.a hcstubs/*.o
 # GMP >= 6.2 initialises an mpz lazily (no limb allocation); integer-gmp 0.5 recovers the result
