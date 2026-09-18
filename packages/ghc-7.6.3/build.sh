@@ -77,6 +77,7 @@ for t in ld ar ranlib nm objdump strip as objcopy; do ln -sf "$(command -v $t)" 
 ln -sf "${CCDIR}/gcc" "${XTOOLS}/${TRIPLE}-gcc"
 export PATH="${XTOOLS}:${PATH}"
 CC="${CCDIR}/gcc"; LD="$(command -v ld)"; AR="$(command -v ar)"
+export CC   # every library configure in the tree compiles its probes with it
 
 # --- P2 target tree ---
 mkdir T && tar -xjf "${SRC_TARBALL}" -C T --strip-components=1 --no-same-owner
@@ -108,19 +109,21 @@ DYNAMIC_BY_DEFAULT = NO
 DYNAMIC_GHC_PROGRAMS = NO
 EOF
 # configure builds utils/ghc-pwd with the boot compiler and aborts without one; ghc-pwd only prints
-# the working directory, so /bin/pwd stands in (re-placed after configure's own rm/mkdir of the
-# dist-boot dir). The matching-ghc-pkg check has nothing to match either.
+# the working directory, so coreutils' pwd stands in (re-placed after configure's own rm/mkdir of
+# the dist-boot dir). The matching-ghc-pkg check has nothing to match either.
+PWDBIN="$(command -v pwd)"
 sed -i 's|as_fn_error $? "Building ghc-pwd failed"|: hc-boot-skip-ghc-pwd|' configure
 sed -i 's|as_fn_error $? "Cannot find matching ghc-pkg"|: hc-boot-skip-ghc-pkg|' configure
-sed -i 's|^\([[:space:]]*\)mkdir  *utils/ghc-pwd/dist-boot[[:space:]]*$|&; cp /bin/pwd utils/ghc-pwd/dist-boot/ghc-pwd|' configure
-grep -q 'cp /bin/pwd utils/ghc-pwd' configure || { echo "ghc-${VERSION}: ghc-pwd hook did not apply" >&2; exit 1; }
+sed -i "s|^\([[:space:]]*\)mkdir  *utils/ghc-pwd/dist-boot[[:space:]]*$|&; cp ${PWDBIN} utils/ghc-pwd/dist-boot/ghc-pwd|" configure
+grep -q "cp ${PWDBIN} utils/ghc-pwd" configure || { echo "ghc-${VERSION}: ghc-pwd hook did not apply" >&2; exit 1; }
 # rules/build-prog.mk's hc-boot link branch carries one stray double quote.
 perl -pi -e 's/(\$\$\(call cmd,\$1_\$2_CC\))"( -o)/$1$2/g; s/"(\$\$\(call cmd,\$1_\$2_CC\))""( -o)/"$1"$2/g' rules/build-prog.mk
 # Without a boot compiler configure cannot infer the platform from `ghc --info`.
 CC="${CC}" ./configure --enable-hc-boot --with-gcc="${CC}" --build=${TRIPLE} --host=${TRIPLE} --target=${TRIPLE} --prefix="${PREFIX}" > ../configure.log 2>&1 \
   || { tail -30 ../configure.log >&2; echo "ghc-${VERSION}: configure failed" >&2; exit 1; }
 grep -q 'Bootstrapping from HC files' ../configure.log || { echo "ghc-${VERSION}: configure did not enter hc-boot mode" >&2; exit 1; }
-( cd libraries/integer-gmp && ./configure > /dev/null 2>&1 )
+( cd libraries/integer-gmp && ./configure > ../../../integer-gmp-configure.log 2>&1 ) \
+  || { tail -20 ../integer-gmp-configure.log >&2; echo "ghc-${VERSION}: integer-gmp configure failed" >&2; exit 1; }
 make CC_STAGE0="${CC}" CC="${CC}" bootstrapping-files > ../bootstrapping-files.log 2>&1 \
   || { tail -30 ../bootstrapping-files.log >&2; echo "ghc-${VERSION}: bootstrapping-files failed" >&2; exit 1; }
 grep -q 'TABLES_NEXT_TO_CODE 1' includes/ghcautoconf.h && { echo "ghc-${VERSION}: TABLES_NEXT_TO_CODE leaked into the unregisterised build" >&2; exit 1; }
@@ -176,7 +179,9 @@ ghc_stage1_v_EXTRA_CC_OPTS += -Wl,--start-group $(compiler_stage1_v_LIB) $(ALL_S
 utils/ghc-pkg_dist-install_OTHER_OBJS += utils/ghc-pkg/dist-install/build/hcboot_main.o
 utils/ghc-pkg_dist-install_v_EXTRA_CC_OPTS += -Wl,--start-group $(ALL_STAGE1_LIBS) $(ALL_RTS_LIBS) $(libffi_STATIC_LIB) $(wildcard hcstubs/libhcstubs.a) -Wl,--end-group -lgmp -lm -lutil -lrt -ltinfo -ldl -lpthread
 EOF
-for d in libraries/*/; do [ -x "$d/configure" ] && ( cd "$d" && ./configure > /dev/null 2>&1 ) || true; done
+for d in libraries/*/; do [ -x "$d/configure" ] || continue
+  ( cd "$d" && ./configure > configure.log 2>&1 ) || { tail -20 "$d/configure.log" >&2; echo "ghc-${VERSION}: $d configure failed" >&2; exit 1; }
+done
 make bootstrapping-files > ../bootstrapping-files-2.log 2>&1 || true
 # Command-line variables beat every makefile assignment: the RTS (manual-package-config) never
 # gets rts_dist_CC etc. defined, AR_OPTS came out empty, and build.mk cannot override

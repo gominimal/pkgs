@@ -73,6 +73,7 @@ CCDIR="${BUILDROOT}/cc"; mkdir -p "${CCDIR}"
 mkfixlib "${CCDIR}/fixlib"
 mkwrapper "${CCDIR}/gcc" "${CCDIR}/fixlib"
 CC="${CCDIR}/gcc"
+export CC   # library configures inside the tree compile their probes with it
 
 # --- P2 bootstrap Hadrian ---
 mkdir src && tar -xJf "${SRC_TARBALL}" -C src --strip-components=1 --no-same-owner
