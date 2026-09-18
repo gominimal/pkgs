@@ -23,6 +23,8 @@ let findutils = import "../findutils/build.ncl" in
 let diffutils = import "../diffutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
 let xz = import "../xz/build.ncl" in
+let gzip = import "../gzip/build.ncl" in # the build system untars the bundled libffi
+let patch = import "../patch/build.ncl" in # and patches it
 let version = "8.6.5" in
 let amd64_spec =
   {
@@ -52,6 +54,8 @@ let amd64_spec =
       diffutils,
       tar,
       xz,
+      gzip,
+      patch,
     ],
     cmd = "./build.sh",
     outputs = {

@@ -26,6 +26,7 @@ let diffutils = import "../diffutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
 let xz = import "../xz/build.ncl" in
 let gzip = import "../gzip/build.ncl" in
+let patch = import "../patch/build.ncl" in # the build system patches the bundled libffi
 let version = "9.6.7" in
 let amd64_spec =
   {
@@ -63,6 +64,7 @@ let amd64_spec =
       tar,
       xz,
       gzip,
+      patch,
     ],
     cmd = "./build.sh",
     outputs = {
