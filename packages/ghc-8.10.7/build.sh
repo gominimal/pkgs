@@ -25,6 +25,7 @@ LOADER="${SR}/lib/ld-linux-x86-64.so.2"
 JOBS="$(nproc 2>/dev/null || echo 4)"
 export HOME="${BUILDROOT}/home"; mkdir -p "$HOME"
 export TMPDIR="${BUILDROOT}/tmp"; mkdir -p "$TMPDIR"   # GHC writes its temporary files here   # ghc-cabal reads the user package db location
+export TAR_OPTIONS=--no-same-owner   # the build system untars bundled tarballs (libffi) itself; the sandbox cannot chown
 
 # --- P0 preconditions ---
 [ "$(uname -m)" = x86_64 ] || { echo "ghc-${VERSION}: amd64 ladder rung on $(uname -m)" >&2; exit 1; }
