@@ -103,28 +103,27 @@ let revision = "1243" in
 let browser_version = "153.0.8010.52" in
 {
   name = "chromium-headless-shell-bin",
-  build_deps =
-    [
-      { file = "build.sh" } | Local,
-      # One complete CfT bundle per arch. Both extract to a single
-      # top-level dir matching Playwright's registry layout
-      # (chrome-headless-shell-linux64 / -linux-arm64, binary
-      # `chrome-headless-shell`), so build.sh needs no renames.
-      match {
-        { arch = 'Amd64, .. } =>
-          {
-            url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chrome-headless-shell-linux64.zip",
-            sha256 = "944dc1eae654637fed4d57650198774f9c43b45f34e48febb84f43c541b5de76",
-          } | Source,
-        { arch = 'Arm64, .. } =>
-          {
-            url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux-arm64/chrome-headless-shell-linux-arm64.zip",
-            sha256 = "d8e97f3bf2537280a60f4b9bae8e9f463d112c9cdce349f89c2c7611150282d7",
-          } | Source,
-      } target,
-      base,
-      unzip,
-    ],
+  build_deps = [
+    { file = "build.sh" } | Local,
+    # One complete CfT bundle per arch. Both extract to a single
+    # top-level dir matching Playwright's registry layout
+    # (chrome-headless-shell-linux64 / -linux-arm64, binary
+    # `chrome-headless-shell`), so build.sh needs no renames.
+    match {
+      { arch = 'Amd64, .. } =>
+        {
+          url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chrome-headless-shell-linux64.zip",
+          sha256 = "944dc1eae654637fed4d57650198774f9c43b45f34e48febb84f43c541b5de76",
+        } | Source,
+      { arch = 'Arm64, .. } =>
+        {
+          url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux-arm64/chrome-headless-shell-linux-arm64.zip",
+          sha256 = "d8e97f3bf2537280a60f4b9bae8e9f463d112c9cdce349f89c2c7611150282d7",
+        } | Source,
+    } target,
+    base,
+    unzip,
+  ],
   runtime_deps = [
     bash,
     glibc,
