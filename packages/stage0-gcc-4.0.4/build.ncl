@@ -4,9 +4,9 @@ let { target, .. } = import "config.ncl" in
 # the musl sysroot at /usr/lib/musl-bedrock, with as/ld/ar/ranlib from stage0-binutils-2.30. The
 # tarball ships every generated file, so no autotools/bison/flex are needed; the shipped 2005
 # config.sub already knows x86_64-linux-gnu. See build.sh.
-let stage0-tcc-musl-s4 = import "../stage0-tcc-0.9.27-musl-s4/build.ncl" in # CC: /usr/bin/tcc-musl2 + /usr/lib/tcc/libtcc1.a
-let stage0-musl-r4 = import "../stage0-musl-1.1.24-cc2/build.ncl" in # link target: musl libc.a + crt + headers, and the /usr/lib/musl-bedrock sysroot
-let stage0-binutils-r5 = import "../stage0-binutils-2.30/build.ncl" in # as/ld/ar/ranlib/nm on PATH (xgcc assembles libgcc via as)
+let stage0-tcc-0-9-27-musl-s4 = import "../stage0-tcc-0.9.27-musl-s4/build.ncl" in # CC: /usr/bin/tcc-musl2 + /usr/lib/tcc/libtcc1.a
+let stage0-musl-1-1-24-cc2 = import "../stage0-musl-1.1.24-cc2/build.ncl" in # link target: musl libc.a + crt + headers, and the /usr/lib/musl-bedrock sysroot
+let stage0-binutils-2-30 = import "../stage0-binutils-2.30/build.ncl" in # as/ld/ar/ranlib/nm on PATH (xgcc assembles libgcc via as)
 let bash = import "../bash/build.ncl" in # build.sh + configure shell
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in # source seds
@@ -31,9 +31,9 @@ let amd64_spec =
         sha256 = "e9bf58c761a4f988311aef6b41f12fd5c7e51d09477468fb73826aecc1be32e7",
         extract = false,
       } | Source,
-      stage0-tcc-musl-s4, # CC (via the musl-cc wrapper) + AR="tcc-musl2 -ar"
-      stage0-musl-r4, # static link target
-      stage0-binutils-r5, # as/ld/ar/ranlib/nm on PATH
+      stage0-tcc-0-9-27-musl-s4, # CC (via the musl-cc wrapper) + AR="tcc-musl2 -ar"
+      stage0-musl-1-1-24-cc2, # static link target
+      stage0-binutils-2-30, # as/ld/ar/ranlib/nm on PATH
       bash,
       make,
       sed,

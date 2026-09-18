@@ -6,8 +6,8 @@ let { target, .. } = import "config.ncl" in
 # choice cannot change the output. stage0-gcc-10.4.0 is the only gcc in the closure, so /usr/bin/gcc
 # is unambiguous. See build.sh.
 let stage0-gcc-10-4-0 = import "../stage0-gcc-10.4.0/build.ncl" in # HOSTCC for unifdef
-let stage0-binutils = import "../stage0-binutils-2.41/build.ncl" in # as/ld for the host gcc
-let stage0-musl-r7 = import "../stage0-musl-1.2.5/build.ncl" in # /usr/lib/musl-bedrock-1.2.5 sysroot (static link)
+let stage0-binutils-2-41 = import "../stage0-binutils-2.41/build.ncl" in # as/ld for the host gcc
+let stage0-musl-1-2-5 = import "../stage0-musl-1.2.5/build.ncl" in # /usr/lib/musl-bedrock-1.2.5 sysroot (static link)
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -32,8 +32,8 @@ let amd64_spec =
         extract = false,
       } | Source,
       stage0-gcc-10-4-0, # HOSTCC (via the gcc-cc wrapper in build.sh)
-      stage0-binutils, # as/ld/ar/ranlib
-      stage0-musl-r7, # static musl sysroot
+      stage0-binutils-2-41, # as/ld/ar/ranlib
+      stage0-musl-1-2-5, # static musl sysroot
       bash,
       make,
       sed,

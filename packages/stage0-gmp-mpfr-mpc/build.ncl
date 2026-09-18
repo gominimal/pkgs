@@ -5,9 +5,9 @@ let { target, .. } = import "config.ncl" in
 # --with-mpc. One combined package because the three are always consumed together and have a strict
 # build order (gmp, mpfr, mpc). Output: /usr/lib/gcc-math/{lib,include}, a single-writer tree so
 # consumers do not depend on the merged /usr. See build.sh.
-let stage0-gcc = import "../stage0-gcc-4.0.4/build.ncl" in # CC (via the gcc-cc wrapper)
-let stage0-musl-r7 = import "../stage0-musl-1.2.5/build.ncl" in # /usr/lib/musl-bedrock-1.2.5 sysroot (link libc)
-let stage0-binutils-r5 = import "../stage0-binutils-2.30/build.ncl" in # as/ld/ar/ranlib
+let stage0-gcc-4-0-4 = import "../stage0-gcc-4.0.4/build.ncl" in # CC (via the gcc-cc wrapper)
+let stage0-musl-1-2-5 = import "../stage0-musl-1.2.5/build.ncl" in # /usr/lib/musl-bedrock-1.2.5 sysroot (link libc)
+let stage0-binutils-2-30 = import "../stage0-binutils-2.30/build.ncl" in # as/ld/ar/ranlib
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -38,9 +38,9 @@ let amd64_spec =
         sha256 = "17503d2c395dfcf106b622dc142683c1199431d095367c6aacba6eec30340459",
         extract = false,
       } | Source,
-      stage0-gcc, # CC
-      stage0-musl-r7, # the sysroot the wrapper links against
-      stage0-binutils-r5, # as/ld/ar/ranlib on PATH
+      stage0-gcc-4-0-4, # CC
+      stage0-musl-1-2-5, # the sysroot the wrapper links against
+      stage0-binutils-2-30, # as/ld/ar/ranlib on PATH
       bash,
       make,
       sed,

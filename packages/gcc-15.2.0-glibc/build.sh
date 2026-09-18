@@ -2,21 +2,8 @@
 # gcc-15.2.0-glibc: builds gcc 15.2.0 (c, c++, fortran; shared libstdc++.so.6, libgcc_s.so.1, libgomp,
 # libatomic, libquadmath) from gcc-15.2.0.tar.xz with stage0-gcc-15.2.0's gcc/g++ as CC/CXX,
 # targeting the glibc-2.42 sysroot at /usr/lib/glibc-bedrock-2.42, assembled by binutils-2.46-glibc.
-# Installed under /usr into $OUTPUT_DIR. On aarch64 the prebuilt artifact from build.ncl's Arm64
-# Source is extracted instead of building.
-# phases: arm extract, clean state, preconditions, libc.so fix, unpack, host wrappers, mtime guard, configure, build, install, correctness gates
-if [ "$(uname -m)" = "aarch64" ]; then
-  set -ex
-  ART=$(ls stage0-gcc-*-aarch64.tar.zst /build/stage0-gcc-*-aarch64.tar.zst 2>/dev/null | head -1)
-  [ -n "$ART" ] || { echo "FATAL: arm artifact not hydrated (stage0-gcc-*-aarch64.tar.zst)" >&2; exit 1; }
-  mkdir -p "$OUTPUT_DIR"
-  tar --zstd --no-same-owner -xf "$ART" -C "$OUTPUT_DIR"
-  [ -x "$OUTPUT_DIR/usr/bin/gcc" ] && [ -x "$OUTPUT_DIR/usr/bin/g++" ] \
-    || { echo "FATAL: gcc/g++ missing after extract" >&2; ls "$OUTPUT_DIR/usr/bin" >&2; exit 1; }
-  [ -f "$OUTPUT_DIR/usr/include/c++/15.2.0/aarch64-linux-gnu/bits/c++config.h" ] \
-    || { echo "FATAL: C++ headers missing after extract" >&2; exit 1; }
-  exit 0
-fi
+# Installed under /usr into $OUTPUT_DIR.
+# phases: clean state, preconditions, libc.so fix, unpack, host wrappers, mtime guard, configure, build, install, correctness gates
 
 # --- clean state: the build directory may persist between runs ---
 # Start from an empty $OUTPUT_DIR and drop every top-level directory (derived build/source trees);

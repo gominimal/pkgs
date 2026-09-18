@@ -12,8 +12,8 @@ let { target, .. } = import "config.ncl" in
 # at /usr/lib/tcc/libtcc1.a, which the float gate in build.sh links against.
 # stage0-musl-1.1.24's headers at /usr/include only satisfy tcc-musl2's baked sysinclude path
 # for configure's probe compiles; the compile is -c/-ar only and never links against /usr/lib.
-let stage0-tcc-musl-s3 = import "../stage0-tcc-0.9.27-musl-s3/build.ncl" in # tcc-musl2 + libtcc1.a
-let stage0-musl-r4 = import "../stage0-musl-1.1.24/build.ncl" in # musl headers at /usr/include for configure probes
+let stage0-tcc-0-9-27-musl-s3 = import "../stage0-tcc-0.9.27-musl-s3/build.ncl" in # tcc-musl2 + libtcc1.a
+let stage0-musl-1-1-24 = import "../stage0-musl-1.1.24/build.ncl" in # musl headers at /usr/include for configure probes
 let bash = import "../bash/build.ncl" in # build.sh interpreter
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in # configure: config.mak generation
@@ -45,8 +45,8 @@ let amd64_spec =
         sha256 = "1370c9a812b2cf2a7d92802510cca0058cc37e66a7bedd70051f0a34015022a3",
         extract = false,
       } | Source,
-      stage0-tcc-musl-s3, # /usr/bin/tcc-musl2 (CC and `tcc-musl2 -ar`), /usr/lib/tcc/libtcc1.a
-      stage0-musl-r4, # musl headers at /usr/include for configure probes only
+      stage0-tcc-0-9-27-musl-s3, # /usr/bin/tcc-musl2 (CC and `tcc-musl2 -ar`), /usr/lib/tcc/libtcc1.a
+      stage0-musl-1-1-24, # musl headers at /usr/include for configure probes only
       bash,
       make,
       sed,

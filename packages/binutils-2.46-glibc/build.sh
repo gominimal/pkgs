@@ -3,19 +3,8 @@
 # strip, shared libbfd/libopcodes) from binutils-2.46.0.tar.xz with stage0-gcc-15.2.0 as CC,
 # glibc-dynamic against the glibc-2.42 sysroot at /usr/lib/glibc-bedrock-2.42, as/ld from
 # stage0-binutils-2.41, with the production binutils configure flags. Installed under /usr into
-# $OUTPUT_DIR. On aarch64 the prebuilt artifact from build.ncl's Arm64 Source (binutils 2.41) is
-# extracted instead of building.
-# phases: arm extract, clean state, preconditions, libc.so fix, unpack, CC/CXX wrappers, mtime guard, configure, build, install, triplet symlinks, smoke gate
-if [ "$(uname -m)" = "aarch64" ]; then
-  set -ex
-  ART=$(ls stage0-binutils-*-aarch64.tar.zst /build/stage0-binutils-*-aarch64.tar.zst 2>/dev/null | head -1)
-  [ -n "$ART" ] || { echo "FATAL: arm artifact not hydrated (stage0-binutils-*-aarch64.tar.zst)" >&2; exit 1; }
-  mkdir -p "$OUTPUT_DIR"
-  tar --zstd --no-same-owner -xf "$ART" -C "$OUTPUT_DIR"
-  LD=$(find "$OUTPUT_DIR" -name ld -type f -path '*/bin/*' | head -1)
-  [ -n "$LD" ] || { echo "FATAL: ld missing after extract" >&2; exit 1; }
-  exit 0
-fi
+# $OUTPUT_DIR.
+# phases: clean state, preconditions, libc.so fix, unpack, CC/CXX wrappers, mtime guard, configure, build, install, triplet symlinks, smoke gate
 
 # --- clean state: the build directory may persist between runs ---
 # Start from an empty $OUTPUT_DIR and drop every top-level directory (derived build/source trees);

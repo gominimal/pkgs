@@ -5,7 +5,7 @@ let { target, .. } = import "config.ncl" in
 # headers and linked statically against mes crt/libc. The output bakes musl prefixes (/usr/lib,
 # /usr/include) for the later musl-linked stages. Deps are mes-side only (no musl), so the
 # sandbox carries no mes/musl header collision. Outputs: usr/bin/tcc-musl + x86_64 libtcc1.a.
-let stage0-tcc-r2 = import "../stage0-tcc-0.9.26/build.ncl" in # the mes-linked compiler that builds tcc-musl
+let stage0-tcc-0-9-26 = import "../stage0-tcc-0.9.26/build.ncl" in # the mes-linked compiler that builds tcc-musl
 let stage0-mes = import "../stage0-mes/build.ncl" in # mes headers + mes crt/libc the build links against
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -26,7 +26,7 @@ let amd64_spec =
         sha256 = "f04ba1598543f3f09a0f0b95c9804e00ee7dc5eacfdacf159d6850873eeee3e9",
         extract = false,
       } | Source,
-      stage0-tcc-r2,
+      stage0-tcc-0-9-26,
       stage0-mes,
       bash,
       coreutils,

@@ -4,11 +4,11 @@ let { target, .. } = import "config.ncl" in
 # stage0-gcc-10.4.0's gcc/g++ and linked statically against the musl-1.2.5 sysroot, using gmp/mpfr/mpc
 # from stage0-gmp-mpfr-mpc (/usr/lib/gcc-math) and as/ld/ar/ranlib from stage0-binutils-2.41.
 # Same source and sha as the production gcc package. gcc-15 requires a C++14 host compiler, which
-# gcc-10.4.0 provides. The stage0-cc import below is the host-compiler swap point. See build.sh.
-let stage0-cc = import "../stage0-gcc-10.4.0/build.ncl" in # CC=gcc-10.4.0, CXX=g++ (with its musl libstdc++)
+# gcc-10.4.0 provides. The stage0-gcc-10-4-0 import below is the host-compiler swap point. See build.sh.
+let stage0-gcc-10-4-0 = import "../stage0-gcc-10.4.0/build.ncl" in # CC=gcc-10.4.0, CXX=g++ (with its musl libstdc++)
 let stage0-gmp-mpfr-mpc = import "../stage0-gmp-mpfr-mpc/build.ncl" in # /usr/lib/gcc-math: libgmp/libmpfr/libmpc.a + headers
-let stage0-musl-r7 = import "../stage0-musl-1.2.5/build.ncl" in # /usr/lib/musl-bedrock-1.2.5 sysroot (link libc)
-let stage0-binutils = import "../stage0-binutils-2.41/build.ncl" in # as/ld/ar/ranlib
+let stage0-musl-1-2-5 = import "../stage0-musl-1.2.5/build.ncl" in # /usr/lib/musl-bedrock-1.2.5 sysroot (link libc)
+let stage0-binutils-2-41 = import "../stage0-binutils-2.41/build.ncl" in # as/ld/ar/ranlib
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -33,10 +33,10 @@ let amd64_spec =
         sha256 = "438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e",
         extract = false,
       } | Source,
-      stage0-cc, # CC/CXX
+      stage0-gcc-10-4-0, # CC/CXX
       stage0-gmp-mpfr-mpc, # --with-gmp/mpfr/mpc=/usr/lib/gcc-math
-      stage0-musl-r7, # musl-1.2.5 sysroot
-      stage0-binutils, # as/ld/ar/ranlib
+      stage0-musl-1-2-5, # musl-1.2.5 sysroot
+      stage0-binutils-2-41, # as/ld/ar/ranlib
       bash,
       make,
       sed,

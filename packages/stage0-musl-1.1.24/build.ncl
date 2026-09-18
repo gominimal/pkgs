@@ -17,7 +17,7 @@ let { target, .. } = import "config.ncl" in
 # stage0-mes supplies the mes headers at /usr/include/mes, tcc-0.9.27's baked sysinclude path,
 # so configure's probe compiles resolve their includes. /usr is read-only at build time; make
 # installs under DESTDIR=$OUTPUT_DIR.
-let stage0-tcc-r3 = import "../stage0-tcc-0.9.27/build.ncl" in # /usr/bin/tcc, libtcc1.a, /usr/lib/mes
+let stage0-tcc-0-9-27 = import "../stage0-tcc-0.9.27/build.ncl" in # /usr/bin/tcc, libtcc1.a, /usr/lib/mes
 let stage0-mes = import "../stage0-mes/build.ncl" in # mes headers at /usr/include/mes for configure probes
 let bash = import "../bash/build.ncl" in # build.sh interpreter
 let make = import "../make/build.ncl" in
@@ -51,7 +51,7 @@ let amd64_spec =
         sha256 = "1370c9a812b2cf2a7d92802510cca0058cc37e66a7bedd70051f0a34015022a3",
         extract = false,
       } | Source,
-      stage0-tcc-r3, # /usr/bin/tcc (CC and `tcc -ar`), libtcc1.a, /usr/lib/mes
+      stage0-tcc-0-9-27, # /usr/bin/tcc (CC and `tcc -ar`), libtcc1.a, /usr/lib/mes
       stage0-mes, # /usr/include/** mes headers for configure probes
       bash,
       make,

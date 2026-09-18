@@ -4,8 +4,8 @@ let { target, .. } = import "config.ncl" in
 # libopcodes.a) built by tcc-musl2 and linked statically against the musl sysroot at
 # /usr/lib/musl-bedrock. The tarball ships every generated file, so no autoreconf/bison/flex/perl
 # are needed. See build.sh.
-let stage0-tcc-musl-s4 = import "../stage0-tcc-0.9.27-musl-s4/build.ncl" in # CC: /usr/bin/tcc-musl2 + /usr/lib/tcc/libtcc1.a
-let stage0-musl-r4b = import "../stage0-musl-1.1.24-cc2/build.ncl" in # link target: musl libc.a + crt + headers, and the /usr/lib/musl-bedrock sysroot
+let stage0-tcc-0-9-27-musl-s4 = import "../stage0-tcc-0.9.27-musl-s4/build.ncl" in # CC: /usr/bin/tcc-musl2 + /usr/lib/tcc/libtcc1.a
+let stage0-musl-1-1-24-cc2 = import "../stage0-musl-1.1.24-cc2/build.ncl" in # link target: musl libc.a + crt + headers, and the /usr/lib/musl-bedrock sysroot
 let bash = import "../bash/build.ncl" in # build.sh + configure shell
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -33,8 +33,8 @@ let amd64_spec =
         sha256 = "6e46b8aeae2f727a36f0bd9505e405768a72218f1796f0d09757d45209871ae6",
         extract = false,
       } | Source,
-      stage0-tcc-musl-s4, # /usr/bin/tcc-musl2 + /usr/lib/tcc/libtcc1.a
-      stage0-musl-r4b, # /usr/lib/{libc.a,crt1.o,crti.o,crtn.o} + /usr/include/** (the link target)
+      stage0-tcc-0-9-27-musl-s4, # /usr/bin/tcc-musl2 + /usr/lib/tcc/libtcc1.a
+      stage0-musl-1-1-24-cc2, # /usr/lib/{libc.a,crt1.o,crti.o,crtn.o} + /usr/include/** (the link target)
       bash,
       make,
       sed,

@@ -4,8 +4,8 @@ let { target, .. } = import "config.ncl" in
 # musl (stage0-musl-1.1.24) into tcc-musl2, a musl-linked tcc that does not depend on mes-libc
 # at runtime. Deps are musl-side only (no mes), so /usr/include is pure musl.
 # Outputs: usr/bin/tcc-musl2 + s1's libtcc1.a passed through.
-let stage0-musl-r4 = import "../stage0-musl-1.1.24/build.ncl" in
-let stage0-tcc-musl-s1 = import "../stage0-tcc-0.9.27-musl-s1/build.ncl" in
+let stage0-musl-1-1-24 = import "../stage0-musl-1.1.24/build.ncl" in
+let stage0-tcc-0-9-27-musl-s1 = import "../stage0-tcc-0.9.27-musl-s1/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
@@ -25,8 +25,8 @@ let amd64_spec =
         sha256 = "4267860f408f2df455116bc7e7ee9cee874cc81339841d0760a2a0261803ae79",
         extract = false,
       } | Source,
-      stage0-musl-r4,
-      stage0-tcc-musl-s1,
+      stage0-musl-1-1-24,
+      stage0-tcc-0-9-27-musl-s1,
       bash,
       coreutils,
       tar,

@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
@@ -66,13 +66,6 @@ let version = "1.97.1" in
     sqlite,
     subsetOf gcc ["libgcc", "libstdcpp"],
   ],
-  # `needs` is kept for environments that build this recipe without pre-staged mirrors;
-  # the build itself no longer downloads anything.
-  needs =
-    {
-      dns = {},
-      internet = {},
-    } | Needs,
 
   cmd = "./build.sh",
   outputs = {

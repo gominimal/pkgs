@@ -1,16 +1,16 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
-# glibc-bedrock-2.42: the production glibc-2.42 source (same sha as packages/glibc) built cold from
+# glibc-bedrock-2.42: the glibc-2.42 source built cold from
 # source by stage0-gcc-15.2.0 and stage0-binutils-2.41, with musl (stage0-musl-1.2.5) as the host
 # compiler's own libc for BUILD_CC only. Unlike the production glibc package (a native rebuild with
 # glibc already in /usr), this is a headers-first cross-style build: a distinct host triple so
 # configure skips AC_TRY_RUN probes, pass 1 installs headers + crt + a stub libc.so into a staging
 # sysroot, an optional pass 2 rebuilds libgcc against glibc, pass 3 builds glibc itself. Outputs the
 # plain /usr layout plus a versioned single-writer sysroot at usr/lib/glibc-bedrock-2.42. See build.sh.
-let stage0-gcc = import "../stage0-gcc-15.2.0/build.ncl" in # CC/CXX (musl-linked, --disable-shared)
-let stage0-binutils = import "../stage0-binutils-2.41/build.ncl" in # as/ld/ar/ranlib (glibc-2.42 needs binutils >= 2.39)
-let stage0-linux-headers = import "../stage0-linux-headers-6.12.43/build.ncl" in # kernel UAPI at /usr/include/{linux,asm,asm-generic}
-let stage0-musl = import "../stage0-musl-1.2.5/build.ncl" in # /usr/lib/musl-bedrock-1.2.5: the host compiler's own libc, BUILD_CC only
+let stage0-gcc-15-2-0 = import "../stage0-gcc-15.2.0/build.ncl" in # CC/CXX (musl-linked, --disable-shared)
+let stage0-binutils-2-41 = import "../stage0-binutils-2.41/build.ncl" in # as/ld/ar/ranlib (glibc-2.42 needs binutils >= 2.39)
+let stage0-linux-headers-6-12-43 = import "../stage0-linux-headers-6.12.43/build.ncl" in # kernel UAPI at /usr/include/{linux,asm,asm-generic}
+let stage0-musl-1-2-5 = import "../stage0-musl-1.2.5/build.ncl" in # /usr/lib/musl-bedrock-1.2.5: the host compiler's own libc, BUILD_CC only
 let stage0-gmp-mpfr-mpc = import "../stage0-gmp-mpfr-mpc/build.ncl" in # /usr/lib/gcc-math, used only if pass 2 runs
 # build tools, matching the production glibc package
 let bash = import "../bash/build.ncl" in
@@ -70,24 +70,13 @@ let amd64_spec =
     name = "glibc-bedrock-2.42",
     build_deps = [
       { file = "build.sh" } | Local,
-      match {
-        { arch = 'Amd64, .. } =>
-          {
-            # production glibc-2.42 tarball, same sha as packages/glibc (upstream:
-            # https://ftp.gnu.org/gnu/glibc/). extract=false: build.sh untars with --no-same-owner.
-            url = "gs://minimal-staging-archives/glibc-%{version}.tar.xz",
-            sha256 = "d1775e32e4628e64ef930f435b67bb63af7599acb6be2b335b9f19f16509f17f",
-            extract = false,
-          } | Source,
-        { arch = 'Arm64, .. } =>
-          {
-            # aarch64 prebuilt from the arm64 bootstrap chain: glibc-2.42 with locales. Root-shaped
-            # usr/lib/glibc-bedrock-%{version}/ tree; build.sh extracts it verbatim.
-            url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/a1d40cb10e77670c3c1b00bf2ce28f45775146dfe0397d4c4c5468e955bb1cdc/stage0-glibc-2.42-aarch64.tar.zst",
-            sha256 = "a1d40cb10e77670c3c1b00bf2ce28f45775146dfe0397d4c4c5468e955bb1cdc",
-            extract = false,
-          } | Source,
-      } target,
+      {
+        # glibc-2.42 tarball (upstream:
+        # https://ftp.gnu.org/gnu/glibc/). extract=false: build.sh untars with --no-same-owner.
+        url = "gs://minimal-staging-archives/glibc-%{version}.tar.xz",
+        sha256 = "d1775e32e4628e64ef930f435b67bb63af7599acb6be2b335b9f19f16509f17f",
+        extract = false,
+      } | Source,
       {
         # gcc-15.2.0 source, needed only for the optional pass-2 libgcc rebuild (B4_REBUILD_LIBGCC=1);
         # same sha as stage0-gcc-15.2.0. build.sh untars it only inside that branch, so by default it
@@ -98,10 +87,10 @@ let amd64_spec =
         extract = false,
       } | Source,
       # toolchain
-      stage0-gcc,
-      stage0-binutils,
-      stage0-linux-headers,
-      stage0-musl,
+      stage0-gcc-15-2-0,
+      stage0-binutils-2-41,
+      stage0-linux-headers-6-12-43,
+      stage0-musl-1-2-5,
       stage0-gmp-mpfr-mpc,
       # build tools
       bash,

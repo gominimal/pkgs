@@ -13,7 +13,7 @@ let { target, .. } = import "config.ncl" in
 #
 # /usr is mounted read-only; the build writes to /build/output/usr/**. Because tcc-0.9.27 is
 # only used for -c/-ar here, the deliverable bakes the consumer /usr/lib/mes directly.
-let stage0-tcc-r2 = import "../stage0-tcc-0.9.26/build.ncl" in # tcc-0.9.26 + its rebuilt mes-libc at /usr/lib/mes
+let stage0-tcc-0-9-26 = import "../stage0-tcc-0.9.26/build.ncl" in # tcc-0.9.26 + its rebuilt mes-libc at /usr/lib/mes
 let stage0-mes = import "../stage0-mes/build.ncl" in # mes libc headers
 let stage0-mescc-full = import "../stage0-mescc-full/build.ncl" in # kaem (driver), catm, simple-patch
 let coreutils = import "../coreutils/build.ncl" in # cp, chmod, mkdir, sha256sum
@@ -69,7 +69,7 @@ let amd64_spec =
         extract = true,
       } | Source,
       # toolchain suppliers (chain-enforce predecessor edges); build_deps are not transitively overlaid:
-      stage0-tcc-r2, # /usr/bin/{tcc-0.9.26,tcc,...} + /usr/lib/mes/**
+      stage0-tcc-0-9-26, # /usr/bin/{tcc-0.9.26,tcc,...} + /usr/lib/mes/**
       stage0-mes, # /usr/include/** (mes libc headers for the tcc.c compile)
       stage0-mescc-full, # /usr/bin/{kaem,catm,simple-patch,...}
       coreutils, # /usr/bin/{cp,chmod,mkdir,sha256sum}

@@ -1,6 +1,6 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
-# rustc-1.94.1: builds rustc 1.94.1 from the upstream -src tarball with the rustc-1.94.1 package as
+# rustc-1.94.1: builds rustc 1.94.1 from the upstream -src tarball with the rustc-1.93.1 package as
 # x.py's stage0, strictly offline, installed to /usr/lib/rustc-1.94.1 (bin/ + lib/ only).
 # rustc-1.95.0's bootstrap references proc_macro::tracked_env, which 1.94.1 provides and 1.94.0
 # does not; that is why the ladder passes through 1.94.1 rather than 1.94.0.
@@ -27,6 +27,7 @@ let amd64_spec =
     name = "rustc-%{version}",
     build_deps = [
       { file = "build.sh" } | Local,
+      { file = "rustc-1.94.1.answers" } | Local, # sha256 pins for the seal check in build.sh; unpinned today
       # The -src tarball ships .cargo/config.toml (crates-io -> vendored-sources) and vendor/, so no
       # cargo-vendor input is needed.  build.sh asserts src/version and the src/stage0 pairing.
       {

@@ -3,10 +3,10 @@ let { target, .. } = import "config.ncl" in
 # stage0-gcc-4.7.4: gcc 4.7.4 with C and C++ (cc1, cc1plus, g++, static libstdc++), built by
 # stage0-gcc-4.0.4 and linked statically against the musl-1.2.5 sysroot, using gmp/mpfr/mpc from
 # stage0-gmp-mpfr-mpc (/usr/lib/gcc-math) and as/ld/ar/ranlib from stage0-binutils-2.30. See build.sh.
-let stage0-gcc-405 = import "../stage0-gcc-4.0.4/build.ncl" in # CC (via the gcc-cc wrapper)
+let stage0-gcc-4-0-4 = import "../stage0-gcc-4.0.4/build.ncl" in # CC (via the gcc-cc wrapper)
 let stage0-gmp-mpfr-mpc = import "../stage0-gmp-mpfr-mpc/build.ncl" in # /usr/lib/gcc-math: libgmp/libmpfr/libmpc.a + headers
-let stage0-musl-r7 = import "../stage0-musl-1.2.5/build.ncl" in # /usr/lib/musl-bedrock-1.2.5 sysroot (link libc)
-let stage0-binutils-r5 = import "../stage0-binutils-2.30/build.ncl" in # as/ld/ar/ranlib
+let stage0-musl-1-2-5 = import "../stage0-musl-1.2.5/build.ncl" in # /usr/lib/musl-bedrock-1.2.5 sysroot (link libc)
+let stage0-binutils-2-30 = import "../stage0-binutils-2.30/build.ncl" in # as/ld/ar/ranlib
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -31,10 +31,10 @@ let amd64_spec =
         sha256 = "92e61c6dc3a0a449e62d72a38185fda550168a86702dea07125ebd3ec3996282",
         extract = false,
       } | Source,
-      stage0-gcc-405, # CC
+      stage0-gcc-4-0-4, # CC
       stage0-gmp-mpfr-mpc, # --with-gmp/mpfr/mpc=/usr/lib/gcc-math
-      stage0-musl-r7, # musl-1.2.5 sysroot
-      stage0-binutils-r5, # as/ld/ar/ranlib
+      stage0-musl-1-2-5, # musl-1.2.5 sysroot
+      stage0-binutils-2-30, # as/ld/ar/ranlib
       bash,
       make,
       sed,

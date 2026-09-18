@@ -11,8 +11,8 @@ let { target, .. } = import "config.ncl" in
 # output tree unless every gate passes. A failure here is deterministic (tcc-musl2 is
 # musl-linked), so the fix is a fresh s3 build, not a retry of s4.
 # Link target is stage0-musl-1.1.24-cc2's single-writer sysroot, not the merged /usr.
-let stage0-musl-r4b = import "../stage0-musl-1.1.24-cc2/build.ncl" in # musl libc.a + crt + headers (link target)
-let stage0-tcc-musl-s3 = import "../stage0-tcc-0.9.27-musl-s3/build.ncl" in # tcc-musl2 (candidate) + libtcc1.a
+let stage0-musl-1-1-24-cc2 = import "../stage0-musl-1.1.24-cc2/build.ncl" in # musl libc.a + crt + headers (link target)
+let stage0-tcc-0-9-27-musl-s3 = import "../stage0-tcc-0.9.27-musl-s3/build.ncl" in # tcc-musl2 (candidate) + libtcc1.a
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
@@ -38,8 +38,8 @@ let amd64_spec =
         sha256 = "8567511d499c73ded9432a07d9e0047a166efd3b32bc4a8d2cc31ec37ff8c705",
         extract = false,
       } | Source,
-      stage0-musl-r4b,
-      stage0-tcc-musl-s3,
+      stage0-musl-1-1-24-cc2,
+      stage0-tcc-0-9-27-musl-s3,
       bash,
       coreutils,
       tar,

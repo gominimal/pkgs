@@ -1,16 +1,16 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
-# gcc-15.2.0-glibc: the production gcc-15.2.0 source (same sha as packages/gcc) built by
+# gcc-15.2.0-glibc: the gcc-15.2.0 source (same sha as packages/gcc) built by
 # stage0-gcc-15.2.0 and targeting glibc-bedrock-2.42, producing the glibc-linked shared runtime
 # libraries downstream packages link (libstdc++.so.6, libgcc_s.so.1, libgomp, libatomic,
 # libquadmath), assembled by binutils-2.46-glibc. gmp/mpfr/mpc come from stage0-gmp-mpfr-mpc: they
 # are linked statically into cc1 and do not affect the target ABI. Byte parity with the prebuilt gcc
 # is not expected (a different compiler built it). See build.sh for the configure flags and gates.
-let stage0-cc = import "../stage0-gcc-15.2.0/build.ncl" in # CC=gcc-15.2.0, CXX=g++ (with its musl libstdc++): the host compiler
+let stage0-gcc-15-2-0 = import "../stage0-gcc-15.2.0/build.ncl" in # CC=gcc-15.2.0, CXX=g++ (with its musl libstdc++): the host compiler
 let binutils-glibc = import "../binutils-2.46-glibc/build.ncl" in # glibc-linked as/ld/ar/ranlib
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # target glibc sysroot at /usr/lib/glibc-bedrock-2.42
 let stage0-gmp-mpfr-mpc = import "../stage0-gmp-mpfr-mpc/build.ncl" in # /usr/lib/gcc-math: libgmp/libmpfr/libmpc.a for cc1
-let stage0-linux-headers = import "../stage0-linux-headers-6.12.43/build.ncl" in # kernel UAPI at /usr/include (glibc headers include <linux/...>)
+let stage0-linux-headers-6-12-43 = import "../stage0-linux-headers-6.12.43/build.ncl" in # kernel UAPI at /usr/include (glibc headers include <linux/...>)
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -28,30 +28,18 @@ let amd64_spec =
     build_deps = [
       { file = "build.sh" } | Local,
       { file = "stage0.answers" } | Local, # no byte-identity pins for this package; see the file
-      match {
-        { arch = 'Amd64, .. } =>
-          {
-            # full gcc-15.2.0 tarball (.tar.xz), same source and sha as stage0-gcc-15.2.0 and the
-            # production gcc package. extract=false: build.sh untars with --no-same-owner.
-            url = "gs://minimal-staging-archives/gcc-%{version}.tar.xz",
-            sha256 = "438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e",
-            extract = false,
-          } | Source,
-        { arch = 'Arm64, .. } =>
-          {
-            # aarch64 prebuilt from the arm64 bootstrap chain: gcc-15.2.0 with glibc and g++. Root-shaped
-            # usr/ tree with bin/{gcc,g++}, lib/gcc/aarch64-linux-gnu/15.2.0, include/c++/15.2.0;
-            # build.sh extracts it verbatim.
-            url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/6715136640b3e12d04231c34d4b17f0f39e7e034b94450a27769ca49e91ce5ad/stage0-gcc-15.2.0-glibc-aarch64.tar.zst",
-            sha256 = "6715136640b3e12d04231c34d4b17f0f39e7e034b94450a27769ca49e91ce5ad",
-            extract = false,
-          } | Source,
-      } target,
-      stage0-cc, # CC/CXX host compiler
+      {
+        # full gcc-15.2.0 tarball (.tar.xz), same source and sha as stage0-gcc-15.2.0 and the
+        # production gcc package. extract=false: build.sh untars with --no-same-owner.
+        url = "gs://minimal-staging-archives/gcc-%{version}.tar.xz",
+        sha256 = "438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e",
+        extract = false,
+      } | Source,
+      stage0-gcc-15-2-0, # CC/CXX host compiler
       binutils-glibc, # glibc-linked as/ld/ar/ranlib
       glibc-bedrock, # target glibc sysroot
       stage0-gmp-mpfr-mpc, # --with-gmp/mpfr/mpc=/usr/lib/gcc-math
-      stage0-linux-headers, # kernel UAPI at /usr/include
+      stage0-linux-headers-6-12-43, # kernel UAPI at /usr/include
       bash,
       make,
       sed,

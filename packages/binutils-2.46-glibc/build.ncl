@@ -1,12 +1,12 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
-# binutils-2.46-glibc: the production binutils-2.46.0 source (same sha as packages/binutils) built
+# binutils-2.46-glibc: the binutils-2.46.0 source built
 # by stage0-gcc-15.2.0 and linked glibc-dynamic against glibc-bedrock-2.42 (shared libbfd.so,
 # interp under /usr/lib/glibc-bedrock-2.42/lib), assembled by stage0-binutils-2.41, with the
 # production binutils configure flags. gold and gprofng stay disabled: they are C++ and would link
 # the host's musl-built libstdc++.a into a glibc binary. See build.sh.
-let stage0-gcc = import "../stage0-gcc-15.2.0/build.ncl" in # CC, retargeted to glibc via -B/-L/-isystem in build.sh
-let stage0-binutils-r10 = import "../stage0-binutils-2.41/build.ncl" in # as/ld/ar/ranlib on PATH for the host gcc
+let stage0-gcc-15-2-0 = import "../stage0-gcc-15.2.0/build.ncl" in # CC, retargeted to glibc via -B/-L/-isystem in build.sh
+let stage0-binutils-2-41 = import "../stage0-binutils-2.41/build.ncl" in # as/ld/ar/ranlib on PATH for the host gcc
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # target glibc sysroot at /usr/lib/glibc-bedrock-2.42 (kernel UAPI co-located)
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -25,26 +25,15 @@ let amd64_spec =
     build_deps = [
       { file = "build.sh" } | Local,
       { file = "stage0.answers" } | Local, # no byte-identity pins for this package; see the file
-      match {
-        { arch = 'Amd64, .. } =>
-          {
-            # production binutils-2.46.0 tarball, same sha as packages/binutils. extract=false:
-            # build.sh untars with --no-same-owner.
-            url = "gs://minimal-staging-archives/binutils-%{version}.tar.xz",
-            sha256 = "d75a94f4d73e7a4086f7513e67e439e8fcdcbb726ffe63f4661744e6256b2cf2",
-            extract = false,
-          } | Source,
-        { arch = 'Arm64, .. } =>
-          {
-            # aarch64 prebuilt from the arm64 bootstrap chain: binutils 2.41, not 2.46 (no 2.46 arm
-            # build exists yet). Root-shaped usr/ tree; build.sh extracts it verbatim.
-            url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/58fd82c720a3885df8d07341eb822a5eb880c204eff1b7b0b5017ea769067c6b/stage0-binutils-2.41-aarch64.tar.zst",
-            sha256 = "58fd82c720a3885df8d07341eb822a5eb880c204eff1b7b0b5017ea769067c6b",
-            extract = false,
-          } | Source,
-      } target,
-      stage0-gcc, # CC via the gcc-cc wrapper (glibc-targeted, no -static)
-      stage0-binutils-r10, # /usr/bin/{as,ld,ar,ranlib} for the host gcc
+      {
+        # binutils-2.46.0 tarball. extract=false:
+        # build.sh untars with --no-same-owner.
+        url = "gs://minimal-staging-archives/binutils-%{version}.tar.xz",
+        sha256 = "d75a94f4d73e7a4086f7513e67e439e8fcdcbb726ffe63f4661744e6256b2cf2",
+        extract = false,
+      } | Source,
+      stage0-gcc-15-2-0, # CC via the gcc-cc wrapper (glibc-targeted, no -static)
+      stage0-binutils-2-41, # /usr/bin/{as,ld,ar,ranlib} for the host gcc
       glibc-bedrock, # target glibc sysroot
       bash,
       make,
@@ -72,8 +61,8 @@ let amd64_spec =
     cmd = "./build.sh",
     outputs = {
       # as/ld/ar/nm/objcopy/objdump/ranlib/readelf/strip + addr2line/c++filt/size/strings + the
-      # x86_64-linux-gnu-<tool> symlinks. allow_executable: ELF programs kept as OutputData because
-      # they carry the sysroot interpreter, which OutputBin's checker rejects.
+      # x86_64-linux-gnu-<tool> symlinks. allow_executable: ELF programs exported as OutputData rather
+      # than OutputBin because consumers reach them by absolute path under this package's own prefix.
       bin = { glob = "usr/bin/*", allow_executable = true } | OutputData,
       # libbfd.so*/libopcodes.so* (--enable-shared) plus the .a files
       libs = { glob = "usr/lib/*.{a,so*}" } | OutputLib,

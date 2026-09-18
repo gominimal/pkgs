@@ -4,21 +4,8 @@
 # Installs to /usr in $OUTPUT_DIR and publishes a copy as the versioned single-writer sysroot
 # usr/lib/glibc-bedrock-2.42/{include,lib}. Unlike the production glibc package (a native rebuild with
 # glibc already in /usr), this is a headers-first cross-style build with no glibc present.
-# On aarch64 the prebuilt artifact from build.ncl's Arm64 Source is extracted instead of building.
-# phases: arm extract, clean state, preconditions, staging sysroot, wrappers, pass 1 (headers + crt), optional pass 2 (libgcc), pass 3 (glibc), sysroot publish, locales, correctness gates, linker-script rewrite
-if [ "$(uname -m)" = "aarch64" ]; then
-  set -ex
-  ART=$(ls stage0-glibc-*-aarch64.tar.zst /build/stage0-glibc-*-aarch64.tar.zst 2>/dev/null | head -1)
-  [ -n "$ART" ] || { echo "FATAL: arm glibc artifact not hydrated" >&2; exit 1; }
-  mkdir -p "$OUTPUT_DIR"
-  tar --zstd --no-same-owner -xf "$ART" -C "$OUTPUT_DIR"
-  V="${MINIMAL_ARG_VERSION:-2.42}"
-  [ -e "$OUTPUT_DIR/usr/lib/glibc-bedrock-$V/lib/ld-linux-aarch64.so.1" ] \
-    || { echo "FATAL: arm loader missing after extract" >&2; ls "$OUTPUT_DIR/usr/lib" >&2; exit 1; }
-  [ -f "$OUTPUT_DIR/usr/lib/glibc-bedrock-$V/include/stdio.h" ] \
-    || { echo "FATAL: arm glibc headers missing after extract" >&2; exit 1; }
-  exit 0
-fi
+#
+# phases: clean state, preconditions, staging sysroot, wrappers, pass 1 (headers + crt), optional pass 2 (libgcc), pass 3 (glibc), sysroot publish, locales, correctness gates, linker-script rewrite
 
 # --- clean state: the build directory may persist between runs ---
 # Start from an empty $OUTPUT_DIR and drop every top-level directory (derived build/source trees);

@@ -4,12 +4,12 @@ let { target, .. } = import "config.ncl" in
 # stage0-gcc-4.7.4's gcc/g++ and linked statically against the musl-1.2.5 sysroot, using gmp/mpfr/mpc
 # from stage0-gmp-mpfr-mpc (/usr/lib/gcc-math) and as/ld/ar/ranlib from stage0-binutils-2.41.
 # gcc-10.4.0 is the last gcc a C++98 host compiler can build (10.5 requires C++11, which gcc-4.7.4
-# lacks), so no intermediate gcc is needed. The stage0-cc import below is the host-compiler
+# lacks), so no intermediate gcc is needed. The stage0-gcc-4-7-4 import below is the host-compiler
 # swap point. See build.sh.
-let stage0-cc = import "../stage0-gcc-4.7.4/build.ncl" in # CC=gcc, CXX=g++ (with its musl libstdc++)
+let stage0-gcc-4-7-4 = import "../stage0-gcc-4.7.4/build.ncl" in # CC=gcc, CXX=g++ (with its musl libstdc++)
 let stage0-gmp-mpfr-mpc = import "../stage0-gmp-mpfr-mpc/build.ncl" in # /usr/lib/gcc-math: libgmp/libmpfr/libmpc.a + headers
-let stage0-musl-r7 = import "../stage0-musl-1.2.5/build.ncl" in # /usr/lib/musl-bedrock-1.2.5 sysroot (link libc)
-let stage0-binutils = import "../stage0-binutils-2.41/build.ncl" in # as/ld/ar/ranlib
+let stage0-musl-1-2-5 = import "../stage0-musl-1.2.5/build.ncl" in # /usr/lib/musl-bedrock-1.2.5 sysroot (link libc)
+let stage0-binutils-2-41 = import "../stage0-binutils-2.41/build.ncl" in # as/ld/ar/ranlib
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -34,10 +34,10 @@ let amd64_spec =
         sha256 = "c9297d5bcd7cb43f3dfc2fed5389e948c9312fd962ef6a4ce455cff963ebe4f1",
         extract = false,
       } | Source,
-      stage0-cc, # CC/CXX
+      stage0-gcc-4-7-4, # CC/CXX
       stage0-gmp-mpfr-mpc, # --with-gmp/mpfr/mpc=/usr/lib/gcc-math
-      stage0-musl-r7, # musl-1.2.5 sysroot
-      stage0-binutils, # as/ld/ar/ranlib
+      stage0-musl-1-2-5, # musl-1.2.5 sysroot
+      stage0-binutils-2-41, # as/ld/ar/ranlib
       bash,
       make,
       sed,

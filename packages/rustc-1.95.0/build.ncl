@@ -25,6 +25,7 @@ let amd64_spec =
     name = "rustc-%{version}",
     build_deps = [
       { file = "build.sh" } | Local,
+      { file = "rustc-1.95.0.answers" } | Local, # sha256 pins for the seal check in build.sh; unpinned today
       # The -src tarball ships .cargo/config.toml (crates-io -> vendored-sources) and vendor/, so no
       # cargo-vendor input is needed.  build.sh asserts src/version and the src/stage0 pairing.
       {

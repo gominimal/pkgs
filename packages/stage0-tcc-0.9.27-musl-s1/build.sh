@@ -35,7 +35,7 @@ emit "S1-INFO header sysroot $MB: $(ls "$MB" | wc -l | tr -d ' ') entries, stdio
 cd /build/tm
 tar --no-same-owner -xzf "$BUILDROOT/tccsrc-r3got-s1.tar.gz" 2>/tmp/te; xrc=$?
 [ "$xrc" = 0 ] || emit "S1-FAIL extract: $(head -1 /tmp/te)"
-cd tccsrc || { emit "S1-FAIL no tccsrc dir"; cp /build/tm/rows.txt "$LOGOUT/rows.log"; echo fail | tee "$MAN"; cp "$TCC26" "$BINOUT/tcc-musl"; : > "$LIBOUT/libtcc1.a"; exit 0; }
+[ "$xrc" = 0 ] && cd tccsrc || { emit "S1-FAIL no tccsrc dir"; cp /build/tm/rows.txt "$LOGOUT/rows.log"; echo fail | tee "$MAN"; exit 1; }
 : > config.h
 emit "S1-INFO extracted $(ls | wc -l | tr -d ' ') files; GOT fix: $(grep -c 'R5 amd64 static-GOT fix' tccelf.c) (fill_got@$(grep -n 'fill_got(s1)' tccelf.c | head -1 | cut -d: -f1) tidy@$(grep -n 'tidy_section_headers(s1, sec_order)' tccelf.c | head -1 | cut -d: -f1))"
 

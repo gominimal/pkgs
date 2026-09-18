@@ -4,9 +4,9 @@ let { target, .. } = import "config.ncl" in
 # libbfd.a, libopcodes.a) built by stage0-gcc-4.7.4 and linked statically against the musl-1.2.5
 # sysroot. gcc shells out to as/ld/ranlib, so stage0-binutils-2.30 is a build dep. binutils has no
 # bignum middle-end, so gmp/mpfr/mpc are not needed. See build.sh.
-let stage0-gcc-474 = import "../stage0-gcc-4.7.4/build.ncl" in # CC/CXX (gcc-4.7.4 / g++ via the gcc-cc/gcc-cxx wrappers)
-let stage0-binutils-r5 = import "../stage0-binutils-2.30/build.ncl" in # as/ld/ar/ranlib on PATH for the host gcc
-let stage0-musl-r7 = import "../stage0-musl-1.2.5/build.ncl" in # /usr/lib/musl-bedrock-1.2.5 sysroot (libc.a + crt + headers)
+let stage0-gcc-4-7-4 = import "../stage0-gcc-4.7.4/build.ncl" in # CC/CXX (gcc-4.7.4 / g++ via the gcc-cc/gcc-cxx wrappers)
+let stage0-binutils-2-30 = import "../stage0-binutils-2.30/build.ncl" in # as/ld/ar/ranlib on PATH for the host gcc
+let stage0-musl-1-2-5 = import "../stage0-musl-1.2.5/build.ncl" in # /usr/lib/musl-bedrock-1.2.5 sysroot (libc.a + crt + headers)
 let bash = import "../bash/build.ncl" in # build.sh + configure shell
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -30,9 +30,9 @@ let amd64_spec =
         sha256 = "ae9a5789e23459e59606e6714723f2d3ffc31c03174191ef0d015bdf06007450",
         extract = false,
       } | Source,
-      stage0-gcc-474, # CC + CXX
-      stage0-binutils-r5, # /usr/bin/{as,ld,ar,ranlib} for the host gcc
-      stage0-musl-r7, # musl-1.2.5 sysroot
+      stage0-gcc-4-7-4, # CC + CXX
+      stage0-binutils-2-30, # /usr/bin/{as,ld,ar,ranlib} for the host gcc
+      stage0-musl-1-2-5, # musl-1.2.5 sysroot
       bash,
       make,
       sed,

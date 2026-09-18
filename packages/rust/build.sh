@@ -53,9 +53,56 @@ echo "rust:   sysroot=$("$SEED_RUSTC" --print sysroot 2>&1)  |  remaining rustc-
 sed -i "/^\[build\]/a cargo = \"$SEED_CARGO\"" bootstrap.toml
 sed -i "/^\[build\]/a rustc = \"$SEED_RUSTC\"" bootstrap.toml
 
+BUILDROOT="$(pwd)"
+# --- P0b offline harness ---
+# curl/wget stubs exit non-zero: the build must fail if x.py or a build.rs tries the network.
+# A real curl is in the rootfs (pulled in by cmake), so the stub's PATH precedence is asserted.
+# git stub: local read-only verbs exit 1 (x.py's version stamp and a few vendored build.rs probe
+# them and handle failure); network-capable and unknown verbs are tripwires.
+STUBS="${BUILDROOT}/stubs"; mkdir -p "${STUBS}"
+for t in curl wget; do
+  cat > "${STUBS}/${t}" <<EOF
+#!/bin/sh
+echo "\$0 \$*" >> "${BUILDROOT}/NETWORK-TRIPWIRE"
+echo "rust: FATAL — the build invoked '${t}', which must never happen offline" >&2
+exit 1
+EOF
+  chmod 0755 "${STUBS}/${t}"
+done
+
+cat > "${STUBS}/git" <<EOF
+#!/bin/sh
+# Allowlist by subcommand: local read-only verbs exit 1 (git's out-of-repo behaviour, which x.py
+# handles); network-capable verbs are tripwires; --version prints a stub.
+if [ "\$1" = "--version" ]; then
+  echo "git \$*" >> "${BUILDROOT}/GIT-LOCAL.log"; echo "git version 0.0.0-bedrock-stub"; exit 0
+fi
+case "\$1" in
+  rev-parse|log|describe|symbolic-ref|show-ref|rev-list|cat-file|status|diff|show|name-rev|for-each-ref|update-index|config)
+    echo "git \$*" >> "${BUILDROOT}/GIT-LOCAL.log"; exit 1 ;;   # local read-only; no network
+  clone|fetch|pull|push|remote|ls-remote|submodule|archive|request-pull|send-pack|fetch-pack|upload-pack)
+    echo "git \$*" >> "${BUILDROOT}/NETWORK-TRIPWIRE"
+    echo "rust: FATAL — git NETWORK verb attempted: \$*" >&2; exit 1 ;;
+  *)
+    # unknown verb: default deny, so a new network path cannot slip through
+    echo "git \$*" >> "${BUILDROOT}/NETWORK-TRIPWIRE"
+    echo "rust: FATAL — git invoked with an un-allowlisted verb (default-deny): \$*" >&2; exit 1 ;;
+esac
+EOF
+chmod 0755 "${STUBS}/git"
+
+PATH="${STUBS}:${PATH}"; export PATH
+[ "$(command -v curl)" = "${STUBS}/curl" ] || {
+  echo "rust: FATAL the curl stub is NOT shadowing the real curl (packages/cmake pulls one in)." >&2
+  echo "      command -v curl = $(command -v curl)" >&2; exit 1; }
+[ "$(command -v git)" = "${STUBS}/git" ] || { echo "rust: FATAL the git stub is NOT first on PATH" >&2; exit 1; }
+
 # bootstrap.toml sets `vendor = false` so bootstrap does not pass cargo --frozen (see there);
 # force cargo offline so no path can reach the network.
 export CARGO_NET_OFFLINE=true
+export GIT_CEILING_DIRECTORIES="$(pwd)"
+export GIT_CONFIG_NOSYSTEM=1
+export GIT_TERMINAL_PROMPT=0
 
 # --- neutralize bootstrap's Vendor step ---
 # `x.py install` runs the Vendor step (vendor.rs) unconditionally; it shells out to
@@ -82,4 +129,7 @@ DESTDIR=$OUTPUT_DIR ./x.py install library/std compiler/rustc cargo clippy rustf
 mkdir -p "$OUTPUT_DIR/usr/lib/rustlib/src/rust"
 cp -a library "$OUTPUT_DIR/usr/lib/rustlib/src/rust/library"
 
+if [ -e "${BUILDROOT}/NETWORK-TRIPWIRE" ]; then
+  echo "rust: FATAL a network fetch was attempted during the build:" >&2; cat "${BUILDROOT}/NETWORK-TRIPWIRE" >&2; exit 1
+fi
 rm $OUTPUT_DIR/usr/bin/rust-gdbgui

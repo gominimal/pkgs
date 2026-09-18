@@ -14,9 +14,9 @@ let { target, .. } = import "config.ncl" in
 # 1.1.24 one, for the gcc wrappers of later rungs (gmp/mpfr/mpc, gcc-4.7.4).
 # Not included: linux kernel headers. musl builds without them; add a second Source when a
 # downstream rung needs <linux/*.h>.
-let stage0-gcc = import "../stage0-gcc-4.0.4/build.ncl" in # gcc/cc1/cpp + libgcc.a
-let stage0-musl-r4b = import "../stage0-musl-1.1.24-cc2/build.ncl" in # /usr/lib/musl-bedrock, link libc for configure probes
-let stage0-binutils-r5 = import "../stage0-binutils-2.30/build.ncl" in # as/ld/ar/ranlib
+let stage0-gcc-4-0-4 = import "../stage0-gcc-4.0.4/build.ncl" in # gcc/cc1/cpp + libgcc.a
+let stage0-musl-1-1-24-cc2 = import "../stage0-musl-1.1.24-cc2/build.ncl" in # /usr/lib/musl-bedrock, link libc for configure probes
+let stage0-binutils-2-30 = import "../stage0-binutils-2.30/build.ncl" in # as/ld/ar/ranlib
 let bash = import "../bash/build.ncl" in # build.sh and configure interpreter
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in # configure: config.mak generation
@@ -38,9 +38,9 @@ let amd64_spec =
         sha256 = "a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4",
         extract = false,
       } | Source,
-      stage0-gcc, # CC via the gcc-cc wrapper in build.sh
-      stage0-musl-r4b, # explicit: the /usr/lib/musl-bedrock sysroot the wrapper links against
-      stage0-binutils-r5, # explicit: as/ld/ar/ranlib on PATH
+      stage0-gcc-4-0-4, # CC via the gcc-cc wrapper in build.sh
+      stage0-musl-1-1-24-cc2, # explicit: the /usr/lib/musl-bedrock sysroot the wrapper links against
+      stage0-binutils-2-30, # explicit: as/ld/ar/ranlib on PATH
       bash,
       make,
       sed,
