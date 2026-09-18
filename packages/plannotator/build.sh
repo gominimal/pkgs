@@ -11,7 +11,18 @@ case "$(uname -m)" in
   *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;;
 esac
 
-bun install --frozen-lockfile
+# --ignore-scripts: node-pty's install script shells out to node-gyp, which we
+# do not ship, and the build dies with "node-gyp: command not found". Skipping
+# it is safe for the artifact we produce. Upstream's own
+# packages/server/agent-terminal-runtime.ts explains why:
+#
+#   "Bun cannot dlopen the native node-pty addon, so the PTY server ...
+#    node-pty ships prebuilds for macOS and Windows only"
+#
+# i.e. node-pty is NOT linked into the `bun build --compile` output — it is
+# located at run time, and upstream already handles it being absent. Building
+# it here would produce an addon the compiled binary cannot load anyway.
+bun install --frozen-lockfile --ignore-scripts
 
 # Upstream builds the review and hook UIs before compiling; the compiled
 # binary embeds their output.

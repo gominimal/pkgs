@@ -24,10 +24,17 @@ let glibc = import "../glibc/build.ncl" in
 #   https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/linux_amd64.json
 #   https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/linux_arm64.json
 #
-# ⚠ NO source_provenance: the artifact is a Google-hosted binary with no public
-# source repo and no CPE, so this ships DARK — zero advisory coverage, like the
-# other no-provenance packages. That is a deliberate, recorded trade, not an
-# oversight. If a repo or CPE ever appears, wire it up.
+# ⚠ NO source_provenance, and `closed_source = true` in attrs. The artifact is
+# a Google-hosted binary with no public source repo and no CPE, so there is
+# nothing to scan against — the same position as claude-code, which is packaged
+# identically (per-arch prebuilt from a vendor GCS bucket, LicenseRef-* license,
+# closed_source set). The flag is what distinguishes "proprietary by nature"
+# from "someone forgot the provenance"; without it this reads as an accidental
+# dark package. If a repo or CPE ever appears, wire it up.
+#
+# Not packageable from source: no public repo exists, and the npm names are
+# squatters — `antigravity` 0.0.0 ("placeholder for the haters", imlucas) and
+# `antigravity-cli` 0.0.1 (joseph.chiang). Neither is Google.
 #
 # Upstream publishes sha512 in the manifest; `Source` takes sha256, so the
 # digests below were computed from the exact artifacts the manifest named and
@@ -80,7 +87,18 @@ in
   attrs =
     {
       upstream_version = version,
+      # LicenseRef-* because there is no SPDX id and no licence text ships:
+      # the tarball contains exactly one member (the binary). The evidence for
+      # calling it proprietary is in the binary itself — it carries the strings
+      # "Terms of Service & Data Use" and "All rights reserved" — and there is
+      # no public source repo (googlesource 404s; google/antigravity,
+      # google-gemini/antigravity-cli and googleapis/antigravity are all 404).
       license_spdx = "LicenseRef-Google-Antigravity-CLI-ToS",
+      # Marks this as a deliberately closed-source prebuilt rather than a
+      # package that merely forgot its provenance — the same posture
+      # claude-code uses. Without it this reads as an accidentally dark
+      # package in the coverage reports.
+      closed_source = true,
       binary_from =
         match {
           { arch = 'Amd64, .. } => "%{dl_base}/linux-x64/cli_linux_x64.tar.gz",
