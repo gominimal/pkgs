@@ -27,6 +27,9 @@ let tar = import "../tar/build.ncl" in
 let xz = import "../xz/build.ncl" in
 let gzip = import "../gzip/build.ncl" in
 let patch = import "../patch/build.ncl" in # the build system patches the bundled libffi
+let autoconf = import "../autoconf/build.ncl" in # binary-dist-dir regenerates the bindist configure
+let automake = import "../automake/build.ncl" in
+let m4 = import "../m4/build.ncl" in
 let version = "9.6.7" in
 let amd64_spec =
   {
@@ -65,6 +68,9 @@ let amd64_spec =
       xz,
       gzip,
       patch,
+      autoconf,
+      automake,
+      m4,
     ],
     cmd = "./build.sh",
     outputs = {

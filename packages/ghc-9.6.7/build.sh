@@ -34,7 +34,7 @@ export TAR_OPTIONS=--no-same-owner   # the build system untars bundled tarballs 
 
 # --- P0 preconditions ---
 [ "$(uname -m)" = x86_64 ] || { echo "ghc-${VERSION}: amd64 ladder rung on $(uname -m)" >&2; exit 1; }
-for t in gcc g++ ld ar ranlib nm objdump strip as objcopy make perl python3 sed grep tar xz gzip find xargs sha256sum; do
+for t in gcc g++ ld ar ranlib nm objdump strip as objcopy make perl python3 sed grep tar xz gzip find xargs sha256sum autoreconf; do
   command -v "$t" >/dev/null 2>&1 || { echo "ghc-${VERSION}: '$t' not on PATH" >&2; exit 1; }
 done
 BGCC="$(command -v gcc)"
