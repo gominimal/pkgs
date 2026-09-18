@@ -1,0 +1,8 @@
+{
+  "name": "pkgmgr-node-import",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "yarn": "1.22.22"
+  }
+}
