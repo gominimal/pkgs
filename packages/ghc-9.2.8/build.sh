@@ -53,7 +53,7 @@ mkfixlib() {
   sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@${SR}/lib/\1@g" "${SR}/lib/libc.so" > "$1/libc.so"
   if grep -q '/build/output' "$1/libc.so"; then echo "ghc-${VERSION}: libc.so fixup failed" >&2; exit 1; fi
 }
--std=gnu17
+# gnu17: C23 reads the K&R `malloc()` declarations in utils/hp2ps as zero-argument functions.
 CCFLAGS="-isystem ${SR}/include -isystem /usr/include -std=gnu17"
 # The wrapper resolves gcc and its include dir when invoked, so the shipped copy also works in a
 # sandbox whose gcc differs from this one.
