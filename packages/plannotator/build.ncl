@@ -1,45 +1,51 @@
-let { Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
-let { target, .. } = import "config.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bun = import "../bun/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let jq = import "../jq/build.ncl" in
+let toolchain = import "../toolchain/build.ncl" in
 
 # plannotator — plan review / annotation tool (plannotator.ai).
 #
-# Replaces `curl -fsSL https://plannotator.ai/install.sh | bash` in the
-# agentbox image. Of the three curl-pipe installers this one had the best story
-# already: its releases carry SLSA build-provenance attestations from v0.17.2
-# onward, publish a `.sha256` beside every asset, and ship a CycloneDX SBOM
-# (`plannotator-<v>-release-sbom.cdx.json`). The digests below are that
-# published `.sha256`, not something we computed and hoped matched.
+# Replaces `curl -fsSL https://plannotator.ai/install.sh | bash` in the agentbox
+# image, which installs whatever the "latest" tag currently resolves to.
 #
-# Bare static binary per platform — no archive, hence no `extract`.
+# BUILT FROM SOURCE. An earlier cut of this package pinned the published
+# release binary using upstream's own .sha256. That is a strong integrity
+# claim — the releases even carry SLSA build-provenance attestations and a
+# CycloneDX SBOM — but it still only proves the artifact did not change, not
+# that it corresponds to this source. AGENTS.md requires a source build when
+# the toolchain is packaged, and bun is.
+#
+# The build steps mirror upstream's own release.yml exactly (install with the
+# frozen lockfile, build the review + hook UI, then `bun build --compile` the
+# hook server entrypoint). Deviating from that is how you ship something that
+# is not the tool people expect.
+#
+# `needs` is set because `bun install` fetches from the npm registry.
 let version = "0.27.16" in
-let dl_base = "https://github.com/backnotprop/plannotator/releases/download/v%{version}" in
-
-let { amd64_sha256, arm64_sha256 } = {
-  amd64_sha256 = "dd332feb9af7428e0633ed7faa749ad91e89576b5a6daaae3880c1bcaefde116",
-  arm64_sha256 = "0e9ccde99f0ec804e274d2d220f505a332ef66d32fdbb50361f932152e85807e",
-}
-in
 
 {
   name = "plannotator",
   build_deps = [
     { file = "build.sh" } | Local,
-    match {
-      { arch = 'Amd64, .. } =>
-        {
-          url = "%{dl_base}/plannotator-linux-x64",
-          sha256 = amd64_sha256,
-        } | Source,
-      { arch = 'Arm64, .. } =>
-        {
-          url = "%{dl_base}/plannotator-linux-arm64",
-          sha256 = arm64_sha256,
-        } | Source,
-    } target,
+    {
+      url = "https://github.com/backnotprop/plannotator/archive/refs/tags/v%{version}.tar.gz",
+      sha256 = "e925db8d3a770632e42ea627d4f54c4e05d9d6ec6239c24d9180f0bb79be1fea",
+      extract = true,
+      strip_prefix = "plannotator-%{version}",
+    } | Source,
     base,
+    bun,
+    jq,
+    toolchain,
   ],
+
+  needs =
+    {
+      dns = {},
+      internet = {},
+    } | Needs,
 
   runtime_deps = [
     glibc,
@@ -63,11 +69,6 @@ in
         owner = "backnotprop",
         repo = "plannotator",
       },
-      binary_from =
-        match {
-          { arch = 'Amd64, .. } => "%{dl_base}/plannotator-linux-x64",
-          { arch = 'Arm64, .. } => "%{dl_base}/plannotator-linux-arm64",
-        } target,
     } | Attrs,
 
   tests = {

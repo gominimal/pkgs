@@ -1,18 +1,12 @@
 #!/bin/sh
-set -ex
-
-# The release asset is a bare static binary, not an archive — it
-# arrives in the cwd under its per-arch name. Pick whichever one this
-# arch fetched rather than globbing, so an unexpected extra file fails
-# loudly instead of being installed.
-if [ -f herdr-linux-x86_64 ]; then
-  SRC=herdr-linux-x86_64
-elif [ -f herdr-linux-aarch64 ]; then
-  SRC=herdr-linux-aarch64
-else
-  echo "no herdr release binary in the build dir" >&2
-  exit 1
-fi
-
+# Auto-bootstrapped from https://github.com/herdrdev/herdr (0.9.1, rust) by pkgmgr import github.
+set -eu
+export CC=gcc
+export LD=gcc
+# Reproducibility (per minimal-repro's guide): strip absolute build
+# paths (source dir + cargo registry) and disable incremental builds.
+export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
+export CARGO_INCREMENTAL=0
+cargo build --release
 mkdir -p "$OUTPUT_DIR/usr/bin"
-install -m 755 "$SRC" "$OUTPUT_DIR/usr/bin/herdr"
+cp "target/release/herdr" "$OUTPUT_DIR/usr/bin/"
