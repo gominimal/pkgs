@@ -91,6 +91,8 @@ export CC CXX   # library configures inside the tree compile their probes with t
 # --- P2 bootstrap Hadrian ---
 mkdir src && tar -xJf "${SRC_TARBALL}" -C src --strip-components=1 --no-same-owner
 cd src
+# hp2ps declares malloc/realloc K&R-style; C23 reads `()` as no parameters.
+sed -i 's/extern void\* malloc();/extern void* malloc(long unsigned int);/; s/extern void \*realloc();/extern void *realloc(void *, long unsigned int);/' utils/hp2ps/Utilities.c
 # The bootstrap sources tarball carries a plan-bootstrap.json whose `builtin` entries pin the
 # versions of the packages bundled with the boot compiler it was generated for (9.2.5); bootstrap.py
 # checks those against the boot's ghc-pkg exactly. Rewrite them to what this boot ships and repack.
