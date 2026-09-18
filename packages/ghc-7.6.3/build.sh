@@ -181,6 +181,15 @@ ghc_stage1_v_EXTRA_CC_OPTS += -Wl,--start-group $(compiler_stage1_v_LIB) $(ALL_S
 utils/ghc-pkg_dist-install_OTHER_OBJS += utils/ghc-pkg/dist-install/build/hcboot_main.o
 utils/ghc-pkg_dist-install_v_EXTRA_CC_OPTS += -Wl,--start-group $(ALL_STAGE1_LIBS) $(ALL_RTS_LIBS) $(libffi_STATIC_LIB) $(wildcard hcstubs/libhcstubs.a) -Wl,--end-group -lgmp -lm -lutil -lrt -ltinfo -ldl -lpthread
 EOF
+# terminfo links the curses library that carries the terminfo functions; the emitting host had a
+# separate libtinfo, this sandbox may only have libncurses. Pick what is present and rewrite the
+# bundle's terminfo metadata and the link stanzas.
+TINFO_LIB=""; for l in tinfo ncursesw ncurses; do ls /usr/lib/lib$l.so* >/dev/null 2>&1 && { TINFO_LIB=$l; break; }; done
+[ -n "${TINFO_LIB}" ] || { echo "ghc-${VERSION}: no curses library in /usr/lib" >&2; exit 1; }
+if [ "${TINFO_LIB}" != tinfo ]; then
+  sed -i "s/-ltinfo/-l${TINFO_LIB}/g" mk/build.mk
+  grep -rl 'tinfo' --include=package-data.mk --include='*.conf' --include='package.conf*' . | xargs -r sed -i "s/\btinfo\b/${TINFO_LIB}/g"
+fi
 for d in libraries/*/; do [ -x "$d/configure" ] || continue
   ( cd "$d" && ./configure > configure.log 2>&1 ) || { tail -20 "$d/configure.log" >&2; echo "ghc-${VERSION}: $d configure failed" >&2; exit 1; }
 done
