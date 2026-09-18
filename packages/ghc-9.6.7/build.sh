@@ -91,6 +91,10 @@ export CC CXX   # library configures inside the tree compile their probes with t
 # --- P2 bootstrap Hadrian ---
 mkdir src && tar -xJf "${SRC_TARBALL}" -C src --strip-components=1 --no-same-owner
 cd src
+# ghc-pkg writes package.cache in directory-listing order; sort the .conf list so the cache is
+# byte-stable across filesystems.
+grep -q 'filter (".conf" `isSuffixOf`) fs' utils/ghc-pkg/Main.hs || { echo "ghc-${VERSION}: ghc-pkg conf listing changed shape" >&2; exit 1; }
+sed -i 's/filter (".conf" `isSuffixOf`) fs/sort (filter (".conf" `isSuffixOf`) fs)/' utils/ghc-pkg/Main.hs
 # hp2ps declares malloc/realloc K&R-style; C23 reads `()` as no parameters.
 sed -i 's/extern void\* malloc();/extern void* malloc(long unsigned int);/; s/extern void \*realloc();/extern void *realloc(void *, long unsigned int);/' utils/hp2ps/Utilities.c
 # The bootstrap sources tarball carries a plan-bootstrap.json whose `builtin` entries pin the
