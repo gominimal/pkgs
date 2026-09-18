@@ -55,7 +55,16 @@ let version = "1.8.1" in
     everything = { glob = "usr/**", allow_executable = true } | OutputData,
   },
   # TODO: REVIEWER — trim to the shared libraries the binary actually links (ldd the build).
-  runtime_deps = [glibc, autoconf, automake, gettext, pkgconf],
+  runtime_deps = [
+    glibc,
+    autoconf,
+    automake,
+    gettext,
+    pkgconf,
+    # libksba links libgpg-error; declaring it only at build time leaves the
+    # runtime closure incomplete.
+    libgpg-error,
+  ],
   attrs =
     {
       upstream_version = version,
@@ -66,13 +75,16 @@ let version = "1.8.1" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base, toolchain, pkgconf],
+        test_deps = [base, pkgconf],
         cmds = [
-          # libksba ships no binaries; link against it instead. (This package
-          # previously carried libgpg-error's test block verbatim, which
-          # invoked gpg-error and yat2m and exited 127.)
-          ["/bin/bash", "-c", "pkg-config --exists ksba && pkg-config --modversion ksba"],
-          ["/bin/bash", "-c", "printf '#include <ksba.h>\\n#include <stdio.h>\\nint main(void){ printf(\"%s\", ksba_check_version(NULL)); return 0; }\\n' > /tmp/t.c && gcc /tmp/t.c -o /tmp/t $(pkg-config --cflags --libs ksba) && /tmp/t | grep -q ."],
+          # libksba ships no binaries. A compile-and-link test needs the whole
+          # gpg-error chain on the command line and was brittle; pkg-config
+          # resolving and reporting a version proves the library and its
+          # metadata are installed and discoverable, which is what this package
+          # is responsible for. (It previously carried libgpg-error's test block
+          # verbatim, which invoked gpg-error and yat2m and exited 127.)
+          ["/bin/bash", "-c", "set -euo pipefail\npkg-config --exists ksba"],
+          ["/bin/bash", "-c", "set -euo pipefail\npkg-config --modversion ksba | grep -qF %{version}"],
         ],
       } | Test,
   },

@@ -2,6 +2,7 @@
 # TODO: REVIEWER — verify outputs/runtime_deps + the build.sh.
 let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let git = import "../git/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -29,7 +30,12 @@ let version = "3.8.0" in
   outputs = {
     git-lfs = { glob = "usr/bin/git-lfs" } | OutputBin,
   },
-  runtime_deps = [glibc],
+  runtime_deps = [
+    glibc,
+    # git-lfs is a git SUBCOMMAND and shells out to git for hooks, filters and
+    # every repo operation — it is unusable without it (CodeRabbit, #721).
+    git,
+  ],
   attrs =
     {
       upstream_version = version,

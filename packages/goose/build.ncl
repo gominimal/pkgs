@@ -34,6 +34,5 @@ let version = "3.28.0" in
     {
       upstream_version = version,
       source_provenance = { category = 'GithubRepo, owner = "pressly", repo = "goose" },
-      # TODO: REVIEWER — set license_spdx.
     } | Attrs,
 } | BuildSpec

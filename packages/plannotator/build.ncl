@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let git = import "../git/build.ncl" in
 let bun = import "../bun/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let jq = import "../jq/build.ncl" in
@@ -49,6 +50,8 @@ let version = "0.27.16" in
 
   runtime_deps = [
     glibc,
+    # plannotator reviews plans against a working tree and invokes git.
+    git,
   ],
 
   cmd = "./build.sh",

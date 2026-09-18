@@ -14,9 +14,16 @@ patch -Np1 -i "0010-avoid-beta-warning.patch"
 patch -Np1 -i "0210-dirmngr-hkp-avoid-potential-race-condition-when-some-host-die.patch"
 patch -Np1 -i "fix-i18n.patch"
 patch -Np1 -i "make-aes-default-for-fips.patch"
-# The release tarball is already bootstrapped, so this is a no-op here;
-# kept because it costs nothing and makes the script work on either source.
-if [ ! -x ./configure ]; then autoreconf -fi; fi
+# ALWAYS regenerate, do not condition on ./configure being absent.
+#
+# The release tarball ships an executable `configure`, so the old
+# `if [ ! -x ./configure ]` guard skipped autoreconf entirely — and
+# libassun-version.patch edits only configure.ac. The patch applied cleanly,
+# the build succeeded, and the generated configure still carried the OLD
+# Libassuan version requirement. Nothing failed; the patch simply did nothing.
+# (CodeRabbit caught this on #721; it appeared when this package moved from the
+# GitHub archive, which has no configure, to the release tarball, which does.)
+autoreconf -fi
 #: doc/Makefile.am renders the module-overview and card-
 # architecture diagrams from SVG with ImageMagick's `convert`, which we do not
 # package — the targets are BUILT_SOURCES, so make dies with Error 127 before

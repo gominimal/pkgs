@@ -1,5 +1,10 @@
 let { Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let sed = import "../sed/build.ncl" in
+let findutils = import "../findutils/build.ncl" in
+let gawk = import "../gawk/build.ncl" in
+let grep = import "../grep/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -33,6 +38,14 @@ let version = "1.2.1" in
 
   runtime_deps = [
     bash,
+    # These are SHELL SCRIPTS: they shell out to grep/cut/tr/awk/xargs/sed and
+    # friends at run time. Nothing links them, so only an explicit runtime
+    # declaration keeps them in the closure (CodeRabbit, #721).
+    coreutils,
+    grep,
+    gawk,
+    findutils,
+    sed,
   ],
 
   cmd = "./build.sh",

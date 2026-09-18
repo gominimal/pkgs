@@ -10,6 +10,7 @@ let make = import "../make/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let gnutls = import "../gnutls/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 let libusb = import "../libusb/build.ncl" in
 let npth = import "../npth/build.ncl" in
@@ -63,6 +64,12 @@ let version = "2.4.9" in
     npth,
     # libusb is REQUIRED, not optional: configure aborts with "You need libusb
     # to build the internal ccid driver" (the smartcard reader path).
+    # gnutls is what makes dirmngr exist. Without it configure prints
+    # "*** Neither NTBTLS nor GNUTLS available - not building dirmngr" and
+    # continues happily — so you get a gnupg with no keyserver access, no CRL
+    # and no OCSP, and the only symptom is `dirmngr: command not found` much
+    # later. We ship gnutls; there is no reason to lose dirmngr.
+    gnutls,
     libusb,
     # sqlite is optional but load-bearing — without it configure quietly
     # continues and prints "Building without SQLite support - TOFU and Keyboxd
@@ -95,10 +102,21 @@ let version = "2.4.9" in
     npth,
     libusb,
     sqlite,
+    gnutls,
   ],
   attrs =
     {
       upstream_version = version,
+      # Kept as GithubRepo after checking the corpus rather than taking the
+      # review comment at face value. GnuProject renders `pkg:generic/gnu/gnupg`,
+      # which matches ZERO advisories here; `pkg:github/gpg/gnupg` matches 1.
+      # Switching would have been strictly worse.
+      #
+      # ⚠ Neither is where the advisories actually live: 305 gnupg advisories are
+      # keyed by the NVD CPE `gnupg:gnupg`, and no provenance category reaches a
+      # CPE. That needs a curated entry in package_cpe_identity.toml — the same
+      # gap that made openssl read 0/0/0 while carrying 1 Critical / 5 High
+      # (pkgmgr-rs#441, and the NVD-only false-negative class).
       source_provenance = { category = 'GithubRepo, owner = "gpg", repo = "gnupg" },
       license_spdx = "GPL-3.0-or-later",
     } | Attrs,
@@ -110,28 +128,28 @@ let version = "2.4.9" in
         cmds = [
           # TODO: REVIEWER — ported from the Wolfi test block; verify each
           # against minimal's toolchain (bins on PATH, flags supported).
-          ["/bin/bash", "-c", "gpg --version 2>/dev/null || gpg version"],
-          ["/bin/bash", "-c", "gpg --help 2>/dev/null || gpg help"],
+          ["/bin/bash", "-c", "gpg --version"],
+          ["/bin/bash", "-c", "gpg --help"],
           ["/bin/bash", "-c", "export GNUPGHOME=$(mktemp -d)\n\n# Generate a test keypair in batch mode (no passphrase, no pinentry needed)\ngpg --batch --pinentry-mode loopback --passphrase \"\" \\\n  --quick-gen-key \"Test User <test@example.com>\" rsa2048 sign 0\n\n# Verify the key was created and is listed\ngpg --list-keys | grep -F \"Test User\"\ngpg --list-keys | grep -F \"test@example.com\""],
           ["/bin/bash", "-c", "export GNUPGHOME=$(mktemp -d)\n\n# Generate a key for encryption/decryption test\ngpg --batch --pinentry-mode loopback --passphrase \"\" \\\n  --quick-gen-key \"Enc User <enc@example.com>\" rsa2048 encr 0\n\n# Encrypt a message to the key\necho \"gnupg encryption test payload\" | \\\n  gpg --batch --yes --trust-model always \\\n  --encrypt --recipient \"enc@example.com\" \\\n  --output /tmp/test-encrypted.gpg\n\n# Decrypt and verify the original plaintext is recovered\ngpg --batch --pinentry-mode loopback --passphrase \"\" \\\n  --decrypt /tmp/test-encrypted.gpg | grep -F \"gnupg encryption test payload\""],
           ["/bin/bash", "-c", "export GNUPGHOME=$(mktemp -d)\n\n# Generate a key for signing test\ngpg --batch --pinentry-mode loopback --passphrase \"\" \\\n  --quick-gen-key \"Sign User <sign@example.com>\" rsa2048 sign 0\n\n# Create a test file and sign it\necho \"gnupg signature test payload\" > /tmp/test-sign.txt\ngpg --batch --pinentry-mode loopback --passphrase \"\" \\\n  --detach-sign --output /tmp/test-sign.txt.sig /tmp/test-sign.txt\n\n# Verify the signature\ngpg --verify /tmp/test-sign.txt.sig /tmp/test-sign.txt"],
-          ["/bin/bash", "-c", "dirmngr dirmngr-client --version 2>/dev/null || dirmngr dirmngr-client version"],
-          ["/bin/bash", "-c", "dirmngr dirmngr-client --help 2>/dev/null || dirmngr dirmngr-client help"],
-          ["/bin/bash", "-c", "gpg-connect-agent gpgconf --version 2>/dev/null || gpg-connect-agent gpgconf version"],
-          ["/bin/bash", "-c", "gpg-connect-agent gpgconf --help 2>/dev/null || gpg-connect-agent gpgconf help"],
-          ["/bin/bash", "-c", "gpg gpg2 --version 2>/dev/null || gpg gpg2 version"],
-          ["/bin/bash", "-c", "gpg gpg2 --help 2>/dev/null || gpg gpg2 help"],
+          ["/bin/bash", "-c", "dirmngr --version"],
+          ["/bin/bash", "-c", "dirmngr-client --version"],
+          ["/bin/bash", "-c", "gpgconf --version"],
+          ["/bin/bash", "-c", "gpg-connect-agent --help"],
+          ["/bin/bash", "-c", "gpg --version"],
+          ["/bin/bash", "-c", "gpg --help"],
           ["/bin/bash", "-c", "gpg --list-keys"],
-          ["/bin/bash", "-c", "gpg-agent --version 2>/dev/null || gpg-agent version"],
-          ["/bin/bash", "-c", "gpg-agent --help 2>/dev/null || gpg-agent help"],
-          ["/bin/bash", "-c", "gpg-wks-server --version 2>/dev/null || gpg-wks-server version"],
-          ["/bin/bash", "-c", "gpg-wks-server --help 2>/dev/null || gpg-wks-server help"],
-          ["/bin/bash", "-c", "gpgsm --version 2>/dev/null || gpgsm version"],
-          ["/bin/bash", "-c", "gpgsm --help 2>/dev/null || gpgsm help"],
-          ["/bin/bash", "-c", "gpgv gpgv2 --version 2>/dev/null || gpgv gpgv2 version"],
-          ["/bin/bash", "-c", "gpgv gpgv2 --help 2>/dev/null || gpgv gpgv2 help"],
-          ["/bin/bash", "-c", "gpgsplit gpgtar kbxutil watchgnupg --version 2>/dev/null || gpgsplit gpgtar kbxutil watchgnupg version"],
-          ["/bin/bash", "-c", "gpgparsemail gpgsplit gpgtar kbxutil watchgnupg --help 2>/dev/null || gpgparsemail gpgsplit gpgtar kbxutil watchgnupg help"],
+          ["/bin/bash", "-c", "gpg-agent --version"],
+          ["/bin/bash", "-c", "gpg-agent --help"],
+          ["/bin/bash", "-c", "gpg-wks-server --version"],
+          ["/bin/bash", "-c", "gpg-wks-server --help"],
+          ["/bin/bash", "-c", "gpgsm --version"],
+          ["/bin/bash", "-c", "gpgsm --help"],
+          ["/bin/bash", "-c", "gpgv --version"],
+          ["/bin/bash", "-c", "gpgv --help"],
+          ["/bin/bash", "-c", "gpgsplit --version"],
+          ["/bin/bash", "-c", "gpgparsemail --help"],
         ],
       } | Test,
   },

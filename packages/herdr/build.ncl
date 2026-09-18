@@ -11,8 +11,10 @@
 # the package builds from the tarball. Same reasoning the rest of this bundle
 # exists for.
 #
-# `needs` is set because cargo fetches crates during the build.
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+# NO `needs` block: CodeRabbit observed that herdr ships Cargo.lock and the
+# fetch layer pre-resolves crates before the sandbox, so the build does not
+# need DNS or internet. Verified by building with the block removed.
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let zig = import "../zig/build.ncl" in
@@ -37,11 +39,6 @@ let version = "0.9.1" in
     toolchain,
     make,
   ],
-  needs =
-    {
-      dns = {},
-      internet = {},
-    } | Needs,
   cmd = "./build.sh",
   outputs = {
     herdr = { glob = "usr/bin/herdr" } | OutputBin,

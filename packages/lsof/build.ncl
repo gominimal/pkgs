@@ -53,10 +53,18 @@ let version = "4.99.7" in
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          # TODO: REVIEWER — ported from the Wolfi test block; verify each
-          # against minimal's toolchain (bins on PATH, flags supported).
-          ["/bin/bash", "-c", "fail() { echo \"FAIL:\" \"$@\"; exit 1; }\n\n# both -h and -v output to stderr\nlsof -h 2>&1 || fail \"'lsof -h' exited $?\"\necho \"PASS: 'lsof -h' exited 0\"\n\nver=\"${{package.version}}\"\nout=$(lsof -v 2>&1) || fail \"'lsof -v' exited $?\"\necho \"$out\" | grep -F -- \"$ver\" ||\n  fail \"'lsof -v' output did not include '$ver': $out\"\necho \"PASS: 'lsof -v' contained version '$ver' in output\""],
-          ["/bin/bash", "-c", "# Create a test file and hold it open with a background process\ntmpfile=$(mktemp /tmp/lsof-test-XXXXXX)\necho \"lsof test data\" > \"$tmpfile\"\n\n# Hold the file open by reading from it in a background sleep via shell redirection\nsh -c \"exec 3<\\\"$tmpfile\\\"; sleep 60\" &\nbg_pid=$!\n\n# Give the background process a moment to start\nsleep 1\n\n# Verify lsof can list open files for the current shell process\noutput=$(lsof -p $$ 2>&1)\necho \"$output\" | grep -F . || { echo \"FAIL: lsof -p $$ produced no output\"; exit 1; }\necho \"PASS: lsof -p $$ listed open files for current process\"\n\n# Verify lsof can find the specific open file held by the background process\nlsof_output=$(lsof -p \"$bg_pid\" 2>&1)\necho \"$lsof_output\" | grep -F \"$tmpfile\"\necho \"PASS: lsof found the open test file for background process $bg_pid\"\n\n# Clean up\nkill \"$bg_pid\"\nrm -f \"$tmpfile\""],
+          # Rewritten from the Wolfi-ported block, which had TWO assertions that
+          # could not fail:
+          #   * `ver="${{package.version}}"` was an unsubstituted Wolfi template.
+          #     In bash it expands to empty, so `grep -F -- "$ver"` matched any
+          #     output at all and the version check passed unconditionally.
+          #   * the open-file check ran `grep -F "$tmpfile"` and then IGNORED its
+          #     exit status, printed PASS, and ended with a cleanup command whose
+          #     zero exit became the result (CodeRabbit, #721).
+          # Both now fail loudly: `set -euo pipefail` plus `grep -q`.
+          ["/bin/bash", "-c", "set -euo pipefail\n/bin/lsof -h 2>&1 | grep -qi usage"],
+          ["/bin/bash", "-c", "set -euo pipefail\n/bin/lsof -v 2>&1 | grep -qF %{version}"],
+          ["/bin/bash", "-c", "set -euo pipefail\ntmpfile=$(mktemp /tmp/lsof-test-XXXXXX)\ntrap 'kill $bg_pid 2>/dev/null || true; rm -f \"$tmpfile\"' EXIT\necho data > \"$tmpfile\"\nsh -c \"exec 3<\\\"$tmpfile\\\"; sleep 60\" &\nbg_pid=$!\nsleep 1\n/bin/lsof -p \"$bg_pid\" 2>&1 | grep -qF \"$tmpfile\""],
         ],
       } | Test,
   },
