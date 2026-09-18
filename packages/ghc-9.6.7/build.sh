@@ -34,7 +34,7 @@ export TAR_OPTIONS=--no-same-owner   # the build system untars bundled tarballs 
 
 # --- P0 preconditions ---
 [ "$(uname -m)" = x86_64 ] || { echo "ghc-${VERSION}: amd64 ladder rung on $(uname -m)" >&2; exit 1; }
-for t in gcc ld ar ranlib nm objdump strip as objcopy make perl python3 sed grep tar xz gzip find xargs sha256sum; do
+for t in gcc g++ ld ar ranlib nm objdump strip as objcopy make perl python3 sed grep tar xz gzip find xargs sha256sum; do
   command -v "$t" >/dev/null 2>&1 || { echo "ghc-${VERSION}: '$t' not on PATH" >&2; exit 1; }
 done
 BGCC="$(command -v gcc)"
@@ -71,11 +71,22 @@ exec "\$G" -nostdinc -isystem "\$GI" ${CCFLAGS} "\$@" -L$2 -B${SR}/lib -L${SR}/l
 WRAP
   chmod 0755 "$1"
 }
+# configure probes the C++ standard library with a C++ compiler; give it the same sysroot view.
+mkcxxwrapper() { # $1 wrapper path, $2 fixlib dir
+  cat > "$1" <<WRAP
+#!/bin/sh
+G=\$(command -v g++)
+for a in "\$@"; do case "\$a" in -c|-S|-E|-M|-MM) exec "\$G" -isystem ${SR}/include "\$@" ;; esac; done
+exec "\$G" -isystem ${SR}/include "\$@" -L$2 -B${SR}/lib -L${SR}/lib -L/usr/lib -Wl,--dynamic-linker=${LOADER} -Wl,-rpath,${SR}/lib:/usr/lib -Wl,--build-id=none
+WRAP
+  chmod 0755 "$1"
+}
 CCDIR="${BUILDROOT}/cc"; mkdir -p "${CCDIR}"
 mkfixlib "${CCDIR}/fixlib"
 mkwrapper "${CCDIR}/gcc" "${CCDIR}/fixlib"
-CC="${CCDIR}/gcc"
-export CC   # library configures inside the tree compile their probes with it
+mkcxxwrapper "${CCDIR}/g++" "${CCDIR}/fixlib"
+CC="${CCDIR}/gcc"; CXX="${CCDIR}/g++"
+export CC CXX   # library configures inside the tree compile their probes with them
 
 # --- P2 bootstrap Hadrian ---
 mkdir src && tar -xJf "${SRC_TARBALL}" -C src --strip-components=1 --no-same-owner
@@ -106,7 +117,7 @@ HADRIAN="${PWD}/_build/bin/hadrian"
 [ -x "${HADRIAN}" ] || { echo "ghc-${VERSION}: no hadrian binary at ${HADRIAN} after bootstrap" >&2; exit 1; }
 
 # --- P3 configure + build ---
-./configure --prefix="${PREFIX}" GHC="${BOOT}" CC="${CC}" > ../configure.log 2>&1 \
+./configure --prefix="${PREFIX}" GHC="${BOOT}" CC="${CC}" CXX="${CXX}" > ../configure.log 2>&1 \
   || { tail -30 ../configure.log >&2; echo "ghc-${VERSION}: configure failed" >&2; exit 1; }
 # quick = -O0 compiler, -O1 libraries: enough for a boot compiler. binary-dist-dir with docs off
 # leaves haddock out (the boot ships no xhtml); the bindist's own configure/make install then lays
@@ -116,7 +127,7 @@ HADRIAN="${PWD}/_build/bin/hadrian"
 # --- P4 install ---
 BD="$(ls -d _build/bindist/ghc-* | head -1)"
 [ -n "${BD}" ] && [ -x "${BD}/configure" ] || { echo "ghc-${VERSION}: no bindist under _build/bindist" >&2; exit 1; }
-( cd "${BD}" && ./configure --prefix="${PREFIX}" CC="${CC}" > "${BUILDROOT}/bindist-configure.log" 2>&1 && make install DESTDIR="${OUTPUT_DIR}" > "${BUILDROOT}/install.log" 2>&1 ) \
+( cd "${BD}" && ./configure --prefix="${PREFIX}" CC="${CC}" CXX="${CXX}" > "${BUILDROOT}/bindist-configure.log" 2>&1 && make install DESTDIR="${OUTPUT_DIR}" > "${BUILDROOT}/install.log" 2>&1 ) \
   || { tail -20 "${BUILDROOT}/bindist-configure.log" "${BUILDROOT}/install.log" >&2; echo "ghc-${VERSION}: bindist install failed" >&2; exit 1; }
 SETTINGS="$(find "${DST}" -type f -name settings | head -1)"
 [ -n "${SETTINGS}" ] || { echo "ghc-${VERSION}: no settings file under ${DST}" >&2; exit 1; }
@@ -131,8 +142,9 @@ DB="$(find "${LIBD}" -maxdepth 1 -type d -name 'package.conf.d' | head -1)"
 # one inherit it.
 mkfixlib "${DST}/lib/glibc-fixlib"
 mkwrapper "${DST}/bin/ghc-cc" "${PREFIX}/lib/glibc-fixlib"
+mkcxxwrapper "${DST}/bin/ghc-cxx" "${PREFIX}/lib/glibc-fixlib"
 cp "${SETTINGS}" "${BUILDROOT}/settings.build"
-sed -i "s|${CCDIR}/gcc|${PREFIX}/bin/ghc-cc|g" "${SETTINGS}"
+sed -i "s|${CCDIR}/gcc|${PREFIX}/bin/ghc-cc|g; s|${CCDIR}/g++|${PREFIX}/bin/ghc-cxx|g" "${SETTINGS}"
 grep -q "${PREFIX}/bin/ghc-cc" "${SETTINGS}" || { echo "ghc-${VERSION}: settings does not name the shipped C compiler" >&2; exit 1; }
 # text files only: ELF binaries legitimately embed the build directory
 TEXTS=$(for f in "${DST}"/bin/* "${SETTINGS}" "${DB}"/*.conf; do [ -f "$f" ] && ! iself "$f" && printf '%s\n' "$f"; done; true)
@@ -151,7 +163,7 @@ printf 'import Data.List\nmain = putStrLn ("GHC-GATE:" ++ show (product [1..5 ::
 [ "$OUT" = "GHC-GATE:120:50" ] || { echo "ghc-${VERSION}: gate printed '$OUT'" >&2; exit 1; }
 "${GHCBIN}" -B"${LIBD}" --info | grep -q '"Unregisterised","NO"' || { echo "ghc-${VERSION}: not a registerised compiler" >&2; exit 1; }
 [ "$("${GHCBIN}" -B"${LIBD}" --numeric-version)" = "${VERSION}" ] || { echo "ghc-${VERSION}: wrong compiler version installed" >&2; exit 1; }
-sed -i "s|${CCDIR}/gcc|${PREFIX}/bin/ghc-cc|g" "${SETTINGS}"
+sed -i "s|${CCDIR}/gcc|${PREFIX}/bin/ghc-cc|g; s|${CCDIR}/g++|${PREFIX}/bin/ghc-cxx|g" "${SETTINGS}"
 find "${GATEDB}" -delete
 
 mkdir -p "${OUTPUT_DIR}/usr/share/ghc-${VERSION}"
