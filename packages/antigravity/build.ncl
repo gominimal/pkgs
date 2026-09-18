@@ -108,13 +108,61 @@ in
         } target,
     } | Attrs,
 
+  # The tests carry more weight than usual here, because build.sh rewrites the
+  # binary's ELF headers. A patchelf mistake does not fail the build — it ships
+  # a package that installs cleanly and dies later, so the tests have to be the
+  # thing that catches it. The --remove-needed attempt that preceded the current
+  # --replace-needed was caught by exactly this suite, not by the build.
   tests = {
     smoketest =
       {
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          ["/bin/bash", "-c", "LD_BIND_NOW=1 /bin/antigravity --version"],
+          # LD_BIND_NOW=1 disables lazy binding, so the loader must resolve
+          # EVERY dynamic symbol before main() instead of at first call. Without
+          # it a bad DT_NEEDED is invisible until the program first tries to
+          # resolve a hostname, which no smoke test would reach. This is the
+          # single most important assertion in the package.
+          ["/bin/bash", "-c", "set -euo pipefail\nLD_BIND_NOW=1 /bin/antigravity --version"],
+
+          # The binary must report the version we claim to have packaged. The
+          # download URL embeds a build id that is NOT derivable from the
+          # version, so a bump that edits `version` and forgets `build_id` would
+          # otherwise ship 1.2.6 while the build.ncl says something else, and
+          # every other test here would still pass.
+          ["/bin/bash", "-c", "set -euo pipefail\nLD_BIND_NOW=1 /bin/antigravity --version 2>&1 | grep -qF %{version}"],
+
+          # Argument parsing and terminal setup run far past the loader. --help
+          # exercises the real command table rather than a hardcoded string.
+          ["/bin/bash", "-c", "set -euo pipefail\nLD_BIND_NOW=1 /bin/antigravity --help >/dev/null 2>&1"],
+        ],
+      } | Test,
+
+    # Pin down WHERE __res_search resolves, not merely that it resolves.
+    #
+    # This is the assertion the package turns on. antigravity is a Go binary
+    # built with cgo, so its DNS path calls the C resolver, and build.sh rewrites
+    # that dependency from libresolv.so.2 to libc.so.6. LD_DEBUG=bindings makes
+    # the loader name the library it actually bound each symbol to, so this fails
+    # if a future glibc moves the resolver back out of libc, or if someone
+    # changes the patchelf invocation to point somewhere plausible but wrong.
+    #
+    # It can genuinely disagree: point --replace-needed at any library that does
+    # not define __res_search and either the grep finds a different soname or the
+    # program does not start at all.
+    resolver_binds_to_libc =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          # Deliberately NOT `set -o pipefail` with a trailing `grep -q`:
+          # LD_DEBUG prints megabytes, `grep -q` exits at the first match and
+          # closes the pipe, and the writer then dies of SIGPIPE (141) — which
+          # pipefail would report as a test failure having nothing to do with
+          # the binding. The assertion is a `case` on a captured line instead,
+          # so it fails only when the binding is actually wrong.
+          ["/bin/bash", "-c", "set -eu\nout=$(LD_DEBUG=bindings LD_BIND_NOW=1 /bin/antigravity --version 2>&1 || true)\nline=$(printf '%s\\n' \"$out\" | grep -F __res_search | head -1 || true)\nif [ -z \"$line\" ]; then echo 'no __res_search binding was reported at all' >&2; exit 1; fi\ncase \"$line\" in\n  *libc.so.6*) printf 'ok: %s\\n' \"$line\" ;;\n  *) printf 'resolver bound to the wrong library: %s\\n' \"$line\" >&2; exit 1 ;;\nesac"],
         ],
       } | Test,
   },
