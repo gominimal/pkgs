@@ -10,7 +10,32 @@ let make = import "../make/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let sqlite = import "../sqlite/build.ncl" in
+let libusb = import "../libusb/build.ncl" in
+let npth = import "../npth/build.ncl" in
+let libksba = import "../libksba/build.ncl" in
+let libassuan = import "../libassuan/build.ncl" in
+let libgcrypt = import "../libgcrypt/build.ncl" in
+let libgpg-error = import "../libgpg-error/build.ncl" in
 let patch = import "../patch/build.ncl" in
+# SOURCE: upstream's official release tarball (gnupg.org), mirrored to gs://,
+# NOT the GitHub auto-generated archive. Still a full source build — we compile
+# every line of C — but the release tarball is `make dist` output, so it also
+# carries what upstream generated at release time: the bootstrapped `configure`,
+# the pre-built .info, and the four doc diagrams.
+#
+# That last part is why this matters. doc/Makefile.am renders
+# gnupg-module-overview.{png,pdf} and gnupg-card-architecture.{png,pdf} from SVG
+# with ImageMagick's `convert`, which we do not package. They are BUILT_SOURCES,
+# so make dies Error 127 before anything else, and gnupg's only doc control is
+# AM_CONDITIONAL(BUILD_DOC) — all-or-nothing, so --disable-doc would also throw
+# away the man pages. The release tarball ships all four already rendered, so
+# the rule never fires and we keep the complete docs.
+#
+# It is also better provenance: gnupg.org publishes a detached PGP signature
+# (gnupg-2.4.9.tar.bz2.sig) alongside it, while GitHub's archive/refs/tags
+# tarballs are generated on demand, unsigned, and have changed compression in
+# the past — silently changing the sha256 for an unchanged tag.
 let version = "2.4.9" in
 {
   name = "gnupg",
@@ -30,12 +55,26 @@ let version = "2.4.9" in
     pkgconf,
     toolchain,
     glibc,
+    # gnupg's five-library stack, all packaged alongside it in this bundle.
+    libgpg-error,
+    libgcrypt,
+    libassuan,
+    libksba,
+    npth,
+    # libusb is REQUIRED, not optional: configure aborts with "You need libusb
+    # to build the internal ccid driver" (the smartcard reader path).
+    libusb,
+    # sqlite is optional but load-bearing — without it configure quietly
+    # continues and prints "Building without SQLite support - TOFU and Keyboxd
+    # disabled", i.e. you get a gnupg missing trust-on-first-use and the
+    # keybox daemon, with no build failure to tell you.
+    sqlite,
     patch,
     {
-      url = "https://github.com/gpg/gnupg/archive/refs/tags/gnupg-%{version}.tar.gz",
-      sha256 = "49366c29a7fe2b3fb861a2fdb9011e9e8dd3c0cddf35609bf0d06a83b6b9cdc0",
+      url = "gs://minimal-staging-archives/gnupg-%{version}.tar.bz2",
+      sha256 = "dd17ab2e9a04fd79d39d853f599cbc852062ddb9ab52a4ddeb4176fd8b302964",
       extract = true,
-      strip_prefix = "gnupg-gnupg-%{version}",
+      strip_prefix = "gnupg-%{version}",
     } | Source,
   ],
   cmd = "./build.sh",
