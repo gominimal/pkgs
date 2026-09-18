@@ -97,6 +97,44 @@ PATH="${STUBS}:${PATH}"; export PATH
   echo "      command -v curl = $(command -v curl)" >&2; exit 1; }
 [ "$(command -v git)" = "${STUBS}/git" ] || { echo "rust: FATAL the git stub is NOT first on PATH" >&2; exit 1; }
 
+# --- P0c vendored submodule markers ---
+# curl-sys and libssh2-sys build.rs check for a `.git` marker in their bundled submodule dir and,
+# absent one (release tarballs ship none), run `git submodule update --init`, which the git stub
+# fail-shuts.  An empty `.git` marker makes build.rs compile the sources shipped in the tarball.
+# Checksum-safe: cargo's DirectorySource::verify checks only the files listed in
+# .cargo-checksum.json, so an extra unlisted file is not detected.  Never edit a vendored file.
+# The dirs are globbed (the -sys crate versions change per rung) and only populated ones are
+# marked; marking an empty checkout would make the crate try to compile nothing.
+# libgit2-sys is not marked: its guard keys on libgit2/src, which the tarball ships.
+marked=0
+for pat in "curl-sys-*/curl" "libssh2-sys-*/libssh2"; do
+  # shellcheck disable=SC2231  # intentional glob on ${pat}
+  for d in "${BUILDROOT}"/vendor/${pat}; do
+    [ -d "${d}" ] || continue
+    # a populated submodule dir has entries; an empty checkout has none
+    n="$(find "${d}" -mindepth 1 -maxdepth 1 ! -name .git 2>/dev/null | head -1 | wc -l | tr -d ' ')"
+    if [ "${n}" -lt 1 ]; then
+      echo "rust SUBMOD: NOTE ${d#"${BUILDROOT}"/} ships no sources; NOT marking (expecting the pkg-config path)" >&2
+      continue
+    fi
+    if [ ! -e "${d}/.git" ]; then
+      : > "${d}/.git"
+      marked=$((marked + 1))
+      echo "rust SUBMOD: marked ${d#"${BUILDROOT}"/}/.git" >&2
+    fi
+  done
+done
+echo "rust SUBMOD: ${marked} vendored submodule marker(s) placed" >&2
+# Diagnostic (non-fatal): whether pkg-config sees the system libs, so the log shows which path
+# curl-sys/libssh2-sys will take if a marker was skipped.
+for lib in libcurl libssh2; do
+  if pkg-config --exists "${lib}" 2>/dev/null; then
+    echo "rust SUBMOD: pkg-config sees ${lib} $(pkg-config --modversion "${lib}" 2>/dev/null)" >&2
+  else
+    echo "rust SUBMOD: NOTE pkg-config does NOT see ${lib} — the crate MUST use its vendored submodule (marker required above)" >&2
+  fi
+done
+
 # bootstrap.toml sets `vendor = false` so bootstrap does not pass cargo --frozen (see there);
 # force cargo offline so no path can reach the network.
 export CARGO_NET_OFFLINE=true
