@@ -33,6 +33,8 @@ let version = "3.28.0" in
   attrs =
     {
       upstream_version = version,
+      # Verified against the LICENSE file at the v3.28.0 tag pinned above.
+      license_spdx = "MIT",
       source_provenance = { category = 'GithubRepo, owner = "pressly", repo = "goose" },
     } | Attrs,
 } | BuildSpec

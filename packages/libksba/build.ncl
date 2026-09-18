@@ -69,7 +69,14 @@ let version = "1.8.1" in
     {
       upstream_version = version,
       source_provenance = { category = 'GithubRepo, owner = "gpg", repo = "libksba" },
-      license_spdx = "GPL-2.0-or-later AND LGPL-2.1-or-later",
+      # Was "GPL-2.0-or-later AND LGPL-2.1-or-later", wrong twice over: the
+      # library is LGPLv3 not LGPLv2.1, and it is dual-licensed (a choice, so
+      # OR) rather than jointly licensed. Upstream 1.8.1 AUTHORS:
+      #   "License (library): LGPLv3+/GPLv2+"
+      #   "License (tools, manual): GPLv3+"
+      # The output glob is usr/**, so ksba.m4 and ksba.info ship and the
+      # GPLv3+ half applies.
+      license_spdx = "(LGPL-3.0-or-later OR GPL-2.0-or-later) AND GPL-3.0-or-later",
     } | Attrs,
   tests = {
     smoke =

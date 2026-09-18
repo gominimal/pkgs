@@ -47,7 +47,10 @@ let version = "3.0.2" in
     {
       upstream_version = version,
       source_provenance = { category = 'GithubRepo, owner = "gpg", repo = "libassuan" },
-      license_spdx = "LGPL-2.1-or-later",
+      # Upstream 3.0.2 AUTHORS: "License (library): LGPLv2.1+" and
+      # "License (manual): GPLv3+". The output glob is usr/**, so the info
+      # manual ships and its licence belongs in the expression.
+      license_spdx = "LGPL-2.1-or-later AND GPL-3.0-or-later",
     } | Attrs,
   tests = {
     smoke =

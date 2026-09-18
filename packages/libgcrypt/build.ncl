@@ -45,7 +45,18 @@ let version = "1.12.4" in
     {
       upstream_version = version,
       source_provenance = { category = 'GithubRepo, owner = "gpg", repo = "libgcrypt" },
-      license_spdx = "LGPL-2.1-or-later",
+      # This package's output glob is usr/**, so it ships the library, the
+      # tools (dumpsexp, hmac256, mpicalc) and the manual, and the expression
+      # has to cover all three. From upstream 1.12.4:
+      #   AUTHORS:  "License (library): LGPLv2.1+"
+      #             "License (manual and tools): GPLv2+"
+      #   LICENSES: a BSD_3Clause section covering Intel's SHA assembly
+      #             (cipher/sha{256,512}-*-amd64.S, sha512-ssse3-i386.c)
+      # The other LICENSES sections are deliberately NOT listed: "X License"
+      # covers install.sh, a build script that is never installed; "Public
+      # domain" needs no grant; "OCB license 1" is a patent grant, not a
+      # copyright licence.
+      license_spdx = "LGPL-2.1-or-later AND GPL-2.0-or-later AND BSD-3-Clause",
     } | Attrs,
   tests = {
     smoke =
