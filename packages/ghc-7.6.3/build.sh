@@ -29,6 +29,7 @@ TRIPLE=x86_64-unknown-linux-gnu
 JOBS="$(nproc 2>/dev/null || echo 4)"
 export HOME="${BUILDROOT}/home"; mkdir -p "$HOME"
 export TMPDIR="${BUILDROOT}/tmp"; mkdir -p "$TMPDIR"   # GHC writes its temporary files here
+export TAR_OPTIONS=--no-same-owner   # the build system untars bundled tarballs (libffi) itself; the sandbox cannot chown
 
 # --- P0 preconditions ---
 [ "$(uname -m)" = x86_64 ] || { echo "ghc-${VERSION}: the .hc bundle is x86_64 code" >&2; exit 1; }
