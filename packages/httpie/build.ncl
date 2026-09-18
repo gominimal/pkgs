@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -53,6 +53,12 @@ let version = "3.2.4" in
 
   outputs = {
     bins = { glob = "usr/bin/http*" } | OutputBin,
+    # Not every dependency is pure Python: charset_normalizer and multidict
+    # ship compiled C extensions (e.g. md.cpython-314-aarch64-linux-gnu.so),
+    # and the output-types check rejects a *data* output that matches a
+    # binary/library file. They need their own library output — the more
+    # specific glob is listed first so the data glob only claims the rest.
+    site_packages_libs = { glob = "usr/lib/python*/site-packages/**/*.so" } | OutputLib,
     site_packages = { glob = "usr/lib/python*/site-packages/**/*" } | OutputData,
   },
 

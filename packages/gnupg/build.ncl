@@ -84,7 +84,18 @@ let version = "2.4.9" in
     everything = { glob = "usr/**", allow_executable = true } | OutputData,
   },
   # TODO: REVIEWER — trim to the shared libraries the binary actually links (ldd the build).
-  runtime_deps = [glibc],
+  runtime_deps = [
+    glibc,
+    # gnupg dlinks all of these; declaring only glibc meant gpg died at
+    # startup with "libsqlite3.so: cannot open shared object file".
+    libgpg-error,
+    libgcrypt,
+    libassuan,
+    libksba,
+    npth,
+    libusb,
+    sqlite,
+  ],
   attrs =
     {
       upstream_version = version,
