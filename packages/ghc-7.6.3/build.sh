@@ -298,8 +298,10 @@ mkfixlib "${DST}/lib/glibc-fixlib"
 mkwrapper "${DST}/bin/ghc-cc" "${PREFIX}/lib/glibc-fixlib"
 sed -i "s|${CCDIR}/gcc|${PREFIX}/bin/ghc-cc|g; s|${BUILDROOT}/T/inplace/lib|${TOPDIR}|g" "${LIBD}/settings"
 grep -q "${PREFIX}/bin/ghc-cc" "${LIBD}/settings" || { echo "ghc-${VERSION}: settings does not name the shipped C compiler" >&2; exit 1; }
-if grep -l "${BUILDROOT}" "${LIBD}"/package.conf.d/*.conf "${LIBD}/settings" "${DST}"/bin/* -q 2>/dev/null; then
-  grep -l "${BUILDROOT}" "${LIBD}"/package.conf.d/*.conf "${LIBD}/settings" "${DST}"/bin/* >&2; echo "ghc-${VERSION}: build paths survive in the install" >&2; exit 1; fi
+# text files only: ELF binaries legitimately embed the build directory
+TEXTS=$(for f in "${DST}"/bin/* "${LIBD}/settings" "${LIBD}"/package.conf.d/*.conf; do [ -f "$f" ] && ! iself "$f" && printf '%s\n' "$f"; done; true)
+if echo "${TEXTS}" | xargs grep -l "${BUILDROOT}" 2>/dev/null | grep -q .; then
+  echo "${TEXTS}" | xargs grep -l "${BUILDROOT}" >&2; echo "ghc-${VERSION}: build paths survive in the install" >&2; exit 1; fi
 
 # --- P6 gate on the installed layout ---
 # The install lives under ${DST}, not ${PREFIX}, until the package is placed; point the db at

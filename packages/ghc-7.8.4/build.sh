@@ -117,8 +117,10 @@ mkwrapper "${DST}/bin/ghc-cc" "${PREFIX}/lib/glibc-fixlib"
 cp "${SETTINGS}" "${BUILDROOT}/settings.build"
 sed -i "s|${CCDIR}/gcc|${PREFIX}/bin/ghc-cc|g" "${SETTINGS}"
 grep -q "${PREFIX}/bin/ghc-cc" "${SETTINGS}" || { echo "ghc-${VERSION}: settings does not name the shipped C compiler" >&2; exit 1; }
-if grep -rl "${BUILDROOT}" "${DST}/bin" "${LIBD}"/settings "${DB}" -q 2>/dev/null; then
-  grep -rl "${BUILDROOT}" "${DST}/bin" "${LIBD}"/settings "${DB}" >&2; echo "ghc-${VERSION}: build paths survive in the install" >&2; exit 1; fi
+# text files only: ELF binaries legitimately embed the build directory
+TEXTS=$(for f in "${DST}"/bin/* "${LIBD}"/settings "${DB}"/*.conf; do [ -f "$f" ] && ! iself "$f" && printf '%s\n' "$f"; done; true)
+if [ -n "${TEXTS}" ] && echo "${TEXTS}" | xargs grep -l "${BUILDROOT}" 2>/dev/null | grep -q .; then
+  echo "${TEXTS}" | xargs grep -l "${BUILDROOT}" >&2; echo "ghc-${VERSION}: build paths survive in the install" >&2; exit 1; fi
 
 # --- P4 gate on the installed layout ---
 # The install lives under ${DST}, not ${PREFIX}, until the package is placed: gate with a copy of
