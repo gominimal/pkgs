@@ -28,6 +28,7 @@ LOADER="${SR}/lib/ld-linux-x86-64.so.2"
 TRIPLE=x86_64-unknown-linux-gnu
 JOBS="$(nproc 2>/dev/null || echo 4)"
 export HOME="${BUILDROOT}/home"; mkdir -p "$HOME"
+export TMPDIR="${BUILDROOT}/tmp"; mkdir -p "$TMPDIR"   # GHC writes its temporary files here
 
 # --- P0 preconditions ---
 [ "$(uname -m)" = x86_64 ] || { echo "ghc-${VERSION}: the .hc bundle is x86_64 code" >&2; exit 1; }
@@ -111,7 +112,7 @@ EOF
 # configure builds utils/ghc-pwd with the boot compiler and aborts without one; ghc-pwd only prints
 # the working directory, so coreutils' pwd stands in (re-placed after configure's own rm/mkdir of
 # the dist-boot dir). The matching-ghc-pkg check has nothing to match either.
-PWDBIN="$(command -v pwd)"
+PWDBIN="$(type -P pwd)"; [ -x "${PWDBIN}" ] || { echo "ghc-${VERSION}: no pwd binary on PATH" >&2; exit 1; }
 sed -i 's|as_fn_error $? "Building ghc-pwd failed"|: hc-boot-skip-ghc-pwd|' configure
 sed -i 's|as_fn_error $? "Cannot find matching ghc-pkg"|: hc-boot-skip-ghc-pkg|' configure
 sed -i "s|^\([[:space:]]*\)mkdir  *utils/ghc-pwd/dist-boot[[:space:]]*$|&; cp ${PWDBIN} utils/ghc-pwd/dist-boot/ghc-pwd|" configure

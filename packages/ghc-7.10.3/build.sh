@@ -23,7 +23,8 @@ GCC_VERSION=15.2.0
 SR=/usr/lib/glibc-bedrock-2.42
 LOADER="${SR}/lib/ld-linux-x86-64.so.2"
 JOBS="$(nproc 2>/dev/null || echo 4)"
-export HOME="${BUILDROOT}/home"; mkdir -p "$HOME"   # ghc-cabal reads the user package db location
+export HOME="${BUILDROOT}/home"; mkdir -p "$HOME"
+export TMPDIR="${BUILDROOT}/tmp"; mkdir -p "$TMPDIR"   # GHC writes its temporary files here   # ghc-cabal reads the user package db location
 
 # --- P0 preconditions ---
 [ "$(uname -m)" = x86_64 ] || { echo "ghc-${VERSION}: amd64 ladder rung on $(uname -m)" >&2; exit 1; }
