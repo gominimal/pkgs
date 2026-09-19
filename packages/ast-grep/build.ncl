@@ -6,7 +6,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.45.1" in
+let version = "0.45.3" in
 {
   name = "ast-grep",
 
@@ -14,7 +14,7 @@ let version = "0.45.1" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/ast-grep/ast-grep/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "a3cf5afc5a7302c79df56c2d52762a70e8290ce86291050e3febe90abd388d6c",
+      sha256 = "0ad252ce2535493e105bd4b2dd6db2829439732d15599825aecb0b02fc9e606f",
       extract = true,
       strip_prefix = "ast-grep-%{version}",
     } | Source,
