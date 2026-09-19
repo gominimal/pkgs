@@ -113,6 +113,9 @@ PKGBIN=""; for c in "${LIBD}/bin/ghc-pkg" "${LIBD}/ghc-pkg"; do iself "$c" && PK
 [ -n "${GHCBIN}" ] && [ -n "${PKGBIN}" ] || { echo "ghc-${VERSION}: compiler binaries not found under ${LIBD}" >&2; exit 1; }
 DB="$(find "${LIBD}" -maxdepth 1 -type d -name 'package.conf.d' | head -1)"
 [ -n "${DB}" ] || { echo "ghc-${VERSION}: package db not found under ${LIBD}" >&2; exit 1; }
+# unlit and hp2ps are C programs compiled through GHC, which hands gcc a temp file named ghc<pid>_N.c; that
+# name lands in the symbol table as the FILE symbol. Strip them so the binaries do not depend on the pid.
+find "${LIBD}" -type f \( -name unlit -o -name hp2ps \) -exec strip {} + 2>/dev/null || true
 # The shipped C compiler wrapper; `settings` names it, so later compilers configured against this
 # one inherit it.
 mkfixlib "${DST}/lib/glibc-fixlib"
