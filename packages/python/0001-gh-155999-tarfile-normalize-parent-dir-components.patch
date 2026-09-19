@@ -1,0 +1,63 @@
+From 16dea1e8 Mon Sep 17 00:00:00 2001
+Subject: [3.14] gh-155999: tarfile: handle a member that leaves the
+ destination but comes back (CVE-2026-19672)
+
+Backported verbatim from CPython commit 16dea1e8 on the 3.14 branch
+(2026-08-19), which landed two weeks AFTER the v3.14.7 tag (823f0323,
+2026-08-05) and is therefore in no released 3.14.x. It first ships in
+3.14.8.
+
+The `data` and `tar` extraction filters check containment using the
+RESOLVED path, which stays inside the destination for a member like
+`../evil/../dest/sub/file`. But intermediate directories are created from
+the name AS GIVEN, so the `../evil` component is created outside the
+destination before the resolved path check ever passes. Normalizing a
+name that contains a `..` component closes that.
+
+Impact is limited to directory creation outside the destination on POSIX;
+the extracted file itself always landed inside.
+
+Upstream issue: https://github.com/python/cpython/issues/155999
+Advisory: PSF-2026-38 / CVE-2026-19672 / GHSA-prxg-vvhf-mgqq
+---
+diff --git a/Lib/tarfile.py b/Lib/tarfile.py
+--- a/Lib/tarfile.py
++++ b/Lib/tarfile.py
+@@ -819,6 +819,13 @@ def _get_filtered_attrs(member, dest_path, for_data=True):
+         # For example, 'C:/foo' on Windows.
+         raise AbsolutePathError(member)
+     # Ensure we stay in the destination
++    if '..' in name.replace(os.sep, '/').split('/'):
++        # Directories are created from the name as given, so a name that
++        # leaves the destination part-way through would create them
++        # outside it even if the resolved path stays inside.
++        normalized = os.path.normpath(name)
++        if normalized != name:
++            name = new_attrs['name'] = normalized
+     target_path = os.path.realpath(os.path.join(dest_path, name),
+                                    strict=os.path.ALLOW_MISSING)
+     if os.path.commonpath([target_path, dest_path]) != dest_path:
+diff --git a/Lib/test/test_tarfile.py b/Lib/test/test_tarfile.py
+--- a/Lib/test/test_tarfile.py
++++ b/Lib/test/test_tarfile.py
+@@ -3981,6 +3981,20 @@ def test_absolute(self):
+                         tarfile.AbsolutePathError,
+                         """['"].*escaped.evil['"] has an absolute path""")
+ 
++    def test_parent_dir_out_and_back(self):
++        # Test a member that leaves the destination and comes back.
++        # The containment check looks at the resolved path, which stays
++        # inside, but the intermediate directories are created from the
++        # name as given, which does not.
++        with ArchiveMaker() as arc:
++            arc.add(f'../escaped.evil/../{self.destdir.name}/sub/file',
++                    content='content')
++
++        for filter in 'tar', 'data':
++            with self.subTest(filter):
++                with self.check_context(arc.open(), filter):
++                    self.expect_file('sub/file', content='content')
++
+     @symlink_test
+     def test_parent_symlink(self):
+         # Test interplaying symlinks
