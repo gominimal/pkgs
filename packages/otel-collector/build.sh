@@ -36,6 +36,17 @@ OCB=$(go env GOPATH)/bin/builder
 # above it and go reported:
 #   reading /internal/obi-src/go.mod: no such file or directory
 cd distributions/otelcol-contrib
+
+# go 1.27 bridge: the contrib 0.159.0 manifest resolves cockroachdb/swiss (via pebble/v2) at a
+# pin whose go:linkname shims are gated `!go1.27`, so it fails to compile under go 1.27
+# (undefined hashFn/getRuntimeHasher/fastrand64). Pin a newer swiss whose guard reads
+# `(go1.20 && !go1.28) || untested_go_version` via the manifest's own replaces list.
+# Drop on the next contrib bump if the transitive pin has moved past it; the greps fail loudly.
+grep -q '^replaces:' manifest.yaml
+grep -q 'cockroachdb/swiss' manifest.yaml && { echo "swiss already replaced/pinned in manifest — drop this patch"; exit 1; }
+sed -i '/^replaces:/a\  - github.com/cockroachdb/swiss => github.com/cockroachdb/swiss v0.0.0-20260820225851-333444432258' manifest.yaml
+grep -q 'cockroachdb/swiss => ' manifest.yaml
+
 $OCB --config=manifest.yaml
 
 mkdir -p $OUTPUT_DIR/usr/bin

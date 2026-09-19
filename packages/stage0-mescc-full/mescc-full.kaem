@@ -1,0 +1,82 @@
+# stage0-mescc-full driver, run by stage0-mescc's full C kaem with --strict (without it
+# the full kaem does not stop on a failing child). Port of upstream
+# stage0-posix-1.9.1/AMD64/kaem.run, the phase 12-23 orchestrator, with three changes:
+#   * seed: copy stage0-mescc's /usr/bin/{M2-Planet,blood-elf,M1,hex2,kaem} into the
+#     freshly extracted tree at the paths kaem.run and full-kaem expect.
+#   * gate: upstream's in-tree `./AMD64/bin/sha256sum -c amd64.answers` is replaced by
+#     coreutils `/usr/bin/sha256sum -c stage0.answers` run from /build.
+#   * simple-patch (a live-bootstrap helper, not in stage0-posix) is compiled with the same
+#     M2-Mesoplanet, M2libc and CWD as the extra tools, then staged with the outputs.
+# The full-kaem and extra sub-scripts run unmodified from the source tree. Every write
+# lands in the extracted tree or /build/output; /usr is read-only at build time.
+
+# --- seed stage0-mescc's outputs into the extracted tree (CWD=/build) ---
+# M2-Planet is artifact/M2 (bootstrap M2), blood-elf is artifact/blood-elf-0 (no debug).
+/usr/bin/mkdir -p stage0-posix-1.9.1/AMD64/bin
+/usr/bin/mkdir -p stage0-posix-1.9.1/AMD64/artifact
+/usr/bin/cp /usr/bin/M2-Planet stage0-posix-1.9.1/AMD64/artifact/M2
+/usr/bin/cp /usr/bin/blood-elf stage0-posix-1.9.1/AMD64/artifact/blood-elf-0
+/usr/bin/cp /usr/bin/M1        stage0-posix-1.9.1/AMD64/bin/M1
+/usr/bin/cp /usr/bin/hex2      stage0-posix-1.9.1/AMD64/bin/hex2
+/usr/bin/cp /usr/bin/kaem      stage0-posix-1.9.1/AMD64/bin/kaem
+# make the copies executable regardless of cp's mode handling; content is unchanged
+/usr/bin/chmod 0755 stage0-posix-1.9.1/AMD64/artifact/M2 stage0-posix-1.9.1/AMD64/artifact/blood-elf-0 stage0-posix-1.9.1/AMD64/bin/M1 stage0-posix-1.9.1/AMD64/bin/hex2 stage0-posix-1.9.1/AMD64/bin/kaem
+
+# --- kaem.run body, run from the tree root as upstream kaem.amd64 does ---
+cd stage0-posix-1.9.1
+
+# env preamble from AMD64/kaem.run; kaem exports these to the sub-kaems
+ARCH="amd64"
+ARCH_DIR="AMD64"
+M2LIBC="../M2libc"
+TOOLS="../AMD64/bin"
+BLOOD_FLAG="--64"
+BASE_ADDRESS="0x00600000"
+ENDIAN_FLAG="--little-endian"
+BINDIR="../AMD64/bin"
+BUILDDIR="../AMD64/artifact"
+TMPDIR="../AMD64/artifact"
+OPERATING_SYSTEM="Linux"
+
+# --- phases 12-15: final M2-Planet, M2-Mesoplanet, blood-elf, get_machine ---
+./AMD64/bin/kaem --verbose --strict --file AMD64/mescc-tools-full-kaem.kaem
+
+# --- phases 16-23: mescc-tools-extra (catm, chmod, cp, match, mkdir, replace, rm, ---
+# --- sha256sum, ungz, unbz2, unxz, untar, wrap) ---
+# kaem.run's own `cd mescc-tools-extra ... cd ..` belong to this parent script.
+cd mescc-tools-extra
+../AMD64/bin/kaem --verbose --strict --file mescc-tools-extra.kaem
+
+# --- simple-patch ---
+# Built inside mescc-tools-extra with the same environment as the extra tools so its
+# `#include "M2libc/bootstrappable.h"` resolves the same way (cf. live-bootstrap
+# steps/simple-patch-1.0/pass1.kaem). simple-patch.c is a Local at /build.
+# M2-Mesoplanet searches PATH for M2-Planet/M1/hex2/blood-elf and reads M2LIBC_PATH;
+# the extra sub-kaem set those in its own process, so set them again here.
+/usr/bin/cp ../../simple-patch.c simple-patch.c
+M2LIBC_PATH=../M2libc
+PATH=../AMD64/bin
+../AMD64/bin/M2-Mesoplanet --operating-system Linux --architecture amd64 -f simple-patch.c -o ../AMD64/bin/simple-patch
+cd ..
+
+# back to /build for the gate; kaem.run's after.kaem hook is a no-op echo and is dropped
+cd ..
+
+# --- byte-identity gate: 19 upstream amd64.answers leaves; a mismatch aborts under --strict ---
+/usr/bin/sha256sum -c stage0.answers
+
+# --- install into OUTPUT_DIR ---
+# The extra tools that share names with coreutils are not staged (see build.ncl outputs).
+/usr/bin/mkdir -p /build/output/usr/bin
+# six tools built by this rung
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/M2-Planet     /build/output/usr/bin/M2-Planet
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/M2-Mesoplanet /build/output/usr/bin/M2-Mesoplanet
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/blood-elf     /build/output/usr/bin/blood-elf
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/get_machine   /build/output/usr/bin/get_machine
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/match         /build/output/usr/bin/match
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/simple-patch  /build/output/usr/bin/simple-patch
+# four tools re-exported from stage0-mescc
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/kaem          /build/output/usr/bin/kaem
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/catm          /build/output/usr/bin/catm
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/M1            /build/output/usr/bin/M1
+/usr/bin/cp stage0-posix-1.9.1/AMD64/bin/hex2          /build/output/usr/bin/hex2

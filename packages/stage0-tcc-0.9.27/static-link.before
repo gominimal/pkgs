@@ -1,0 +1,2 @@
+    s->alacarte_link = 1;
+    s->nocommon = 1;

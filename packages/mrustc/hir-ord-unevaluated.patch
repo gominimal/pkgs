@@ -1,0 +1,44 @@
+# hir-ord-unevaluated.patch: upstream mrustc commits d8cc2933 + dad6c321 squashed, against the
+# v0.12.0 tag. Fixes a self-compare typo in ConstGeneric_Unevaluated::ord and replaces its
+# "Compare non-expanded array sizes (w/ MIR)" TODO with the string-compare fallback, which
+# aarch64 libcore (const-generic core::arch lane types) reaches. fmt() prints populated MIR in
+# a deterministic pointer-free form, so the fallback gives a stable order.
+# Re-derive: git diff 2d14b09a dad6c321 -- src/hir/hir.cpp
+diff --git a/src/hir/hir.cpp b/src/hir/hir.cpp
+index e4485c9..1affa75 100644
+--- a/src/hir/hir.cpp
++++ b/src/hir/hir.cpp
+@@ -112,7 +112,7 @@ namespace HIR {
+     {
+         if( this->expr.get() != x.expr.get() ) {
+             // If only one has populated MIR, they can't be equal (sort populated MIR after)
+-            if( !this->expr->m_mir != !this->expr->m_mir ) {
++            if( !this->expr->m_mir != !x.expr->m_mir ) {
+                 return (this->expr->m_mir ? OrdGreater : OrdLess);
+             }
+ 
+@@ -126,18 +126,12 @@ namespace HIR {
+                 return ::ord(tn->m_binding, xn->m_binding);
+             }
+ 
+-            // If the MIR is populated
+-            if( this->expr->m_mir )
+-            {
+-                TODO(Span(), "Compare non-expanded array sizes - (w/ MIR) " << *this << " and " << x);
+-            }
+-            else {
+-                // EVIL OPTION: Just compare the string representations
+-                // - Hopefully there's no pointers printed involved.
+-                auto v_t = FMT(*this);
+-                auto v_x = FMT(x);
+-                return ::ord(v_t, v_x);
+-            }
++            // EVIL OPTION: Just compare the string representations
++            // - The fmt() routine prints MIR blocks (when populated) or the source expression
++            //   (when not) in a deterministic, pointer-free form, so this gives a stable order.
++            auto v_t = FMT(*this);
++            auto v_x = FMT(x);
++            return ::ord(v_t, v_x);
+         }
+         if(auto cmp = this->params_impl.ord(x.params_impl)) return cmp;
+         if(auto cmp = this->params_item.ord(x.params_item)) return cmp;

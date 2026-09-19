@@ -1,4 +1,5 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let curl = import "../curl/build.ncl" in
@@ -8,40 +9,63 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let python = import "../python/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
+let libssh2 = import "../libssh2/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-
+let rustc-1-96-0 = import "../rustc-1.96.0/build.ncl" in # the stage0
 let version = "1.97.1" in
 {
   name = "rust",
-  build_deps = [
-    { file = "bootstrap.toml" } | Local,
-    { file = "build.sh" } | Local,
-    {
-      url = "gs://minimal-staging-archives/rustc-%{version}-src.tar.xz",
-      sha256 = "0ed06fdaffd4722a7702e0b4eebfafc897ab8f513e8e1b247cdd7e5c6df6ded2",
-      extract = true,
-      strip_prefix = "rustc-%{version}-src",
-    } | Source,
-    base,
-    cmake,
-    curl,
-    pkgconf,
-    python,
-    toolchain,
-  ],
+  build_deps =
+    [
+      { file = "bootstrap.toml" } | Local,
+      { file = "build.sh" } | Local,
+      {
+        url = "gs://minimal-staging-archives/rustc-%{version}-src.tar.xz",
+        sha256 = "0ed06fdaffd4722a7702e0b4eebfafc897ab8f513e8e1b247cdd7e5c6df6ded2",
+        extract = true,
+        strip_prefix = "rustc-%{version}-src",
+      } | Source,
+      base,
+      cmake,
+      curl,
+      # the stage0 cargo is dynamically linked against libssh2.so.1
+      libssh2,
+      pkgconf,
+      python,
+      toolchain,
+    ]
+    # stage0 = the rustc-1.96.0 rung (1.97.1's src/stage0 pins 1.96.0), built by the chain
+    # gcc-15.2.0 -> mrustc 0.12.0 -> rustc-1.90.0 -> 1.91.1 -> ... -> 1.96.0.  amd64 takes the
+    # rung build_dep; arm64 takes a sha-pinned tarball of the same rung.  build.sh injects it
+    # into bootstrap.toml [build] rustc/cargo; x.py never downloads a stage0.
+    @ (
+      match {
+        { arch = 'Amd64, .. } => [rustc-1-96-0],
+        { arch = 'Arm64, .. } =>
+          [
+            # arm64 stage0: rustc-1.96.0 built by the same rung recipes on arm64 hardware.  The
+            # tarball bundles the libLLVM.so.21.1 it links (built with all targets; the llvm
+            # package here omits experimental ones) and that library's non-glibc dependencies,
+            # each with an $ORIGIN RUNPATH.  `extract = true` unpacks it to ./rustc-1.96.0-aarch64
+            # inside the source root; build.sh points bootstrap.toml [build] rustc/cargo at it.
+            {
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/1602ba71cc33ebb82b9b9817196fe846447bd45cd8beb424b4d3f3335db0ed81/rustc-1.96.0-aarch64.tar.zst",
+              sha256 = "1602ba71cc33ebb82b9b9817196fe846447bd45cd8beb424b4d3f3335db0ed81",
+              extract = true,
+            } | Source,
+          ],
+      } target
+    ),
   runtime_deps = [
+    # libssh2 must also be a runtime dep: the shipped cargo carries a DT_NEEDED on libssh2.so.1.
+    libssh2,
     libffi,
     llvm,
     openssl,
     sqlite,
     subsetOf gcc ["libgcc", "libstdcpp"],
   ],
-  needs =
-    {
-      dns = {},
-      internet = {},
-    } | Needs,
 
   cmd = "./build.sh",
   outputs = {
