@@ -6,14 +6,14 @@ let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.5.3" in
+let version = "1.5.4" in
 {
   name = "bzip3",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/iczelia/bzip3/releases/download/%{version}/bzip3-%{version}.tar.xz",
-      sha256 = "58a53d002eb80c6f74c292ddf37d4f53604f6e2126cb3ae2bff738971302aa85",
+      sha256 = "fac65d7f39ae73c1c9221a97075eebeb27696299b02ad1e01ec039ab0eca9fca",
       extract = true,
       strip_prefix = "bzip3-%{version}",
     } | Source,
