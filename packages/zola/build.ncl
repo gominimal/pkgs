@@ -7,14 +7,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let version = "0.23.3" in
+let version = "0.23.6" in
 {
   name = "zola",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/getzola/zola/v%{version}.tar.gz",
-      sha256 = "2028bb1608b9625f78634c75b62654583fa3214fadac7e5f448a6b59b68912ec",
+      sha256 = "193db594222cd9c1097387ce17272cbbe672c3a894c263f6f4c436a7fedb379f",
       extract = true,
       strip_prefix = "zola-%{version}",
     } | Source,
