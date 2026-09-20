@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
@@ -57,6 +57,14 @@ let version = "1.97.1" in
           ],
       } target
     ),
+  # The build itself is offline (build.sh stubs curl/wget/git and fails on any attempt). The flags stay
+  # because the builder grants a package network access when ANY of its dependencies declares it, and
+  # the Rust programs that depend on this package still fetch their crates during their own builds.
+  needs =
+    {
+      dns = {},
+      internet = {},
+    } | Needs,
   runtime_deps = [
     # libssh2 must also be a runtime dep: the shipped cargo carries a DT_NEEDED on libssh2.so.1.
     libssh2,
