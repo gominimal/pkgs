@@ -11,7 +11,7 @@ let libffi = import "../libffi/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "1.97.1" in
+let version = "1.98.1" in
 {
   name = "rust",
   build_deps = [
@@ -19,7 +19,7 @@ let version = "1.97.1" in
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/rustc-%{version}-src.tar.xz",
-      sha256 = "0ed06fdaffd4722a7702e0b4eebfafc897ab8f513e8e1b247cdd7e5c6df6ded2",
+      sha256 = "be1816e7f6c40abb90245ad6e024bed2a7e88d7dda4561e4d5470207df616b9f",
       extract = true,
       strip_prefix = "rustc-%{version}-src",
     } | Source,
