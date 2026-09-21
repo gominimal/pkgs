@@ -4,15 +4,15 @@ let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let version = "704" in
+let version = "710" in
 {
   name = "less",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://www.greenwoodsoftware.com/less/less-704.tar.gz
+      # https://www.greenwoodsoftware.com/less/less-710.tar.gz
       url = "gs://minimal-staging-archives/less-%{version}.tar.gz",
-      sha256 = "20a0b0a2bb2525fa53c7eee9beb854b4c9cf172eabb209af7020743547bfe9fb"
+      sha256 = "d1008fb78dcae1323ddab664bcb352a61f022b1b131bd8018548e021d975ec7a"
     } | Source,
     base,
     make,
