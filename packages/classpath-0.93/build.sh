@@ -42,8 +42,8 @@ INC="-isystem ${SR}/include -isystem /usr/include"
 CCDIR="${BUILDROOT}/cc"; mkdir -p "${CCDIR}"
 cat > "${CCDIR}/gcc" <<WRAP
 #!/bin/sh
-for a in "\$@"; do case "\$a" in -c|-S|-E|-M|-MM) exec "${BGCC}" ${INC}  "\$@" ;; esac; done
-exec "${BGCC}" ${INC}  "\$@" ${LNK}
+for a in "\$@"; do case "\$a" in -c|-S|-E|-M|-MM) exec "${BGCC}" ${INC} -std=gnu17 "\$@" ;; esac; done
+exec "${BGCC}" ${INC} -std=gnu17 "\$@" ${LNK}
 WRAP
 cat > "${CCDIR}/g++" <<WRAP
 #!/bin/sh
@@ -66,7 +66,7 @@ cd "${BUILDROOT}"
 # --- P3 gate ---
 [ -s "${DST}/share/classpath/glibj.zip" ] || { echo "classpath-0.93: glibj.zip missing" >&2; exit 1; }
 [ -n "$(ls "${DST}"/lib/classpath/libjava*.so* 2>/dev/null)" ] || { echo "classpath-0.93: native libraries missing" >&2; exit 1; }
-printf 'public class G { public static void main(String[] a){ System.out.println("CP93:" + (6*7)); } }\n' > gate/G.java 2>/dev/null || { mkdir -p gate; printf 'public class G { public static void main(String[] a){ System.out.println("CP93:" + (6*7)); } }\n' > gate/G.java; }
+mkdir -p gate; printf 'public class G { public static void main(String[] a){ System.out.println("CP93:" + (6*7)); } }\n' > gate/G.java
 "${JIKES}" -bootclasspath "${DST}/share/classpath/glibj.zip" -d gate gate/G.java || { echo "classpath-0.93: jikes cannot compile against glibj.zip" >&2; exit 1; }
 [ -f gate/G.class ] || { echo "classpath-0.93: no class file from the gate compile" >&2; exit 1; }
 
