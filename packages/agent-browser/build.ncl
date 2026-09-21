@@ -10,12 +10,45 @@ let pnpm = import "../pnpm/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-# chromium-bin is the Playwright-revisioned prebuilt chromium pkg; see
-# its build.ncl for why a prebuilt and the amd64/arm64 source story.
-# It also brings the full chromium system-lib closure (alsa-lib, cairo,
-# cups, nss, mesa, the X11 stack, eudev, liberation-fonts, etc.) as
-# transitive runtime_deps, so we only declare the pkg directly.
-let chromium-bin = import "../chromium-bin/build.ncl" in
+# chromium-headless-shell-bin, NOT chromium-bin. agent-browser runs headless
+# by default (`--headed` is opt-in), and headless-shell is the only Chromium
+# we can ship on arm64 at all:
+#
+#   * chromium-bin's arm64 leg came from Playwright's CDN, and Playwright
+#     STOPPED building linux-arm64 — r1243 was the last one ever (re-verified
+#     2026-09-18: r1243 -> 200, r1245/1250/1260/1270 -> 400). It is a dead
+#     source, not a stale pin.
+#   * Google publishes no open-source Chromium binary for linux-arm64 at all;
+#     the chromium-browser-snapshots bucket is x64 ONLY (Linux_ARM64 -> 404),
+#     which is why chromium-bin needed a third-party build in the first place.
+#   * Chrome for Testing DOES build arm64, but the `chrome` bundle is branded
+#     Google Chrome and ships libwidevinecdm.so — gominimal/inbox#284 ruled
+#     that non-redistributable, and our cache redistributes.
+#
+#   chrome-headless-shell is the exception that clears all three: CfT builds
+#   it for arm64, and it was PROVEN redistributable for pkgs#718 — zero
+#   WidevineCdm entries on either arch and a LICENSE.headless_shell carrying
+#   the Chromium BSD-3-Clause grant.
+#
+# WHAT THIS GIVES UP, deliberately. chrome-headless-shell is the separate,
+# reduced headless binary, not the full browser running headless, so these
+# agent-browser features do NOT work against it:
+#
+#   --extensions        (no extension support in headless-shell)
+#   --headed            (there is no headed mode in this binary)
+#   WebGPU screenshots  (upstream documents these as requiring headed)
+#
+# Accepted because agent-browser is driven by agents, not humans: nothing
+# runs it expecting a visible UI, and no consumer uses extensions. If that
+# changes, the path back is Debian's chromium (DFSG-free, Widevine-free, both
+# arches at 153.0.8010.52-1) at the cost of a 47-library runtime closure —
+# libpulse, libopenh264, libdav1d, libFLAC, libopus, libminizip and friends,
+# which Debian links dynamically where Google's build bundles them.
+#
+# It still brings the chromium system-lib closure (alsa-lib, cairo, cups,
+# nss, mesa, the X11 stack, eudev, liberation-fonts) transitively, so we
+# declare only the pkg.
+let chromium-headless-shell-bin = import "../chromium-headless-shell-bin/build.ncl" in
 
 let version = "0.15.1" in
 {
@@ -40,7 +73,7 @@ let version = "0.15.1" in
     bash,
     node,
     glibc,
-    chromium-bin,
+    chromium-headless-shell-bin,
   ],
 
   cmd = "./build.sh",
