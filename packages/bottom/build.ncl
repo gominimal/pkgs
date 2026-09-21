@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.14.8" in
+let version = "0.14.9" in
 {
   name = "bottom",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/ClementTsang/bottom/%{version}.tar.gz",
-      sha256 = "be10adada9ec1e5dd741dcb5581c4e0ebd45cb5bdae213dd296b29511363a770",
+      sha256 = "1dbb940c763fb583b7e1c7dfa165b73ed9a0ba712e72cc97311c5b1c098d5b72",
       extract = true,
       strip_prefix = "bottom-%{version}",
     } | Source,
@@ -31,7 +31,9 @@ let version = "0.14.8" in
 
   outputs = {
     btm = { glob = "usr/bin/btm" } | OutputLib,
-    completions = { glob = "usr/share/bash-completion/completions/*" } | OutputData,
+    bash_completion = { glob = "usr/share/bash-completion/completions/btm" } | OutputData,
+    fish_completion = { glob = "usr/share/fish/vendor_completions.d/btm.fish" } | OutputData,
+    zsh_completion = { glob = "usr/share/zsh/site-functions/_btm" } | OutputData,
   },
 
   attrs =

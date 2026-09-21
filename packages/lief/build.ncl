@@ -8,14 +8,14 @@ let ninja = import "../ninja/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "0.17.6" in
+let version = "1.0.0" in
 {
   name = "lief",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/lief-project/LIEF/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "5fbbd19c85912d417eabbaef2b98e70144496356964685b82e0792d708b9be87",
+      sha256 = "2cf412695ff739d82e129db441e5c2025f3bb4873a3d3a1d3dd4cf300b682abd",
       extract = true,
       strip_prefix = "LIEF-%{version}",
     } | Source,

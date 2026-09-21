@@ -1,0 +1,79 @@
+name: docs-link-check
+
+# Canary for AGENTS.md's links into the public Minimal docs. Two verdicts with
+# deliberately different severities:
+#
+#   LIVENESS — BLOCKING. A dead link (404/410, or a redirect into `/auth/`) is
+#     a definite, self-inflicted, actionable defect: the file is ours, the URL
+#     set is ours, and the fix is ours. It is also strictly worse than the
+#     duplication AGENTS.md is replacing — an agent that follows a dead link
+#     gets nothing, where before it got stale-but-useful prose. So this reds.
+#
+#   DRIFT — REPORT-ONLY. A linked page's text changing does not make AGENTS.md
+#     wrong; AGENTS.md links rather than restates, so the target being edited
+#     is a "go re-read it" signal, not a breakage. Failing on it would red this
+#     repo for something nobody here did, and would train people to bump the
+#     snapshot without reading it — which is the same as having no canary.
+#
+# This is a deliberate divergence from the `docs-drift` job in
+# gominimal/minimal-skills, which blocks on both. That repo's skills RESTATE
+# doc content, so drift there means a skill may now contradict the docs — a
+# correctness bug in the artifact. Here the coupling is a link, so only a dead
+# link is a correctness bug. Different coupling, different severity.
+#
+# Why liveness can block here when source-liveness.yml (arbitrary upstream
+# hosts) cannot: minimal.dev is first-party, and unknown /docs/ pages return
+# real 404s, so the signal is meaningful rather than egress-dependent. The
+# script still reports timeouts/403/5xx as `unknown` and never fails on them,
+# so a blocking check stays trustworthy.
+#
+# Why a schedule AND a PR trigger: drift happens on the docs' timescale, not
+# ours, so it needs a cron sweep (same logic as source-liveness.yml). Liveness
+# additionally needs a PR gate, because the cheapest moment to catch a bad URL
+# is the PR that introduces it — hence the path filter on AGENTS.md.
+#
+# Network: unauthenticated HTTPS GETs against minimal.dev only. No secrets.
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "AGENTS.md"
+      - ".github/docs-snapshots.json"
+      - ".github/scripts/docs_link_check.py"
+      - ".github/workflows/docs-link-check.yml"
+  schedule:
+    - cron: "29 6 * * 3" # weekly; Wednesday, offset from the Mon/Tue siblings
+
+# Least privilege. Posts via GITHUB_STEP_SUMMARY, which needs no write scope.
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-link-check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Pinned to a SHA (matches the sibling workflows).
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Docs link liveness + drift
+        run: |
+          set -uo pipefail
+          # No `|| warning` wrapper here, unlike the report-only siblings: a
+          # dead link MUST red. The script separates its own exit codes —
+          # 1 = a link is dead (a real verdict), 2 = the script itself crashed.
+          # `|| status=$?` is required: Actions runs this with `-e`, so a bare
+          # invocation would abort the step before the status could be read.
+          status=0
+          python3 .github/scripts/docs_link_check.py || status=$?
+          if [ "$status" -eq 2 ]; then
+            echo "::warning::docs-link-check hit an internal error; see logs (not a docs verdict)"
+            exit 0
+          fi
+          exit "$status"

@@ -5,14 +5,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "3.6.3" in
+let version = "3.6.4" in
 {
   name = "openssl",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/openssl/openssl/openssl-%{version}.tar.gz",
-      sha256 = "c5524dd6bfaa8e8ff0f1be885c390d14f3ff0bd2de62a7311b65fcbb75cb7546",
+      sha256 = "c6b94124bb76ac5f8aa80de121e0f922a93d3bbf1be478bd50ebc36a30dc1db1",
       extract = true,
       strip_prefix = "openssl-openssl-%{version}",
     } | Source,

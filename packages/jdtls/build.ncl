@@ -44,5 +44,15 @@ let build_stamp = "202606262232" in
       upstream_version = version,
       license_spdx = "EPL-2.0",
       binary_from = "https://download.eclipse.org/jdtls/milestones/",
+      # Advisories for the JDT Language Server are filed against the SOURCE
+      # repo, not the download mirror the binary comes from. Without this the
+      # package is advisory-dark: no source can reach it, it scans 0/0/0 for an
+      # infrastructural reason, and `coverage-health` fails the 08:05 job every
+      # day (it did, 2026-09-02 through 09-11). Same class as jdk in pkgmgr#740.
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "eclipse-jdtls",
+        repo = "eclipse.jdt.ls",
+      },
     } | Attrs,
 } | BuildSpec

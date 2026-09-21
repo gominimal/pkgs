@@ -6,14 +6,14 @@ let meson = import "../meson/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let version = "0.23.2" in
+let version = "0.23.3" in
 {
   name = "libpsl",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libpsl-%{version}.tar.gz",
-      sha256 = "f2ea0e59bffb36597a872f6ef89893ffa4c30196c87eff7aeb2c47e4e8c98133"
+      sha256 = "93941f85a1e7bd593fa94f299233cb5dfc91cd144fd9a78a6ceb75001c5b03be"
     } | Source,
     base,
     meson,

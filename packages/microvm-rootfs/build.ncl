@@ -97,9 +97,9 @@ in
       "52fd401e79ce6b0ff7648733ba4de3135083cd0132543534e72106e7ea767a00"
       "c7a99a18206827b09f0cfa2373e6f1db0963845ad8468a378a3b99a7e716a0e8",
     apk
-      "fstrim-2.42.1-r0"
-      "9781870281182e8a349c9ff19e6bbe9493f5fa6911fa64a3762de7580258489e"
-      "a9f9419250d9eabbaef57f40d4daa5ef6906b3cc02c2ae3c8919fc3c7e9b0364",
+      "fstrim-2.42.3-r1"
+      "2a8f896aec5059e80c3e57bbb678d38470cdaaa6a0926ce631baf3bc70d7e92d"
+      "2344b70dc160afdcbc3aaee5763e894b59b93b383daf9a75b40b461af814ecc5",
     apk
       "git-2.54.0-r0"
       "ea41e2f837f1f6a8b66e72a5ece0fc75cca44f76f49cf5500d467fc5627d0ab7"
@@ -109,9 +109,9 @@ in
       "5ef23a7fd11df32dae739de6f3faca463711809eeab0391c38ad268636ee0b70"
       "7a40bb386c19e7945e09683402adf2e30b15ce0003267376aa758280ce96dc27",
     apk
-      "util-linux-misc-2.42.1-r0"
-      "4a21ca798bc5b7b0d2db7cbfab5742ad3b3168f09eb8a7634667556123e11c1a"
-      "f2d5cc17637ecf9c7c8f38ebd5272841ab8c5d46fa5350332f2595ed2df59f82",
+      "util-linux-misc-2.42.3-r1"
+      "b04d1b39317348f03872bcafb5f5662d0e3f957b44469bef70a688c8a54a7e71"
+      "8cba67c052d9932c61db6b32f3a6042b62cca642f16479ba066c59a5a97ffc55",
 
     # Shared-library closure of the six packages above, resolved against the
     # v3.24 main APKINDEX. Alpine deps are recorded as sonames, so this is the
@@ -130,9 +130,9 @@ in
       "52124971ae397d599aadd79263fcd68fc9e271922ccf8185b124f35fe24c60c8"
       "2e067395a6981b06cfd2cd3abf0e6c6574f7ef64d02e01f75fc5323d4a337fb9",
     apk
-      "libblkid-2.42.1-r0"
-      "5de536dd5f80772946aebf99211695a1f4ad033568d5c9ebd0d7d1dead33de44"
-      "c5a5da8aa518196b613ad4654535be5fe22003253535a84e226fce055fe91e1a",
+      "libblkid-2.42.3-r1"
+      "9d0f24976c575c53c12526b6e078edf34c980c153bc8e5f1c1053cbece5b8cfa"
+      "2512c2bff496ac2b8561a3c814d21d35ce10cda579b3d410f9f96da93a5aaac1",
     apk
       "libcap2-2.78-r0"
       "e13be383f18b1fcfe895361d816ff7cfd2b3c265e442bb371c4a234b29b0e4a9"
@@ -142,9 +142,9 @@ in
       "a75b5955ff57046e33fc2842cfe466dc77d8e68305d5c86c6646b38a069490a2"
       "4723d0fb8e286dc6adb54dd3cdaedcd8db54260f75ee778a5acb4c16922c0f52",
     apk
-      "libcurl-8.21.0-r0"
-      "df0c0e4b870bf48759fd751116986019e92d40279669e9f0348ea079a7735013"
-      "78538a948a4b8453184ddeb85818a82439735c3384c15b04d37c1e69be2bef19",
+      "libcurl-8.22.0-r0"
+      "cbec830a63888be570c06d20d87c85649aff1db38c3b4dcc17884b14471e39e3"
+      "40b2a8e15a8d24bc95a5f42aaeb018313a1ff457cee71d8e15aaf1328da765e8",
     apk
       "libeconf-0.8.3-r0"
       "cf0899d49ded0a6891e3cdf1b37887f2ecd77293afe1d8f3cb8937763c83f183"
@@ -154,13 +154,13 @@ in
       "1c108314af454a885ac0b053201db57027470c4f2309412c016897e2a2bf5d0e"
       "78c5a1993342ab1bdcdce30639fd0937e8000f6d0d85cea171f573d31decd036",
     apk
-      "libexpat-2.8.2-r0"
-      "3c112b8ce1dd8211a6446921654e5f85047db803ed6827147691b4789a523209"
-      "cbd8ae7af319512615ae546970112667136ac88e6c18dcb2059bd0dfceb877fb",
+      "libexpat-2.8.4-r0"
+      "ca1be5be36985a8370f4a8e9e33a25788ac95260295718e1b0b721a16bb2aa61"
+      "34fa41e3994d9a844f50a7c01cb40bb2e272fa7f506b96e92a2b4a20b23a81bc",
     apk
-      "libfdisk-2.42.1-r0"
-      "0444bf4ecd3758b6638bf55afc6041c08f5ba080643b4ee8cc54788327ebf5af"
-      "b8fb5e44e588e9bd5567f9570f227da65339c7b6e46a835e9eefc7f4dd6f74e7",
+      "libfdisk-2.42.3-r1"
+      "061e5c9c82eff00f806bd51bdd414d3ff6aaec99de02ed4c1b60f3e13578e2b7"
+      "9775aae10e103c128e6b8424585f5d2dac6d8e8e386cc8365a46358ccd6aa7d0",
     apk
       "libidn2-2.3.8-r0"
       "d02ffda4510652f89c5fb89cd2e7ff721afb0c74e7d75476ad60bebe7ac0ae20"
@@ -170,9 +170,9 @@ in
       "0ca382c70f78affef3a4a28016aab25ad8c3ccf1bcdad59f3968d4536a7b2478"
       "3693162ff7c27998dbbb2da1c4bd9072079cd55af1fa3d6d2ade51d276e20157",
     apk
-      "libmount-2.42.1-r0"
-      "d2e5eefddf71f538ddbb546bd52783f0c7f20c73c9d6b82e4a809dc6234592ef"
-      "fc6fd06c1244b804fc0716d4978c4a9783ad2a461b31e1b49492d4dfcbffb02b",
+      "libmount-2.42.3-r1"
+      "a2a6fc6aab7a59c70ec060f5fb8c950be42d1a017934bf32e5dd6984eaab15cc"
+      "e2ae003260f2c1ec13666c6e108d5e8e3d64974b0667166a02432bd3be263a7a",
     apk
       "libncursesw-6.6_p20260516-r0"
       "51a7aa4b3ec40b144d0801c0544e0a9f62e2a41d04b6067bb5e95786040741c6"
@@ -182,17 +182,17 @@ in
       "b31e91371425d5f80c1db5cba2a849956b65c802add0b49de844b2ca961aa8da"
       "ec665a344b6e887f00f0a47015cc732c3a281b69e84641dc8662ea234fde6cdb",
     apk
-      "libsmartcols-2.42.1-r0"
-      "61763d7e009b483c677a8b760b14041ec52feb267167abb0b5c4e7119491892c"
-      "3a117674cf383d5c5d5d61aa3f2a91795d7700911acbbff18a7094889ad01a4b",
+      "libsmartcols-2.42.3-r1"
+      "e2a4b6c2e2f493100305b0e62b9b10454611a49625534b1b06a3bc8aa0087818"
+      "5e3a457257d9c0e6799ab5d544ca4f172c4e19e02adcde94c72343ed3f6d8b26",
     apk
       "libunistring-1.4.2-r0"
       "58abfcbce2459071c505771a572a79953d6043d72b643ed0d5285ca39cdaf85c"
       "3aa6030e603e34d96192742f327c0509f409c6769ce2e7b1463685dede38d714",
     apk
-      "libuuid-2.42.1-r0"
-      "d2f69552b05184ba205dbc8aa0e79f8a080fcf746ec5e5e25eb89d66fbbe6db6"
-      "e86120f2d764e9a4e1713a79fd622d815754fbfa19e525170801b174a5a18273",
+      "libuuid-2.42.3-r1"
+      "9ce20c7ffe2ccaa7c321893c10564abbca13c3f2edb82f60a35f1f68e004f86c"
+      "8306e5bb577696c9069fe1dfd9e1dcc39d2d481c6a1b0e707fd03c3e21aa6aa2",
     apk
       "ncurses-terminfo-base-6.6_p20260516-r0"
       "e0c546b9461bdce206a90bc720cb69aa4628b5a5b8d908c3e5084e00f28f6a9d"
@@ -202,17 +202,17 @@ in
       "10ec950fca526db87bbdc0702ba623fca6639df15abb48229f548d6812563b33"
       "7d7705cea464389989d3ca6b9505dbfce3cf25cfca1eeb06709a9909f93f4f11",
     apk
-      "pcre2-10.47-r1"
-      "7bdff8ceaae86798a468382c02ae1548531681c1def07671e0511d8a06931a57"
-      "e2be27046bc933ff6716e5c6e08e301fc0cc3ddb28db1db5510057846238f276",
+      "pcre2-10.48-r0"
+      "0e8a425ec23fca1b549e83758b385e7186a070597e8dc014163462f960079167"
+      "cffaedb6cf404647619a8b0323958d293d9cd240e8f887c16bdf4b0a039f993a",
     apk
       "readline-8.3.3-r1"
       "9f0ae0923c02b0d6aba62e9173542b65396ba3f0efefcbf087ea32f1120e7b34"
       "766911ecb986a6c5cf0841a6b556cd1e9dbbf22b3559726de32416486cd15c81",
     apk
-      "setarch-2.42.1-r0"
-      "f4d61b8272088038b8c23b15623edb951212d684ab1e6f1564c463e986b7540c"
-      "7529811aead2dfd0d52343a4c7fb83067331f1b73bae3c8058afa22ccfc9f261",
+      "setarch-2.42.3-r1"
+      "10c2df054ee731b9cd9da771ef64d1275ff37385a53eaf71db798e756d9501e3"
+      "14098fdd87c4247acbee0513147eb2defd17fb850913e45a6dad6cb3e9a4d6b1",
     apk
       "skalibs-libs-2.15.0.0-r0"
       "7ea58fb512067402b519079fcce8a48381eb2b9c690341c4a017aa15f719c198"
@@ -225,6 +225,35 @@ in
       "zstd-libs-1.5.7-r2"
       "2bb5136c89f5b0bbe1554c8915a3b520d5aa63ae2a51d4d821eb81698db5a818"
       "23c6065b0049b2406441564bcf0032515a43f78e80d76fcb85535a3803ef5d4e",
+
+    # SECURITY OVERRIDES OF THE BASE LAYER.
+    #
+    # Unlike every entry above, these do not ADD a package — they REPLACE one
+    # the minirootfs tarball already ships. alpine-minirootfs-3.24.1 carries
+    # openssl 3.5.7-r0 (see `lib/apk/db/installed`, `o:openssl`), which has ten
+    # unfixed CVEs: CVE-2026-14456, -14457, -18798, -54874, -63072, -63073,
+    # -63074, -63075, -63076, -75803. Alpine fixed them in 3.5.8-r0, in v3.24
+    # main — but the newest minirootfs RELEASE is still 3.24.1, so bumping
+    # `alpine_release` cannot pick the fix up. There is no 3.24.2 to move to.
+    #
+    # Both packages install to the same `usr/lib/libcrypto.so.3` /
+    # `usr/lib/libssl.so.3` the base layer uses, so the overlay replaces the
+    # vulnerable objects outright. build.sh reconciles the recorded version in
+    # `lib/apk/db/installed` afterwards — without that the image would carry
+    # patched libraries while its own database still claimed 3.5.7-r0, and
+    # every scanner reading it would report ten CVEs that are no longer there.
+    #
+    # DROP THESE the moment `alpine_release` reaches a minirootfs carrying
+    # >= 3.5.8-r0; keeping a stale override is how an image ends up pinned
+    # BELOW its base layer.
+    apk
+      "libcrypto3-3.5.8-r0"
+      "35b892813c23664a3592e4fc8c12a03538a22c579057655361c7043305272a9a"
+      "161223a16f042b8e469e9441291e071464fd91d4f4bbe6f496ee8d0abd4e0701",
+    apk
+      "libssl3-3.5.8-r0"
+      "d6ec970cc10e01539e41626f720c4e0ac69016eaa2079a10ef776ffd3243db5b"
+      "aca521e5ae4a321322a9d47ed64a1775f5ab1ffd215d1e9fc0433c58f7bfd037",
   ],
 
   cmd = "./build.sh",

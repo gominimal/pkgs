@@ -4,6 +4,12 @@ set -e
 tar -xof "Python-${MINIMAL_ARG_VERSION}.tar.xz"
 cd "Python-${MINIMAL_ARG_VERSION}"
 
+# CVE-2026-19672 -- see the patch header and the note in build.ncl. Applied
+# before configure so a failed hunk fails the build under `set -e` rather than
+# quietly producing a python whose tarfile filters still escape. The patch
+# lives one level up because we extracted into a subdirectory above.
+patch -Np1 -i "../0001-gh-155999-tarfile-normalize-parent-dir-components.patch"
+
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
   aarch64) MARCH="-march=armv8-a" ;;
