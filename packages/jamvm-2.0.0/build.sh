@@ -67,7 +67,8 @@ cd "${BUILDROOT}"
 # --- P3 gate ---
 mkdir -p gate; printf 'public class G { public static void main(String[] a){ int s=0; for(int i=1;i<=6;i++) s+=i; System.out.println("JAMVM2:"+s); } }\n' > gate/G.java
 ( cd gate && "${JAVAC}" -bootclasspath "${CPD}/share/classpath/glibj.zip:${CPD}/share/classpath/tools.zip" G.java )
-OUT="$("${DST}/bin/jamvm" ${JVMFLAGS} -cp gate G 2>&1 | tail -1)"
+# The compiled-in boot classpath names the final prefix, which does not exist under DESTDIR yet.
+OUT="$("${DST}/bin/jamvm" ${JVMFLAGS} -Xbootclasspath:"${DST}/share/jamvm/classes.zip:${CPD}/share/classpath/glibj.zip" -cp gate G 2>&1 | tail -1)"
 [ "$OUT" = "JAMVM2:21" ] || { echo "jamvm-2.0.0: gate printed '$OUT'" >&2; exit 1; }
 
 mkdir -p "${OUTPUT_DIR}/usr/share/jamvm-2.0.0"

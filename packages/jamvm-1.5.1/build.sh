@@ -65,7 +65,8 @@ cd "${BUILDROOT}"
 # --- P3 gate: run a class compiled by jikes against glibj ---
 mkdir -p gate; printf 'public class G { public static void main(String[] a){ int s=0; for(int i=1;i<=6;i++) s+=i; System.out.println("JAMVM:"+s+":"+System.getProperty("java.vm.name")); } }\n' > gate/G.java
 /usr/lib/jikes-1.22/bin/jikes -bootclasspath "${CP}/share/classpath/glibj.zip" -d gate gate/G.java
-OUT="$("${DST}/bin/jamvm" ${JVMFLAGS} -cp gate G 2>&1 | head -1)"
+# The compiled-in boot classpath names the final prefix, which does not exist under DESTDIR yet.
+OUT="$("${DST}/bin/jamvm" ${JVMFLAGS} -Xbootclasspath:"${DST}/share/jamvm/classes.zip:${CP}/share/classpath/glibj.zip" -cp gate G 2>&1 | tail -1)"
 case "$OUT" in JAMVM:21:*) ;; *) echo "jamvm-1.5.1: gate printed '$OUT'" >&2; exit 1 ;; esac
 
 mkdir -p "${OUTPUT_DIR}/usr/share/jamvm-1.5.1"
