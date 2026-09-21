@@ -27,6 +27,7 @@ let cpio = import "../cpio/build.ncl" in
 let file = import "../file/build.ncl" in
 let which = import "../which/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
+let libxslt = import "../libxslt/build.ncl" in # xsltproc generates the JVMTI sources
 let zlib = import "../zlib/build.ncl" in
 let freetype = import "../freetype/build.ncl" in
 let cups = import "../cups/build.ncl" in
@@ -138,6 +139,7 @@ let amd64_spec =
       file,
       which,
       pkgconf,
+      libxslt,
       zlib,
       freetype,
       cups,
