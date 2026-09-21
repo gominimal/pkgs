@@ -61,8 +61,9 @@ mkdir openjdk.src && tar -xJf ../icedtea8-3.19.0-openjdk.tar.xz -C openjdk.src -
 for d in aarch32 corba jaxp jaxws jdk langtools hotspot nashorn shenandoah; do mkdir -p "openjdk.src/$d" && tar -xJf "../icedtea8-3.19.0-$d.tar.xz" -C "openjdk.src/$d" --strip-components=1; done
 ( cd openjdk.src/jdk && patch -p1 < ../../../jdk-currency-time-bomb2.patch )
 # --- source fixes ---
-sed -i -E 's/(DIST_ID="Custom build).*$/\1"/' configure acinclude.m4
-sed -i 's/DIST_NAME="\$build_os"/DIST_NAME="minimal"/' configure acinclude.m4
+# only the generated configure: touching acinclude.m4 would make the build re-run aclocal
+sed -i -E 's/(DIST_ID="Custom build).*$/\1"/' configure
+sed -i 's/DIST_NAME="\$build_os"/DIST_NAME="minimal"/' configure
 grep -q 'DIST_NAME="minimal"' configure || { echo "icedtea-8: a source fix did not apply" >&2; exit 1; }
 # the boot JDK's tools on PATH; hotspot takes gcc/g++ from PATH (hence CCDIR), the jdk makefiles from CC/CXX
 export JAVA_HOME="${JDK7}" PATH="${JDK7}/bin:${ANT}/bin:${CCDIR}:${PATH}" ANT_HOME="${ANT}" ANT_OPTS="-Xmx8g" DISABLE_HOTSPOT_OS_VERSION_CHECK=ok
