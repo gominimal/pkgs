@@ -39,6 +39,8 @@ sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@${SR}/l
 if grep -q '/build/output' "${FIXLIB}/libc.so"; then echo "ecj4-bootstrap-4.2.1: libc.so fixup failed" >&2; exit 1; fi
 LNK="-L${FIXLIB} -B${SR}/lib -L${SR}/lib -L/usr/lib -Wl,--dynamic-linker=${LOADER} -Wl,-rpath,${SR}/lib:/usr/lib -Wl,--build-id=none"
 INC="-isystem ${SR}/include -isystem /usr/include"
+# C++: /usr/include must stay behind the libstdc++ headers, whose <cmath> reaches math.h with #include_next
+CXXINC="-isystem ${SR}/include -idirafter /usr/include"
 CCDIR="${BUILDROOT}/cc"; mkdir -p "${CCDIR}"
 cat > "${CCDIR}/gcc" <<WRAP
 #!/bin/sh
@@ -47,8 +49,8 @@ exec "${BGCC}" ${INC}  "\$@" ${LNK}
 WRAP
 cat > "${CCDIR}/g++" <<WRAP
 #!/bin/sh
-for a in "\$@"; do case "\$a" in -c|-S|-E|-M|-MM) exec "${BGXX}" ${INC} "\$@" ;; esac; done
-exec "${BGXX}" ${INC} "\$@" ${LNK}
+for a in "\$@"; do case "\$a" in -c|-S|-E|-M|-MM) exec "${BGXX}" ${CXXINC} "\$@" ;; esac; done
+exec "${BGXX}" ${CXXINC} "\$@" ${LNK}
 WRAP
 chmod 0755 "${CCDIR}/gcc" "${CCDIR}/g++"
 export CC="${CCDIR}/gcc" CXX="${CCDIR}/g++"
