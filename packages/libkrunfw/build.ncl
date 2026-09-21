@@ -29,9 +29,19 @@ let version = "5.6.1" in
     } | Source,
     # Guest kernel firmware source, vendored so the build is hermetic (the
     # Makefile otherwise curls it into tarballs/ at build time).
+    #
+    # ⚠ THIS VERSION IS COUPLED TO `version` ABOVE and must be bumped with it.
+    # libkrunfw's Makefile hard-pins the kernel it builds against:
+    #   5.5.0:  KERNEL_VERSION = linux-6.12.91
+    #   5.6.1:  KERNEL_VERSION = linux-6.12.109
+    # If they disagree, the Makefile does not find its tarball under tarballs/
+    # and falls back to curling it — which fails in the hermetic sandbox with
+    # "make: curl: No such file or directory", not with a version error. Check
+    # KERNEL_VERSION at the top of the Makefile for the tag being pinned.
+    # sha256 is kernel.org's published sha256sums.asc entry for the file.
     {
-      url = "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.12.91.tar.xz",
-      sha256 = "0ff2ab9e169f9f1948557471fbb450d3018f8c5b77caf288e1a3982582597969",
+      url = "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.12.109.tar.xz",
+      sha256 = "5484e552a334e15019f4aeba89e5b58f04651cf2f4e24e04de9f152f1c38e3fa",
     } | Source,
     base,
     toolchain,
