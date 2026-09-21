@@ -73,7 +73,7 @@ patch -p1 < ../openjdk-9-setsignalhandler.patch
 echo "9.181" > .src-rev
 
 # GNU make 4.3+ evaluates `-include` in DependOnVariableHelper differently and the build stops at ..._the.BUILD_TOOLS_LANGTOOLS.vardeps
-# (JDK-8237879); this is the upstream fix, present from JDK 15.
+# (JDK-8237879); this is the upstream fix, present from JDK 15 and in some later update releases.
 python3 - make/common/MakeBase.gmk <<'PPEOF'
 import sys; p=sys.argv[1]; s=open(p).read()
 old="        $(eval -include $(call DependOnVariableFileName, $1, $2)) \\\n"
@@ -81,7 +81,7 @@ new="        $(eval $1_filename := $(call DependOnVariableFileName, $1, $2)) \\\
 n=s.count(old); s=s.replace(old,new)
 s=s.replace("$(call MakeDir, $(dir $(call DependOnVariableFileName, $1, $2)))","$(call MakeDir, $(dir $($1_filename)))")
 s=s.replace("              $(call DependOnVariableFileName, $1, $2))) \\\n        $(call DependOnVariableFileName, $1, $2) \\\n","              $($1_filename))) \\\n        $($1_filename) \\\n")
-open(p,'w').write(s); sys.exit(0 if n==1 else 1)
+open(p,'w').write(s); sys.exit(0 if n==1 or '$1_filename :=' in s else 1)   # update releases may carry the fix already
 PPEOF
 # hotspot takes gcc/g++ from PATH (hence CCDIR), the rest from CC/CXX
 export JAVA_HOME="${BOOT}" PATH="${BOOT}/bin:${CCDIR}:${PATH}"
