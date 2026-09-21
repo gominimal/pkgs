@@ -1,5 +1,5 @@
 #!/bin/bash
-# ecj4-bootstrap-4.2.1: one rung of the JVM ladder (jikes-1.22 -> classpath-0.93 -> jamvm-1.5.1 -> ant-bootstrap-1.8.4 -> ecj-bootstrap-3.2.2 -> classpath-0.99 -> classpath-devel -> jamvm-2.0.0 -> ecj4-bootstrap-4.2.1 -> icedtea-7 -> icedtea-8 -> openjdk-9 .. 25).
+# ecj4-bootstrap-4.2.1: one rung of the JVM ladder (jikes-1.22 -> classpath-0.93 -> jamvm-1.5.1 -> ant-bootstrap-1.8.4 -> ecj-bootstrap-3.2.2 -> classpath-0.99 -> classpath-devel -> jamvm-2.0.0 -> ecj4-bootstrap-4.2.1 -> icedtea-7 -> icedtea-8 -> openjdk-9 -> ... -> openjdk-25).
 # Eclipse ecj 4.2.1 (Java 7 language) compiled by ecj 3.2.2 on jamvm-2.0.0 against classpath-devel; ships a javac wrapper (jamvm-2.0.0, -source 1.7).
 set -eu
 trap 'echo "ecj4-bootstrap-4.2.1: failed at line $LINENO: $BASH_COMMAND" >&2' ERR

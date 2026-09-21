@@ -1,5 +1,5 @@
 #!/bin/bash
-# icedtea-8: one rung of the JVM ladder (jikes-1.22 -> classpath-0.93 -> jamvm-1.5.1 -> ant-bootstrap-1.8.4 -> ecj-bootstrap-3.2.2 -> classpath-0.99 -> classpath-devel -> jamvm-2.0.0 -> ecj4-bootstrap-4.2.1 -> icedtea-7 -> icedtea-8 -> openjdk-9 .. 25).
+# icedtea-8: one rung of the JVM ladder (jikes-1.22 -> classpath-0.93 -> jamvm-1.5.1 -> ant-bootstrap-1.8.4 -> ecj-bootstrap-3.2.2 -> classpath-0.99 -> classpath-devel -> jamvm-2.0.0 -> ecj4-bootstrap-4.2.1 -> icedtea-7 -> icedtea-8 -> openjdk-9 -> ... -> openjdk-25).
 # OpenJDK 8u292 via the IcedTea 3.19.0 harness in --enable-bootstrap mode, with ../icedtea-7 as the boot JDK.
 set -eu
 trap 'echo "icedtea-8: failed at line $LINENO: $BASH_COMMAND" >&2' ERR

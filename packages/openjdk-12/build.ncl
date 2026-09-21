@@ -1,7 +1,10 @@
 let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
-# openjdk-12: one rung of the JVM ladder (jikes-1.22 -> classpath-0.93 -> jamvm-1.5.1 -> ant-bootstrap-1.8.4 -> ecj-bootstrap-3.2.2 -> classpath-0.99 -> classpath-devel -> jamvm-2.0.0 -> ecj4-bootstrap-4.2.1 -> icedtea-7 -> icedtea-8 -> openjdk-9 .. 25).
-# OpenJDK 12+33 from the GitHub tag archive, built with ../openjdk-11 as the boot JDK. Installs at /usr/lib/openjdk-12; nothing lands on /usr/bin.
+# openjdk-12: one rung of the JVM ladder (jikes-1.22 -> classpath-0.93 -> jamvm-1.5.1 -> ant-
+# bootstrap-1.8.4 -> ecj-bootstrap-3.2.2 -> classpath-0.99 -> classpath-devel -> jamvm-2.0.0 ->
+# ecj4-bootstrap-4.2.1 -> icedtea-7 -> icedtea-8 -> openjdk-9 -> ... -> openjdk-25).
+# OpenJDK 12+33 from the GitHub tag archive, built with ../openjdk-11 as the boot JDK. Installs at
+# /usr/lib/openjdk-12; nothing lands on /usr/bin.
 # Sources mirrored to gs://minimal-staging-archives/. No `needs`: nothing here touches the network.
 # amd64 only (see the match at the bottom).
 let boot = import "../openjdk-11/build.ncl" in # the boot JDK
@@ -123,7 +126,8 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# amd64 only: this rung belongs to the amd64 bootstrap ladder; the spec collapses to an empty collection on arm64.
+# amd64 only: this rung belongs to the amd64 bootstrap ladder; the spec collapses to an empty
+# collection on arm64.
 match {
   { arch = 'Amd64, .. } => amd64_spec,
   { arch = 'Arm64, .. } =>
