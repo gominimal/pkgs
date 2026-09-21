@@ -2,14 +2,14 @@ let { Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 
-let version = "2.14.4" in
+let version = "2.14.7" in
 {
   name = "nats-server",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/nats-io/nats-server/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "fb873897f826686dc4407112613e80c61fba10a1b381375458784995cd9f295d",
+      sha256 = "094114987c7f7d45347a77e1731a394d002115669b802b5475ef515d342358cc",
       extract = true,
       strip_prefix = "nats-server-%{version}",
     } | Source,
