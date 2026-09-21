@@ -63,8 +63,7 @@ for d in aarch32 corba jaxp jaxws jdk langtools hotspot nashorn shenandoah; do m
 # --- source fixes ---
 sed -i -E 's/(DIST_ID="Custom build).*$/\1"/' configure acinclude.m4
 sed -i 's/DIST_NAME="\$build_os"/DIST_NAME="minimal"/' configure acinclude.m4
-sed -i 's|#include <sys/sysctl.h>|#include <linux/sysctl.h>|' openjdk.src/jdk/src/solaris/native/java/net/PlainSocketImpl.c openjdk.src/jdk/src/solaris/native/java/net/PlainDatagramSocketImpl.c
-grep -q 'DIST_NAME="minimal"' configure && grep -q 'linux/sysctl.h' openjdk.src/jdk/src/solaris/native/java/net/PlainSocketImpl.c || { echo "icedtea-8: a source fix did not apply" >&2; exit 1; }
+grep -q 'DIST_NAME="minimal"' configure || { echo "icedtea-8: a source fix did not apply" >&2; exit 1; }
 # the boot JDK's tools on PATH; hotspot takes gcc/g++ from PATH (hence CCDIR), the jdk makefiles from CC/CXX
 export JAVA_HOME="${JDK7}" PATH="${JDK7}/bin:${ANT}/bin:${CCDIR}:${PATH}" ANT_HOME="${ANT}" ANT_OPTS="-Xmx8g" DISABLE_HOTSPOT_OS_VERSION_CHECK=ok
 # --- configure + make ---
