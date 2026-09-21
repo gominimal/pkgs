@@ -39,8 +39,15 @@ sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@${SR}/l
 if grep -q '/build/output' "${FIXLIB}/libc.so"; then echo "openjdk-20: libc.so fixup failed" >&2; exit 1; fi
 LNK="-L${FIXLIB} -B${SR}/lib -L${SR}/lib -L/usr/lib -Wl,--dynamic-linker=${LOADER} -Wl,-rpath,${SR}/lib:/usr/lib -Wl,--build-id=none"
 INC="-isystem ${SR}/include -isystem /usr/include"
-# C++: /usr/include must stay behind the libstdc++ headers, whose <cmath> reaches math.h with #include_next
-CXXINC="-isystem ${SR}/include -idirafter /usr/include"
+# C++: rebuild g++'s own include chain (libstdc++, gcc freestanding) ahead of the sysroot's glibc headers, and
+# /usr/include last. Hoisting a glibc dir above libstdc++ shadows its <math.h> wrapper (no float overloads) and
+# a hoisted /usr/include empties the tail #include_next needs.
+CXXINC=""
+for d in $("${BGXX}" -E -x c++ -v /dev/null 2>&1 | sed -n '/#include <...> search starts here:/,/End of search list./p' | sed '1d;$d'); do
+  case "$d" in /usr/include|/usr/include/*-linux-gnu|/usr/local/include) ;; *) CXXINC="${CXXINC} -isystem $d" ;; esac
+done
+CXXINC="${CXXINC# } -isystem ${SR}/include -idirafter /usr/include"
+[ -n "$(echo "${CXXINC}" | grep -o 'c++')" ] || { echo "openjdk-20: cannot find g++'s libstdc++ include dirs" >&2; exit 1; }
 CCDIR="${BUILDROOT}/cc"; mkdir -p "${CCDIR}"
 cat > "${CCDIR}/gcc" <<WRAP
 #!/bin/sh
@@ -49,8 +56,8 @@ exec "${BGCC}" ${INC}  "\$@" ${LNK}
 WRAP
 cat > "${CCDIR}/g++" <<WRAP
 #!/bin/sh
-for a in "\$@"; do case "\$a" in -c|-S|-E|-M|-MM) exec "${BGXX}" ${CXXINC} "\$@" ;; esac; done
-exec "${BGXX}" ${CXXINC} "\$@" ${LNK}
+for a in "\$@"; do case "\$a" in -c|-S|-E|-M|-MM) exec "${BGXX}" -nostdinc -nostdinc++ ${CXXINC} "\$@" ;; esac; done
+exec "${BGXX}" -nostdinc -nostdinc++ ${CXXINC} "\$@" ${LNK}
 WRAP
 chmod 0755 "${CCDIR}/gcc" "${CCDIR}/g++"
 export CC="${CCDIR}/gcc" CXX="${CCDIR}/g++"
