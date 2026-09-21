@@ -7,14 +7,14 @@ let toolchain = import "../toolchain/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.24.0" in
+let version = "1.24.1" in
 {
   name = "skopeo",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/containers/skopeo/v%{version}.tar.gz",
-      sha256 = "1eea9364e344c4d6cb398fac53bc387663d19690552003b43c75819e8bb55527",
+      sha256 = "6a3f342a327ec7684198eb0e15114940b6101506db48d9a96590f5942cb3b335",
       extract = true,
       strip_prefix = "skopeo-%{version}",
     } | Source,
