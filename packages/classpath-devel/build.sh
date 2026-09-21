@@ -67,7 +67,7 @@ export PATH="/usr/lib/ecj-bootstrap-3.2.2/bin:/usr/lib/classpath-0.99/bin:${PATH
   || { tail -30 ../configure.log >&2; echo "classpath-devel: configure failed" >&2; exit 1; }
 # MAKEINFO=true: the git snapshot ships no prebuilt .info files and texinfo is not in the closure
 make -j"${JOBS}" JAVAC_MEM_OPT="-J-Xms512M -J-Xmx768M" MAKEINFO=true > ../make.log 2>&1 || { grep -A5 -m5 'ERROR in' ../make.log >&2 || true; grep -n -m5 -iE ' error|Error [0-9]' ../make.log >&2 || true; echo "classpath-devel: make failed" >&2; exit 1; }
-make install DESTDIR="${OUTPUT_DIR}" > ../install.log 2>&1 && make install-data DESTDIR="${OUTPUT_DIR}" >> ../install.log 2>&1 \
+make install MAKEINFO=true DESTDIR="${OUTPUT_DIR}" > ../install.log 2>&1 && make install-data MAKEINFO=true DESTDIR="${OUTPUT_DIR}" >> ../install.log 2>&1 \
   || { tail -20 ../install.log >&2; echo "classpath-devel: install failed" >&2; exit 1; }
 cd "${BUILDROOT}"
 mkdir -p "${DST}/bin"
