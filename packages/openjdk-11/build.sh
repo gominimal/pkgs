@@ -86,14 +86,15 @@ open(p,'w').write(s); sys.exit(0 if n==1 else 1)
 PPEOF
 # hotspot takes gcc/g++ from PATH (hence CCDIR), the rest from CC/CXX
 export JAVA_HOME="${BOOT}" PATH="${BOOT}/bin:${CCDIR}:${PATH}"
-# JDK 10's AVX-512 intrinsics miscompile on AVX-512 hosts; every JVM of this build (the boot, the interim, the exploded image) runs with AVX2
-export JAVA_TOOL_OPTIONS="-XX:UseAVX=2"
 # --- configure + make ---
 bash ./configure --with-boot-jdk="${BOOT}" --disable-option-checking --disable-warnings-as-errors --with-native-debug-symbols=none \
   "--with-extra-cflags=-fcommon -fno-delete-null-pointer-checks -fno-lifetime-dse -Wno-error=int-conversion" --disable-hotspot-gtest --with-version-pre= --with-hotspot-build-time=1970-01-01T00:00:01 --enable-reproducible-build \
   --with-giflib=system --with-lcms=system --with-libjpeg=system --with-libpng=system --with-zlib=system \
   --with-freetype-include=/usr/include/freetype2 --with-freetype-lib=/usr/lib > ../configure.log 2>&1 \
   || { grep -n -iE 'error|could not|cannot|not found' ../configure.log | tail -8 >&2 || true; echo "openjdk-11: configure failed" >&2; exit 1; }
+# JDK 10's AVX-512 intrinsics miscompile on AVX-512 hosts; every JVM of the build (boot, interim, exploded image) runs with AVX2.
+# Set after configure: the "Picked up JAVA_TOOL_OPTIONS" banner breaks its boot-JDK version parse.
+export JAVA_TOOL_OPTIONS="-XX:UseAVX=2"
 make JOBS="${JOBS}" all > ../make.log 2>&1 \
   || { grep -nE 'error:|Error [0-9]|\*\*\* \[' ../make.log | grep -v Werror | tail -8 >&2 || true; tail -10 ../make.log >&2; echo "openjdk-11: make failed" >&2; exit 1; }
 IMG="$(ls -d build/*/images/jdk | head -1)"
