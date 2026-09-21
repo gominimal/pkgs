@@ -42,8 +42,8 @@ INC="-isystem ${SR}/include -isystem /usr/include"
 CCDIR="${BUILDROOT}/cc"; mkdir -p "${CCDIR}"
 cat > "${CCDIR}/gcc" <<WRAP
 #!/bin/sh
-for a in "\$@"; do case "\$a" in -c|-S|-E|-M|-MM) exec "${BGCC}" ${INC} -std=gnu17 "\$@" ;; esac; done
-exec "${BGCC}" ${INC} -std=gnu17 "\$@" ${LNK}
+for a in "\$@"; do case "\$a" in -c|-S|-E|-M|-MM) exec "${BGCC}" ${INC} -std=gnu17 -Wno-error=implicit-function-declaration -Wno-error=incompatible-pointer-types -Wno-error=int-conversion "\$@" ;; esac; done
+exec "${BGCC}" ${INC} -std=gnu17 -Wno-error=implicit-function-declaration -Wno-error=incompatible-pointer-types -Wno-error=int-conversion "\$@" ${LNK}
 WRAP
 cat > "${CCDIR}/g++" <<WRAP
 #!/bin/sh
