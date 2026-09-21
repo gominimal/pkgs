@@ -42,11 +42,11 @@ INC="-isystem ${SR}/include -isystem /usr/include"
 # C++: rebuild g++'s own include chain (libstdc++, gcc freestanding) ahead of the sysroot's glibc headers, and
 # /usr/include last. Hoisting a glibc dir above libstdc++ shadows its <math.h> wrapper (no float overloads) and
 # a hoisted /usr/include empties the tail #include_next needs.
-CXXINC=""
+CXXINC=""; CXXTAIL=""
 for d in $("${BGXX}" -E -x c++ -v /dev/null 2>&1 | sed -n '/#include <...> search starts here:/,/End of search list./p' | sed '1d;$d'); do
-  case "$d" in /usr/include|/usr/include/*-linux-gnu|/usr/local/include) ;; *) CXXINC="${CXXINC} -isystem $d" ;; esac
+  case "$d" in /usr/include|/usr/local/include) ;; /usr/include/*) CXXTAIL="${CXXTAIL} -idirafter $d" ;; *) CXXINC="${CXXINC} -isystem $d" ;; esac
 done
-CXXINC="${CXXINC# } -isystem ${SR}/include -idirafter /usr/include"
+CXXINC="${CXXINC# } -isystem ${SR}/include${CXXTAIL} -idirafter /usr/include"
 [ -n "$(echo "${CXXINC}" | grep -o 'c++')" ] || { echo "ecj-bootstrap-3.2.2: cannot find g++'s libstdc++ include dirs" >&2; exit 1; }
 CCDIR="${BUILDROOT}/cc"; mkdir -p "${CCDIR}"
 cat > "${CCDIR}/gcc" <<WRAP
