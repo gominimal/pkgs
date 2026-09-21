@@ -60,7 +60,7 @@ cd src
 JAVAC="${JIKES}" ./configure --prefix="${PREFIX}" --with-jikes="${JIKES}" --disable-Werror --disable-gmp --disable-gtk-peer --disable-gconf-peer \
   --disable-plugin --disable-dssi --disable-alsa --disable-gjdoc --disable-examples --disable-tools > ../configure.log 2>&1 \
   || { tail -30 ../configure.log >&2; echo "classpath-0.93: configure failed" >&2; exit 1; }
-make -j"${JOBS}" > ../make.log 2>&1 || { grep -n -m5 -iE ' error|Error [0-9]' ../make.log >&2; tail -20 ../make.log >&2; echo "classpath-0.93: make failed" >&2; exit 1; }
+make -j"${JOBS}" > ../make.log 2>&1 || { grep -n -m5 -iE ' error|Error [0-9]' ../make.log >&2 || true; tail -20 ../make.log >&2; echo "classpath-0.93: make failed" >&2; exit 1; }
 make install DESTDIR="${OUTPUT_DIR}" > ../install.log 2>&1 || { tail -20 ../install.log >&2; echo "classpath-0.93: install failed" >&2; exit 1; }
 cd "${BUILDROOT}"
 # --- P3 gate ---

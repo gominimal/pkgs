@@ -65,7 +65,8 @@ export PATH="/usr/lib/ecj-bootstrap-3.2.2/bin:/usr/lib/classpath-0.99/bin:${PATH
 ./configure --prefix="${PREFIX}" --with-ecj-jar="${ECJJAR}" --with-javac="${JAVAC}" JAVA="${JAMVM}" GCJ_JAVAC_TRUE=no ac_cv_prog_java_works=yes \
   --disable-Werror --disable-gmp --disable-gtk-peer --disable-gconf-peer --disable-plugin --disable-dssi --disable-alsa --disable-gjdoc > ../configure.log 2>&1 \
   || { tail -30 ../configure.log >&2; echo "classpath-devel: configure failed" >&2; exit 1; }
-make -j"${JOBS}" JAVAC_MEM_OPT="-J-Xms512M -J-Xmx768M" > ../make.log 2>&1 || { grep -A5 -m5 'ERROR in' ../make.log >&2; grep -n -m5 -iE ' error|Error [0-9]' ../make.log >&2; echo "classpath-devel: make failed" >&2; exit 1; }
+# MAKEINFO=true: the git snapshot ships no prebuilt .info files and texinfo is not in the closure
+make -j"${JOBS}" JAVAC_MEM_OPT="-J-Xms512M -J-Xmx768M" MAKEINFO=true > ../make.log 2>&1 || { grep -A5 -m5 'ERROR in' ../make.log >&2 || true; grep -n -m5 -iE ' error|Error [0-9]' ../make.log >&2 || true; echo "classpath-devel: make failed" >&2; exit 1; }
 make install DESTDIR="${OUTPUT_DIR}" > ../install.log 2>&1 && make install-data DESTDIR="${OUTPUT_DIR}" >> ../install.log 2>&1 \
   || { tail -20 ../install.log >&2; echo "classpath-devel: install failed" >&2; exit 1; }
 cd "${BUILDROOT}"

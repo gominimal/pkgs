@@ -61,7 +61,7 @@ rm -f src/classlib/gnuclasspath/lib/classes.zip   # shipped precompiled classes;
 for p in jamvm-2.0.0-disable-branch-patching.patch jamvm-2.0.0-guard-fp-opcodes.patch; do patch -p1 < "../$p" > "../$p.log" 2>&1 || { cat "../$p.log" >&2; echo "jamvm-2.0.0: $p did not apply" >&2; exit 1; }; done
 CFLAGS="-O2" ./configure --prefix="${PREFIX}" --with-classpath-install-dir="${CPD}" --disable-int-caching --enable-runtime-reloc-checks --enable-ffi \
   --with-java-runtime-library=gnuclasspath JAVAC="${JAVAC}" > ../configure.log 2>&1 || { tail -30 ../configure.log >&2; echo "jamvm-2.0.0: configure failed" >&2; exit 1; }
-make -j"${JOBS}" > ../make.log 2>&1 || { grep -n -m5 -iE ' error|Error [0-9]' ../make.log >&2; tail -20 ../make.log >&2; echo "jamvm-2.0.0: make failed" >&2; exit 1; }
+make -j"${JOBS}" > ../make.log 2>&1 || { grep -n -m5 -iE ' error|Error [0-9]' ../make.log >&2 || true; tail -20 ../make.log >&2; echo "jamvm-2.0.0: make failed" >&2; exit 1; }
 make install DESTDIR="${OUTPUT_DIR}" > ../install.log 2>&1 || { tail -20 ../install.log >&2; echo "jamvm-2.0.0: install failed" >&2; exit 1; }
 cd "${BUILDROOT}"
 # --- P3 gate ---

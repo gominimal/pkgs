@@ -59,7 +59,7 @@ mkdir src && tar -xzf jamvm-1.5.1.tar.gz -C src --strip-components=1
 cd src
 CFLAGS="-O2" ./configure --prefix="${PREFIX}" --with-classpath-install-dir="${CP}" --disable-int-caching --enable-runtime-reloc > ../configure.log 2>&1 \
   || { tail -30 ../configure.log >&2; echo "jamvm-1.5.1: configure failed" >&2; exit 1; }
-make -j"${JOBS}" > ../make.log 2>&1 || { grep -n -m5 -iE ' error|Error [0-9]' ../make.log >&2; tail -20 ../make.log >&2; echo "jamvm-1.5.1: make failed" >&2; exit 1; }
+make -j"${JOBS}" > ../make.log 2>&1 || { grep -n -m5 -iE ' error|Error [0-9]' ../make.log >&2 || true; tail -20 ../make.log >&2; echo "jamvm-1.5.1: make failed" >&2; exit 1; }
 make install DESTDIR="${OUTPUT_DIR}" > ../install.log 2>&1 || { tail -20 ../install.log >&2; echo "jamvm-1.5.1: install failed" >&2; exit 1; }
 cd "${BUILDROOT}"
 # --- P3 gate: run a class compiled by jikes against glibj ---
