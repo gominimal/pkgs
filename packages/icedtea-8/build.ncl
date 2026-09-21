@@ -41,6 +41,7 @@ let libxtst = import "../libxtst/build.ncl" in
 let libxi = import "../libxi/build.ncl" in
 let libxinerama = import "../libxinerama/build.ncl" in
 let libxrandr = import "../libxrandr/build.ncl" in
+let libxcomposite = import "../libxcomposite/build.ncl" in
 let libxt = import "../libxt/build.ncl" in
 let xorgproto = import "../xorgproto/build.ncl" in
 let version = "3.19.0" in
@@ -153,6 +154,7 @@ let amd64_spec =
       libxi,
       libxinerama,
       libxrandr,
+      libxcomposite,
       libxt,
       xorgproto,
     ],
