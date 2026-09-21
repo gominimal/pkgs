@@ -42,7 +42,23 @@ let version = "710" in
     # libexecdir. OutputLib matches findutils' `libexec_frcode`, the same shape
     # — an executable helper that lives outside PATH.
     lessecho = { glob = "usr/libexec/lessecho" } | OutputLib,
-    lesskey = { glob = "usr/bin/lesskey" } | OutputBin,
+    # lesskey was DROPPED as a binary in 710. Upstream's install target no
+    # longer ships it at all —
+    #   704:  ${INSTALL_PROGRAM} lesskey  ${DESTDIR}${bindir}/lesskey
+    #   710:  (no lesskey install rule; only less, lessecho, less-osc8-open)
+    # because `lesskey_parse.o` is now linked into `less` itself, so less reads
+    # a lesskey source file directly and the separate compiler is redundant.
+    # Only the MAN page survives (`lesskey.nro`), which the `mans` glob below
+    # already captures. Keeping a `usr/bin/lesskey` output therefore failed the
+    # build outright: "output globs did not match any files: lesskey".
+    #
+    # This is the same upstream reshuffle that moved lessecho in 704, one
+    # release later — and the 704 fix repointed only lessecho, leaving this
+    # sibling to break on the next bump.
+    #
+    # NEW in 710: less-osc8-open, a helper script for OSC-8 hyperlink opening,
+    # installed to ${libexecdir}. Same shape as lessecho, so same output type.
+    less_osc8_open = { glob = "usr/libexec/less-osc8-open" } | OutputLib,
     mans = { glob = "usr/share/man/**" } | OutputData,
   },
   attrs =
