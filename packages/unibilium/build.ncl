@@ -7,14 +7,14 @@ let glibc = import "../glibc/build.ncl" in
 
 # Terminfo parsing library. Upstream (mauke/unibilium) is unmaintained; the
 # neovim fork is the actively maintained canonical source.
-let version = "2.1.2" in
+let version = "2.1.4" in
 {
   name = "unibilium",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/neovim/unibilium/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "370ecb07fbbc20d91d1b350c55f1c806b06bf86797e164081ccc977fc9b3af7a",
+      sha256 = "7360907bcf79ba49f6fc4a504767ff86e93ab9018477026fcc70d5ab77e1f2c1",
       extract = true,
       strip_prefix = "unibilium-%{version}",
     } | Source,
