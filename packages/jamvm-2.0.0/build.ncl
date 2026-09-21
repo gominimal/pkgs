@@ -1,8 +1,8 @@
 let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
-# jamvm-2.0.0: one rung of the JVM ladder (jikes-1.22 -> classpath-0.93 -> jamvm-1.5.1 -> ant-
-# bootstrap-1.8.4 -> ecj-bootstrap-3.2.2 -> classpath-0.99 -> classpath-devel -> jamvm-2.0.0 ->
-# ecj4-bootstrap-4.2.1 -> icedtea-7 -> icedtea-8 -> openjdk-9 -> ... -> openjdk-25).
+# jamvm-2.0.0: one rung of the JVM ladder (jikes-1.22 -> classpath-0.93 -> jamvm-1.5.1 ->
+# ant-bootstrap-1.8.4 -> ecj-bootstrap-3.2.2 -> classpath-0.99 -> classpath-devel -> jamvm-2.0.0
+# -> ecj4-bootstrap-4.2.1 -> icedtea-7 -> icedtea-8 -> openjdk-9 -> ... -> openjdk-25).
 # JamVM 2.0.0 against classpath-devel, its own class-library glue compiled by ecj-bootstrap-3.2.2;
 # two upstream-derived patches. Installs at /usr/lib/jamvm-2.0.0; nothing lands on /usr/bin.
 # Sources mirrored to gs://minimal-staging-archives/. No `needs`: nothing here touches the network.

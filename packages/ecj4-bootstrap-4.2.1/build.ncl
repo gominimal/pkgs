@@ -3,8 +3,8 @@ let { target, .. } = import "config.ncl" in
 # ecj4-bootstrap-4.2.1: one rung of the JVM ladder (jikes-1.22 -> classpath-0.93 -> jamvm-1.5.1 ->
 # ant-bootstrap-1.8.4 -> ecj-bootstrap-3.2.2 -> classpath-0.99 -> classpath-devel -> jamvm-2.0.0
 # -> ecj4-bootstrap-4.2.1 -> icedtea-7 -> icedtea-8 -> openjdk-9 -> ... -> openjdk-25).
-# Eclipse ecj 4.2.1 (Java 7 language) compiled by ecj 3.2.2 on jamvm-2.0.0 against classpath-
-# devel; ships a javac wrapper (jamvm-2.0.0, -source 1.7). Installs at
+# Eclipse ecj 4.2.1 (Java 7 language) compiled by ecj 3.2.2 on jamvm-2.0.0 against
+# classpath-devel; ships a javac wrapper (jamvm-2.0.0, -source 1.7). Installs at
 # /usr/lib/ecj4-bootstrap-4.2.1; nothing lands on /usr/bin.
 # Sources mirrored to gs://minimal-staging-archives/. No `needs`: nothing here touches the network.
 # amd64 only (see the match at the bottom).

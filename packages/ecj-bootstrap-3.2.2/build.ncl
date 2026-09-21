@@ -4,8 +4,8 @@ let { target, .. } = import "config.ncl" in
 # ant-bootstrap-1.8.4 -> ecj-bootstrap-3.2.2 -> classpath-0.99 -> classpath-devel -> jamvm-2.0.0
 # -> ecj4-bootstrap-4.2.1 -> icedtea-7 -> icedtea-8 -> openjdk-9 -> ... -> openjdk-25).
 # Eclipse ecj 3.2.2 compiled by jikes: the first Java-written Java compiler in the chain, shipped
-# with a javac-compatible wrapper that runs it on jamvm-1.5.1. Installs at /usr/lib/ecj-
-# bootstrap-3.2.2; nothing lands on /usr/bin.
+# with a javac-compatible wrapper that runs it on jamvm-1.5.1. Installs at
+# /usr/lib/ecj-bootstrap-3.2.2; nothing lands on /usr/bin.
 # Sources mirrored to gs://minimal-staging-archives/. No `needs`: nothing here touches the network.
 # amd64 only (see the match at the bottom).
 let jikes = import "../jikes-1.22/build.ncl" in

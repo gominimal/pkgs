@@ -1,10 +1,10 @@
 let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
-# classpath-0.99: one rung of the JVM ladder (jikes-1.22 -> classpath-0.93 -> jamvm-1.5.1 -> ant-
-# bootstrap-1.8.4 -> ecj-bootstrap-3.2.2 -> classpath-0.99 -> classpath-devel -> jamvm-2.0.0 ->
-# ecj4-bootstrap-4.2.1 -> icedtea-7 -> icedtea-8 -> openjdk-9 -> ... -> openjdk-25).
-# GNU Classpath 0.99 compiled by ecj-bootstrap-3.2.2 (on jamvm-1.5.1); ships its tools with jamvm-
-# run wrappers. Installs at /usr/lib/classpath-0.99; nothing lands on /usr/bin.
+# classpath-0.99: one rung of the JVM ladder (jikes-1.22 -> classpath-0.93 -> jamvm-1.5.1 ->
+# ant-bootstrap-1.8.4 -> ecj-bootstrap-3.2.2 -> classpath-0.99 -> classpath-devel -> jamvm-2.0.0
+# -> ecj4-bootstrap-4.2.1 -> icedtea-7 -> icedtea-8 -> openjdk-9 -> ... -> openjdk-25).
+# GNU Classpath 0.99 compiled by ecj-bootstrap-3.2.2 (on jamvm-1.5.1); ships its tools with
+# jamvm-run wrappers. Installs at /usr/lib/classpath-0.99; nothing lands on /usr/bin.
 # Sources mirrored to gs://minimal-staging-archives/. No `needs`: nothing here touches the network.
 # amd64 only (see the match at the bottom).
 let ecj = import "../ecj-bootstrap-3.2.2/build.ncl" in # the javac wrapper + jar
