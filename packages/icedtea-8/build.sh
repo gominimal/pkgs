@@ -73,7 +73,8 @@ export JAVA_HOME="${JDK7}" PATH="${JDK7}/bin:${ANT}/bin:${CCDIR}:${PATH}" ANT_HO
   --disable-system-sctp --disable-system-pcsc --disable-system-kerberos --disable-system-gif --disable-system-jpeg --disable-system-png --enable-system-zlib --enable-system-lcms \
   --with-parallel-jobs="${JOBS}" --with-openjdk-src-dir=./openjdk.src --with-jdk-home="${JDK7}" > ../configure.log 2>&1 \
   || { grep -n -iE 'error|cannot|not found|no acceptable' ../configure.log | tail -8 >&2 || true; tail -10 ../configure.log >&2; echo "icedtea-8: configure failed" >&2; exit 1; }
-make -j"${JOBS}" > ../make.log 2>&1 \
+# no -j here: the OpenJDK 8 makefiles refuse an inherited -j; --with-parallel-jobs carries the parallelism
+make > ../make.log 2>&1 \
   || { grep -n -B8 -m1 -E 'make\[[0-9]*\]: \*\*\*|^\*\*\* \[' ../make.log | tail -12 >&2 || true; grep -oE 'error: [^(]{0,60}|Exception in thread[^\n]{0,60}|\*\*\* \[[^]]{0,60}\]' ../make.log | sort | uniq -c | sort -rn | head -5 >&2 || true; echo "icedtea-8: make failed" >&2; exit 1; }
 [ -x openjdk.build/images/j2sdk-image/bin/java ] || { echo "icedtea-8: no j2sdk-image" >&2; exit 1; }
 mkdir -p "${DST}" && cp -a openjdk.build/images/j2sdk-image/. "${DST}/"
