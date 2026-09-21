@@ -119,7 +119,7 @@ let amd64_spec =
         license_spdx = "GPL-2.0-only WITH Classpath-exception-2.0",
         build_cost_multiple = 12,
         source_provenance = {
-          category = 'Github,
+          category = 'GithubRepo,
           owner = "openjdk",
           repo = "jdk17u",
         },
