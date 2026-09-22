@@ -23,13 +23,14 @@ let python = import "../python/build.ncl" in # normalises the zip archives after
 let zlib = import "../zlib/build.ncl" in
 let gzip = import "../gzip/build.ncl" in
 let zip = import "../zip/build.ncl" in # classes.zip
+let patch = import "../patch/build.ncl" in
 let version = "1.5.1" in
 let amd64_spec =
   {
     name = "jamvm-1.5.1",
     build_deps = [
       { file = "build.sh" } | Local,
-
+      { file = "jamvm-1.5.1-jni-return-width.patch" } | Local, # JNI trampoline stored all of %rax for jboolean returns
       {
         url = "gs://minimal-staging-archives/jamvm-1.5.1.tar.gz",
         sha256 = "663895bd69caf3a1fda6af5eea8263d90a5fd35ca8f4c32e2210ac410788901a",
@@ -37,6 +38,7 @@ let amd64_spec =
       } | Source,
       classpath,
       jikes,
+      patch,
       gcc-bedrock,
       binutils-bedrock,
       glibc-bedrock,
