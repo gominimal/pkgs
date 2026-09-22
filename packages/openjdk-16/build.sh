@@ -99,42 +99,43 @@ OUT="$("${DST}/bin/java" -cp gate G 2>&1 | tail -1)"
 
 # --- P4 deterministic archives: zip entry timestamps and order are build-time noise ---
 python3 - "${DST}" <<'PYEOF'
-import os, shutil, sys, zipfile
+import io, os, shutil, sys, zipfile
+def norm_bytes(b):
+    """Rewrite a zip: fixed entry timestamps, sorted entries (manifest first), nested jars normalised too."""
+    with zipfile.ZipFile(io.BytesIO(b)) as z:
+        infos = z.infolist(); data = {i.filename: z.read(i) for i in infos}
+    order = sorted(infos, key=lambda i: (0 if i.filename == 'META-INF/MANIFEST.MF' else 1 if i.filename.startswith('META-INF/') else 2, i.filename))
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, 'w') as o:
+        for i in order:
+            d = data[i.filename]
+            if i.filename.endswith(('.jar', '.zip')) and zipfile.is_zipfile(io.BytesIO(d)): d = norm_bytes(d)
+            zi = zipfile.ZipInfo(i.filename, date_time=(1980, 1, 1, 0, 0, 0))
+            zi.compress_type = i.compress_type; zi.external_attr = i.external_attr; zi.create_system = 3
+            o.writestr(zi, d)
+    return out.getvalue()
 root = sys.argv[1]; n = 0
 for dp, _, fn in os.walk(root):
     for f in fn:
         p = os.path.join(dp, f)
         if os.path.islink(p) or not (f.endswith(('.jar', '.zip', '.war', '.jmod')) or f == 'ct.sym'): continue
+        with open(p, 'rb') as fh: raw = fh.read()
         head = b''
         if f.endswith('.jmod'):   # a jmod is a zip behind a 4-byte "JM" magic
-            with open(p, 'rb') as fh: head = fh.read(4)
-            if head[:2] != b'JM': continue
-            body = p + '.zip'
-            with open(p, 'rb') as fh, open(body, 'wb') as out: fh.seek(4); shutil.copyfileobj(fh, out)
-        else:
-            body = p
-        if not zipfile.is_zipfile(body):
-            if body != p: os.unlink(body)
-            continue
-        with zipfile.ZipFile(body) as z:
-            infos = z.infolist(); data = {i.filename: z.read(i) for i in infos}
-        # the manifest stays first: JarInputStream only sees it there
-        order = sorted(infos, key=lambda i: (0 if i.filename == 'META-INF/MANIFEST.MF' else 1 if i.filename.startswith('META-INF/') else 2, i.filename))
+            if raw[:2] != b'JM': continue
+            head, raw = raw[:4], raw[4:]
+        if not zipfile.is_zipfile(io.BytesIO(raw)): continue
         tmp = p + '.tmp'
-        with zipfile.ZipFile(tmp, 'w') as out:
-            for i in order:
-                zi = zipfile.ZipInfo(i.filename, date_time=(1980, 1, 1, 0, 0, 0))
-                zi.compress_type = i.compress_type; zi.external_attr = i.external_attr; zi.create_system = 3
-                out.writestr(zi, data[i.filename])
-        if head:
-            with open(tmp, 'rb') as fh: payload = fh.read()
-            with open(tmp, 'wb') as out: out.write(head); out.write(payload)
-            os.unlink(body)
+        with open(tmp, 'wb') as out: out.write(head); out.write(norm_bytes(raw))
         shutil.copymode(p, tmp); os.replace(tmp, p); n += 1
 print("normalised", n, "archives")
 PYEOF
 # class-data-sharing archives are dumped at build time from a live VM and do not reproduce; the VM runs without them
 find "${DST}" -name 'classes*.jsa' -type f -delete
+# src.zip carries generated sources that do not reproduce; a bootstrap JDK does not need it
+find "${DST}" -name 'src.zip' -type f -delete
+# the default class list is written in class-load order, which varies run to run; only its membership matters
+[ ! -f "${DST}/lib/classlist" ] || { LC_ALL=C sort "${DST}/lib/classlist" > "${DST}/lib/classlist.sorted" && mv "${DST}/lib/classlist.sorted" "${DST}/lib/classlist"; }
 
 mkdir -p "${OUTPUT_DIR}/usr/share/openjdk-16"
 cat > "${OUTPUT_DIR}/usr/share/openjdk-16/BUILDINFO" <<EOF
