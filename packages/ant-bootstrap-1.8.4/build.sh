@@ -77,8 +77,9 @@ bash bootstrap.sh -Ddist.dir="${DST}" > ../bootstrap.log 2>&1 || {
   tail -40 ../bootstrap.log >&2
   # what the class library thinks of the build tree (a directory mistaken for a file points at its stat glue)
   ls -la build build/lib >&2 2>&1 || true; stat build/lib >&2 2>&1 || true
-  printf 'public class D { public static void main(String[] a){ for (String p : a) { java.io.File f = new java.io.File(p); System.out.println(p + " exists=" + f.exists() + " dir=" + f.isDirectory() + " file=" + f.isFile() + " canRead=" + f.canRead()); } } }\n' > ../D.java
-  "${JIKES}" -bootclasspath "${GLIBJ}" -d .. ../D.java >&2 2>&1 && "${JAMVM}" ${JVMFLAGS} -cp .. D "$(pwd)" "$(pwd)/build" "$(pwd)/build/lib" /tmp "${DST}" >&2 2>&1 || true
+  printf 'public class D { public static void main(String[] a){ for (int i = 0; i < a.length; i++) { java.io.File f = new java.io.File(a[i]); System.out.println(a[i] + " exists=" + f.exists() + " dir=" + f.isDirectory() + " file=" + f.isFile() + " canRead=" + f.canRead() + " len=" + f.length()); } } }\n' > ../D.java
+  "${JIKES}" -bootclasspath "${GLIBJ}" -d .. ../D.java >&2 2>&1 && "${JAMVM}" ${JVMFLAGS} -cp .. D "$(pwd)" "$(pwd)/build" "$(pwd)/build/lib" "$(pwd)/build.xml" /nonexistent "${DST}" >&2 2>&1 || true
+  "${JAMVM}" -version >&2 2>&1 | head -2 || true; ldd /usr/lib/classpath-0.93/lib/classpath/libjavaio.so >&2 2>&1 || true
   echo "ant-bootstrap-1.8.4: bootstrap.sh failed" >&2; exit 1; }
 unset CLASSPATH
 cd "${BUILDROOT}"
