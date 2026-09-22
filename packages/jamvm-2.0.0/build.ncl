@@ -24,6 +24,7 @@ let zlib = import "../zlib/build.ncl" in
 let libffi = import "../libffi/build.ncl" in # --enable-ffi
 let patch = import "../patch/build.ncl" in
 let gzip = import "../gzip/build.ncl" in
+let zip = import "../zip/build.ncl" in # classes.zip
 let version = "2.0.0" in
 let amd64_spec =
   {
@@ -44,6 +45,7 @@ let amd64_spec =
       glibc-bedrock,
       zlib,
       libffi,
+      zip,
       patch,
       bash,
       make,
