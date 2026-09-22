@@ -72,9 +72,8 @@ for d in aarch32 corba jaxp jaxws jdk langtools hotspot nashorn shenandoah; do m
 sed -i 's/__DATE__/""/; s/__TIME__/""/' openjdk.src/hotspot/src/share/vm/runtime/vm_version.cpp   # the VM banner's build date
 # --- source fixes ---
 # only the generated configure: touching acinclude.m4 would make the build re-run aclocal
-sed -i -E 's/(DIST_ID="Custom build).*$/\1"/' configure
-sed -i 's/DIST_NAME="\$build_os"/DIST_NAME="minimal"/' configure
-grep -q 'DIST_NAME="minimal"' configure || { echo "icedtea-8: a source fix did not apply" >&2; exit 1; }
+sed -i -E 's/^(\s*)DIST_ID=".*$/\1DIST_ID="minimal"/; s/^(\s*)DIST_NAME=".*$/\1DIST_NAME="minimal"/' configure
+[ "$(grep -c 'DIST_ID="minimal"' configure)" -ge 2 ] || { echo "icedtea-8: a source fix did not apply" >&2; exit 1; }
 # the boot JDK's tools on PATH; hotspot takes gcc/g++ from PATH (hence CCDIR), the jdk makefiles from CC/CXX
 export JAVA_HOME="${JDK7}" PATH="${JDK7}/bin:${ANT}/bin:${CCDIR}:${PATH}" ANT_HOME="${ANT}" ANT_OPTS="-Xmx8g" DISABLE_HOTSPOT_OS_VERSION_CHECK=ok
 # --- configure + make ---
@@ -97,42 +96,43 @@ OUT="$("${DST}/bin/java" -cp gate G 2>&1 | tail -1)"
 
 # --- P4 deterministic archives: zip entry timestamps and order are build-time noise ---
 python3 - "${DST}" <<'PYEOF'
-import os, shutil, sys, zipfile
+import io, os, shutil, sys, zipfile
+def norm_bytes(b):
+    """Rewrite a zip: fixed entry timestamps, sorted entries (manifest first), nested jars normalised too."""
+    with zipfile.ZipFile(io.BytesIO(b)) as z:
+        infos = z.infolist(); data = {i.filename: z.read(i) for i in infos}
+    order = sorted(infos, key=lambda i: (0 if i.filename == 'META-INF/MANIFEST.MF' else 1 if i.filename.startswith('META-INF/') else 2, i.filename))
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, 'w') as o:
+        for i in order:
+            d = data[i.filename]
+            if i.filename.endswith(('.jar', '.zip')) and zipfile.is_zipfile(io.BytesIO(d)): d = norm_bytes(d)
+            zi = zipfile.ZipInfo(i.filename, date_time=(1980, 1, 1, 0, 0, 0))
+            zi.compress_type = i.compress_type; zi.external_attr = i.external_attr; zi.create_system = 3
+            o.writestr(zi, d)
+    return out.getvalue()
 root = sys.argv[1]; n = 0
 for dp, _, fn in os.walk(root):
     for f in fn:
         p = os.path.join(dp, f)
         if os.path.islink(p) or not (f.endswith(('.jar', '.zip', '.war', '.jmod')) or f == 'ct.sym'): continue
+        with open(p, 'rb') as fh: raw = fh.read()
         head = b''
         if f.endswith('.jmod'):   # a jmod is a zip behind a 4-byte "JM" magic
-            with open(p, 'rb') as fh: head = fh.read(4)
-            if head[:2] != b'JM': continue
-            body = p + '.zip'
-            with open(p, 'rb') as fh, open(body, 'wb') as out: fh.seek(4); shutil.copyfileobj(fh, out)
-        else:
-            body = p
-        if not zipfile.is_zipfile(body):
-            if body != p: os.unlink(body)
-            continue
-        with zipfile.ZipFile(body) as z:
-            infos = z.infolist(); data = {i.filename: z.read(i) for i in infos}
-        # the manifest stays first: JarInputStream only sees it there
-        order = sorted(infos, key=lambda i: (0 if i.filename == 'META-INF/MANIFEST.MF' else 1 if i.filename.startswith('META-INF/') else 2, i.filename))
+            if raw[:2] != b'JM': continue
+            head, raw = raw[:4], raw[4:]
+        if not zipfile.is_zipfile(io.BytesIO(raw)): continue
         tmp = p + '.tmp'
-        with zipfile.ZipFile(tmp, 'w') as out:
-            for i in order:
-                zi = zipfile.ZipInfo(i.filename, date_time=(1980, 1, 1, 0, 0, 0))
-                zi.compress_type = i.compress_type; zi.external_attr = i.external_attr; zi.create_system = 3
-                out.writestr(zi, data[i.filename])
-        if head:
-            with open(tmp, 'rb') as fh: payload = fh.read()
-            with open(tmp, 'wb') as out: out.write(head); out.write(payload)
-            os.unlink(body)
+        with open(tmp, 'wb') as out: out.write(head); out.write(norm_bytes(raw))
         shutil.copymode(p, tmp); os.replace(tmp, p); n += 1
 print("normalised", n, "archives")
 PYEOF
 # class-data-sharing archives are dumped at build time from a live VM and do not reproduce; the VM runs without them
 find "${DST}" -name 'classes*.jsa' -type f -delete
+# src.zip carries generated sources that do not reproduce; a bootstrap JDK does not need it
+find "${DST}" -name 'src.zip' -type f -delete
+# the default class list is written in class-load order, which varies run to run; only its membership matters
+[ ! -f "${DST}/lib/classlist" ] || { LC_ALL=C sort "${DST}/lib/classlist" > "${DST}/lib/classlist.sorted" && mv "${DST}/lib/classlist.sorted" "${DST}/lib/classlist"; }
 
 mkdir -p "${OUTPUT_DIR}/usr/share/icedtea-8"
 cat > "${OUTPUT_DIR}/usr/share/icedtea-8/BUILDINFO" <<EOF
