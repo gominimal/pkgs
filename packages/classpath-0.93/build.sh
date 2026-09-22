@@ -30,7 +30,7 @@ GCCVER="$("${BGCC}" -dumpversion 2>/dev/null || echo unknown)"
 [ "${GCCVER}" = "${GCC_VERSION}" ] || { echo "classpath-0.93: gcc -dumpversion='${GCCVER}', expected '${GCC_VERSION}'" >&2; exit 1; }
 [ -e "${SR}/lib/libc.so" ] || { echo "classpath-0.93: glibc sysroot missing at ${SR}" >&2; exit 1; }
 [ -e "${LOADER}" ] || { echo "classpath-0.93: glibc loader missing at ${LOADER}" >&2; exit 1; }
-for x in /usr/lib/jikes-1.22/bin/jikes; do [ -e "$x" ] || { echo "@NAME@: missing boot artifact $x" >&2; exit 1; }; done
+for x in /usr/lib/jikes-1.22/bin/jikes; do [ -e "$x" ] || { echo "classpath-0.93: missing boot artifact $x" >&2; exit 1; }; done
 
 # --- P1 sysroot C/C++ wrappers ---
 # The sysroot's libc.so is a linker script with staging paths; regenerate it.

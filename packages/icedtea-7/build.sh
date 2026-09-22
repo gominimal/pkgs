@@ -30,7 +30,7 @@ GCCVER="$("${BGCC}" -dumpversion 2>/dev/null || echo unknown)"
 [ "${GCCVER}" = "${GCC_VERSION}" ] || { echo "icedtea-7: gcc -dumpversion='${GCCVER}', expected '${GCC_VERSION}'" >&2; exit 1; }
 [ -e "${SR}/lib/libc.so" ] || { echo "icedtea-7: glibc sysroot missing at ${SR}" >&2; exit 1; }
 [ -e "${LOADER}" ] || { echo "icedtea-7: glibc loader missing at ${LOADER}" >&2; exit 1; }
-for x in /usr/lib/jamvm-2.0.0/bin/jamvm /usr/lib/classpath-devel/share/classpath/glibj.zip /usr/lib/classpath-devel/share/classpath/tools.zip /usr/lib/classpath-devel/bin/javah /usr/lib/classpath-devel/bin/rmic /usr/lib/ecj4-bootstrap-4.2.1/bin/javac /usr/lib/ant-bootstrap-1.8.4/bin/ant /usr/include/freetype2/freetype/freetype.h /usr/include/X11/Intrinsic.h; do [ -e "$x" ] || { echo "@NAME@: missing boot artifact $x" >&2; exit 1; }; done
+for x in /usr/lib/jamvm-2.0.0/bin/jamvm /usr/lib/classpath-devel/share/classpath/glibj.zip /usr/lib/classpath-devel/share/classpath/tools.zip /usr/lib/classpath-devel/bin/javah /usr/lib/classpath-devel/bin/rmic /usr/lib/ecj4-bootstrap-4.2.1/bin/javac /usr/lib/ant-bootstrap-1.8.4/bin/ant /usr/include/freetype2/freetype/freetype.h /usr/include/X11/Intrinsic.h; do [ -e "$x" ] || { echo "icedtea-7: missing boot artifact $x" >&2; exit 1; }; done
 
 # --- P1 sysroot C/C++ wrappers ---
 # The sysroot's libc.so is a linker script with staging paths; regenerate it.

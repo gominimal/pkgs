@@ -30,7 +30,7 @@ GCCVER="$("${BGCC}" -dumpversion 2>/dev/null || echo unknown)"
 [ "${GCCVER}" = "${GCC_VERSION}" ] || { echo "classpath-0.99: gcc -dumpversion='${GCCVER}', expected '${GCC_VERSION}'" >&2; exit 1; }
 [ -e "${SR}/lib/libc.so" ] || { echo "classpath-0.99: glibc sysroot missing at ${SR}" >&2; exit 1; }
 [ -e "${LOADER}" ] || { echo "classpath-0.99: glibc loader missing at ${LOADER}" >&2; exit 1; }
-for x in /usr/lib/ecj-bootstrap-3.2.2/bin/javac /usr/lib/jamvm-1.5.1/bin/jamvm; do [ -e "$x" ] || { echo "@NAME@: missing boot artifact $x" >&2; exit 1; }; done
+for x in /usr/lib/ecj-bootstrap-3.2.2/bin/javac /usr/lib/jamvm-1.5.1/bin/jamvm; do [ -e "$x" ] || { echo "classpath-0.99: missing boot artifact $x" >&2; exit 1; }; done
 
 # --- P1 sysroot C/C++ wrappers ---
 # The sysroot's libc.so is a linker script with staging paths; regenerate it.

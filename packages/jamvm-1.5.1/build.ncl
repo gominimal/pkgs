@@ -8,6 +8,7 @@ let { target, .. } = import "config.ncl" in
 # Sources mirrored to gs://minimal-staging-archives/. No `needs`: nothing here touches the network.
 # amd64 only (see the match at the bottom).
 let classpath = import "../classpath-0.93/build.ncl" in # the class library
+let jikes = import "../jikes-1.22/build.ncl" in # the gate compiles with it
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
@@ -35,6 +36,7 @@ let amd64_spec =
         extract = false, # build.sh untars with --no-same-owner
       } | Source,
       classpath,
+      jikes,
       gcc-bedrock,
       binutils-bedrock,
       glibc-bedrock,
