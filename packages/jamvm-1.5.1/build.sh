@@ -22,7 +22,7 @@ JVMFLAGS="-Xnocompact -Xnoinlining"   # jamvm: without these the class-library b
 
 # --- P0 preconditions ---
 [ "$(uname -m)" = x86_64 ] || { echo "jamvm-1.5.1: amd64 ladder rung on $(uname -m)" >&2; exit 1; }
-for t in gcc g++ ld ar ranlib make sed grep tar find xargs sha256sum python3 zip; do
+for t in gcc g++ ld ar ranlib make sed grep tar find xargs sha256sum python3 zip patch; do
   command -v "$t" >/dev/null 2>&1 || { echo "jamvm-1.5.1: '$t' not on PATH" >&2; exit 1; }
 done
 BGCC="$(command -v gcc)"; BGXX="$(command -v g++)"
@@ -66,6 +66,7 @@ CP=/usr/lib/classpath-0.93
 # --- P2 build ---
 mkdir src && tar -xzf jamvm-1.5.1.tar.gz -C src --strip-components=1
 cd src
+patch -p1 < ../jamvm-1.5.1-jni-return-width.patch
 CFLAGS="-O2" ./configure --prefix="${PREFIX}" --with-classpath-install-dir="${CP}" --disable-int-caching --enable-runtime-reloc > ../configure.log 2>&1 \
   || { tail -30 ../configure.log >&2; echo "jamvm-1.5.1: configure failed" >&2; exit 1; }
 make -j"${JOBS}" > ../make.log 2>&1 || { grep -n -m5 -iE ' error|Error [0-9]' ../make.log >&2 || true; tail -20 ../make.log >&2; echo "jamvm-1.5.1: make failed" >&2; exit 1; }
