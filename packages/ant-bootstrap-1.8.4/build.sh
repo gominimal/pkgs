@@ -22,7 +22,7 @@ JVMFLAGS="-Xnocompact -Xnoinlining"   # jamvm: without these the class-library b
 
 # --- P0 preconditions ---
 [ "$(uname -m)" = x86_64 ] || { echo "ant-bootstrap-1.8.4: amd64 ladder rung on $(uname -m)" >&2; exit 1; }
-for t in gcc g++ ld ar ranlib make sed grep tar find xargs sha256sum bzip2; do
+for t in gcc g++ ld ar ranlib make sed grep tar find xargs sha256sum python3 bzip2; do
   command -v "$t" >/dev/null 2>&1 || { echo "ant-bootstrap-1.8.4: '$t' not on PATH" >&2; exit 1; }
 done
 BGCC="$(command -v gcc)"; BGXX="$(command -v g++)"
@@ -79,6 +79,28 @@ cd "${BUILDROOT}"
 # --- P3 gate ---
 [ -s "${DST}/lib/ant.jar" ] || { echo "ant-bootstrap-1.8.4: lib/ant.jar missing" >&2; exit 1; }
 [ "$(ls "${DST}"/lib/*.jar | wc -l)" -ge 5 ] || { echo "ant-bootstrap-1.8.4: too few jars" >&2; exit 1; }
+
+# --- P4 deterministic archives: zip entry timestamps and order are build-time noise ---
+python3 - "${DST}" <<'PYEOF'
+import os, shutil, sys, zipfile
+root = sys.argv[1]; n = 0
+for dp, _, fn in os.walk(root):
+    for f in fn:
+        p = os.path.join(dp, f)
+        if os.path.islink(p) or not (f.endswith(('.jar', '.zip', '.war')) or f == 'ct.sym') or not zipfile.is_zipfile(p): continue
+        with zipfile.ZipFile(p) as z:
+            infos = z.infolist(); data = {i.filename: z.read(i) for i in infos}
+        # the manifest stays first: JarInputStream only sees it there
+        order = sorted(infos, key=lambda i: (0 if i.filename == 'META-INF/MANIFEST.MF' else 1 if i.filename.startswith('META-INF/') else 2, i.filename))
+        tmp = p + '.tmp'
+        with zipfile.ZipFile(tmp, 'w') as out:
+            for i in order:
+                zi = zipfile.ZipInfo(i.filename, date_time=(1980, 1, 1, 0, 0, 0))
+                zi.compress_type = i.compress_type; zi.external_attr = i.external_attr; zi.create_system = 3
+                out.writestr(zi, data[i.filename])
+        shutil.copymode(p, tmp); os.replace(tmp, p); n += 1
+print("normalised", n, "archives")
+PYEOF
 
 mkdir -p "${OUTPUT_DIR}/usr/share/ant-bootstrap-1.8.4"
 cat > "${OUTPUT_DIR}/usr/share/ant-bootstrap-1.8.4/BUILDINFO" <<EOF

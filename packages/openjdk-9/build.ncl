@@ -18,6 +18,7 @@ let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let findutils = import "../findutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
+let python = import "../python/build.ncl" in # normalises the zip archives after install
 let gawk = import "../gawk/build.ncl" in
 let diffutils = import "../diffutils/build.ncl" in
 let gzip = import "../gzip/build.ncl" in
@@ -49,7 +50,6 @@ let libxrandr = import "../libxrandr/build.ncl" in
 let libxcomposite = import "../libxcomposite/build.ncl" in
 let libxt = import "../libxt/build.ncl" in
 let xorgproto = import "../xorgproto/build.ncl" in
-let python = import "../python/build.ncl" in # the MakeBase.gmk fix is applied with it
 let version = "9+181" in
 let amd64_spec =
   {
@@ -82,6 +82,7 @@ let amd64_spec =
       coreutils,
       findutils,
       tar,
+      python,
       gawk,
       diffutils,
       gzip,
@@ -113,7 +114,6 @@ let amd64_spec =
       libxcomposite,
       libxt,
       xorgproto,
-      python,
     ],
     cmd = "./build.sh",
     outputs = {

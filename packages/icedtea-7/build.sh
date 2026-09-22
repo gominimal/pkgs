@@ -22,7 +22,7 @@ JVMFLAGS="-Xnocompact -Xnoinlining"   # jamvm: without these the class-library b
 
 # --- P0 preconditions ---
 [ "$(uname -m)" = x86_64 ] || { echo "icedtea-7: amd64 ladder rung on $(uname -m)" >&2; exit 1; }
-for t in gcc g++ ld ar ranlib make sed grep tar find xargs sha256sum gawk xz bzip2 gzip patch zip unzip cpio file which pkg-config xsltproc objcopy; do
+for t in gcc g++ ld ar ranlib make sed grep tar find xargs sha256sum python3 gawk xz bzip2 gzip patch zip unzip cpio file which pkg-config xsltproc objcopy; do
   command -v "$t" >/dev/null 2>&1 || { echo "icedtea-7: '$t' not on PATH" >&2; exit 1; }
 done
 BGCC="$(command -v gcc)"; BGXX="$(command -v g++)"
@@ -71,6 +71,7 @@ mkdir openjdk.src && tar -xjf ../icedtea7-2.6.13-openjdk.tar.bz2 -C openjdk.src 
 for d in corba jaxp jaxws jdk langtools hotspot; do mkdir -p "openjdk.src/$d" && tar -xjf "../icedtea7-2.6.13-$d.tar.bz2" -C "openjdk.src/$d" --strip-components=1; done
 ( cd openjdk.src/jdk && patch -p1 < ../../../jdk-currency-time-bomb.patch )
 ( cd openjdk.src/hotspot && patch -p1 < ../../../icedtea-7-hotspot-pointer-comparison.patch )
+sed -i 's/__DATE__/""/; s/__TIME__/""/' openjdk.src/hotspot/src/share/vm/runtime/vm_version.cpp   # the VM banner's build date
 # --- source fixes ---
 sed -i 's|DISTRIBUTION_ID="\$(DIST_ID)"|DISTRIBUTION_ID="\\"minimal\\""|' Makefile.in
 # the boot JDK is GNU Classpath: its class library is glibj.zip, not jre/lib/rt.jar
@@ -133,6 +134,28 @@ mkdir -p gate; printf 'import java.util.*;\npublic class G { public static void 
 ( cd gate && "${DST}/bin/javac" G.java )
 OUT="$("${DST}/bin/java" -cp gate G 2>&1 | tail -1)"
 [ "$OUT" = "IT7:21:1.7" ] || { echo "icedtea-7: gate printed '$OUT'" >&2; exit 1; }
+
+# --- P4 deterministic archives: zip entry timestamps and order are build-time noise ---
+python3 - "${DST}" <<'PYEOF'
+import os, shutil, sys, zipfile
+root = sys.argv[1]; n = 0
+for dp, _, fn in os.walk(root):
+    for f in fn:
+        p = os.path.join(dp, f)
+        if os.path.islink(p) or not (f.endswith(('.jar', '.zip', '.war')) or f == 'ct.sym') or not zipfile.is_zipfile(p): continue
+        with zipfile.ZipFile(p) as z:
+            infos = z.infolist(); data = {i.filename: z.read(i) for i in infos}
+        # the manifest stays first: JarInputStream only sees it there
+        order = sorted(infos, key=lambda i: (0 if i.filename == 'META-INF/MANIFEST.MF' else 1 if i.filename.startswith('META-INF/') else 2, i.filename))
+        tmp = p + '.tmp'
+        with zipfile.ZipFile(tmp, 'w') as out:
+            for i in order:
+                zi = zipfile.ZipInfo(i.filename, date_time=(1980, 1, 1, 0, 0, 0))
+                zi.compress_type = i.compress_type; zi.external_attr = i.external_attr; zi.create_system = 3
+                out.writestr(zi, data[i.filename])
+        shutil.copymode(p, tmp); os.replace(tmp, p); n += 1
+print("normalised", n, "archives")
+PYEOF
 
 mkdir -p "${OUTPUT_DIR}/usr/share/icedtea-7"
 cat > "${OUTPUT_DIR}/usr/share/icedtea-7/BUILDINFO" <<EOF
