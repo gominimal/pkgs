@@ -5,7 +5,7 @@ let ninja = import "../ninja/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let version = "5.2.0" in
+let version = "5.2.1" in
 {
   name = "upx",
   build_deps = [
@@ -26,7 +26,7 @@ let version = "5.2.0" in
       #   compression error: Unsupported SHA-256 checksum (not yet implemented)
       # build.sh unpacks it with the system tar instead, which handles it.
       url = "https://github.com/upx/upx/releases/download/v%{version}/upx-%{version}-src.tar.xz",
-      sha256 = "af99e526d5759de94412aea1104d5e4ca406cb725295f8633ecc9e843dc1ce1c",
+      sha256 = "a7d457be4ef942e46844ee8f301206b111394cbcbde3599747a6904c54ff116b",
     } | Source,
   ],
   cmd = "./build.sh",

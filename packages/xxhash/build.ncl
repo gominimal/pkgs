@@ -1,6 +1,6 @@
 let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 
-let version = "0.8.3" in
+let version = "0.8.4" in
 
 let base = import "../base/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
@@ -15,7 +15,7 @@ let glibc = import "../glibc/build.ncl" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/Cyan4973/xxHash/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "aae608dfe8213dfd05d909a57718ef82f30722c392344583d3f39050c7f29a80",
+      sha256 = "5738270935e7c3d38a79b3adf7c9692566ce7895a25f67de43ad52ab504acd32",
       extract = true,
       strip_prefix = "xxHash-%{version}",
     } | Source,
@@ -48,6 +48,7 @@ let glibc = import "../glibc/build.ncl" in
 
   attrs = {
     upstream_version = version,
+    license_spdx = "BSD-2-Clause",
     source_provenance = {
       category = 'GithubRepo,
       owner = "Cyan4973",
