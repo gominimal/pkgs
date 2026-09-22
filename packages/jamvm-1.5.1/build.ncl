@@ -18,6 +18,7 @@ let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let findutils = import "../findutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
+let python = import "../python/build.ncl" in # normalises the zip archives after install
 let zlib = import "../zlib/build.ncl" in
 let gzip = import "../gzip/build.ncl" in
 let version = "1.5.1" in
@@ -45,6 +46,7 @@ let amd64_spec =
       findutils,
       tar,
       gzip,
+      python,
     ],
     cmd = "./build.sh",
     outputs = {

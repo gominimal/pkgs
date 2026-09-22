@@ -22,7 +22,7 @@ JVMFLAGS="-Xnocompact -Xnoinlining"   # jamvm: without these the class-library b
 
 # --- P0 preconditions ---
 [ "$(uname -m)" = x86_64 ] || { echo "classpath-devel: amd64 ladder rung on $(uname -m)" >&2; exit 1; }
-for t in gcc g++ ld ar ranlib make sed grep tar find xargs sha256sum fastjar zip autoreconf; do
+for t in gcc g++ ld ar ranlib make sed grep tar find xargs sha256sum python3 fastjar zip autoreconf; do
   command -v "$t" >/dev/null 2>&1 || { echo "classpath-devel: '$t' not on PATH" >&2; exit 1; }
 done
 BGCC="$(command -v gcc)"; BGXX="$(command -v g++)"
@@ -84,6 +84,28 @@ for tool in javah rmic rmid orbd rmiregistry native2ascii gjdoc; do M=Main; [ $t
   printf '#!/bin/sh\nexec %s %s -classpath %s/share/classpath/tools.zip gnu.classpath.tools.%s.%s "$@"\n' "${JAMVM}" "${JVMFLAGS}" "${PREFIX}" $tool $M > "${DST}/bin/$tool"; chmod 0755 "${DST}/bin/$tool"; done
 # --- P3 gate ---
 [ -s "${DST}/share/classpath/glibj.zip" ] && [ -s "${DST}/share/classpath/tools.zip" ] || { echo "classpath-devel: glibj.zip/tools.zip missing" >&2; exit 1; }
+
+# --- P4 deterministic archives: zip entry timestamps and order are build-time noise ---
+python3 - "${DST}" <<'PYEOF'
+import os, shutil, sys, zipfile
+root = sys.argv[1]; n = 0
+for dp, _, fn in os.walk(root):
+    for f in fn:
+        p = os.path.join(dp, f)
+        if os.path.islink(p) or not (f.endswith(('.jar', '.zip', '.war')) or f == 'ct.sym') or not zipfile.is_zipfile(p): continue
+        with zipfile.ZipFile(p) as z:
+            infos = z.infolist(); data = {i.filename: z.read(i) for i in infos}
+        # the manifest stays first: JarInputStream only sees it there
+        order = sorted(infos, key=lambda i: (0 if i.filename == 'META-INF/MANIFEST.MF' else 1 if i.filename.startswith('META-INF/') else 2, i.filename))
+        tmp = p + '.tmp'
+        with zipfile.ZipFile(tmp, 'w') as out:
+            for i in order:
+                zi = zipfile.ZipInfo(i.filename, date_time=(1980, 1, 1, 0, 0, 0))
+                zi.compress_type = i.compress_type; zi.external_attr = i.external_attr; zi.create_system = 3
+                out.writestr(zi, data[i.filename])
+        shutil.copymode(p, tmp); os.replace(tmp, p); n += 1
+print("normalised", n, "archives")
+PYEOF
 
 mkdir -p "${OUTPUT_DIR}/usr/share/classpath-devel"
 cat > "${OUTPUT_DIR}/usr/share/classpath-devel/BUILDINFO" <<EOF
