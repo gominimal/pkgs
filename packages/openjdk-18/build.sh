@@ -77,7 +77,7 @@ sed -i 's/__DATE__/""/; s/__TIME__/""/' src/hotspot/share/runtime/abstract_vm_ve
 echo "18.0.2.1" > .src-rev
 # hotspot takes gcc/g++ from PATH (hence CCDIR), the rest from CC/CXX
 export JAVA_HOME="${BOOT}" PATH="${BOOT}/bin:${CCDIR}:${PATH}"
-export SOURCE_DATE_EPOCH=1   # JDK 13+ configure takes the source date from it
+export SOURCE_DATE_EPOCH=315532802   # 1980-01-01T00:00:02Z, the earliest date jmod --date accepts; JDK 13+ configure reads it
 # --- configure + make ---
 bash ./configure --with-boot-jdk="${BOOT}" --disable-option-checking --disable-warnings-as-errors --with-native-debug-symbols=none \
   "--with-extra-cflags=-fcommon -fno-delete-null-pointer-checks -fno-lifetime-dse -Wno-error=int-conversion" --without-gtest --with-version-pre= --with-hotspot-build-time=1970-01-01T00:00:01 --enable-reproducible-build \
