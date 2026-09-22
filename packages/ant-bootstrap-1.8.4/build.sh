@@ -81,9 +81,10 @@ bash bootstrap.sh -Ddist.dir="${DST}" > ../bootstrap.log 2>&1 || {
   "${JIKES}" -bootclasspath "${GLIBJ}" -d .. ../D.java >&2 2>&1 && "${JAMVM}" ${JVMFLAGS} -cp .. D "$(pwd)" "$(pwd)/build" "$(pwd)/build/lib" "$(pwd)/build.xml" /nonexistent "${DST}" >&2 2>&1 || true
   "${JAMVM}" -version >&2 2>&1 | head -2 || true; stat -f -c 'fs=%T' . >&2 2>&1 || true
   printf 'public class E { public static void main(String[] a){ String[] ps = { "build/lib", "./build/lib", "/build/src/build/lib", "build/classes", "nothere" }; for (int r = 0; r < 3; r++) for (int i = 0; i < ps.length; i++) { java.io.File f = new java.io.File(ps[i]); System.out.println(r + " " + ps[i] + " abs=" + f.getAbsolutePath() + " exists=" + f.exists() + " isFile=" + f.isFile() + " isDir=" + f.isDirectory()); } System.out.println("user.dir=" + System.getProperty("user.dir")); } }\n' > ../E.java
-  "${JIKES}" -bootclasspath "${GLIBJ}" -d .. ../E.java >&2 2>&1 && "${JAMVM}" ${JVMFLAGS} -cp .. E >&2 2>&1 || true
-  # the failing step itself, verbosely
-  [ -x bootstrap/bin/ant ] && bootstrap/bin/ant -nouserlib -lib lib/optional -debug -Ddist.dir="${DST}" build 2>&1 | grep -B12 -A3 'Unable to create' | head -40 >&2 || true
+  "${JIKES}" -bootclasspath "${GLIBJ}" -d .. ../E.java >&2 2>&1 || true
+  for v in "plain" "LD_BIND_NOW=1" "noflags" "MALLOC_PERTURB_=85"; do echo "--- E under $v" >&2
+    case $v in plain) "${JAMVM}" ${JVMFLAGS} -cp .. E 2>&1 | head -2 >&2;; noflags) "${JAMVM}" -cp .. E 2>&1 | head -2 >&2;; *) env $v "${JAMVM}" ${JVMFLAGS} -cp .. E 2>&1 | head -2 >&2;; esac; done || true
+  readelf -d /usr/lib/classpath-0.93/lib/classpath/libjavaio.so 2>/dev/null | grep -E 'FLAGS|BIND' >&2 || true; readelf -d "${JAMVM}" 2>/dev/null | grep -E 'FLAGS|BIND' >&2 || true
   echo "ant-bootstrap-1.8.4: bootstrap.sh failed" >&2; exit 1; }
 unset CLASSPATH
 cd "${BUILDROOT}"
