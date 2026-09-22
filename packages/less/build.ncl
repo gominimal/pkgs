@@ -56,9 +56,15 @@ let version = "710" in
     # release later — and the 704 fix repointed only lessecho, leaving this
     # sibling to break on the next bump.
     #
-    # NEW in 710: less-osc8-open, a helper script for OSC-8 hyperlink opening,
-    # installed to ${libexecdir}. Same shape as lessecho, so same output type.
-    less_osc8_open = { glob = "usr/libexec/less-osc8-open" } | OutputLib,
+    # NEW in 710: less-osc8-open, the OSC-8 hyperlink handler, installed to
+    # ${libexecdir} (Makefile.in: `${INSTALL} less-osc8-open.sh
+    # ${libexecdir}/less-osc8-open`). It sits in the same directory as lessecho
+    # but is NOT the same kind of file: lessecho is ELF, this is a `#!/bin/sh`
+    # script. Typed as OutputLib, the checker parsed it as ELF and failed on
+    # both arches ("is malformed (parsing error: Unknown file magic)").
+    # OutputBin + allow_missing_interpreter is the shape for shipped shell
+    # scripts (bzip2's bzcmp/bzdiff, curl's wcurl).
+    less_osc8_open = { glob = "usr/libexec/less-osc8-open", allow_missing_interpreter = true } | OutputBin,
     mans = { glob = "usr/share/man/**" } | OutputData,
   },
   attrs =
