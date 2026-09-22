@@ -30,6 +30,7 @@ let zlib = import "../zlib/build.ncl" in
 let gzip = import "../gzip/build.ncl" in
 let autoconf = import "../autoconf/build.ncl" in # the snapshot ships no configure
 let automake = import "../automake/build.ncl" in
+let gettext = import "../gettext/build.ncl" in # AM_ICONV and the AC_LIB_* macros autoreconf expands
 let libtool = import "../libtool/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in # configure macros
@@ -58,6 +59,7 @@ let amd64_spec =
       zlib,
       autoconf,
       automake,
+      gettext,
       libtool,
       m4,
       pkgconf,
