@@ -72,8 +72,9 @@ CFLAGS="-O2" ./configure --prefix="${PREFIX}" --with-classpath-install-dir="${CP
   --with-java-runtime-library=gnuclasspath JAVAC="${JAVAC}" > ../configure.log 2>&1 || { tail -30 ../configure.log >&2; echo "jamvm-2.0.0: configure failed" >&2; exit 1; }
 make -j"${JOBS}" > ../make.log 2>&1 || { grep -n -m5 -iE ' error|Error [0-9]' ../make.log >&2 || true; tail -20 ../make.log >&2; echo "jamvm-2.0.0: make failed" >&2; exit 1; }
 make install DESTDIR="${OUTPUT_DIR}" > ../install.log 2>&1 || { tail -20 ../install.log >&2; echo "jamvm-2.0.0: install failed" >&2; exit 1; }
-# make install links lib/rt.jar to the class library by absolute path; a symlink out of the output is not allowed
-[ ! -L "${DST}/lib/rt.jar" ] || unlink "${DST}/lib/rt.jar"
+# make install links lib/rt.jar to the class library by absolute path; a symlink out of the output is not allowed,
+# and Ant's jikes adapter reads its boot classpath from ${java.home}/lib/rt.jar, so keep a copy
+[ ! -L "${DST}/lib/rt.jar" ] || { cp -L "${DST}/lib/rt.jar" "${DST}/lib/rt.jar.copy" && mv "${DST}/lib/rt.jar.copy" "${DST}/lib/rt.jar"; }
 cd "${BUILDROOT}"
 # --- P3 gate ---
 mkdir -p gate; printf 'public class G { public static void main(String[] a){ int s=0; for(int i=1;i<=6;i++) s+=i; System.out.println("JAMVM2:"+s); } }\n' > gate/G.java
