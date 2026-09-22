@@ -3,7 +3,7 @@ let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let tar = import "../tar/build.ncl" in
 
-let version = "2.29.0" in
+let version = "2.30.0" in
 {
   name = "dotenvx",
   build_deps = [
@@ -17,13 +17,13 @@ let version = "2.29.0" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://github.com/dotenvx/dotenvx/releases/download/v%{version}/dotenvx-%{version}-linux-x86_64.tar.gz",
-          sha256 = "86049d57b0a733235073af8dd4eaf747e3adcdc09a80bf022b470a3438e14dc3",
+          sha256 = "1ac0fb8fef37c10de4297686a273719290fbc29d8c3abf9595ab7a023119c1c3",
           extract = true,
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://github.com/dotenvx/dotenvx/releases/download/v%{version}/dotenvx-%{version}-linux-aarch64.tar.gz",
-          sha256 = "6f5a7cac9b4d5dc8368937c8b38afa4d12f44e887df62fb7c1cc77a5fed9fdd2",
+          sha256 = "11cdcdd68eba087b0b488fc0ce9adce223d84d076f097ff4ce8980670c5f1682",
           extract = true,
         } | Source,
     } target,
