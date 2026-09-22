@@ -20,7 +20,7 @@ let coreutils = import "../coreutils/build.ncl" in
 let findutils = import "../findutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
 let python = import "../python/build.ncl" in # normalises the zip archives after install
-let gawk = import "../gawk/build.ncl" in
+let gawk = import "../gawk/build.ncl" in # configure scripts and config.status
 let diffutils = import "../diffutils/build.ncl" in
 let gzip = import "../gzip/build.ncl" in
 let patch = import "../patch/build.ncl" in
@@ -87,6 +87,8 @@ let amd64_spec =
       findutils,
       tar,
       python,
+      gawk,
+      diffutils,
       gawk,
       diffutils,
       gzip,

@@ -22,6 +22,8 @@ let coreutils = import "../coreutils/build.ncl" in
 let findutils = import "../findutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
 let python = import "../python/build.ncl" in # normalises the zip archives after install
+let gawk = import "../gawk/build.ncl" in # configure scripts and config.status
+let diffutils = import "../diffutils/build.ncl" in
 let fastjar = import "../fastjar/build.ncl" in
 let zip = import "../zip/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
@@ -32,7 +34,6 @@ let libtool = import "../libtool/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in # configure macros
 let perl = import "../perl/build.ncl" in # autotools
-let gawk = import "../gawk/build.ncl" in
 let version = "0.99.e7c13ee0" in
 let amd64_spec =
   {
@@ -71,6 +72,7 @@ let amd64_spec =
       tar,
       gzip,
       python,
+      diffutils,
     ],
     cmd = "./build.sh",
     outputs = {
