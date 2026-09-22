@@ -22,7 +22,7 @@ JVMFLAGS="-Xnocompact -Xnoinlining"   # jamvm: without these the class-library b
 
 # --- P0 preconditions ---
 [ "$(uname -m)" = x86_64 ] || { echo "openjdk-11: amd64 ladder rung on $(uname -m)" >&2; exit 1; }
-for t in gcc g++ ld ar ranlib make sed grep tar find xargs sha256sum python3 xz gawk patch zip unzip cpio file which pkg-config objcopy readelf autoconf; do
+for t in gcc g++ ld ar ranlib make sed grep tar find xargs sha256sum python3 awk diff xz gawk patch zip unzip cpio file which pkg-config objcopy readelf autoconf; do
   command -v "$t" >/dev/null 2>&1 || { echo "openjdk-11: '$t' not on PATH" >&2; exit 1; }
 done
 BGCC="$(command -v gcc)"; BGXX="$(command -v g++)"
