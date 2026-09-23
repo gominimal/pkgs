@@ -36,6 +36,7 @@ let file = import "../file/build.ncl" in
 let which = import "../which/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in # configure probes lcms2/cups/fontconfig through pkg-config
 let libxslt = import "../libxslt/build.ncl" in # xsltproc generates the JVMTI sources
+let wget = import "../wget/build.ncl" in # configure insists it is on PATH, even with --disable-downloading
 let zlib = import "../zlib/build.ncl" in
 let freetype = import "../freetype/build.ncl" in
 let cups = import "../cups/build.ncl" in
@@ -134,6 +135,7 @@ let amd64_spec =
       which,
       pkgconf,
       libxslt,
+      wget,
       zlib,
       freetype,
       cups,
