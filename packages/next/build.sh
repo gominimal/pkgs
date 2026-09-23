@@ -52,10 +52,22 @@ pnpm exec turbo run build --filter=next...
 cd packages/next
 pnpm pack --pack-destination /tmp
 
-# Install the package globally from the tarball
-npm install -g --prefix=$OUTPUT_DIR/usr "/tmp/next-$MINIMAL_ARG_VERSION.tgz"
+# Install the package from the tarball.
+# Install into a package-PRIVATE prefix, NOT the shared usr/lib/node_modules
+# the node runtime owns (#370, #751): anything a package drops there is merged
+# first-writer-wins with every other closure member's tree.
+npm install -g --prefix="$OUTPUT_DIR/usr/libexec/next" "/tmp/next-$MINIMAL_ARG_VERSION.tgz"
 
-NEXT_DIR="$OUTPUT_DIR/usr/lib/node_modules/next"
+# Expose the declared bins as relative PATH symlinks into the private prefix.
+# `test -e` follows the chain, so a renamed upstream bin fails the build here
+# rather than shipping a dangling link.
+mkdir -p "$OUTPUT_DIR/usr/bin"
+for _tool in next; do
+  ln -s "../libexec/next/bin/$_tool" "$OUTPUT_DIR/usr/bin/$_tool"
+  test -e "$OUTPUT_DIR/usr/bin/$_tool" || { echo "next: npm did not install bin $_tool" >&2; exit 1; }
+done
+
+NEXT_DIR="$OUTPUT_DIR/usr/libexec/next/lib/node_modules/next"
 
 # Build sharp from source against our system libvips
 SHARP_STAGING=$(mktemp -d)

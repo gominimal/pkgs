@@ -39,7 +39,7 @@ let version = "0.1.0" in
 
   outputs = {
     cf = { glob = "usr/bin/cf" } | OutputBin,
-    libexec = { glob = "usr/lib/node_modules/**", allow_executable = true } | OutputData,
+    libexec = { glob = "usr/libexec/cf/**", allow_executable = true } | OutputData,
   },
 
   attrs =

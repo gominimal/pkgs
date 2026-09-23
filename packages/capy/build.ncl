@@ -48,7 +48,7 @@ let version = "0.9.1" in
     # @napi-rs/keyring, which ships native `.node` ELF libraries inside
     # node_modules — real loadable code, so an inert-data claim fails the
     # output-types checker on both arches. Same shape as cf's node_modules.
-    node_modules = { glob = "usr/lib/node_modules/**", allow_executable = true } | OutputData,
+    node_modules = { glob = "usr/libexec/capy/**", allow_executable = true } | OutputData,
   },
   attrs =
     {
