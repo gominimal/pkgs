@@ -6,15 +6,15 @@ let glibc = import "../glibc/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
 
-let version = "5.5.0" in
+let version = "5.5.1" in
 {
   name = "ocaml",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://github.com/ocaml/ocaml/releases/download/5.5.0/ocaml-5.5.0.tar.gz
+      # https://github.com/ocaml/ocaml/releases/download/5.5.1/ocaml-5.5.1.tar.gz
       url = "gs://minimal-staging-archives/ocaml-%{version}.tar.gz",
-      sha256 = "c018052c8264a3791a8f54f84179e6bcc78ed82eb889bacc2773df445259aed3",
+      sha256 = "ae47728d0a876665ccc7b745e3a8d8c9ca5ba63c4f7a11d4db6cdbd1dbeef4bb",
       extract = true,
       strip_prefix = "ocaml-%{version}",
     } | Source,
