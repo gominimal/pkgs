@@ -51,7 +51,7 @@ let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Outpu
 let base = import "../base/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let version = "1.0.5" in
+let version = "1.1.0" in
 {
   name = "vlt",
   build_deps = [
