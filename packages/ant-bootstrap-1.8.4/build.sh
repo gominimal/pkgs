@@ -104,7 +104,7 @@ def norm_bytes(b):
     with zipfile.ZipFile(out, 'w') as o:
         for i in order:
             d = data[i.filename]
-            if i.filename.endswith(('.jar', '.zip')) and zipfile.is_zipfile(io.BytesIO(d)): d = norm_bytes(d)
+            if (i.filename.endswith(('.jar', '.zip')) or i.filename.endswith('ct.sym')) and zipfile.is_zipfile(io.BytesIO(d)): d = norm_bytes(d)
             zi = zipfile.ZipInfo(i.filename, date_time=(1980, 1, 1, 0, 0, 0))
             zi.compress_type = i.compress_type; zi.external_attr = i.external_attr; zi.create_system = 3
             o.writestr(zi, d)
