@@ -1,7 +1,7 @@
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let node = import "../node/build.ncl" in
+let node-lts = import "../node-lts/build.ncl" in
 
 # pi is the Pi coding agent (pi.dev), published to npm as
 # @earendil-works/pi-coding-agent. It is installed from the sha256-pinned
@@ -21,11 +21,11 @@ let version = "0.84.4" in
       sha256 = "5bce766d19c3ceba18f3fbaad91c449c9f9d73981f9e3400ecef932006f06968",
     } | Source,
     base,
-    node,
+    node-lts,
   ],
   runtime_deps = [
     coreutils,
-    subsetOf node ["node"],
+    subsetOf node-lts ["node"],
   ],
   needs =
     {

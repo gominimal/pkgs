@@ -2,7 +2,7 @@
 # with outputs refined from a verified `minimal package` build.
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
-let node = import "../node/build.ncl" in
+let node-lts = import "../node-lts/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let version = "14.2.6" in
 {
@@ -10,9 +10,9 @@ let version = "14.2.6" in
   build_deps = [
     { file = "build.sh" } | Local,
     base,
-    node,
+    node-lts,
   ],
-  runtime_deps = [coreutils, subsetOf node ["node"]],
+  runtime_deps = [coreutils, subsetOf node-lts ["node"]],
   needs =
     {
       dns = {},

@@ -2,7 +2,7 @@ let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, ..
 let base = import "../base/build.ncl" in
 let binaryen = import "../binaryen/build.ncl" in
 let llvm = import "../llvm/build.ncl" in
-let node = import "../node/build.ncl" in
+let node-lts = import "../node-lts/build.ncl" in
 let python = import "../python/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
@@ -42,7 +42,7 @@ let version = "4.0.11" in
   runtime_deps = [
     binaryen,
     glibc,
-    subsetOf node ["node"],
+    subsetOf node-lts ["node"],
     python,
     subsetOf llvm ["bins", "libllvm", "libs_clang", "liblld", "libclang"],
   ],

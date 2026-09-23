@@ -3,7 +3,7 @@
 # tool needs (cf. typescript-language-server pulling `typescript`).
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
-let node = import "../node/build.ncl" in
+let node-lts = import "../node-lts/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let version = "3.9.8" in
 {
@@ -13,9 +13,9 @@ let version = "3.9.8" in
     { file = "package.json" } | Local,
     { file = "package-lock.json" } | Local,
     base,
-    node,
+    node-lts,
   ],
-  runtime_deps = [coreutils, subsetOf node ["node"]],
+  runtime_deps = [coreutils, subsetOf node-lts ["node"]],
   needs =
     {
       dns = {},

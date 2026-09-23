@@ -4,7 +4,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let rust = import "../rust/build.ncl" in
-let node = import "../node/build.ncl" in
+let node-lts = import "../node-lts/build.ncl" in
 let pnpm = import "../pnpm/build.ncl" in
 
 let bash = import "../bash/build.ncl" in
@@ -66,12 +66,12 @@ let version = "0.15.1" in
     make,
     pkgconf,
     rust,
-    node,
+    node-lts,
     pnpm,
   ],
   runtime_deps = [
     bash,
-    subsetOf node ["node"],
+    subsetOf node-lts ["node"],
     glibc,
     chromium-headless-shell-bin,
   ],
