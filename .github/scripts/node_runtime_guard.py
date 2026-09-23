@@ -15,7 +15,12 @@ in the evaluated catalog, and this guard rejects both:
   1. shared-tree   A package other than a node runtime declares an output under
                    `usr/lib/node_modules`, the tree the runtime's npm lives in.
                    Install into a private `usr/libexec/<pkg>` prefix instead
-                   (#370; see vlt/pnpm/cf for the pattern).
+                   (#370; see vlt/pnpm/cf for the pattern). A package that BUILDS
+                   with a node runtime is also rejected for a broad recursive glob
+                   whose literal prefix is an ancestor of that tree (`usr/**`,
+                   `usr/lib/**`): its npm install could land there and still be
+                   shipped. Non-node packages keep their broad globs (11 C
+                   libraries use `usr/**`; they never write node_modules).
   2. runtime-npm   A package other than a node runtime takes a node runtime as a
                    RUNTIME dep with its npm: the whole package, or a subset that
                    includes npm/npx/node_modules. Use `subsetOf node ["node"]`
@@ -78,6 +83,20 @@ def load(path: str) -> list[dict]:
     return data
 
 
+def literal_dir(glob: str) -> str:
+    """The directory part of `glob` before its first wildcard, no trailing /.
+    "usr/lib/**" -> "usr/lib"; "usr/**" -> "usr"; "usr/bin/x" -> "usr/bin"."""
+    cut = min((i for i, c in enumerate(glob) if c in "*?[{"), default=len(glob))
+    lit = glob[:cut]
+    if cut == len(glob):  # no wildcard: a literal path; its directory is the parent
+        return lit.rstrip("/").rpartition("/")[0] if "/" in lit.rstrip("/") else ""
+    return lit.rpartition("/")[0]
+
+
+def is_ancestor(parent: str, path: str) -> bool:
+    return parent == "" or path == parent or path.startswith(parent + "/")
+
+
 def output_globs(pkg: dict) -> list[tuple[str, str]]:
     out = []
     for key, o in (pkg.get("outputs") or {}).items():
@@ -92,12 +111,19 @@ def check(pkg: dict) -> list[str]:
     if name in RUNTIMES:
         return []
     problems = []
+    builds_with_node = any(dep_runtime(d) for d in pkg.get("build_deps") or [])
     for key, glob in output_globs(pkg):
         g = glob.lstrip("/")
         if g == SHARED_TREE or g.startswith(SHARED_TREE + "/"):
             problems.append(
                 f"shared-tree: output `{key}` = \"{glob}\" writes into the node runtime's "
                 f"{SHARED_TREE}; install into usr/libexec/{name}/ instead"
+            )
+        elif builds_with_node and "**" in g and is_ancestor(literal_dir(g), SHARED_TREE):
+            problems.append(
+                f"shared-tree: output `{key}` = \"{glob}\" is broad enough to capture "
+                f"{SHARED_TREE}, and this package builds with node; name a private "
+                f"usr/libexec/{name}/** glob instead"
             )
     if not pkg.get("is_collection"):
         for dep in pkg.get("runtime_deps") or []:

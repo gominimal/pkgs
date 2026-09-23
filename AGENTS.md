@@ -660,9 +660,9 @@ cp target/release/my-tool $OUTPUT_DIR/usr/bin/
 
 Node CLIs follow three rules. `.github/workflows/node-runtime-guard.yml` enforces all of them, because breaking them blends two npm installs into one that cannot load (#665, #751):
 
-- **Use `node-lts`, not `node`**, for `build_deps`, `runtime_deps` and `test_deps`. With one flavor, every package ships the same `/usr/bin/node`. `node` (Current) is there for users to opt into; packages don't use it.
+- **Use `node-lts`, not `node`**, for `build_deps` and `runtime_deps`; the guard checks both. With one flavor, every package ships the same `/usr/bin/node`. `node` (Current) is there for users to opt into; packages don't use it. Use `node-lts` for `test_deps` too. That part is convention only: `minimal dump` doesn't include tests, so the guard can't see them.
 - **At runtime, depend on the interpreter only:** `subsetOf node-lts ["node"]`. Never take the whole package, which would bring its npm, npx and `usr/lib/node_modules` into the user's session.
-- **Install into `usr/libexec/<pkg>`, never `usr/lib/node_modules`.** That tree belongs to the runtime's own npm. Expose each bin as a relative symlink.
+- **Install into `usr/libexec/<pkg>`, never `usr/lib/node_modules`.** That tree belongs to the runtime's own npm. Expose each bin as a relative symlink, and name the private tree in `outputs`. A package that builds with Node may not use a broad glob like `usr/**` that would also capture `usr/lib/node_modules`.
 
 ```bash
 #!/bin/sh
