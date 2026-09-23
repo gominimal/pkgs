@@ -70,6 +70,7 @@ find . -type f \( -name '*.bin' -o -name '*.exe' -o -name '*.jar' \) -delete
 patch -p1 < ../openjdk-15-xcursor-no-dynamic.patch
 patch -p1 < ../openjdk-10-setsignalhandler.patch
 patch -p1 < ../openjdk-11-moduledescriptor-hash.patch
+patch -p1 < ../openjdk-13-classlist-reproducibility.patch
 # --- source fixes ---
 # the certificate converter is run as a script with an interpreter line naming a full path
 [ -f make/data/blacklistedcertsconverter/blacklisted.certs.pem ] && sed -i 's|^#!.*|#! java BlacklistedCertsConverter SHA-256|' make/data/blacklistedcertsconverter/blacklisted.certs.pem
@@ -141,7 +142,7 @@ find "${DST}" -name 'src.zip' -type f -delete
 mkdir -p "${OUTPUT_DIR}/usr/share/openjdk-16"
 cat > "${OUTPUT_DIR}/usr/share/openjdk-16/BUILDINFO" <<EOF
 openjdk-16
-source: jdk-16.0.2-ga.tar.gz + 3 patches\nboot: openjdk-15
+source: jdk-16.0.2-ga.tar.gz + 4 patches\nboot: openjdk-15
 c compiler: gcc ${GCC_VERSION}; sysroot: ${SR}
 EOF
 echo "openjdk-16: installed to ${PREFIX}"
