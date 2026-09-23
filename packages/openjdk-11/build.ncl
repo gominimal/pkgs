@@ -63,6 +63,7 @@ let amd64_spec =
       { file = "openjdk-10-jar-reproducibility.patch" } | Local, # deterministic output
       { file = "openjdk-10-jtask-reproducibility.patch" } | Local, # deterministic output
       { file = "openjdk-currency-time-bomb2.patch" } | Local, # GenerateCurrencyData fails once the data file is older than 10 years
+      { file = "openjdk-11-timezonenames-reproducibility.patch" } | Local, # CLDR zone names emitted in sorted order (JDK-8239017)
       {
         # https://openjdk-sources.osci.io/openjdk11/openjdk-11.0.22-ga.tar.xz
         url = "gs://minimal-staging-archives/openjdk-11.0.22-ga.tar.xz",
