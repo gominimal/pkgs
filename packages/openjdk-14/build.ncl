@@ -60,6 +60,7 @@ let amd64_spec =
       { file = "openjdk-10-jtask-reproducibility.patch" } | Local, # deterministic output
       { file = "openjdk-13-classlist-reproducibility.patch" } | Local, # deterministic output
       { file = "openjdk-12-modulehashes-reproducibility.patch" } | Local, # ModuleHashes over module contents, names sorted (JDK-8240734, JDK-8243666)
+      { file = "openjdk-11-moduledescriptor-hash.patch" } | Local, # ModuleDescriptor hashes modifiers by ordinal, not identity (JDK-8275509, JDK-8290041)
       {
         # https://github.com/openjdk/jdk14u/archive/refs/tags/jdk-14.0.2-ga.tar.gz
         url = "gs://minimal-staging-archives/jdk-14.0.2-ga.tar.gz",

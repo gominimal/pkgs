@@ -69,6 +69,7 @@ cd src
 find . -type f \( -name '*.bin' -o -name '*.exe' -o -name '*.jar' \) -delete
 patch -p1 < ../openjdk-10-setsignalhandler.patch
 patch -p1 < ../openjdk-12-modulehashes-reproducibility.patch
+patch -p1 < ../openjdk-11-moduledescriptor-hash.patch
 # --- source fixes ---
 # the certificate converter is run as a script with an interpreter line naming a full path
 [ -f make/data/blacklistedcertsconverter/blacklisted.certs.pem ] && sed -i 's|^#!.*|#! java BlacklistedCertsConverter SHA-256|' make/data/blacklistedcertsconverter/blacklisted.certs.pem
@@ -152,7 +153,7 @@ find "${DST}" -name 'src.zip' -type f -delete
 mkdir -p "${OUTPUT_DIR}/usr/share/openjdk-12"
 cat > "${OUTPUT_DIR}/usr/share/openjdk-12/BUILDINFO" <<EOF
 openjdk-12
-source: jdk-12+33.tar.gz + 2 patches\nboot: openjdk-11
+source: jdk-12+33.tar.gz + 3 patches\nboot: openjdk-11
 c compiler: gcc ${GCC_VERSION}; sysroot: ${SR}
 EOF
 echo "openjdk-12: installed to ${PREFIX}"

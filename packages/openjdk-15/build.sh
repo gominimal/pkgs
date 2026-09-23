@@ -68,6 +68,7 @@ mkdir src && tar -xzf jdk-15.0.10-ga.tar.gz -C src --strip-components=1
 cd src
 find . -type f \( -name '*.bin' -o -name '*.exe' -o -name '*.jar' \) -delete
 patch -p1 < ../openjdk-15-xcursor-no-dynamic.patch
+patch -p1 < ../openjdk-11-moduledescriptor-hash.patch
 # --- source fixes ---
 # the certificate converter is run as a script with an interpreter line naming a full path
 [ -f make/data/blacklistedcertsconverter/blacklisted.certs.pem ] && sed -i 's|^#!.*|#! java BlacklistedCertsConverter SHA-256|' make/data/blacklistedcertsconverter/blacklisted.certs.pem
@@ -139,7 +140,7 @@ find "${DST}" -name 'src.zip' -type f -delete
 mkdir -p "${OUTPUT_DIR}/usr/share/openjdk-15"
 cat > "${OUTPUT_DIR}/usr/share/openjdk-15/BUILDINFO" <<EOF
 openjdk-15
-source: jdk-15.0.10-ga.tar.gz + 1 patches\nboot: openjdk-14
+source: jdk-15.0.10-ga.tar.gz + 2 patches\nboot: openjdk-14
 c compiler: gcc ${GCC_VERSION}; sysroot: ${SR}
 EOF
 echo "openjdk-15: installed to ${PREFIX}"

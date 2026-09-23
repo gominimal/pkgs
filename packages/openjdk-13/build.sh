@@ -70,6 +70,7 @@ find . -type f \( -name '*.bin' -o -name '*.exe' -o -name '*.jar' \) -delete
 patch -p1 < ../openjdk-13-classlist-reproducibility.patch
 patch -p1 < ../openjdk-10-jtask-reproducibility.patch
 patch -p1 < ../openjdk-12-modulehashes-reproducibility.patch
+patch -p1 < ../openjdk-11-moduledescriptor-hash.patch
 # --- source fixes ---
 # the certificate converter is run as a script with an interpreter line naming a full path
 [ -f make/data/blacklistedcertsconverter/blacklisted.certs.pem ] && sed -i 's|^#!.*|#! java BlacklistedCertsConverter SHA-256|' make/data/blacklistedcertsconverter/blacklisted.certs.pem
@@ -153,7 +154,7 @@ find "${DST}" -name 'src.zip' -type f -delete
 mkdir -p "${OUTPUT_DIR}/usr/share/openjdk-13"
 cat > "${OUTPUT_DIR}/usr/share/openjdk-13/BUILDINFO" <<EOF
 openjdk-13
-source: jdk-13.0.14-ga.tar.gz + 3 patches\nboot: openjdk-12
+source: jdk-13.0.14-ga.tar.gz + 4 patches\nboot: openjdk-12
 c compiler: gcc ${GCC_VERSION}; sysroot: ${SR}
 EOF
 echo "openjdk-13: installed to ${PREFIX}"
