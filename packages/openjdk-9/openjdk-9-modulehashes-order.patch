@@ -1,23 +1,23 @@
---- a/jdk/src/java.base/share/classes/jdk/internal/module/ModuleHashes.java	2026-09-22 21:28:32
-+++ b/jdk/src/java.base/share/classes/jdk/internal/module/ModuleHashes.java	2026-09-22 21:29:05
-@@ -34,6 +34,7 @@
- import java.security.NoSuchAlgorithmException;
+--- a/jdk/src/java.base/share/classes/jdk/internal/module/ModuleHashes.java	2026-09-22 21:44:39
++++ b/jdk/src/java.base/share/classes/jdk/internal/module/ModuleHashes.java	2026-09-22 21:44:39
+@@ -36,6 +36,7 @@
+ import java.util.Arrays;
  import java.util.Collections;
  import java.util.HashMap;
 +import java.util.TreeMap;
  import java.util.Map;
  import java.util.Objects;
  import java.util.Set;
-@@ -134,7 +135,7 @@
-      * @return ModuleHashes that encapsulates the hashes
+@@ -161,7 +162,7 @@
+      * @throws UncheckedIOException if an I/O error occurs
       */
-     public static ModuleHashes generate(Map<String, Path> map, String algorithm) {
+     static ModuleHashes generate(Set<ModuleReference> mrefs, String algorithm) {
 -        Map<String, byte[]> nameToHash = new HashMap<>();
 +        Map<String, byte[]> nameToHash = new TreeMap<>();
-         for (Map.Entry<String, Path> entry: map.entrySet()) {
-             String name = entry.getKey();
-             Path path = entry.getValue();
-@@ -152,7 +153,7 @@
+         for (ModuleReference mref : mrefs) {
+             try (ModuleReader reader = mref.open()) {
+                 byte[] hash = computeHash(reader, algorithm);
+@@ -227,7 +228,7 @@
          final Map<String, byte[]> nameToHash;
  
          Builder(String algorithm, int initialCapacity) {
