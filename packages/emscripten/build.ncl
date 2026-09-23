@@ -42,7 +42,7 @@ let version = "4.0.11" in
   runtime_deps = [
     binaryen,
     glibc,
-    node,
+    subsetOf node ["node"],
     python,
     subsetOf llvm ["bins", "libllvm", "libs_clang", "liblld", "libclang"],
   ],

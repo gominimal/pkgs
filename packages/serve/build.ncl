@@ -1,6 +1,6 @@
 # Imported from Wolfi `serve` by `pkgmgr import-wolfi` (node build),
 # with outputs refined from a verified `minimal package` build.
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let node = import "../node/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -12,7 +12,7 @@ let version = "14.2.6" in
     base,
     node,
   ],
-  runtime_deps = [coreutils, node],
+  runtime_deps = [coreutils, subsetOf node ["node"]],
   needs =
     {
       dns = {},

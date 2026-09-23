@@ -1,7 +1,7 @@
 # Imported from npm `typescript` by `pkgmgr import npm` (node build).
 # TODO: REVIEWER — installs `typescript` from npm; add any peer packages the
 # tool needs (cf. typescript-language-server pulling `typescript`).
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let node = import "../node/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -15,7 +15,7 @@ let version = "7.0.2" in
     base,
     node,
   ],
-  runtime_deps = [coreutils, node],
+  runtime_deps = [coreutils, subsetOf node ["node"]],
   needs =
     {
       dns = {},

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let node = import "../node/build.ncl" in
@@ -25,7 +25,7 @@ let version = "0.84.4" in
   ],
   runtime_deps = [
     coreutils,
-    node,
+    subsetOf node ["node"],
   ],
   needs =
     {

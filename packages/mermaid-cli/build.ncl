@@ -1,4 +1,4 @@
-let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let gh = import "../gh/build.ncl" in
@@ -29,7 +29,7 @@ let version = "11.17.0" in
   runtime_deps = [
     base,
     chromium-headless-shell-bin,
-    node,
+    subsetOf node ["node"],
   ],
   needs =
     {
