@@ -22,6 +22,10 @@ let version = "1.14" in
     glibc,
   ],
 
+  # fleet prototype world-rebuild (bs#316 round 3): spec-hash no-op. Not for merge.
+
+  build_args = { PROTO_WORLD = "1" },
+
   cmd = "./build.sh",
   outputs = {
     # Technically bins like zgrep depend on /bin/sh, but its not practical to depend on bash at such a low level.
