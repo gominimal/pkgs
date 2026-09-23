@@ -44,14 +44,14 @@ let version = "1.98.1" in
         { arch = 'Amd64, .. } => [rustc-1-97-1],
         { arch = 'Arm64, .. } =>
           [
-            # arm64 stage0: rustc-1.96.0 built by the same rung recipes on arm64 hardware.  The
+            # arm64 stage0: rustc-1.97.1 built by the same rung recipes on arm64 hardware.  The
             # tarball bundles the libLLVM.so.21.1 it links (built with all targets; the llvm
             # package here omits experimental ones) and that library's non-glibc dependencies,
-            # each with an $ORIGIN RUNPATH.  `extract = true` unpacks it to ./rustc-1.96.0-aarch64
+            # each with an $ORIGIN RUNPATH.  `extract = true` unpacks it to ./rustc-1.97.1-aarch64
             # inside the source root; build.sh points bootstrap.toml [build] rustc/cargo at it.
             {
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/1602ba71cc33ebb82b9b9817196fe846447bd45cd8beb424b4d3f3335db0ed81/rustc-1.96.0-aarch64.tar.zst",
-              sha256 = "1602ba71cc33ebb82b9b9817196fe846447bd45cd8beb424b4d3f3335db0ed81",
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/de0724a4bf882c5f4641dc6edd6284ee0fa565a405d4ea264a4f305e3bfe5e6e/rustc-1.97.1-aarch64.tar.zst",
+              sha256 = "de0724a4bf882c5f4641dc6edd6284ee0fa565a405d4ea264a4f305e3bfe5e6e",
               extract = true,
             } | Source,
           ],
