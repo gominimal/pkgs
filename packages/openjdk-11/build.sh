@@ -74,6 +74,7 @@ patch -p1 < ../openjdk-11-classlist-reproducibility.patch
 patch -p1 < ../openjdk-10-jar-reproducibility.patch
 patch -p1 < ../openjdk-10-jtask-reproducibility.patch
 patch -p1 < ../openjdk-currency-time-bomb2.patch
+patch -p1 < ../openjdk-11-timezonenames-reproducibility.patch
 # --- source fixes ---
 # the certificate converter is run as a script with an interpreter line naming a full path
 [ -f make/data/blockedcertsconverter/blocked.certs.pem ] && sed -i 's|^#!.*|#! java BlockedCertsConverter SHA-256|' make/data/blockedcertsconverter/blocked.certs.pem
@@ -161,7 +162,7 @@ find "${DST}" -name 'src.zip' -type f -delete
 mkdir -p "${OUTPUT_DIR}/usr/share/openjdk-11"
 cat > "${OUTPUT_DIR}/usr/share/openjdk-11/BUILDINFO" <<EOF
 openjdk-11
-source: openjdk-11.0.22-ga.tar.xz + 7 patches\nboot: openjdk-10
+source: openjdk-11.0.22-ga.tar.xz + 8 patches\nboot: openjdk-10
 c compiler: gcc ${GCC_VERSION}; sysroot: ${SR}
 EOF
 echo "openjdk-11: installed to ${PREFIX}"

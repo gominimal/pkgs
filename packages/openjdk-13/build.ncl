@@ -58,6 +58,7 @@ let amd64_spec =
       { file = "build.sh" } | Local,
       { file = "openjdk-13-classlist-reproducibility.patch" } | Local, # deterministic output
       { file = "openjdk-10-jtask-reproducibility.patch" } | Local, # deterministic output
+      { file = "openjdk-12-modulehashes-reproducibility.patch" } | Local, # ModuleHashes over module contents, names sorted (JDK-8240734, JDK-8243666)
       {
         # https://github.com/openjdk/jdk13u/archive/refs/tags/jdk-13.0.14-ga.tar.gz
         url = "gs://minimal-staging-archives/jdk-13.0.14-ga.tar.gz",

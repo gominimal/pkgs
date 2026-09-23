@@ -65,6 +65,7 @@ let amd64_spec =
       { file = "openjdk-9-module3-reproducibility.patch" } | Local, # deterministic output
       { file = "openjdk-9-idlj-reproducibility.patch" } | Local, # deterministic output
       { file = "openjdk-9-setsignalhandler.patch" } | Local, # a signal-handler prototype gcc 11+ rejects
+      { file = "openjdk-9-modulehashes-order.patch" } | Local, # ModuleHashes names in sorted order
       {
         # https://github.com/openjdk/jdk/archive/refs/tags/jdk-9+181.tar.gz
         url = "gs://minimal-staging-archives/jdk-9+181.tar.gz",

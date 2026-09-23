@@ -1,0 +1,28 @@
+--- a/src/java.base/share/classes/jdk/internal/module/ModuleHashes.java	2026-09-22 21:28:32
++++ b/src/java.base/share/classes/jdk/internal/module/ModuleHashes.java	2026-09-22 21:29:05
+@@ -34,6 +34,7 @@
+ import java.security.NoSuchAlgorithmException;
+ import java.util.Collections;
+ import java.util.HashMap;
++import java.util.TreeMap;
+ import java.util.Map;
+ import java.util.Objects;
+ import java.util.Set;
+@@ -134,7 +135,7 @@
+      * @return ModuleHashes that encapsulates the hashes
+      */
+     public static ModuleHashes generate(Map<String, Path> map, String algorithm) {
+-        Map<String, byte[]> nameToHash = new HashMap<>();
++        Map<String, byte[]> nameToHash = new TreeMap<>();
+         for (Map.Entry<String, Path> entry: map.entrySet()) {
+             String name = entry.getKey();
+             Path path = entry.getValue();
+@@ -152,7 +153,7 @@
+         final Map<String, byte[]> nameToHash;
+ 
+         Builder(String algorithm, int initialCapacity) {
+-            this.nameToHash = new HashMap<>(initialCapacity);
++            this.nameToHash = new TreeMap<>();
+             this.algorithm =  Objects.requireNonNull(algorithm);
+         }
+ 

@@ -57,6 +57,7 @@ let amd64_spec =
     build_deps = [
       { file = "build.sh" } | Local,
       { file = "openjdk-10-setsignalhandler.patch" } | Local, # a signal-handler prototype gcc 11+ rejects
+      { file = "openjdk-12-modulehashes-reproducibility.patch" } | Local, # ModuleHashes over module contents, names sorted (JDK-8240734, JDK-8243666)
       {
         # https://github.com/openjdk/jdk/archive/refs/tags/jdk-12+33.tar.gz
         url = "gs://minimal-staging-archives/jdk-12+33.tar.gz",

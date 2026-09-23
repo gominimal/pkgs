@@ -76,6 +76,7 @@ patch -p1 < ../openjdk-9-module2-reproducibility.patch
 patch -p1 < ../openjdk-9-module3-reproducibility.patch
 patch -p1 < ../openjdk-9-idlj-reproducibility.patch
 patch -p1 < ../openjdk-9-setsignalhandler.patch
+patch -p1 < ../openjdk-9-modulehashes-order.patch
 # --- source fixes ---
 # the certificate converter is run as a script with an interpreter line naming a full path
 [ -f jdk/make/data/blacklistedcertsconverter/blacklisted.certs.pem ] && sed -i 's|^#!.*|#! java BlacklistedCertsConverter SHA-256|' jdk/make/data/blacklistedcertsconverter/blacklisted.certs.pem
@@ -157,7 +158,7 @@ find "${DST}" -name 'src.zip' -type f -delete
 mkdir -p "${OUTPUT_DIR}/usr/share/openjdk-9"
 cat > "${OUTPUT_DIR}/usr/share/openjdk-9/BUILDINFO" <<EOF
 openjdk-9
-source: jdk-9+181.tar.gz + 9 patches\nboot: icedtea-8
+source: jdk-9+181.tar.gz + 10 patches\nboot: icedtea-8
 c compiler: gcc ${GCC_VERSION}; sysroot: ${SR}
 EOF
 echo "openjdk-9: installed to ${PREFIX}"
