@@ -58,7 +58,7 @@ let amd64_spec =
       { file = "build.sh" } | Local,
       { file = "openjdk-10-setsignalhandler.patch" } | Local, # a signal-handler prototype gcc 11+ rejects
       { file = "openjdk-10-jtask-reproducibility.patch" } | Local, # deterministic output
-      { file = "openjdk-13-classlist-reproducibility.patch" } | Local, # the CDS classlist is sorted before it is packed into java.base.jmod (17+ sort it natively)
+      { file = "openjdk-13-classlist-reproducibility.patch" } | Local, # the CDS classlist is sorted (comments first, classes, then @lambda lines) before it is packed into java.base.jmod; 17+ do this natively
       { file = "openjdk-12-modulehashes-reproducibility.patch" } | Local, # ModuleHashes over module contents, names sorted (JDK-8240734, JDK-8243666)
       { file = "openjdk-11-moduledescriptor-hash.patch" } | Local, # ModuleDescriptor hashes modifiers by ordinal, not identity (JDK-8275509, JDK-8290041)
       {
