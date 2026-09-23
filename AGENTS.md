@@ -656,6 +656,38 @@ mkdir -p $OUTPUT_DIR/usr/bin
 cp target/release/my-tool $OUTPUT_DIR/usr/bin/
 ```
 
+#### Node pattern
+
+Node CLIs follow three rules. `.github/workflows/node-runtime-guard.yml` enforces all of them, because breaking them blends two npm installs into one that cannot load (#665, #751):
+
+- **Use `node-lts`, not `node`**, for `build_deps`, `runtime_deps` and `test_deps`. With one flavor, every package ships the same `/usr/bin/node`. `node` (Current) is there for users to opt into; packages don't use it.
+- **At runtime, depend on the interpreter only:** `subsetOf node-lts ["node"]`. Never take the whole package, which would bring its npm, npx and `usr/lib/node_modules` into the user's session.
+- **Install into `usr/libexec/<pkg>`, never `usr/lib/node_modules`.** That tree belongs to the runtime's own npm. Expose each bin as a relative symlink.
+
+```bash
+#!/bin/sh
+set -eu
+
+npm install -g --prefix="$OUTPUT_DIR/usr/libexec/my-tool" "my-tool@$MINIMAL_ARG_VERSION"
+
+mkdir -p "$OUTPUT_DIR/usr/bin"
+for _tool in my-tool; do  # the bins package.json declares
+  ln -s "../libexec/my-tool/bin/$_tool" "$OUTPUT_DIR/usr/bin/$_tool"
+  test -e "$OUTPUT_DIR/usr/bin/$_tool"  # fail on a renamed upstream bin
+done
+```
+
+```nickel
+  build_deps = [{ file = "build.sh" } | Local, base, node-lts],
+  runtime_deps = [coreutils, subsetOf node-lts ["node"]],  # coreutils: `#!/usr/bin/env node`
+  outputs = {
+    my-tool = { glob = "usr/bin/my-tool" } | OutputBin,
+    libexec = { glob = "usr/libexec/my-tool/**", allow_executable = true } | OutputData,
+  },
+```
+
+`pkgmgr import npm <name>` generates this layout (using a committed lockfile and `npm ci`); see `packages/vlt`.
+
 
 ### Reproducibility (required)
 
