@@ -116,7 +116,7 @@ PKGBIN=""; for c in "${LIBD}/bin/ghc-pkg" "${LIBD}/ghc-pkg"; do iself "$c" && PK
 DB="$(find "${LIBD}" -maxdepth 1 -type d -name 'package.conf.d' | head -1)"
 [ -n "${DB}" ] || { echo "ghc-${VERSION}: package db not found under ${LIBD}" >&2; exit 1; }
 # a FILE symbol named ghc<pid>_N.c means a process id leaked into the output
-n=$(find "${LIBD}" -type f -exec readelf -sW {} + 2>/dev/null | awk '$4=="FILE" && $8 ~ /^ghc[0-9]+_[0-9]+\.[cs]$/' | wc -l)
+n=$(find "${DST}" -type f -exec readelf -sW {} + 2>/dev/null | awk '$4=="FILE" && $8 ~ /^ghc[0-9]+_[0-9]+\.[cs]$/' | wc -l)
 [ "$n" = 0 ] || { echo "ghc-${VERSION}: $n pid-named FILE symbols in the install" >&2; exit 1; }
 # The shipped C compiler wrapper; `settings` names it, so later compilers configured against this
 # one inherit it.

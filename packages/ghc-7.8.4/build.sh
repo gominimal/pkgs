@@ -121,9 +121,9 @@ DB="$(find "${LIBD}" -maxdepth 1 -type d -name 'package.conf.d' | head -1)"
 [ -n "${DB}" ] || { echo "ghc-${VERSION}: package db not found under ${LIBD}" >&2; exit 1; }
 # unlit and hp2ps are C programs compiled through GHC, which hands gcc a temp file named ghc<pid>_N.c; that
 # name lands in the symbol table as the FILE symbol. Strip them so the binaries do not depend on the pid.
-find "${LIBD}" -type f \( -name unlit -o -name hp2ps \) -exec strip {} + 2>/dev/null || true
+find "${DST}" -type f \( -name unlit -o -name hp2ps \) -exec strip {} + 2>/dev/null || true
 # a FILE symbol named ghc<pid>_N.c means a process id leaked into the output
-n=$(find "${LIBD}" -type f -exec readelf -sW {} + 2>/dev/null | awk '$4=="FILE" && $8 ~ /^ghc[0-9]+_[0-9]+\.[cs]$/' | wc -l)
+n=$(find "${DST}" -type f -exec readelf -sW {} + 2>/dev/null | awk '$4=="FILE" && $8 ~ /^ghc[0-9]+_[0-9]+\.[cs]$/' | wc -l)
 [ "$n" = 0 ] || { echo "ghc-${VERSION}: $n pid-named FILE symbols in the install" >&2; exit 1; }
 # The shipped C compiler wrapper; `settings` names it, so later compilers configured against this
 # one inherit it.
