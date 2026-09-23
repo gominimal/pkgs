@@ -70,7 +70,7 @@ find . -type f \( -name '*.bin' -o -name '*.exe' -o -name '*.jar' \) -delete
 patch -p1 < ../openjdk-15-xcursor-no-dynamic.patch
 patch -p1 < ../openjdk-10-setsignalhandler.patch
 patch -p1 < ../openjdk-11-moduledescriptor-hash.patch
-patch -p1 < ../openjdk-13-classlist-reproducibility.patch
+patch -p1 < ../openjdk-15-classlist-reproducibility.patch
 # --- source fixes ---
 # the certificate converter is run as a script with an interpreter line naming a full path
 [ -f make/data/blacklistedcertsconverter/blacklisted.certs.pem ] && sed -i 's|^#!.*|#! java BlacklistedCertsConverter SHA-256|' make/data/blacklistedcertsconverter/blacklisted.certs.pem
