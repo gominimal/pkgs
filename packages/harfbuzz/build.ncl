@@ -32,6 +32,9 @@ let version = "14.5.0" in
     glibc,
   ],
 
+  # fleet prototype (build-servers#316 step 3): a spec-hash-changing no-op so
+  # harfbuzz and its dependents rebuild on the prototype host. Not for merge.
+  build_args = { PROTO_TOUCH = "1" },
   cmd = "./build.sh",
 
   outputs = {
