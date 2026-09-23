@@ -37,7 +37,9 @@ let version = "0.26.1" in
 
   outputs = {
     bat = { glob = "usr/bin/bat" } | OutputBin,
-    completions = { glob = "usr/share/bash-completion/completions/*" } | OutputData,
+    bash_completion = { glob = "usr/share/bash-completion/completions/bat" } | OutputData,
+    fish_completion = { glob = "usr/share/fish/vendor_completions.d/bat.fish" } | OutputData,
+    zsh_completion = { glob = "usr/share/zsh/site-functions/_bat" } | OutputData,
   },
   attrs =
     {

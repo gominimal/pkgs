@@ -2,7 +2,7 @@ let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let version = "0.17.0" in
+let version = "0.18.0" in
 {
   name = "fq",
   build_deps = [
@@ -12,7 +12,7 @@ let version = "0.17.0" in
     toolchain,
     {
       url = "https://github.com/wader/fq/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "c5658b2bc635a1d344c64e37d7311157f0fc4b20cc3cfa4d09bdd2f023692d57",
+      sha256 = "2580de6fb21281a262f99f24d585a925cef71f158c2b24a34125e1b29bc612ef",
       extract = true,
       strip_prefix = "fq-%{version}",
     } | Source,

@@ -35,20 +35,13 @@ rm -f "$SITE_LISP/embark/avy-embark-collect.el"
 # Corfu terminal rendering (codeberg archives extract to the repo name)
 install_pkg popon emacs-popon
 install_pkg corfu-terminal emacs-corfu-terminal
-# corfu-terminal.el's `cl-defmethod ... &context (corfu-terminal-mode ...)'
-# forms come before the define-minor-mode that declares the variable.
-# cl-generic byte-compiles the &context dispatcher at *load* time, so every
-# load of the .elc prints "reference to free variable 'corfu-terminal-mode'"
-# in *Messages*. Define the variable ahead of the first method. It must be
-# a defvar WITH a value: a bare (defvar sym) only affects the compilation
-# unit it appears in, whereas (defvar sym nil) marks the symbol special
-# globally when it executes, which is what the runtime dispatcher compile
-# checks. nil is the same initial value define-minor-mode sets, so the
-# later definition is unaffected. (Upstream is archived, so the patch is
-# carried here rather than sent upstream.)
-sed -i '/^(cl-defmethod corfu--popup-support-p/i (defvar corfu-terminal-mode nil) ; defined early for the \&context dispatchers below (minimal patch)' \
-  "$SITE_LISP/corfu-terminal/corfu-terminal.el"
-grep -q '^(defvar corfu-terminal-mode nil)' "$SITE_LISP/corfu-terminal/corfu-terminal.el"
+# NOTE: an early `(defvar corfu-terminal-mode nil)` patch lived here. It
+# existed because cl-generic byte-compiled corfu-terminal's `&context`
+# dispatchers at load time and printed "reference to free variable
+# `corfu-terminal-mode'" on every load. REMOVED at the Emacs 30.2 -> 31.1
+# bump: verified empirically on 31.1 that loading corfu-terminal with the
+# patch disabled emits no such warning. Do not reinstate without checking
+# whether the warning actually returns.
 
 # Editable grep buffers
 install_pkg wgrep Emacs-wgrep-3.0.0

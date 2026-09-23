@@ -1,0 +1,39 @@
+From: Enrico Tassi <gareuselesinge@debian.org>
+Date: Tue, 26 Aug 2014 16:20:55 +0200
+Subject: Fix stack overflow in vararg functions
+
+CVE-2014-5461. Lua 5.1 is closed upstream at 5.1.5 (2012) and this was only
+ever fixed in 5.2.3, a separate and incompatible library, so there is no
+version to move to. Taken verbatim from Debian's lua5.1 5.1.5-12 series,
+patch 0004-Fix-stack-overflow-in-vararg-functions.patch.
+
+luaD_precall() reserves p->maxstacksize slots, but for a vararg function
+adjust_varargs() then pushes up to 2 * numparams values onto the stack:
+first padding nils, then copies of the fixed parameters. A vararg function
+with many fixed parameters, called with fewer arguments than it declares,
+writes past the end of the value stack. Reserving numparams more slots
+covers the copies.
+
+Upstream bug: "Stack overflow in vararg functions with many fixed parameters
+called with few arguments", reported by Yunfeng Cloud (云风) on 2013-04-17,
+present since Lua 5.0.
+
+Reproduced against our exact tarball under AddressSanitizer before applying
+(heap-buffer-overflow in adjust_varargs); clean after.
+---
+ src/ldo.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/ldo.c b/src/ldo.c
+index d1bf786..30333bf 100644
+--- a/src/ldo.c
++++ b/src/ldo.c
+@@ -274,7 +274,7 @@ int luaD_precall (lua_State *L, StkId func, int nresults) {
+     CallInfo *ci;
+     StkId st, base;
+     Proto *p = cl->p;
+-    luaD_checkstack(L, p->maxstacksize);
++    luaD_checkstack(L, p->maxstacksize + p->numparams);
+     func = restorestack(L, funcr);
+     if (!p->is_vararg) {  /* no varargs? */
+       base = func + 1;

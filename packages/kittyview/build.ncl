@@ -5,14 +5,14 @@ let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.1.4" in
+let version = "0.1.7" in
 {
   name = "kittyview",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/gominimal/kittyview/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "33e65aafea329545ad9fc61e7cf60443675cfd9f65220a49320c78e9adfd080d",
+      sha256 = "a28bb00c41d9401687bf1ffb93b64b01cd8b39b51c7a38f510ff3e1a29a0c20d",
       extract = true,
       strip_prefix = "kittyview-%{version}",
     } | Source,

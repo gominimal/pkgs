@@ -46,7 +46,23 @@ cp -a "$STAGE/lib/lean/"*.so* "$OUTPUT_DIR/usr/lib/lean/" 2>/dev/null || true
 # Init/ and Std/, and the root-level .a/.so came across in the two copies
 # above. The only missing class was the one file per module that makes all the
 # rest reachable.
-cp -a "$STAGE/lib/lean/"*.olean "$OUTPUT_DIR/usr/lib/lean/" 2>/dev/null || true
+# `*.olean*`, not `*.olean`: since Lean 4.2x each module is THREE files —
+# `X.olean`, `X.olean.server`, `X.olean.private` — and lean refuses to load a
+# module whose sidecars are missing ("failed to open file
+# '/usr/lib/lean/Init.olean.server'"). `.ilean` is the language-server index;
+# small, and what makes `lean --server` usable. pkgs#605 shipped the roots'
+# `.olean` and lean STILL compiled nothing — this is the other half.
+cp -a "$STAGE/lib/lean/"*.olean* "$OUTPUT_DIR/usr/lib/lean/" 2>/dev/null || true
+cp -a "$STAGE/lib/lean/"*.ilean "$OUTPUT_DIR/usr/lib/lean/" 2>/dev/null || true
+# `.ir` / `.ir.sig`: the compiled IR of each module, a separate file since
+# Lean 4.2x. `lean` elaborates and `#eval`s without them, so a compile test
+# passes — but `lake` COMPILES the definitions in a lakefile and fails its
+# "compiler IR check" on the first private `Init` declaration they touch:
+#   failed to compile definition, compiler IR check failed at `config…`:
+#   depends on declaration '_private.Init.Data.Array.Basic…'
+# so without these no Lake project can even be configured. (Found building
+# aeneas-latest; the reference toolchain ships 2,483 of them.)
+cp -a "$STAGE/lib/lean/"*.ir "$STAGE/lib/lean/"*.ir.sig "$OUTPUT_DIR/usr/lib/lean/" 2>/dev/null || true
 
 # Then ASSERT they arrived. The copy above swallows errors (the `|| true` is
 # there so a layout change upstream doesn't hard-fail the copy), and a glob
@@ -59,6 +75,16 @@ for m in Init Std Lean Lake; do
     echo "lean: module root $m.olean is MISSING from the install tree." >&2
     echo "  Without it, 'import $m' cannot resolve and lean compiles nothing." >&2
     echo "  Check whether upstream moved lib/lean/*.olean in this release." >&2
+    exit 1
+  fi
+  # The sidecars are load-bearing too; a root whose .olean.server is absent
+  # fails `import` exactly like a missing .olean (Lean >= 4.2x layout).
+  if [ ! -f "$OUTPUT_DIR/usr/lib/lean/$m.ir" ]; then
+    echo "lean: $m.ir is MISSING — lake needs each module's compiled IR to configure any project." >&2
+    exit 1
+  fi
+  if [ ! -f "$OUTPUT_DIR/usr/lib/lean/$m.olean.server" ]; then
+    echo "lean: $m.olean.server is MISSING — Lean splits modules into .olean/.olean.server/.olean.private; lean cannot load $m without all three." >&2
     exit 1
   fi
 done

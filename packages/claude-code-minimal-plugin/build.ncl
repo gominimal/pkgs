@@ -3,7 +3,7 @@ let base = import "../base/build.ncl" in
 let claude-code = import "../claude-code/build.ncl" in
 let jq = import "../jq/build.ncl" in
 
-let version = "0.3.0" in
+let version = "0.4.0" in
 {
   name = "claude-code-minimal-plugin",
 
@@ -11,7 +11,7 @@ let version = "0.3.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/gominimal/minimal-skills/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "2d53812d0f4c3a04c466bb9f0f06eef1b7ab3c13127835e19e2d06f46341f19c",
+      sha256 = "9948b6bcf78cdf592ff204505bbbbc48016145b5ab8abbda84d169ac9b9a3320",
       extract = true,
       # GitHub drops the leading `v` from the tag when naming the archive's
       # top-level directory, so this is the bare version, not the tag.

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -47,6 +47,16 @@ let version = "5.9.2" in
   outputs = {
     zsh = { glob = "usr/bin/zsh" } | OutputBin,
 
+    # zsh is modular: the line editor (`zsh/zle`), the completion system
+    # (`zsh/complete`, `zsh/computil`) and the rest are dlopened at run
+    # time from here, not linked into the binary. Without them an
+    # interactive shell starts and then fails at its first prompt with
+    # `failed to load module 'zsh/zle'`, which no non-interactive test
+    # catches. Recursive because some modules are namespaced into
+    # subdirectories — `zsh/db/gdbm` (this build passes `--enable-gdbm`)
+    # installs at `zsh/db/gdbm.so`.
+    modules = { glob = "usr/lib/zsh/%{version}/**" } | OutputLib,
+
     functions = { glob = "usr/share/zsh/%{version}/functions/**" } | OutputData,
     help = { glob = "usr/share/zsh/%{version}/help/**" } | OutputData,
     mans = { glob = "usr/share/man/**" } | OutputData,
@@ -81,6 +91,30 @@ let version = "5.9.2" in
         test_deps = [coreutils, grep],
         cmds = [
           ["/usr/bin/zsh", "-c", "echo $((2 + 2))"],
+        ],
+      } | Test,
+    # The tests above all passed while the package shipped no modules at
+    # all: `--version`, `-c` and arithmetic are built in, so none of them
+    # touches `usr/lib/zsh`. These two do. `zmodload` exits non-zero when
+    # it cannot find a module, so the load is the assertion.
+    modules_load =
+      {
+        class = 'Standalone,
+        test_deps = [coreutils, grep],
+        cmds = [
+          ["/usr/bin/zsh", "-c", "zmodload zsh/complete zsh/parameter zsh/zutil"],
+        ],
+      } | Test,
+    # `zsh/zle` by path rather than by load: it is the module an
+    # interactive shell reaches for first, and the one whose absence was
+    # the visible break, but it is the line editor — asserting it is
+    # installed does not depend on how it behaves without a terminal.
+    zle_module_installed =
+      {
+        class = 'Standalone,
+        test_deps = [coreutils, grep],
+        cmds = [
+          ["/usr/bin/zsh", "-c", "test -e /usr/lib/zsh/%{version}/zsh/zle.so"],
         ],
       } | Test,
   },

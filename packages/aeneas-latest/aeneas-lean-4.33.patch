@@ -1,0 +1,721 @@
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/Aeneas/Data/Array.lean aeneas-port/Aeneas/Data/Array.lean
+--- aeneas-lb/src/backends/lean/Aeneas/Data/Array.lean	2026-09-08 14:39:44
++++ aeneas-port/Aeneas/Data/Array.lean	2026-09-12 14:53:42
+@@ -108,13 +108,9 @@
+   simp only [set!_eq_setIfInBounds, ← getElem_toList, toList_setIfInBounds]
+   simp_lists
+ 
+-@[simp, simp_lists_safe]
+-theorem getElem!_set!_ne {α : Type u}
+-  [Inhabited α] {i j : ℕ} {x : α} {xs : Array α}
+-  (h : i ≠ j) :
+-  (xs.set! i x)[j]! = xs[j]! := by
+-  simp only [set!_eq_setIfInBounds, ← getElem!_toList, toList_setIfInBounds]
+-  simp_lists
++-- Lean ≥ 4.33 ships `Array.getElem!_set!_ne` itself (Init/Data/Array/Lemmas);
++-- redeclaring it is an error. Keep it in the `simp_lists` set.
++attribute [simp_lists_safe] getElem!_set!_ne
+ 
+ @[simp, simp_lists_safe]
+ theorem getElem_set!_ne {α : Type u}
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/Aeneas/Data/Coinductive/CoInd.lean aeneas-port/Aeneas/Data/Coinductive/CoInd.lean
+--- aeneas-lb/src/backends/lean/Aeneas/Data/Coinductive/CoInd.lean	2026-09-08 14:39:44
++++ aeneas-port/Aeneas/Data/Coinductive/CoInd.lean	2026-09-12 14:42:28
+@@ -146,7 +146,7 @@
+ 
+ theorem CoInd.fold_approx (x : F (CoInd F)) n :
+     (CoInd.fold F x).approx (n + 1) = PF.map F (λ c => c.approx n) x :=
+-  by simp [fold]
++  by simp [fold] <;> rfl
+ 
+ theorem coherent_eq_i (x : CoInd F) n m {i1 k1 i2 k2} :
+     PF.unpack (x.approx (n + 1)) = .obj i1 k1 →
+@@ -208,7 +208,7 @@
+   simp
+   rename_i h
+   rw [<-h]
+-  simp
++  exact PF.unpack_pack _
+ 
+ /-- `fold` is a left inverse of `unfold`. Together with `unfold_fold`, this shows
+ `fold` and `unfold` are inverse isomorphisms, i.e. `CoInd F ≅ F (CoInd F)`. -/
+@@ -275,7 +275,7 @@
+   ext n
+   cases n
+   · rfl
+-  simp [cofix, CoInd.fold, cofix_approx]
++  simp [cofix, CoInd.fold, cofix_approx] <;> rfl
+ 
+ section partial_order
+ open Lean.Order
+@@ -434,7 +434,7 @@
+   induction n; rfl
+   next n ih =>
+   rw [CoInd.bot_eq, CoInd.csup_eq]
+-  simp [*, fold_approx]
++  simp [*, fold_approx] <;> rfl
+ 
+ theorem CoInd.le_unfold [Inhabited (F PUnit)] c1 c2 :
+     (c1 ⊑ c2) = (c1 = bot F ∨ coherent1 (PartialOrder.rel) (PF.unpack c1.unfold) (PF.unpack c2.unfold)) := by
+@@ -613,7 +613,7 @@
+     CoIndN.bot F (n + 1) = PF.map F (λ _ : PUnit => CoIndN.bot F n) default := by
+   unfold CoIndN.bot
+   rw (occs:=[1]) [CoInd.bot_eq]
+-  simp [CoInd.fold]
++  simp [CoInd.fold] <;> rfl
+ 
+ /-- The pointwise partial order on `CoIndN F n`: `c1 ≤ c2` at depth 0 is always true;
+ at depth `n+1`, either `c1` is bot or both have the same shape
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/Aeneas/Data/Coinductive/ITree.lean aeneas-port/Aeneas/Data/Coinductive/ITree.lean
+--- aeneas-lb/src/backends/lean/Aeneas/Data/Coinductive/ITree.lean	2026-09-08 14:39:44
++++ aeneas-port/Aeneas/Data/Coinductive/ITree.lean	2026-09-12 14:46:49
+@@ -59,7 +59,7 @@
+ @[simp]
+ theorem ret_approx_1 (r : R) n :
+   (ITree.ret (E:=E) r).approx (n + 1) = ITreeF.ret r := by
+-    simp [ITree.ret, ITree.fold, CoInd.fold, PF.map, PF.pack, PF.unpack]
++    simp [ITree.ret, ITree.fold, CoInd.fold, PF.map, PF.pack, PF.unpack] <;> rfl
+     --
+ 
+ @[simp]
+@@ -70,7 +70,7 @@
+ @[simp]
+ theorem div_approx_1 n :
+   (ITree.div (E:=E) (R:=R)).approx  (n + 1) = ITreeF.div := by
+-    simp [ITree.div, ITree.fold, CoInd.fold, PF.map, PF.pack, PF.unpack]
++    simp [ITree.div, ITree.fold, CoInd.fold, PF.map, PF.pack, PF.unpack] <;> rfl
+ 
+ @[simp]
+ theorem fold_div_approx_1 n :
+@@ -107,7 +107,12 @@
+   CoIndN.le _ ((ITree.vis i t1).approx (n + 1)) ((ITree.vis i t2).approx (n + 1))
+  := by
+     intro hs
+-    simp [CoIndN.le, PF.unpack]
++    simp [PF.unpack]
++    -- Lean ≥ 4.32: `simp [CoIndN.le]` no longer unfolds the coinductive
++    -- fixpoint through the dependent `n + 1` index; use its equation lemma.
++    -- `rw` rejects the motive here (the `CoIndN (n+1)` vs `F (CoIndN n)` types
++    -- only agree after unfolding), so apply the equation lemma as a term.
++    refine (CoIndN.le.eq_2 _ n _ _).mpr ?_
+     right
+     constructor <;> try rfl
+     grind [coherent1]
+@@ -130,7 +135,7 @@
+     ext n
+     induction n; congr 0
+     rw [CoInd.bot_eq, div]
+-    simp [PF.map, PF.pack, CoInd.fold, *, PF.unpack, default]
++    simp [PF.map, PF.pack, CoInd.fold, *, PF.unpack, default] <;> rfl
+ 
+ 
+ theorem ITree.le_unfold (t1 t2 : ITree E R) :
+@@ -198,7 +203,8 @@
+     unfold ITree.bind
+     rw [ITree.le_unfold] at hlef
+     rcases hlef with (rfl|⟨_, rfl, rfl⟩|⟨_, _, _, rfl, rfl, _⟩)
+-    · simp [CoIndN.le, CoIndN.bot]
++    · simp only [CoIndN.le.eq_2]
++      exact Or.inl rfl
+     · rename_i x
+       simp
+       have := hg t1 t2 hle x
+@@ -233,7 +239,7 @@
+ @[simp]
+ theorem pure_approx_1 (r : R) n :
+   (pure r : ITree _ _).approx (n + 1) = ITreeF.ret (E:=E) r := by
+-    simp [pure]
++    simp [pure] <;> rfl
+ 
+ instance : LawfulMonad (ITree E) := LawfulMonad.mk' (ITree E)
+   (id_map := by
+@@ -242,7 +248,7 @@
+     ext n
+     induction n generalizing t; congr 0
+     unfold ITree.bind
+-    cases t <;> simp [*])
++    cases t <;> simp [*] <;> rfl)
+   (pure_bind := by simp [pure, Bind.bind])
+   (bind_assoc := by
+     simp [Bind.bind]
+@@ -251,7 +257,7 @@
+     induction n generalizing t1; congr 0
+     rw [ITree.bind.eq_def t1]
+     rw [ITree.bind.eq_def t1]
+-    split <;> simp [*])
++    split <;> simp [*] <;> rfl)
+ 
+ instance : MonoBind (ITree E) where
+   bind_mono_left := by
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/Aeneas/Data/Vector.lean aeneas-port/Aeneas/Data/Vector.lean
+--- aeneas-lb/src/backends/lean/Aeneas/Data/Vector.lean	2026-09-08 14:39:44
++++ aeneas-port/Aeneas/Data/Vector.lean	2026-09-12 14:55:36
+@@ -108,8 +108,11 @@
+     ← Array.getElem!_toList, Array.toList_setIfInBounds]
+   simp_lists
+ 
++-- Lean ≥ 4.33 declares `Vector.getElem_set!` / `getElem_set!_ne` itself with a
++-- different shape (`if i = j then …`); these hypothesis-driven forms keep
++-- their `simp_lists` role under names that no longer collide.
+ @[simp, simp_lists_safe]
+-theorem getElem_set! {α : Type u}
++theorem getElem_set!_of_eq {α : Type u}
+   [Inhabited α] {n i j : ℕ} {x : α} {xs : Vector α n}
+   (hi : i < n ∧ j = i) :
+   (xs.set! i x)[j] = x := by
+@@ -128,7 +131,7 @@
+   simp_lists
+ 
+ @[simp, simp_lists_safe]
+-theorem getElem_set!_ne {α : Type u}
++theorem getElem_set!_of_ne {α : Type u}
+   [Inhabited α] {n i j : ℕ} {x : α} {xs : Vector α n}
+   (h : i ≠ j ∧ j < n) :
+   (xs.set! i x)[j] = xs[j] := by
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/Aeneas/Do/Tests.lean aeneas-port/Aeneas/Do/Tests.lean
+--- aeneas-lb/src/backends/lean/Aeneas/Do/Tests.lean	2026-09-08 14:39:44
++++ aeneas-port/Aeneas/Do/Tests.lean	2026-09-12 14:58:57
+@@ -625,13 +625,15 @@
+ 
+ /-- warning: Variable name `n` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _n
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false`
+ ---
+ warning: Variable name `n` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _n
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false` -/
+ #guard_msgs in
+@@ -647,7 +649,8 @@
+ 
+ /-- warning: Variable name `x` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _x
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false` -/
+ #guard_msgs in
+@@ -668,25 +671,29 @@
+ /--
+ warning: Variable name `a` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _a
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false`
+ ---
+ warning: Variable name `b` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _b
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false`
+ ---
+ warning: Variable name `c` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _c
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false`
+ ---
+ warning: Variable name `d` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _d
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false`
+ -/
+@@ -699,25 +706,29 @@
+ /--
+ warning: Variable name `a` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _a
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false`
+ ---
+ warning: Variable name `b` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _b
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false`
+ ---
+ warning: Variable name `c` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _c
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false`
+ ---
+ warning: Variable name `d` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _d
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false`
+ -/
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/Aeneas/Std/Primitives.lean aeneas-port/Aeneas/Std/Primitives.lean
+--- aeneas-lb/src/backends/lean/Aeneas/Std/Primitives.lean	2026-09-08 14:39:44
++++ aeneas-port/Aeneas/Std/Primitives.lean	2026-09-12 14:52:06
+@@ -127,16 +127,20 @@
+ @[simp, grind =]
+ theorem Result.match.ok {α : Type u} {a : α} : (Result.ok a).match = .ok a := by
+   simp [Result.match, Result.ok, Result.cases]
++  exact ITree.cases.ret
+ @[simp, grind =]
+ theorem Result.match.vis {α : Type u} {e k} : (@Result.vis α e k).match = .vis e k := by
+   simp [Result.match, Result.vis, Result.cases]
++  exact ITree.cases.vis
+ @[simp, grind =]
+ theorem Result.match.div {α : Type u} : Result.div.match = @MatchResult.div α := by
+   simp [Result.match, Result.div, Result.cases]
++  exact ITree.cases.div
+ @[simp, grind =]
+ theorem Result.match.fail {α : Type u} {e} :
+   (Result.fail e : Result α).match = .vis (.fail e) PEmpty.elim := by
+-  simp [Result.fail_eq_vis]
++  rw [Result.fail_eq_vis]
++  exact Result.match.vis
+ 
+ /-!
+ `Result` not being an inductive type it has no built-in constructor facts that grind
+@@ -157,7 +161,10 @@
+ /-- `Result.fail` is opaque, so its injectivity has to be stated separately. -/
+ @[grind inj]
+ theorem Result.fail_injective {α} : Function.Injective (@Result.fail α) := by
+-  intro a b h; simpa using congrArg Result.match h
++  intro a b h
++  have h2 := congrArg Result.match h
++  rw [Result.match.fail, Result.match.fail] at h2
++  cases h2; rfl
+ 
+ /-! The disequality lemmas for the constructors of `Result`. They all follow from the fact that
+ `Result.match` maps the constructors to *distinct* constructors of the inductive `MatchResult`. -/
+@@ -256,33 +263,37 @@
+ # Do-DSL Support
+ -/
+ 
++-- Lean ≥ 4.32: `simp` no longer matches the `ITree` lemmas through the
++-- (irreducible) `Result` alias, so these are term proofs against the `ITree`
++-- facts, with the goal restated in `ITree` terms where elaboration needs it.
+ @[simp] theorem bind_ok (x : α) (f : α → Result β) : bind (.ok x) f = f x :=
+-  by simp [bind, ok]
+-@[simp] theorem bind_vis (e k) (f : α → Result β) : bind (.vis e k) f = .vis e (fun x => bind (k x) f) :=
+-  by simp [bind, vis]
+-     rfl
++  itree_ret_bind x f
++@[simp] theorem bind_vis (e k) (f : α → Result β) : bind (.vis e k) f = .vis e (fun x => bind (k x) f) := by
++  show ITree.bind (ITree.vis e k) f = ITree.vis e (fun x => ITree.bind (k x) f)
++  exact itree_vis_bind e k f
+ @[simp] theorem bind_fail (e : Error) (f : α → Result β) : bind (.fail e) f = .fail e := by
+-  simp only [Result.fail_eq_vis, bind_vis]
++  rw [Result.fail_eq_vis, Result.fail_eq_vis]
++  refine (bind_vis _ _ _).trans ?_
+   apply congrArg
+   funext x
+   exact x.elim
+ 
+-@[simp] theorem bind_div (f : α → Result β) : bind .div f = .div := by simp [bind, div]
++@[simp] theorem bind_div (f : α → Result β) : bind .div f = .div := itree_div_bind f
+ 
+ @[simp] theorem bind_tc_ok (x : α) (f : α → Result β) :
+-  (do let y ← .ok x; f y) = f x := by simp [bind, Bind.bind, ok]
++  (do let y ← .ok x; f y) = f x := itree_ret_bind x f
+ 
+ @[simp] theorem bind_tc_vis (e k) (f : α → Result β) :
+   (do let y ← Result.vis e k; f y) = .vis e (fun x => do let y ← k x; f y) := by
+-  simp [bind, Bind.bind, vis]
+-  rfl
++  show ITree.bind (ITree.vis e k) f = ITree.vis e (fun x => ITree.bind (k x) f)
++  exact itree_vis_bind e k f
+ 
+ @[simp] theorem bind_tc_fail (e : Error) (f : α → Result β) :
+   (do let y ← Result.fail e; f y) = .fail e := by
+   simp [Bind.bind]
+ 
+ @[simp] theorem bind_tc_div (f : α → Result β) :
+-  (do let y ← div; f y) = div := by simp [bind, Bind.bind, div]
++  (do let y ← div; f y) = div := itree_div_bind f
+ 
+ @[simp] theorem bind_assoc_eq {a b c : Type u}
+   (e : Result a) (g :  a → Result b) (h : b → Result c) :
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/Aeneas/Std/Slice.lean aeneas-port/Aeneas/Std/Slice.lean
+--- aeneas-lb/src/backends/lean/Aeneas/Std/Slice.lean	2026-09-08 14:39:44
++++ aeneas-port/Aeneas/Std/Slice.lean	2026-09-12 14:56:55
+@@ -698,7 +698,8 @@
+ /-- Small helper (this function doesn't model a specific Rust function) -/
+ def Slice.clone {T : Type} (clone : T → Result T) (s : Slice T) : Result (Slice T) := do
+   let s' ← List.clone clone s.val
+-  ok (.from s' (by simp))
++  -- Lean ≥ 4.32: `simp` no longer picks up the subtype's own property here.
++  ok (.from s' (by rw [s'.property]; exact s.property))
+ 
+ theorem Slice.clone_length {T : Type} {clone : T → Result T} {s s' : Slice T} (h : Slice.clone clone s = ok s') :
+   s'.length = s.length := by
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/Aeneas/Std/SliceDef.lean aeneas-port/Aeneas/Std/SliceDef.lean
+--- aeneas-lb/src/backends/lean/Aeneas/Std/SliceDef.lean	2026-09-08 14:39:44
++++ aeneas-port/Aeneas/Std/SliceDef.lean	2026-09-12 14:55:36
+@@ -42,8 +42,8 @@
+ theorem Slice.val_from {α} (s : Slice α) h
+   : Slice.from s.val h = s := by
+   cases s
+-  simp [val, Slice.from] at *
+-  simp [ListN_length]
++  simp only [val] at h ⊢
++  simp [Slice.from, ListN_length]
+   apply ListN.to_from_inverse
+ 
+ theorem Slice.eq_iff {α} (s0 s1 : Slice α) : s0 = s1 ↔ s0.val = s1.val := by
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/Aeneas/Std/WP.lean aeneas-port/Aeneas/Std/WP.lean
+--- aeneas-lb/src/backends/lean/Aeneas/Std/WP.lean	2026-09-08 14:39:44
++++ aeneas-port/Aeneas/Std/WP.lean	2026-09-12 14:52:24
+@@ -12,7 +12,7 @@
+ open Aeneas.Data.Coinductive
+ open Lean.Order
+ 
+-def Post α := (α -> Prop)
++abbrev Post α := (α -> Prop)
+ def Pre := Prop
+ 
+ def Wp α := Post α → Pre
+@@ -124,7 +124,7 @@
+ 
+ @[simp, grind =, agrind =]
+ theorem spec_fail (e : Error) : spec (fail e) p ↔ False := by
+-  simp [Result.fail_eq_vis]
++  rw [Result.fail_eq_vis]; exact spec_vis _ _
+ 
+ @[simp, grind =, agrind =]
+ theorem spec_div : spec div p ↔ False := by grind [ok_not_div, div_not_ok]
+@@ -318,7 +318,7 @@
+ 
+ @[simp, grind =, agrind =]
+ theorem dspec_fail (e : Error) : dspec (fail e) p ↔ False := by
+-  simp [Result.fail_eq_vis]
++  rw [Result.fail_eq_vis]; exact dspec_vis _ _
+ 
+ theorem dspec_imp_forall {m:Result α} {P:Post α} :
+   dspec m P → (∀ y, m = ok y → P y) := by
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/Aeneas/Tactic/Simproc/ReduceZMod/ReduceZMod.lean aeneas-port/Aeneas/Tactic/Simproc/ReduceZMod/ReduceZMod.lean
+--- aeneas-lb/src/backends/lean/Aeneas/Tactic/Simproc/ReduceZMod/ReduceZMod.lean	2026-09-08 14:39:44
++++ aeneas-port/Aeneas/Tactic/Simproc/ReduceZMod/ReduceZMod.lean	2026-09-12 14:43:41
+@@ -80,10 +80,14 @@
+ simproc reduceZModPow
+   (@HPow.hPow _ Nat _
+       (@instHPow _ Nat
+-        (@Monoid.toPow _
+-          (@MonoidWithZero.toMonoid _
+-            (@Semiring.toMonoidWithZero _
+-              (@CommSemiring.toSemiring _ (@CommRing.toCommSemiring _ (ZMod.commRing _)))))))
++        -- Mathlib ≥ v4.33: `Monoid` extends a separate `NPow` class, so the
++        -- `Pow M ℕ` instance is `NPow.toPow` over `Monoid.toNPow` (was
++        -- `Monoid.toPow`).
++        (@NPow.toPow _
++          (@Monoid.toNPow _
++            (@MonoidWithZero.toMonoid _
++              (@Semiring.toMonoidWithZero _
++                (@CommSemiring.toSemiring _ (@CommRing.toCommSemiring _ (ZMod.commRing _))))))))
+       _ _) := fun e => do
+   trace[ReduceZMod] "Visiting: {e}"
+   match e.consumeMData.getAppFnArgs with
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/Aeneas/Tactic/Solver/BvTac/BvTac.lean aeneas-port/Aeneas/Tactic/Solver/BvTac/BvTac.lean
+--- aeneas-lb/src/backends/lean/Aeneas/Tactic/Solver/BvTac/BvTac.lean	2026-09-08 14:39:44
++++ aeneas-port/Aeneas/Tactic/Solver/BvTac/BvTac.lean	2026-09-12 14:58:57
+@@ -7,9 +7,11 @@
+ open Lean Lean.Meta Lean.Parser.Tactic Lean.Elab.Tactic
+ open Bvify Utils
+ 
+-structure Config extends Lean.Elab.Tactic.BVDecide.Frontend.BVDecideConfig, Bvify.Config where
++-- Lean ≥ 4.32: the bv_decide frontend types moved out of `.Frontend` and the
++-- context/solver live in `Lean.Meta.Tactic.BVDecide` (module system, `public`).
++structure Config extends Lean.Elab.Tactic.BVDecide.BVDecideConfig, Bvify.Config where
+ 
+-declare_config_elab elabConfig Config
++declare_config_elab elabConfig Aeneas.BvTac.Config
+ 
+ def disjConj : Std.HashSet Name := Std.HashSet.ofList [
+   ``And, ``Or
+@@ -118,9 +120,9 @@
+   -- Call bv_decide
+   IO.FS.withTempFile fun _ lratFile => do
+     let config := config.toBVDecideConfig
+-    let cfg ← BVDecide.Frontend.TacticContext.new lratFile config
++    let cfg ← Lean.Meta.Tactic.BVDecide.TacticContext.new lratFile config
+     liftMetaFinishingTactic fun g => do
+-      discard <| bvDecide g cfg
++      discard <| Lean.Meta.Tactic.BVDecide.bvDecide g cfg
+ 
+ /-!
+ # Tests
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/Aeneas/Tactic/Step/Step.lean aeneas-port/Aeneas/Tactic/Step/Step.lean
+--- aeneas-lb/src/backends/lean/Aeneas/Tactic/Step/Step.lean	2026-09-08 14:39:44
++++ aeneas-port/Aeneas/Tactic/Step/Step.lean	2026-09-12 14:59:56
+@@ -1080,12 +1080,12 @@
+       pure none
+     | some th => do
+       trace[Step] "Lookuped up {kind}: {th}"
+-      -- Apply the theorem
+-      let res ← do
+-        try
+-          let res ← stepWith info lifting args isLet fExpr th
+-          pure (some res)
+-        catch _ => pure none
++      -- Apply the theorem. (Lean ≥ 4.32 rejects a `do` block whose last
++      -- element is a `let x ← …`; the `try` IS this branch's result.)
++      try
++        let res ← stepWith info lifting args isLet fExpr th
++        pure (some res)
++      catch _ => pure none
+   match res with
+   | some res => pure (some res)
+   | none => pure none
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/Aeneas/Tactic/Step/StepArraySpec.lean aeneas-port/Aeneas/Tactic/Step/StepArraySpec.lean
+--- aeneas-lb/src/backends/lean/Aeneas/Tactic/Step/StepArraySpec.lean	2026-09-08 14:39:44
++++ aeneas-port/Aeneas/Tactic/Step/StepArraySpec.lean	2026-09-12 15:00:54
+@@ -107,7 +107,8 @@
+   match stx with
+   | `($[$vis]? step_array_spec (name := $thm_name:ident) $array:ident [ $i:ident ]! { $x:ident => $pred:term } by $tac:tacticSeq) => do
+     -- Compute the visibility of the `step` theorem
+-    let vis : TSyntax `declModifiers ← do
++    -- Lean ≥ 4.32: the quotation's kind is the fully qualified name.
++    let vis : TSyntax `Lean.Parser.Command.declModifiers ← do
+       match vis with
+       | none => `(declModifiers|@[step])
+       | some vis =>
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/Aeneas/Tactic/Step/StepStar.lean aeneas-port/Aeneas/Tactic/Step/StepStar.lean
+--- aeneas-lb/src/backends/lean/Aeneas/Tactic/Step/StepStar.lean	2026-09-08 14:39:44
++++ aeneas-port/Aeneas/Tactic/Step/StepStar.lean	2026-09-12 15:00:54
+@@ -455,7 +455,9 @@
+       {simpThms := #[← Step.stepSimpExt.getTheorems]}
+       (.targets #[] true)
+     /- We may have proven the goal already -/
+-    let tac : Array Syntax.Tactic ← do
++    -- Typed as what `Script.tacs` takes; Lean ≥ 4.32 no longer reconciles the
++    -- two through the branch's `TaskOrDone.mk`.
++    let tac : Array (TaskOrDone (Option Syntax.Tactic)) ← do
+       let genSimp : Bool ← do
+         if r.isNone then pure true
+         else do
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/Aeneas/Tactic/Step/Tests/Coin.lean aeneas-port/Aeneas/Tactic/Step/Tests/Coin.lean
+--- aeneas-lb/src/backends/lean/Aeneas/Tactic/Step/Tests/Coin.lean	2026-09-08 14:39:44
++++ aeneas-port/Aeneas/Tactic/Step/Tests/Coin.lean	2026-09-12 15:05:25
+@@ -12,12 +12,15 @@
+ 
+ namespace Aeneas.Tactic.Step.Tests.Coin
+ 
+-def CoinEffect : Effect := {
++abbrev CoinEffect : Effect := {
+    I := Unit
+    O := fun _ => Bool
+ }
+ 
+-def ITreeC := ITree CoinEffect
++-- `abbrev`: on Lean ≥ 4.32 the `coinductive` command's generated constructor
++-- proofs (`rw`-based) reject the motive through a non-reducible alias, so
++-- with `def` the predicate's `ret`/`vis`/`casesOn` are never created.
++abbrev ITreeC := ITree CoinEffect
+ 
+ -- can just use coinductive props!
+ coinductive coinSpec {α} (p : Post α) : (x : ITreeC α) → Prop where
+@@ -62,13 +65,13 @@
+       | vis m' k' =>
+         right
+         exists m'
++        -- `CoinEffect` is reducible now (Lean ≥ 4.32 needs that for the
++        -- `coinductive` above to elaborate), so `simp` splits `∀ b : Bool`
++        -- into its two cases; prove each the way the single case used to be.
+         simp
+-        intros b
+-        exists (ITree.ret a)
+-        simp [*, coinSpec.ret]
+-        unfold qimp_coinSpec
+-        exists (fun _ => m' b) -- this seems really weird. is the statement really right?
+-        simp [*]
++        refine ⟨?_, ?_⟩ <;> (exists (ITree.ret a); simp [*, coinSpec.ret]; unfold qimp_coinSpec)
++        · exists (fun _ => m' false); simp [*]
++        · exists (fun _ => m' true); simp [*]
+     | vis m k =>
+       simp
+       right
+@@ -82,10 +85,14 @@
+   | .ok a => .ret a
+   | _ => .div -- TODO
+ 
+-theorem spec_coinSpec {α} {x : Result α} {p: Post α} : spec x p → coinSpec p x := by
++-- Lean ≥ 4.32 no longer inserts the `MonadLift` coercion `Result α → ITreeC α`
++-- implicitly here (`Result` is irreducible); lift explicitly.
++theorem spec_coinSpec {α} {x : Result α} {p: Post α} :
++    spec x p → coinSpec p (MonadLift.monadLift x : ITreeC α) := by
+   intros s
+   cases x
+-  · apply coinSpec.ret
++  · simp only [MonadLift.monadLift, Result.match.ok]
++    apply coinSpec.ret
+     simp [spec_ok] at s
+     assumption
+   · simp at s
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/Aeneas/Tactic/Step/Tests/TupleDestruct.lean aeneas-port/Aeneas/Tactic/Step/Tests/TupleDestruct.lean
+--- aeneas-lb/src/backends/lean/Aeneas/Tactic/Step/Tests/TupleDestruct.lean	2026-09-08 14:39:44
++++ aeneas-port/Aeneas/Tactic/Step/Tests/TupleDestruct.lean	2026-09-12 15:01:32
+@@ -35,49 +35,57 @@
+ /--
+ warning: Variable name `a` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _a
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false`
+ ---
+ warning: Variable name `b` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _b
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false`
+ ---
+ warning: Variable name `c` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _c
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false`
+ ---
+ warning: Variable name `d` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _d
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false`
+ ---
+ warning: Variable name `b` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _b
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false`
+ ---
+ warning: Variable name `c` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _c
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false`
+ ---
+ warning: Variable name `e` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _e
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false`
+ ---
+ warning: Variable name `h` is not explicitly referenced.
+ 
+-The binding can be removed (if unused) or named `_` (if used implicitly).
++Hint: The binding can be removed (if unused) or named `_` (if used implicitly). Alternatively, prefix the name with `_` to silence this warning:
++  [apply] _h
+ 
+ Note: This linter can be disabled with `set_option linter.unusedVariables false`
+ -/
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/AeneasMeta/BvEnumToBitVec.lean aeneas-port/AeneasMeta/BvEnumToBitVec.lean
+--- aeneas-lb/src/backends/lean/AeneasMeta/BvEnumToBitVec.lean	2026-09-08 14:39:44
++++ aeneas-port/AeneasMeta/BvEnumToBitVec.lean	2026-09-12 14:40:35
+@@ -3,7 +3,7 @@
+ Released under Apache 2.0 license as described in the file LICENSE.
+ -/
+ import Lean
+-import Lean.Elab.Tactic.BVDecide.Frontend.Normalize.Enums
++import Lean.Meta.Tactic.BVDecide.Normalize.Enums
+ 
+ /-!
+ # Eagerly realizing `bv_decide`'s enum conversion constants
+@@ -44,7 +44,7 @@
+ namespace Aeneas
+ 
+ open Lean Meta Elab
+-open Lean.Elab.Tactic.BVDecide.Frontend.Normalize
++open Lean.Meta.Tactic.BVDecide.Normalize
+ 
+ /-- Marker class enabling `deriving BvEnumToBitVec` on an enum inductive.
+ 
+@@ -69,11 +69,13 @@
+       (parameter-free with only nullary constructors); \
+       `bv_decide` only synthesises `enumToBitVec` for such types."
+   enableRealizationsForConst declName
+-  let act : MetaM Unit := do
+-    discard <| getEnumToBitVecFor declName
+-    discard <| getEnumToBitVecLeFor declName
+-    discard <| getEqIffEnumToBitVecEqFor declName
+-  discard <| act.run' {} {}
++  -- Lean ≥ 4.32 moved these to `Lean.Meta.Tactic.BVDecide.Normalize.Enums`
++  -- under the module system, where `getEnumToBitVecFor` & co. are not
++  -- `public`. The supported route is the reserved-name action bv_decide
++  -- registers for exactly these three suffixes: executing it realises the
++  -- constant (idempotently) through the same `realizeConst` as before.
++  for suffix in ["enumToBitVec", "enumToBitVec_le", "eq_iff_enumToBitVec_eq"] do
++    executeReservedNameAction (Name.str declName suffix)
+ 
+ /-- `#define_bv_decide_toBitVec T` eagerly realises `bv_decide`'s enum
+ conversion constants for the enum inductive `T` in the current module.
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/AeneasMeta/Simp/Simp.lean aeneas-port/AeneasMeta/Simp/Simp.lean
+--- aeneas-lb/src/backends/lean/AeneasMeta/Simp/Simp.lean	2026-09-08 14:39:44
++++ aeneas-port/AeneasMeta/Simp/Simp.lean	2026-09-12 14:40:35
+@@ -116,7 +116,7 @@
+     let freshFVarIds ←
+       match result? with
+       | none => replaceMainGoal []; pure none
+-      | some (fvars, mvarId) => replaceMainGoal [mvarId]; pure fvars
++      | some (fvars, mvarId) => replaceMainGoal [mvarId]; pure (some fvars)
+     /- We need to filter the `fvarIdsToSimp` to remove those which have been replaced with fresh fvars -/
+     let fvars ← do
+       match freshFVarIds with
+@@ -124,7 +124,7 @@
+       | some freshFVarIds =>
+         withMainContext do
+         let ctx ← getLCtx
+-        let ldecls := ctx.foldl (fun set decl => set.insert decl.fvarId) Std.HashSet.emptyWithCapacity
++        let ldecls := ctx.foldl (fun (set : Std.HashSet FVarId) decl => set.insert decl.fvarId) Std.HashSet.emptyWithCapacity
+         pure (fvarIdsToSimp.filter ldecls.contains ++ freshFVarIds)
+     return (fvars, stats)
+ 
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/lakefile.lean aeneas-port/lakefile.lean
+--- aeneas-lb/src/backends/lean/lakefile.lean	2026-09-08 14:39:44
++++ aeneas-port/lakefile.lean	2026-09-12 14:31:49
+@@ -3,7 +3,7 @@
+ 
+ -- Important: mathlib imports std4 and quote4: we mustn't add a `require std4` line
+ require mathlib from git
+-  "https://github.com/leanprover-community/mathlib4.git" @ "v4.31.0"
++  "https://github.com/leanprover-community/mathlib4.git" @ "v4.33.0"
+ 
+ package «aeneas» where
+   preferReleaseBuild := true
+diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/lean/lean-toolchain aeneas-port/lean-toolchain
+--- aeneas-lb/src/backends/lean/lean-toolchain	2026-09-08 14:39:44
++++ aeneas-port/lean-toolchain	2026-09-12 14:31:49
+@@ -1 +1 @@
+-leanprover/lean4:v4.31.0
++leanprover/lean4:v4.33.0

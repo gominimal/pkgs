@@ -40,6 +40,20 @@ rm -f rust-toolchain.toml
 sed -i 's|if (cfg.release && canBuildStdImmediateAbort) {|if (false) { // minimal: stable rust, no -Zbuild-std (pkgs#228)|' scripts/build/deps/lolhtml.ts
 grep -q 'no -Zbuild-std (pkgs#228)' scripts/build/deps/lolhtml.ts || { echo "ERROR: lol-html stable-build patch did not apply — bun's build scripts changed; revisit gominimal/pkgs#228." >&2; exit 1; }
 
+# arm64: cap zig's LLVM codegen shard count (gominimal/pkgs — bun hangs on the
+# 72-core res-server-arm64). bun's local build profile sets
+# -Dllvm_codegen_threads=availableParallelism() (scripts/build/zig.ts,
+# codegenThreads), i.e. 72 shards here. Every cold arm64 build stalled at
+# exactly "zig obj -> bun-zig.{0..71}.o" with zero cache writes for 6 hours
+# until the watchdog killed it (three sandboxes, 2026-09-19/20/21); amd64 with
+# 144 shards completes. Upstream never ships above 8 shards (their ASAN CI
+# value; releases use 1 for full IPO), so pin arm64 to 8. Verify-grep so a
+# future zig.ts refactor fails loudly instead of silently restoring 72.
+if [ "$(uname -m)" = aarch64 ]; then
+  sed -i 's|^  return availableParallelism();$|  return 8; // minimal: arm64 hangs at 72 codegen shards (pkgs bun/arm64-zig-codegen-cap)|' scripts/build/zig.ts
+  grep -q 'arm64 hangs at 72 codegen shards' scripts/build/zig.ts || { echo "ERROR: zig codegen-thread cap did not apply — bun's scripts/build/zig.ts changed; revisit the arm64 hang." >&2; exit 1; }
+fi
+
 # Initialize a git repo so nested dep version generation works
 # (it runs "git rev-parse HEAD" to get version strings for bundled packages)
 git init -q
@@ -53,3 +67,35 @@ bun run build:release
 mkdir -p "$OUTPUT_DIR/usr/bin"
 install -m 755 build/release/bun "$OUTPUT_DIR/usr/bin/bun"
 ln -s bun "$OUTPUT_DIR/usr/bin/bunx"
+
+# Shell completions (gominimal/inbox#470).
+#
+# Use the COMMITTED files at completions/bun.{bash,zsh,fish}, NOT
+# `bun completions <shell>`. At this tag the binary picks the shell from
+# basename($SHELL) alone and never reads its positional argument, so
+# `bun completions zsh` emits whatever $SHELL says — the bash script — or
+# errors out under /bin/sh. It also installs a bunx symlink outside
+# $OUTPUT_DIR as a side effect. The committed files are the same bytes the
+# binary would embed.
+install -D -m 0644 completions/bun.bash "$OUTPUT_DIR/usr/share/bash-completion/completions/bun"
+install -D -m 0644 completions/bun.fish "$OUTPUT_DIR/usr/share/fish/vendor_completions.d/bun.fish"
+install -D -m 0644 completions/bun.zsh  "$OUTPUT_DIR/usr/share/zsh/site-functions/_bun"
+
+# bun.zsh defines _bun() and helpers but never CALLS _bun — it ends with
+# `compdef _bun bun`, which is the sourced-from-rc idiom. Under zsh autoload
+# the whole file becomes the body of _bun, so the first Tab would merely
+# redefine the function and return no matches. Append a self-invocation so the
+# autoloaded form actually completes on first use.
+printf '\n_bun "$@"\n' >> "$OUTPUT_DIR/usr/share/zsh/site-functions/_bun"
+
+# Content assertions — existence alone would pass for a bash script in _bun.
+[ -s "$OUTPUT_DIR/usr/share/bash-completion/completions/bun" ]
+[ -s "$OUTPUT_DIR/usr/share/fish/vendor_completions.d/bun.fish" ]
+[ -s "$OUTPUT_DIR/usr/share/zsh/site-functions/_bun" ]
+head -1 "$OUTPUT_DIR/usr/share/zsh/site-functions/_bun" | grep -qx '#compdef bun'
+# NB: assert the fish CONSTRUCT, not `complete -c bun`. Some upstreams
+# parameterise the command (bat does `set bat {{PROJECT_EXECUTABLE}}` and emits
+# `complete -c $bat`), so embedding the name fails on them. Pair it with a
+# negative check that this is not another shell's script.
+grep -q 'complete -c' "$OUTPUT_DIR/usr/share/fish/vendor_completions.d/bun.fish"
+! grep -qi 'bash completion' "$OUTPUT_DIR/usr/share/fish/vendor_completions.d/bun.fish"

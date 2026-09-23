@@ -3,14 +3,14 @@ let base = import "../base/build.ncl" in
 let tar = import "../tar/build.ncl" in
 let make = import "../make/build.ncl" in
 
-let version = "2.17.0" in
+let version = "2.18.0" in
 {
   name = "bash-completions",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/scop/bash-completion/releases/download/%{version}/bash-completion-%{version}.tar.xz",
-      sha256 = "dd9d825e496435fb3beba3ae7bea9f77e821e894667d07431d1d4c8c570b9e58",
+      sha256 = "88bcf85124f77f74f2f2f8bcd16ac4382d807a827ede742a64940c7116aea33f",
     } | Source,
     base,
     make,
