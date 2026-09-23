@@ -10,6 +10,7 @@ let { target, .. } = import "config.ncl" in
 # amd64 only (see the match at the bottom).
 let ecj = import "../ecj-bootstrap-3.2.2/build.ncl" in
 let jamvm = import "../jamvm-1.5.1/build.ncl" in
+let classpath93 = import "../classpath-0.93/build.ncl" in # jamvm-1.5.1 boots from it
 let classpath99 = import "../classpath-0.99/build.ncl" in # javah/rmic wrappers on PATH
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
@@ -50,6 +51,7 @@ let amd64_spec =
       } | Source,
       ecj,
       jamvm,
+      classpath93,
       classpath99,
       gcc-bedrock,
       binutils-bedrock,
