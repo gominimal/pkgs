@@ -12,8 +12,8 @@ let libffi = import "../libffi/build.ncl" in
 let libssh2 = import "../libssh2/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let rustc-1-96-0 = import "../rustc-1.96.0/build.ncl" in # the stage0
-let version = "1.97.1" in
+let rustc-1-97-1 = import "../rustc-1.97.1/build.ncl" in # the stage0
+let version = "1.98.1" in
 {
   name = "rust",
   build_deps =
@@ -22,7 +22,7 @@ let version = "1.97.1" in
       { file = "build.sh" } | Local,
       {
         url = "gs://minimal-staging-archives/rustc-%{version}-src.tar.xz",
-        sha256 = "0ed06fdaffd4722a7702e0b4eebfafc897ab8f513e8e1b247cdd7e5c6df6ded2",
+        sha256 = "be1816e7f6c40abb90245ad6e024bed2a7e88d7dda4561e4d5470207df616b9f",
         extract = true,
         strip_prefix = "rustc-%{version}-src",
       } | Source,
@@ -35,13 +35,13 @@ let version = "1.97.1" in
       python,
       toolchain,
     ]
-    # stage0 = the rustc-1.96.0 rung (1.97.1's src/stage0 pins 1.96.0), built by the chain
+    # stage0 = the rustc-1.97.1 rung (1.98.1's src/stage0 pins 1.97.1), built by the chain
     # gcc-15.2.0 -> mrustc 0.12.0 -> rustc-1.90.0 -> 1.91.1 -> ... -> 1.96.0.  amd64 takes the
     # rung build_dep; arm64 takes a sha-pinned tarball of the same rung.  build.sh injects it
     # into bootstrap.toml [build] rustc/cargo; x.py never downloads a stage0.
     @ (
       match {
-        { arch = 'Amd64, .. } => [rustc-1-96-0],
+        { arch = 'Amd64, .. } => [rustc-1-97-1],
         { arch = 'Arm64, .. } =>
           [
             # arm64 stage0: rustc-1.96.0 built by the same rung recipes on arm64 hardware.  The

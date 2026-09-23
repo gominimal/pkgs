@@ -17,24 +17,24 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
-# stage0 = the rustc-1.96.0 rung (1.97.1's src/stage0 pins 1.96.0).  amd64: the rung build_dep,
-# hydrated read-only at /usr/lib/rustc-1.96.0.  arm64: the sha-pinned tarball Source from
-# build.ncl, extracted to ./rustc-1.96.0-aarch64 inside the source root.  The stage0 is injected
+# stage0 = the rustc-1.97.1 rung (1.98.1's src/stage0 pins 1.97.1).  amd64: the rung build_dep,
+# hydrated read-only at /usr/lib/rustc-1.97.1.  arm64: the sha-pinned tarball Source from
+# build.ncl, extracted to ./rustc-1.97.1-aarch64 inside the source root.  The stage0 is injected
 # into bootstrap.toml [build] rustc/cargo below; x.py never downloads one, and a missing stage0
 # is fatal.
 if [ "$(uname -m)" = aarch64 ]; then
-  STAGE0_PREFIX="$(pwd)/rustc-1.96.0-aarch64"
+  STAGE0_PREFIX="$(pwd)/rustc-1.97.1-aarch64"
 else
-  STAGE0_PREFIX=/usr/lib/rustc-1.96.0
+  STAGE0_PREFIX=/usr/lib/rustc-1.97.1
 fi
 SEED_RUSTC="${STAGE0_PREFIX}/bin/rustc"
 SEED_CARGO="${STAGE0_PREFIX}/bin/cargo"
-[ -x "$SEED_RUSTC" ] || { echo "rust: FATAL stage0 rustc missing at $SEED_RUSTC — the rustc-1.96.0 package is required" >&2; exit 1; }
+[ -x "$SEED_RUSTC" ] || { echo "rust: FATAL stage0 rustc missing at $SEED_RUSTC — the rustc-1.97.1 package is required" >&2; exit 1; }
 [ -x "$SEED_CARGO" ] || { echo "rust: FATAL stage0 cargo missing at $SEED_CARGO" >&2; exit 1; }
 # x.py checks the stage0 release against the src/stage0 pin; equal to the pin is accepted.
 S0V="$("$SEED_RUSTC" --version 2>&1 || true)"
 echo "$S0V" | grep -qF "1.96.0" || { echo "rust: FATAL stage0 rustc --version = '$S0V', expected 1.96.0" >&2; exit 1; }
-echo "rust stage0: rustc-1.96.0 -> $S0V"
+echo "rust stage0: rustc-1.97.1 -> $S0V"
 
 # Drop the stage0's bundled rust-src: x.py compiles that stale copy of rustc_macros instead of the
 # in-tree source (E0433 on the renamed proc_macro::tracked_env API).  The hydrated stage0 is
