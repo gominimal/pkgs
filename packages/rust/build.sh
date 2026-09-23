@@ -33,7 +33,7 @@ SEED_CARGO="${STAGE0_PREFIX}/bin/cargo"
 [ -x "$SEED_CARGO" ] || { echo "rust: FATAL stage0 cargo missing at $SEED_CARGO" >&2; exit 1; }
 # x.py checks the stage0 release against the src/stage0 pin; equal to the pin is accepted.
 S0V="$("$SEED_RUSTC" --version 2>&1 || true)"
-echo "$S0V" | grep -qF "1.96.0" || { echo "rust: FATAL stage0 rustc --version = '$S0V', expected 1.96.0" >&2; exit 1; }
+echo "$S0V" | grep -qF "1.97.1" || { echo "rust: FATAL stage0 rustc --version = '$S0V', expected 1.97.1" >&2; exit 1; }
 echo "rust stage0: rustc-1.97.1 -> $S0V"
 
 # Drop the stage0's bundled rust-src: x.py compiles that stale copy of rustc_macros instead of the

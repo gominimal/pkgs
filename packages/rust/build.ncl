@@ -36,7 +36,7 @@ let version = "1.98.1" in
       toolchain,
     ]
     # stage0 = the rustc-1.97.1 rung (1.98.1's src/stage0 pins 1.97.1), built by the chain
-    # gcc-15.2.0 -> mrustc 0.12.0 -> rustc-1.90.0 -> 1.91.1 -> ... -> 1.96.0.  amd64 takes the
+    # gcc-15.2.0 -> mrustc 0.12.0 -> rustc-1.90.0 -> 1.91.1 -> ... -> 1.97.1.  amd64 takes the
     # rung build_dep; arm64 takes a sha-pinned tarball of the same rung.  build.sh injects it
     # into bootstrap.toml [build] rustc/cargo; x.py never downloads a stage0.
     @ (
