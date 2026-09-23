@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof gzip-1.14.tar.xz
-cd gzip-1.14
+tar -xof gzip-1.15.tar.xz
+cd gzip-1.15
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
