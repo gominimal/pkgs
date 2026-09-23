@@ -1,10 +1,10 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glib = import "../glib/build.ncl" in
 let libvips = import "../libvips/build.ncl" in
 let make = import "../make/build.ncl" in
-let node = import "../node/build.ncl" in
+let node-lts = import "../node-lts/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let pnpm = import "../pnpm/build.ncl" in
 let python = import "../python/build.ncl" in
@@ -24,7 +24,7 @@ let version = "16.3.5" in
     base,
     glib,
     make,
-    node,
+    node-lts,
     pkgconf,
     pnpm,
     python,
@@ -34,7 +34,7 @@ let version = "16.3.5" in
     coreutils,
     glib,
     libvips,
-    node,
+    subsetOf node-lts ["node"],
   ],
   needs =
     {
@@ -49,7 +49,7 @@ let version = "16.3.5" in
 
   outputs = {
     next = { glob = "usr/bin/next" } | OutputBin,
-    libexec = { glob = "usr/lib/node_modules/next/**", allow_executable = true } | OutputData,
+    libexec = { glob = "usr/libexec/next/**", allow_executable = true } | OutputData,
   },
 
   tests = {
@@ -60,7 +60,7 @@ let version = "16.3.5" in
         cmds = [
           ["/bin/bash", "-c", "next --version | grep -q '16'"],
           ["/bin/bash", "-c", "next telemetry status | grep -q 'Status'"],
-          ["/bin/bash", "-c", "node -e \"const c = require('/usr/lib/node_modules/next/dist/shared/lib/constants.js'); if (c.PHASE_PRODUCTION_BUILD !== 'phase-production-build') process.exit(1);\""],
+          ["/bin/bash", "-c", "node -e \"const c = require('/usr/libexec/next/lib/node_modules/next/dist/shared/lib/constants.js'); if (c.PHASE_PRODUCTION_BUILD !== 'phase-production-build') process.exit(1);\""],
         ],
       } | Test,
     sharp_uses_system_libvips =
@@ -68,8 +68,8 @@ let version = "16.3.5" in
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          ["/bin/bash", "-c", "node -e \"const s = require('/usr/lib/node_modules/next/node_modules/sharp'); const v = s.versions; console.log('vips:', v.vips); if (!v.vips) { throw new Error('no vips version'); }\""],
-          ["/bin/bash", "-c", "node -e \"const s = require('/usr/lib/node_modules/next/node_modules/sharp'); if (!s.versions.vips.startsWith('8.18')) { throw new Error('expected vips 8.18.x, got ' + s.versions.vips); }\""],
+          ["/bin/bash", "-c", "node -e \"const s = require('/usr/libexec/next/lib/node_modules/next/node_modules/sharp'); const v = s.versions; console.log('vips:', v.vips); if (!v.vips) { throw new Error('no vips version'); }\""],
+          ["/bin/bash", "-c", "node -e \"const s = require('/usr/libexec/next/lib/node_modules/next/node_modules/sharp'); if (!s.versions.vips.startsWith('8.18')) { throw new Error('expected vips 8.18.x, got ' + s.versions.vips); }\""],
         ],
       } | Test,
   },
