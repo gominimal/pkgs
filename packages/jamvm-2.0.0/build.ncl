@@ -8,6 +8,8 @@ let { target, .. } = import "config.ncl" in
 # Sources mirrored to gs://minimal-staging-archives/. No `needs`: nothing here touches the network.
 # amd64 only (see the match at the bottom).
 let ecj = import "../ecj-bootstrap-3.2.2/build.ncl" in # JAVAC
+let jamvm1 = import "../jamvm-1.5.1/build.ncl" in # runs the boot javac
+let classpath93 = import "../classpath-0.93/build.ncl" in # jamvm-1.5.1 boots from it
 let classpath = import "../classpath-devel/build.ncl" in
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
@@ -41,6 +43,8 @@ let amd64_spec =
         extract = false, # build.sh untars with --no-same-owner
       } | Source,
       ecj,
+      jamvm1,
+      classpath93,
       classpath,
       gcc-bedrock,
       binutils-bedrock,
