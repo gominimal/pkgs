@@ -1,5 +1,5 @@
---- a/src/java.base/share/classes/jdk/internal/module/ModuleHashes.java	2026-09-22 21:28:32
-+++ b/src/java.base/share/classes/jdk/internal/module/ModuleHashes.java	2026-09-22 21:29:05
+--- a/jdk/src/java.base/share/classes/jdk/internal/module/ModuleHashes.java	2026-09-22 21:28:32
++++ b/jdk/src/java.base/share/classes/jdk/internal/module/ModuleHashes.java	2026-09-22 21:29:05
 @@ -34,6 +34,7 @@
  import java.security.NoSuchAlgorithmException;
  import java.util.Collections;
