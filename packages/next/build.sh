@@ -111,8 +111,14 @@ if [ -d src/build ]; then
   fi
 fi
 
-# Copy the source-built sharp into next's node_modules
+# Copy the source-built sharp into next's node_modules, REPLACING the sharp npm
+# already installed there: sharp is one of next's optionalDependencies. With
+# the target present, `cp -r` nests the build at sharp/sharp/, which nothing
+# loads. The npm copy then wins with its prebuilt @img binaries (deleted
+# below): no binary at all on amd64, and on arm64 a silent fallback to the
+# prebuilt addon plus bundled libvips.
 cd "$SHARP_STAGING"
+rm -rf "$NEXT_DIR/node_modules/sharp"
 cp -r node_modules/sharp "$NEXT_DIR/node_modules/sharp"
 
 # Copy sharp's runtime dependencies
@@ -122,14 +128,30 @@ for dep in detect-libc semver; do
   fi
 done
 mkdir -p "$NEXT_DIR/node_modules/@img"
-if [ -d "node_modules/@img/colour" ]; then
+if [ -d "node_modules/@img/colour" ] && [ ! -d "$NEXT_DIR/node_modules/@img/colour" ]; then
   cp -r node_modules/@img/colour "$NEXT_DIR/node_modules/@img/colour"
 fi
 
-# Remove any prebuilt platform binaries (we use source-built sharp + system libvips)
-rm -rf "$NEXT_DIR/node_modules/@img/sharp-linux-x64"
-rm -rf "$NEXT_DIR/node_modules/@img/sharp-libvips-linux-x64"
-rm -rf "$NEXT_DIR/node_modules/sharp/node_modules/@img/sharp-linux-x64"
-rm -rf "$NEXT_DIR/node_modules/sharp/node_modules/@img/sharp-libvips-linux-x64"
-rm -rf "$NEXT_DIR/node_modules/sharp/node_modules/@img/sharp-linuxmusl-x64"
-rm -rf "$NEXT_DIR/node_modules/sharp/node_modules/@img/sharp-libvips-linuxmusl-x64"
+# Remove every prebuilt platform binary, for EVERY arch (we use source-built
+# sharp + system libvips). Naming only the x64 ones left arm64's
+# @img/sharp-linux-arm64 in place, so arm64 quietly loaded the prebuilt addon.
+# @img/colour is a JS dependency, not a binary; it stays.
+for img in "$NEXT_DIR/node_modules/@img" "$NEXT_DIR/node_modules/sharp/node_modules/@img"; do
+  [ -d "$img" ] || continue
+  find "$img" -mindepth 1 -maxdepth 1 -name 'sharp-*' -exec rm -rf {} +
+done
+
+# Prove it at build time, not in a later test: sharp must load from the
+# installed tree, from its source-built addon, with a libvips version.
+node -e '
+const path = require("path");
+const dir = process.argv[1];
+const s = require(dir);
+const addon = Object.keys(require.cache).find((f) => f.endsWith(".node"));
+const want = path.join(dir, "src", "build", "Release") + path.sep;
+if (!addon || !addon.startsWith(want)) {
+  throw new Error("sharp did not load its source-built addon (loaded: " + addon + ")");
+}
+if (!s.versions.vips) throw new Error("sharp loaded without libvips");
+console.log("sharp", s.versions.sharp, "vips", s.versions.vips, "addon", path.basename(addon));
+' "$NEXT_DIR/node_modules/sharp"

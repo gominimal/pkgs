@@ -47,7 +47,7 @@
 # take it OFF that arm onto the repo-purl arm, where GHSA's npm advisories —
 # which are keyed by package name, not repo — would no longer match. Absent is
 # correct here, not an oversight.
-let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Test, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -61,7 +61,7 @@ let version = "1.0.5" in
     base,
     node-lts,
   ],
-  runtime_deps = [coreutils, node-lts],
+  runtime_deps = [coreutils, subsetOf node-lts ["node"]],
   needs =
     {
       dns = {},

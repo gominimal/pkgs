@@ -1,8 +1,8 @@
-let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let gh = import "../gh/build.ncl" in
-let node = import "../node/build.ncl" in
+let node-lts = import "../node-lts/build.ncl" in
 
 # chromium-headless-shell-bin provides the headless-shell binary (which
 # Puppeteer drives in mermaid's "headless: shell" mode) and its full
@@ -24,12 +24,12 @@ let version = "11.17.0" in
     base,
     curl,
     gh,
-    node,
+    node-lts,
   ],
   runtime_deps = [
     base,
     chromium-headless-shell-bin,
-    node,
+    subsetOf node-lts ["node"],
   ],
   needs =
     {

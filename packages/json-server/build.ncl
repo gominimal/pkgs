@@ -1,8 +1,8 @@
 # Imported from Wolfi `json-server` by `pkgmgr import-wolfi` (node build),
 # with outputs refined from a verified `minimal package` build.
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
-let node = import "../node/build.ncl" in
+let node-lts = import "../node-lts/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let version = "0.17.4" in
 {
@@ -10,9 +10,9 @@ let version = "0.17.4" in
   build_deps = [
     { file = "build.sh" } | Local,
     base,
-    node,
+    node-lts,
   ],
-  runtime_deps = [coreutils, node],
+  runtime_deps = [coreutils, subsetOf node-lts ["node"]],
   needs =
     {
       dns = {},

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -28,7 +28,7 @@ let version = "0.9.1" in
     coreutils, # `capy` shebang resolves node via /usr/bin/env
     ca-certificates, # HTTPS to the Capy API (sync, decryption)
     git, # capy shells out to git for repo/branch detection
-    node-lts, # capy is a Node CLI (#!/usr/bin/env node)
+    subsetOf node-lts ["node"], # capy is a Node CLI (#!/usr/bin/env node); interpreter only, no npm (#751)
   ],
 
   cmd = "./build.sh",

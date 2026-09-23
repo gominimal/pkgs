@@ -1,10 +1,10 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glib = import "../glib/build.ncl" in
 let libvips = import "../libvips/build.ncl" in
 let make = import "../make/build.ncl" in
-let node = import "../node/build.ncl" in
+let node-lts = import "../node-lts/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let pnpm = import "../pnpm/build.ncl" in
 let python = import "../python/build.ncl" in
@@ -24,7 +24,7 @@ let version = "16.3.5" in
     base,
     glib,
     make,
-    node,
+    node-lts,
     pkgconf,
     pnpm,
     python,
@@ -34,7 +34,7 @@ let version = "16.3.5" in
     coreutils,
     glib,
     libvips,
-    node,
+    subsetOf node-lts ["node"],
   ],
   needs =
     {
