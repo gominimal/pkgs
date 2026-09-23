@@ -44,7 +44,7 @@ let version = "11.17.0" in
 
   outputs = {
     mmdc = { glob = "usr/bin/mmdc" } | OutputBin,
-    libexec = { glob = "usr/lib/node_modules/**", allow_executable = true } | OutputData,
+    libexec = { glob = "usr/libexec/mermaid-cli/**", allow_executable = true } | OutputData,
     config = { glob = "usr/share/mermaid-cli/*.json" } | OutputData,
   },
 
@@ -67,7 +67,7 @@ let version = "11.17.0" in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "test -x /bin/mmdc"],
-          ["/bin/bash", "-c", "test -f /usr/lib/node_modules/@mermaid-js/mermaid-cli/src/cli.js"],
+          ["/bin/bash", "-c", "test -f /usr/libexec/mermaid-cli/lib/node_modules/@mermaid-js/mermaid-cli/src/cli.js"],
           ["/bin/bash", "-c", "test -x /bin/chromium-headless-shell"],
           ["/bin/bash", "-c", "/bin/mmdc --help | grep -q 'mermaid'"],
         ],

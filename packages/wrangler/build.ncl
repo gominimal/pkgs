@@ -30,7 +30,7 @@ let version = "4.125.0" in
     wrangler = { glob = "usr/bin/wrangler" } | OutputBin,
     wrangler2 = { glob = "usr/bin/wrangler2" } | OutputBin,
     cf-wrangler = { glob = "usr/bin/cf-wrangler" } | OutputBin,
-    libexec = { glob = "usr/lib/node_modules/**", allow_executable = true } | OutputData,
+    libexec = { glob = "usr/libexec/wrangler/**", allow_executable = true } | OutputData,
   },
 
   attrs =
