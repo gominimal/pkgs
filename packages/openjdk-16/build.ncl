@@ -60,7 +60,7 @@ let amd64_spec =
       { file = "openjdk-15-xcursor-no-dynamic.patch" } | Local, # link libXcursor instead of dlopen()ing it by bare name
       { file = "openjdk-10-setsignalhandler.patch" } | Local, # a signal-handler prototype gcc 11+ rejects
       { file = "openjdk-11-moduledescriptor-hash.patch" } | Local, # ModuleDescriptor hashes modifiers by ordinal, not identity (JDK-8275509, JDK-8290041)
-      { file = "openjdk-13-classlist-reproducibility.patch" } | Local, # the CDS classlist is sorted before it is packed into java.base.jmod (17+ sort it natively)
+      { file = "openjdk-15-classlist-reproducibility.patch" } | Local, # the CDS classlist is sorted before it is packed into java.base.jmod (17+ sort it natively)
       {
         # https://github.com/openjdk/jdk16u/archive/refs/tags/jdk-16.0.2-ga.tar.gz
         url = "gs://minimal-staging-archives/jdk-16.0.2-ga.tar.gz",
