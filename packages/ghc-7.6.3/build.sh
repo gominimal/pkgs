@@ -298,6 +298,17 @@ mkfixlib "${DST}/lib/glibc-fixlib"
 mkwrapper "${DST}/bin/ghc-cc" "${PREFIX}/lib/glibc-fixlib"
 sed -i "s|${CCDIR}/gcc|${PREFIX}/bin/ghc-cc|g; s|${BUILDROOT}/T/inplace/lib|${TOPDIR}|g" "${LIBD}/settings"
 grep -q "${PREFIX}/bin/ghc-cc" "${LIBD}/settings" || { echo "ghc-${VERSION}: settings does not name the shipped C compiler" >&2; exit 1; }
+# `recache` writes package.cache in readdir order. Registering every conf into a fresh db, sorted,
+# gives a cache that does not depend on the filesystem; register also rewrites the confs, so this
+# comes before the text checks.
+OLDDB="${LIBD}/package.conf.d"; NEWDB="${LIBD}/package.conf.d.new"
+"${LIBD}/ghc-pkg" init "${NEWDB}"
+for f in $(ls "${OLDDB}"/*.conf | LC_ALL=C sort); do
+  "${LIBD}/ghc-pkg" --global-package-db "${NEWDB}" register --force "$f" > ../register.log 2>&1 || { tail -3 ../register.log >&2; echo "ghc-${VERSION}: register $(basename "$f") failed" >&2; exit 1; }
+done
+[ "$(ls "${NEWDB}"/*.conf | wc -l)" = "$(ls "${OLDDB}"/*.conf | wc -l)" ] || { echo "ghc-${VERSION}: register loop lost a package" >&2; exit 1; }
+touch -r "${NEWDB}" "${NEWDB}/package.cache"
+find "${OLDDB}" -delete; mv "${NEWDB}" "${OLDDB}"
 # text files only: ELF binaries legitimately embed the build directory
 TEXTS=$(for f in "${DST}"/bin/* "${LIBD}/settings" "${LIBD}"/package.conf.d/*.conf; do [ -f "$f" ] && ! iself "$f" && printf '%s\n' "$f"; done; true)
 if echo "${TEXTS}" | xargs grep -l "${BUILDROOT}" 2>/dev/null | grep -q .; then
@@ -315,7 +326,6 @@ printf 'import Data.List\nmain = putStrLn ("GHC-GATE:" ++ show (product [1..5 ::
 "${LIBD}/ghc" -B"${LIBD}" -no-global-package-db -package-db "${GATEDB}" -O -o ../gate ../gate.hs -outputdir ../gate.d > ../gate.log 2>&1 && OUT="$(../gate)" || { cat ../gate.log >&2; echo "ghc-${VERSION}: installed compiler failed the gate" >&2; exit 1; }
 [ "$OUT" = "GHC-GATE:120:50" ] || { echo "ghc-${VERSION}: gate printed '$OUT'" >&2; exit 1; }
 cp "${BUILDROOT}/settings.shipped" "${LIBD}/settings"
-"${LIBD}/ghc-pkg" --global-package-db "${LIBD}/package.conf.d" recache
 "${LIBD}/ghc" -B"${LIBD}" --info | grep -q '"Unregisterised","YES"' || { echo "ghc-${VERSION}: not the unregisterised compiler" >&2; exit 1; }
 find "${GATEDB}" -delete
 

@@ -29,7 +29,7 @@ export TAR_OPTIONS=--no-same-owner   # the build system untars bundled tarballs 
 
 # --- P0 preconditions ---
 [ "$(uname -m)" = x86_64 ] || { echo "ghc-${VERSION}: amd64 ladder rung on $(uname -m)" >&2; exit 1; }
-for t in gcc ld ar ranlib nm objdump strip as objcopy make perl sed grep tar xz find xargs sha256sum python3; do
+for t in readelf gcc ld ar ranlib nm objdump strip as objcopy make perl sed grep tar xz find xargs sha256sum python3; do
   command -v "$t" >/dev/null 2>&1 || { echo "ghc-${VERSION}: '$t' not on PATH" >&2; exit 1; }
 done
 BGCC="$(command -v gcc)"
@@ -80,6 +80,11 @@ cd src
 # byte-stable across filesystems.
 grep -q 'filter (".conf" `isSuffixOf`) fs' utils/ghc-pkg/Main.hs || { echo "ghc-${VERSION}: ghc-pkg conf listing changed shape" >&2; exit 1; }
 sed -i 's/filter (".conf" `isSuffixOf`) fs/sort (filter (".conf" `isSuffixOf`) fs)/' utils/ghc-pkg/Main.hs
+# GHC names its temp C files ghc<pid>_N.c and gcc records that name as the object's FILE symbol; every
+# executable GHC links gets one. Use the fixed prefix 7.10.2 adopted (upstream 7a82b776).
+grep -q 'findTempName (d </> "ghc" ++ show x ++ "_")' compiler/main/SysTools.lhs || { echo "ghc-${VERSION}: temp-name code changed shape" >&2; exit 1; }
+perl -0pi -e 's/\n( *)x <- getProcessID\n *findTempName \(d <\/> "ghc" \+\+ show x \+\+ "_"\)/\n$1findTempName (d <\/> "ghc_")/' compiler/main/SysTools.lhs
+grep -q 'findTempName (d </> "ghc_")' compiler/main/SysTools.lhs || { echo "ghc-${VERSION}: temp-name patch did not apply" >&2; exit 1; }
 # Vanilla libraries only, no docs, no dynamic linking, no split objects.
 # stage1 is compiled by the unregisterised boot through C; -O0 keeps that fast. The RTS ways
 # beyond vanilla add nothing for a boot compiler.
@@ -117,6 +122,9 @@ DB="$(find "${LIBD}" -maxdepth 1 -type d -name 'package.conf.d' | head -1)"
 # unlit and hp2ps are C programs compiled through GHC, which hands gcc a temp file named ghc<pid>_N.c; that
 # name lands in the symbol table as the FILE symbol. Strip them so the binaries do not depend on the pid.
 find "${LIBD}" -type f \( -name unlit -o -name hp2ps \) -exec strip {} + 2>/dev/null || true
+# a FILE symbol named ghc<pid>_N.c means a process id leaked into the output
+n=$(find "${LIBD}" -type f -exec readelf -sW {} + 2>/dev/null | awk '$4=="FILE" && $8 ~ /^ghc[0-9]+_[0-9]+\.[cs]$/' | wc -l)
+[ "$n" = 0 ] || { echo "ghc-${VERSION}: $n pid-named FILE symbols in the install" >&2; exit 1; }
 # The shipped C compiler wrapper; `settings` names it, so later compilers configured against this
 # one inherit it.
 mkfixlib "${DST}/lib/glibc-fixlib"

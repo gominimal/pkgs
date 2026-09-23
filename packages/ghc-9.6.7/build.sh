@@ -34,7 +34,7 @@ export TAR_OPTIONS=--no-same-owner   # the build system untars bundled tarballs 
 
 # --- P0 preconditions ---
 [ "$(uname -m)" = x86_64 ] || { echo "ghc-${VERSION}: amd64 ladder rung on $(uname -m)" >&2; exit 1; }
-for t in gcc g++ ld ar ranlib nm objdump strip as objcopy make perl python3 sed grep tar xz gzip find xargs sha256sum autoreconf; do
+for t in readelf gcc g++ ld ar ranlib nm objdump strip as objcopy make perl python3 sed grep tar xz gzip find xargs sha256sum autoreconf; do
   command -v "$t" >/dev/null 2>&1 || { echo "ghc-${VERSION}: '$t' not on PATH" >&2; exit 1; }
 done
 BGCC="$(command -v gcc)"
@@ -144,9 +144,9 @@ PKGBIN=""; for c in "${LIBD}/bin/ghc-pkg" "${LIBD}/../bin/ghc-pkg" "${LIBD}/../b
 [ -n "${GHCBIN}" ] && [ -n "${PKGBIN}" ] || { echo "ghc-${VERSION}: compiler binaries not found near ${LIBD}" >&2; exit 1; }
 DB="$(find "${LIBD}" -maxdepth 1 -type d -name 'package.conf.d' | head -1)"
 [ -n "${DB}" ] || { echo "ghc-${VERSION}: package db not found under ${LIBD}" >&2; exit 1; }
-# unlit and hp2ps are C programs compiled through GHC, which hands gcc a temp file named ghc<pid>_N.c; that
-# name lands in the symbol table as the FILE symbol. Strip them so the binaries do not depend on the pid.
-find "${LIBD}" -type f \( -name unlit -o -name hp2ps \) -exec strip {} + 2>/dev/null || true
+# a FILE symbol named ghc<pid>_N.c means a process id leaked into the output
+n=$(find "${LIBD}" -type f -exec readelf -sW {} + 2>/dev/null | awk '$4=="FILE" && $8 ~ /^ghc[0-9]+_[0-9]+\.[cs]$/' | wc -l)
+[ "$n" = 0 ] || { echo "ghc-${VERSION}: $n pid-named FILE symbols in the install" >&2; exit 1; }
 # The shipped C compiler wrapper; `settings` names it, so later compilers configured against this
 # one inherit it.
 mkfixlib "${DST}/lib/glibc-fixlib"
