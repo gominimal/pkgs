@@ -36,6 +36,19 @@ OCB=$(go env GOPATH)/bin/builder
 # above it and go reported:
 #   reading /internal/obi-src/go.mod: no such file or directory
 cd distributions/otelcol-contrib
+
+# Go 1.27: cockroachdb/swiss (transitive) reaches runtime internals through
+# go:linkname shims gated per Go version; the commit this release resolves
+# (b0f6560f979b, "Enable Go 1.26 support") compiles them out on 1.27:
+#   swiss/map.go: undefined: hashFn, getRuntimeHasher, fastrand64
+# Upstream aa852fb3c14e (2026-08-20, "Enable go 1.27 support") adds 1.27, so
+# pin it via the manifest's existing `replaces:` block. An unused replace is
+# inert, so this is safe to keep until a release carries the newer swiss.
+grep -q '^replaces:$' manifest.yaml || { echo "ERROR: manifest.yaml has no replaces: section" >&2; exit 1; }
+sed -i 's|^replaces:$|replaces:\n  - github.com/cockroachdb/swiss => github.com/cockroachdb/swiss v0.0.0-20260820225851-aa852fb3c14e|' manifest.yaml
+grep -q 'cockroachdb/swiss => github.com/cockroachdb/swiss v0.0.0-20260820225851-aa852fb3c14e' manifest.yaml || {
+  echo "ERROR: swiss Go 1.27 replace did not land in manifest.yaml" >&2; exit 1; }
+
 $OCB --config=manifest.yaml
 
 mkdir -p $OUTPUT_DIR/usr/bin
