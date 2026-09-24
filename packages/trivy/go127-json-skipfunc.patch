@@ -1,14 +1,17 @@
-Backport of the one compile fix trivy needs on Go 1.27, from upstream
+Backport of the Go 1.27 json/v2 changes trivy needs, from upstream
 aquasecurity/trivy dc3c56eed5 "chore: bump Go to 1.27 (#11127)" (2026-08-21,
-on main; not in any release as of v0.74.0).
+on main; not in any release as of v0.74.0). Drop at the next trivy release.
 
-Go 1.27's encoding/json/v2 dropped `json.SkipFunc`; the "skip this custom
-unmarshaler and fall back to default decoding" sentinel is now
-`errors.ErrUnsupported`. Without this, v0.74.0 fails on Go 1.27.1 with
-`pkg/x/json/json.go:109:16: undefined: json.SkipFunc` on both arches (pkgs#758).
-Only json.go is taken; the rest of that upstream commit is CI/lint/test churn
-and a style-only move to errors.AsType. Drop this patch at the next trivy
-release (upstream main already carries it).
+Go 1.27's encoding/json/v2 changed two things trivy v0.74.0 relies on:
+- `json.SkipFunc` is gone; the "fall back to default decoding" sentinel is
+  now `errors.ErrUnsupported`. Two call sites (both COMPILE errors on 1.27.1):
+  pkg/x/json/json.go and pkg/iac/scanners/cloudformation/parser/parameter.go.
+- the struct-tag option `inline` became `embed`. pkg/result/filter.go still
+  COMPILES with the old tag but would silently change the shape of trivy's
+  JSON output, so it is taken too.
+Verified against the full v0.74.0 source: these are the only SkipFunc uses and
+the only `,inline` JSON tag. The rest of that upstream commit (errors.AsType,
+reflect.TypeAssert, strings.Cut) is style-only on Go 1.27 and is not needed.
 
 diff --git a/pkg/x/json/json.go b/pkg/x/json/json.go
 --- a/pkg/x/json/json.go
@@ -30,4 +33,29 @@ diff --git a/pkg/x/json/json.go b/pkg/x/json/json.go
 +			return errors.ErrUnsupported
  		}
  		visited.Append(start)
+ 
+diff --git a/pkg/iac/scanners/cloudformation/parser/parameter.go b/pkg/iac/scanners/cloudformation/parser/parameter.go
+--- a/pkg/iac/scanners/cloudformation/parser/parameter.go
++++ b/pkg/iac/scanners/cloudformation/parser/parameter.go
+@@ -54,7 +54,8 @@ func unmarshalIntFirst(dec *jsontext.Decoder, v *any) error {
+ 		}
+ 		return nil
+ 	}
+-	return json.SkipFunc
++	// Fall back to the default decoding.
++	return errors.ErrUnsupported
+ }
+ 
+ func (p *Parameter) Type() cftypes.CfType {
+diff --git a/pkg/result/filter.go b/pkg/result/filter.go
+--- a/pkg/result/filter.go
++++ b/pkg/result/filter.go
+@@ -304,7 +304,7 @@ func filterFindingsByRego[T types.Finding](
+ 
+ func evaluate[T types.Finding](ctx context.Context, query rego.PreparedEvalQuery, finding T) (bool, error) {
+ 	type regoInput struct {
+-		Data T      `json:",inline"`
++		Data T      `json:",embed"`
+ 		Type string `json:"Type"`
+ 	}
  
