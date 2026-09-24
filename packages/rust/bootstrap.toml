@@ -1,6 +1,10 @@
 change-id = 154587
 
 [build]
+# vendor=false: bootstrap auto-enables build.vendor for tarball sources with a vendor/ dir and then
+# passes cargo --frozen, which forbids the offline Cargo.lock refresh the stage0 cargo performs.
+# Disabling it only drops --frozen; the in-tree .cargo/config.toml still redirects every crate to vendor/.
+vendor = false
 # When compiling from source, you almost always want a full stage 2 build,
 # which has all the latest optimizations from nightly.
 build-stage = 2
@@ -8,6 +12,11 @@ test-stage = 2
 doc-stage = 2
 # When compiling from source, you usually want all tools.
 extended = true
+# No "src": the rust-src install step is gated on `extended && tools.contains("src")`, and a
+# bundled rust-src is what x.py would compile instead of the in-tree source.
+tools = ["cargo", "clippy", "rustfmt", "rust-analyzer"]
+# Use libtest built from the source tree instead of the precompiled one from stage 0.
+compiletest-use-stage0-libtest = false
 
 docs = false
 
@@ -23,12 +32,19 @@ download-rustc = false
 # through cc rather than a rust-lld we don't ship.
 lld = false
 llvm-bitcode-linker = false
+# Required with build.vendor = false: bootstrap's debuginfo remap uses the vendor path only when
+# build.vendor is true, and otherwise reads $CARGO_HOME/registry/src, which does not exist offline.
+remap-debuginfo = false
 
 # lto = "thin"
 # codegen-units = 1
 
 [dist]
 compression-profile = "balanced"
+# vendor=false: `x.py install` would otherwise run `cargo vendor --sync src/tools/cargo/Cargo.toml`,
+# which fails offline.  src-tarball=false also drops the PlainSourceTarball default step.
+vendor = false
+src-tarball = false
 
 [target.x86_64-unknown-linux-gnu]
 cc = "clang"

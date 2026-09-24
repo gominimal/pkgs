@@ -1,0 +1,9 @@
+# Checked from /build by `sha256sum -c` at the end of mescc.kaem; a mismatch fails the build.
+# Values are upstream stage0-posix-1.9.1/amd64.answers for AMD64/bin/{M1,hex2,kaem}, the
+# leaves of the mini chain; matching them also asserts every intermediate artifact.
+fc68c115384852b827a35b607de382592a475c324e1e11ca7cf5b9e840ce15a9  stage0-posix-1.9.1/AMD64/bin/M1
+f782df6d59f7ff930e67f34dde7ea62288b12d6d1a0b036ef465ad06b4a4b97a  stage0-posix-1.9.1/AMD64/bin/hex2
+6364de59b36f8575fd938779476a9a121878fc0e2d65cc01ae5372aad2d028b5  stage0-posix-1.9.1/AMD64/bin/kaem
+
+# The intermediate artifacts (hex2-0, catm, M0, cc_amd64, M2, blood-elf-0, M1-0, hex2-1)
+# have no upstream-published sha; mescc.kaem logs them for failure localization.
