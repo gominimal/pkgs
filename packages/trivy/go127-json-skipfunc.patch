@@ -1,0 +1,61 @@
+Backport of the Go 1.27 json/v2 changes trivy needs, from upstream
+aquasecurity/trivy dc3c56eed5 "chore: bump Go to 1.27 (#11127)" (2026-08-21,
+on main; not in any release as of v0.74.0). Drop at the next trivy release.
+
+Go 1.27's encoding/json/v2 changed two things trivy v0.74.0 relies on:
+- `json.SkipFunc` is gone; the "fall back to default decoding" sentinel is
+  now `errors.ErrUnsupported`. Two call sites (both COMPILE errors on 1.27.1):
+  pkg/x/json/json.go and pkg/iac/scanners/cloudformation/parser/parameter.go.
+- the struct-tag option `inline` became `embed`. pkg/result/filter.go still
+  COMPILES with the old tag but would silently change the shape of trivy's
+  JSON output, so it is taken too.
+Verified against the full v0.74.0 source: these are the only SkipFunc uses and
+the only `,inline` JSON tag. The rest of that upstream commit (errors.AsType,
+reflect.TypeAssert, strings.Cut) is style-only on Go 1.27 and is not needed.
+
+diff --git a/pkg/x/json/json.go b/pkg/x/json/json.go
+--- a/pkg/x/json/json.go
++++ b/pkg/x/json/json.go
+@@ -4,6 +4,7 @@ import (
+ 	"bytes"
+ 	"encoding/json/jsontext"
+ 	"encoding/json/v2"
++	"errors"
+ 	"io"
+ 
+ 	"golang.org/x/xerrors"
+@@ -106,7 +107,8 @@ func unmarshaler[T any](r *lineReader, visited set.Set[int], hooks ...DecodeHook
+ 
+ 		// Check visited set to avoid infinity loops
+ 		if visited.Contains(start) {
+-			return json.SkipFunc
++			// Fall back to the default decoding.
++			return errors.ErrUnsupported
+ 		}
+ 		visited.Append(start)
+ 
+diff --git a/pkg/iac/scanners/cloudformation/parser/parameter.go b/pkg/iac/scanners/cloudformation/parser/parameter.go
+--- a/pkg/iac/scanners/cloudformation/parser/parameter.go
++++ b/pkg/iac/scanners/cloudformation/parser/parameter.go
+@@ -54,7 +54,8 @@ func unmarshalIntFirst(dec *jsontext.Decoder, v *any) error {
+ 		}
+ 		return nil
+ 	}
+-	return json.SkipFunc
++	// Fall back to the default decoding.
++	return errors.ErrUnsupported
+ }
+ 
+ func (p *Parameter) Type() cftypes.CfType {
+diff --git a/pkg/result/filter.go b/pkg/result/filter.go
+--- a/pkg/result/filter.go
++++ b/pkg/result/filter.go
+@@ -304,7 +304,7 @@ func filterFindingsByRego[T types.Finding](
+ 
+ func evaluate[T types.Finding](ctx context.Context, query rego.PreparedEvalQuery, finding T) (bool, error) {
+ 	type regoInput struct {
+-		Data T      `json:",inline"`
++		Data T      `json:",embed"`
+ 		Type string `json:"Type"`
+ 	}
+ 
