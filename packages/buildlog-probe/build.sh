@@ -1,6 +1,6 @@
 #!/bin/bash
 # Each numbered step is one signal the build log claims to record.
-# probe round 11 (every env key at exec)
+# probe round 12 (getenv read via libc)
 set -u
 out=$OUTPUT_DIR/usr/share/buildlog-probe
 mkdir -p "$out"
@@ -20,6 +20,11 @@ getent hosts example.org >> "$log" 2>&1 || say "  getent exit $?"
 say "4 env reads: sensitive keys visible to a child exec"
 export PROBE_API_TOKEN=probe-token-value AWS_SECRET_ACCESS_KEY=probe-aws-secret NPM_TOKEN=probe-npm PROBE_PLAIN_SETTING=on
 env | grep -c -E 'PROBE_API_TOKEN|AWS_SECRET|NPM_TOKEN' >> "$log"
+
+say "4b a program READS a sensitive key via libc getenv"
+printf '#include <stdio.h>\n#include <stdlib.h>\nint main(void){const char*v=getenv("PROBE_API_TOKEN");printf("  getenv PROBE_API_TOKEN: %%s\\n", v?"set":"unset");return 0;}\n' > "$out/genv.c"
+gcc -O1 -o "$out/token-reader" "$out/genv.c" >> "$log" 2>&1 && "$out/token-reader" | tee -a "$log"
+rm -f "$out/genv.c" "$out/token-reader"
 
 say "5 writes outside the install prefix, then deleted"
 echo x > /tmp/buildlog-probe.txt && say "  wrote /tmp/buildlog-probe.txt"
