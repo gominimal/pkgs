@@ -1,6 +1,6 @@
 #!/bin/bash
 # Each numbered step is one signal the build log claims to record.
-# probe round 9 (cpu time, dns attribution)
+# probe round 10 (unconnected udp sendto)
 set -u
 out=$OUTPUT_DIR/usr/share/buildlog-probe
 mkdir -p "$out"
@@ -68,8 +68,37 @@ for w in $(seq 1 48); do ( for j in $(seq 1 60); do gcc -E "$out/storm.c" -o /de
 wait
 say "  storm done in $(echo "$(date +%s.%N) - $t0" | bc 2>/dev/null || echo "?") s"
 rm -f "$out/storm.c"
-say "11 hold 60 s (a window for an in-build kill)"
+say "12 unconnected UDP sendto 8.8.8.8:53 (a raw DNS query that bypasses the resolver)"
+cat > "$out/udp.c" <<'C'
+#include <arpa/inet.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <unistd.h>
+int main(void) {
+  /* DNS query: id 0x1234, RD, one question "example.net" A IN */
+  unsigned char q[] = {0x12,0x34,0x01,0x00,0,1,0,0,0,0,0,0,
+    7,'e','x','a','m','p','l','e',3,'n','e','t',0, 0,1, 0,1};
+  int s = socket(AF_INET, SOCK_DGRAM, 0);
+  struct sockaddr_in to = {0};
+  to.sin_family = AF_INET; to.sin_port = htons(53);
+  inet_pton(AF_INET, "8.8.8.8", &to.sin_addr);
+  ssize_t n = sendto(s, q, sizeof q, 0, (struct sockaddr *)&to, sizeof to);
+  struct timeval tv = {2, 0};
+  setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof tv);
+  unsigned char r[512];
+  ssize_t m = recv(s, r, sizeof r, 0);
+  printf("  sendto %zd bytes, reply %zd bytes\n", n, m);
+  close(s);
+  return 0;
+}
+C
+gcc -O1 -o "$out/udp" "$out/udp.c" >> "$log" 2>&1 && "$out/udp" | tee -a "$log"
+rm -f "$out/udp" "$out/udp.c"
+
+say "11 hold 5 s"
 : > "$out/hold"
-for i in $(seq 1 60); do ls /usr/lib > /dev/null; sleep 1; done
+for i in $(seq 1 5); do ls /usr/lib > /dev/null; sleep 1; done
 rm -f "$out/hold"
 say "done"
