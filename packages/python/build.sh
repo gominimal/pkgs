@@ -10,6 +10,15 @@ cd "Python-${MINIMAL_ARG_VERSION}"
 # lives one level up because we extracted into a subdirectory above.
 patch -Np1 -i "../0001-gh-155999-tarfile-normalize-parent-dir-components.patch"
 
+# CVE-2026-15806 (urllib), CVE-2026-15310 (zipfile) and CVE-2026-17084
+# (stringprep/idna) -- same deal: 3.14-branch backports that first ship in
+# 3.14.8. 0004 carries two upstream commits that must apply in order; they
+# live in one file so that order cannot be got wrong. 0002 is reserved for
+# the tarfile fix in pkgs#765.
+patch -Np1 -i "../0003-gh-155694-urllib-scope-credentials-by-scheme.patch"
+patch -Np1 -i "../0004-gh-156002-zipfile-bound-decompression.patch"
+patch -Np1 -i "../0005-gh-155292-stringprep-pin-unicode-3.2.patch"
+
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
   aarch64) MARCH="-march=armv8-a" ;;
