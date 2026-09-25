@@ -13,15 +13,15 @@ set -e
 # puts on lifecycle scripts' PATH at `<dir of current_exe>/dist/node-gyp-bin`
 # (crates/executor/src/bundled_node_gyp.rs), so dist/ must sit beside it.
 
-case $(uname -m) in
-  x86_64)  PNPMARCH=x64 ;;
-  aarch64) PNPMARCH=arm64 ;;
-  *)       echo "unsupported architecture: $(uname -m)" >&2; exit 1 ;;
-esac
+# build.ncl fetches exactly one native tarball, chosen by `target`; use that one
+# rather than re-deriving the arch here, so the two can never disagree.
+set -- exe.linux-*-"${MINIMAL_ARG_VERSION}".tgz
+test $# -eq 1 && test -f "$1" \
+  || { echo "pnpm: expected exactly one exe.linux-*-${MINIMAL_ARG_VERSION}.tgz, got: $*" >&2; exit 1; }
 
 mkdir wrapper native
 tar -xof "pnpm-${MINIMAL_ARG_VERSION}.tgz" -C wrapper
-tar -xof "exe.linux-${PNPMARCH}-${MINIMAL_ARG_VERSION}.tgz" -C native
+tar -xof "$1" -C native
 
 PREFIX=$OUTPUT_DIR/usr/libexec/pnpm
 install -d $OUTPUT_DIR/usr/bin $PREFIX

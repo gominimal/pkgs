@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
@@ -67,6 +67,16 @@ let version = "12.5.1" in
     # stays available as an explicit opt-in for users.
     subsetOf node-lts ["node"],
   ],
+  # Not for pnpm's own build (that is offline): this is the abstract network dep
+  # a package that builds WITH pnpm inherits, so its `pnpm install` can reach the
+  # registry (71d7239a, like curl/go/rust/uv/wget). agent-browser declares no
+  # `needs` of its own; today it also gets network through rust, but a pnpm
+  # consumer without rust would lose the registry if this went away.
+  needs =
+    {
+      dns = {},
+      internet = {},
+    } | Needs,
 
   cmd = "./build.sh",
   build_args = {
