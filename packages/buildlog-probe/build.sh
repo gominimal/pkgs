@@ -1,6 +1,6 @@
 #!/bin/bash
 # Each numbered step is one signal the build log claims to record.
-# probe round 7 (sensor down)
+# probe round 7b (sensor down, dns direct)
 set -u
 out=$OUTPUT_DIR/usr/share/buildlog-probe
 mkdir -p "$out"
