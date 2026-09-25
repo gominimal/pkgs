@@ -1,6 +1,6 @@
 #!/bin/bash
 # Each numbered step is one signal the build log claims to record.
-# probe round 6 (compile storm)
+# probe round 6b (compile storm, dedup on)
 set -u
 out=$OUTPUT_DIR/usr/share/buildlog-probe
 mkdir -p "$out"
