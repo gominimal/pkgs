@@ -1,6 +1,6 @@
 #!/bin/bash
 # Each numbered step is one signal the build log claims to record.
-# probe round 10 (unconnected udp sendto)
+# probe round 11 (every env key at exec)
 set -u
 out=$OUTPUT_DIR/usr/share/buildlog-probe
 mkdir -p "$out"
@@ -18,7 +18,7 @@ say "3 resolver only: getent hosts example.org"
 getent hosts example.org >> "$log" 2>&1 || say "  getent exit $?"
 
 say "4 env reads: sensitive keys visible to a child exec"
-export PROBE_API_TOKEN=probe-token-value AWS_SECRET_ACCESS_KEY=probe-aws-secret NPM_TOKEN=probe-npm
+export PROBE_API_TOKEN=probe-token-value AWS_SECRET_ACCESS_KEY=probe-aws-secret NPM_TOKEN=probe-npm PROBE_PLAIN_SETTING=on
 env | grep -c -E 'PROBE_API_TOKEN|AWS_SECRET|NPM_TOKEN' >> "$log"
 
 say "5 writes outside the install prefix, then deleted"
