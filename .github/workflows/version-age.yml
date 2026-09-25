@@ -12,7 +12,7 @@ name: version-age
 #
 # SECURITY: triggered on `pull_request` (NOT pull_request_target). Forks get a
 # read-only token and NO secrets, which is correct because this job evaluates
-# untrusted build.ncl via `minimal dump`. Network egress is read-only GitHub API
+# untrusted build.ncl via `mip dump`. Network egress is read-only GitHub API
 # + ftp.gnu.org HEAD requests for release dates (both SSRF-guarded in the script).
 
 on:
@@ -38,7 +38,10 @@ jobs:
         with:
           fetch-depth: 0 # need base..head reachable for the changed-file diff
 
-      - uses: ./.github/actions/setup-minimal
+      # The runner's pinned, sha256-verified evaluator, NOT the public shim
+      # (whose cli pointer is stuck at a May build that rejects current stdlib
+      # features, so every dump failed and this report silently no-op'd).
+      - uses: ./.github/actions/setup-mip
 
       - name: Detect changed packages
         id: changed
@@ -64,10 +67,11 @@ jobs:
           # A broken (fork) build.ncl must NOT turn this report-only check red:
           # on dump failure, warn and leave an empty dump.json for the script to
           # no-op on. `dump` is hidden from --help but not science-gated.
-          if minimal dump -p --format json --arch amd64 > dump.json; then
+          mip --version || true
+          if mip dump -p --format json --arch amd64 > dump.json; then
             echo "dumped $(jq 'length' dump.json) packages"
           else
-            echo "::warning::minimal dump failed (non-blocking); skipping report"
+            echo "::warning::mip dump failed (non-blocking); skipping report"
             : > dump.json
           fi
 
