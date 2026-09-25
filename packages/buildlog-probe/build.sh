@@ -1,6 +1,6 @@
 #!/bin/bash
 # Each numbered step is one signal the build log claims to record.
-# probe round 5 (monitor restart mid-build)
+# probe round 6 (compile storm)
 set -u
 out=$OUTPUT_DIR/usr/share/buildlog-probe
 mkdir -p "$out"
@@ -48,7 +48,24 @@ say "9 background child outliving the script by 3 s"
 ( sleep 3; echo "  bg child done" >> "$log" ) &
 wait
 
-say "10 hold 25 s with steady activity, so a monitor restart can land mid-build"
-for i in $(seq 1 25); do ls /usr/lib > /dev/null; echo "tick $i" > "$out/tick"; sleep 1; done
-rm -f "$out/tick"
+say "10 compile storm: 48 workers x 60 preprocessor runs over the same headers"
+cat > "$out/storm.c" <<'C'
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <time.h>
+#include <math.h>
+#include <pthread.h>
+int main(void) { return 0; }
+C
+t0=$(date +%s.%N)
+for w in $(seq 1 48); do ( for j in $(seq 1 60); do gcc -E "$out/storm.c" -o /dev/null; done ) & done
+wait
+say "  storm done in $(echo "$(date +%s.%N) - $t0" | bc 2>/dev/null || echo "?") s"
+rm -f "$out/storm.c"
 say "done"

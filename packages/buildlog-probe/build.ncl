@@ -2,6 +2,7 @@ let { Attrs, BuildSpec, Local, OutputData, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let util-linux = import "../util-linux/build.ncl" in
+let toolchain = import "../toolchain/build.ncl" in
 
 # A probe for the Package Build Log (build-servers#353): every kind of
 # signal the log claims to capture, deliberately, so the statement can be
@@ -13,6 +14,7 @@ let util-linux = import "../util-linux/build.ncl" in
     base,
     curl,
     util-linux,
+    toolchain,
   ],
   cmd = "./build.sh",
   outputs = {
