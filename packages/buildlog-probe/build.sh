@@ -1,5 +1,6 @@
 #!/bin/bash
 # Each numbered step is one signal the build log claims to record.
+# probe round 2
 set -u
 out=$OUTPUT_DIR/usr/share/buildlog-probe
 mkdir -p "$out"
@@ -25,16 +26,25 @@ echo x > /tmp/buildlog-probe.txt && say "  wrote /tmp/buildlog-probe.txt"
 echo y > "$HOME/.buildlog-probe" 2>>"$log" && say "  wrote \$HOME/.buildlog-probe"
 rm -f /tmp/buildlog-probe.txt "$HOME/.buildlog-probe"
 
-say "6 symlink + rename + setuid bit inside the prefix"
+say "6 symlink + rename + setuid bit + chmod inside the prefix"
 ln -s /etc/passwd "$out/passwd-link" && mv "$out/passwd-link" "$out/passwd-link2" && rm "$out/passwd-link2"
-cp /bin/true "$out/suid-true" && chmod u+s "$out/suid-true" && rm "$out/suid-true"
+cp /bin/true "$out/suid-true" && chmod u+s "$out/suid-true" && chmod 0777 "$out/suid-true" && rm "$out/suid-true"
 
-say "7 privilege: mount, unshare, ptrace-guarded read of pid 1"
+say "7 privilege: mount, unshare, nsenter, chroot, chown root, ptrace-guarded reads"
 mount -t tmpfs none /mnt >> "$log" 2>&1 || say "  mount exit $?"
-unshare -Ur true >> "$log" 2>&1 || say "  unshare exit $?"
+unshare -Ur true >> "$log" 2>&1 || say "  unshare -Ur exit $?"
+unshare -m true >> "$log" 2>&1 || say "  unshare -m exit $?"
+nsenter -t 1 -m true >> "$log" 2>&1 || say "  nsenter exit $?"
+chroot / /bin/true >> "$log" 2>&1 || say "  chroot exit $?"
+chown 0:0 "$log" >> "$log" 2>&1 || say "  chown root exit $?"
 cat /proc/1/environ > /dev/null 2>>"$log" || say "  /proc/1/environ exit $?"
+cat /proc/1/mem > /dev/null 2>>"$log" || say "  /proc/1/mem exit $?"
+kill -0 1 2>>"$log" && say "  kill -0 1 ok" || say "  kill -0 1 exit $?"
 
-say "8 background child outliving the script by 3 s"
+say "8 bind + listen on a local port"
+( exec 4<>/dev/tcp/127.0.0.1/1 ) 2>/dev/null || say "  connect 127.0.0.1:1 refused (expected)"
+
+say "9 background child outliving the script by 3 s"
 ( sleep 3; echo "  bg child done" >> "$log" ) &
 wait
 say "done"

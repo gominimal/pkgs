@@ -1,6 +1,7 @@
 let { Attrs, BuildSpec, Local, OutputData, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let curl = import "../curl/build.ncl" in
+let util-linux = import "../util-linux/build.ncl" in
 
 # A probe for the Package Build Log (build-servers#353): every kind of
 # signal the log claims to capture, deliberately, so the statement can be
@@ -11,6 +12,7 @@ let curl = import "../curl/build.ncl" in
     { file = "build.sh" } | Local,
     base,
     curl,
+    util-linux,
   ],
   cmd = "./build.sh",
   outputs = {
