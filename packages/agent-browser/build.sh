@@ -11,6 +11,12 @@ set -e
 export PNPM_CONFIG_STRICT_DEP_BUILDS=false
 export PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false
 
+# pnpm 12 places its default store on the project's own volume when it cannot
+# hardlink into its home store, and in the sandbox /build is a separate mount,
+# so the store lands in node_modules/.pnpm-store — which the `cp -R node_modules`
+# below would ship. Pin it outside the build tree, where pnpm 11 put it.
+export PNPM_CONFIG_STORE_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/pnpm/store"
+
 export CC=gcc
 export LD=gcc
 export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo -C codegen-units=1"
@@ -54,6 +60,8 @@ install -d $OUTPUT_DIR/usr/libexec/agent-browser
 # (.modules.yaml `prunedAt`, .pnpm-workspace-state-v1.json `lastValidatedTimestamp`)
 # — non-deterministic and not needed at runtime. Drop them before packaging.
 rm -f node_modules/.modules.yaml node_modules/.pnpm-workspace-state-v1.json
+test ! -e node_modules/.pnpm-store \
+  || { echo "agent-browser: the pnpm store is inside node_modules and would ship" >&2; exit 1; }
 cp -R dist bin node_modules package.json $OUTPUT_DIR/usr/libexec/agent-browser/
 
 cat > $OUTPUT_DIR/usr/bin/agent-browser << EOF
