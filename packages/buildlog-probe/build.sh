@@ -1,6 +1,6 @@
 #!/bin/bash
 # Each numbered step is one signal the build log claims to record.
-# probe round 8b (preemption in build)
+# probe round 8c (preemption in a 60 s hold)
 set -u
 out=$OUTPUT_DIR/usr/share/buildlog-probe
 mkdir -p "$out"
@@ -68,4 +68,8 @@ for w in $(seq 1 48); do ( for j in $(seq 1 60); do gcc -E "$out/storm.c" -o /de
 wait
 say "  storm done in $(echo "$(date +%s.%N) - $t0" | bc 2>/dev/null || echo "?") s"
 rm -f "$out/storm.c"
+say "11 hold 60 s (a window for an in-build kill)"
+: > "$out/hold"
+for i in $(seq 1 60); do ls /usr/lib > /dev/null; sleep 1; done
+rm -f "$out/hold"
 say "done"
