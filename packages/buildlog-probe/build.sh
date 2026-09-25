@@ -1,6 +1,6 @@
 #!/bin/bash
 # Each numbered step is one signal the build log claims to record.
-# probe round 4 (v2 image)
+# probe round 5 (monitor restart mid-build)
 set -u
 out=$OUTPUT_DIR/usr/share/buildlog-probe
 mkdir -p "$out"
@@ -47,4 +47,8 @@ say "8 bind + listen on a local port"
 say "9 background child outliving the script by 3 s"
 ( sleep 3; echo "  bg child done" >> "$log" ) &
 wait
+
+say "10 hold 25 s with steady activity, so a monitor restart can land mid-build"
+for i in $(seq 1 25); do ls /usr/lib > /dev/null; echo "tick $i" > "$out/tick"; sleep 1; done
+rm -f "$out/tick"
 say "done"
