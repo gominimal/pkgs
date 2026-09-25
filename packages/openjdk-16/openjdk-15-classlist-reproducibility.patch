@@ -1,0 +1,11 @@
+--- a/make/GenerateLinkOptData.gmk	2026-09-23 02:44:12
++++ b/make/GenerateLinkOptData.gmk	2026-09-23 02:44:12
+@@ -69,7 +69,7 @@
+ 	    -Duser.language=en -Duser.country=US \
+ 	    -cp $(SUPPORT_OUTPUTDIR)/classlist.jar \
+ 	    build.tools.classlist.HelloClasslist $(LOG_DEBUG)
+-	$(GREP) -v HelloClasslist $@.raw > $@.interim
++	$(GREP) -v HelloClasslist $@.raw | $(SORT) > $@.interim
+ 	$(FIXPATH) $(INTERIM_IMAGE_DIR)/bin/java -Xshare:dump \
+ 	    -XX:SharedClassListFile=$@.interim -XX:SharedArchiveFile=$@.jsa \
+ 	    -Xmx128M -Xms128M $(LOG_INFO)
