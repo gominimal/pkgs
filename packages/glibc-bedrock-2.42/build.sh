@@ -1,5 +1,5 @@
 #!/bin/sh
-# glibc-bedrock-2.42: cold from-source build of glibc 2.42 from glibc-2.42.tar.xz with stage0-gcc-15.2.0
+# glibc-bedrock-2.42: cold from-source build of glibc 2.42 from glibc-2.44.tar.xz with stage0-gcc-15.2.0
 # (musl-linked, static) as CC, stage0-binutils-2.41 as as/ld, and the stage0 kernel UAPI headers.
 # Installs to /usr in $OUTPUT_DIR and publishes a copy as the versioned single-writer sysroot
 # usr/lib/glibc-bedrock-2.42/{include,lib}. Unlike the production glibc package (a native rebuild with
@@ -94,7 +94,7 @@ tar --no-same-owner -xof "glibc-${VERSION}.tar.xz"
 SRC="$BUILDROOT/glibc-${VERSION}"
 
 # Common configure (deltas vs the production package: the cross triple, --with-headers, BUILD_CC).
-# libc_cv_forced_unwind / libc_cv_c_cleanup are absent from glibc-2.42's configure; do not add them.
+# libc_cv_forced_unwind / libc_cv_c_cleanup are absent from glibc-2.44's configure; do not add them.
 common_configure() {  # runs in $PWD build dir; re-emits -ffile-prefix-map for this dir
   echo "rootsbindir=/usr/sbin" > configparms
   env CC="$GCC" CXX="$GXX" BUILD_CC="$BUILD_CC" $TOOLS \

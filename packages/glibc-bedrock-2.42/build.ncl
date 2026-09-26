@@ -1,6 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
-# glibc-bedrock-2.42: the glibc-2.42 source built cold from
+# glibc-bedrock-2.42: the glibc-2.44 source built cold from
 # source by stage0-gcc-15.2.0 and stage0-binutils-2.41, with musl (stage0-musl-1.2.5) as the host
 # compiler's own libc for BUILD_CC only. Unlike the production glibc package (a native rebuild with
 # glibc already in /usr), this is a headers-first cross-style build: a distinct host triple so
@@ -8,7 +8,7 @@ let { target, .. } = import "config.ncl" in
 # sysroot, an optional pass 2 rebuilds libgcc against glibc, pass 3 builds glibc itself. Outputs the
 # plain /usr layout plus a versioned single-writer sysroot at usr/lib/glibc-bedrock-2.42. See build.sh.
 let stage0-gcc-15-2-0 = import "../stage0-gcc-15.2.0/build.ncl" in # CC/CXX (musl-linked, --disable-shared)
-let stage0-binutils-2-41 = import "../stage0-binutils-2.41/build.ncl" in # as/ld/ar/ranlib (glibc-2.42 needs binutils >= 2.39)
+let stage0-binutils-2-41 = import "../stage0-binutils-2.41/build.ncl" in # as/ld/ar/ranlib (glibc-2.44 needs binutils >= 2.39)
 let stage0-linux-headers-6-12-43 = import "../stage0-linux-headers-6.12.43/build.ncl" in # kernel UAPI at /usr/include/{linux,asm,asm-generic}
 let stage0-musl-1-2-5 = import "../stage0-musl-1.2.5/build.ncl" in # /usr/lib/musl-bedrock-1.2.5: the host compiler's own libc, BUILD_CC only
 let stage0-gmp-mpfr-mpc = import "../stage0-gmp-mpfr-mpc/build.ncl" in # /usr/lib/gcc-math, used only if pass 2 runs
@@ -31,7 +31,7 @@ let xz = import "../xz/build.ncl" in
 let bison = import "../bison/build.ncl" in # intl/plural.c is not shipped in the 2.42 tarball, so bison always regenerates it
 let m4 = import "../m4/build.ncl" in # bison runtime dep
 let python = import "../python/build.ncl" in # gen-as-const.py
-let version = "2.42" in
+let version = "2.44" in
 
 # Outputs follow the production glibc package (plain /usr, --prefix=/usr, libc_cv_slibdir=/usr/lib),
 # plus two globs for the versioned single-writer sysroot that consumers build against with -nostdinc.
@@ -71,10 +71,10 @@ let amd64_spec =
     build_deps = [
       { file = "build.sh" } | Local,
       {
-        # glibc-2.42 tarball (upstream:
+        # glibc-2.44 tarball (upstream:
         # https://ftp.gnu.org/gnu/glibc/). extract=false: build.sh untars with --no-same-owner.
         url = "gs://minimal-staging-archives/glibc-%{version}.tar.xz",
-        sha256 = "d1775e32e4628e64ef930f435b67bb63af7599acb6be2b335b9f19f16509f17f",
+        sha256 = "37f600f2bef3c5e8300147059568b2a2e40a7ad6ccc65ce942556d49429cc667",
         extract = false,
       } | Source,
       {
@@ -122,6 +122,7 @@ let amd64_spec =
     attrs =
       {
         upstream_version = version,
+        license_spdx = "(GPL-2.0-only AND GPL-3.0-only AND LGPL-2.1-only)",
         repology_project = "glibc",
         source_provenance = {
           category = 'GnuProject,
