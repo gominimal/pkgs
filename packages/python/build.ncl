@@ -29,6 +29,15 @@ let version = "3.14.7" in
     # the 3.14 branch two weeks AFTER the 3.14.7 tag, so it is in no released
     # 3.14.x -- it first ships in 3.14.8. Drop this patch on that bump.
     { file = "0001-gh-155999-tarfile-normalize-parent-dir-components.patch" } | Local,
+    # CVE-2026-87910 (PSF-2026-40, gh-157265): when a hard link falls back to
+    # extracting a copy of its target, tarfile called the filter with the
+    # link's name and threw the result away, so a custom filter that rejects
+    # a member by returning None (instead of raising) was ignored. The stock
+    # `data`/`tar` filters raise, so only None-returning custom filters are
+    # affected. Fixed on main (fb2f0bbc) and 3.13; the 3.14 backport
+    # (python/cpython#157307) is not in any released 3.14.x -- it is expected
+    # in 3.14.8. Drop this patch on that bump.
+    { file = "0002-gh-157265-tarfile-honor-filter-none-link-fallback.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/Python-%{version}.tar.xz",
       sha256 = "3b48dac8fb59f62eaa67ac83c1eb12bda1b7a08406dd286e252c11a66be27f81"
@@ -169,6 +178,68 @@ let version = "3.14.7" in
                   failures.append('directory created OUTSIDE destination: ' + outside)
               if not os.path.isfile(os.path.join(dest, 'sub', 'file')):
                   failures.append('expected file missing at dest/sub/file')
+
+              for f in failures:
+                  print('FAIL: ' + f)
+              sys.exit(1 if failures else 0)
+              PYEOF
+              python3 poc.py
+            "%
+          ],
+        ],
+      } | Test,
+
+    # CVE-2026-87910 regression. FAILS on stock 3.14.7 (checked against the
+    # unpatched Lib/tarfile.py) and passes only with the gh-157265 patch, so
+    # it catches the patch going missing on a bump before 3.14.8.
+    #
+    # `q` is a hard link to the symlink `a/b/s -> ../escape`. `a/b/s` itself
+    # is fine (it resolves inside the destination), so linking fails over to
+    # extracting a copy as `q`, where `../escape` DOES leave the destination.
+    # The filter rejects that by returning None; unpatched tarfile ignores
+    # the None and creates `q -> ../escape` anyway.
+    tarfile_link_fallback_honors_filter_none =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              cat > poc.py <<'PYEOF'
+              import io, os, sys, tarfile, tempfile
+
+              work = tempfile.mkdtemp()
+              dest = os.path.join(work, 'dest')
+              os.makedirs(dest)
+
+              buf = io.BytesIO()
+              with tarfile.open(fileobj=buf, mode='w') as tf:
+                  s = tarfile.TarInfo('a/b/s')
+                  s.type = tarfile.SYMTYPE
+                  s.linkname = '../escape'
+                  tf.addfile(s)
+                  q = tarfile.TarInfo('q')
+                  q.type = tarfile.LNKTYPE
+                  q.linkname = 'a/b/s'
+                  tf.addfile(q)
+              buf.seek(0)
+
+              def skip_unsafe(member, path):
+                  try:
+                      return tarfile.data_filter(member, path)
+                  except tarfile.FilterError:
+                      return None
+
+              with tarfile.open(fileobj=buf, mode='r') as tf:
+                  tf.extractall(dest, filter=skip_unsafe)
+
+              failures = []
+              if os.path.lexists(os.path.join(dest, 'q')):
+                  failures.append('rejected link fallback extracted anyway as dest/q')
+              if os.readlink(os.path.join(dest, 'a', 'b', 's')) != '../escape':
+                  failures.append('expected dest/a/b/s -> ../escape')
 
               for f in failures:
                   print('FAIL: ' + f)
