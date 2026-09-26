@@ -1,6 +1,6 @@
 #!/bin/bash
 # Each numbered step is one signal the build log claims to record.
-# probe round 12b (rebaked images)
+# probe round 12c (sleepable getenv, fast rescan)
 set -u
 out=$OUTPUT_DIR/usr/share/buildlog-probe
 mkdir -p "$out"
