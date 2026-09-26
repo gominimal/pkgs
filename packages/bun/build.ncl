@@ -1,6 +1,7 @@
 let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash = import "../bash/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
@@ -69,6 +70,7 @@ in
   runtime_deps = [
     glibc,
     git,
+    bash, # the /usr/bin wrappers are #!/bin/sh scripts (bash provides bin/sh)
   ],
   needs =
     {
@@ -85,6 +87,7 @@ in
     bash_completion = { glob = "usr/share/bash-completion/completions/bun" } | OutputData,
     fish_completion = { glob = "usr/share/fish/vendor_completions.d/bun.fish" } | OutputData,
     zsh_completion = { glob = "usr/share/zsh/site-functions/_bun" } | OutputData,
+    libexec = { glob = "usr/libexec/bun/**", allow_executable = true } | OutputData,
   },
 
   attrs =
@@ -104,7 +107,9 @@ in
     } | Attrs,
 
   tests = {
-    smoketest = standaloneTest "/bin/bun --version",
+    # The raw ELF, not the /usr/bin wrapper: standaloneTest runs with no shell
+    # in the sandbox, so a #!/bin/sh wrapper would ENOENT there.
+    smoketest = standaloneTest "/usr/libexec/bun/bun --version",
 
     eval =
       {
@@ -112,6 +117,16 @@ in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "bun --eval 'console.log(1+1)' | grep -q '^2$'"],
+        ],
+      } | Test,
+    global_install_default =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          # The wrapper must default BUN_INSTALL so `bun add -g` bins land in
+          # ~/.local/bin, on the session PATH (gominimal/inbox#584).
+          ["/bin/bash", "-c", "bun --eval 'console.log(process.env.BUN_INSTALL)' | grep -q '/.local$'"],
         ],
       } | Test,
   },
