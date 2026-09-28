@@ -25,6 +25,7 @@ let tar = import "../tar/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
 let gzip = import "../gzip/build.ncl" in
 let patch = import "../patch/build.ncl" in # the build system patches the bundled libffi
+# pkgmgr: bootstrap_rung = "ghc"
 let version = "7.6.3" in
 let amd64_spec =
   {

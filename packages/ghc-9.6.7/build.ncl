@@ -30,6 +30,7 @@ let patch = import "../patch/build.ncl" in # the build system patches the bundle
 let autoconf = import "../autoconf/build.ncl" in # binary-dist-dir regenerates the bindist configure
 let automake = import "../automake/build.ncl" in
 let m4 = import "../m4/build.ncl" in
+# pkgmgr: bootstrap_rung = "ghc"
 let version = "9.6.7" in
 let amd64_spec =
   {
