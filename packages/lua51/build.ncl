@@ -2,6 +2,7 @@ let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = impor
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+let patch = import "../patch/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 
@@ -17,6 +18,12 @@ let abi = "5.1" in
 
   build_deps = [
     { file = "build.sh" } | Local,
+    # CVE-2014-5461: stack overflow in vararg functions. 5.1 is closed at
+    # 5.1.5 and the fix only ever landed in 5.2.3 -- a different library, not
+    # an upgrade -- so carrying the patch is the only route. Verbatim from
+    # Debian's lua5.1 5.1.5-12 series; our tarball is byte-identical to theirs
+    # (same sha256 as lua5.1_5.1.5.orig.tar.gz in their signed .dsc).
+    { file = "0001-fix-stack-overflow-in-vararg-functions.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/lua-%{version}.tar.gz",
       sha256 = "2640fc56a795f29d28ef15e13c34a47e223960b0240e8cb0a82d9b0738695333",
@@ -25,6 +32,7 @@ let abi = "5.1" in
     } | Source,
     base,
     make,
+    patch,
     toolchain,
   ],
 

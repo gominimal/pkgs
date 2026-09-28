@@ -11,6 +11,11 @@ esac
 
 CFLAGS="$MARCH -O2 -pipe -fPIC -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
 
+# CVE-2014-5461 -- see the patch header. Applied before any compilation so a
+# failure here fails the build rather than silently producing a vulnerable
+# library; `patch` exits non-zero on a failed hunk and `set -e` catches it.
+patch -Np1 -i "0001-fix-stack-overflow-in-vararg-functions.patch"
+
 # LUA_USE_POSIX + LUA_USE_DLOPEN is what LUA_USE_LINUX expands to minus
 # readline, which only the standalone interpreter needs -- this package ships
 # the library, so it stays out of the dependency set. `ar -D` for a

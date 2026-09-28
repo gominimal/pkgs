@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -28,7 +28,7 @@ let version = "0.9.1" in
     coreutils, # `capy` shebang resolves node via /usr/bin/env
     ca-certificates, # HTTPS to the Capy API (sync, decryption)
     git, # capy shells out to git for repo/branch detection
-    node-lts, # capy is a Node CLI (#!/usr/bin/env node)
+    subsetOf node-lts ["node"], # capy is a Node CLI (#!/usr/bin/env node); interpreter only, no npm (#751)
   ],
 
   cmd = "./build.sh",
@@ -45,10 +45,10 @@ let version = "0.9.1" in
   outputs = {
     capy = { glob = "usr/bin/capy" } | OutputBin,
     # allow_executable: @capysc/cli (>= this release) depends on
-    # @napi-rs/keyring, which ships native `.node` ELF libraries inside
-    # node_modules — real loadable code, so an inert-data claim fails the
-    # output-types checker on both arches. Same shape as cf's node_modules.
-    node_modules = { glob = "usr/lib/node_modules/**", allow_executable = true } | OutputData,
+    # @napi-rs/keyring, which ships native `.node` ELF libraries inside its
+    # private libexec tree — real loadable code, so an inert-data claim fails
+    # the output-types checker on both arches.
+    libexec = { glob = "usr/libexec/capy/**", allow_executable = true } | OutputData,
   },
   attrs =
     {

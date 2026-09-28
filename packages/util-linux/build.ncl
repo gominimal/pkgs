@@ -4,14 +4,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.42.3" in
+let version = "2.42.4" in
 {
   name = "util-linux",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/util-linux-%{version}.tar.xz",
-      sha256 = "66ac7c0e725278eb2b039e3104f2c91119341d941b41bac7a285c695f940bd57"
+      sha256 = "fbd62a100ab7bb8746ba0661255c3c48185b1e9021507c624da01fbc696330ec"
     } | Source,
     base-bootstrap,
     make,

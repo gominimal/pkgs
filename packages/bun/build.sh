@@ -40,6 +40,20 @@ rm -f rust-toolchain.toml
 sed -i 's|if (cfg.release && canBuildStdImmediateAbort) {|if (false) { // minimal: stable rust, no -Zbuild-std (pkgs#228)|' scripts/build/deps/lolhtml.ts
 grep -q 'no -Zbuild-std (pkgs#228)' scripts/build/deps/lolhtml.ts || { echo "ERROR: lol-html stable-build patch did not apply — bun's build scripts changed; revisit gominimal/pkgs#228." >&2; exit 1; }
 
+# arm64: cap zig's LLVM codegen shard count (gominimal/pkgs — bun hangs on the
+# 72-core res-server-arm64). bun's local build profile sets
+# -Dllvm_codegen_threads=availableParallelism() (scripts/build/zig.ts,
+# codegenThreads), i.e. 72 shards here. Every cold arm64 build stalled at
+# exactly "zig obj -> bun-zig.{0..71}.o" with zero cache writes for 6 hours
+# until the watchdog killed it (three sandboxes, 2026-09-19/20/21); amd64 with
+# 144 shards completes. Upstream never ships above 8 shards (their ASAN CI
+# value; releases use 1 for full IPO), so pin arm64 to 8. Verify-grep so a
+# future zig.ts refactor fails loudly instead of silently restoring 72.
+if [ "$(uname -m)" = aarch64 ]; then
+  sed -i 's|^  return availableParallelism();$|  return 8; // minimal: arm64 hangs at 72 codegen shards (pkgs bun/arm64-zig-codegen-cap)|' scripts/build/zig.ts
+  grep -q 'arm64 hangs at 72 codegen shards' scripts/build/zig.ts || { echo "ERROR: zig codegen-thread cap did not apply — bun's scripts/build/zig.ts changed; revisit the arm64 hang." >&2; exit 1; }
+fi
+
 # Initialize a git repo so nested dep version generation works
 # (it runs "git rev-parse HEAD" to get version strings for bundled packages)
 git init -q

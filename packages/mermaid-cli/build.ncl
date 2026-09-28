@@ -1,8 +1,8 @@
-let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let gh = import "../gh/build.ncl" in
-let node = import "../node/build.ncl" in
+let node-lts = import "../node-lts/build.ncl" in
 
 # chromium-headless-shell-bin provides the headless-shell binary (which
 # Puppeteer drives in mermaid's "headless: shell" mode) and its full
@@ -24,12 +24,12 @@ let version = "11.17.0" in
     base,
     curl,
     gh,
-    node,
+    node-lts,
   ],
   runtime_deps = [
     base,
     chromium-headless-shell-bin,
-    node,
+    subsetOf node-lts ["node"],
   ],
   needs =
     {
@@ -44,7 +44,7 @@ let version = "11.17.0" in
 
   outputs = {
     mmdc = { glob = "usr/bin/mmdc" } | OutputBin,
-    libexec = { glob = "usr/lib/node_modules/**", allow_executable = true } | OutputData,
+    libexec = { glob = "usr/libexec/mermaid-cli/**", allow_executable = true } | OutputData,
     config = { glob = "usr/share/mermaid-cli/*.json" } | OutputData,
   },
 
@@ -67,7 +67,7 @@ let version = "11.17.0" in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "test -x /bin/mmdc"],
-          ["/bin/bash", "-c", "test -f /usr/lib/node_modules/@mermaid-js/mermaid-cli/src/cli.js"],
+          ["/bin/bash", "-c", "test -f /usr/libexec/mermaid-cli/lib/node_modules/@mermaid-js/mermaid-cli/src/cli.js"],
           ["/bin/bash", "-c", "test -x /bin/chromium-headless-shell"],
           ["/bin/bash", "-c", "/bin/mmdc --help | grep -q 'mermaid'"],
         ],

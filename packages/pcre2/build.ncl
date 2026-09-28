@@ -23,14 +23,14 @@ let linux_headers = import "../linux_headers/build.ncl" in
 # other
 let zlib = import "../zlib/build.ncl" in
 
-let version = "10.47" in
+let version = "10.48" in
 {
   name = "pcre2",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/pcre2-%{version}.tar.bz2",
-      sha256 = "47fe8c99461250d42f89e6e8fdaeba9da057855d06eb7fc08d9ca03fd08d7bc7"
+      sha256 = "b6c68fdf6f3ac31388b50aa89ff0fc49c00c987c16e7b5146491d12003f2c8ed"
     } | Source,
     # base
     bash-bootstrap,

@@ -14,6 +14,9 @@ sed -i '/^cat >>\$CONFIG_STATUS <<_ACEOF || ac_write_fail=1$/{
   /\n_ACEOF$/d
 }' configure.sh
 
-./configure
+# rsync 3.5.1 aborts configure when an optional library it probes for is
+# absent unless the feature is disabled explicitly; IDN needs libidn2, which
+# is not in our closure and adds nothing we use (internationalised hostnames).
+./configure --disable-idn
 
 make -j$(nproc) DESTDIR=$OUTPUT_DIR prefix=/usr install

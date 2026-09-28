@@ -1,6 +1,6 @@
 let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 
-let version = "3.5.0" in
+let version = "3.5.1" in
 
 let base = import "../base/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
@@ -19,7 +19,7 @@ let coreutils = import "../coreutils/build.ncl" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/RsyncProject/rsync/releases/download/v%{version}/rsync-%{version}.tar.gz",
-      sha256 = "c7ffd1ef653e99540f661e47cb00b7f9cad1ee6b972399b16f93d672656e0d33",
+      sha256 = "c55f9c9dc10fb8bec397b399a0fdded53cc9a2d8e30891bb0d63724d25c37bef",
       extract = true,
       strip_prefix = "rsync-%{version}",
     } | Source,

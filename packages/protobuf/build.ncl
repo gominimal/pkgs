@@ -10,14 +10,14 @@ let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "36.0" in
+let version = "36.2" in
 {
   name = "protobuf",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/protocolbuffers/protobuf/releases/download/v%{version}/protobuf-%{version}.tar.gz",
-      sha256 = "399931c793f4ac6db81045b00b06dd07c877b48aeecf36c797f65c541fb533e7",
+      sha256 = "3d9642a662d10e68ebae5e53f14dcce5105684212d5078f8e0d47d1ab3ae6b64",
       extract = true,
       strip_prefix = "protobuf-%{version}",
     } | Source,

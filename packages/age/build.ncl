@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.3.1" in
+let version = "1.3.2" in
 {
   name = "age",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/FiloSottile/age/v%{version}.tar.gz",
-      sha256 = "396007bc0bc53de253391493bda1252757ba63af1a19db86cfb60a35cb9d290a",
+      sha256 = "b07c28c6c4bdafa272073a310b75bc22c49da8904585a89c30e5ca4233e63843",
       extract = true,
       strip_prefix = "age-%{version}",
     } | Source,

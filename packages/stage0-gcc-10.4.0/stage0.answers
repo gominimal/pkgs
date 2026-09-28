@@ -1,0 +1,16 @@
+# Byte-identity pins for stage0-gcc-10.4.0, checked from $OUTPUT_DIR by `sha256sum -c` once the gate
+# at the end of build.sh is enabled. Unpinned: capture the shas from a first build, paste them below,
+# then enable the gate. Paths are relative to $OUTPUT_DIR.
+# <sha>  usr/bin/gcc
+# <sha>  usr/bin/g++
+# <sha>  usr/bin/cpp
+# <sha>  usr/libexec/gcc/x86_64-linux-gnu/10.4.0/cc1
+# <sha>  usr/libexec/gcc/x86_64-linux-gnu/10.4.0/cc1plus
+# <sha>  usr/libexec/gcc/x86_64-linux-gnu/10.4.0/collect2
+# <sha>  usr/lib/gcc/x86_64-linux-gnu/10.4.0/libgcc.a
+# <sha>  usr/lib/gcc/x86_64-linux-gnu/10.4.0/crtbegin.o
+# <sha>  usr/lib/gcc/x86_64-linux-gnu/10.4.0/crtend.o
+# <sha>  usr/lib/libstdc++.a
+# <sha>  usr/lib/libsupc++.a
+# Archive with binutils ar (--enable-deterministic-archives) so member timestamps do not perturb
+# the libgcc.a / libstdc++.a shas.

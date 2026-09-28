@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof xz-5.8.3.tar.xz
-cd xz-5.8.3
+tar -xof xz-5.8.4.tar.xz
+cd xz-5.8.4
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
@@ -15,7 +15,7 @@ export CXXFLAGS="${CFLAGS}"
 
 ./configure --prefix=/usr   \
            --disable-static \
-           --docdir=/usr/share/doc/xz-5.8.3
+           --docdir=/usr/share/doc/xz-5.8.4
 
 make -j$(nproc)
 # make check

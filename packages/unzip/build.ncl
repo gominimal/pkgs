@@ -17,14 +17,28 @@ let version = "6.0" in
       strip_prefix = "unzip60",
     } | Source,
     # Info-ZIP unzip 6.0 is frozen (2009); its CVE fixes live only in distro
-    # patch-sets. Apply Debian's full 6.0-29 series (build.sh) to fix
-    # CVE-2014-8139/8140/8141/9636/9913, CVE-2015-7696/7697, CVE-2016-9844,
-    # CVE-2018-1000035, CVE-2019-13232, CVE-2022-0529/0530 + build fixes. We
-    # stay on Info-ZIP (not bsdunzip) because consumers like bun's build invoke
-    # `unzip -DD`, an Info-ZIP-only flag bsdunzip lacks.
+    # patch-sets, so our effective security version is the Debian revision we
+    # track, NOT the "6.0" upstream version. Apply Debian's full 6.0-31 series
+    # (build.sh) to fix CVE-2014-8139/8140/8141/9636/9913, CVE-2015-7696/7697,
+    # CVE-2016-9844, CVE-2018-1000035, CVE-2019-13232, CVE-2022-0529/0530,
+    # CAN-2026-2034440/2034442/2034443 + build fixes. We stay on Info-ZIP (not
+    # bsdunzip) because consumers like bun's build invoke `unzip -DD`, an
+    # Info-ZIP-only flag bsdunzip lacks.
+    #
+    # Mirrored verbatim from Debian — this is their unpacked source overlay,
+    # not a repack, so the sha256 below is exactly the one in Debian's
+    # PGP-signed unzip_6.0-31.dsc and can be re-verified against it:
+    #   https://deb.debian.org/debian/pool/main/u/unzip/unzip_6.0-31.dsc
+    #
+    # ⚠ This pin goes stale silently. Nothing in `pkgmgr check` watches Debian
+    # revisions — upstream is frozen at 6.0, so the version checker reports us
+    # current while the patch series falls behind. We shipped 6.0-29 for three
+    # months while 6.0-30 and 6.0-31 carried three memory-safety fixes. When
+    # touching this package, diff our series against Debian's current:
+    #   curl -s https://deb.debian.org/debian/pool/main/u/unzip/ | grep debian.tar
     {
-      url = "gs://minimal-staging-archives/unzip-debian-patches-6.0-29.tar.xz",
-      sha256 = "afb1c7eb9c2671f0b9b27e2db2f211ff131b404b25c64efd9cb048e2f9fa755c",
+      url = "gs://minimal-staging-archives/unzip_6.0-31.debian.tar.xz",
+      sha256 = "d7dc23f5254c6711dc05f467e70236cfd50a7931001c6152904474b19f295c38",
       extract = true,
     } | Source,
     base,

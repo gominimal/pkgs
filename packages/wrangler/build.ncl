@@ -1,19 +1,19 @@
-let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let node = import "../node/build.ncl" in
+let node-lts = import "../node-lts/build.ncl" in
 
-let version = "4.125.0" in
+let version = "4.135.0" in
 {
   name = "wrangler",
   build_deps = [
     { file = "build.sh" } | Local,
     base,
-    node,
+    node-lts,
   ],
   runtime_deps = [
     coreutils,
-    node,
+    subsetOf node-lts ["node"],
   ],
   needs =
     {
@@ -30,7 +30,7 @@ let version = "4.125.0" in
     wrangler = { glob = "usr/bin/wrangler" } | OutputBin,
     wrangler2 = { glob = "usr/bin/wrangler2" } | OutputBin,
     cf-wrangler = { glob = "usr/bin/cf-wrangler" } | OutputBin,
-    libexec = { glob = "usr/lib/node_modules/**", allow_executable = true } | OutputData,
+    libexec = { glob = "usr/libexec/wrangler/**", allow_executable = true } | OutputData,
   },
 
   attrs =

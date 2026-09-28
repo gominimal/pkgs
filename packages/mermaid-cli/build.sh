@@ -14,7 +14,12 @@ fi
 # postinstall from fetching its own chromium — we provide it via the
 # chromium-bin pkg as a runtime dep.
 export PUPPETEER_SKIP_DOWNLOAD=true
-npm install -g --prefix=$OUTPUT_DIR/usr @mermaid-js/mermaid-cli@$MINIMAL_ARG_VERSION
+# Install into a package-PRIVATE prefix, NOT the shared usr/lib/node_modules
+# the node runtime owns (#370, #751): anything a package drops there is merged
+# first-writer-wins with every other closure member's tree.
+npm install -g --prefix="$OUTPUT_DIR/usr/libexec/mermaid-cli" "@mermaid-js/mermaid-cli@$MINIMAL_ARG_VERSION"
+test -f "$OUTPUT_DIR/usr/libexec/mermaid-cli/lib/node_modules/@mermaid-js/mermaid-cli/src/cli.js" ||
+  { echo "mermaid-cli: src/cli.js missing from the npm install" >&2; exit 1; }
 
 # Puppeteer config: use headless shell mode, and add --no-sandbox when root.
 mkdir -p $OUTPUT_DIR/usr/share/mermaid-cli
@@ -25,10 +30,10 @@ cat > $OUTPUT_DIR/usr/share/mermaid-cli/puppeteer-root.json << 'CONF'
 {"headless":"shell","args":["--no-sandbox","--disable-dev-shm-usage"]}
 CONF
 
-# Replace the npm-created symlink with a wrapper that points puppeteer at
+# Install a wrapper (instead of symlinking npm's bin) that points puppeteer at
 # chromium-bin's headless-shell. /usr/bin/chromium-headless-shell is a
 # stable wrapper that resolves to the per-arch headless_shell binary.
-rm -f $OUTPUT_DIR/usr/bin/mmdc
+mkdir -p $OUTPUT_DIR/usr/bin
 cat > $OUTPUT_DIR/usr/bin/mmdc << 'WRAPPER'
 #!/bin/bash
 export PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-headless-shell
@@ -36,6 +41,6 @@ PUPPETEER_CONF=/usr/share/mermaid-cli/puppeteer.json
 if [ "$(id -u)" = "0" ]; then
   PUPPETEER_CONF=/usr/share/mermaid-cli/puppeteer-root.json
 fi
-exec node /usr/lib/node_modules/@mermaid-js/mermaid-cli/src/cli.js -p "$PUPPETEER_CONF" "$@"
+exec node /usr/libexec/mermaid-cli/lib/node_modules/@mermaid-js/mermaid-cli/src/cli.js -p "$PUPPETEER_CONF" "$@"
 WRAPPER
 chmod +x $OUTPUT_DIR/usr/bin/mmdc

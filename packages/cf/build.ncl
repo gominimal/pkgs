@@ -1,7 +1,7 @@
-let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let node = import "../node/build.ncl" in
+let node-lts = import "../node-lts/build.ncl" in
 
 # cf is Cloudflare's unified CLI (technical preview). It is closed-source and
 # distributed only as a pre-bundled npm package — there is no public source
@@ -20,11 +20,11 @@ let version = "0.1.0" in
       sha256 = "758b65757a10cf6ef918c3ec02da45374d6b4ec402ebe39b6907e46b8ac25c1b",
     } | Source,
     base,
-    node,
+    node-lts,
   ],
   runtime_deps = [
     coreutils,
-    node,
+    subsetOf node-lts ["node"],
   ],
   needs =
     {
@@ -39,7 +39,7 @@ let version = "0.1.0" in
 
   outputs = {
     cf = { glob = "usr/bin/cf" } | OutputBin,
-    libexec = { glob = "usr/lib/node_modules/**", allow_executable = true } | OutputData,
+    libexec = { glob = "usr/libexec/cf/**", allow_executable = true } | OutputData,
   },
 
   attrs =

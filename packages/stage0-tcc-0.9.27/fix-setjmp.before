@@ -1,0 +1,15 @@
+int
+setjmp (jmp_buf env)
+{
+  long *p;
+  // *INDENT-OFF*
+  asm ("mov    %%rbp,%0"
+       : "=r" (p)
+       : //no inputs ""
+       );
+  // *INDENT-ON*
+  env[0].__bp = (long) p;
+  env[0].__pc = p[1];
+  env[0].__sp = p[0];
+  return 0;
+}
