@@ -1,3 +1,4 @@
+# pkgmgr: bootstrap_rung = "hex0"
 let { BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let stage0-hex1 = import "../stage0-hex1/build.ncl" in

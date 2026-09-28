@@ -41,6 +41,7 @@ let grep = import "../grep/build.ncl" in # assertions
 let coreutils = import "../coreutils/build.ncl" in # sha256sum/cp/mkdir/nproc/touch/cut/od/date
 let tar = import "../tar/build.ncl" in # plain .tar unpack (--no-same-owner)
 let patch = import "../patch/build.ncl" in # aarch64-support.patch (unconditional), hir-ord-unevaluated.patch (conditional)
+# pkgmgr: bootstrap_rung = "rust"
 let version = "0.12.0" in
 let commit = "1d552cadf1c58bce8b9b431a5714dcea113dde38" in
 let amd64_spec =

@@ -1,3 +1,4 @@
+# pkgmgr: bootstrap_rung = "hex0"
 let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # stage0-tcc-0.9.26: janneke's tcc-0.9.26 fork compiled by MesCC (stage0-mes) against mes-libc,

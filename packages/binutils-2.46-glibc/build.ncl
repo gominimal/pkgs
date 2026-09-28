@@ -18,6 +18,7 @@ let xz = import "../xz/build.ncl" in # .tar.xz source
 let diffutils = import "../diffutils/build.ncl" in # configure's cmp/diff
 let findutils = import "../findutils/build.ncl" in # mtime guard: find . -exec touch
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # configure's awk
+# pkgmgr: bootstrap_rung = "hex0"
 let version = "2.46.0" in
 let amd64_spec =
   {

@@ -15,6 +15,7 @@ let sed = import "../sed/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in # sha256sum/cp/mkdir/uname/timeout/rm
 let tar = import "../tar/build.ncl" in
+# pkgmgr: bootstrap_rung = "go"
 let version = "1.22.6" in
 let amd64_spec =
   {

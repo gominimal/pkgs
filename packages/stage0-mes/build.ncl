@@ -1,3 +1,4 @@
+# pkgmgr: bootstrap_rung = "hex0"
 let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let stage0-mescc-full = import "../stage0-mescc-full/build.ncl" in # M2-Planet, kaem, catm, M1, hex2, blood-elf

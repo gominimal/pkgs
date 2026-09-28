@@ -16,6 +16,7 @@ let tar = import "../tar/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in # .tar.bz2 source
 let findutils = import "../findutils/build.ncl" in # mtime guard: find . -exec touch
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # configure's awk
+# pkgmgr: bootstrap_rung = "hex0"
 let version = "4.0.4" in
 let amd64_spec =
   {

@@ -18,6 +18,7 @@ let libssh2 = import "../libssh2/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
+# pkgmgr: bootstrap_rung = "rust"
 let version = "1.92.0" in
 let stage0_version = "1.91.1" in
 let amd64_spec =

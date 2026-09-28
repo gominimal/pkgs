@@ -1,3 +1,4 @@
+# pkgmgr: bootstrap_rung = "hex0"
 let { BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # hex0: the per-arch seed binary of the bootstrap ladder, the hex0 monitor from

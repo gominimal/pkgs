@@ -16,6 +16,7 @@ let sed = import "../sed/build.ncl" in # libc.so linker-script fixup
 let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in # sha256sum/cp/mkdir/uname/timeout
 let tar = import "../tar/build.ncl" in
+# pkgmgr: bootstrap_rung = "go"
 let version = "1.4" in
 let amd64_spec =
   {

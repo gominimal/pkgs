@@ -1,3 +1,4 @@
+# pkgmgr: bootstrap_rung = "hex0"
 let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # stage0-tcc-0.9.27-musl-s1: builds tcc-musl, a tcc-0.9.27 with the static-GOT linker fix

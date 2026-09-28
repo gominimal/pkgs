@@ -21,6 +21,7 @@ let tar = import "../tar/build.ncl" in
 let xz = import "../xz/build.ncl" in # .tar.xz source
 let findutils = import "../findutils/build.ncl" in # mtime guard: find . -exec touch
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # gcc's build regenerates options.cc via awk
+# pkgmgr: bootstrap_rung = "hex0"
 let version = "15.2.0" in
 let amd64_spec =
   {

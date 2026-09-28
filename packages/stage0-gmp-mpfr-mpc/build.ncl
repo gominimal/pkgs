@@ -1,3 +1,4 @@
+# pkgmgr: bootstrap_rung = "hex0"
 let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # stage0-gmp-mpfr-mpc: gmp-6.2.1, mpfr-4.1.0 and mpc-1.2.1 as static libraries, built by

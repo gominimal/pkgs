@@ -18,6 +18,7 @@ let tar = import "../tar/build.ncl" in
 let xz = import "../xz/build.ncl" in # .tar.xz source
 let findutils = import "../findutils/build.ncl" in
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # kernel Makefiles use awk
+# pkgmgr: bootstrap_rung = "hex0"
 let version = "6.12.43" in
 let amd64_spec =
   {

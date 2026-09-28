@@ -15,6 +15,7 @@ let tar = import "../tar/build.ncl" in
 let xz = import "../xz/build.ncl" in # .tar.xz source
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # configure's awk
 let diffutils = import "../diffutils/build.ncl" in # cmp for move-if-change / config.status
+# pkgmgr: bootstrap_rung = "hex0"
 let version = "2.30" in
 let amd64_spec =
   {

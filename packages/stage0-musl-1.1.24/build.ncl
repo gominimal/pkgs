@@ -28,6 +28,7 @@ let coreutils = import "../coreutils/build.ncl" in # rm/mkdir/cp/chmod/install/c
 let tar = import "../tar/build.ncl" in # build.sh `tar -xf`
 let gzip = import "../gzip/build.ncl" in # tar's .gz decompression
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # musl's configure uses awk once
+# pkgmgr: bootstrap_rung = "hex0"
 let version = "1.1.24" in
 let amd64_spec =
   {

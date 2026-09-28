@@ -31,6 +31,7 @@ let xz = import "../xz/build.ncl" in
 let bison = import "../bison/build.ncl" in # intl/plural.c is not shipped in the 2.42 tarball, so bison always regenerates it
 let m4 = import "../m4/build.ncl" in # bison runtime dep
 let python = import "../python/build.ncl" in # gen-as-const.py
+# pkgmgr: bootstrap_rung = "hex0"
 let version = "2.42" in
 
 # Outputs follow the production glibc package (plain /usr, --prefix=/usr, libc_cv_slibdir=/usr/lib),

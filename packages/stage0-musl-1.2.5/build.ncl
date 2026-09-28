@@ -25,6 +25,7 @@ let coreutils = import "../coreutils/build.ncl" in # rm/mkdir/cp/ln/install/sha2
 let tar = import "../tar/build.ncl" in # build.sh `tar -xf`
 let gzip = import "../gzip/build.ncl" in # tar's .gz decompression
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # musl configure's awk
+# pkgmgr: bootstrap_rung = "hex0"
 let version = "1.2.5" in
 let amd64_spec =
   {

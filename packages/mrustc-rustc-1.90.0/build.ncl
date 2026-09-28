@@ -50,6 +50,7 @@ let coreutils = import "../coreutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
 let findutils = import "../findutils/build.ncl" in # install-phase build-path sweep
 let diffutils = import "../diffutils/build.ncl" in # `patch` uses cmp on some paths
+# pkgmgr: bootstrap_rung = "rust"
 let version = "1.90.0" in
 let mrustc_version = "0.12.0" in
 let mrustc_commit = "1d552cadf1c58bce8b9b431a5714dcea113dde38" in
