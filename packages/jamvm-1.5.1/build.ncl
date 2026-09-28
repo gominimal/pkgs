@@ -26,6 +26,7 @@ let zlib = import "../zlib/build.ncl" in
 let gzip = import "../gzip/build.ncl" in
 let zip = import "../zip/build.ncl" in # classes.zip
 let patch = import "../patch/build.ncl" in
+# pkgmgr: bootstrap_rung = "jvm"
 let version = "1.5.1" in
 let amd64_spec =
   {

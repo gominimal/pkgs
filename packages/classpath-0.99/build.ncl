@@ -27,6 +27,7 @@ let fastjar = import "../fastjar/build.ncl" in # jar tool
 let zip = import "../zip/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let gzip = import "../gzip/build.ncl" in
+# pkgmgr: bootstrap_rung = "jvm"
 let version = "0.99" in
 let amd64_spec =
   {

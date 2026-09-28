@@ -35,6 +35,7 @@ let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in # the source is a .tar.bz2
+# pkgmgr: bootstrap_rung = "jvm"
 let version = "1.22" in
 let amd64_spec =
   {

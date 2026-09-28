@@ -53,6 +53,7 @@ let libxinerama = import "../libxinerama/build.ncl" in
 let libxcomposite = import "../libxcomposite/build.ncl" in # configure checks for it
 let libxt = import "../libxt/build.ncl" in # AWT links -lXt
 let xorgproto = import "../xorgproto/build.ncl" in
+# pkgmgr: bootstrap_rung = "jvm"
 let version = "2.6.13" in
 let amd64_spec =
   {

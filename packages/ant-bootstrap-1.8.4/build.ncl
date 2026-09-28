@@ -24,6 +24,7 @@ let python = import "../python/build.ncl" in # normalises the zip archives after
 let gawk = import "../gawk/build.ncl" in # configure scripts and config.status
 let diffutils = import "../diffutils/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in # the source is a .tar.bz2
+# pkgmgr: bootstrap_rung = "jvm"
 let version = "1.8.4" in
 let amd64_spec =
   {

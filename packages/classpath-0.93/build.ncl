@@ -24,6 +24,7 @@ let diffutils = import "../diffutils/build.ncl" in
 let zip = import "../zip/build.ncl" in # glibj.zip is a zip archive
 let zlib = import "../zlib/build.ncl" in # java.util.zip
 let gzip = import "../gzip/build.ncl" in
+# pkgmgr: bootstrap_rung = "jvm"
 let version = "0.93" in
 let amd64_spec =
   {

@@ -29,6 +29,7 @@ let libffi = import "../libffi/build.ncl" in # --enable-ffi
 let patch = import "../patch/build.ncl" in
 let gzip = import "../gzip/build.ncl" in
 let zip = import "../zip/build.ncl" in # classes.zip
+# pkgmgr: bootstrap_rung = "jvm"
 let version = "2.0.0" in
 let amd64_spec =
   {

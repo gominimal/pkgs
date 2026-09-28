@@ -50,6 +50,7 @@ let libxrandr = import "../libxrandr/build.ncl" in
 let libxcomposite = import "../libxcomposite/build.ncl" in
 let libxt = import "../libxt/build.ncl" in
 let xorgproto = import "../xorgproto/build.ncl" in
+# pkgmgr: bootstrap_rung = "jvm"
 let version = "9+181" in
 let amd64_spec =
   {

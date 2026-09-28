@@ -27,6 +27,7 @@ let gawk = import "../gawk/build.ncl" in # configure scripts and config.status
 let diffutils = import "../diffutils/build.ncl" in
 let unzip = import "../unzip/build.ncl" in
 let zip = import "../zip/build.ncl" in
+# pkgmgr: bootstrap_rung = "jvm"
 let version = "4.2.1" in
 let amd64_spec =
   {

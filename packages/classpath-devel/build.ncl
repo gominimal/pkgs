@@ -36,6 +36,7 @@ let libtool = import "../libtool/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in # configure macros
 let perl = import "../perl/build.ncl" in # autotools
+# pkgmgr: bootstrap_rung = "jvm"
 let version = "0.99.e7c13ee0" in
 let amd64_spec =
   {
