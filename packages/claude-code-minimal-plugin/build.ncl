@@ -11,7 +11,7 @@ let version = "0.6.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/gominimal/minimal-skills/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "0000000000000000000000000000000000000000000000000000000000000000",
+      sha256 = "6e45f03c60a30cc123a613ceebfc7c5dccee274624b617970977d1fc03fbab03",
       extract = true,
       # GitHub drops the leading `v` from the tag when naming the archive's
       # top-level directory, so this is the bare version, not the tag.
