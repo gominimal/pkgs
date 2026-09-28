@@ -33,7 +33,6 @@ let amd64_spec =
     name = "ecj4-bootstrap-4.2.1",
     build_deps = [
       { file = "build.sh" } | Local,
-
       {
         # a zip archive of the sources
         url = "gs://minimal-staging-archives/ecjsrc-4.2.1.jar",

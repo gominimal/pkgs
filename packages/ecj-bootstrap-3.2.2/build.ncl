@@ -33,7 +33,6 @@ let amd64_spec =
     name = "ecj-bootstrap-3.2.2",
     build_deps = [
       { file = "build.sh" } | Local,
-
       {
         url = "gs://minimal-staging-archives/ecjsrc-3.2.2.zip",
         sha256 = "070cd425f5324349073c8ea9a3a0d43166429264584da9e9537888d6a7401216",

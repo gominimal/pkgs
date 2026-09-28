@@ -57,7 +57,6 @@ let amd64_spec =
     name = "openjdk-25",
     build_deps = [
       { file = "build.sh" } | Local,
-
       {
         # https://github.com/openjdk/jdk25u/archive/refs/tags/jdk-25.0.2-ga.tar.gz
         url = "gs://minimal-staging-archives/jdk-25.0.2-ga.tar.gz",

@@ -42,7 +42,6 @@ let amd64_spec =
     name = "classpath-devel",
     build_deps = [
       { file = "build.sh" } | Local,
-
       {
         # git snapshot of classpath at e7c13ee0cf2005206fbec0eca677f8cf66d5a103 (top dir classpath-git, no build products)
         url = "gs://minimal-staging-archives/classpath-devel-e7c13ee0-src2.tar.gz",

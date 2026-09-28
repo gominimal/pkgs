@@ -30,7 +30,6 @@ let amd64_spec =
     name = "ant-bootstrap-1.8.4",
     build_deps = [
       { file = "build.sh" } | Local,
-
       {
         url = "gs://minimal-staging-archives/apache-ant-1.8.4-src.tar.bz2",
         sha256 = "5de65f7ba3f67e436ffffcdc0a73f591d1006e9fb41af8632c1f1f84d4a3e0b1",

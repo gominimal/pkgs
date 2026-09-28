@@ -33,7 +33,6 @@ let amd64_spec =
     name = "classpath-0.99",
     build_deps = [
       { file = "build.sh" } | Local,
-
       {
         url = "gs://minimal-staging-archives/classpath-0.99.tar.gz",
         sha256 = "f929297f8ae9b613a1a167e231566861893260651d913ad9b6c11933895fecc8",
