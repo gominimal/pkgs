@@ -7,7 +7,7 @@ let { target, .. } = import "config.ncl" in
 # Installs at /usr/lib/classpath-0.93; nothing lands on /usr/bin.
 # Sources mirrored to gs://minimal-staging-archives/. No `needs`: nothing here touches the network.
 # amd64 only (see the match at the bottom).
-let jikes = import "../jikes-1.22/build.ncl" in # JAVAC
+let jikes-1-22 = import "../jikes-1.22/build.ncl" in # JAVAC
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
@@ -35,7 +35,7 @@ let amd64_spec =
         sha256 = "df2d093612abd23fe67e9409d89bb2a8e79b1664fe2b2da40e1c8ed693e32945",
         extract = false, # build.sh untars with --no-same-owner
       } | Source,
-      jikes,
+      jikes-1-22,
       gcc-bedrock,
       binutils-bedrock,
       glibc-bedrock,

@@ -7,7 +7,7 @@ let { target, .. } = import "config.ncl" in
 # at /usr/lib/openjdk-19; nothing lands on /usr/bin.
 # Sources mirrored to gs://minimal-staging-archives/. No `needs`: nothing here touches the network.
 # amd64 only (see the match at the bottom).
-let boot = import "../openjdk-18/build.ncl" in # the boot JDK
+let openjdk-18 = import "../openjdk-18/build.ncl" in # the boot JDK
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
@@ -38,7 +38,7 @@ let alsa-lib = import "../alsa-lib/build.ncl" in
 let lcms2 = import "../lcms2/build.ncl" in
 let fontconfig = import "../fontconfig/build.ncl" in
 let libpng = import "../libpng/build.ncl" in
-let libjpeg = import "../libjpeg-turbo/build.ncl" in
+let libjpeg-turbo = import "../libjpeg-turbo/build.ncl" in
 let giflib = import "../giflib/build.ncl" in
 let libx11 = import "../libx11/build.ncl" in
 let libxext = import "../libxext/build.ncl" in
@@ -64,7 +64,7 @@ let amd64_spec =
         sha256 = "c297c9d0a09721e84c420e7893ff9ba2e0c4e27370507dec4b356b59e6c8e7a2",
         extract = false, # build.sh untars with --no-same-owner
       } | Source,
-      boot,
+      openjdk-18,
       gcc-bedrock,
       binutils-bedrock,
       glibc-bedrock,
@@ -97,7 +97,7 @@ let amd64_spec =
       lcms2,
       fontconfig,
       libpng,
-      libjpeg,
+      libjpeg-turbo,
       giflib,
       libx11,
       libxext,

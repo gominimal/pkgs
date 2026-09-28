@@ -8,10 +8,10 @@ let { target, .. } = import "config.ncl" in
 # /usr/lib/ecj-bootstrap-3.2.2; nothing lands on /usr/bin.
 # Sources mirrored to gs://minimal-staging-archives/. No `needs`: nothing here touches the network.
 # amd64 only (see the match at the bottom).
-let jikes = import "../jikes-1.22/build.ncl" in
-let jamvm = import "../jamvm-1.5.1/build.ncl" in # runs the wrapper
-let classpath = import "../classpath-0.93/build.ncl" in
-let ant = import "../ant-bootstrap-1.8.4/build.ncl" in # on the compile classpath
+let jikes-1-22 = import "../jikes-1.22/build.ncl" in
+let jamvm-1-5-1 = import "../jamvm-1.5.1/build.ncl" in # runs the wrapper
+let classpath-0-93 = import "../classpath-0.93/build.ncl" in
+let ant-bootstrap-1-8-4 = import "../ant-bootstrap-1.8.4/build.ncl" in # on the compile classpath
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
@@ -38,10 +38,10 @@ let amd64_spec =
         sha256 = "070cd425f5324349073c8ea9a3a0d43166429264584da9e9537888d6a7401216",
         extract = false, # build.sh untars with --no-same-owner
       } | Source,
-      jikes,
-      jamvm,
-      classpath,
-      ant,
+      jikes-1-22,
+      jamvm-1-5-1,
+      classpath-0-93,
+      ant-bootstrap-1-8-4,
       gcc-bedrock,
       binutils-bedrock,
       glibc-bedrock,

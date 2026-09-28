@@ -7,9 +7,9 @@ let { target, .. } = import "config.ncl" in
 # compiles. Installs at /usr/lib/ant-bootstrap-1.8.4; nothing lands on /usr/bin.
 # Sources mirrored to gs://minimal-staging-archives/. No `needs`: nothing here touches the network.
 # amd64 only (see the match at the bottom).
-let jikes = import "../jikes-1.22/build.ncl" in
-let jamvm = import "../jamvm-1.5.1/build.ncl" in
-let classpath = import "../classpath-0.93/build.ncl" in
+let jikes-1-22 = import "../jikes-1.22/build.ncl" in
+let jamvm-1-5-1 = import "../jamvm-1.5.1/build.ncl" in
+let classpath-0-93 = import "../classpath-0.93/build.ncl" in
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
@@ -35,9 +35,9 @@ let amd64_spec =
         sha256 = "5de65f7ba3f67e436ffffcdc0a73f591d1006e9fb41af8632c1f1f84d4a3e0b1",
         extract = false, # build.sh untars with --no-same-owner
       } | Source,
-      jikes,
-      jamvm,
-      classpath,
+      jikes-1-22,
+      jamvm-1-5-1,
+      classpath-0-93,
       gcc-bedrock,
       binutils-bedrock,
       glibc-bedrock,

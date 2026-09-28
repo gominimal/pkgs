@@ -7,8 +7,8 @@ let { target, .. } = import "config.ncl" in
 # the boot JDK. Installs at /usr/lib/icedtea-8; nothing lands on /usr/bin.
 # Sources mirrored to gs://minimal-staging-archives/. No `needs`: nothing here touches the network.
 # amd64 only (see the match at the bottom).
-let jdk7 = import "../icedtea-7/build.ncl" in # the boot JDK
-let ant = import "../ant-bootstrap-1.8.4/build.ncl" in
+let icedtea-7 = import "../icedtea-7/build.ncl" in # the boot JDK
+let ant-bootstrap-1-8-4 = import "../ant-bootstrap-1.8.4/build.ncl" in
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
@@ -123,8 +123,8 @@ let amd64_spec =
         sha256 = "d81606795abe5721d54aef6413677845a24c5b2202414a095bd04f1fba945fca",
         extract = false, # build.sh untars with --no-same-owner
       } | Source,
-      jdk7,
-      ant,
+      icedtea-7,
+      ant-bootstrap-1-8-4,
       gcc-bedrock,
       binutils-bedrock,
       glibc-bedrock,

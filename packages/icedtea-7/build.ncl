@@ -8,10 +8,10 @@ let { target, .. } = import "config.ncl" in
 # real one. Installs at /usr/lib/icedtea-7; nothing lands on /usr/bin.
 # Sources mirrored to gs://minimal-staging-archives/. No `needs`: nothing here touches the network.
 # amd64 only (see the match at the bottom).
-let jamvm = import "../jamvm-2.0.0/build.ncl" in # the boot VM
-let classpath = import "../classpath-devel/build.ncl" in # the boot class library and its tools (javah, rmic)
-let ecj4 = import "../ecj4-bootstrap-4.2.1/build.ncl" in # the boot javac
-let ant = import "../ant-bootstrap-1.8.4/build.ncl" in
+let jamvm-2-0-0 = import "../jamvm-2.0.0/build.ncl" in # the boot VM
+let classpath-devel = import "../classpath-devel/build.ncl" in # the boot class library and its tools (javah, rmic)
+let ecj4-bootstrap-4-2-1 = import "../ecj4-bootstrap-4.2.1/build.ncl" in # the boot javac
+let ant-bootstrap-1-8-4 = import "../ant-bootstrap-1.8.4/build.ncl" in
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
@@ -109,10 +109,10 @@ let amd64_spec =
         sha256 = "9ae3d6d43ff771cf02b8c7805ac0f0a457f5fa7026b1334ea1085262d3d86d9d",
         extract = false, # build.sh untars with --no-same-owner
       } | Source,
-      jamvm,
-      classpath,
-      ecj4,
-      ant,
+      jamvm-2-0-0,
+      classpath-devel,
+      ecj4-bootstrap-4-2-1,
+      ant-bootstrap-1-8-4,
       gcc-bedrock,
       binutils-bedrock,
       glibc-bedrock,

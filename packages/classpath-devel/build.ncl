@@ -8,10 +8,10 @@ let { target, .. } = import "config.ncl" in
 # lands on /usr/bin.
 # Sources mirrored to gs://minimal-staging-archives/. No `needs`: nothing here touches the network.
 # amd64 only (see the match at the bottom).
-let ecj = import "../ecj-bootstrap-3.2.2/build.ncl" in
-let jamvm = import "../jamvm-1.5.1/build.ncl" in
-let classpath93 = import "../classpath-0.93/build.ncl" in # jamvm-1.5.1 boots from it
-let classpath99 = import "../classpath-0.99/build.ncl" in # javah/rmic wrappers on PATH
+let ecj-bootstrap-3-2-2 = import "../ecj-bootstrap-3.2.2/build.ncl" in
+let jamvm-1-5-1 = import "../jamvm-1.5.1/build.ncl" in
+let classpath-0-93 = import "../classpath-0.93/build.ncl" in # jamvm-1.5.1 boots from it
+let classpath-0-99 = import "../classpath-0.99/build.ncl" in # javah/rmic wrappers on PATH
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
@@ -48,10 +48,10 @@ let amd64_spec =
         sha256 = "0d4cebf7faf9339c29a8048c3599da272805add3afc5ca1d014d38d94293ee9c",
         extract = false, # build.sh untars with --no-same-owner
       } | Source,
-      ecj,
-      jamvm,
-      classpath93,
-      classpath99,
+      ecj-bootstrap-3-2-2,
+      jamvm-1-5-1,
+      classpath-0-93,
+      classpath-0-99,
       gcc-bedrock,
       binutils-bedrock,
       glibc-bedrock,
