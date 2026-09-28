@@ -6,5 +6,6 @@ case $(uname -m) in
   *)       MARCH="" ;;
 esac
 # The Makefile has no configure step; its OFLAGS carry the optimisation flags and LDFLAGS the link flags.
-make CC=gcc OFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir" LDFLAGS="-Wl,--build-id=none" PREFIX=/usr
+# Library targets only: `all` also builds the utilities and runs doc/ through ImageMagick's convert.
+make CC=gcc OFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir" LDFLAGS="-Wl,--build-id=none" PREFIX=/usr libgif.so libgif.a
 make install-include install-lib PREFIX=/usr DESTDIR="$OUTPUT_DIR"
