@@ -69,6 +69,8 @@ BOOT=/usr/lib/openjdk-23
 # --- P2 unpack (the GitHub tag archive; shipped binaries and jars removed, as Guix does) ---
 mkdir src && tar -xzf jdk-24.0.1-ga.tar.gz -C src --strip-components=1
 cd src
+# glibc 2.42's <stdlib.h> declares uabs(int); hotspot's inline overloads of the same name collide (no-op where hotspot has none)
+grep -rl '\buabs\b' src/hotspot 2>/dev/null | xargs -r sed -i 's/\buabs\b/hs_uabs/g'
 find . -type f \( -name '*.bin' -o -name '*.exe' -o -name '*.jar' \) -delete
 # --- source fixes ---
 # the certificate converter is run as a script with an interpreter line naming a full path
