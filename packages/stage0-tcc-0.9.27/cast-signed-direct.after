@@ -1,0 +1,14 @@
+                if ((sbt & VT_BTYPE) == VT_LLONG) {
+                    if ((sbt & VT_UNSIGNED) || !(vtop->c.i >> 63))
+                        vtop->c.ld = vtop->c.i;
+                    else
+                        /* [R3 amd64 fix] direct signed->ld cast; the `-(long double)-x` trick
+                           uses FP negation, which tcc-0.9.26 miscompiles to NaN (same root as
+                           neg-float-const) -> (double)<negative int> folded to NaN -> crash. */
+                        vtop->c.ld = (long double)(long long)vtop->c.i;
+                } else if(!sf) {
+                    if ((sbt & VT_UNSIGNED) || !(vtop->c.i >> 31))
+                        vtop->c.ld = (uint32_t)vtop->c.i;
+                    else
+                        vtop->c.ld = (long double)(int)vtop->c.i;
+                }

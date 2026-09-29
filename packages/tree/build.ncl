@@ -48,6 +48,22 @@ let version = "2.3.2" in
       upstream_version = version,
       license_spdx = "GPL-2.0-or-later",
       repology_project = "tree",
+      # Without this the package is DARK: no provenance means no vuln query
+      # runs at all, so it reports 0/0/0 for an infrastructural reason rather
+      # than because it is clean. The coverage gate flagged it as NEW dark on
+      # 2026-09-22; it arrived in #721 without provenance.
+      #
+      # Upstream is `unix-tree` on gitlab.com (the source tarball is
+      # unix-tree-%{version}.tar.gz), and tag 2.3.2 there matches what we ship.
+      # Gitlab provenance carries `host` because GitLab is federated — the same
+      # owner/repo on two instances are different projects. Same shape psmisc
+      # uses.
+      source_provenance = {
+        category = 'Gitlab,
+        host = "gitlab.com",
+        owner = "OldManProgrammer",
+        repo = "unix-tree",
+      },
     } | Attrs,
 
   tests = {

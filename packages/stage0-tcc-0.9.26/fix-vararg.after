@@ -1,0 +1,14 @@
+    {
+        /* amd64 mescc/tcc-mes-safe (wf_9d59a528 follow-up): tcc-mes miscompiled the chained deref
+           `vtop->type.ref->c` and/or the ternary here under register pressure, leaving %al (the
+           SysV-ABI variadic SSE-arg count) wrong -> variadic callees (snprintf/fprintf) read
+           phantom SSE registers -> tcc-boot0 crashed on EVERY compile (it snprintf's the output
+           path). Decompose into single-op statements with explicit temporaries. */
+        Sym *fnref = vtop->type.ref;
+        if (fnref->c != FUNC_NEW) { /* FUNC_OLD or FUNC_ELLIPSIS */
+            int al_sse = nb_sse_args;
+            if (al_sse > 8)
+                al_sse = 8;
+            oad(0xb8, al_sse); /* mov nb_sse_args, %eax */
+        }
+    }

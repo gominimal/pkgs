@@ -1,10 +1,10 @@
-let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let rust = import "../rust/build.ncl" in
-let node = import "../node/build.ncl" in
+let node-lts = import "../node-lts/build.ncl" in
 let pnpm = import "../pnpm/build.ncl" in
 
 let bash = import "../bash/build.ncl" in
@@ -66,12 +66,12 @@ let version = "0.15.1" in
     make,
     pkgconf,
     rust,
-    node,
+    node-lts,
     pnpm,
   ],
   runtime_deps = [
     bash,
-    node,
+    subsetOf node-lts ["node"],
     glibc,
     chromium-headless-shell-bin,
   ],

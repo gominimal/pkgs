@@ -1,0 +1,34 @@
+amd64: define va_list for tcc under __TINYC__ using tcc's own SysV __va_list_struct
+(from tcc include/stdarg.h); tcc-0.9.27 has no __builtin_va_list and crashes on it.
+Guarded with __TINYC_va_list_defined because alltypes.h is included once per __NEED'd type.
+--- musl-1.1.24/arch/x86_64/bits/alltypes.h.in
++++ musl-1.1.24/arch/x86_64/bits/alltypes.h.in
+@@ -1,6 +1,28 @@
+ #define _Addr long
+ #define _Int64 long
+ #define _Reg long
++
++#ifdef __TINYC__
++#ifndef __TINYC_va_list_defined
++#define __TINYC_va_list_defined
++typedef struct {
++	unsigned int gp_offset;
++	unsigned int fp_offset;
++	union {
++		unsigned int overflow_offset;
++		char *overflow_arg_area;
++	};
++	char *reg_save_area;
++} __va_list_struct;
++typedef __va_list_struct __builtin_va_list[1];
++void __va_start(__va_list_struct *, void *);
++void *__va_arg(__va_list_struct *, int, int, int);
++#define __builtin_va_start(ap, last) __va_start(ap, __builtin_frame_address(0))
++#define __builtin_va_arg(ap, type) (*(type *)(__va_arg(ap, __builtin_va_arg_types(type), sizeof(type), __alignof__(type))))
++#define __builtin_va_copy(dest, src) (*(dest) = *(src))
++#define __builtin_va_end(ap)
++#endif
++#endif
+ 
+ TYPEDEF __builtin_va_list va_list;
+ TYPEDEF __builtin_va_list __isoc_va_list;

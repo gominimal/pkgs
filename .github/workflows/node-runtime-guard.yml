@@ -1,0 +1,48 @@
+name: node-runtime-guard
+
+# BLOCKING. No package may contribute a second npm to a session or build
+# closure (gominimal/pkgs#751, #665): closure members are hardlinked
+# first-writer-wins per file, so two npm trees blend into one that cannot load.
+# Evaluates the whole catalog on both arches and rejects (1) outputs under the
+# shared usr/lib/node_modules, (2) runtime deps that carry a node runtime's npm,
+# (3) packages on `node` (Current) instead of `node-lts`. Rationale and escape
+# hatch live in .github/scripts/node_runtime_guard.py.
+#
+# Unlike the report-only siblings this check FAILS. A dump failure fails too
+# (exit 2 = UNVERIFIED): a guard that cannot see the catalog must not go green.
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "packages/**"
+      - "stacks/**"
+      - ".github/scripts/node_runtime_guard.py"
+      - ".github/workflows/node-runtime-guard.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: node-runtime-guard-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - uses: ./.github/actions/setup-minimal # puts `minimal` on PATH
+
+      - name: Dump catalog (amd64 + arm64)
+        run: |
+          set -euo pipefail
+          for arch in amd64 arm64; do
+            minimal dump -p --format json --arch "$arch" > "dump-$arch.json"
+            echo "dumped $(jq 'length' "dump-$arch.json") packages ($arch)"
+          done
+
+      - name: node-runtime guard
+        run: python3 .github/scripts/node_runtime_guard.py dump-amd64.json dump-arm64.json

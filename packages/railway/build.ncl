@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "5.43.3" in
+let version = "5.59.0" in
 {
   name = "railway",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/railwayapp/cli/v%{version}.tar.gz",
-      sha256 = "ca40bc9d42f5e5618db9c1155c9a9949a93cd3e322db07c03b553b8cd38aed29",
+      sha256 = "83d257bc559f6d6081b113d4e61af77f93e584ff792b2bac6a53fb4fdd1e349d",
       extract = true,
       strip_prefix = "cli-%{version}",
     } | Source,

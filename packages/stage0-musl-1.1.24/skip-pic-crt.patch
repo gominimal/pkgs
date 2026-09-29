@@ -1,0 +1,13 @@
+amd64: drop Scrt1.o and rcrt1.o from CRT_OBJS. tcc-0.9.27 crashes compiling
+arch/x86_64/crt_arch.h under -fPIC (PC-relative reloc to the weak hidden _DYNAMIC symbol).
+The static bootstrap links with crt1.o only.
+--- musl-1.1.24/Makefile	2019-10-13 22:58:27.000000000 +0100
++++ musl-1.1.24/Makefile	2026-06-25 00:00:00.000000000 +0000
+@@ -30,7 +30,7 @@
+ LIBC_OBJS = $(filter obj/src/%,$(ALL_OBJS))
+ LDSO_OBJS = $(filter obj/ldso/%,$(ALL_OBJS:%.o=%.lo))
+-CRT_OBJS = $(filter obj/crt/%,$(ALL_OBJS))
++CRT_OBJS = $(filter-out obj/crt/Scrt1.o obj/crt/rcrt1.o,$(filter obj/crt/%,$(ALL_OBJS)))
+ 
+ AOBJS = $(LIBC_OBJS)
+ LOBJS = $(LIBC_OBJS:.o=.lo)

@@ -7,14 +7,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.29.0" in
+let version = "1.30.1" in
 {
   name = "zizmor",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/zizmorcore/zizmor/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "de3da74599a1e080361e97c0431bdc0f656ea530420fdff953a8e3d679e1153b",
+      sha256 = "3224fd5b49b77b2ec1a8a0809587824e3bc346a7583e8272d8ad66f95d0e8cc2",
       extract = true,
       strip_prefix = "zizmor-%{version}",
     } | Source,
