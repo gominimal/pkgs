@@ -105,7 +105,7 @@ export SOURCE_DATE_EPOCH=315532802   # 1980-01-01T00:00:02Z, the earliest date j
 # --- configure + make ---
 # extra-cflags come last in the JDK's CFLAGS: gnu17 keeps gcc 15 off C23 (K&R `()` prototypes in libnet's gio
 # shims), and gcc 14's incompatible-pointer-types error is a warning again (jtreg's libTestJNI.c)
-bash ./configure --with-boot-jdk="${BOOT}" --disable-option-checking --disable-warnings-as-errors --with-native-debug-symbols=none \
+bash ./configure --with-boot-jdk="${BOOT}" --with-build-user=minimal --disable-option-checking --disable-warnings-as-errors --with-native-debug-symbols=none \
   "--with-extra-cflags=-std=gnu17 -fcommon -fno-delete-null-pointer-checks -fno-lifetime-dse -Wno-error=int-conversion -Wno-error=incompatible-pointer-types" "--with-extra-cxxflags=-fcommon -fno-delete-null-pointer-checks -fno-lifetime-dse" --disable-hotspot-gtest --disable-freetype-bundling \
   --with-giflib=system --with-lcms=system --with-libjpeg=system --with-libpng=system --with-zlib=system \
   --with-freetype-include=/usr/include/freetype2 --with-freetype-lib=/usr/lib > ../configure.log 2>&1 \
