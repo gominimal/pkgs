@@ -168,10 +168,19 @@ let amd64_spec =
       xorgproto,
       python,
     ],
-    # java and javac load libz
+    # java loads libz; AWT, sound and font code load the X libraries, alsa, lcms2 and freetype
     runtime_deps = [
       glibc-bedrock,
       zlib,
+      freetype,
+      lcms2,
+      alsa-lib,
+      libx11,
+      libxext,
+      libxi,
+      libxrender,
+      libxtst,
+      libxcomposite,
     ],
     cmd = "./build.sh",
     outputs = {

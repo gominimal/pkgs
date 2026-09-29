@@ -61,6 +61,10 @@ let amd64_spec =
     build_args = {
       include version,
     },
+    # the interpreter is the sysroot's ld.so
+    runtime_deps = [
+      glibc-bedrock,
+    ],
     cmd = "./build.sh",
     outputs = {
       # OutputData + allow_executable, NOT OutputBin: links against the B4 sysroot loader at a

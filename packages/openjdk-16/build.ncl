@@ -115,10 +115,21 @@ let amd64_spec =
       xorgproto,
       libxcursor,
     ],
-    # java and javac load libz
+    # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, lcms2, libpng, giflib and libjpeg
     runtime_deps = [
       glibc-bedrock,
       zlib,
+      freetype,
+      libpng,
+      giflib,
+      libjpeg-turbo,
+      lcms2,
+      alsa-lib,
+      libx11,
+      libxext,
+      libxi,
+      libxrender,
+      libxtst,
     ],
     cmd = "./build.sh",
     outputs = {

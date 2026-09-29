@@ -53,6 +53,7 @@ let libxinerama = import "../libxinerama/build.ncl" in
 let libxcomposite = import "../libxcomposite/build.ncl" in # configure checks for it
 let libxt = import "../libxt/build.ncl" in # AWT links -lXt
 let xorgproto = import "../xorgproto/build.ncl" in
+let libpng = import "../libpng/build.ncl" in
 # pkgmgr: bootstrap_rung = "jvm"
 let version = "2.6.13" in
 let amd64_spec =
@@ -156,10 +157,21 @@ let amd64_spec =
       xorgproto,
       python,
     ],
-    # java and javac load libz
+    # java loads libz; AWT, sound and font code load the X libraries, alsa, fontconfig, lcms2 and the bundled freetype (which loads libpng)
     runtime_deps = [
       glibc-bedrock,
       zlib,
+      freetype,
+      libpng,
+      lcms2,
+      fontconfig,
+      alsa-lib,
+      libx11,
+      libxext,
+      libxi,
+      libxrender,
+      libxtst,
+      libxcomposite,
     ],
     cmd = "./build.sh",
     outputs = {
