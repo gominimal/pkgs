@@ -71,6 +71,8 @@ mkdir src && tar -xzf jdk-19.0.2-ga.tar.gz -C src --strip-components=1
 cd src
 find . -type f \( -name '*.bin' -o -name '*.exe' -o -name '*.jar' \) -delete
 patch -p1 < ../openjdk-15-xcursor-no-dynamic.patch
+# glibc 2.42's <stdlib.h> declares uabs(int); hotspot's inline overloads of the same name collide (no-op where hotspot has none)
+grep -rl '\buabs\b' hotspot src/hotspot 2>/dev/null | xargs -r sed -i 's/\buabs\b/hs_uabs/g'
 # --- source fixes ---
 # the certificate converter is run as a script with an interpreter line naming a full path
 [ -f src/java.base/share/data/blockedcertsconverter/blocked.certs.pem ] && sed -i 's|^#!.*|#! java BlockedCertsConverter SHA-256|' src/java.base/share/data/blockedcertsconverter/blocked.certs.pem

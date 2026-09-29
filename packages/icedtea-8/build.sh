@@ -77,6 +77,9 @@ sed -i 's/__DATE__/""/; s/__TIME__/""/' openjdk.src/hotspot/src/share/vm/runtime
 # only the generated configure: touching acinclude.m4 would make the build re-run aclocal
 sed -i -E 's/^(\s*)DIST_ID=".*$/\1DIST_ID="minimal"/; s/^(\s*)DIST_NAME=".*$/\1DIST_NAME="minimal"/' configure
 [ "$(grep -c 'DIST_ID="minimal"' configure)" -ge 2 ] || { echo "icedtea-8: a source fix did not apply" >&2; exit 1; }
+# glibc 2.42's <stdlib.h> declares uabs(int); hotspot's inline overloads of the same name (globalDefinitions.hpp) collide
+for h in openjdk.src/hotspot/src openjdk.src/shenandoah/src; do [ -d "$h" ] && grep -rl '\buabs\b' "$h" | xargs -r sed -i 's/\buabs\b/hs_uabs/g'; done
+grep -q 'hs_uabs' openjdk.src/hotspot/src/share/vm/utilities/globalDefinitions.hpp || { echo "icedtea-8: uabs rename did not apply" >&2; exit 1; }
 # the boot JDK's tools on PATH; hotspot takes gcc/g++ from PATH (hence CCDIR), the jdk makefiles from CC/CXX
 export JAVA_HOME="${JDK7}" PATH="${JDK7}/bin:${ANT}/bin:${CCDIR}:${PATH}" ANT_HOME="${ANT}" ANT_OPTS="-Xmx8g" DISABLE_HOTSPOT_OS_VERSION_CHECK=ok
 # --- configure + make ---

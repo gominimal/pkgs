@@ -80,6 +80,8 @@ patch -p1 < ../openjdk-9-module3-reproducibility.patch
 patch -p1 < ../openjdk-9-idlj-reproducibility.patch
 patch -p1 < ../openjdk-9-setsignalhandler.patch
 patch -p1 < ../openjdk-9-modulehashes-order.patch
+# glibc 2.42's <stdlib.h> declares uabs(int); hotspot's inline overloads of the same name collide (no-op where hotspot has none)
+grep -rl '\buabs\b' hotspot src/hotspot 2>/dev/null | xargs -r sed -i 's/\buabs\b/hs_uabs/g'
 # --- source fixes ---
 # the certificate converter is run as a script with an interpreter line naming a full path
 [ -f jdk/make/data/blacklistedcertsconverter/blacklisted.certs.pem ] && sed -i 's|^#!.*|#! java BlacklistedCertsConverter SHA-256|' jdk/make/data/blacklistedcertsconverter/blacklisted.certs.pem

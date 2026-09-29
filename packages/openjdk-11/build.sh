@@ -79,6 +79,8 @@ patch -p1 < ../openjdk-10-jtask-reproducibility.patch
 patch -p1 < ../openjdk-currency-time-bomb2.patch
 patch -p1 < ../openjdk-11-timezonenames-reproducibility.patch
 patch -p1 < ../openjdk-11-moduledescriptor-hash.patch
+# glibc 2.42's <stdlib.h> declares uabs(int); hotspot's inline overloads of the same name collide (no-op where hotspot has none)
+grep -rl '\buabs\b' hotspot src/hotspot 2>/dev/null | xargs -r sed -i 's/\buabs\b/hs_uabs/g'
 # --- source fixes ---
 # the certificate converter is run as a script with an interpreter line naming a full path
 [ -f make/data/blockedcertsconverter/blocked.certs.pem ] && sed -i 's|^#!.*|#! java BlockedCertsConverter SHA-256|' make/data/blockedcertsconverter/blocked.certs.pem
