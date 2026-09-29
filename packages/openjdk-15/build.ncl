@@ -129,6 +129,7 @@ let amd64_spec =
       libxi,
       libxrender,
       libxtst,
+      libxcursor,
     ],
     cmd = "./build.sh",
     outputs = {
