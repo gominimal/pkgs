@@ -10,6 +10,11 @@ cd "Python-${MINIMAL_ARG_VERSION}"
 # lives one level up because we extracted into a subdirectory above.
 patch -Np1 -i "../0001-gh-155999-tarfile-normalize-parent-dir-components.patch"
 
+# CVE-2026-87910 -- see the patch header and the note in build.ncl. Same
+# fail-closed placement as 0001; applied after it because its line numbers
+# were regenerated against the 0001-patched tree.
+patch -Np1 -i "../0002-gh-157265-tarfile-honor-filter-none-link-fallback.patch"
+
 # CVE-2026-15806 (urllib), CVE-2026-15310 (zipfile) and CVE-2026-17084
 # (stringprep/idna) -- same deal: 3.14-branch backports that first ship in
 # 3.14.8. 0004 carries two upstream commits that must apply in order; they
