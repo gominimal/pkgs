@@ -90,7 +90,9 @@ bash ./configure --with-boot-jdk="${BOOT}" --with-build-user=minimal --disable-o
   --with-giflib=system --with-lcms=system --with-libjpeg=system --with-libpng=system --with-zlib=system \
   --with-freetype-include=/usr/include/freetype2 --with-freetype-lib=/usr/lib > ../configure.log 2>&1 \
   || { grep -n -iE 'error|could not|cannot|not found' ../configure.log | tail -8 >&2 || true; echo "openjdk-24: configure failed" >&2; exit 1; }
-make JOBS="${JOBS}" all > ../make.log 2>&1 \
+# `images` (the jdk image this rung ships) rather than `all`: JDK 24 added a static-launcher target to `all`, which
+# links the launcher statically and fails against the versioned sysroot; nothing here consumes it
+make JOBS="${JOBS}" images > ../make.log 2>&1 \
   || { grep -nE 'error:|Error [0-9]|\*\*\* \[' ../make.log | grep -v Werror | tail -8 >&2 || true; tail -10 ../make.log >&2; echo "openjdk-24: make failed" >&2; exit 1; }
 IMG="$(ls -d build/*/images/jdk | head -1)"
 [ -x "${IMG}/bin/java" ] || { echo "openjdk-24: no jdk image" >&2; exit 1; }
