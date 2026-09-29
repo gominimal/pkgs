@@ -50,11 +50,12 @@ for d in $("${BGXX}" -E -x c++ -v /dev/null 2>&1 | sed -n '/#include <...> searc
 done
 CXXINC="${CXXINC# } -isystem ${SR}/include${CXXTAIL} -idirafter /usr/include"
 [ -n "$(echo "${CXXINC}" | grep -o 'c++')" ] || { echo "openjdk-22: cannot find g++'s libstdc++ include dirs" >&2; exit 1; }
+# gnu17: gcc 15 defaults to C23, where hotspot's `typedef int bool;` (agent/src/os/linux/libproc.h) is an error
 CCDIR="${BUILDROOT}/cc"; mkdir -p "${CCDIR}"
 cat > "${CCDIR}/gcc" <<WRAP
 #!/bin/sh
-for a in "\$@"; do case "\$a" in -c|-S|-E|-M|-MM) exec "${BGCC}" ${INC}  "\$@" ;; esac; done
-exec "${BGCC}" ${INC}  ${LNK} "\$@"
+for a in "\$@"; do case "\$a" in -c|-S|-E|-M|-MM) exec "${BGCC}" ${INC} -std=gnu17  "\$@" ;; esac; done
+exec "${BGCC}" ${INC} -std=gnu17  ${LNK} "\$@"
 WRAP
 cat > "${CCDIR}/g++" <<WRAP
 #!/bin/sh
