@@ -2,13 +2,16 @@ let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = impo
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+# amd64 bootstraps from the go-1.24.9 rung, the top of the go-1.4 -> ... -> 1.24.9 ladder.
+# arm64 bootstraps from a sha-pinned go1.24.9 GOROOT tarball (the Source below): Go 1.5 was the
+# first release with an arm64 port, so the C-hosted go-1.4 root cannot produce one.
+let go-1-24-9 = import "../go-1.24.9/build.ncl" in
 let git = import "../git/build.ncl" in
 
 let version = "1.27.1" in
 let variants = {
-  amd64_url = "https://go.dev/dl/go%{version}.linux-amd64.tar.gz",
-  amd64_sha256 = "63d339f0da5ab53635a56f2490a7984dfe12dfcff22ad749f63edaf590168445",
-
+  # Bumping go means updating `version` and `source_sha256` only.  The bootstrap pins change
+  # only when go's minimum bootstrap version (src/cmd/dist/buildtool.go) moves past 1.24.
   source_url = "https://go.dev/dl/go%{version}.src.tar.gz",
   source_sha256 = "4e408abae126d916b6164627193f2c54f0e3ca1312d693b86db45f862ab238b1",
 }
@@ -18,11 +21,7 @@ in
   build_deps = [
     { file = "build.sh" } | Local,
     match {
-      { arch = 'Amd64, .. } =>
-        {
-          url = variants.amd64_url,
-          sha256 = variants.amd64_sha256,
-        } | Source,
+      { arch = 'Amd64, .. } => go-1-24-9,
       { arch = 'Arm64, .. } =>
         {
           # BEDROCK ROOT (arm64): this bootstrap Go is go1.24.9 from the hex0-rooted arm
@@ -45,6 +44,8 @@ in
     base,
     toolchain,
   ],
+  # `needs` is kept for environments that build this recipe without pre-staged mirrors;
+  # the bootstrap itself no longer downloads anything.
   needs =
     {
       dns = {},

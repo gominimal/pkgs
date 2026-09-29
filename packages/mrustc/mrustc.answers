@@ -1,0 +1,25 @@
+# mrustc.answers: byte-seal pins for packages/mrustc. Currently unpinned.
+#
+# build.sh runs `sha256sum -c` on this file from ${OUTPUT_DIR} as soon as it contains a line
+# matching `^<64 hex>  <path>`; no code change is needed to arm it.
+#
+# To seal, once two independent builds have produced byte-identical output:
+#   cd ${OUTPUT_DIR} && sha256sum usr/bin/mrustc usr/bin/minicargo
+# and paste the lines below, uncommented, in `sha256sum` format (two spaces).
+#
+# usr/share/mrustc/** is not pinned: copies of Local inputs and a constant-only BUILDINFO,
+# already covered by their input shas.
+#
+# Nondeterminism status of the two binaries:
+#   - Makefile:190 VERSION_BUILDTIME + 4 git shell-outs: patched, proven in-build by a
+#     later-wall-clock version.o rebuild + byte-compare
+#   - .note.gnu.build-id: suppressed (-Wl,--build-id=none)
+#   - debug info paths: stable (cwd is always /build/...)
+#   - --add-gnu-debuglink CRC: derived, therefore stable
+#   - ar member mtimes in bin/*.a: do not reach the linked binaries
+# Makefile:190 is the only date/git shell-out in Makefile, minicargo.mk, tools/*/Makefile and
+# run_rustc/Makefile.
+#
+# UNPINNED
+# usr/bin/mrustc
+# usr/bin/minicargo

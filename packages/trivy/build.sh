@@ -14,6 +14,8 @@ if grep -rn --include='*.go' --exclude='*_test.go' -e 'json\.SkipFunc' -e 'json:
 fi
 
 export GOROOT=/usr/go
+# jsonv2 is required: pkg/x/json imports encoding/json/v2 and encoding/json/jsontext, which
+# only exist under this experiment.
 export GOEXPERIMENT=jsonv2
 export CGO_LDFLAGS="-fuse-ld=bfd"
 

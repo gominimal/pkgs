@@ -1,0 +1,6 @@
+# No byte-identity pins for binutils-2.46-glibc. It is built by stage0-gcc-15.2.0, a different
+# compiler than the one that built the prebuilt binutils, so byte parity with the prebuilt is not
+# expected and build.sh has no `sha256sum -c` gate. build.sh enforces a smoke gate instead: the
+# fresh glibc-linked as+ld must assemble and link a glibc-dynamic executable that runs and returns 42.
+# --enable-deterministic-archives, -Wl,--build-id=none and -ffile-prefix-map keep the artifact
+# reproducible. Nothing to pin here.

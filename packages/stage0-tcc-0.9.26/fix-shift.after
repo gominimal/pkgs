@@ -1,0 +1,1 @@
+            { unsigned long shm; unsigned long shv; if (ll) shm = 63; else shm = 31; shv = vtop->c.i; shv = shv & shm; g(shv); }
