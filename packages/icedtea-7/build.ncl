@@ -156,6 +156,11 @@ let amd64_spec =
       xorgproto,
       python,
     ],
+    # java and javac load libz
+    runtime_deps = [
+      glibc-bedrock,
+      zlib,
+    ],
     cmd = "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path

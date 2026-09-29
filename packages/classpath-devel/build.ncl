@@ -78,6 +78,11 @@ let amd64_spec =
       python,
       diffutils,
     ],
+    # the tool wrappers (javah, rmic, …) exec jamvm-1.5.1
+    runtime_deps = [
+      jamvm-1-5-1,
+      glibc-bedrock,
+    ],
     cmd = "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path

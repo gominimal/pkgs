@@ -54,6 +54,10 @@ let amd64_spec =
       gawk,
       diffutils,
     ],
+    # native libraries
+    runtime_deps = [
+      glibc-bedrock,
+    ],
     cmd = "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path

@@ -66,6 +66,13 @@ let amd64_spec =
       gawk,
       diffutils,
     ],
+    # the VM is configured for classpath-devel; links libz and libffi
+    runtime_deps = [
+      classpath-devel,
+      glibc-bedrock,
+      zlib,
+      libffi,
+    ],
     cmd = "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path

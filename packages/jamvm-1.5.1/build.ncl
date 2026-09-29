@@ -59,6 +59,12 @@ let amd64_spec =
       gawk,
       diffutils,
     ],
+    # the VM is configured for classpath-0.93; links libz
+    runtime_deps = [
+      classpath-0-93,
+      glibc-bedrock,
+      zlib,
+    ],
     cmd = "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path

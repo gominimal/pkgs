@@ -60,6 +60,11 @@ let amd64_spec =
       gawk,
       diffutils,
     ],
+    # the javac wrapper runs ecj on jamvm-2.0.0 against classpath-devel
+    runtime_deps = [
+      jamvm-2-0-0,
+      classpath-devel,
+    ],
     cmd = "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path
