@@ -3,6 +3,7 @@ let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let bzip2 = import "../bzip2/build.ncl" in # unix/configure finds bzlib.h and links -lbz2
 # Info-ZIP zip 3.0: the `zip` archiver (jar files are zip archives; the JVM ladder packs its jars with it).
 let version = "3.0" in
 {
@@ -16,10 +17,12 @@ let version = "3.0" in
       strip_prefix = "zip30",
     } | Source,
     base,
+    bzip2,
     make,
     toolchain,
   ],
   runtime_deps = [
+    bzip2,
     glibc,
   ],
   cmd = "./build.sh",
