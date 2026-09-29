@@ -156,6 +156,8 @@ CXXINC="-nostdinc -nostdinc++ -isystem ${CB} -isystem ${CB}/${CCTRIPLE} -isystem
 CINC="-nostdinc -isystem ${GIX} -isystem ${SR}/include"
 # --dynamic-linker: the sandbox has no /lib64 symlink, and the gates execute the binaries.
 # -rpath so bin/mrustc runs without LD_LIBRARY_PATH. --build-id=none for byte-seal parity.
+# LNK goes BEFORE the caller's arguments: a makefile's own -Wl,-rpath,/usr/lib must not precede the sysroot in RPATH,
+# or the sysroot's ld.so loads the system libc.so.6 (GLIBC_PRIVATE symbol lookup error)
 LNK="-L${FIXLIB} -B${SR}/lib -L${SR}/lib -L/usr/lib -Wl,--dynamic-linker=${LOADER} -Wl,-rpath,${SR}/lib:/usr/lib -Wl,--build-id=none"
 
 # --- compiler wrappers ---
@@ -169,7 +171,7 @@ cat > "${WRAP}/bedrock-c++" <<EOF
 case " \$* " in
   *" -c "*) exec "${BGXX}" ${CXXINC} ${ARCH_CFLAGS} "\$@" ;;
 esac
-exec "${BGXX}" ${CXXINC} ${ARCH_CFLAGS} "\$@" ${LNK}
+exec "${BGXX}" ${CXXINC} ${ARCH_CFLAGS} ${LNK} "\$@"
 EOF
 
 # The CC mrustc shells out to at codegen time. It logs every invocation; GATE 3 asserts the
@@ -180,7 +182,7 @@ echo "cc \$*" >> "${BUILDROOT}/ccwrap.log"
 case " \$* " in
   *" -c "*) exec "${BGCC}" ${CINC} ${ARCH_CFLAGS} "\$@" ;;
 esac
-exec "${BGCC}" ${CINC} ${ARCH_CFLAGS} "\$@" ${LNK}
+exec "${BGCC}" ${CINC} ${ARCH_CFLAGS} ${LNK} "\$@"
 EOF
 chmod 0755 "${WRAP}/bedrock-c++" "${WRAP}/bedrock-cc"
 

@@ -37,6 +37,8 @@ for x in /usr/lib/jamvm-2.0.0/bin/jamvm /usr/lib/classpath-devel/share/classpath
 FIXLIB="${BUILDROOT}/glibc-fixlib"; mkdir -p "${FIXLIB}"
 sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@${SR}/lib/\1@g" "${SR}/lib/libc.so" > "${FIXLIB}/libc.so"
 if grep -q '/build/output' "${FIXLIB}/libc.so"; then echo "icedtea-7: libc.so fixup failed" >&2; exit 1; fi
+# LNK goes BEFORE the caller's arguments: a makefile's own -Wl,-rpath,/usr/lib must not precede the sysroot in RPATH,
+# or the sysroot's ld.so loads the system libc.so.6 (GLIBC_PRIVATE symbol lookup error)
 LNK="-L${FIXLIB} -B${SR}/lib -L${SR}/lib -L/usr/lib -Wl,--dynamic-linker=${LOADER} -Wl,-rpath,${SR}/lib:/usr/lib -Wl,--build-id=none"
 INC="-isystem ${SR}/include -isystem /usr/include"
 # C++: rebuild g++'s own include chain (libstdc++, gcc freestanding) ahead of the sysroot's glibc headers, and
@@ -52,12 +54,12 @@ CCDIR="${BUILDROOT}/cc"; mkdir -p "${CCDIR}"
 cat > "${CCDIR}/gcc" <<WRAP
 #!/bin/sh
 for a in "\$@"; do case "\$a" in -c|-S|-E|-M|-MM) exec "${BGCC}" ${INC}  "\$@" ;; esac; done
-exec "${BGCC}" ${INC}  "\$@" ${LNK}
+exec "${BGCC}" ${INC}  ${LNK} "\$@"
 WRAP
 cat > "${CCDIR}/g++" <<WRAP
 #!/bin/sh
 for a in "\$@"; do case "\$a" in -c|-S|-E|-M|-MM) exec "${BGXX}" -nostdinc -nostdinc++ ${CXXINC} "\$@" ;; esac; done
-exec "${BGXX}" -nostdinc -nostdinc++ ${CXXINC} "\$@" ${LNK}
+exec "${BGXX}" -nostdinc -nostdinc++ ${CXXINC} ${LNK} "\$@"
 WRAP
 chmod 0755 "${CCDIR}/gcc" "${CCDIR}/g++"
 export CC="${CCDIR}/gcc" CXX="${CCDIR}/g++"
