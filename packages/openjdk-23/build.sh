@@ -145,7 +145,8 @@ find "${DST}" -name 'src.zip' -type f -delete
 mkdir -p "${OUTPUT_DIR}/usr/share/openjdk-23"
 cat > "${OUTPUT_DIR}/usr/share/openjdk-23/BUILDINFO" <<EOF
 openjdk-23
-source: jdk-23.0.2-ga.tar.gz\nboot: openjdk-22
+source: jdk-23.0.2-ga.tar.gz
+boot: openjdk-22
 c compiler: gcc ${GCC_VERSION}; sysroot: ${SR}
 EOF
 echo "openjdk-23: installed to ${PREFIX}"

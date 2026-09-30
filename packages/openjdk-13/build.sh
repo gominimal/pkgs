@@ -161,7 +161,8 @@ find "${DST}" -name 'src.zip' -type f -delete
 mkdir -p "${OUTPUT_DIR}/usr/share/openjdk-13"
 cat > "${OUTPUT_DIR}/usr/share/openjdk-13/BUILDINFO" <<EOF
 openjdk-13
-source: jdk-13.0.14-ga.tar.gz + 4 patches\nboot: openjdk-12
+source: jdk-13.0.14-ga.tar.gz + 4 patches
+boot: openjdk-12
 c compiler: gcc ${GCC_VERSION}; sysroot: ${SR}
 EOF
 echo "openjdk-13: installed to ${PREFIX}"

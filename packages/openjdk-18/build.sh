@@ -146,7 +146,8 @@ find "${DST}" -name 'src.zip' -type f -delete
 mkdir -p "${OUTPUT_DIR}/usr/share/openjdk-18"
 cat > "${OUTPUT_DIR}/usr/share/openjdk-18/BUILDINFO" <<EOF
 openjdk-18
-source: jdk-18.0.2.1-ga.tar.gz + 1 patches\nboot: openjdk-17
+source: jdk-18.0.2.1-ga.tar.gz + 1 patches
+boot: openjdk-17
 c compiler: gcc ${GCC_VERSION}; sysroot: ${SR}
 EOF
 echo "openjdk-18: installed to ${PREFIX}"

@@ -50,7 +50,6 @@ let libxrandr = import "../libxrandr/build.ncl" in
 let libxcomposite = import "../libxcomposite/build.ncl" in
 let libxt = import "../libxt/build.ncl" in
 let xorgproto = import "../xorgproto/build.ncl" in
-let libxcursor = import "../libxcursor/build.ncl" in # linked since the xcursor patch
 # pkgmgr: bootstrap_rung = "jvm"
 let version = "25.0.2" in
 let amd64_spec =
@@ -109,7 +108,6 @@ let amd64_spec =
       libxcomposite,
       libxt,
       xorgproto,
-      libxcursor,
     ],
     # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, lcms2, libpng, giflib and libjpeg
     runtime_deps = [

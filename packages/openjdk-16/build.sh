@@ -149,7 +149,8 @@ find "${DST}" -name 'src.zip' -type f -delete
 mkdir -p "${OUTPUT_DIR}/usr/share/openjdk-16"
 cat > "${OUTPUT_DIR}/usr/share/openjdk-16/BUILDINFO" <<EOF
 openjdk-16
-source: jdk-16.0.2-ga.tar.gz + 4 patches\nboot: openjdk-15
+source: jdk-16.0.2-ga.tar.gz + 4 patches
+boot: openjdk-15
 c compiler: gcc ${GCC_VERSION}; sysroot: ${SR}
 EOF
 echo "openjdk-16: installed to ${PREFIX}"

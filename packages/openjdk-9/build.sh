@@ -165,7 +165,8 @@ find "${DST}" -name 'src.zip' -type f -delete
 mkdir -p "${OUTPUT_DIR}/usr/share/openjdk-9"
 cat > "${OUTPUT_DIR}/usr/share/openjdk-9/BUILDINFO" <<EOF
 openjdk-9
-source: jdk-9+181.tar.gz + 10 patches\nboot: icedtea-8
+source: jdk-9+181.tar.gz + 10 patches
+boot: icedtea-8
 c compiler: gcc ${GCC_VERSION}; sysroot: ${SR}
 EOF
 echo "openjdk-9: installed to ${PREFIX}"

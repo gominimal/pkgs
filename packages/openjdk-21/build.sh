@@ -146,7 +146,8 @@ find "${DST}" -name 'src.zip' -type f -delete
 mkdir -p "${OUTPUT_DIR}/usr/share/openjdk-21"
 cat > "${OUTPUT_DIR}/usr/share/openjdk-21/BUILDINFO" <<EOF
 openjdk-21
-source: jdk-21.0.2-ga.tar.gz + 1 patches\nboot: openjdk-20
+source: jdk-21.0.2-ga.tar.gz + 1 patches
+boot: openjdk-20
 c compiler: gcc ${GCC_VERSION}; sysroot: ${SR}
 EOF
 echo "openjdk-21: installed to ${PREFIX}"

@@ -172,7 +172,8 @@ find "${DST}" -name 'src.zip' -type f -delete
 mkdir -p "${OUTPUT_DIR}/usr/share/openjdk-10"
 cat > "${OUTPUT_DIR}/usr/share/openjdk-10/BUILDINFO" <<EOF
 openjdk-10
-source: jdk-10+46.tar.gz + 12 patches\nboot: openjdk-9
+source: jdk-10+46.tar.gz + 12 patches
+boot: openjdk-9
 c compiler: gcc ${GCC_VERSION}; sysroot: ${SR}
 EOF
 echo "openjdk-10: installed to ${PREFIX}"

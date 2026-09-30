@@ -146,7 +146,8 @@ find "${DST}" -name 'src.zip' -type f -delete
 mkdir -p "${OUTPUT_DIR}/usr/share/openjdk-20"
 cat > "${OUTPUT_DIR}/usr/share/openjdk-20/BUILDINFO" <<EOF
 openjdk-20
-source: jdk-20.0.2-ga.tar.gz + 1 patches\nboot: openjdk-19
+source: jdk-20.0.2-ga.tar.gz + 1 patches
+boot: openjdk-19
 c compiler: gcc ${GCC_VERSION}; sysroot: ${SR}
 EOF
 echo "openjdk-20: installed to ${PREFIX}"
