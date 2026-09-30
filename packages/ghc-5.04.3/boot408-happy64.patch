@@ -1,0 +1,33 @@
+--- a/ghc/compiler/parser/Parser.hs	2026-09-26 07:27:26
++++ b/ghc/compiler/parser/Parser.hs	2026-09-26 07:27:26
+@@ -5706,7 +5706,7 @@
+ #elif __GLASGOW_HASKELL__ == 500
+ 	intToInt16# i
+ #else
+-	(i `iShiftL#` 16#) `iShiftRA#` 16#
++	(i `iShiftL#` 48#) `iShiftRA#` 48#	-- 64-bit Int: sign-extend the 16-bit table entry
+ #endif
+   where
+ #if __GLASGOW_HASKELL__ >= 503
+--- a/ghc/compiler/parser/ParserCore.hs	2026-09-26 07:27:26
++++ b/ghc/compiler/parser/ParserCore.hs	2026-09-26 07:27:26
+@@ -1237,7 +1237,7 @@
+ #elif __GLASGOW_HASKELL__ == 500
+ 	intToInt16# i
+ #else
+-	(i `iShiftL#` 16#) `iShiftRA#` 16#
++	(i `iShiftL#` 48#) `iShiftRA#` 48#	-- 64-bit Int: sign-extend the 16-bit table entry
+ #endif
+   where
+ #if __GLASGOW_HASKELL__ >= 503
+--- a/ghc/compiler/main/ParsePkgConf.hs	2026-09-26 07:27:26
++++ b/ghc/compiler/main/ParsePkgConf.hs	2026-09-26 07:27:26
+@@ -400,7 +400,7 @@
+ #elif __GLASGOW_HASKELL__ == 500
+ 	intToInt16# i
+ #else
+-	(i `iShiftL#` 16#) `iShiftRA#` 16#
++	(i `iShiftL#` 48#) `iShiftRA#` 48#	-- 64-bit Int: sign-extend the 16-bit table entry
+ #endif
+   where
+ #if __GLASGOW_HASKELL__ >= 503

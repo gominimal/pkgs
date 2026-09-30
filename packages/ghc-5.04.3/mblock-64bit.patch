@@ -1,0 +1,46 @@
+--- a/ghc/rts/MBlock.h
++++ b/ghc/rts/MBlock.h
+@@ -62,13 +62,13 @@
+ 
+ // on a 64-bit machine, we need to extend the above scheme to use a
+ // 2-level mapping.  (ToDo)
++//
++// Until then: in a non-PIE executable, text and static data lie below the
++// end-of-data marker and every mmap'd megablock lies above it (GHC 4.08's test).
++// HEAP_BASE is 0 here, so comparing against it would make static closures heap.
++extern void* DATA_SECTION_END_MARKER_DECL;
++#define HEAP_ALLOCED(x)  ((StgPtr)(x) >= (StgPtr)&DATA_SECTION_END_MARKER)
+ 
+-#ifdef TEXT_BEFORE_HEAP
+-# define HEAP_ALLOCED(x)  ((StgPtr)(x) >= (StgPtr)(HEAP_BASE))
+-#else
+-#error HEAP_ALLOCED not defined
+-#endif
+-
+ #endif // SIZEOF_VOID_P != 4
+ 
+ #endif // __MBLOCK_H__
+--- a/ghc/rts/MBlock.c
++++ b/ghc/rts/MBlock.c
+@@ -48,13 +48,21 @@
+    The MBlock Map: provides our implementation of HEAP_ALLOCED()
+    -------------------------------------------------------------------------- */
+ 
++#if SIZEOF_VOID_P == 4
+ StgWord8 mblock_map[4096]; // initially all zeros
+ 
+ static void
+ mblockIsHeap (void *p)
+ {
+     mblock_map[((StgWord)p & ~MBLOCK_MASK) >> MBLOCK_SHIFT] = 1;
++}
++#else
++// 4096 entries cover 4GB of 1MB megablocks; 64-bit HEAP_ALLOCED is an address test (MBlock.h)
++static void
++mblockIsHeap (void *p STG_UNUSED)
++{
+ }
++#endif
+ 
+ /* -----------------------------------------------------------------------------
+    Allocate new mblock(s)

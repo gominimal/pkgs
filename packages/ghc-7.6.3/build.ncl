@@ -1,12 +1,12 @@
 let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
-# ghc-7.6.3: the root of the GHC ladder (7.6.3 -> 7.8.4 -> 7.10.3 -> 8.2.2 -> 8.6.5 -> 8.10.7 ->
-# 9.2.8 -> 9.6.7 -> ghc). No Haskell compiler is needed: the source tree's --enable-hc-boot mode
-# compiles the unregisterised C that ghc-7.6.3's own stage1 emitted for its libraries, compiler and
-# ghc-pkg (the bundle Source) with gcc alone. Installs the whole compiler at /usr/lib/ghc-7.6.3 for
-# the next rung; nothing lands on /usr/bin. amd64 only: the bundle is x86_64 code.
-# Sources mirrored to gs://minimal-staging-archives/: the upstream tarball and the .hc bundle
-# (ghc-7.6.3 stage1 output, see the Source comment).
+# ghc-7.6.3: where the source-only lineage (microhs -> 4.08.2 -> 5.04.3 -> 6.6.1 -> 6.10.4 -> 7.0.4) meets the
+# upper ladder (7.6.3 -> 7.8.4 -> 7.10.3 -> 8.2.2 -> 8.6.5 -> 8.10.7 -> 9.2.8 -> 9.6.7 -> ghc). Built from the
+# upstream tarball with ghc-7.0.4 as the boot compiler, registerised; installs the whole compiler at
+# /usr/lib/ghc-7.6.3 for the next rung; nothing lands on /usr/bin.
+# Sources mirrored to gs://minimal-staging-archives/: the upstream tarball and make 3.82 (the 7.x build system
+# wants it; build.sh builds it).
+let ghc-boot = import "../ghc-7.0.4/build.ncl" in # the previous rung
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # compiles the .hc and the RTS; asserted by build.sh
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
@@ -38,12 +38,11 @@ let amd64_spec =
         extract = false, # build.sh untars with --no-same-owner
       } | Source,
       {
-        # .hc/.hi output of ghc-7.6.3's stage1 (PORTING_HOST, unregisterised, -keep-hc-files) for
-        # every library, the compiler and ghc-pkg, plus the capi wrapper C sources and the package db.
-        url = "gs://minimal-staging-archives/ghc-%{version}-hcboot-bundle-v4.tar.gz",
-        sha256 = "71791f12773b03b2b0e4b9eaba753b5e92f738549b968e661d4bacb2853c8f39",
+        url = "gs://minimal-staging-archives/make-3.82.tar.bz2",
+        sha256 = "e2c1a73f179c40c71e2fe8abf8a8a0688b8499538512984da4a76958d0402966",
         extract = false,
       } | Source,
+      ghc-boot,
       gcc-bedrock,
       binutils-bedrock,
       glibc-bedrock,
@@ -83,7 +82,7 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# amd64 only: the .hc bundle is x86_64 code. On arm64 the ghc recipe keeps its prebuilt boot.
+# amd64 only for now: the source lineage below it is amd64 so far. On arm64 the ghc recipe keeps its prebuilt boot.
 match {
   { arch = 'Amd64, .. } => amd64_spec,
   { arch = 'Arm64, .. } =>

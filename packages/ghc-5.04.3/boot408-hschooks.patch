@@ -1,0 +1,32 @@
+--- a/ghc/compiler/parser/hschooks.c	2026-09-26 07:23:09
++++ b/ghc/compiler/parser/hschooks.c	2026-09-26 07:23:09
+@@ -10,15 +10,18 @@
+ #include "rtsdefs.h"
+ #endif
+ 
+-#if __GLASGOW_HASKELL__ >= 408
++/* 5.04's RtsFlags.h does not describe an older boot compiler's RTS */
++#if __GLASGOW_HASKELL__ >= 500
+ #include "../includes/RtsFlags.h"
++#endif
++#if __GLASGOW_HASKELL__ >= 408
+ #include "HsFFI.h"
+ #endif
+ 
+ void
+ defaultsHook (void)
+ {
+-#if __GLASGOW_HASKELL__ >= 408
++#if __GLASGOW_HASKELL__ >= 500
+     RtsFlags.GcFlags.heapSizeSuggestion = 6*1024*1024 / BLOCK_SIZE;
+     RtsFlags.GcFlags.maxStkSize         = 8*1024*1024 / sizeof(W_);
+ #endif
+@@ -40,7 +43,7 @@
+ void
+ setHeapSize( HsInt size )
+ {
+-#if __GLASGOW_HASKELL__ >= 408
++#if __GLASGOW_HASKELL__ >= 500
+     RtsFlags.GcFlags.heapSizeSuggestion = size / BLOCK_SIZE;
+     if (RtsFlags.GcFlags.maxHeapSize != 0 &&
+ 	RtsFlags.GcFlags.heapSizeSuggestion > RtsFlags.GcFlags.maxHeapSize) {
