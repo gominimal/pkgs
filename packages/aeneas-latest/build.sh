@@ -22,21 +22,21 @@ export CC=gcc
 ROOT="$(pwd)"
 cd AeneasVerif-aeneas-505b6ca/backends/lean
 
-# 1. Our Lean 4.33 port, then the manifest that pins the deps we vendor.
-patch -p1 < "$ROOT/aeneas-lean-4.33.patch"
+# 1. Our Lean 4.34 port, then the manifest that pins the deps we vendor.
+patch -p1 < "$ROOT/aeneas-lean-4.34.patch"
 cp "$ROOT/lake-manifest.json" lake-manifest.json
 
 # 2. Vendored dependencies into place (name -> extracted top-dir).
 mkdir -p .lake/packages
-mv "$ROOT/leanprover-community-mathlib4-db584cd" ".lake/packages/mathlib"
-mv "$ROOT/leanprover-community-plausible-b7eb330" ".lake/packages/plausible"
-mv "$ROOT/leanprover-community-LeanSearchClient-5f4d51b" ".lake/packages/LeanSearchClient"
-mv "$ROOT/leanprover-community-import-graph-16f02aa" ".lake/packages/importGraph"
-mv "$ROOT/leanprover-community-ProofWidgets4-4be2e3d" ".lake/packages/proofwidgets"
-mv "$ROOT/leanprover-community-aesop-3448c0b" ".lake/packages/aesop"
-mv "$ROOT/leanprover-community-quote4-92c15be" ".lake/packages/Qq"
-mv "$ROOT/leanprover-community-batteries-4488d40" ".lake/packages/batteries"
-mv "$ROOT/leanprover-lean4-cli-6130a47" ".lake/packages/Cli"
+mv "$ROOT/leanprover-community-mathlib4-d13f23b" ".lake/packages/mathlib"
+mv "$ROOT/leanprover-community-plausible-118aa17" ".lake/packages/plausible"
+mv "$ROOT/leanprover-community-LeanSearchClient-ddf04cf" ".lake/packages/LeanSearchClient"
+mv "$ROOT/leanprover-community-import-graph-e928b72" ".lake/packages/importGraph"
+mv "$ROOT/leanprover-community-ProofWidgets4-106ff4f" ".lake/packages/proofwidgets"
+mv "$ROOT/leanprover-community-aesop-355695d" ".lake/packages/aesop"
+mv "$ROOT/leanprover-community-quote4-6a489d9" ".lake/packages/Qq"
+mv "$ROOT/leanprover-community-batteries-f2effa3" ".lake/packages/batteries"
+mv "$ROOT/leanprover-lean4-cli-e92c9f1" ".lake/packages/Cli"
 
 # 3. The on-disk overrides file: lake resolves every `require` to these dirs.
 {
@@ -78,7 +78,7 @@ done
 printf '%s\n' "$LEAN_PATH_OUT" > "$OUT/LEAN_PATH"
 
 mkdir -p "$OUTPUT_DIR/usr/share/aeneas-latest"
-cp "$ROOT/aeneas-lean-4.33.patch" "$ROOT/lake-manifest.json" "$OUTPUT_DIR/usr/share/aeneas-latest/"
+cp "$ROOT/aeneas-lean-4.34.patch" "$ROOT/lake-manifest.json" "$OUTPUT_DIR/usr/share/aeneas-latest/"
 # Build manifest: what was installed (the per-package olean counts), so a
 # consumer can tell a complete package from a truncated one at a glance.
 { echo "aeneas-latest $MINIMAL_ARG_VERSION"; for d in "$OUT"/*/; do n="$(basename "$d")"; echo "$n $(find "$d" -name "*.olean" | wc -l) oleans $(du -sk "$d" | cut -f1) KB"; done; echo "total files: $(find "$OUT" -type f | wc -l)"; } > "$OUTPUT_DIR/usr/share/aeneas-latest/MANIFEST"
