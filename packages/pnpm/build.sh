@@ -59,7 +59,7 @@ install -m 755 native/package/pnpm $PREFIX/pnpm
 for b in pnpm pn pnpx pnx; do
   cat > "$OUTPUT_DIR/usr/bin/$b" <<WRAPPER
 #!/bin/sh
-if [ -z "\${PNPM_HOME:-}" ]; then
+if [ -n "\${HOME:-}" ] && [ -z "\${PNPM_HOME:-}" ]; then
   : "\${PNPM_CONFIG_GLOBAL_BIN_DIR:=\$HOME/.local/bin}"
   export PNPM_CONFIG_GLOBAL_BIN_DIR
 fi

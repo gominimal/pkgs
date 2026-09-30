@@ -84,7 +84,7 @@ ln -s bun "$OUTPUT_DIR/usr/libexec/bun/bunx"
 for cmd in bun bunx; do
   cat > "$OUTPUT_DIR/usr/bin/$cmd" <<WRAPPER
 #!/bin/sh
-if [ -z "\${BUN_INSTALL:-}" ]; then
+if [ -n "\${HOME:-}" ] && [ -z "\${BUN_INSTALL:-}" ]; then
   : "\${BUN_INSTALL_BIN:=\$HOME/.local/bin}"
   : "\${BUN_INSTALL_GLOBAL_DIR:=\$HOME/.local/share/bun/global}"
   export BUN_INSTALL_BIN BUN_INSTALL_GLOBAL_DIR
