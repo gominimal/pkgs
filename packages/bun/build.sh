@@ -63,19 +63,32 @@ git -c user.email=build@local -c user.name=build commit -q -m "v${MINIMAL_ARG_VE
 # deps, zig, linking, and strip). Outputs the stripped binary at build/release/bun.
 bun run build:release
 
-# Install. The real binary lives in libexec; /usr/bin carries wrappers that
-# default BUN_INSTALL so `bun add -g` lands its bins in ~/.local/bin (on the
-# session PATH) rather than the off-PATH cache-derived default; a caller's own
-# BUN_INSTALL still wins. bunx stays an argv0 symlink next to the real binary
-# so bun's name-based multiplexing keeps working. See gominimal/inbox#584.
+# Install. The real binary lives in libexec; /usr/bin carries wrappers so
+# `bun add -g` lands its bins in ~/.local/bin (on the session PATH) rather
+# than the off-PATH cache-derived default. bun 1.3.14 reads two narrow knobs
+# (PackageManagerOptions.zig, openGlobalBinDir and openGlobalDir), and the
+# wrapper defaults both:
+#   - BUN_INSTALL_BIN: where the global bin symlinks go.
+#   - BUN_INSTALL_GLOBAL_DIR: the global package dir those symlinks point
+#     into. Without it bun falls back to $XDG_CACHE_HOME/.bun/install/global
+#     (the session sets XDG_CACHE_HOME), so clearing the cache would leave
+#     every ~/.local/bin entry dangling.
+# A caller's own value of either wins, and a caller's BUN_INSTALL disables
+# both defaults so its bin/ and install/global stay as they expect. The env
+# vars do outrank bunfig's globalBinDir/globalDir. bunx stays an argv0
+# symlink next to the real binary so bun's name-based multiplexing keeps
+# working. See gominimal/inbox#584.
 mkdir -p "$OUTPUT_DIR/usr/bin" "$OUTPUT_DIR/usr/libexec/bun"
 install -m 755 build/release/bun "$OUTPUT_DIR/usr/libexec/bun/bun"
 ln -s bun "$OUTPUT_DIR/usr/libexec/bun/bunx"
 for cmd in bun bunx; do
   cat > "$OUTPUT_DIR/usr/bin/$cmd" <<WRAPPER
 #!/bin/sh
-: "\${BUN_INSTALL:=\$HOME/.local}"
-export BUN_INSTALL
+if [ -z "\${BUN_INSTALL:-}" ]; then
+  : "\${BUN_INSTALL_BIN:=\$HOME/.local/bin}"
+  : "\${BUN_INSTALL_GLOBAL_DIR:=\$HOME/.local/share/bun/global}"
+  export BUN_INSTALL_BIN BUN_INSTALL_GLOBAL_DIR
+fi
 exec /usr/libexec/bun/$cmd "\$@"
 WRAPPER
   chmod +x "$OUTPUT_DIR/usr/bin/$cmd"
