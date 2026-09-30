@@ -119,14 +119,34 @@ in
           ["/bin/bash", "-c", "bun --eval 'console.log(1+1)' | grep -q '^2$'"],
         ],
       } | Test,
-    global_install_default =
+    # `bun add -g` lands a package's bin in ~/.local/bin, where the session
+    # PATH resolves it, backed by a global dir outside the cache
+    # (gominimal/inbox#584).
+    global_install =
       {
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          # The wrapper must default BUN_INSTALL so `bun add -g` bins land in
-          # ~/.local/bin, on the session PATH (gominimal/inbox#584).
-          ["/bin/bash", "-c", "bun --eval 'console.log(process.env.BUN_INSTALL)' | grep -q '/.local$'"],
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              # Standalone tests run with the build-sandbox env (HOME=/state/home,
+              # no ~/.local/bin on PATH), so each lookup below spells out a
+              # session-like PATH that carries ~/.local/bin.
+              mkdir -p /tmp/g/bin && cd /tmp/g
+              printf '%s' '{"name":"gbin","version":"1.0.0","bin":{"gbin":"bin/gbin"}}' > package.json
+              printf '#!/bin/sh\necho ok\n' > bin/gbin && chmod +x bin/gbin
+              cd / && bun add -g file:/tmp/g
+              test "$(PATH=/usr/bin:/bin:$HOME/.local/bin command -v gbin)" = "$HOME/.local/bin/gbin"
+              test "$(PATH=/usr/bin:/bin:$HOME/.local/bin gbin)" = ok
+              test -f "$HOME/.local/share/bun/global/package.json"
+
+              # A caller's BUN_INSTALL keeps bun's own <BUN_INSTALL>/bin layout.
+              test "$(BUN_INSTALL=/tmp/bi bun --eval 'console.log(process.env.BUN_INSTALL_BIN ?? "unset")')" = unset
+            "%
+          ],
         ],
       } | Test,
   },

@@ -67,15 +67,27 @@ let version = "2.9.5" in
           ["/bin/bash", "-c", "deno eval 'console.log(1+1)' | grep -q '^2$'"],
         ],
       } | Test,
-    global_install_default =
+    # `deno install -g` lands a script in ~/.local/bin, where the session PATH
+    # resolves it (gominimal/inbox#584).
+    global_install =
       {
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          # The wrapper must default DENO_INSTALL_ROOT so `deno install -g`
-          # bins land in ~/.local/bin, on the session PATH
-          # (gominimal/inbox#584).
-          ["/bin/bash", "-c", "deno eval \"console.log(Deno.env.get('DENO_INSTALL_ROOT'))\" | grep -q '/.local$'"],
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              # Standalone tests run with the build-sandbox env (HOME=/state/home,
+              # no ~/.local/bin on PATH), so each lookup below spells out a
+              # session-like PATH that carries ~/.local/bin.
+              printf '%s\n' 'console.log("ok");' > /tmp/t.ts
+              deno install -g -n gbin /tmp/t.ts
+              test "$(PATH=/usr/bin:/bin:$HOME/.local/bin command -v gbin)" = "$HOME/.local/bin/gbin"
+              test "$(PATH=/usr/bin:/bin:$HOME/.local/bin gbin)" = ok
+            "%
+          ],
         ],
       } | Test,
   },

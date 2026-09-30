@@ -86,14 +86,37 @@ let version = "4.0.6" in
         ],
       } | Test,
 
-    gem_bindir_default =
+    # `gem install` puts a gem's executable in ~/.local/bin, where the session
+    # PATH resolves it, even when the user's own gemrc sets `gem:` flags; and
+    # `gem uninstall` removes it again (gominimal/inbox#584).
+    gem_global_install =
       {
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          # The shipped system gemrc must redirect gem binstubs to ~/.local/bin,
-          # on the session PATH (gominimal/inbox#584).
-          ["/bin/bash", "-c", "grep -q -- '--bindir ~/.local/bin' /usr/etc/gemrc"],
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              # Standalone tests run with the build-sandbox env (HOME=/state/home,
+              # no ~/.local/bin on PATH), so each lookup below spells out a
+              # session-like PATH that carries ~/.local/bin.
+              printf 'gem: --no-document\n' > "$HOME/.gemrc"
+              mkdir -p /tmp/g/bin && cd /tmp/g
+              printf '#!/usr/bin/env ruby\nputs "ok"\n' > bin/gbin && chmod +x bin/gbin
+              printf '%s\n' 'Gem::Specification.new do |s|' \
+                '  s.name = "gbin"; s.version = "0.0.1"; s.summary = "t"; s.authors = ["t"]' \
+                '  s.files = ["bin/gbin"]; s.executables = ["gbin"]' \
+                'end' > gbin.gemspec
+              gem build gbin.gemspec
+              gem install --local ./gbin-0.0.1.gem
+              test "$(PATH=/usr/bin:/bin:$HOME/.local/bin command -v gbin)" = "$HOME/.local/bin/gbin"
+              test "$(PATH=/usr/bin:/bin:$HOME/.local/bin gbin)" = ok
+              gem uninstall -x gbin
+              test ! -e "$HOME/.local/bin/gbin"
+            "%
+          ],
         ],
       } | Test,
   },
