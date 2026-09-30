@@ -719,3 +719,18 @@ diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/le
 @@ -1 +1 @@
 -leanprover/lean4:v4.31.0
 +leanprover/lean4:v4.34.1
+diff -ruN a/Aeneas/Tactic/Solver/Arith/Lemmas.lean b/Aeneas/Tactic/Solver/Arith/Lemmas.lean
+--- a/Aeneas/Tactic/Solver/Arith/Lemmas.lean	2026-09-30 16:31:51
++++ b/Aeneas/Tactic/Solver/Arith/Lemmas.lean	2026-09-30 16:31:51
+@@ -282,9 +282,8 @@
+     simp only [Nat.cast_inj]
+     rfl
+   else
+-    have hn : 0 < n := by cases n <;> simp_all only [AddLeftCancelMonoid.add_eq_zero, one_ne_zero,
+-      and_false, not_false_eq_true, lt_add_iff_pos_left, add_pos_iff,
+-      zero_lt_one, or_true, not_true_eq_false]
++    -- Mathlib v4.34 dropped `AddLeftCancelMonoid.add_eq_zero`; `hn : ¬n = 0` makes this arithmetic.
++    have hn : 0 < n := by omega
+     rw [ZMod.mul_inv_eq_gcd]
+     rw [← Int.gcd_natCast_natCast]
+     have hnz : NeZero n := by simp [neZero_iff, *]
