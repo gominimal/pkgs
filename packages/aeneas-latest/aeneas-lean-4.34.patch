@@ -735,12 +735,13 @@ diff -ruN a/Aeneas/Tactic/Solver/Arith/Lemmas.lean b/Aeneas/Tactic/Solver/Arith/
      rw [← Int.gcd_natCast_natCast]
      have hnz : NeZero n := by simp [neZero_iff, *]
 diff -ruN a/Aeneas/Tactic/Conv/Bvify/Bvify.lean b/Aeneas/Tactic/Conv/Bvify/Bvify.lean
---- a/Aeneas/Tactic/Conv/Bvify/Bvify.lean	2026-09-30 16:44:12
-+++ b/Aeneas/Tactic/Conv/Bvify/Bvify.lean	2026-09-30 16:44:12
-@@ -402,70 +402,12 @@
+--- a/Aeneas/Tactic/Conv/Bvify/Bvify.lean	2026-09-30 16:53:38
++++ b/Aeneas/Tactic/Conv/Bvify/Bvify.lean	2026-09-30 16:53:38
+@@ -401,71 +401,14 @@
+ example (n a : Nat) (h : a < 2^n) : BitVec.ofNat n a ≤ BitVec.ofNat n (2^n - 1) := by
    bvify n at *
    tauto
- 
+-
 -/--
 -info: example
 -  (a : U32)
@@ -759,7 +760,7 @@ diff -ruN a/Aeneas/Tactic/Conv/Bvify/Bvify.lean b/Aeneas/Tactic/Conv/Bvify/Bvify
 -  bvify 32 at *
 -  extract_goal1
 -  bv_decide
--
+ 
 -example
 -  (a : U32)
 -  (b : U32)
@@ -782,10 +783,11 @@ diff -ruN a/Aeneas/Tactic/Conv/Bvify/Bvify.lean b/Aeneas/Tactic/Conv/Bvify/Bvify
 -  bvify 32 at *
 -  simp_all only
 -  bv_decide
-+-- Lean 4.34.1: `bv_decide` abstracts `a.bv + b.bv` as an opaque atom after `bvify`
-+-- and reports a spurious counterexample, so the three `bvify ...; bv_decide` tests
-+-- that stood here are dropped. They exercised Lean's `bv_decide`, not `bvify`, which
-+-- is the only Aeneas API in this file.
++-- Lean 4.34.1: `bv_decide` abstracts `a.bv + b.bv` (and `byte.bv &&& 16#8`) as opaque
++-- atoms after `bvify` and reports a spurious counterexample, so the three
++-- `bvify ...; bv_decide` tests that stood here, and the `byte &&& 16` one at the end
++-- of the file, are dropped. They exercised Lean's `bv_decide`, not `bvify`, which is
++-- the only Aeneas API in this file.
  
  example
 -  (a : U32)
@@ -812,3 +814,11 @@ diff -ruN a/Aeneas/Tactic/Conv/Bvify/Bvify.lean b/Aeneas/Tactic/Conv/Bvify/Bvify
    (x : U16) (_ : x.val < 3329)
    (y : U32) (_ : y = core.convert.num.FromU32U16.from x) :
    y.val = x.val
+@@ -501,7 +444,5 @@
+   extract_goal1
+   simp [h]
+ 
+-example (byte : U8) : 8 ∣ (byte &&& 16#u8).val := by
+-  bvify 8; bv_decide
+ 
+ end Aeneas.Bvify
