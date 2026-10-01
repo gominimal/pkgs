@@ -17,7 +17,7 @@ let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let xz = import "../xz/build.ncl" in
 
-let version = "3.14.7" in
+let version = "3.14.8" in
 {
   name = "python",
   build_deps = [
@@ -59,7 +59,7 @@ let version = "3.14.7" in
     { file = "0005-gh-155292-stringprep-pin-unicode-3.2.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/Python-%{version}.tar.xz",
-      sha256 = "3b48dac8fb59f62eaa67ac83c1eb12bda1b7a08406dd286e252c11a66be27f81"
+      sha256 = "c2215904f02b175596dc49351585104f4bc20341e1c47378b26a2c274360ce73"
     } | Source,
     base,
     make,
@@ -270,7 +270,7 @@ let version = "3.14.7" in
         ],
       } | Test,
 
-    # CVE-2026-15806 regression: FAILS on stock 3.14.7 (the https
+    # CVE-2026-15806 regression: FAILS on stock 3.14.8 (the https
     # credentials come back for the http URL, and HTTPPasswordMgrWithPriorAuth
     # pre-emptively sends them), passes only with the gh-155694 patch.
     urllib_credentials_scoped_by_scheme =
