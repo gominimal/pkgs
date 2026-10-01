@@ -18,11 +18,12 @@ mkdir -p $BIN/fixlib
 # the sysroot's libc.so is a linker script with staging paths; regenerate it
 sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@$SR/lib/\1@g" $SR/lib/libc.so > $BIN/fixlib/libc.so
 grep -q '/build/output' $BIN/fixlib/libc.so && { echo "ghc-5.04.3: libc.so fixup failed" >&2; exit 1; }
-# gcc (and cc): the first gcc on PATH outside this directory, given the sysroot's headers and, when linking, its
+# gcc (and cc): the first gcc on PATH that is not one of these wrappers (each rung ships one), given the sysroot's headers and, when linking, its
 # libraries and loader ahead of /usr/lib, where the toolchain glibc also lives
 cat > $BIN/gcc <<EOF
 #!/bin/sh
-SELF=\$(dirname "\$0"); G=; IFS=:; for d in \$PATH; do [ "\$d" = "\$SELF" ] && continue; [ -x "\$d/gcc" ] && { G=\$d/gcc; break; }; done; unset IFS
+# sysroot-gcc-wrapper (every rung ships one; they skip each other by this line)
+G=; IFS=:; for d in \$PATH; do [ -x "\$d/gcc" ] || continue; grep -q 'sysroot-gcc-wrapper' "\$d/gcc" 2>/dev/null && continue; G=\$d/gcc; break; done; unset IFS
 [ -n "\$G" ] || { echo "gcc wrapper: no gcc on PATH" >&2; exit 127; }
 GI=\$("\$G" -print-file-name=include)
 for a in "\$@"; do case "\$a" in -c|-S|-E|-M|-MM) exec "\$G" -nostdinc -isystem "\$GI" -isystem $SR/include -isystem /usr/include "\$@" ;; esac; done
