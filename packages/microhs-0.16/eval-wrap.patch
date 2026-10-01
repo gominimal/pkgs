@@ -1,0 +1,52 @@
+--- a/src/runtime/eval.c
++++ b/src/runtime/eval.c
+@@ -6346,7 +6346,7 @@
+       case T_QUOT:  if (yu == 0)
+                       raise_rts(exn_dividebyzero);
+                     else if ((value_t)xu == VALUE_MIN && (value_t)yu == -1)
+-                      raise_rts(exn_overflow);
++                      ru = xu;          /* wraps, as GHC's quotInt# does (hsc 4.08 relies on it) */
+                     else
+                       ru = (uvalue_t)((value_t)xu / (value_t)yu);
+                     break;
+@@ -6409,7 +6409,7 @@
+     unint:
+       switch (GETTAG(p)) {
+       case T_IND:      p = GETINDIR(p); goto unint;
+-      case T_NEG:      if ((value_t)xu == VALUE_MIN) raise_rts(exn_overflow); ru = -xu; break;
++      case T_NEG:      ru = -xu; break;   /* unsigned negate: minBound wraps to itself */
+       case T_UNEG:     ru = -xu; break;
+       case T_INV:      ru = ~xu; break;
+       case T_POPCOUNT: ru = POPCOUNT(xu); break;
+@@ -6462,7 +6462,7 @@
+       case T_QUOT64:if (y64u == 0)
+                       raise_rts(exn_dividebyzero);
+                     else if ((int64_t)x64u == INT64_MIN && (int64_t)y64u == -1)
+-                      raise_rts(exn_overflow);
++                      r64u = x64u;
+                     else
+                       r64u = (uint64_t)((int64_t)x64u / (int64_t)y64u);
+                     break;
+@@ -6525,7 +6525,7 @@
+     unint64:
+       switch (GETTAG(p)) {
+       case T_IND:        p = GETINDIR(p); goto unint64;
+-      case T_NEG64:      if ((int64_t)x64u == INT64_MIN) raise_rts(exn_overflow); r64u = -x64u; break;
++      case T_NEG64:      r64u = -x64u; break;
+       case T_UNEG64:     r64u = -x64u; break;
+       case T_INV64:      r64u = ~x64u; break;
+       case T_POPCOUNT64: ru = POPCOUNT64(x64u); SETINT(n, (value_t)ru); goto ret;
+--- a/src/runtime/unix/config.h
++++ b/src/runtime/unix/config.h
+@@ -80,9 +80,9 @@
+ #define WANT_ERRNO 1
+ 
+ /*
+- * overflow detection in arithmetic
++ * overflow detection in arithmetic: off, Int wraps as in GHC (hsc 4.08's hashing and unique arithmetic rely on it)
+  */
+-#define WANT_OVERFLOW 1
++#define WANT_OVERFLOW 0
+ 
+ /*
+  * Enable non-blocking IO polling.
