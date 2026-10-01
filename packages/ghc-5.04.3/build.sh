@@ -45,9 +45,10 @@ cat > $BIN/gcc89 <<'EOF'
 exec gcc -std=gnu89 -fcommon -fno-strict-aliasing -Wno-implicit-int -Wno-implicit-function-declaration \
   -Wno-int-conversion -Wno-incompatible-pointer-types -no-pie "$@"
 EOF
-# the compiler's cpp (-pgmP): gcc -E splices backslash-newline even with -traditional, destroying Haskell string gaps.
-# Protect a backslash whose next line opens with one (a \002 marker, stripped afterwards) on non-directive lines;
-# the temporary copy sits beside the input so relative #includes resolve; line markers point back at the real file.
+# the compiler's cpp (-pgmP): gcc -E splices backslash(+blanks)-newline even with -traditional, destroying Haskell string
+# gaps and operators such as `infix 5 \\` at a line end. Protect every line-final backslash on non-directive lines (a \002
+# marker, stripped afterwards); the temporary copy sits beside the input so relative #includes resolve; line markers
+# point back at the real file.
 cat > $BIN/cpp-gap <<'EOF'
 #!/bin/bash
 args=("$@"); out=; in_i=-1
@@ -57,7 +58,7 @@ for ((i = 0; i < ${#args[@]}; i++)); do
 done
 [ $in_i -ge 0 ] || exec gcc89 -E -undef -traditional "$@"
 in=${args[$in_i]}; tmp=$(mktemp "$(dirname "$in")/.cppgap.XXXXXX")
-perl -e '@l = <>; $d = 0; for $i (0 .. $#l) { $_ = $l[$i]; $d = 1 if /^\s*#/; if ($d) { $d = /\\[ \t]*\r?\n$/ ? 1 : 0 } elsif ($i < $#l && $l[$i + 1] =~ /^\s*\\/) { s/\\([ \t]*\r?\n)$/\\\002$1/ } print }' "$in" > "$tmp"
+perl -e '$d = 0; while (<>) { $d = 1 if /^\s*#/; if ($d) { $d = /\\[ \t]*\r?\n$/ ? 1 : 0 } else { s/\\([ \t]*\r?\n)$/\\\002$1/ } print }' "$in" > "$tmp"
 args[$in_i]=$tmp
 gcc89 -E -undef -traditional "${args[@]}"; rc=$?
 [ -n "$out" ] && [ -f "$out" ] && T="$tmp" I="$in" perl -pi -e 's/\002//g; s/\Q$ENV{T}\E/$ENV{I}/g' "$out"
