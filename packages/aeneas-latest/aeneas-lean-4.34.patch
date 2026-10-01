@@ -824,8 +824,8 @@ diff -ruN a/Aeneas/Tactic/Conv/Bvify/Bvify.lean b/Aeneas/Tactic/Conv/Bvify/Bvify
  end Aeneas.Bvify
 diff -ruN a/Aeneas/Tactic/Solver/BvTac/BvTac.lean b/Aeneas/Tactic/Solver/BvTac/BvTac.lean
 --- a/Aeneas/Tactic/Solver/BvTac/BvTac.lean	2026-09-30 17:37:47
-+++ b/Aeneas/Tactic/Solver/BvTac/BvTac.lean	2026-09-30 17:57:41
-@@ -81,7 +81,42 @@
++++ b/Aeneas/Tactic/Solver/BvTac/BvTac.lean	2026-09-30 18:07:54
+@@ -81,7 +81,46 @@
  elab "bv_tac_preprocess" config:Parser.Tactic.optConfig n:(colGt term)? : tactic => do
    bvTacPreprocess (← elabConfig config) (← optElabTerm n)
  
@@ -838,8 +838,12 @@ diff -ruN a/Aeneas/Tactic/Solver/BvTac/BvTac.lean b/Aeneas/Tactic/Solver/BvTac/B
 +  let w ← whnf (← instantiateMVars w)
 +  return w.nat?.orElse fun _ => w.rawNatLit?
 +
++/-- The scalar bit-vector accessors: `Aeneas.Std.UScalar.bv`, `IScalar.bv` and the per-type
++`U8.bv` … `Isize.bv`. -/
 +def isScalarBv (e : Expr) : Bool :=
-+  e.isAppOf ``Aeneas.Std.UScalar.bv || e.isAppOf ``Aeneas.Std.IScalar.bv
++  match e.getAppFn.constName? with
++  | some n@(.str _ "bv") => `Aeneas.Std.isPrefixOf n
++  | _ => false
 +
 +/-- Lean ≥ 4.34 reads a `bv_decide` atom's width SYNTACTICALLY (`Sym.getNatValue?`), and the
 +width of `x.bv : BitVec ty.numBits` is `UScalarTy.numBits U8`, which it no longer reduces to `8`:
@@ -869,23 +873,11 @@ diff -ruN a/Aeneas/Tactic/Solver/BvTac/BvTac.lean b/Aeneas/Tactic/Solver/BvTac/B
  /-- `bv_tac n` solves goals about bit-vectors.
  
  **Usage**: `bv_tac n` where `n` is the bitwidth to use for the bit-vectors.
-@@ -117,12 +152,28 @@
+@@ -117,12 +156,16 @@
    bvTacPreprocess config (← optElabTerm n)
    -- The preprocessing step may have proven the goal
    Utils.allGoals do
-+  -- TEMP-DEBUG (stderr: logInfo is rolled back by allGoals' try/catch)
-+  do
-+    let g ← getMainGoal
-+    let t ← instantiateMVars (← g.getType)
-+    IO.eprintln s!"BVTAC-DBG before: {toString t}"
 +  literalWidthAtomsTac
-+  do
-+    let g ← getMainGoal
-+    let t ← instantiateMVars (← g.getType)
-+    IO.eprintln s!"BVTAC-DBG after: {toString t}"
-+    for d in (← getLCtx) do
-+      unless d.isImplementationDetail do
-+        IO.eprintln s!"BVTAC-DBG hyp {d.userName}: {toString (← instantiateMVars d.type)}"
    -- Call bv_decide
    IO.FS.withTempFile fun _ lratFile => do
      let config := config.toBVDecideConfig
