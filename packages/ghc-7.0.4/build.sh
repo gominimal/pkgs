@@ -159,12 +159,13 @@ iself() { [ -f "$1" ] && [ "$(head -c 4 "$1" | tr -d '\0')" = $'\x7fELF' ]; }
 for f in "$DST"/bin/* "$LIBD"/package.conf.d/*.conf; do iself "$f" || ! grep -q "$BUILDROOT" "$f" || { echo "ghc-7.0.4: build paths survive in $f" >&2; exit 1; }; done
 
 # --- P5 gate on the installed layout: the db pointed at $DST for the duration ---
-GATEDB="$LIBD/gate.conf.d"; cp -r "$LIBD/package.conf.d" "$GATEDB"
+GATEDB="$LIBD/gate.conf.d"; find "$GATEDB" -delete 2>/dev/null || true; cp -r "$LIBD/package.conf.d" "$GATEDB"
 sed -i "s|$PREFIX|$DST|g" "$GATEDB"/*.conf
 "$LIBD/ghc-pkg" --global-conf "$GATEDB" recache
 cd $T
 "$LIBD/ghc" -B"$LIBD" -no-user-package-conf -package-conf "$GATEDB" -O -rtsopts -o gate num.hs -outputdir gate.d > gate.log 2>&1 && ./gate > gate.out 2>&1 || { tail -10 gate.log >&2; echo "ghc-7.0.4: installed compiler failed the gate" >&2; exit 1; }
 cmp -s gate.out num.expected || { echo "ghc-7.0.4: installed compiler's output differs" >&2; exit 1; }
-"$LIBD/ghc" -B"$LIBD" --info | grep -q '"Unregisterised","NO"' || { echo "ghc-7.0.4: not the registerised compiler" >&2; exit 1; }
+INFO=$("$LIBD/ghc" -B"$LIBD" --info)   # captured: grep -q closing the pipe early would fail the pipeline
+echo "$INFO" | grep -q '"Unregisterised","NO"' || { echo "ghc-7.0.4: not the registerised compiler" >&2; exit 1; }
 find "$GATEDB" -delete
 echo "ghc-7.0.4: installed $(du -sh "$DST" | cut -f1) at $PREFIX"

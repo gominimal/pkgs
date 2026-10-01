@@ -187,7 +187,8 @@ printf 'import Data.List\nmain = putStrLn ("GHC-GATE:" ++ show (product [1..5 ::
 printf 'main :: IO ()\nmain = do\n  let zs = [ (2 ^ (100 :: Int) + toInteger i) - (2 ^ (100 :: Int) + toInteger i) | i <- [1 .. 300000 :: Int] ]\n  print (sum zs, length (show (product [1 .. 3000 :: Integer])))\n' > ../gmpzero.hs
 "${GHCBIN}" -B"${LIBD}" -no-global-package-db -package-db "${GATEDB}" -O -o ../gmpzero ../gmpzero.hs -outputdir ../gmpzero.d > ../gmpzero.log 2>&1 && OUT="$(../gmpzero)" || { cat ../gmpzero.log >&2; echo "ghc-${VERSION}: gmpzero failed" >&2; exit 1; }
 [ "$OUT" = "(0,9131)" ] || { echo "ghc-${VERSION}: gmpzero printed '$OUT'" >&2; exit 1; }
-"${GHCBIN}" -B"${LIBD}" --info | grep -q '"Unregisterised","NO"' || { echo "ghc-${VERSION}: not a registerised compiler" >&2; exit 1; }
+INFO="$("${GHCBIN}" -B"${LIBD}" --info)"   # captured: grep -q closing the pipe early would fail the pipeline
+echo "${INFO}" | grep -q '"Unregisterised","NO"' || { echo "ghc-${VERSION}: not a registerised compiler" >&2; exit 1; }
 [ "$("${GHCBIN}" -B"${LIBD}" --numeric-version)" = "${VERSION}" ] || { echo "ghc-${VERSION}: wrong compiler version installed" >&2; exit 1; }
 sed -i "s|${CCDIR}/gcc|${PREFIX}/bin/ghc-cc|g" "${SETTINGS}"
 find "${GATEDB}" -delete
