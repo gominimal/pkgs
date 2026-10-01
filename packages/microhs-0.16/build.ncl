@@ -2,6 +2,7 @@ let { subsetOf, Attrs, BuildSpec, Local, OutputData, Source, .. } = import "mini
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
+let patch = import "../patch/build.ncl" in # applies the three wrap patches
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # the C compiler, hex0-rooted; build.sh wraps it against the sysroot
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
@@ -27,6 +28,7 @@ let amd64_spec =
       } | Source,
       base,
       make,
+      patch,
       gcc-bedrock,
       binutils-bedrock,
       glibc-bedrock,
