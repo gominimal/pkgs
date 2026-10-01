@@ -824,7 +824,7 @@ diff -ruN a/Aeneas/Tactic/Conv/Bvify/Bvify.lean b/Aeneas/Tactic/Conv/Bvify/Bvify
  end Aeneas.Bvify
 diff -ruN a/Aeneas/Tactic/Solver/BvTac/BvTac.lean b/Aeneas/Tactic/Solver/BvTac/BvTac.lean
 --- a/Aeneas/Tactic/Solver/BvTac/BvTac.lean	2026-09-30 17:37:47
-+++ b/Aeneas/Tactic/Solver/BvTac/BvTac.lean	2026-09-30 18:07:54
++++ b/Aeneas/Tactic/Solver/BvTac/BvTac.lean	2026-09-30 18:17:52
 @@ -81,7 +81,46 @@
  elab "bv_tac_preprocess" config:Parser.Tactic.optConfig n:(colGt term)? : tactic => do
    bvTacPreprocess (← elabConfig config) (← optElabTerm n)
@@ -842,7 +842,7 @@ diff -ruN a/Aeneas/Tactic/Solver/BvTac/BvTac.lean b/Aeneas/Tactic/Solver/BvTac/B
 +`U8.bv` … `Isize.bv`. -/
 +def isScalarBv (e : Expr) : Bool :=
 +  match e.getAppFn.constName? with
-+  | some n@(.str _ "bv") => `Aeneas.Std.isPrefixOf n
++  | some n@(.str _ "bv") => (`Aeneas.Std).isPrefixOf n
 +  | _ => false
 +
 +/-- Lean ≥ 4.34 reads a `bv_decide` atom's width SYNTACTICALLY (`Sym.getNatValue?`), and the
