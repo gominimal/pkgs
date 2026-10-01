@@ -824,7 +824,7 @@ diff -ruN a/Aeneas/Tactic/Conv/Bvify/Bvify.lean b/Aeneas/Tactic/Conv/Bvify/Bvify
  end Aeneas.Bvify
 diff -ruN a/Aeneas/Tactic/Solver/BvTac/BvTac.lean b/Aeneas/Tactic/Solver/BvTac/BvTac.lean
 --- a/Aeneas/Tactic/Solver/BvTac/BvTac.lean	2026-09-30 17:37:47
-+++ b/Aeneas/Tactic/Solver/BvTac/BvTac.lean	2026-09-30 17:37:47
++++ b/Aeneas/Tactic/Solver/BvTac/BvTac.lean	2026-09-30 17:47:43
 @@ -81,7 +81,42 @@
  elab "bv_tac_preprocess" config:Parser.Tactic.optConfig n:(colGt term)? : tactic => do
    bvTacPreprocess (← elabConfig config) (← optElabTerm n)
@@ -869,11 +869,19 @@ diff -ruN a/Aeneas/Tactic/Solver/BvTac/BvTac.lean b/Aeneas/Tactic/Solver/BvTac/B
  /-- `bv_tac n` solves goals about bit-vectors.
  
  **Usage**: `bv_tac n` where `n` is the bitwidth to use for the bit-vectors.
-@@ -117,12 +152,16 @@
+@@ -117,12 +152,24 @@
    bvTacPreprocess config (← optElabTerm n)
    -- The preprocessing step may have proven the goal
    Utils.allGoals do
 +  literalWidthAtomsTac
++  -- TEMP-DEBUG
++  do
++    let g ← getMainGoal
++    let t ← instantiateMVars (← g.getType)
++    logInfo m!"BVTAC-DBG target: {t} :: RAW {toString t}"
++    for d in (← getLCtx) do
++      unless d.isImplementationDetail do
++        logInfo m!"BVTAC-DBG hyp {d.userName}: RAW {toString (← instantiateMVars d.type)}"
    -- Call bv_decide
    IO.FS.withTempFile fun _ lratFile => do
      let config := config.toBVDecideConfig
