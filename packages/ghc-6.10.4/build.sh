@@ -126,6 +126,7 @@ install -m 0755 $BIN/gcc $BIN/gcc89 $BIN/cpp-gap "$DST/bin/"; ln -sf gcc "$DST/b
 mkdir -p "$DST/lib"; cp -a $BIN/fixlib "$DST/lib/fixlib"; sed -i "s|$BIN/fixlib|$PREFIX/lib/fixlib|" "$DST/bin/gcc"
 cp -a $TREE "$DST/ghc-$V"
 find "$DST/ghc-$V" \( -name '*.o' -o -name '*.hc' -o -name '*.log' -o -name '*_stub.c' \) -type f -delete
+find "$DST/ghc-$V" \( -name config.status -o -name config.log -o -name config.cache \) -type f -delete   # configure's records
 grep -rlI "$BUILDROOT" "$DST/ghc-$V" | xargs -r sed -i "s|$TREE|$PREFIX/ghc-$V|g; s|$BUILDROOT/bin|$PREFIX/bin|g; s|$BUILDROOT/home|/tmp|g"
 grep -rlI "$BUILDROOT" "$DST/ghc-$V" | head -3 | grep -q . && { echo "ghc-6.10.4: build-root paths remain in the installed tree" >&2; exit 1; } || true
 cat > "$DST/bin/ghc" <<EOF
