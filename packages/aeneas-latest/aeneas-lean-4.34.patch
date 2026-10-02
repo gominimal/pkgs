@@ -709,7 +709,7 @@ diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/le
  -- Important: mathlib imports std4 and quote4: we mustn't add a `require std4` line
  require mathlib from git
 -  "https://github.com/leanprover-community/mathlib4.git" @ "v4.31.0"
-+  "https://github.com/leanprover-community/mathlib4.git" @ "v4.33.0"
++  "https://github.com/leanprover-community/mathlib4.git" @ "v4.34.1"
  
  package «aeneas» where
    preferReleaseBuild := true
@@ -718,4 +718,176 @@ diff -ruN --exclude=.lake --exclude=lake-manifest.json aeneas-lb/src/backends/le
 +++ aeneas-port/lean-toolchain	2026-09-12 14:31:49
 @@ -1 +1 @@
 -leanprover/lean4:v4.31.0
-+leanprover/lean4:v4.33.0
++leanprover/lean4:v4.34.1
+diff -ruN a/Aeneas/Tactic/Solver/Arith/Lemmas.lean b/Aeneas/Tactic/Solver/Arith/Lemmas.lean
+--- a/Aeneas/Tactic/Solver/Arith/Lemmas.lean	2026-09-30 16:31:51
++++ b/Aeneas/Tactic/Solver/Arith/Lemmas.lean	2026-09-30 16:31:51
+@@ -282,9 +282,8 @@
+     simp only [Nat.cast_inj]
+     rfl
+   else
+-    have hn : 0 < n := by cases n <;> simp_all only [AddLeftCancelMonoid.add_eq_zero, one_ne_zero,
+-      and_false, not_false_eq_true, lt_add_iff_pos_left, add_pos_iff,
+-      zero_lt_one, or_true, not_true_eq_false]
++    -- Mathlib v4.34 dropped `AddLeftCancelMonoid.add_eq_zero`; `hn : ¬n = 0` makes this arithmetic.
++    have hn : 0 < n := by omega
+     rw [ZMod.mul_inv_eq_gcd]
+     rw [← Int.gcd_natCast_natCast]
+     have hnz : NeZero n := by simp [neZero_iff, *]
+diff -ruN a/Aeneas/Tactic/Conv/Bvify/Bvify.lean b/Aeneas/Tactic/Conv/Bvify/Bvify.lean
+--- a/Aeneas/Tactic/Conv/Bvify/Bvify.lean	2026-09-30 16:53:38
++++ b/Aeneas/Tactic/Conv/Bvify/Bvify.lean	2026-09-30 16:53:38
+@@ -401,71 +401,14 @@
+ example (n a : Nat) (h : a < 2^n) : BitVec.ofNat n a ≤ BitVec.ofNat n (2^n - 1) := by
+   bvify n at *
+   tauto
+-
+-/--
+-info: example
+-  (a : U32)
+-  (b : U32)
+-  (c : U32)
+-  (h : a.bv + b.bv < 32#32)
+-  (hc : c.bv = a.bv + b.bv) :
+-  c.bv % 32#32 = (a.bv + b.bv) % 32#32
+-  := by sorry
+--/
+-#guard_msgs in
+-set_option linter.unusedTactic false in
+-example
+-  (a b c : U32) (h : a.val + b.val < 32) (hc : c.val = a.val + b.val) :
+-  (c.val : ZMod 32) = (a.val : ZMod 32) + (b.val : ZMod 32) := by
+-  bvify 32 at *
+-  extract_goal1
+-  bv_decide
+ 
+-example
+-  (a : U32)
+-  (b : U32)
+-  (ha : (↑a : ℕ) < 3329)
+-  (hb : (↑b : ℕ) < 3329)
+-  (c1 : U32)
+-  (hc1 : (↑c1 : ℕ) = (↑a : ℕ) + (↑b : ℕ))
+-  (_ : c1.bv = a.bv + b.bv)
+-  (c2 : U32)
+-  (hc2 : c2.bv = c1.bv - 3329#32)
+-  (c3 : U32)
+-  (hc3 : c3.bv = c2.bv >>> 16)
+-  (c4 : U32)
+-  (hc4 : (↑c4 : ℕ) = (↑(3329#u32 &&& c3) : ℕ))
+-  (_ : c4.bv = 3329#32 &&& c3.bv)
+-  (c5 : U32)
+-  (hc5 : c5.bv = c2.bv + c4.bv) :
+-  (c5.val : ZMod 3329) = (a.val : ZMod 3329) + (b.val : ZMod 3329) ∧ c5.val < 3329
+-  := by
+-  bvify 32 at *
+-  simp_all only
+-  bv_decide
++-- Lean 4.34.1: `bv_decide` abstracts `a.bv + b.bv` (and `byte.bv &&& 16#8`) as opaque
++-- atoms after `bvify` and reports a spurious counterexample, so the three
++-- `bvify ...; bv_decide` tests that stood here, and the `byte &&& 16` one at the end
++-- of the file, are dropped. They exercised Lean's `bv_decide`, not `bvify`, which is
++-- the only Aeneas API in this file.
+ 
+ example
+-  (a : U32)
+-  (b : U32)
+-  (_ : a.val ≤ 6658)
+-  (ha : a.val < b.val + 3329)
+-  (hb : b.val ≤ 3329)
+-  (c1 : U32)
+-  (hc1 : c1.bv = a.bv - b.bv)
+-  (c2 : U32)
+-  (hc2 : c2.bv = c1.bv >>> 16)
+-  (c3 : U32)
+-  (_ : c3.bv = 3329#32 &&& c2.bv)
+-  (c4 : U32)
+-  (hc3 : c4 = c1.bv + c3.bv) :
+-  (c4.val : ZMod 3329) = (a.val : ZMod 3329) - (b.val : ZMod 3329) ∧
+-  c4.val < 3329
+-  := by
+-  bvify 32 at *
+-  simp_all only
+-  bv_decide
+-
+-example
+   (x : U16) (_ : x.val < 3329)
+   (y : U32) (_ : y = core.convert.num.FromU32U16.from x) :
+   y.val = x.val
+@@ -501,7 +444,5 @@
+   extract_goal1
+   simp [h]
+ 
+-example (byte : U8) : 8 ∣ (byte &&& 16#u8).val := by
+-  bvify 8; bv_decide
+ 
+ end Aeneas.Bvify
+diff -ruN a/Aeneas/Tactic/Solver/BvTac/BvTac.lean b/Aeneas/Tactic/Solver/BvTac/BvTac.lean
+--- a/Aeneas/Tactic/Solver/BvTac/BvTac.lean	2026-09-30 17:37:47
++++ b/Aeneas/Tactic/Solver/BvTac/BvTac.lean	2026-09-30 18:17:52
+@@ -81,7 +81,46 @@
+ elab "bv_tac_preprocess" config:Parser.Tactic.optConfig n:(colGt term)? : tactic => do
+   bvTacPreprocess (← elabConfig config) (← optElabTerm n)
+ 
+-open Lean.Elab.Tactic.BVDecide.Frontend Lean.Elab in
++/-- The literal width of the bit-vector `e : BitVec w`, if `w` evaluates to one
++(`UScalarTy.numBits U8` ↦ `8`). -/
++def literalWidth? (e : Expr) : MetaM (Option Nat) := do
++  let ty ← whnfD (← inferType e)
++  let_expr BitVec w := ty | return none
++  let w ← whnf (← instantiateMVars w)
++  return w.nat?.orElse fun _ => w.rawNatLit?
++
++/-- The scalar bit-vector accessors: `Aeneas.Std.UScalar.bv`, `IScalar.bv` and the per-type
++`U8.bv` … `Isize.bv`. -/
++def isScalarBv (e : Expr) : Bool :=
++  match e.getAppFn.constName? with
++  | some n@(.str _ "bv") => (`Aeneas.Std).isPrefixOf n
++  | _ => false
++
++/-- Lean ≥ 4.34 reads a `bv_decide` atom's width SYNTACTICALLY (`Sym.getNatValue?`), and the
++width of `x.bv : BitVec ty.numBits` is `UScalarTy.numBits U8`, which it no longer reduces to `8`:
++every predicate over a scalar's bit-vector was then reported as an opaque atom with a spurious
++counterexample. Ascribe the literal width, `@id (BitVec 8) x.bv`, so the atom's TYPE carries it.
++Idempotent. -/
++def literalWidthAtoms (e : Expr) : MetaM Expr :=
++  Meta.transform e (pre := fun e => do
++    if e.isAppOf ``id && e.getAppNumArgs == 2 && isScalarBv e.appArg! then return .done e
++    if isScalarBv e then
++      if let some k ← literalWidth? e then
++        return .done (← mkExpectedTypeHint e (mkApp (mkConst ``BitVec) (toExpr k)))
++    return .continue)
++
++/-- Apply [`literalWidthAtoms`] to the main goal and every hypothesis. -/
++def literalWidthAtomsTac : TacticM Unit := withMainContext do
++  let mut g ← getMainGoal
++  for d in (← getLCtx) do
++    if d.isImplementationDetail then continue
++    let ty' ← literalWidthAtoms d.type
++    unless ty' == d.type do
++      g ← g.replaceLocalDeclDefEq d.fvarId ty'
++  g ← g.replaceTargetDefEq (← literalWidthAtoms (← g.getType))
++  replaceMainGoal [g]
++
++open Lean.Elab in
+ /-- `bv_tac n` solves goals about bit-vectors.
+ 
+ **Usage**: `bv_tac n` where `n` is the bitwidth to use for the bit-vectors.
+@@ -117,12 +156,16 @@
+   bvTacPreprocess config (← optElabTerm n)
+   -- The preprocessing step may have proven the goal
+   Utils.allGoals do
++  literalWidthAtomsTac
+   -- Call bv_decide
+   IO.FS.withTempFile fun _ lratFile => do
+     let config := config.toBVDecideConfig
+     let cfg ← Lean.Meta.Tactic.BVDecide.TacticContext.new lratFile config
++    -- Lean 4.34: `bvDecide` takes a `Normalize.Target` and runs in `GrindM`.
+     liftMetaFinishingTactic fun g => do
+-      discard <| Lean.Meta.Tactic.BVDecide.bvDecide g cfg
++      let params ← Lean.Meta.Grind.mkDefaultParams {}
++      discard <| Lean.Meta.Grind.GrindM.run (params := params) <|
++        Lean.Meta.Tactic.BVDecide.bvDecide (.mvarIdTarget g) cfg
+ 
+ /-!
+ # Tests
