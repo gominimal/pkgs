@@ -131,10 +131,18 @@ want MEMORY_HOTPLUG MEMORY_HOTREMOVE VIRTIO_MEM
 # virtiofs, below) mappable without going through the guest page cache.
 want ZONE_DEVICE LIBNVDIMM VIRTIO_PMEM DAX FS_DAX
 
-# vsock + virtio-vsock for host<->guest sockets. The loopback transport lets
-# guest-local services speak vsock without a host peer, which is what most
-# vsock-based agents test against.
-want VSOCKETS VSOCKETS_LOOPBACK VIRTIO_VSOCKETS
+# vsock + virtio-vsock for host<->guest sockets.
+want VSOCKETS VIRTIO_VSOCKETS
+
+# No loopback transport. The vsock channel into a Minimal guest is host->guest
+# only: the in-VM daemon's listener is meant for the host-side helper, and
+# nothing in the guest speaks vsock to itself. With the loopback transport
+# built in, a guest process can reach a guest listener by dialling CID 1 or the
+# guest's own CID, which af_vsock routes to this transport (since 5.6). Leaving
+# it out makes such a connect fail with no transport at all, so the guest adds
+# no second path beside the daemon's own peer-CID check. Pinned off rather than
+# merely dropped from want(): kconfig would otherwise be free to turn it back on.
+nope VSOCKETS_LOOPBACK
 
 # virtiofs (needs FUSE). DAX mapping and passthrough are what make it fast
 # enough to use as a real rootfs/workspace share.
