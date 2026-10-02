@@ -37,6 +37,13 @@ let version = "3.14.8" in
     # and gh-155292 (stringprep, CVE-2026-17084). All four ship in 3.14.8 and
     # were dropped; their regression tests below stay as guards.
     { file = "0002-gh-157265-tarfile-honor-filter-none-link-fallback.patch" } | Local,
+    # CVE-2025-15367 (gh-143923): poplib built each command from caller-supplied
+    # text and sent it unchecked, so a CR/LF inside an argument injected extra
+    # POP3 commands. Fixed on main (b234a2b6, 3.15.0a6) only: the 3.14 branch has
+    # no commit touching poplib.py since 2025-03-02 and 3.14.8's Misc/NEWS has no
+    # entry for gh-143923. A straight cherry-pick; drop it on the first 3.14.x
+    # whose changelog lists gh-143923.
+    { file = "0003-gh-143923-poplib-reject-control-characters.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/Python-%{version}.tar.xz",
       sha256 = "c2215904f02b175596dc49351585104f4bc20341e1c47378b26a2c274360ce73"
@@ -240,6 +247,52 @@ let version = "3.14.8" in
 
               for f in failures:
                   print('FAIL: ' + f)
+              sys.exit(1 if failures else 0)
+              PYEOF
+              python3 poc.py
+            "%
+          ],
+        ],
+      } | Test,
+
+    # CVE-2025-15367 regression: FAILS on stock 3.14.8 (poplib sends a command
+    # containing CR/LF verbatim, so a username can smuggle in extra POP3
+    # commands) and passes only with the gh-143923 patch. Exercises `_putcmd`
+    # directly -- no network.
+    poplib_rejects_control_characters =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              cat > poc.py <<'PYEOF'
+              import poplib, sys
+
+              class Fake(poplib.POP3):
+                  def __init__(self):
+                      self.encoding = 'UTF-8'
+                      self._debugging = 0
+                      self.sent = []
+                  def _putline(self, line):
+                      self.sent.append(line)
+
+              failures = []
+              f = Fake()
+              f._putcmd('USER alice')
+              if f.sent != [b'USER alice']:
+                  failures.append('a normal command was not sent: %r' % (f.sent,))
+              for bad in ('USER a\r\nDELE 1', 'USER a\nQUIT', 'NOOP\x00', 'USER a\x7f'):
+                  try:
+                      f._putcmd(bad)
+                  except ValueError:
+                      continue
+                  failures.append('control characters were sent: %r' % (bad,))
+
+              for m in failures:
+                  print('FAIL: ' + m, file=sys.stderr)
               sys.exit(1 if failures else 0)
               PYEOF
               python3 poc.py

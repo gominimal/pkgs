@@ -10,12 +10,17 @@ cd "Python-${MINIMAL_ARG_VERSION}"
 # ignores a filter's None. The patch lives one level up because we extracted into
 # a subdirectory above.
 #
-# The other four backports (0001 gh-155999 tarfile, 0003 gh-155694 urllib,
-# 0004 gh-156002 zipfile, 0005 gh-155292 stringprep) first ship in 3.14.8 and were
-# dropped on that bump: 3.14.8's own Misc/NEWS lists all four, and each patch
-# reports "previously applied" against the 3.14.8 tree. gh-157265 is NOT in that
-# changelog and its patch still applies cleanly, so it stays.
+# Four earlier backports (gh-155999 tarfile, gh-155694 urllib, gh-156002 zipfile,
+# gh-155292 stringprep) first ship in 3.14.8 and were dropped on that bump:
+# 3.14.8's own Misc/NEWS lists all four, and each patch reported "previously
+# applied" against the 3.14.8 tree. gh-157265 is NOT in that changelog and its
+# patch still applies cleanly, so it stays.
 patch -Np1 -i "../0002-gh-157265-tarfile-honor-filter-none-link-fallback.patch"
+
+# CVE-2025-15367 (poplib command injection, gh-143923) -- cherry-picked from main;
+# upstream never backported it to 3.14, so 3.14.8 still lacks it. Same fail-closed
+# placement as 0002.
+patch -Np1 -i "../0003-gh-143923-poplib-reject-control-characters.patch"
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
