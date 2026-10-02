@@ -4,25 +4,23 @@ set -e
 tar -xof "Python-${MINIMAL_ARG_VERSION}.tar.xz"
 cd "Python-${MINIMAL_ARG_VERSION}"
 
-# CVE-2026-19672 -- see the patch header and the note in build.ncl. Applied
-# before configure so a failed hunk fails the build under `set -e` rather than
-# quietly producing a python whose tarfile filters still escape. The patch
-# lives one level up because we extracted into a subdirectory above.
-patch -Np1 -i "../0001-gh-155999-tarfile-normalize-parent-dir-components.patch"
-
-# CVE-2026-87910 -- see the patch header and the note in build.ncl. Same
-# fail-closed placement as 0001; applied after it because its line numbers
-# were regenerated against the 0001-patched tree.
+# CVE-2026-87910 (PSF-2026-40, gh-157265) -- see the patch header and the note in
+# build.ncl. Applied before configure so a failed hunk fails the build under
+# `set -e` rather than quietly producing a python whose tarfile link fallback still
+# ignores a filter's None. The patch lives one level up because we extracted into
+# a subdirectory above.
+#
+# Four earlier backports (gh-155999 tarfile, gh-155694 urllib, gh-156002 zipfile,
+# gh-155292 stringprep) first ship in 3.14.8 and were dropped on that bump:
+# 3.14.8's own Misc/NEWS lists all four, and each patch reported "previously
+# applied" against the 3.14.8 tree. gh-157265 is NOT in that changelog and its
+# patch still applies cleanly, so it stays.
 patch -Np1 -i "../0002-gh-157265-tarfile-honor-filter-none-link-fallback.patch"
 
-# CVE-2026-15806 (urllib), CVE-2026-15310 (zipfile) and CVE-2026-17084
-# (stringprep/idna) -- same deal: 3.14-branch backports that first ship in
-# 3.14.8. 0004 carries two upstream commits that must apply in order; they
-# live in one file so that order cannot be got wrong. 0002 is reserved for
-# the tarfile fix in pkgs#765.
-patch -Np1 -i "../0003-gh-155694-urllib-scope-credentials-by-scheme.patch"
-patch -Np1 -i "../0004-gh-156002-zipfile-bound-decompression.patch"
-patch -Np1 -i "../0005-gh-155292-stringprep-pin-unicode-3.2.patch"
+# CVE-2025-15367 (poplib command injection, gh-143923) -- cherry-picked from main;
+# upstream never backported it to 3.14, so 3.14.8 still lacks it. Same fail-closed
+# placement as 0002.
+patch -Np1 -i "../0003-gh-143923-poplib-reject-control-characters.patch"
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
