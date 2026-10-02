@@ -1,0 +1,39 @@
+--- a/lib/Data/Integer_Type.hs	2001-09-08 18:46:40
++++ b/lib/Data/Integer_Type.hs	2026-09-25 10:21:08
+@@ -38,26 +38,21 @@
+ _intToInteger :: Int -> Integer
+ _intToInteger i
+   | i `primIntEQ` 0 = I Plus []
+-  | i `primIntGE` 0 = f Plus (primIntToWord i)
+-  | True            = f Minus (primWordNeg (primIntToWord i))
+-  where
+-    f sign i =
+-      let
+-        high = quotMaxD i
+-        low = remMaxD i
+-      in if high `primWordEQ` 0 then I sign [low] else I sign [low, high]
++  | i `primIntGE` 0 = I Plus  (wordDigits (primIntToWord i))
++  | True            = I Minus (wordDigits (primWordNeg (primIntToWord i)))
+ 
++-- Split a machine word into base-2^shiftD digits, least significant first.
++-- (A 64-bit word needs up to four 16-bit digits; the original split into
++-- exactly two, leaving an oversized "high" digit for values >= 2^32.)
++wordDigits :: Word -> [Digit]
++wordDigits w =
++  if w `primWordEQ` 0 then [] else remMaxD w : wordDigits (quotMaxD w)
++
+ _integerToInt :: Integer -> Int
+ _integerToInt x = primWordToInt (_integerToWord x)
+ 
+ _wordToInteger :: Word -> Integer
+-_wordToInteger i
+-  | i    `primWordEQ` 0 = I Plus []
+-  | high `primWordEQ` 0 = I Plus [low]
+-  | True                = I Plus [low, high]
+-  where
+-    high = quotMaxD i
+-    low = remMaxD i
++_wordToInteger i = I Plus (wordDigits i)
+ 
+ _integerToWord :: Integer -> Word
+ _integerToWord (I sign ds) =

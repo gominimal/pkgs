@@ -1,0 +1,36 @@
+--- a/ghc/compiler/absCSyn/PprAbsC.lhs	2026-09-26 08:21:38
++++ b/ghc/compiler/absCSyn/PprAbsC.lhs	2026-09-26 08:21:38
+@@ -1801,6 +1801,25 @@
+ 
+ -- floatss are always 1 word
+ floatToWord :: CAddrMode -> CAddrMode
++#if __GLASGOW_HASKELL__ < 500
++-- A pre-5.00 boot compiler on a 64-bit host stores Float as a double (FLOATS_AS_DOUBLES), so the array trick below
++-- would read back double bits; compute the IEEE single-precision word arithmetically instead.
++floatToWord (CLit (MachFloat r)) = CLit (MachInt (ieeeSingleBits (fromRational r)))
++
++ieeeSingleBits :: Float -> Integer
++ieeeSingleBits x
++  | isNaN x                    = 0x7FC00000
++  | isInfinite x               = if x < 0 then 0xFF800000 else 0x7F800000
++  | x == 0                     = if isNegativeZero x then 0x80000000 else 0
++  | otherwise                  = sign + bits
++  where
++    (m, e) = decodeFloat x                    -- x = m * 2^e, 2^23 <= |m| < 2^24
++    sign   = if m < 0 then 0x80000000 else 0
++    am     = abs m
++    be     = e + 23 + 127                     -- biased exponent of a normal number
++    bits | be > 0    = toInteger be * 0x800000 + (am - 0x800000)
++         | otherwise = am `div` (2 ^ (1 - be))  -- subnormal
++#else
+ floatToWord (CLit (MachFloat r))
+   = runST (do
+ 	arr <- newFloatArray ((0::Int),0)
+@@ -1808,6 +1827,7 @@
+ 	i <- readIntArray arr 0
+ 	return (CLit (MachInt (toInteger i)))
+     )
++#endif
+ 
+ doubleToWords :: CAddrMode -> [CAddrMode]
+ doubleToWords (CLit (MachDouble r))
