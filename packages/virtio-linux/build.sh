@@ -207,6 +207,15 @@ want NF_CONNTRACK NF_NAT NF_NAT_MASQUERADE
 want NF_TABLES NF_TABLES_INET NF_TABLES_IPV4 NF_TABLES_IPV6
 want NFT_CT NFT_NAT NFT_MASQ NFT_COMPAT NFT_LIMIT NFT_LOG
 want NFT_REJECT NFT_REJECT_IPV4 NFT_REJECT_IPV6 NFT_FIB_IPV4 NFT_FIB_IPV6
+# The guest minimald loads a host-address classifier table (`inet
+# minimal_class`) that keys on the sending socket's cgroup: `socket cgroupv2
+# level N "<path>"` is NFT_SOCKET, whose tristate has no default, so
+# olddefconfig leaves it off. NF_SOCKET_IPV4/IPV6 are what it selects and
+# SOCK_CGROUP_DATA (selected via CGROUP_BPF) is what backs the cgroupv2 key;
+# NFT_REJECT_INET is `reject with icmpx` in an inet table. Those four follow
+# from symbols already on; they are listed so the assert below catches a drop.
+# The rest of that table (ct, nat, limit, log, reject) is wanted above.
+want NFT_SOCKET NF_SOCKET_IPV4 NF_SOCKET_IPV6 SOCK_CGROUP_DATA NFT_REJECT_INET
 want IP_NF_IPTABLES IP_NF_IPTABLES_LEGACY IP_NF_FILTER IP_NF_NAT IP_NF_MANGLE
 want IP_NF_TARGET_MASQUERADE IP_NF_TARGET_REJECT IP_NF_TARGET_REDIRECT
 want IP6_NF_IPTABLES IP6_NF_IPTABLES_LEGACY IP6_NF_FILTER IP6_NF_NAT
