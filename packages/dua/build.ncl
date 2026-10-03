@@ -7,14 +7,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let version = "2.42.1" in
+let version = "2.45.1" in
 {
   name = "dua",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/Byron/dua-cli/v%{version}.tar.gz",
-      sha256 = "31a452ce11ff6246da6298b70f892ae6b575eea5669adfd438381afd2157f748",
+      sha256 = "d75fd6cb1c6a470b53d55051401a903f175a8a68d92d7d12d2c538fd8e70036e",
       extract = true,
       strip_prefix = "dua-cli-%{version}",
     } | Source,
