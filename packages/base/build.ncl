@@ -10,6 +10,7 @@ let grep = import "../grep/build.ncl" in
 let gzip = import "../gzip/build.ncl" in
 let sed = import "../sed/build.ncl" in
 let tar = import "../tar/build.ncl" in
+let tzdata = import "../tzdata/build.ncl" in
 let xz = import "../xz/build.ncl" in
 {
   name = "base",
@@ -28,6 +29,7 @@ let xz = import "../xz/build.ncl" in
     gzip,
     sed,
     tar,
+    tzdata,
     xz,
   ],
   cmd = "build.sh",
