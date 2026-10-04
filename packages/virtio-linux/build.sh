@@ -224,6 +224,11 @@ want NFT_REJECT NFT_REJECT_IPV4 NFT_REJECT_IPV6 NFT_FIB_IPV4 NFT_FIB_IPV6
 # from symbols already on; they are listed so the assert below catches a drop.
 # The rest of that table (ct, nat, limit, log, reject) is wanted above.
 want NFT_SOCKET NF_SOCKET_IPV4 NF_SOCKET_IPV6 SOCK_CGROUP_DATA NFT_REJECT_INET
+# The same table marks each new flow with its box's verdict and reads the
+# mark back (`ct mark set ct mark and ... or ...`, NET-078): `ct mark` is
+# NF_CONNTRACK_MARK, which defconfig leaves off, and without it nft_ct
+# answers EOPNOTSUPP, so `nft -c` rejects the whole table ("Not supported").
+want NF_CONNTRACK_MARK
 want IP_NF_IPTABLES IP_NF_IPTABLES_LEGACY IP_NF_FILTER IP_NF_NAT IP_NF_MANGLE
 want IP_NF_TARGET_MASQUERADE IP_NF_TARGET_REJECT IP_NF_TARGET_REDIRECT
 want IP6_NF_IPTABLES IP6_NF_IPTABLES_LEGACY IP6_NF_FILTER IP6_NF_NAT
