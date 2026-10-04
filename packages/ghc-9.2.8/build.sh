@@ -106,7 +106,22 @@ EOF
 printf 'CC_STAGE0 = %s\n' "${CC}" >> mk/build.mk
 # hp2ps declares malloc/realloc K&R-style; C23 reads `()` as no parameters.
 sed -i 's/extern void\* malloc();/extern void* malloc(long unsigned int);/; s/extern void \*realloc();/extern void *realloc(void *, long unsigned int);/' utils/hp2ps/Utilities.c
-./configure --prefix="${PREFIX}" GHC="${BOOT}" CC="${CC}" > ../configure.log 2>&1 \
+CFGX=
+if [ "${ARCH}" = aarch64 ]; then
+  # genapply (built by the boot) writes AutoApply.cmm from the HOST's register macros; an unregisterised boot defines
+  # UnregisterisedCompiler -> NO_REGS, so this registerised build would get register-less apply code
+  sed -i 's|^#include "../../includes/stg/MachRegsForHost.h"|#undef UnregisterisedCompiler\n#undef NO_REGS\n&|' utils/genapply/Main.hs
+  grep -B2 'MachRegsForHost.h' utils/genapply/Main.hs | grep -q 'undef NO_REGS' || { echo "ghc-${VERSION}: genapply patch did not apply" >&2; exit 1; }
+  # ghc itself links -eventlog; the boot has no eventlog RTS for stage 1
+  sed -i '/^    ghc-options: -eventlog$/d' ghc/ghc-bin.cabal.in
+  # the boot is unregisterised and compiles stage 1 through C, but the build puts this tree's includes first; everything the
+  # boot compiles links the boot's RTS, so its RTS headers go ahead (-optc lands before ghc's own -I)
+  OPTC=$(for d in $("$(dirname "${BOOT}")/ghc-pkg" field rts include-dirs --simple-output --expand-pkgroot); do printf ' -optc-I%s' "$d"; done)
+  # stage 1, compiled through C at -O0, exceeds the +-128 MB reach of aarch64 direct branches; lld adds range-extension thunks
+  BOOTW="${BUILDROOT}/bootw"; mkdir -p "${BOOTW}"; ln -sf "$(dirname "${BOOT}")/ghc-pkg" "${BOOTW}/ghc-pkg"
+  printf '#!/bin/sh\nexec %s%s "$@"\n' "${BOOT}" "${OPTC} -optl-fuse-ld=lld" > "${BOOTW}/ghc"; chmod 0755 "${BOOTW}/ghc"; BOOT="${BOOTW}/ghc"
+fi
+./configure ${CFGX} --prefix="${PREFIX}" GHC="${BOOT}" CC="${CC}" > ../configure.log 2>&1 \
   || { tail -30 ../configure.log >&2; echo "ghc-${VERSION}: configure failed" >&2; exit 1; }
 make -j"${JOBS}" > ../make.log 2>&1 || { grep -n -B3 -m3 -E ' error:|Segmentation|internal error|\*\*\*' ../make.log | grep -v warning >&2; tail -20 ../make.log >&2; echo "ghc-${VERSION}: make failed" >&2; exit 1; }
 
@@ -146,7 +161,9 @@ cp "${BUILDROOT}/settings.build" "${SETTINGS}"
 printf 'import Data.List\nmain = putStrLn ("GHC-GATE:" ++ show (product [1..5 :: Integer] - (2^(70::Int) - 2^(70::Int))) ++ ":" ++ show (length (nub [1..50::Int])))\n' > ../gate.hs
 "${GHCBIN}" -B"${LIBD}" -no-global-package-db -package-db "${GATEDB}" -O -o ../gate ../gate.hs -outputdir ../gate.d > ../gate.log 2>&1 && OUT="$(../gate)" || { cat ../gate.log >&2; echo "ghc-${VERSION}: installed compiler failed the gate" >&2; exit 1; }
 [ "$OUT" = "GHC-GATE:120:50" ] || { echo "ghc-${VERSION}: gate printed '$OUT'" >&2; exit 1; }
-"${GHCBIN}" -B"${LIBD}" --info | grep -q '"Unregisterised","NO"' || { echo "ghc-${VERSION}: not a registerised compiler" >&2; exit 1; }
+WANT=NO; [ "${ARCH}" = aarch64 ] && WANT=NO
+INFO="$("${GHCBIN}" -B"${LIBD}" --info)"
+echo "${INFO}" | grep -q "\"Unregisterised\",\"${WANT}\"" || { echo "ghc-${VERSION}: Unregisterised is not ${WANT}" >&2; exit 1; }
 [ "$("${GHCBIN}" -B"${LIBD}" --numeric-version)" = "${VERSION}" ] || { echo "ghc-${VERSION}: wrong compiler version installed" >&2; exit 1; }
 sed -i "s|${CCDIR}/gcc|${PREFIX}/bin/ghc-cc|g" "${SETTINGS}"
 find "${GATEDB}" -delete

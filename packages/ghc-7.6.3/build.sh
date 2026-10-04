@@ -106,7 +106,7 @@ chmod 0755 "${CCDIR}/cpp-gap"
 # make 3.82: -fcommon (make.h defines stack_limit in every object); the bundled glob calls glibc-internal
 # __alloca/__stat, which glibc no longer exports. glob.c stays as shipped.
 mkdir -p "${BUILDROOT}/make-src"; tar -xjf "${MAKE_TARBALL}" -C "${BUILDROOT}/make-src" --strip-components=1
-( cd "${BUILDROOT}/make-src" && CC="${CC} -fcommon" CPPFLAGS="-D__alloca=__builtin_alloca -D__stat=stat" ./configure --prefix="${BUILDROOT}/make382" > configure.log 2>&1 && make > make.log 2>&1 && make install > install.log 2>&1 ) \
+( cd "${BUILDROOT}/make-src" && CC="${CC} -fcommon" CPPFLAGS="-D__alloca=__builtin_alloca -D__stat=stat" ./configure $( [ "${ARCH}" = aarch64 ] && echo --build=aarch64-unknown-linux-gnu --host=aarch64-unknown-linux-gnu ) --prefix="${BUILDROOT}/make382" > configure.log 2>&1 && make > make.log 2>&1 && make install > install.log 2>&1 ) \
   || { tail -10 "${BUILDROOT}/make-src/make.log" >&2; echo "ghc-${VERSION}: make 3.82 did not build" >&2; exit 1; }
 MK="${BUILDROOT}/make382/bin/make"
 "${MK}" --version | grep -q 'GNU Make 3.82' || { echo "ghc-${VERSION}: wrong make" >&2; exit 1; }
@@ -130,6 +130,18 @@ sed -i 's/__gmpz_init(\([^)]*\))/__gmpz_init2(\1, 64)/g' "$GW"
 grep -q '__gmpz_init2(' "$GW" && ! grep -q '__gmpz_init(' "$GW" || { echo "ghc-${VERSION}: gmp-wrappers fix did not apply" >&2; exit 1; }
 # Vanilla libraries only, no docs, no dynamic linking, no split objects; the threaded RTS way for the
 # programs the next rung's build runs. The boot's cpp mangles string gaps, hence -pgmP for every stage.
+# aarch64: 2013-era platform knowledge. The libraries' config.guess copies cannot name the host; configure's CPU table
+# and arch whitelist lack aarch64; the bundled libffi 3.0.11 has no aarch64 port (3.5.2 installs its headers under
+# inst/include, where libffi/ghc.mk is pointed)
+if [ "${ARCH}" = aarch64 ]; then
+  for g in $(find . -name config.guess); do cp "${BUILDROOT}/gnu-config-config.guess" "$g"; cp "${BUILDROOT}/gnu-config-config.sub" "$(dirname "$g")/config.sub"; chmod +x "$g" "$(dirname "$g")/config.sub"; done
+  perl -0pi -e 's/\n  arm\*\)\n    (\w+)="arm"\n    ;;/\n  aarch64*)\n    $1="aarch64"\n    ;;\n  arm*)\n    $1="arm"\n    ;;/g' configure
+  sed -i 's/^        alpha|mips|mipseb|mipsel|hppa|hppa1_1|ia64|m68k|rs6000|s390|s390x|sparc64|vax)/        aarch64|alpha|mips|mipseb|mipsel|hppa|hppa1_1|ia64|m68k|rs6000|s390|s390x|sparc64|vax)/' configure
+  [ "$(grep -c 'aarch64\*)' configure)" = 3 ] && grep -q '^        aarch64|alpha|mips' configure || { echo "ghc-${VERSION}: configure platform tables not patched" >&2; exit 1; }
+  rm ghc-tarballs/libffi/libffi-3.0.11.tar.gz; cp "${BUILDROOT}/libffi-3.5.2.tar.gz" ghc-tarballs/libffi/
+  sed -i 's|libffi/build/inst/lib/libffi-\*/include/|libffi/build/inst/include/|' libffi/ghc.mk
+  grep -q 'libffi/build/inst/include/' libffi/ghc.mk || { echo "ghc-${VERSION}: libffi header path not repointed" >&2; exit 1; }
+fi
 cat > mk/build.mk <<EOF
 HADDOCK_DOCS        = NO
 BUILD_DOCBOOK_HTML  = NO
@@ -147,6 +159,8 @@ GhcStage1HcOpts     = -O
 GhcStage2HcOpts     = -O
 GhcLibHcOpts        = -O
 EOF
+# aarch64 has no native code generator before 9.2: unregisterised, tables apart from code, vanilla RTS only
+[ "${ARCH}" = aarch64 ] && printf 'GhcUnregisterised   = YES\nGhcWithNativeCodeGen = NO\nGhcWithSMP          = NO\nGhcEnableTablesNextToCode = NO\nGhcRTSWays          =\nGhcNotThreaded      = YES\n' >> mk/build.mk
 CC="${CC}" ./configure --prefix="${PREFIX}" --with-ghc="${BOOTDIR}/ghc" --with-ghc-pkg="${BOOTDIR}/ghc-pkg" --with-gcc="${CC}" > ../configure.log 2>&1 \
   || { tail -30 ../configure.log >&2; echo "ghc-${VERSION}: configure failed" >&2; exit 1; }
 "${MK}" -j"${JOBS}" > ../make.log 2>&1 || { grep -n -B3 -m3 -E ' error:|Segmentation|internal error|\*\*\*' ../make.log | grep -v warning >&2; tail -20 ../make.log >&2; echo "ghc-${VERSION}: make failed" >&2; exit 1; }
@@ -196,14 +210,15 @@ printf 'main :: IO ()\nmain = do\n  let zs = [ (2 ^ (100 :: Int) + toInteger i) 
 "${GHCBIN}" -B"${LIBD}" -no-global-package-db -package-db "${GATEDB}" -O -o ../gmpzero ../gmpzero.hs -outputdir ../gmpzero.d > ../gmpzero.log 2>&1 && OUT="$(../gmpzero)" || { cat ../gmpzero.log >&2; echo "ghc-${VERSION}: gmpzero failed" >&2; exit 1; }
 [ "$OUT" = "(0,9131)" ] || { echo "ghc-${VERSION}: gmpzero printed '$OUT'" >&2; exit 1; }
 INFO="$("${GHCBIN}" -B"${LIBD}" --info)"   # captured: grep -q closing the pipe early would fail the pipeline
-echo "${INFO}" | grep -q '"Unregisterised","NO"' || { echo "ghc-${VERSION}: not a registerised compiler" >&2; exit 1; }
+WANT=NO; [ "${ARCH}" = aarch64 ] && WANT=YES
+echo "${INFO}" | grep -q "\"Unregisterised\",\"${WANT}\"" || { echo "ghc-${VERSION}: Unregisterised is not ${WANT}" >&2; exit 1; }
 [ "$("${GHCBIN}" -B"${LIBD}" --numeric-version)" = "${VERSION}" ] || { echo "ghc-${VERSION}: wrong compiler version installed" >&2; exit 1; }
 sed -i "s|${CCDIR}/gcc|${PREFIX}/bin/ghc-cc|g" "${SETTINGS}"
 find "${GATEDB}" -delete
 
 mkdir -p "${OUTPUT_DIR}/usr/share/ghc-${VERSION}"
 cat > "${OUTPUT_DIR}/usr/share/ghc-${VERSION}/BUILDINFO" <<EOF
-ghc ${VERSION} (registerised x86_64, booted by ghc-${BOOT_VERSION})
+ghc ${VERSION} (${ARCH}, booted by ghc-${BOOT_VERSION})
 source: ${SRC_TARBALL} sha256 ${SRC_SHA}
 make: ${MAKE_TARBALL} sha256 ${MAKE_SHA}
 c compiler: gcc ${GCC_VERSION} via ${PREFIX}/bin/ghc-cc

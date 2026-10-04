@@ -9,6 +9,8 @@ let ghc-boot = import "../ghc-8.10.7/build.ncl" in # the previous rung
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
+let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
+let llvm = import "../llvm/build.ncl" in
 let gmp = import "../gmp/build.ncl" in # integer-gmp
 let ncurses = import "../ncurses/build.ncl" in # terminfo
 let bash = import "../bash/build.ncl" in
@@ -27,37 +29,48 @@ let gzip = import "../gzip/build.ncl" in # the build system untars the bundled l
 let patch = import "../patch/build.ncl" in # and patches it
 # pkgmgr: bootstrap_rung = "ghc"
 let version = "9.2.8" in
-let amd64_spec =
+let is_arm = target.arch == 'Arm64 in
+# x86_64 compiles with the bedrock gcc against its glibc sysroot; aarch64 with the toolchain, itself hex0-rooted
+let cc_build = if is_arm then [toolchain] else [gcc-bedrock, binutils-bedrock, glibc-bedrock] in
+let arm_extra =
+  if is_arm then
+    [
+      llvm, # ld.lld: links the stage-1 compiler (beyond the reach of aarch64 direct branches)
+    ]
+  else
+    []
+in
+let spec =
   {
     name = "ghc-9.2.8",
-    build_deps = [
-      { file = "build.sh" } | Local,
-      {
-        url = "gs://minimal-staging-archives/ghc-%{version}-src.tar.xz",
-        sha256 = "5f13d1786bf4fd12f4b45faa37abedb5bb3f36d5e58f7da5307e8bfe88a567a1",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      ghc-boot,
-      gcc-bedrock,
-      binutils-bedrock,
-      glibc-bedrock,
-      gmp,
-      ncurses,
-      bash,
-      make,
-      perl,
-      python,
-      sed,
-      grep,
-      gawk,
-      coreutils,
-      findutils,
-      diffutils,
-      tar,
-      xz,
-      gzip,
-      patch,
-    ],
+    build_deps =
+      [
+        { file = "build.sh" } | Local,
+        {
+          url = "gs://minimal-staging-archives/ghc-%{version}-src.tar.xz",
+          sha256 = "5f13d1786bf4fd12f4b45faa37abedb5bb3f36d5e58f7da5307e8bfe88a567a1",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        ghc-boot,
+        gmp,
+        ncurses,
+        bash,
+        make,
+        perl,
+        python,
+        sed,
+        grep,
+        gawk,
+        coreutils,
+        findutils,
+        diffutils,
+        tar,
+        xz,
+        gzip,
+        patch,
+      ]
+      @ cc_build
+      @ arm_extra,
     cmd = "./build.sh",
     outputs = {
       # The next rung consumes the tree by absolute path: compiler, ghc-pkg, package db, libraries
@@ -78,13 +91,4 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# amd64 only: this rung belongs to the amd64 bootstrap ladder. On arm64 the ghc recipe keeps its
-# prebuilt boot, so this spec collapses to an empty collection there.
-match {
-  { arch = 'Amd64, .. } => amd64_spec,
-  { arch = 'Arm64, .. } =>
-    {
-      name = "ghc-9.2.8",
-      build_deps = [],
-    } | BuildSpec,
-} target
+spec
