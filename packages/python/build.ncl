@@ -130,6 +130,16 @@ let version = "3.14.7" in
         ],
       } | Test,
 
+    # base carries tzdata, so zoneinfo resolves IANA zone names without extra packages
+    smoketest_zoneinfo =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/python3", "-c", "import zoneinfo; zoneinfo.ZoneInfo('Europe/Paris')"],
+        ],
+      } | Test,
+
     smoketest_math =
       {
         class = 'Standalone,

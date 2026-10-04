@@ -15,9 +15,12 @@ export CXXFLAGS="${CFLAGS}"
 
 SRCDIR=$(pwd)
 cd unix
+# --with-tzdata: configure otherwise skips the bundled zone data whenever
+# /usr/share/zoneinfo exists (base ships tzdata), leaving the tzdata output empty.
 ./configure  --prefix=/usr            \
             --mandir=/usr/share/man \
-            --disable-rpath
+            --disable-rpath         \
+            --with-tzdata
 
 make -j$(nproc)
 
