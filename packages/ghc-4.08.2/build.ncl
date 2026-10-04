@@ -13,6 +13,8 @@ let gmp = import "../gmp/build.ncl" in # the RTS's Integer
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # the C compiler, hex0-rooted; build.sh wraps it against the sysroot
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
+let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
+let glibc = import "../glibc/build.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -29,68 +31,70 @@ let bzip2 = import "../bzip2/build.ncl" in
 let gzip = import "../gzip/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let version = "4.08.2" in
-let amd64_spec =
+let is_arm = target.arch == 'Arm64 in
+# x86_64 compiles with the bedrock gcc against its glibc sysroot; aarch64 with the toolchain, itself hex0-rooted
+let cc_build = if is_arm then [toolchain] else [gcc-bedrock, binutils-bedrock, glibc-bedrock] in
+let cc_runtime = if is_arm then [glibc, toolchain] else [subsetOf glibc-bedrock ["sysroot_lib"], gcc-bedrock, binutils-bedrock] in
+let spec =
   {
     name = "ghc-4.08.2",
-    build_deps = [
-      { file = "build.sh" } | Local,
-      {
-        url = "gs://minimal-staging-archives/ghc-%{version}-src.tar.bz2",
-        sha256 = "38dc3e1ef888013383d205a8991e1d16f44d4e60f58523dde6bb64467cb7242b",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      {
-        url = "gs://minimal-staging-archives/happy-1.16.tar.gz",
-        sha256 = "4da47f4904dbdddfb58140edb0395383feba72dfc77759e57587a526dd9496c5",
-        extract = false,
-      } | Source,
-      # first-party: what makes 4.08.2 compile on MicroHs and on a 64-bit modern toolchain. Text only; the
-      # generators that produced D/ from the compiler sources (step1c.sh, desugar.py, hiboot2hsboot.py) ride along.
-      {
-        url = "gs://minimal-staging-archives/ghc-4.08.2-microhs-overlay.tar.gz",
-        sha256 = "2727566c55180867bee9861d485d379d9cab264dc0fab03a5df5a52c1d013a39",
-        extract = false,
-      } | Source,
-      # the tarball's 2001 config.guess/config.sub predate x86_64; the modern GNU pair replaces them
-      {
-        url = "gs://minimal-staging-archives/build-aux/gnu-config-config.guess",
-        sha256 = "e3d148130e9151735f8b9a8e69a70d06890ece51468a9762eb7ac0feddddcc2f",
-        extract = false,
-      } | Source,
-      {
-        url = "gs://minimal-staging-archives/build-aux/gnu-config-config.sub",
-        sha256 = "11c54f55c3ac99e5d2c3dc2bb0bcccbf69f8223cc68f6b2438daa806cf0d16d8",
-        extract = false,
-      } | Source,
-      microhs-0-16,
-      gmp,
-      gcc-bedrock,
-      binutils-bedrock,
-      glibc-bedrock,
-      base,
-      bash,
-      make,
-      perl,
-      python,
-      sed,
-      grep,
-      gawk,
-      coreutils,
-      findutils,
-      diffutils,
-      tar,
-      bzip2,
-      gzip,
-      patch,
-    ],
+    build_deps =
+      [
+        { file = "build.sh" } | Local,
+        {
+          url = "gs://minimal-staging-archives/ghc-%{version}-src.tar.bz2",
+          sha256 = "38dc3e1ef888013383d205a8991e1d16f44d4e60f58523dde6bb64467cb7242b",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        {
+          url = "gs://minimal-staging-archives/happy-1.16.tar.gz",
+          sha256 = "4da47f4904dbdddfb58140edb0395383feba72dfc77759e57587a526dd9496c5",
+          extract = false,
+        } | Source,
+        # first-party: what makes 4.08.2 compile on MicroHs and on a 64-bit modern toolchain. Text only; the
+        # generators that produced D/ from the compiler sources (step1c.sh, desugar.py, hiboot2hsboot.py) ride along.
+        {
+          url = "gs://minimal-staging-archives/ghc-4.08.2-microhs-overlay.tar.gz",
+          sha256 = "2727566c55180867bee9861d485d379d9cab264dc0fab03a5df5a52c1d013a39",
+          extract = false,
+        } | Source,
+        # the tarball's 2001 config.guess/config.sub predate x86_64; the modern GNU pair replaces them
+        {
+          url = "gs://minimal-staging-archives/build-aux/gnu-config-config.guess",
+          sha256 = "e3d148130e9151735f8b9a8e69a70d06890ece51468a9762eb7ac0feddddcc2f",
+          extract = false,
+        } | Source,
+        {
+          url = "gs://minimal-staging-archives/build-aux/gnu-config-config.sub",
+          sha256 = "11c54f55c3ac99e5d2c3dc2bb0bcccbf69f8223cc68f6b2438daa806cf0d16d8",
+          extract = false,
+        } | Source,
+        microhs-0-16,
+        gmp,
+        base,
+        bash,
+        make,
+        perl,
+        python,
+        sed,
+        grep,
+        gawk,
+        coreutils,
+        findutils,
+        diffutils,
+        tar,
+        bzip2,
+        gzip,
+        patch,
+      ]
+      @ cc_build,
     # the driver is Perl and runs gcc on the C hsc emits; the RTS links libgmp
-    runtime_deps = [
-      subsetOf glibc-bedrock ["sysroot_lib"],
-      gmp,
-      perl,
-      gcc-bedrock,
-      binutils-bedrock,
-    ],
+    runtime_deps =
+      [
+        gmp,
+        perl,
+      ]
+      @ cc_runtime,
     cmd = "./build.sh",
     outputs = {
       prefix = { glob = "usr/lib/ghc-4.08.2/**", allow_executable = true } | OutputData,
@@ -108,12 +112,4 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# amd64 only for now: the overlay's configure case and RTS stubs are x86_64; the arm64 lineage is being probed.
-match {
-  { arch = 'Amd64, .. } => amd64_spec,
-  { arch = 'Arm64, .. } =>
-    {
-      name = "ghc-4.08.2",
-      build_deps = [],
-    } | BuildSpec,
-} target
+spec

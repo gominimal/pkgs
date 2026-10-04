@@ -12,16 +12,18 @@ BIN=$BUILDROOT/bin
 TREE=$BUILDROOT/ghc-$V
 export HOME=$BUILDROOT/home; mkdir -p $HOME   # ghc-pkg reads $HOME
 
-# --- C toolchain: the bedrock gcc against the versioned glibc sysroot (as every rung of the GHC ladder) ---
-SR=/usr/lib/glibc-bedrock-2.42; LOADER=$SR/lib/ld-linux-x86-64.so.2
-[ -e $SR/lib/libc.so ] && [ -e $LOADER ] || { echo "ghc-6.6.1: glibc sysroot missing at $SR" >&2; exit 1; }
-mkdir -p $BIN/fixlib
-# the sysroot's libc.so is a linker script with staging paths; regenerate it
-sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@$SR/lib/\1@g" $SR/lib/libc.so > $BIN/fixlib/libc.so
-grep -q '/build/output' $BIN/fixlib/libc.so && { echo "ghc-6.6.1: libc.so fixup failed" >&2; exit 1; }
-# gcc (and cc): the first gcc on PATH that is not one of these wrappers (each rung ships one), given the sysroot's headers and, when linking, its
-# libraries and loader ahead of /usr/lib, where the toolchain glibc also lives
-cat > $BIN/gcc <<EOF
+# --- C toolchain. x86_64: the bedrock gcc against the versioned glibc sysroot (as every rung of the GHC ladder);
+# aarch64: the toolchain gcc, itself built from the hex0 seed, as is
+if [ "$(uname -m)" = x86_64 ]; then
+  SR=/usr/lib/glibc-bedrock-2.42; LOADER=$SR/lib/ld-linux-x86-64.so.2
+  [ -e $SR/lib/libc.so ] && [ -e $LOADER ] || { echo "ghc-6.6.1: glibc sysroot missing at $SR" >&2; exit 1; }
+  mkdir -p $BIN/fixlib
+  # the sysroot's libc.so is a linker script with staging paths; regenerate it
+  sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@$SR/lib/\1@g" $SR/lib/libc.so > $BIN/fixlib/libc.so
+  grep -q '/build/output' $BIN/fixlib/libc.so && { echo "ghc-6.6.1: libc.so fixup failed" >&2; exit 1; }
+  # gcc (and cc): the first gcc on PATH that is not one of these wrappers (each rung ships one), given the sysroot's headers and, when linking, its
+  # libraries and loader ahead of /usr/lib, where the toolchain glibc also lives
+  cat > $BIN/gcc <<EOF
 #!/bin/sh
 # sysroot-gcc-wrapper (every rung ships one; they skip each other by this line)
 G=; IFS=:; for d in \$PATH; do [ -x "\$d/gcc" ] || continue; grep -q 'sysroot-gcc-wrapper' "\$d/gcc" 2>/dev/null && continue; G=\$d/gcc; break; done; unset IFS
@@ -30,8 +32,16 @@ GI=\$("\$G" -print-file-name=include)
 for a in "\$@"; do case "\$a" in -c|-S|-E|-M|-MM) exec "\$G" -nostdinc -isystem "\$GI" -isystem $SR/include -isystem /usr/include "\$@" ;; esac; done
 exec "\$G" -nostdinc -isystem "\$GI" -isystem $SR/include -isystem /usr/include "\$@" -L$BIN/fixlib -B$SR/lib -L$SR/lib -L/usr/lib -Wl,--dynamic-linker=$LOADER -Wl,-rpath,$SR/lib:/usr/lib -Wl,--build-id=none
 EOF
-chmod 0755 $BIN/gcc; ln -sf gcc $BIN/cc
-export PATH=$BIN:$PATH
+  chmod 0755 $BIN/gcc; ln -sf gcc $BIN/cc
+fi
+mkdir -p $BIN; export PATH=$BIN:$PATH
+# aarch64 differs only where these 2000s-era trees cannot name the platform: configure's platform case (a patch), the
+# triple given by hand (config.guess predates aarch64)
+case "$(uname -m)" in
+  aarch64) PA=aarch64; CFGTR="--build=aarch64-unknown-linux-gnu --host=aarch64-unknown-linux-gnu --target=aarch64-unknown-linux-gnu" ;;
+  *) PA=x86_64; CFGTR= ;;
+esac
+
 # --- P0 ---
 [ -x $BOOTDIR/ghc ] && [ -x $BOOTDIR/ghc-pkg ] || { echo "ghc-6.6.1: no boot compiler at $BOOTDIR (ghc-5.04.3)" >&2; exit 1; }
 $BOOTDIR/ghc --version 2>&1 | grep -q 'version 5.04.3' || { echo "ghc-6.6.1: boot compiler is not 5.04.3" >&2; exit 1; }
@@ -69,9 +79,10 @@ mkdir -p $TREE; tar xjf ghc-$V-src.tar.bz2 -C $TREE --strip-components=1 --no-sa
 cd $TREE
 patch -p1 --forward --no-backup-if-mismatch < $BUILDROOT/configure-perl.patch > /dev/null   # accepts any perl 5
 # configure takes the ghc-pkg beside the ghc it is given
-CC=gcc89 ./configure --with-ghc=$BOOTDIR/ghc --with-gcc=gcc89 > configure.log 2>&1 || { tail -20 configure.log >&2; echo "ghc-6.6.1: configure failed" >&2; exit 1; }
+[ $PA = aarch64 ] && patch -p1 --forward --no-backup-if-mismatch < $BUILDROOT/configure-aarch64.patch > /dev/null
+CC=gcc89 ./configure $CFGTR --with-ghc=$BOOTDIR/ghc --with-gcc=gcc89 > configure.log 2>&1 || { tail -20 configure.log >&2; echo "ghc-6.6.1: configure failed" >&2; exit 1; }
 grep -a 'checking for ghc-pkg' configure.log | grep -q "$BOOTDIR" || { echo "ghc-6.6.1: configure did not take the boot ghc-pkg" >&2; exit 1; }
-grep -q 'x86_64-unknown-linux' mk/config.mk || { echo "ghc-6.6.1: platform is not x86_64-unknown-linux" >&2; exit 1; }
+grep -q "$PA-unknown-linux" mk/config.mk || { echo "ghc-6.6.1: platform is not $PA-unknown-linux" >&2; exit 1; }
 cat > mk/build.mk <<'EOF'
 # unregisterised: rts/Makefile forces -fvia-C for every .cmm (the NCG cannot do Cmm loops), and registerised via-C
 # needs the evil mangler, which neither a modern perl nor a modern gcc's assembly survives
@@ -125,8 +136,9 @@ done
 cd $BUILDROOT
 mkdir -p "$DST/bin"
 # the C compiler wrappers the installed compiler runs, with the regenerated libc.so beside them
-install -m 0755 $BIN/gcc $BIN/gcc89 $BIN/cpp-gap "$DST/bin/"; ln -sf gcc "$DST/bin/cc"
-mkdir -p "$DST/lib"; cp -a $BIN/fixlib "$DST/lib/fixlib"; sed -i "s|$BIN/fixlib|$PREFIX/lib/fixlib|" "$DST/bin/gcc"
+install -m 0755 $BIN/gcc89 $BIN/cpp-gap "$DST/bin/"
+if [ -f $BIN/gcc ]; then install -m 0755 $BIN/gcc "$DST/bin/"; ln -sf gcc "$DST/bin/cc"
+  mkdir -p "$DST/lib"; cp -a $BIN/fixlib "$DST/lib/fixlib"; sed -i "s|$BIN/fixlib|$PREFIX/lib/fixlib|" "$DST/bin/gcc"; fi
 cp -a $TREE "$DST/ghc-$V"
 find "$DST/ghc-$V" \( -name '*.o' -o -name '*.hc' -o -name '*.log' -o -name '*_stub.c' \) -type f -delete
 find "$DST/ghc-$V/compiler/stage1" -delete 2>/dev/null || true   # the compiler 5.04.3 built; stage 2 is the product

@@ -10,6 +10,8 @@ let gmp = import "../gmp/build.ncl" in # the RTS's Integer
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # the C compiler, hex0-rooted; build.sh wraps it against the sysroot
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
+let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
+let glibc = import "../glibc/build.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -26,47 +28,50 @@ let tar = import "../tar/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let version = "6.6.1" in
-let amd64_spec =
+let is_arm = target.arch == 'Arm64 in
+# x86_64 compiles with the bedrock gcc against its glibc sysroot; aarch64 with the toolchain, itself hex0-rooted
+let cc_build = if is_arm then [toolchain] else [gcc-bedrock, binutils-bedrock, glibc-bedrock] in
+let cc_runtime = if is_arm then [glibc, toolchain] else [subsetOf glibc-bedrock ["sysroot_lib"], gcc-bedrock, binutils-bedrock] in
+let spec =
   {
     name = "ghc-6.6.1",
-    build_deps = [
-      { file = "build.sh" } | Local,
-      {
-        url = "gs://minimal-staging-archives/ghc-%{version}-src.tar.bz2",
-        sha256 = "489126ceeb2dbb6a85ef8d87d6792e61e1bc0d5882e4b33a7725410d796132c6",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      { file = "configure-perl.patch" } | Local, # configure accepts only perl 5.6/5.8 by version string
-      ghc-5-04-3,
-      gmp,
-      gcc-bedrock,
-      binutils-bedrock,
-      glibc-bedrock,
-      base,
-      bash,
-      make,
-      perl,
-      flex,
-      bison,
-      sed,
-      grep,
-      gawk,
-      coreutils,
-      findutils,
-      diffutils,
-      tar,
-      bzip2,
-      patch,
-    ],
+    build_deps =
+      [
+        { file = "build.sh" } | Local,
+        { file = "configure-aarch64.patch" } | Local,
+        {
+          url = "gs://minimal-staging-archives/ghc-%{version}-src.tar.bz2",
+          sha256 = "489126ceeb2dbb6a85ef8d87d6792e61e1bc0d5882e4b33a7725410d796132c6",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        { file = "configure-perl.patch" } | Local, # configure accepts only perl 5.6/5.8 by version string
+        ghc-5-04-3,
+        gmp,
+        base,
+        bash,
+        make,
+        perl,
+        flex,
+        bison,
+        sed,
+        grep,
+        gawk,
+        coreutils,
+        findutils,
+        diffutils,
+        tar,
+        bzip2,
+        patch,
+      ]
+      @ cc_build,
     # the driver runs gcc on the C it emits and the perl mangler/splitter; the RTS links libgmp
-    runtime_deps = [
-      subsetOf glibc-bedrock ["sysroot_lib"],
-      gmp,
-      perl,
-      gcc-bedrock,
-      binutils-bedrock,
-      bash,
-    ],
+    runtime_deps =
+      [
+        gmp,
+        perl,
+        bash,
+      ]
+      @ cc_runtime,
     cmd = "./build.sh",
     outputs = {
       prefix = { glob = "usr/lib/ghc-6.6.1/**", allow_executable = true } | OutputData,
@@ -84,12 +89,4 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# amd64 only for now: the unregisterised build is proven on x86_64; the arm64 lineage is being probed.
-match {
-  { arch = 'Amd64, .. } => amd64_spec,
-  { arch = 'Arm64, .. } =>
-    {
-      name = "ghc-6.6.1",
-      build_deps = [],
-    } | BuildSpec,
-} target
+spec
