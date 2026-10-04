@@ -66,7 +66,8 @@ make DESTDIR=$OUTPUT_DIR install
 printf 'prefix=~/.local\n' > "$OUTPUT_DIR/usr/lib/node_modules/npm/npmrc"
 
 # Installed wasm is exactly the rebuilt blobs: js2c'd into node, verbatim in npm's undici.
-$LH census -C "$OUTPUT_DIR" $LH_WASM --expect usr/bin/node=2+ \
+# V8 test runtime (runtime-test-wasm.cc) compiles in two type-section-only modules.
+$LH census -C "$OUTPUT_DIR" $LH_WASM --expect usr/bin/node=2+ --allow-raw usr/bin/node=2 \
     --expect usr/lib/node_modules/npm/node_modules/undici/lib/llhttp/llhttp-wasm.js=1 \
     --expect usr/lib/node_modules/npm/node_modules/undici/lib/llhttp/llhttp_simd-wasm.js=1 \
     usr

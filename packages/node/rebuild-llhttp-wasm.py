@@ -460,9 +460,10 @@ def splice(path, pin, rebuilt_path):
         path, pin[:16], sha(new)[:16], " (identical to upstream)" if pin == sha(new) else ""))
 
 
-def census(roots, allowed_shas, allow_paths, expect):
+def census(roots, allowed_shas, allow_paths, expect, allow_raw=None):
     allowed_shas = set(allowed_shas)
-    fails, found = [], collections.Counter()
+    allow_raw = allow_raw or {}
+    fails, found, raws = [], collections.Counter(), collections.Counter()
     nfiles = 0
     for root in roots:
         if not os.path.exists(root):
@@ -484,6 +485,10 @@ def census(roots, allowed_shas, allow_paths, expect):
                         if kind == "base64":
                             found[p] += 1
                         log("@@CENSUS ok %s %s:%d %s" % (kind, p, off, h[:16]))
+                    elif kind == "raw" and blob is None and p in allow_raw:
+                        # a bare header inside a binary (V8 byte constants), not an extractable module
+                        raws[p] += 1
+                        log("@@CENSUS raw-allowed %s:%d %s" % (p, off, data[max(0, off - 8):off + 24].hex()))
                     elif path_ok:
                         log("@@CENSUS allowed-path %s %s:%d %s" % (kind, p, off, (h or "-")[:16]))
                     else:
@@ -491,6 +496,9 @@ def census(roots, allowed_shas, allow_paths, expect):
     for p, (n, at_least) in sorted(expect.items()):
         if found[p] < n if at_least else found[p] != n:
             fails.append("expected %d%s allowed blob(s) in %s, found %d" % (n, "+" if at_least else "", p, found[p]))
+    for p, n in sorted(allow_raw.items()):
+        if raws[p] != n:
+            fails.append("expected %d raw header(s) in %s, found %d" % (n, p, raws[p]))
     if expect:
         for p in sorted(set(found) - set(expect)):
             if not any(fnmatch.fnmatch(p, g) for g in allow_paths):
@@ -802,6 +810,19 @@ def selftest():
                               "deps/npm/node_modules/undici/lib/llhttp/llhttp-wasm.js": (1, False)},
                              contains=why)
 
+            log("selftest: census allow-raw is an exact count")
+            root = tree()
+            os.chdir(root)
+            full_pass(root)
+            open("deps/x.bin", "wb").write(b"ELF..." + MAGIC + b"........" + MAGIC + b"...")
+            exp = {"deps/undici/undici.js": (2, False), "deps/npm/node_modules/undici/lib/llhttp/llhttp-wasm.js": (1, False)}
+            census(["deps"], [sha(good), sha(good_simd)], ["deps/v8/third_party/wasm-api/example/*"], exp, {"deps/x.bin": 2})
+            _expect_fail(census, ["deps"], [sha(good), sha(good_simd)], ["deps/v8/third_party/wasm-api/example/*"], exp,
+                         {"deps/x.bin": 1}, contains="expected 1 raw header(s)")
+            open("deps/x.wasm", "wb").write(mkwasm(exports=("evil",)))
+            _expect_fail(census, ["deps"], [sha(good), sha(good_simd)], ["deps/v8/third_party/wasm-api/example/*"], exp,
+                         {"deps/x.wasm": 1}, contains="raw deps/x.wasm")
+
             log("selftest: source pins")
             src = os.path.join(td, "undici-src")
             os.makedirs(os.path.join(src, "deps/llhttp/src"))
@@ -858,6 +879,7 @@ def main(argv):
     p.add_argument("--wasm", action="append", default=[], help="rebuilt blob whose sha is allowed")
     p.add_argument("--allow-path", action="append", default=[], help="fnmatch glob, relative to -C")
     p.add_argument("--expect", action="append", default=[], help="PATH=N (exact) or PATH=N+ allowed blobs in PATH")
+    p.add_argument("--allow-raw", action="append", default=[], help="PATH=N: exactly N undecodable raw wasm headers in PATH")
     p = sp.add_parser("smoke")
     p.add_argument("node")
     p.add_argument("wasm", nargs="+")
@@ -880,7 +902,11 @@ def main(argv):
             for e in a.expect:
                 k, _, v = e.rpartition("=")
                 expect[os.path.normpath(k)] = (int(v.rstrip("+")), v.endswith("+"))
-            census(a.roots, shas, a.allow_path, expect)
+            raw = {}
+            for e in a.allow_raw:
+                k, _, v = e.rpartition("=")
+                raw[os.path.normpath(k)] = int(v)
+            census(a.roots, shas, a.allow_path, expect, raw)
         elif a.cmd == "smoke":
             smoke(a.node, a.wasm, a.fetch, a.require)
         elif a.cmd == "selftest":
