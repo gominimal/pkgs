@@ -1,6 +1,8 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let llvm = import "../llvm/build.ncl" in
@@ -33,7 +35,6 @@ let version = "1.98.1" in
       libssh2,
       pkgconf,
       python,
-      toolchain,
     ]
     # stage0 = the rustc-1.97.1 rung (1.98.1's src/stage0 pins 1.97.1), built by the chain
     # gcc-15.2.0 -> mrustc 0.12.0 -> rustc-1.90.0 -> 1.91.1 -> ... -> 1.97.1.  amd64 takes the
@@ -73,6 +74,9 @@ let version = "1.98.1" in
     openssl,
     sqlite,
     subsetOf gcc ["libgcc", "libstdcpp"],
+    # rustc links through `cc` by default; toolchain brings gcc (which provides `cc`), binutils,
+    # glibc and the kernel headers, the same set the rust stack adds
+    toolchain,
   ],
 
   cmd = "./build.sh",
@@ -103,4 +107,18 @@ let version = "1.98.1" in
       },
       build_cost_multiple = 3,
     } | Attrs,
+
+  tests = {
+    # Only rust's own runtime closure may supply the `cc` that rustc links through here.
+    compile_exec_hello =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils],
+        cmds = [
+          ["/bin/bash", "-c", "echo 'fn main() { println!(\"hello\"); }' > hello.rs"],
+          ["/bin/rustc", "hello.rs", "-o", "hello"],
+          ["/bin/bash", "-c", "test \"$(./hello)\" = hello"],
+        ],
+      } | Test,
+  },
 } | BuildSpec
