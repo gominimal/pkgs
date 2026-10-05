@@ -62,7 +62,7 @@ chmod +x "$STUB_DIR/sphinx-build"
 # Ensure stubs and build-produced tools are in PATH
 export PATH="$STUB_DIR:$PWD/_build/bin:$PATH"
 
-# Boot compiler: the ghc-9.6.7 ladder rung when present (amd64), else the prebuilt ghc on PATH.
+# Boot compiler: the ghc-9.6.7 ladder rung when present, else a ghc on PATH.
 if [ -x /usr/lib/ghc-9.6.7/bin/ghc ]; then
   BOOT=/usr/lib/ghc-9.6.7/bin/ghc; BOOT_PKG=/usr/lib/ghc-9.6.7/bin/ghc-pkg
 else
