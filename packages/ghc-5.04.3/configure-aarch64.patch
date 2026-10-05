@@ -1,0 +1,18 @@
+--- a/configure
++++ b/configure
+@@ -870,6 +870,15 @@
+         HostOS_CPP='mingw32'
+ 	exeext='.exe'
+         ;;
++aarch64-*-linux*)
++        HostPlatform=aarch64-unknown-linux # hack again
++        TargetPlatform=aarch64-unknown-linux
++        BuildPlatform=aarch64-unknown-linux
++        HostPlatform_CPP='aarch64_unknown_linux'
++        HostArch_CPP='aarch64'
++        HostVendor_CPP='unknown'
++        HostOS_CPP='linux'
++        ;;
+ ia64-*-linux*)
+         HostPlatform=ia64-unknown-linux # hack again
+         TargetPlatform=ia64-unknown-linux

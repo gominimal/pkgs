@@ -10,6 +10,8 @@ let ncurses = import "../ncurses/build.ncl" in # the terminfo library binds it
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # the C compiler, hex0-rooted; build.sh wraps it against the sysroot
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
+let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
+let glibc = import "../glibc/build.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -26,48 +28,64 @@ let tar = import "../tar/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let version = "6.10.4" in
-let amd64_spec =
+let is_arm = target.arch == 'Arm64 in
+# x86_64 compiles with the bedrock gcc against its glibc sysroot; aarch64 with the toolchain, itself hex0-rooted
+let cc_build = if is_arm then [toolchain] else [gcc-bedrock, binutils-bedrock, glibc-bedrock] in
+let cc_runtime = if is_arm then [glibc, toolchain] else [subsetOf glibc-bedrock ["sysroot_lib"], gcc-bedrock, binutils-bedrock] in
+let arm_sources =
+  if is_arm then
+    [
+      {
+        url = "gs://minimal-staging-archives/libffi-3.5.2.tar.gz",
+        sha256 = "f3a3082a23b37c293a4fcd1053147b371f2ff91fa7ea1b2a52e335676bac82dc",
+        extract = false,
+      } | Source,
+    ]
+  else
+    []
+in
+let spec =
   {
     name = "ghc-6.10.4",
-    build_deps = [
-      { file = "build.sh" } | Local,
-      {
-        url = "gs://minimal-staging-archives/ghc-%{version}-src.tar.bz2",
-        sha256 = "d66a8e52572f4ff819fe5c4e34c6dd1e84a7763e25c3fadcc222453c0bd8534d",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      ghc-6-6-1,
-      gmp,
-      ncurses,
-      gcc-bedrock,
-      binutils-bedrock,
-      glibc-bedrock,
-      base,
-      bash,
-      make,
-      perl,
-      flex,
-      bison,
-      sed,
-      grep,
-      gawk,
-      coreutils,
-      findutils,
-      diffutils,
-      tar,
-      bzip2,
-      patch,
-    ],
+    build_deps =
+      [
+        { file = "build.sh" } | Local,
+        { file = "configure-aarch64.patch" } | Local,
+        {
+          url = "gs://minimal-staging-archives/ghc-%{version}-src.tar.bz2",
+          sha256 = "d66a8e52572f4ff819fe5c4e34c6dd1e84a7763e25c3fadcc222453c0bd8534d",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        ghc-6-6-1,
+        gmp,
+        ncurses,
+        base,
+        bash,
+        make,
+        perl,
+        flex,
+        bison,
+        sed,
+        grep,
+        gawk,
+        coreutils,
+        findutils,
+        diffutils,
+        tar,
+        bzip2,
+        patch,
+      ]
+      @ cc_build
+      @ arm_sources,
     # the driver runs gcc on the C it emits and the perl mangler/splitter; the RTS links libgmp
-    runtime_deps = [
-      subsetOf glibc-bedrock ["sysroot_lib"],
-      gmp,
-      ncurses,
-      perl,
-      gcc-bedrock,
-      binutils-bedrock,
-      bash,
-    ],
+    runtime_deps =
+      [
+        gmp,
+        ncurses,
+        perl,
+        bash,
+      ]
+      @ cc_runtime,
     cmd = "./build.sh",
     outputs = {
       prefix = { glob = "usr/lib/ghc-6.10.4/**", allow_executable = true } | OutputData,
@@ -85,12 +103,4 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# amd64 only for now: the unregisterised build is proven on x86_64; the arm64 lineage is being probed.
-match {
-  { arch = 'Amd64, .. } => amd64_spec,
-  { arch = 'Arm64, .. } =>
-    {
-      name = "ghc-6.10.4",
-      build_deps = [],
-    } | BuildSpec,
-} target
+spec

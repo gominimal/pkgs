@@ -17,16 +17,18 @@ export HOME=$BUILDROOT/home; mkdir -p $HOME   # ghc-pkg reads $HOME
 export TMPDIR=$BUILDROOT/tmp; mkdir -p $TMPDIR
 export TAR_OPTIONS=--no-same-owner   # the build system untars the bundled libffi itself
 
-# --- C toolchain: the bedrock gcc against the versioned glibc sysroot (as every rung of the GHC ladder) ---
-SR=/usr/lib/glibc-bedrock-2.42; LOADER=$SR/lib/ld-linux-x86-64.so.2
-[ -e $SR/lib/libc.so ] && [ -e $LOADER ] || { echo "ghc-7.0.4: glibc sysroot missing at $SR" >&2; exit 1; }
-mkdir -p $BIN/fixlib
-# the sysroot's libc.so is a linker script with staging paths; regenerate it
-sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@$SR/lib/\1@g" $SR/lib/libc.so > $BIN/fixlib/libc.so
-grep -q '/build/output' $BIN/fixlib/libc.so && { echo "ghc-7.0.4: libc.so fixup failed" >&2; exit 1; }
-# gcc (and cc): the first gcc on PATH that is not one of these wrappers (each rung ships one), given the sysroot's headers and, when linking, its
-# libraries and loader ahead of /usr/lib, where the toolchain glibc also lives
-cat > $BIN/gcc <<EOF
+# --- C toolchain. x86_64: the bedrock gcc against the versioned glibc sysroot (as every rung of the GHC ladder);
+# aarch64: the toolchain gcc, itself built from the hex0 seed, as is
+if [ "$(uname -m)" = x86_64 ]; then
+  SR=/usr/lib/glibc-bedrock-2.42; LOADER=$SR/lib/ld-linux-x86-64.so.2
+  [ -e $SR/lib/libc.so ] && [ -e $LOADER ] || { echo "ghc-7.0.4: glibc sysroot missing at $SR" >&2; exit 1; }
+  mkdir -p $BIN/fixlib
+  # the sysroot's libc.so is a linker script with staging paths; regenerate it
+  sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@$SR/lib/\1@g" $SR/lib/libc.so > $BIN/fixlib/libc.so
+  grep -q '/build/output' $BIN/fixlib/libc.so && { echo "ghc-7.0.4: libc.so fixup failed" >&2; exit 1; }
+  # gcc (and cc): the first gcc on PATH that is not one of these wrappers (each rung ships one), given the sysroot's headers and, when linking, its
+  # libraries and loader ahead of /usr/lib, where the toolchain glibc also lives
+  cat > $BIN/gcc <<EOF
 #!/bin/sh
 # sysroot-gcc-wrapper (every rung ships one; they skip each other by this line)
 G=; IFS=:; for d in \$PATH; do [ -x "\$d/gcc" ] || continue; grep -q 'sysroot-gcc-wrapper' "\$d/gcc" 2>/dev/null && continue; G=\$d/gcc; break; done; unset IFS
@@ -35,8 +37,9 @@ GI=\$("\$G" -print-file-name=include)
 for a in "\$@"; do case "\$a" in -c|-S|-E|-M|-MM) exec "\$G" -nostdinc -isystem "\$GI" -isystem $SR/include -isystem /usr/include "\$@" ;; esac; done
 exec "\$G" -nostdinc -isystem "\$GI" -isystem $SR/include -isystem /usr/include "\$@" -L$BIN/fixlib -B$SR/lib -L$SR/lib -L/usr/lib -Wl,--dynamic-linker=$LOADER -Wl,-rpath,$SR/lib:/usr/lib -Wl,--build-id=none
 EOF
-chmod 0755 $BIN/gcc; ln -sf gcc $BIN/cc
-export PATH=$BIN:$PATH
+  chmod 0755 $BIN/gcc; ln -sf gcc $BIN/cc
+fi
+mkdir -p $BIN; export PATH=$BIN:$PATH
 # --- P0 ---
 [ -x $BOOTDIR/ghc ] && [ -x $BOOTDIR/ghc-pkg ] || { echo "ghc-7.0.4: no boot compiler at $BOOTDIR (ghc-6.10.4)" >&2; exit 1; }
 $BOOTDIR/ghc --version 2>&1 | grep -q 'version 6.10.4' || { echo "ghc-7.0.4: boot compiler is not 6.10.4" >&2; exit 1; }
@@ -72,7 +75,7 @@ chmod 0755 $BIN/gcc89 $BIN/cpp-gap
 # make 3.82: -fcommon (make.h defines stack_limit in every object); the bundled glob calls glibc-internal
 # __alloca/__stat, which glibc no longer exports. glob.c stays as shipped.
 mkdir -p $BUILDROOT/make-3.82; tar xjf make-3.82.tar.bz2 -C $BUILDROOT/make-3.82 --strip-components=1
-( cd $BUILDROOT/make-3.82 && CC="gcc89 -fcommon" CPPFLAGS="-D__alloca=__builtin_alloca -D__stat=stat" ./configure --prefix=$BUILDROOT/make382 > configure.log 2>&1 && make > make.log 2>&1 && make install > install.log 2>&1 ) \
+( cd $BUILDROOT/make-3.82 && CC="gcc89 -fcommon" CPPFLAGS="-D__alloca=__builtin_alloca -D__stat=stat" ./configure $( [ "$(uname -m)" = aarch64 ] && echo --build=aarch64-unknown-linux-gnu --host=aarch64-unknown-linux-gnu ) --prefix=$BUILDROOT/make382 > configure.log 2>&1 && make > make.log 2>&1 && make install > install.log 2>&1 ) \
   || { tail -10 $BUILDROOT/make-3.82/make.log >&2; echo "ghc-7.0.4: make 3.82 did not build" >&2; exit 1; }
 MK=$BUILDROOT/make382/bin/make
 $MK --version | grep -q 'GNU Make 3.82' || { echo "ghc-7.0.4: wrong make" >&2; exit 1; }
@@ -85,6 +88,21 @@ cd $TREE
 GW=libraries/integer-gmp/cbits/gmp-wrappers.cmm
 sed -i 's/__gmpz_init(\([^)]*\))/__gmpz_init2(\1, 64)/g' $GW
 grep -q '__gmpz_init2(' $GW && ! grep -q '__gmpz_init(' $GW || { echo "ghc-7.0.4: gmp-wrappers fix did not apply" >&2; exit 1; }
+# aarch64: 2008-era platform knowledge throughout. The tree and five libraries carry config.guess copies that cannot name
+# the host (configure needs a guess that succeeds, and no --build: it takes the platform from the boot's --info);
+# configure's CPU table and arch whitelist lack aarch64; the bundled libffi 3.0.9 has no aarch64 port (3.5.2 builds in a
+# host-named subdirectory, where the rts and libffi makefiles are pointed)
+if [ "$(uname -m)" = aarch64 ]; then
+  D=aarch64-unknown-linux-gnu
+  for g in $(find . -name config.guess); do cp $BUILDROOT/gnu-config-config.guess $g; cp $BUILDROOT/gnu-config-config.sub $(dirname $g)/config.sub; chmod +x $g $(dirname $g)/config.sub; done
+  perl -0pi -e 's/\n  arm\*\)\n    (\w+)="arm"\n    ;;/\n  aarch64*)\n    $1="aarch64"\n    ;;\n  arm*)\n    $1="arm"\n    ;;/g' configure
+  sed -i 's/^    alpha|arm|hppa|hppa1_1|i386|ia64|/    aarch64|alpha|arm|hppa|hppa1_1|i386|ia64|/' configure
+  [ "$(grep -c 'aarch64\*)' configure)" = 3 ] && grep -q '^    aarch64|alpha|arm|' configure || { echo "ghc-7.0.4: configure platform tables not patched" >&2; exit 1; }
+  rm ghc-tarballs/libffi/libffi-3.0.9.tar.gz; cp $BUILDROOT/libffi-3.5.2.tar.gz ghc-tarballs/libffi/
+  sed -i "s|libffi/build/include|libffi/build/$D/include|g" rts/ghc.mk libffi/ghc.mk
+  sed -i "s|cd libffi/build \&\& ./libtool|cd libffi/build/$D \&\& ./libtool|; s|build/libtool|build/$D/libtool|g; s|libffi/build/.libs|libffi/build/$D/.libs|; /libffi.selinux-detection/d" libffi/ghc.mk
+  grep -q "libffi/build/$D/include" rts/ghc.mk && grep -q "cd libffi/build/$D && ./libtool" libffi/ghc.mk || { echo "ghc-7.0.4: libffi rules not repointed" >&2; exit 1; }
+fi
 CC=gcc89 ./configure --prefix=$PREFIX --with-ghc=$BOOTDIR/ghc --with-ghc-pkg=$BOOTDIR/ghc-pkg --with-gcc=gcc89 > configure.log 2>&1 || { tail -20 configure.log >&2; echo "ghc-7.0.4: configure failed" >&2; exit 1; }
 cat > mk/build.mk <<'EOF'
 HADDOCK_DOCS        = NO
@@ -102,6 +120,8 @@ GhcStage1HcOpts     = -O
 GhcStage2HcOpts     = -O
 GhcLibHcOpts        = -O
 EOF
+# aarch64 has no native code generator before 9.2: unregisterised, without the threaded RTS (it needs a real BaseReg)
+[ "$(uname -m)" = aarch64 ] && printf 'GhcUnregisterised    = YES\nGhcWithNativeCodeGen = NO\nGhcRTSWays           =\nGhcNotThreaded       = YES\n' >> mk/build.mk
 $MK > all.log 2>&1 || { grep -aiE 'error:|\*\*\*|panic|Segmentation|not in scope|parse error' all.log | grep -v warning | head -12 >&2; echo "ghc-7.0.4: make failed" >&2; exit 1; }
 G=$TREE/inplace/bin/ghc-stage2
 $G --version 2>&1 | grep -q "version $V" || { echo "ghc-7.0.4: stage 2 compiler does not report $V" >&2; exit 1; }
@@ -137,8 +157,9 @@ done
 cd $TREE
 $MK install DESTDIR=$OUTPUT_DIR > install.log 2>&1 || { tail -20 install.log >&2; echo "ghc-7.0.4: make install failed" >&2; exit 1; }
 # the C compiler wrappers the installed compiler runs, with the regenerated libc.so beside them
-install -m 0755 $BIN/gcc $BIN/gcc89 $BIN/cpp-gap "$DST/bin/"; ln -sf gcc "$DST/bin/cc"
-mkdir -p "$DST/lib"; cp -a $BIN/fixlib "$DST/lib/fixlib"; sed -i "s|$BIN/fixlib|$PREFIX/lib/fixlib|" "$DST/bin/gcc"
+install -m 0755 $BIN/gcc89 $BIN/cpp-gap "$DST/bin/"
+if [ -f $BIN/gcc ]; then install -m 0755 $BIN/gcc "$DST/bin/"; ln -sf gcc "$DST/bin/cc"
+  mkdir -p "$DST/lib"; cp -a $BIN/fixlib "$DST/lib/fixlib"; sed -i "s|$BIN/fixlib|$PREFIX/lib/fixlib|" "$DST/bin/gcc"; fi
 # the installed wrappers name the C compiler as configured (gcc89): they find it beside themselves
 for w in "$DST"/bin/*; do
   [ -f "$w" ] && [ "$(head -c 2 "$w")" = '#!' ] && grep -q 'exedir=' "$w" && sed -i "2i PATH=$PREFIX/bin:\$PATH; export PATH" "$w"
@@ -166,6 +187,7 @@ cd $T
 "$LIBD/ghc" -B"$LIBD" -no-user-package-conf -package-conf "$GATEDB" -O -rtsopts -o gate num.hs -outputdir gate.d > gate.log 2>&1 && ./gate > gate.out 2>&1 || { tail -10 gate.log >&2; echo "ghc-7.0.4: installed compiler failed the gate" >&2; exit 1; }
 cmp -s gate.out num.expected || { echo "ghc-7.0.4: installed compiler's output differs" >&2; exit 1; }
 INFO=$("$LIBD/ghc" -B"$LIBD" --info)   # captured: grep -q closing the pipe early would fail the pipeline
-echo "$INFO" | grep -q '"Unregisterised","NO"' || { echo "ghc-7.0.4: not the registerised compiler" >&2; exit 1; }
+WANT=NO; [ "$(uname -m)" = aarch64 ] && WANT=YES
+echo "$INFO" | grep -q "\"Unregisterised\",\"$WANT\"" || { echo "ghc-7.0.4: Unregisterised is not $WANT" >&2; exit 1; }
 find "$GATEDB" -delete
 echo "ghc-7.0.4: installed $(du -sh "$DST" | cut -f1) at $PREFIX"

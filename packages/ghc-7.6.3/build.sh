@@ -23,6 +23,7 @@ PREFIX="/usr/lib/ghc-${VERSION}"
 DST="${OUTPUT_DIR}${PREFIX}"
 BOOTDIR="/usr/lib/ghc-${BOOT_VERSION}/bin"
 GCC_VERSION=15.2.0
+ARCH="$(uname -m)"   # x86_64: bedrock gcc + the versioned glibc sysroot; aarch64: the toolchain gcc and its glibc
 SR=/usr/lib/glibc-bedrock-2.42
 LOADER="${SR}/lib/ld-linux-x86-64.so.2"
 JOBS="$(nproc 2>/dev/null || echo 4)"
@@ -31,15 +32,17 @@ export TMPDIR="${BUILDROOT}/tmp"; mkdir -p "$TMPDIR"   # GHC writes its temporar
 export TAR_OPTIONS=--no-same-owner   # the build system untars the bundled libffi itself; the sandbox cannot chown
 
 # --- P0 preconditions ---
-[ "$(uname -m)" = x86_64 ] || { echo "ghc-${VERSION}: amd64 ladder rung on $(uname -m)" >&2; exit 1; }
+case "${ARCH}" in x86_64|aarch64) ;; *) echo "ghc-${VERSION}: no ladder for ${ARCH}" >&2; exit 1 ;; esac
 for t in readelf gcc ld ar ranlib nm objdump strip as objcopy make perl sed grep tar bzip2 find xargs sha256sum; do
   command -v "$t" >/dev/null 2>&1 || { echo "ghc-${VERSION}: '$t' not on PATH" >&2; exit 1; }
 done
 BGCC="$(command -v gcc)"
 GCCVER="$("${BGCC}" -dumpversion 2>/dev/null || echo unknown)"
 [ "${GCCVER}" = "${GCC_VERSION}" ] || { echo "ghc-${VERSION}: gcc -dumpversion='${GCCVER}', expected '${GCC_VERSION}'" >&2; exit 1; }
-[ -e "${SR}/lib/libc.so" ] || { echo "ghc-${VERSION}: glibc sysroot missing at ${SR}" >&2; exit 1; }
-[ -e "${LOADER}" ] || { echo "ghc-${VERSION}: glibc loader missing at ${LOADER}" >&2; exit 1; }
+if [ "${ARCH}" = x86_64 ]; then
+  [ -e "${SR}/lib/libc.so" ] || { echo "ghc-${VERSION}: glibc sysroot missing at ${SR}" >&2; exit 1; }
+  [ -e "${LOADER}" ] || { echo "ghc-${VERSION}: glibc loader missing at ${LOADER}" >&2; exit 1; }
+fi
 [ -f /usr/include/gmp.h ] && [ -f /usr/include/curses.h ] || { echo "ghc-${VERSION}: gmp.h or curses.h missing" >&2; exit 1; }
 [ -x "${BOOTDIR}/ghc" ] && [ -x "${BOOTDIR}/ghc-pkg" ] || { echo "ghc-${VERSION}: boot compiler missing at ${BOOTDIR}" >&2; exit 1; }
 BOOTVER="$("${BOOTDIR}/ghc" --numeric-version 2>/dev/null || echo unknown)"
@@ -55,14 +58,19 @@ echo "${MAKE_SHA}  ${MAKE_TARBALL}" | sha256sum -c - || { echo "ghc-${VERSION}: 
 # after installation.
 mkfixlib() {
   mkdir -p "$1"
+  [ "${ARCH}" = x86_64 ] || return 0
   sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@${SR}/lib/\1@g" "${SR}/lib/libc.so" > "$1/libc.so"
   if grep -q '/build/output' "$1/libc.so"; then echo "ghc-${VERSION}: libc.so fixup failed" >&2; exit 1; fi
 }
 # 2013-era C on a modern gcc: gnu99, no PIE, tentative definitions as commons, warnings stay warnings.
-CCFLAGS="-isystem ${SR}/include -isystem /usr/include -std=gnu99 -fno-pie -no-pie -fcommon -fno-strict-aliasing -Wno-error -Wno-implicit-function-declaration -Wno-implicit-int -Wno-incompatible-pointer-types -Wno-int-conversion"
+SRINC="-isystem ${SR}/include -isystem /usr/include"; [ "${ARCH}" = x86_64 ] || SRINC=
+CCFLAGS="${SRINC} -std=gnu99 -fno-pie -no-pie -fcommon -fno-strict-aliasing -Wno-error -Wno-implicit-function-declaration -Wno-implicit-int -Wno-incompatible-pointer-types -Wno-int-conversion"
 # The wrapper resolves gcc and its include dir when invoked, so the shipped copy also works in a
 # sandbox whose gcc differs from this one.
 mkwrapper() { # $1 wrapper path, $2 fixlib dir
+  if [ "${ARCH}" = aarch64 ]; then
+    printf '#!/bin/sh\nexec gcc %s "$@"\n' "${CCFLAGS}" > "$1"; chmod 0755 "$1"; return 0
+  fi
   cat > "$1" <<WRAP
 #!/bin/sh
 G=\$(command -v gcc); GI=\$("\$G" -print-file-name=include)

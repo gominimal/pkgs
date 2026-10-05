@@ -21,16 +21,18 @@ BUILDROOT=$PWD
 W=$BUILDROOT/w   # the lab tree's /w; every script below is rewritten to this path
 BIN=$BUILDROOT/bin
 
-# --- C toolchain: the bedrock gcc against the versioned glibc sysroot (as every rung of the GHC ladder) ---
-SR=/usr/lib/glibc-bedrock-2.42; LOADER=$SR/lib/ld-linux-x86-64.so.2
-[ -e $SR/lib/libc.so ] && [ -e $LOADER ] || { echo "ghc-4.08.2: glibc sysroot missing at $SR" >&2; exit 1; }
-mkdir -p $BIN/fixlib
-# the sysroot's libc.so is a linker script with staging paths; regenerate it
-sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@$SR/lib/\1@g" $SR/lib/libc.so > $BIN/fixlib/libc.so
-grep -q '/build/output' $BIN/fixlib/libc.so && { echo "ghc-4.08.2: libc.so fixup failed" >&2; exit 1; }
-# gcc (and cc): the first gcc on PATH that is not one of these wrappers (each rung ships one), given the sysroot's headers and, when linking, its
-# libraries and loader ahead of /usr/lib, where the toolchain glibc also lives
-cat > $BIN/gcc <<EOF
+# --- C toolchain. x86_64: the bedrock gcc against the versioned glibc sysroot (as every rung of the GHC ladder);
+# aarch64: the toolchain gcc, itself built from the hex0 seed, as is
+if [ "$(uname -m)" = x86_64 ]; then
+  SR=/usr/lib/glibc-bedrock-2.42; LOADER=$SR/lib/ld-linux-x86-64.so.2
+  [ -e $SR/lib/libc.so ] && [ -e $LOADER ] || { echo "ghc-4.08.2: glibc sysroot missing at $SR" >&2; exit 1; }
+  mkdir -p $BIN/fixlib
+  # the sysroot's libc.so is a linker script with staging paths; regenerate it
+  sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@$SR/lib/\1@g" $SR/lib/libc.so > $BIN/fixlib/libc.so
+  grep -q '/build/output' $BIN/fixlib/libc.so && { echo "ghc-4.08.2: libc.so fixup failed" >&2; exit 1; }
+  # gcc (and cc): the first gcc on PATH that is not one of these wrappers (each rung ships one), given the sysroot's headers and, when linking, its
+  # libraries and loader ahead of /usr/lib, where the toolchain glibc also lives
+  cat > $BIN/gcc <<EOF
 #!/bin/sh
 # sysroot-gcc-wrapper (every rung ships one; they skip each other by this line)
 G=; IFS=:; for d in \$PATH; do [ -x "\$d/gcc" ] || continue; grep -q 'sysroot-gcc-wrapper' "\$d/gcc" 2>/dev/null && continue; G=\$d/gcc; break; done; unset IFS
@@ -39,8 +41,9 @@ GI=\$("\$G" -print-file-name=include)
 for a in "\$@"; do case "\$a" in -c|-S|-E|-M|-MM) exec "\$G" -nostdinc -isystem "\$GI" -isystem $SR/include -isystem /usr/include "\$@" ;; esac; done
 exec "\$G" -nostdinc -isystem "\$GI" -isystem $SR/include -isystem /usr/include "\$@" -L$BIN/fixlib -B$SR/lib -L$SR/lib -L/usr/lib -Wl,--dynamic-linker=$LOADER -Wl,-rpath,$SR/lib:/usr/lib -Wl,--build-id=none
 EOF
-chmod 0755 $BIN/gcc; ln -sf gcc $BIN/cc
-export PATH=$BIN:$PATH
+  chmod 0755 $BIN/gcc; ln -sf gcc $BIN/cc
+fi
+mkdir -p $BIN; export PATH=$BIN:$PATH
 
 # --- P0 ---
 for x in $MHS/mhs $MHS/cpphs; do [ -x "$x" ] || { echo "ghc-4.08.2: missing $x (microhs-0.16)" >&2; exit 1; }; done
@@ -171,7 +174,7 @@ grep -rlI "$BUILDROOT" "$DST/w" | grep -v '\.hc$' | head -3 | grep -q . && { ech
 # the next rung's boot compiler: configure parses "version M.mm, patchlevel P"; everything else goes to the driver
 mkdir -p "$DST/bin" "$DST/lib"
 # the C compiler wrapper the driver runs, with the regenerated libc.so beside it
-install -m 0755 $BIN/gcc "$DST/bin/"; ln -sf gcc "$DST/bin/cc"; cp -a $BIN/fixlib "$DST/lib/fixlib"; sed -i "s|$BIN/fixlib|$PREFIX/lib/fixlib|" "$DST/bin/gcc"
+if [ -f $BIN/gcc ]; then install -m 0755 $BIN/gcc "$DST/bin/"; ln -sf gcc "$DST/bin/cc"; cp -a $BIN/fixlib "$DST/lib/fixlib"; sed -i "s|$BIN/fixlib|$PREFIX/lib/fixlib|" "$DST/bin/gcc"; fi
 cat > "$DST/bin/ghc-4.08.2" <<EOF
 #!/bin/sh
 PATH=$PREFIX/bin:\$PATH; export PATH

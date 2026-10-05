@@ -9,18 +9,26 @@ DST="${OUTPUT_DIR}${PREFIX}"
 BOOT=/usr/lib/ghc-4.08.2/bin/ghc-4.08.2
 BUILDROOT=$PWD
 BIN=$BUILDROOT/bin
-SERIES="configure-x86_64 mblock-64bit cast-lvalue rts-carry driver-x86_64 gcc15-c boot408-hschooks boot408-happy64 gcc15-rts-net glibc-modern boot408-floatlit uniqfm-64bit"
+# aarch64 differs only where these 2000s-era trees cannot name the platform: configure's platform case (a patch), the
+# triple given by hand (config.guess predates aarch64)
+case "$(uname -m)" in
+  aarch64) PA=aarch64; CFGTR="--build=aarch64-unknown-linux-gnu --host=aarch64-unknown-linux-gnu --target=aarch64-unknown-linux-gnu" ;;
+  *) PA=x86_64; CFGTR= ;;
+esac
+SERIES="configure-$PA mblock-64bit cast-lvalue rts-carry driver-$PA gcc15-c boot408-hschooks boot408-happy64 gcc15-rts-net glibc-modern boot408-floatlit uniqfm-64bit"
 
-# --- C toolchain: the bedrock gcc against the versioned glibc sysroot (as every rung of the GHC ladder) ---
-SR=/usr/lib/glibc-bedrock-2.42; LOADER=$SR/lib/ld-linux-x86-64.so.2
-[ -e $SR/lib/libc.so ] && [ -e $LOADER ] || { echo "ghc-5.04.3: glibc sysroot missing at $SR" >&2; exit 1; }
-mkdir -p $BIN/fixlib
-# the sysroot's libc.so is a linker script with staging paths; regenerate it
-sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@$SR/lib/\1@g" $SR/lib/libc.so > $BIN/fixlib/libc.so
-grep -q '/build/output' $BIN/fixlib/libc.so && { echo "ghc-5.04.3: libc.so fixup failed" >&2; exit 1; }
-# gcc (and cc): the first gcc on PATH that is not one of these wrappers (each rung ships one), given the sysroot's headers and, when linking, its
-# libraries and loader ahead of /usr/lib, where the toolchain glibc also lives
-cat > $BIN/gcc <<EOF
+# --- C toolchain. x86_64: the bedrock gcc against the versioned glibc sysroot (as every rung of the GHC ladder);
+# aarch64: the toolchain gcc, itself built from the hex0 seed, as is
+if [ "$(uname -m)" = x86_64 ]; then
+  SR=/usr/lib/glibc-bedrock-2.42; LOADER=$SR/lib/ld-linux-x86-64.so.2
+  [ -e $SR/lib/libc.so ] && [ -e $LOADER ] || { echo "ghc-5.04.3: glibc sysroot missing at $SR" >&2; exit 1; }
+  mkdir -p $BIN/fixlib
+  # the sysroot's libc.so is a linker script with staging paths; regenerate it
+  sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@$SR/lib/\1@g" $SR/lib/libc.so > $BIN/fixlib/libc.so
+  grep -q '/build/output' $BIN/fixlib/libc.so && { echo "ghc-5.04.3: libc.so fixup failed" >&2; exit 1; }
+  # gcc (and cc): the first gcc on PATH that is not one of these wrappers (each rung ships one), given the sysroot's headers and, when linking, its
+  # libraries and loader ahead of /usr/lib, where the toolchain glibc also lives
+  cat > $BIN/gcc <<EOF
 #!/bin/sh
 # sysroot-gcc-wrapper (every rung ships one; they skip each other by this line)
 G=; IFS=:; for d in \$PATH; do [ -x "\$d/gcc" ] || continue; grep -q 'sysroot-gcc-wrapper' "\$d/gcc" 2>/dev/null && continue; G=\$d/gcc; break; done; unset IFS
@@ -29,8 +37,9 @@ GI=\$("\$G" -print-file-name=include)
 for a in "\$@"; do case "\$a" in -c|-S|-E|-M|-MM) exec "\$G" -nostdinc -isystem "\$GI" -isystem $SR/include -isystem /usr/include "\$@" ;; esac; done
 exec "\$G" -nostdinc -isystem "\$GI" -isystem $SR/include -isystem /usr/include "\$@" -L$BIN/fixlib -B$SR/lib -L$SR/lib -L/usr/lib -Wl,--dynamic-linker=$LOADER -Wl,-rpath,$SR/lib:/usr/lib -Wl,--build-id=none
 EOF
-chmod 0755 $BIN/gcc; ln -sf gcc $BIN/cc
-export PATH=$BIN:$PATH
+  chmod 0755 $BIN/gcc; ln -sf gcc $BIN/cc
+fi
+mkdir -p $BIN; export PATH=$BIN:$PATH
 # --- P0 ---
 [ -x $BOOT ] || { echo "ghc-5.04.3: no boot compiler at $BOOT (ghc-4.08.2)" >&2; exit 1; }
 [ -f ghc-$V-src.tar.bz2 ] || { echo "ghc-5.04.3: source tarball absent" >&2; exit 1; }
@@ -87,8 +96,8 @@ faildir() { awk '/Entering directory/{d=$NF} /\*\*\* \[|Error [0-9]/{print d; ex
 # --- P2 stage 1: 4.08.2 compiles the compiler (no -O: 4.08's optimiser on 5.04's sources is slow and fragile) ---
 S1=$BUILDROOT/s1
 unpack_patch $S1
-( cd $S1 && CC=gcc89 ./configure --with-ghc=$BUILDROOT/boot/ghc --with-gcc=gcc89 > configure.log 2>&1 ) || { tail -20 $S1/configure.log >&2; echo "ghc-5.04.3: stage 1 configure failed" >&2; exit 1; }
-grep -q 'x86_64-unknown-linux' $S1/mk/config.mk || { echo "ghc-5.04.3: stage 1 platform is not x86_64-unknown-linux" >&2; exit 1; }
+( cd $S1 && CC=gcc89 ./configure $CFGTR --with-ghc=$BUILDROOT/boot/ghc --with-gcc=gcc89 > configure.log 2>&1 ) || { tail -20 $S1/configure.log >&2; echo "ghc-5.04.3: stage 1 configure failed" >&2; exit 1; }
+grep -q "$PA-unknown-linux" $S1/mk/config.mk || { echo "ghc-5.04.3: stage 1 platform is not $PA-unknown-linux" >&2; exit 1; }
 # stage 1 runs on 4.08's RTS (1 MB default stack); the library makefiles race under -j
 { printf '%s' "$BUILDMK"; echo 'FptoolsHcOpts        ='; echo 'GhcLibHcOpts         += +RTS -K512m -M8g -RTS -pgmP cpp-gap'; } > $S1/mk/build.mk
 ( cd $S1 && make boot > boot.log 2>&1 ) || { grep -aiE 'error|\*\*\*' $S1/boot.log | head -8 >&2; echo "ghc-5.04.3: stage 1 make boot failed in $(faildir $S1/boot.log)" >&2; exit 1; }
@@ -100,7 +109,7 @@ $G1 --version 2>&1 | grep -q "version $V" || { echo "ghc-5.04.3: stage 1 compile
 S2=$BUILDROOT/ghc-$V
 unpack_patch $S2
 mkdir -p $BUILDROOT/boot1; ln -sf $G1 $BUILDROOT/boot1/ghc; ln -sf $S1/ghc/utils/ghc-pkg/ghc-pkg-inplace $BUILDROOT/boot1/ghc-pkg
-( cd $S2 && CC=gcc89 ./configure --with-ghc=$BUILDROOT/boot1/ghc --with-gcc=gcc89 > configure.log 2>&1 ) || { tail -20 $S2/configure.log >&2; echo "ghc-5.04.3: stage 2 configure failed" >&2; exit 1; }
+( cd $S2 && CC=gcc89 ./configure $CFGTR --with-ghc=$BUILDROOT/boot1/ghc --with-gcc=gcc89 > configure.log 2>&1 ) || { tail -20 $S2/configure.log >&2; echo "ghc-5.04.3: stage 2 configure failed" >&2; exit 1; }
 # both the boot (stage 1) and the new compiler run on 5.04's RTS
 { printf '%s' "$BUILDMK"; echo 'SRC_HC_OPTS          += +RTS -K512m -M8g -RTS -pgmP cpp-gap'; } > $S2/mk/build.mk
 ( cd $S2 && make all > all.log 2>&1 ) || { grep -aiE 'error:|\*\*\*|panic|Segmentation|not in scope|parse error' $S2/all.log | head -10 >&2; echo "ghc-5.04.3: stage 2 make all failed in $(faildir $S2/all.log)" >&2; exit 1; }
@@ -139,8 +148,9 @@ echo "ghc-5.04.3: stage 1 vs stage 2 C for num.hs: $(cmp -s hc1/num.hc hc2/num.h
 cd $BUILDROOT
 mkdir -p "$DST/bin"
 # the C compiler wrappers the installed compiler runs, with the regenerated libc.so beside them
-install -m 0755 $BIN/gcc $BIN/gcc89 $BIN/cpp-gap "$DST/bin/"; ln -sf gcc "$DST/bin/cc"
-mkdir -p "$DST/lib"; cp -a $BIN/fixlib "$DST/lib/fixlib"; sed -i "s|$BIN/fixlib|$PREFIX/lib/fixlib|" "$DST/bin/gcc"
+install -m 0755 $BIN/gcc89 $BIN/cpp-gap "$DST/bin/"
+if [ -f $BIN/gcc ]; then install -m 0755 $BIN/gcc "$DST/bin/"; ln -sf gcc "$DST/bin/cc"
+  mkdir -p "$DST/lib"; cp -a $BIN/fixlib "$DST/lib/fixlib"; sed -i "s|$BIN/fixlib|$PREFIX/lib/fixlib|" "$DST/bin/gcc"; fi
 cp -a $S2 "$DST/ghc-$V"
 find "$DST/ghc-$V" \( -name '*.o' -o -name '*.hc' -o -name '*.log' -o -name '*.hi-boot' -o -name '*_stub.c' \) -type f -delete
 find "$DST/ghc-$V" -name '*.hi-boot' -delete 2>/dev/null || true
