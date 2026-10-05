@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "10.4.2" in
+let version = "10.5.0" in
 {
   name = "fd",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/sharkdp/fd/v%{version}.tar.gz",
-      sha256 = "3a7e027af8c8e91c196ac259c703d78cd55c364706ddafbc66d02c326e57a456",
+      sha256 = "e6d9e90730bf316101691e49d59cc02565278dc3779d33a77423801569484851",
       extract = true,
       strip_prefix = "fd-%{version}",
     } | Source,
