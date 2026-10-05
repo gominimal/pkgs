@@ -5,14 +5,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "3.42" in
+let version = "3.43" in
 {
   name = "fio",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/axboe/fio/archive/refs/tags/fio-%{version}.tar.gz",
-      sha256 = "56b03497a918d07692257890fd759bf73168ad79df5be78a2bcbbdc8ce67895b",
+      sha256 = "efa49b3f36eda9adf29294f27a87d7e457747d676cd0f73996d6365357832cfe",
       extract = true,
       strip_prefix = "fio-fio-%{version}",
     } | Source,
