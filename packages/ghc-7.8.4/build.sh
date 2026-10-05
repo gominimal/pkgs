@@ -112,7 +112,18 @@ V = 0
 GhcRTSWays = thr
 GhcStage1HcOpts = -O0
 EOF
-CC="${CC}" ./configure --prefix="${PREFIX}" --with-ghc="${BOOT}" --with-gcc="${CC}" > ../configure.log 2>&1 \
+CFGX=
+if [ "${ARCH}" = aarch64 ]; then
+  for g in $(find . -name config.guess); do cp "${BUILDROOT}/gnu-config-config.guess" "$g"; cp "${BUILDROOT}/gnu-config-config.sub" "$(dirname "$g")/config.sub"; chmod +x "$g" "$(dirname "$g")/config.sub"; done
+  perl -0pi -e 's/\n  arm\*\)\n    (\w+)="arm"\n    ;;/\n  aarch64*)\n    $1="aarch64"\n    ;;\n  arm*)\n    $1="arm"\n    ;;/g' configure
+  sed -i 's/^        hppa|hppa1_1|ia64|m68k|powerpc64le|/        aarch64|hppa|hppa1_1|ia64|m68k|powerpc64le|/' configure
+  [ "$(grep -c 'aarch64\*)' configure)" -ge 3 ] && grep -q '^        aarch64|hppa' configure || { echo "ghc-${VERSION}: configure platform tables not patched" >&2; exit 1; }
+  rm libffi-tarballs/libffi-3.0.11.tar.gz; cp "${BUILDROOT}/libffi-3.5.2.tar.gz" libffi-tarballs/
+  sed -i 's|libffi/build/inst/lib/libffi-\*/include/|libffi/build/inst/include/|' libffi/ghc.mk
+  grep -q 'libffi/build/inst/include/' libffi/ghc.mk || { echo "ghc-${VERSION}: libffi header path not repointed" >&2; exit 1; }
+  printf 'GhcUnregisterised = YES\nGhcWithNativeCodeGen = NO\nGhcWithInterpreter = NO\nGhcWithSMP = NO\nGhcEnableTablesNextToCode = NO\nGhcRTSWays = \n' >> mk/build.mk
+fi
+CC="${CC}" ./configure ${CFGX} --prefix="${PREFIX}" --with-ghc="${BOOT}" --with-gcc="${CC}" > ../configure.log 2>&1 \
   || { tail -30 ../configure.log >&2; echo "ghc-${VERSION}: configure failed" >&2; exit 1; }
 make -j"${JOBS}" > ../make.log 2>&1 || { grep -n -B3 -m3 -E ' error:|Segmentation|internal error|\*\*\*' ../make.log | grep -v warning >&2; tail -20 ../make.log >&2; echo "ghc-${VERSION}: make failed" >&2; exit 1; }
 
@@ -155,7 +166,9 @@ cp "${BUILDROOT}/settings.build" "${SETTINGS}"
 printf 'import Data.List\nmain = putStrLn ("GHC-GATE:" ++ show (product [1..5 :: Integer] - (2^(70::Int) - 2^(70::Int))) ++ ":" ++ show (length (nub [1..50::Int])))\n' > ../gate.hs
 "${GHCBIN}" -B"${LIBD}" -no-global-package-db -package-db "${GATEDB}" -O -o ../gate ../gate.hs -outputdir ../gate.d > ../gate.log 2>&1 && OUT="$(../gate)" || { cat ../gate.log >&2; echo "ghc-${VERSION}: installed compiler failed the gate" >&2; exit 1; }
 [ "$OUT" = "GHC-GATE:120:50" ] || { echo "ghc-${VERSION}: gate printed '$OUT'" >&2; exit 1; }
-"${GHCBIN}" -B"${LIBD}" --info | grep -q '"Unregisterised","NO"' || { echo "ghc-${VERSION}: not a registerised compiler" >&2; exit 1; }
+WANT=NO; [ "${ARCH}" = aarch64 ] && WANT=YES
+INFO="$("${GHCBIN}" -B"${LIBD}" --info)"
+echo "${INFO}" | grep -q "\"Unregisterised\",\"${WANT}\"" || { echo "ghc-${VERSION}: Unregisterised is not ${WANT}" >&2; exit 1; }
 [ "$("${GHCBIN}" -B"${LIBD}" --numeric-version)" = "${VERSION}" ] || { echo "ghc-${VERSION}: wrong compiler version installed" >&2; exit 1; }
 sed -i "s|${CCDIR}/gcc|${PREFIX}/bin/ghc-cc|g" "${SETTINGS}"
 find "${GATEDB}" -delete

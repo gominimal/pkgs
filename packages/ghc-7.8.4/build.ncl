@@ -9,6 +9,7 @@ let ghc-boot = import "../ghc-7.6.3/build.ncl" in # the previous rung
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
+let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
 let gmp = import "../gmp/build.ncl" in # integer-gmp
 let ncurses = import "../ncurses/build.ncl" in # terminfo
 let bash = import "../bash/build.ncl" in
@@ -27,37 +28,62 @@ let gzip = import "../gzip/build.ncl" in # the build system untars the bundled l
 let patch = import "../patch/build.ncl" in # and patches it
 # pkgmgr: bootstrap_rung = "ghc"
 let version = "7.8.4" in
-let amd64_spec =
+let is_arm = target.arch == 'Arm64 in
+# x86_64 compiles with the bedrock gcc against its glibc sysroot; aarch64 with the toolchain, itself hex0-rooted
+let cc_build = if is_arm then [toolchain] else [gcc-bedrock, binutils-bedrock, glibc-bedrock] in
+let arm_extra =
+  if is_arm then
+    [
+      {
+        url = "gs://minimal-staging-archives/libffi-3.5.2.tar.gz",
+        sha256 = "f3a3082a23b37c293a4fcd1053147b371f2ff91fa7ea1b2a52e335676bac82dc",
+        extract = false,
+      } | Source,
+      {
+        url = "gs://minimal-staging-archives/build-aux/gnu-config-config.guess",
+        sha256 = "e3d148130e9151735f8b9a8e69a70d06890ece51468a9762eb7ac0feddddcc2f",
+        extract = false,
+      } | Source,
+      {
+        url = "gs://minimal-staging-archives/build-aux/gnu-config-config.sub",
+        sha256 = "11c54f55c3ac99e5d2c3dc2bb0bcccbf69f8223cc68f6b2438daa806cf0d16d8",
+        extract = false,
+      } | Source,
+    ]
+  else
+    []
+in
+let spec =
   {
     name = "ghc-7.8.4",
-    build_deps = [
-      { file = "build.sh" } | Local,
-      {
-        url = "gs://minimal-staging-archives/ghc-%{version}-src.tar.xz",
-        sha256 = "c319cd94adb284177ed0e6d21546ed0b900ad84b86b87c06a99eac35152982c4",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      ghc-boot,
-      gcc-bedrock,
-      binutils-bedrock,
-      glibc-bedrock,
-      gmp,
-      ncurses,
-      bash,
-      make,
-      perl,
-      python,
-      sed,
-      grep,
-      gawk,
-      coreutils,
-      findutils,
-      diffutils,
-      tar,
-      xz,
-      gzip,
-      patch,
-    ],
+    build_deps =
+      [
+        { file = "build.sh" } | Local,
+        {
+          url = "gs://minimal-staging-archives/ghc-%{version}-src.tar.xz",
+          sha256 = "c319cd94adb284177ed0e6d21546ed0b900ad84b86b87c06a99eac35152982c4",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        ghc-boot,
+        gmp,
+        ncurses,
+        bash,
+        make,
+        perl,
+        python,
+        sed,
+        grep,
+        gawk,
+        coreutils,
+        findutils,
+        diffutils,
+        tar,
+        xz,
+        gzip,
+        patch,
+      ]
+      @ cc_build
+      @ arm_extra,
     cmd = "./build.sh",
     outputs = {
       # The next rung consumes the tree by absolute path: compiler, ghc-pkg, package db, libraries
@@ -78,13 +104,4 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# amd64 only: this rung belongs to the amd64 bootstrap ladder. On arm64 the ghc recipe keeps its
-# prebuilt boot, so this spec collapses to an empty collection there.
-match {
-  { arch = 'Amd64, .. } => amd64_spec,
-  { arch = 'Arm64, .. } =>
-    {
-      name = "ghc-7.8.4",
-      build_deps = [],
-    } | BuildSpec,
-} target
+spec

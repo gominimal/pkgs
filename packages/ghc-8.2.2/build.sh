@@ -108,7 +108,15 @@ EOF
 printf 'CC_STAGE0 = %s\n' "${CC}" >> mk/build.mk
 # hp2ps declares malloc/realloc K&R-style; C23 reads `()` as no parameters.
 sed -i 's/extern void\* malloc();/extern void* malloc(long unsigned int);/; s/extern void \*realloc();/extern void *realloc(void *, long unsigned int);/' utils/hp2ps/Utilities.c
-./configure --prefix="${PREFIX}" GHC="${BOOT}" CC="${CC}" > ../configure.log 2>&1 \
+CFGX=
+if [ "${ARCH}" = aarch64 ]; then
+  # arm/aarch64 links with ld.gold here (a workaround for bfd ld bugs since fixed; gold is gone from current binutils)
+  sed -i 's/ -fuse-ld=gold//g' configure
+  CFGX=--enable-unregisterised
+  # iserv is always built and always linked -threaded
+  printf 'GhcUnregisterised = YES\nGhcWithNativeCodeGen = NO\nGhcWithInterpreter = NO\nGhcWithSMP = NO\nGhcEnableTablesNextToCode = NO\nGhcRTSWays = thr\n' >> mk/build.mk
+fi
+./configure ${CFGX} --prefix="${PREFIX}" GHC="${BOOT}" CC="${CC}" > ../configure.log 2>&1 \
   || { tail -30 ../configure.log >&2; echo "ghc-${VERSION}: configure failed" >&2; exit 1; }
 make -j"${JOBS}" > ../make.log 2>&1 || { grep -n -B3 -m3 -E ' error:|Segmentation|internal error|\*\*\*' ../make.log | grep -v warning >&2; tail -20 ../make.log >&2; echo "ghc-${VERSION}: make failed" >&2; exit 1; }
 
@@ -148,7 +156,9 @@ cp "${BUILDROOT}/settings.build" "${SETTINGS}"
 printf 'import Data.List\nmain = putStrLn ("GHC-GATE:" ++ show (product [1..5 :: Integer] - (2^(70::Int) - 2^(70::Int))) ++ ":" ++ show (length (nub [1..50::Int])))\n' > ../gate.hs
 "${GHCBIN}" -B"${LIBD}" -no-global-package-db -package-db "${GATEDB}" -O -o ../gate ../gate.hs -outputdir ../gate.d > ../gate.log 2>&1 && OUT="$(../gate)" || { cat ../gate.log >&2; echo "ghc-${VERSION}: installed compiler failed the gate" >&2; exit 1; }
 [ "$OUT" = "GHC-GATE:120:50" ] || { echo "ghc-${VERSION}: gate printed '$OUT'" >&2; exit 1; }
-"${GHCBIN}" -B"${LIBD}" --info | grep -q '"Unregisterised","NO"' || { echo "ghc-${VERSION}: not a registerised compiler" >&2; exit 1; }
+WANT=NO; [ "${ARCH}" = aarch64 ] && WANT=YES
+INFO="$("${GHCBIN}" -B"${LIBD}" --info)"
+echo "${INFO}" | grep -q "\"Unregisterised\",\"${WANT}\"" || { echo "ghc-${VERSION}: Unregisterised is not ${WANT}" >&2; exit 1; }
 [ "$("${GHCBIN}" -B"${LIBD}" --numeric-version)" = "${VERSION}" ] || { echo "ghc-${VERSION}: wrong compiler version installed" >&2; exit 1; }
 sed -i "s|${CCDIR}/gcc|${PREFIX}/bin/ghc-cc|g" "${SETTINGS}"
 find "${GATEDB}" -delete

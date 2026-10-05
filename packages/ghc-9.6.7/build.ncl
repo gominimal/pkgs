@@ -11,6 +11,7 @@ let ghc-boot = import "../ghc-9.2.8/build.ncl" in # the previous rung
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
+let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
 let gmp = import "../gmp/build.ncl" in # integer-gmp
 let ncurses = import "../ncurses/build.ncl" in # terminfo
 let bash = import "../bash/build.ncl" in
@@ -32,47 +33,49 @@ let automake = import "../automake/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 # pkgmgr: bootstrap_rung = "ghc"
 let version = "9.6.7" in
-let amd64_spec =
+let is_arm = target.arch == 'Arm64 in
+# x86_64 compiles with the bedrock gcc against its glibc sysroot; aarch64 with the toolchain, itself hex0-rooted
+let cc_build = if is_arm then [toolchain] else [gcc-bedrock, binutils-bedrock, glibc-bedrock] in
+let spec =
   {
     name = "ghc-9.6.7",
-    build_deps = [
-      { file = "build.sh" } | Local,
-      {
-        url = "gs://minimal-staging-archives/ghc-%{version}-src.tar.xz",
-        sha256 = "d053bf6ce1d588a75cfe8c9316269486e9d8fb89dcdf6fd92836fa2e3df61305",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      {
-        # Hackage sources of Hadrian's dependencies plus their build plan, as published for the
-        # 9.2.5 boot; build.sh rewrites the plan's bundled-package versions to the 9.2.8 boot's.
-        url = "gs://minimal-staging-archives/hadrian-bootstrap-sources-9.2.5.tar.gz",
-        sha256 = "a081cd21d2917855e5447ef2433a3b7a4d87ddc8229f6e98fde9f51a693bff5e",
-        extract = false,
-      } | Source,
-      ghc-boot,
-      gcc-bedrock,
-      binutils-bedrock,
-      glibc-bedrock,
-      gmp,
-      ncurses,
-      bash,
-      make,
-      perl,
-      python,
-      sed,
-      grep,
-      gawk,
-      coreutils,
-      findutils,
-      diffutils,
-      tar,
-      xz,
-      gzip,
-      patch,
-      autoconf,
-      automake,
-      m4,
-    ],
+    build_deps =
+      [
+        { file = "build.sh" } | Local,
+        {
+          url = "gs://minimal-staging-archives/ghc-%{version}-src.tar.xz",
+          sha256 = "d053bf6ce1d588a75cfe8c9316269486e9d8fb89dcdf6fd92836fa2e3df61305",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        {
+          # Hackage sources of Hadrian's dependencies plus their build plan, as published for the
+          # 9.2.5 boot; build.sh rewrites the plan's bundled-package versions to the 9.2.8 boot's.
+          url = "gs://minimal-staging-archives/hadrian-bootstrap-sources-9.2.5.tar.gz",
+          sha256 = "a081cd21d2917855e5447ef2433a3b7a4d87ddc8229f6e98fde9f51a693bff5e",
+          extract = false,
+        } | Source,
+        ghc-boot,
+        gmp,
+        ncurses,
+        bash,
+        make,
+        perl,
+        python,
+        sed,
+        grep,
+        gawk,
+        coreutils,
+        findutils,
+        diffutils,
+        tar,
+        xz,
+        gzip,
+        patch,
+        autoconf,
+        automake,
+        m4,
+      ]
+      @ cc_build,
     cmd = "./build.sh",
     outputs = {
       # The ghc recipe consumes the tree by absolute path: compiler, ghc-pkg, package db, libraries
@@ -93,13 +96,4 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# amd64 only: this rung belongs to the amd64 bootstrap ladder. On arm64 the ghc recipe keeps its
-# prebuilt boot, so this spec collapses to an empty collection there.
-match {
-  { arch = 'Amd64, .. } => amd64_spec,
-  { arch = 'Arm64, .. } =>
-    {
-      name = "ghc-9.6.7",
-      build_deps = [],
-    } | BuildSpec,
-} target
+spec
