@@ -1,4 +1,4 @@
-let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Needs, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -20,8 +20,13 @@ let version = "2026.9.3" in
     toolchain,
   ],
 
-  # No `needs` block: the source tarball vendors all Go modules (vendor/), so the
-  # build resolves everything offline via `go build -mod=vendor`.
+  # Go modules are fetched at build time (verified against go.sum): upstream removed
+  # vendor/ in TUN-10829 (2026-09-02), first shipped in 2026.9.x.
+  needs =
+    {
+      dns = {},
+      internet = {},
+    } | Needs,
 
   runtime_deps = [
     glibc,
