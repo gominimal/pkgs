@@ -18,17 +18,29 @@ let zstd = import "../zstd/build.ncl" in
 let gtest = import "../gtest/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let llvm = import "../llvm/build.ncl" in
+let wasi-libc = import "../wasi-libc/build.ncl" in
 
+# undici bundled under deps/npm; its llhttp C rebuilds npm's wasm blobs.
+let npm-undici = "6.26.0" in
 let version = "24.19.0" in
 {
   name = "node-lts",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://nodejs.org/dist/v%{version}/node-v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/node-v%{version}.tar.gz",
       sha256 = "16fe258006a6e86844fbe05b3b5e1e5623ca8d3da54e32d98d9e83234bf25b01",
     } | Source,
+    # Rebuilds and splices undici's llhttp wasm blobs.
+    { file = "rebuild-llhttp-wasm.py" } | Local,
+    {
+      url = "gs://minimal-staging-archives/undici-%{npm-undici}.tar.gz",
+      sha256 = "fc371d680e507ddf32f4944cf6b355a520f16ef5fc4987e0f25dc668372475c7",
+    } | Source,
     base,
+    llvm, # clang + wasm-ld for the llhttp wasm
+    wasi-libc,
     make,
     pkgconf,
     python,
