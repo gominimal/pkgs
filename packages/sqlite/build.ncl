@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -48,4 +48,8 @@ let version = "3.53.4" in
         repo = "sqlite",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/sqlite3 --version",
+  },
 } | BuildSpec
