@@ -127,7 +127,15 @@ bash "$W/cbuild.sh" > "$W/cbuild.log" 2>&1; grep -q 'CBUILD_DONE.*bad=0' "$W/cbu
 # --- P9 gen1: the compiler's own sources (cpp'd here, parsers from P5) compiled by the MicroHs-hosted hsc ---
 mkdir -p "$W/T/comp"
 ( cd "$W/T/comp" && PREP_ONLY=1 bash "$W/compbuild.sh" )
-( cd "$W/T/comp" && PREP_ONLY=skip JOBS=$(( J > 2 ? J - 2 : 1 )) bash "$W/compbuild.sh" )
+# The happy parsers and Lex collect garbage constantly in MicroHs's default 50M-cell heap; 600M cells (~9.6 GB each)
+# gives byte-identical .hc about 3x faster.
+cat > "$W/T/hsc408-heap" <<EOF
+#!/bin/sh
+case " \$* " in *" Parser.hs "*|*" ParseIface.hs "*|*" Lex.hs "*) exec "$W/T/hsc408" +RTS -H600000000 -RTS "\$@" ;; esac
+exec "$W/T/hsc408" "\$@"
+EOF
+chmod +x "$W/T/hsc408-heap"
+( cd "$W/T/comp" && PREP_ONLY=skip JOBS=$(( J > 2 ? J - 2 : 1 )) HSC="$W/T/hsc408-heap" bash "$W/compbuild.sh" )
 nhs=$(ls "$W"/T/comp/*.hs | grep -vc unlit); nhc=$(find "$W/T/comp" -maxdepth 1 -name '*.hc' -size +0 | wc -l)
 [ "$nhc" -ge "$nhs" ] || { grep -E 'STUCK|^FAIL' "$W/T/comp/compbuild.log" | tail -5 >&2; echo "ghc-4.08.2: gen1 incomplete ($nhc/$nhs modules)" >&2; exit 1; }
 
