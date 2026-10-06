@@ -35,6 +35,8 @@ EOF
   chmod 0755 $BIN/gcc; ln -sf gcc $BIN/cc
 fi
 mkdir -p $BIN; export PATH=$BIN:$PATH
+# mhs and old build scripts call cc; the aarch64 toolchain ships only gcc
+command -v cc > /dev/null || ln -s "$(command -v gcc)" $BIN/cc
 # aarch64 differs only where these 2000s-era trees cannot name the platform: configure's platform case (a patch), the
 # triple given by hand (config.guess predates aarch64)
 case "$(uname -m)" in

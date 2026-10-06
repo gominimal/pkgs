@@ -40,6 +40,8 @@ EOF
   chmod 0755 $BIN/gcc; ln -sf gcc $BIN/cc
 fi
 mkdir -p $BIN; export PATH=$BIN:$PATH
+# mhs and old build scripts call cc; the aarch64 toolchain ships only gcc
+command -v cc > /dev/null || ln -s "$(command -v gcc)" $BIN/cc
 # --- P0 ---
 [ -x $BOOT ] || { echo "ghc-5.04.3: no boot compiler at $BOOT (ghc-4.08.2)" >&2; exit 1; }
 [ -f ghc-$V-src.tar.bz2 ] || { echo "ghc-5.04.3: source tarball absent" >&2; exit 1; }

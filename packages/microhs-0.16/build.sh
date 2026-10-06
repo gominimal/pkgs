@@ -33,6 +33,8 @@ EOF
   chmod 0755 $BIN/gcc; ln -sf gcc $BIN/cc
 fi
 mkdir -p $BIN; export PATH=$BIN:$PATH
+# mhs and old build scripts call cc; the aarch64 toolchain ships only gcc
+command -v cc > /dev/null || ln -s "$(command -v gcc)" $BIN/cc
 
 # --- P0 ---
 for f in Makefile generated/mhs.c generated/cpphs.c src/runtime/eval.c lib/Data/Integer_Type.hs; do

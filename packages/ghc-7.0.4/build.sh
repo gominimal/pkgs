@@ -40,6 +40,8 @@ EOF
   chmod 0755 $BIN/gcc; ln -sf gcc $BIN/cc
 fi
 mkdir -p $BIN; export PATH=$BIN:$PATH
+# mhs and old build scripts call cc; the aarch64 toolchain ships only gcc
+command -v cc > /dev/null || ln -s "$(command -v gcc)" $BIN/cc
 # --- P0 ---
 [ -x $BOOTDIR/ghc ] && [ -x $BOOTDIR/ghc-pkg ] || { echo "ghc-7.0.4: no boot compiler at $BOOTDIR (ghc-6.10.4)" >&2; exit 1; }
 $BOOTDIR/ghc --version 2>&1 | grep -q 'version 6.10.4' || { echo "ghc-7.0.4: boot compiler is not 6.10.4" >&2; exit 1; }
