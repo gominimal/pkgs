@@ -4,26 +4,24 @@ let gcc = import "../gcc/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let unzip = import "../unzip/build.ncl" in
+let python = import "../python/build.ncl" in
 
 let version = "78.3" in
 {
   name = "icu",
   build_deps = [
     { file = "build.sh" } | Local,
+    # Builds ICU's data generators from its BUILD.bazel files without Bazel.
+    { file = "minibazel.py" } | Local,
+    # The tag, not the release tarballs: the data as text and the generators' sources, no prebuilt data.
     {
-      url = "https://github.com/unicode-org/icu/releases/download/release-%{version}/icu4c-%{version}-sources.tgz",
-      sha256 = "3a2e7a47604ba702f345878308e6fefeca612ee895cf4a5f222e7955fabfe0c0",
-    } | Source,
-    # ICU's data as text (locales, collation, break rules, converters); replaces the prebuilt archive.
-    {
-      url = "https://github.com/unicode-org/icu/releases/download/release-%{version}/icu4c-%{version}-data.zip",
-      sha256 = "9d8b3899096aeb83e4e21ef8a40fec9e03b28db18c48452efac882ce25a91e27",
+      url = "https://github.com/unicode-org/icu/archive/refs/tags/release-%{version}.tar.gz",
+      sha256 = "f06bcab72736ee9d55689033b8198a178562354128cf38edb2afc2e67e3fd931",
     } | Source,
     base,
     make,
+    python,
     toolchain,
-    unzip,
   ],
   runtime_deps = [
     glibc,
