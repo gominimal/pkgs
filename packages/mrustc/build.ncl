@@ -100,7 +100,11 @@ in
 # artifacts are consumed as sha-pinned Sources elsewhere, so the spec is an empty collection
 # (no build, no outputs, no dependents).
 match {
-  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Amd64, .. } =>
+    if (import "../hex0/amd64-ladder.ncl").enabled then
+      amd64_spec
+    else
+      ({ name = "mrustc", build_deps = [] } | BuildSpec),
   { arch = 'Arm64, .. } =>
     {
       name = "mrustc",

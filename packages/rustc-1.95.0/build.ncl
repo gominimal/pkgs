@@ -84,7 +84,11 @@ in
 # amd64 only: on arm64 the rustc ladder is consumed as sha-pinned bedrock Sources by the flip
 # specs, so this spec collapses to an empty collection there (no build, nothing shipped).
 match {
-  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Amd64, .. } =>
+    if (import "../hex0/amd64-ladder.ncl").enabled then
+      amd64_spec
+    else
+      ({ name = "rustc-1.95.0", build_deps = [] } | BuildSpec),
   { arch = 'Arm64, .. } =>
     {
       name = "rustc-%{version}",

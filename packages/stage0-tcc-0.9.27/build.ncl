@@ -98,7 +98,11 @@ in
 # amd64 only: this rung belongs to the hex0-rooted amd64 ladder. On arm64 the spec collapses to
 # an empty collection (no build, no outputs, nothing depends on it).
 match {
-  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Amd64, .. } =>
+    if (import "../hex0/amd64-ladder.ncl").enabled then
+      amd64_spec
+    else
+      ({ name = "stage0-tcc-0.9.27", build_deps = [] } | BuildSpec),
   { arch = 'Arm64, .. } =>
     {
       name = "stage0-tcc-0.9.27",
