@@ -118,15 +118,6 @@ $MHS/mhs -i"$W/D" -i"$W/S" Main -o "$W/T/hsc408" > "$W/hsc408-build.log" 2>&1 ||
 # --- P7 libraries: std (the Prelude) and hslibs/lang, compiled to C by the MicroHs-hosted hsc ---
 mkdir -p "$W/T/lib" "$W/T/lang"
 cp -n ghc/lib/std/*.hi-boot "$W/T/lib/"   # the mutually recursive Prelude modules import through these; the overlay's PrelGHC pair stays
-( cd "$W/T/lib" && bash "$W/libbuild.sh" ); grep -q 'LIBBUILD_DONE: 43 hc' "$W/T/lib/libbuild.log" || { grep -E 'STUCK|^FAIL' "$W/T/lib/libbuild.log" | head -5 >&2; echo "ghc-4.08.2: std library incomplete" >&2; exit 1; }
-( cd "$W/T/lang" && bash "$W/langbuild.sh" ); grep -q 'LIBBUILD_DONE: 31 hc' "$W/T/lang/libbuild.log" || { grep -E 'STUCK|^FAIL' "$W/T/lang/libbuild.log" | head -5 >&2; echo "ghc-4.08.2: lang library incomplete" >&2; exit 1; }
-
-# --- P8 the C side: RTS, hooks, cbits, the libraries' .hc ---
-bash "$W/cbuild.sh" > "$W/cbuild.log" 2>&1; grep -q 'CBUILD_DONE.*bad=0' "$W/cbuild.log" || { grep '^BAD' "$W/cbuild.log" | head -5 >&2; echo "ghc-4.08.2: C side failed" >&2; exit 1; }
-
-# --- P9 gen1: the compiler's own sources (cpp'd here, parsers from P5) compiled by the MicroHs-hosted hsc ---
-mkdir -p "$W/T/comp"
-( cd "$W/T/comp" && PREP_ONLY=1 bash "$W/compbuild.sh" )
 # The happy parsers and Lex collect garbage constantly in MicroHs's default 50M-cell heap; 600M cells (~9.6 GB each)
 # gives byte-identical .hc about 3x faster.
 cat > "$W/T/hsc408-heap" <<EOF
@@ -135,9 +126,42 @@ case " \$* " in *" Parser.hs "*|*" ParseIface.hs "*|*" Lex.hs "*) exec "$W/T/hsc
 exec "$W/T/hsc408" "\$@"
 EOF
 chmod +x "$W/T/hsc408-heap"
-( cd "$W/T/comp" && PREP_ONLY=skip JOBS=$(( J > 2 ? J - 2 : 1 )) HSC="$W/T/hsc408-heap" bash "$W/compbuild.sh" )
+# The overlay's libbuild.sh/langbuild.sh compile one module at a time in retry rounds. Their preprocessing runs as is;
+# their per-module compile (libone.sh, the same commands) runs in import order, DJ at a time (dagbuild.py).
+DJ=$(( J > 2 ? J - 2 : 1 ))
+sed '/^todo=/,$d' "$W/libbuild.sh" > "$W/libprep.sh"; sed '/^todo=/,$d' "$W/langbuild.sh" > "$W/langprep.sh"
+cat > "$W/libone.sh" <<'EOF'
+#!/bin/bash
+# libone.sh SRCDIR PKG HIMAP MOD: one module as libbuild.sh/langbuild.sh compile it; prints OK/WAIT/FAIL like compone.sh
+set -f; L=$1; pkg=$2; himap=$3; m=$4
+opts=$(grep -ohE -- '-fno-implicit-prelude|-fglasgow-exts' $L/$m.lhs $L/$m.hs 2>/dev/null | sort -u | tr '\n' ' ')
+"$HSC" $m.hs -fglasgow-exts $opts -static -funregisterised -inpackage=$pkg -fhi-version=408 -fsimplify "[" -fmax-simplifier-iterations4 "]" "-himap=$himap" -olang=C -ofile=$m.hc -hifile=$m.hi-raw > $m.log 2>&1
+[ -s $m.hi-raw ] && python3 "$POSTIFACE" $m.hi-raw $m.hi 2>>$m.log
+if [ -s $m.hc ] && [ -s $m.hi ] && ! grep -q "Compilation had errors" $m.log; then echo "OK   $m ($(wc -c < $m.hc) B)"
+elif grep -qE "Could not find interface file|Bad interface file" $m.log; then echo "WAIT $m"; rm -f $m.hc $m.hi $m.hi-raw
+else echo "FAIL $m: $(grep -vE 'topCoreBindsToStg|^    <THIS>|^      =|ifaceBinds|Warning|^$' $m.log | head -3 | tr '\n' ' ' | cut -c1-200)"; rm -f $m.hc $m.hi $m.hi-raw; fi
+EOF
+export HSC="$W/T/hsc408-heap" POSTIFACE="$W/postiface.py"
+libdag() { # dir srcdir pkg himap mods expected
+  ( cd "$1" && bash "$W/$(basename "$1")prep.sh" )
+  MODS="$5" python3 "$BUILDROOT/dagbuild.py" "$1" $DJ bash "$W/libone.sh" "$2" "$3" "$4" > "$1/dagbuild.log" 2>&1 || true
+  n=$(find "$1" -maxdepth 1 -name '*.hc' -size +0 | wc -l)
+  [ "$n" -eq "$6" ] || { grep -E 'never compiled|FAIL' "$1/dagbuild.log" | tail -5 >&2; echo "ghc-4.08.2: $3 library incomplete ($n/$6)" >&2; exit 1; }
+}
+L=ghc/lib/std; libdag "$W/T/lib" "$W/ghc-4.08.2/$L" std "$W/T/lib%.hi" "$(ls $L/*.lhs | xargs -n1 basename | sed 's/\.lhs$//' | grep -vE '^(PrelHugs|PrelMain|Main)$')" 43
+L=hslibs/lang; libdag "$W/T/lang" "$W/ghc-4.08.2/$L" lang "$W/T/lang%.hi:$W/T/lib%.hi" "$(ls $L/*.lhs $L/*.hs | xargs -n1 basename | sed -E 's/\.l?hs$//')" 31
+
+# --- P8 the C side: RTS, hooks, cbits, the libraries' .hc ---
+bash "$W/cbuild.sh" > "$W/cbuild.log" 2>&1; grep -q 'CBUILD_DONE.*bad=0' "$W/cbuild.log" || { grep '^BAD' "$W/cbuild.log" | head -5 >&2; echo "ghc-4.08.2: C side failed" >&2; exit 1; }
+
+# --- P9 gen1: the compiler's own sources (cpp'd here, parsers from P5) compiled by the MicroHs-hosted hsc ---
+mkdir -p "$W/T/comp"
+( cd "$W/T/comp" && PREP_ONLY=1 bash "$W/compbuild.sh" )
+# compbuild.sh's compile step (compone.sh per module) in import order, DJ at a time, Parser and ParseIface overlapping
+( cd "$W/T/comp" && find . -maxdepth 1 \( -name '*.hc' -o -name '*.hi' -o -name '*.hi-raw' \) -delete )
+OUT="$W/T/comp" python3 "$BUILDROOT/dagbuild.py" "$W/T/comp" $DJ bash "$W/compone.sh" > "$W/T/comp/compbuild.log" 2>&1 || true
 nhs=$(ls "$W"/T/comp/*.hs | grep -vc unlit); nhc=$(find "$W/T/comp" -maxdepth 1 -name '*.hc' -size +0 | wc -l)
-[ "$nhc" -ge "$nhs" ] || { grep -E 'STUCK|^FAIL' "$W/T/comp/compbuild.log" | tail -5 >&2; echo "ghc-4.08.2: gen1 incomplete ($nhc/$nhs modules)" >&2; exit 1; }
+[ "$nhc" -ge "$nhs" ] || { grep -E 'never compiled|FAIL' "$W/T/comp/compbuild.log" | tail -5 >&2; echo "ghc-4.08.2: gen1 incomplete ($nhc/$nhs modules)" >&2; exit 1; }
 
 # --- P10 the native hsc ---
 ( cd "$W/T/comp" && bash "$W/link-hsc.sh" > "$W/link-hsc.log" 2>&1 )

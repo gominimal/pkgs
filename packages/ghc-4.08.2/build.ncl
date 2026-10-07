@@ -41,6 +41,8 @@ let spec =
     build_deps =
       [
         { file = "build.sh" } | Local,
+        # Import-ordered parallel scheduler for the library and gen1 compiles.
+        { file = "dagbuild.py" } | Local,
         {
           url = "gs://minimal-staging-archives/ghc-%{version}-src.tar.bz2",
           sha256 = "38dc3e1ef888013383d205a8991e1d16f44d4e60f58523dde6bb64467cb7242b",
