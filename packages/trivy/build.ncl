@@ -5,7 +5,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.74.0" in
+let version = "0.75.0" in
 {
   name = "trivy",
   build_deps = [
@@ -14,7 +14,7 @@ let version = "0.74.0" in
     { file = "go127-json-skipfunc.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/aquasecurity/trivy/v%{version}.tar.gz",
-      sha256 = "04268af574690b84bc3474a5f19e002cd6da3e16899fac9fd39c6e84e7843940",
+      sha256 = "4ee2010384f90bf23d4059ae49c11129e5041816a3754d890a90ae80f678d765",
       extract = true,
       strip_prefix = "trivy-%{version}",
     } | Source,
