@@ -4,6 +4,7 @@ let gcc = import "../gcc/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let unzip = import "../unzip/build.ncl" in
 
 let version = "78.3" in
 {
@@ -14,9 +15,15 @@ let version = "78.3" in
       url = "https://github.com/unicode-org/icu/releases/download/release-%{version}/icu4c-%{version}-sources.tgz",
       sha256 = "3a2e7a47604ba702f345878308e6fefeca612ee895cf4a5f222e7955fabfe0c0",
     } | Source,
+    # ICU's data as text (locales, collation, break rules, converters); replaces the prebuilt archive.
+    {
+      url = "https://github.com/unicode-org/icu/releases/download/release-%{version}/icu4c-%{version}-data.zip",
+      sha256 = "9d8b3899096aeb83e4e21ef8a40fec9e03b28db18c48452efac882ce25a91e27",
+    } | Source,
     base,
     make,
     toolchain,
+    unzip,
   ],
   runtime_deps = [
     glibc,
