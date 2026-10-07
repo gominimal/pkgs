@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let sealed-glibc = (import "../hex0/ladder-tools.ncl").glibc in # sealed ladder tools link libc
 # stage0-binutils-2.41: binutils 2.41 (as, ld, ar, nm, objcopy, objdump, ranlib, readelf, strip,
 # libbfd.a, libopcodes.a) built by stage0-gcc-4.7.4 and linked statically against the musl-1.2.5
 # sysroot. gcc shells out to as/ld/ranlib, so stage0-binutils-2.30 is a build dep. binutils has no
@@ -7,16 +8,16 @@ let { target, .. } = import "config.ncl" in
 let stage0-gcc-4-7-4 = import "../stage0-gcc-4.7.4/build.ncl" in # CC/CXX (gcc-4.7.4 / g++ via the gcc-cc/gcc-cxx wrappers)
 let stage0-binutils-2-30 = import "../stage0-binutils-2.30/build.ncl" in # as/ld/ar/ranlib on PATH for the host gcc
 let stage0-musl-1-2-5 = import "../stage0-musl-1.2.5/build.ncl" in # /usr/lib/musl-bedrock-1.2.5 sysroot (libc.a + crt + headers)
-let bash = import "../bash/build.ncl" in # build.sh + configure shell
-let make = import "../make/build.ncl" in
-let sed = import "../sed/build.ncl" in
-let grep = import "../grep/build.ncl" in
-let coreutils = import "../coreutils/build.ncl" in
-let tar = import "../tar/build.ncl" in
-let xz = import "../xz/build.ncl" in # .tar.xz source
-let diffutils = import "../diffutils/build.ncl" in # configure's cmp/diff
-let findutils = import "../findutils/build.ncl" in # mtime guard: find . -exec touch
-let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # configure's awk
+let bash = (import "../hex0/ladder-tools.ncl").bash-bootstrap in # build.sh + configure shell
+let make = (import "../hex0/ladder-tools.ncl").make in
+let sed = (import "../hex0/ladder-tools.ncl").sed in
+let grep = (import "../hex0/ladder-tools.ncl").grep in
+let coreutils = (import "../hex0/ladder-tools.ncl").coreutils in
+let tar = (import "../hex0/ladder-tools.ncl").tar in
+let xz = (import "../hex0/ladder-tools.ncl").xz in # .tar.xz source
+let diffutils = (import "../hex0/ladder-tools.ncl").diffutils in # configure's cmp/diff
+let findutils = (import "../hex0/ladder-tools.ncl").findutils in # mtime guard: find . -exec touch
+let gawk-bootstrap = (import "../hex0/ladder-tools.ncl").gawk-bootstrap in # configure's awk
 # pkgmgr: bootstrap_rung = "hex0"
 let version = "2.41" in
 let amd64_spec =
@@ -39,6 +40,7 @@ let amd64_spec =
       sed,
       grep,
       coreutils,
+      sealed-glibc,
       tar,
       xz,
       diffutils,

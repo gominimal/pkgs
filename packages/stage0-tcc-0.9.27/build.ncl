@@ -1,6 +1,7 @@
 # pkgmgr: bootstrap_rung = "hex0"
 let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let sealed-glibc = (import "../hex0/ladder-tools.ncl").glibc in # sealed ladder tools link libc
 # stage0-tcc-0.9.27: mainline tinycc 0.9.27 compiled in one shot by stage0-tcc-0.9.26's tcc
 # against its mes-libc at /usr/lib/mes, then used (-c/-ar only) to rebuild mes-libc once more.
 # Outputs /usr/bin/tcc + /usr/lib/mes/** for the musl rungs. No mescc and no boot loop.
@@ -17,7 +18,7 @@ let { target, .. } = import "config.ncl" in
 let stage0-tcc-0-9-26 = import "../stage0-tcc-0.9.26/build.ncl" in # tcc-0.9.26 + its rebuilt mes-libc at /usr/lib/mes
 let stage0-mes = import "../stage0-mes/build.ncl" in # mes libc headers
 let stage0-mescc-full = import "../stage0-mescc-full/build.ncl" in # kaem (driver), catm, simple-patch
-let coreutils = import "../coreutils/build.ncl" in # cp, chmod, mkdir, sha256sum
+let coreutils = (import "../hex0/ladder-tools.ncl").coreutils in # cp, chmod, mkdir, sha256sum
 let amd64_spec =
   {
     name = "stage0-tcc-0.9.27",
@@ -73,7 +74,8 @@ let amd64_spec =
       stage0-tcc-0-9-26, # /usr/bin/{tcc-0.9.26,tcc,...} + /usr/lib/mes/**
       stage0-mes, # /usr/include/** (mes libc headers for the tcc.c compile)
       stage0-mescc-full, # /usr/bin/{kaem,catm,simple-patch,...}
-      coreutils, # /usr/bin/{cp,chmod,mkdir,sha256sum}
+      coreutils,
+      sealed-glibc, # /usr/bin/{cp,chmod,mkdir,sha256sum}
     ],
     # tcc-0.9.27 and the rebuilt mes-libc are static ELF (CONFIG_TCC_STATIC=1): no .interp, no DT_NEEDED.
     cmds = [

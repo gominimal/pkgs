@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let sealed-glibc = (import "../hex0/ladder-tools.ncl").glibc in # sealed ladder tools link libc
 # glibc-bedrock-2.42: the glibc-2.42 source built cold from
 # source by stage0-gcc-15.2.0 and stage0-binutils-2.41, with musl (stage0-musl-1.2.5) as the host
 # compiler's own libc for BUILD_CC only. Unlike the production glibc package (a native rebuild with
@@ -13,24 +14,24 @@ let stage0-linux-headers-6-12-43 = import "../stage0-linux-headers-6.12.43/build
 let stage0-musl-1-2-5 = import "../stage0-musl-1.2.5/build.ncl" in # /usr/lib/musl-bedrock-1.2.5: the host compiler's own libc, BUILD_CC only
 let stage0-gmp-mpfr-mpc = import "../stage0-gmp-mpfr-mpc/build.ncl" in # /usr/lib/gcc-math, used only if pass 2 runs
 # build tools, matching the production glibc package
-let bash = import "../bash/build.ncl" in
-let bzip2 = import "../bzip2/build.ncl" in
-let coreutils = import "../coreutils/build.ncl" in
-let diffutils = import "../diffutils/build.ncl" in
-let file = import "../file/build.ncl" in
-let findutils = import "../findutils/build.ncl" in
-let gawk = import "../gawk/build.ncl" in # full gawk (gen-tunables.awk / gen-sorted.awk / errlist.awk), not gawk-bootstrap
-let grep = import "../grep/build.ncl" in
-let gzip = import "../gzip/build.ncl" in
-let make = import "../make/build.ncl" in
-let perl = import "../perl/build.ncl" in # tests/mtrace only; not build-required
-let sed = import "../sed/build.ncl" in
-let tar = import "../tar/build.ncl" in
-let xz = import "../xz/build.ncl" in
+let bash = (import "../hex0/ladder-tools.ncl").bash-bootstrap in
+let bzip2 = (import "../hex0/ladder-tools.ncl").bzip2 in
+let coreutils = (import "../hex0/ladder-tools.ncl").coreutils in
+let diffutils = (import "../hex0/ladder-tools.ncl").diffutils in
+let file = (import "../hex0/ladder-tools.ncl").file in
+let findutils = (import "../hex0/ladder-tools.ncl").findutils in
+let gawk = (import "../hex0/ladder-tools.ncl").gawk in # full gawk (gen-tunables.awk / gen-sorted.awk / errlist.awk), not gawk-bootstrap
+let grep = (import "../hex0/ladder-tools.ncl").grep in
+let gzip = (import "../hex0/ladder-tools.ncl").gzip in
+let make = (import "../hex0/ladder-tools.ncl").make in
+let perl = (import "../hex0/ladder-tools.ncl").perl in # tests/mtrace only; not build-required
+let sed = (import "../hex0/ladder-tools.ncl").sed in
+let tar = (import "../hex0/ladder-tools.ncl").tar in
+let xz = (import "../hex0/ladder-tools.ncl").xz in
 # other tools configure aborts without
-let bison = import "../bison/build.ncl" in # intl/plural.c is not shipped in the 2.42 tarball, so bison always regenerates it
-let m4 = import "../m4/build.ncl" in # bison runtime dep
-let python = import "../python/build.ncl" in # gen-as-const.py
+let bison = (import "../hex0/ladder-tools.ncl").bison in # intl/plural.c is not shipped in the 2.42 tarball, so bison always regenerates it
+let m4 = (import "../hex0/ladder-tools.ncl").m4 in # bison runtime dep
+let python = (import "../hex0/ladder-tools.ncl").python in # gen-as-const.py
 # pkgmgr: bootstrap_rung = "hex0"
 let version = "2.42" in
 
@@ -97,6 +98,7 @@ let amd64_spec =
       bash,
       bzip2,
       coreutils,
+      sealed-glibc,
       diffutils,
       file,
       findutils,

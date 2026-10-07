@@ -1,11 +1,12 @@
 # pkgmgr: bootstrap_rung = "hex0"
 let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let sealed-glibc = (import "../hex0/ladder-tools.ncl").glibc in # sealed ladder tools link libc
 let stage0-mescc-full = import "../stage0-mescc-full/build.ncl" in # M2-Planet, kaem, catm, M1, hex2, blood-elf
-let coreutils = import "../coreutils/build.ncl" in
-let tar = import "../tar/build.ncl" in
-let gzip = import "../gzip/build.ncl" in
-let sed = import "../sed/build.ncl" in
+let coreutils = (import "../hex0/ladder-tools.ncl").coreutils in
+let tar = (import "../hex0/ladder-tools.ncl").tar in
+let gzip = (import "../hex0/ladder-tools.ncl").gzip in
+let sed = (import "../hex0/ladder-tools.ncl").sed in
 # stage0-mes: GNU Mes 0.27.1. M2-Planet compiles mes-m2 (a subset-C port of the Mes
 # Scheme interpreter); mes-m2 runs MesCC to build mes-libc (crt1.o, libc.a, libc+tcc.a,
 # libmescc.a) and regenerate nyacc's parser tables. Outputs: mes-m2, mescc.scm, the
@@ -43,7 +44,8 @@ let amd64_spec =
       # mes-m2 must be built with the final self-hosted bin/M2-Planet (as live-bootstrap's
       # seed.kaem does), which stage0-mescc-full provides; stage0-mescc only emits artifact/M2.
       stage0-mescc-full, # /usr/bin/{M2-Planet,kaem,catm,M1,hex2,blood-elf,M2-Mesoplanet,match,simple-patch,get_machine}
-      coreutils, # /usr/bin/{mkdir,cp,rm,chmod,sha256sum}
+      coreutils,
+      sealed-glibc, # /usr/bin/{mkdir,cp,rm,chmod,sha256sum}
       tar, # /usr/bin/tar
       gzip, # /usr/bin/gzip
       sed, # /usr/bin/sed, replaces live-bootstrap's `replace` and `simple-patch`

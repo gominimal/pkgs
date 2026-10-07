@@ -28,8 +28,11 @@ let { target, .. } = import "config.ncl" in
           extract = true,
         } | Source,
     } target,
-    (import "../bash-bootstrap/build.ncl"), # /bin/sh for build.sh
-    (import "../coreutils/build.ncl"), # sha256sum/wc/cp/mkdir/chmod
+    # EXPERIMENT (sealed ladder tools): the bedrock prebuilts, not the live
+    # packages, so the rung's hash no longer moves with the tree above.
+    (import "ladder-tools.ncl").bash-bootstrap, # /bin/sh for build.sh
+    (import "ladder-tools.ncl").coreutils, # sha256sum/wc/cp/mkdir/chmod
+    (import "ladder-tools.ncl").glibc, # the two above link libc
   ],
   cmd = "./build.sh",
   outputs = {

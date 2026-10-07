@@ -1,8 +1,9 @@
 # pkgmgr: bootstrap_rung = "hex0"
 let { BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let sealed-glibc = (import "../hex0/ladder-tools.ncl").glibc in # sealed ladder tools link libc
 let stage0-mescc = import "../stage0-mescc/build.ncl" in
-let coreutils = import "../coreutils/build.ncl" in
+let coreutils = (import "../hex0/ladder-tools.ncl").coreutils in
 # stage0-mescc-full: stage0-posix phases 12-23, which need the full C kaem (cd, variables,
 # sub-`kaem --file`). Builds the final self-hosted M2-Planet, M2-Mesoplanet, blood-elf and
 # get_machine (mescc-tools-full-kaem), the mescc-tools-extra set including `match`, and
@@ -34,7 +35,8 @@ let amd64_spec =
       # into the tree: /usr/bin/M2-Planet (artifact/M2), /usr/bin/blood-elf
       # (artifact/blood-elf-0), /usr/bin/{M1,hex2,kaem}.
       stage0-mescc,
-      coreutils, # /usr/bin/{mkdir,cp,chmod,sha256sum}, called by absolute path from kaem
+      coreutils,
+      sealed-glibc, # /usr/bin/{mkdir,cp,chmod,sha256sum}, called by absolute path from kaem
     ],
     cmds = [
       ["/usr/bin/kaem", "--strict", "--verbose", "--file", "mescc-full.kaem"],

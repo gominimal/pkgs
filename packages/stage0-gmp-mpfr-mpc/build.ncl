@@ -1,6 +1,7 @@
 # pkgmgr: bootstrap_rung = "hex0"
 let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let sealed-glibc = (import "../hex0/ladder-tools.ncl").glibc in # sealed ladder tools link libc
 # stage0-gmp-mpfr-mpc: gmp-6.2.1, mpfr-4.1.0 and mpc-1.2.1 as static libraries, built by
 # stage0-gcc-4.0.4 and linked against the musl-1.2.5 sysroot, for gcc's --with-gmp/--with-mpfr/
 # --with-mpc. One combined package because the three are always consumed together and have a strict
@@ -9,16 +10,16 @@ let { target, .. } = import "config.ncl" in
 let stage0-gcc-4-0-4 = import "../stage0-gcc-4.0.4/build.ncl" in # CC (via the gcc-cc wrapper)
 let stage0-musl-1-2-5 = import "../stage0-musl-1.2.5/build.ncl" in # /usr/lib/musl-bedrock-1.2.5 sysroot (link libc)
 let stage0-binutils-2-30 = import "../stage0-binutils-2.30/build.ncl" in # as/ld/ar/ranlib
-let bash = import "../bash/build.ncl" in
-let make = import "../make/build.ncl" in
-let sed = import "../sed/build.ncl" in
-let grep = import "../grep/build.ncl" in
-let coreutils = import "../coreutils/build.ncl" in
-let tar = import "../tar/build.ncl" in
-let xz = import "../xz/build.ncl" in # gmp + mpfr are .tar.xz
-let gzip = import "../gzip/build.ncl" in # mpc is .tar.gz
-let m4 = import "../m4/build.ncl" in # gmp's configure wants m4 even with --disable-assembly
-let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in
+let bash = (import "../hex0/ladder-tools.ncl").bash-bootstrap in
+let make = (import "../hex0/ladder-tools.ncl").make in
+let sed = (import "../hex0/ladder-tools.ncl").sed in
+let grep = (import "../hex0/ladder-tools.ncl").grep in
+let coreutils = (import "../hex0/ladder-tools.ncl").coreutils in
+let tar = (import "../hex0/ladder-tools.ncl").tar in
+let xz = (import "../hex0/ladder-tools.ncl").xz in # gmp + mpfr are .tar.xz
+let gzip = (import "../hex0/ladder-tools.ncl").gzip in # mpc is .tar.gz
+let m4 = (import "../hex0/ladder-tools.ncl").m4 in # gmp's configure wants m4 even with --disable-assembly
+let gawk-bootstrap = (import "../hex0/ladder-tools.ncl").gawk-bootstrap in
 let amd64_spec =
   {
     name = "stage0-gmp-mpfr-mpc",
@@ -47,6 +48,7 @@ let amd64_spec =
       sed,
       grep,
       coreutils,
+      sealed-glibc,
       tar,
       xz,
       gzip,

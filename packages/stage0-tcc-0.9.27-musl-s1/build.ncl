@@ -1,6 +1,7 @@
 # pkgmgr: bootstrap_rung = "hex0"
 let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let sealed-glibc = (import "../hex0/ladder-tools.ncl").glibc in # sealed ladder tools link libc
 # stage0-tcc-0.9.27-musl-s1: builds tcc-musl, a tcc-0.9.27 with the static-GOT linker fix
 # (fill_got before tidy_section_headers), compiled by stage0-tcc-0.9.26's tcc against mes
 # headers and linked statically against mes crt/libc. The output bakes musl prefixes (/usr/lib,
@@ -8,13 +9,13 @@ let { target, .. } = import "config.ncl" in
 # sandbox carries no mes/musl header collision. Outputs: usr/bin/tcc-musl + x86_64 libtcc1.a.
 let stage0-tcc-0-9-26 = import "../stage0-tcc-0.9.26/build.ncl" in # the mes-linked compiler that builds tcc-musl
 let stage0-mes = import "../stage0-mes/build.ncl" in # mes headers + mes crt/libc the build links against
-let bash = import "../bash/build.ncl" in
-let coreutils = import "../coreutils/build.ncl" in
-let tar = import "../tar/build.ncl" in
-let gzip = import "../gzip/build.ncl" in
-let sed = import "../sed/build.ncl" in
-let grep = import "../grep/build.ncl" in
-let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in
+let bash = (import "../hex0/ladder-tools.ncl").bash-bootstrap in
+let coreutils = (import "../hex0/ladder-tools.ncl").coreutils in
+let tar = (import "../hex0/ladder-tools.ncl").tar in
+let gzip = (import "../hex0/ladder-tools.ncl").gzip in
+let sed = (import "../hex0/ladder-tools.ncl").sed in
+let grep = (import "../hex0/ladder-tools.ncl").grep in
+let gawk-bootstrap = (import "../hex0/ladder-tools.ncl").gawk-bootstrap in
 let amd64_spec =
   {
     name = "stage0-tcc-0.9.27-musl-s1",
@@ -31,6 +32,7 @@ let amd64_spec =
       stage0-mes,
       bash,
       coreutils,
+      sealed-glibc,
       tar,
       gzip,
       sed,

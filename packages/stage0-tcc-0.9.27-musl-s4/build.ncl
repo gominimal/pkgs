@@ -1,6 +1,7 @@
 # pkgmgr: bootstrap_rung = "hex0"
 let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let sealed-glibc = (import "../hex0/ladder-tools.ncl").glibc in # sealed ladder tools link libc
 # stage0-tcc-0.9.27-musl-s4: correctness gate for s3's tcc-musl2. tcc-musl2 was produced by a
 # mes-linked compiler that can emit a wrong-but-running binary, so before it is used as CC by
 # stage0-binutils-2.30 and stage0-gcc-4.0.4 it must pass:
@@ -14,13 +15,13 @@ let { target, .. } = import "config.ncl" in
 # Link target is stage0-musl-1.1.24-cc2's single-writer sysroot, not the merged /usr.
 let stage0-musl-1-1-24-cc2 = import "../stage0-musl-1.1.24-cc2/build.ncl" in # musl libc.a + crt + headers (link target)
 let stage0-tcc-0-9-27-musl-s3 = import "../stage0-tcc-0.9.27-musl-s3/build.ncl" in # tcc-musl2 (candidate) + libtcc1.a
-let bash = import "../bash/build.ncl" in
-let coreutils = import "../coreutils/build.ncl" in
-let tar = import "../tar/build.ncl" in
-let gzip = import "../gzip/build.ncl" in
-let sed = import "../sed/build.ncl" in
-let grep = import "../grep/build.ncl" in
-let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in
+let bash = (import "../hex0/ladder-tools.ncl").bash-bootstrap in
+let coreutils = (import "../hex0/ladder-tools.ncl").coreutils in
+let tar = (import "../hex0/ladder-tools.ncl").tar in
+let gzip = (import "../hex0/ladder-tools.ncl").gzip in
+let sed = (import "../hex0/ladder-tools.ncl").sed in
+let grep = (import "../hex0/ladder-tools.ncl").grep in
+let gawk-bootstrap = (import "../hex0/ladder-tools.ncl").gawk-bootstrap in
 let amd64_spec =
   {
     name = "stage0-tcc-0.9.27-musl-s4",
@@ -43,6 +44,7 @@ let amd64_spec =
       stage0-tcc-0-9-27-musl-s3,
       bash,
       coreutils,
+      sealed-glibc,
       tar,
       gzip,
       sed,

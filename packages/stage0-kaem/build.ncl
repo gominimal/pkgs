@@ -1,8 +1,9 @@
 # pkgmgr: bootstrap_rung = "hex0"
 let { BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let sealed-glibc = (import "../hex0/ladder-tools.ncl").glibc in # sealed ladder tools link libc
 let stage0-hex1 = import "../stage0-hex1/build.ncl" in
-let coreutils = import "../coreutils/build.ncl" in
+let coreutils = (import "../hex0/ladder-tools.ncl").coreutils in
 # stage0-kaem: builds kaem-minimal from kaem-minimal.hex0 with the hex0 from stage0-hex1
 # (byte-identical to upstream's kaem-optional-seed, 153b8915…), then runs bootstrap.kaem
 # under it to rebuild hex0 and hex1. No shell: each cmd is an argv vector, and kaem
@@ -21,7 +22,8 @@ let amd64_spec =
         extract = true,
       } | Source,
       stage0-hex1, # /usr/bin/hex0 and /usr/bin/hex1
-      coreutils, # /usr/bin/{chmod,cp,mkdir,sha256sum}, called by absolute path from kaem
+      coreutils,
+      sealed-glibc, # /usr/bin/{chmod,cp,mkdir,sha256sum}, called by absolute path from kaem
     ],
     cmds = [
       ["/usr/bin/hex0", "stage0-posix-1.9.1/AMD64/kaem-minimal.hex0", "/build/kaem-0"],

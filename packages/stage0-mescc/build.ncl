@@ -1,8 +1,9 @@
 # pkgmgr: bootstrap_rung = "hex0"
 let { BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let sealed-glibc = (import "../hex0/ladder-tools.ncl").glibc in # sealed ladder tools link libc
 let stage0-kaem = import "../stage0-kaem/build.ncl" in
-let coreutils = import "../coreutils/build.ncl" in
+let coreutils = (import "../hex0/ladder-tools.ncl").coreutils in
 # stage0-mescc: the mescc-tools mini chain from stage0-posix-1.9.1, driven by the
 # kaem-minimal from stage0-kaem running mescc.kaem (upstream
 # AMD64/mescc-tools-mini-kaem.kaem phases 2-11 with paths prefixed for /build, plus a
@@ -22,7 +23,8 @@ let amd64_spec =
         extract = true,
       } | Source,
       stage0-kaem, # /usr/bin/{kaem (kaem-minimal, the driver), hex0, hex1}
-      coreutils, # /usr/bin/{sha256sum,mkdir,cp,chmod}, called by absolute path from kaem
+      coreutils,
+      sealed-glibc, # /usr/bin/{sha256sum,mkdir,cp,chmod}, called by absolute path from kaem
     ],
     cmds = [
       # kaem-minimal takes the script as a positional argument.

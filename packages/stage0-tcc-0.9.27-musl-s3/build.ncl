@@ -1,19 +1,20 @@
 # pkgmgr: bootstrap_rung = "hex0"
 let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let sealed-glibc = (import "../hex0/ladder-tools.ncl").glibc in # sealed ladder tools link libc
 # stage0-tcc-0.9.27-musl-s3: the musl relink. s1's mes-linked tcc-musl recompiles tcc.c against
 # musl (stage0-musl-1.1.24) into tcc-musl2, a musl-linked tcc that does not depend on mes-libc
 # at runtime. Deps are musl-side only (no mes), so /usr/include is pure musl.
 # Outputs: usr/bin/tcc-musl2 + s1's libtcc1.a passed through.
 let stage0-musl-1-1-24 = import "../stage0-musl-1.1.24/build.ncl" in
 let stage0-tcc-0-9-27-musl-s1 = import "../stage0-tcc-0.9.27-musl-s1/build.ncl" in
-let bash = import "../bash/build.ncl" in
-let coreutils = import "../coreutils/build.ncl" in
-let tar = import "../tar/build.ncl" in
-let gzip = import "../gzip/build.ncl" in
-let sed = import "../sed/build.ncl" in
-let grep = import "../grep/build.ncl" in
-let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in
+let bash = (import "../hex0/ladder-tools.ncl").bash-bootstrap in
+let coreutils = (import "../hex0/ladder-tools.ncl").coreutils in
+let tar = (import "../hex0/ladder-tools.ncl").tar in
+let gzip = (import "../hex0/ladder-tools.ncl").gzip in
+let sed = (import "../hex0/ladder-tools.ncl").sed in
+let grep = (import "../hex0/ladder-tools.ncl").grep in
+let gawk-bootstrap = (import "../hex0/ladder-tools.ncl").gawk-bootstrap in
 let amd64_spec =
   {
     name = "stage0-tcc-0.9.27-musl-s3",
@@ -30,6 +31,7 @@ let amd64_spec =
       stage0-tcc-0-9-27-musl-s1,
       bash,
       coreutils,
+      sealed-glibc,
       tar,
       gzip,
       sed,

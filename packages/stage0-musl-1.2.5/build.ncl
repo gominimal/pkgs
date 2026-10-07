@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let sealed-glibc = (import "../hex0/ladder-tools.ncl").glibc in # sealed ladder tools link libc
 # stage0-musl-1.2.5: stock musl 1.2.5 (no patches) compiled by gcc-4.0.4 from stage0-gcc-4.0.4
 # and assembled/linked by binutils-2.30. gcc handles everything the tcc-era musl patches worked
 # around (PIC crt, __builtin_va_list, register-asm syscall args, SSE .s, @PLT, empty archives).
@@ -17,14 +18,14 @@ let { target, .. } = import "config.ncl" in
 let stage0-gcc-4-0-4 = import "../stage0-gcc-4.0.4/build.ncl" in # gcc/cc1/cpp + libgcc.a
 let stage0-musl-1-1-24-cc2 = import "../stage0-musl-1.1.24-cc2/build.ncl" in # /usr/lib/musl-bedrock, link libc for configure probes
 let stage0-binutils-2-30 = import "../stage0-binutils-2.30/build.ncl" in # as/ld/ar/ranlib
-let bash = import "../bash/build.ncl" in # build.sh and configure interpreter
-let make = import "../make/build.ncl" in
-let sed = import "../sed/build.ncl" in # configure: config.mak generation
-let grep = import "../grep/build.ncl" in # configure probes
-let coreutils = import "../coreutils/build.ncl" in # rm/mkdir/cp/ln/install/sha256sum
-let tar = import "../tar/build.ncl" in # build.sh `tar -xf`
-let gzip = import "../gzip/build.ncl" in # tar's .gz decompression
-let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # musl configure's awk
+let bash = (import "../hex0/ladder-tools.ncl").bash-bootstrap in # build.sh and configure interpreter
+let make = (import "../hex0/ladder-tools.ncl").make in
+let sed = (import "../hex0/ladder-tools.ncl").sed in # configure: config.mak generation
+let grep = (import "../hex0/ladder-tools.ncl").grep in # configure probes
+let coreutils = (import "../hex0/ladder-tools.ncl").coreutils in # rm/mkdir/cp/ln/install/sha256sum
+let tar = (import "../hex0/ladder-tools.ncl").tar in # build.sh `tar -xf`
+let gzip = (import "../hex0/ladder-tools.ncl").gzip in # tar's .gz decompression
+let gawk-bootstrap = (import "../hex0/ladder-tools.ncl").gawk-bootstrap in # musl configure's awk
 # pkgmgr: bootstrap_rung = "hex0"
 let version = "1.2.5" in
 let amd64_spec =
@@ -47,6 +48,7 @@ let amd64_spec =
       sed,
       grep,
       coreutils,
+      sealed-glibc,
       tar,
       gzip,
       gawk-bootstrap,

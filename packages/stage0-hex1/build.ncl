@@ -1,9 +1,10 @@
 # pkgmgr: bootstrap_rung = "hex0"
 let { BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let sealed-glibc = (import "../hex0/ladder-tools.ncl").glibc in # sealed ladder tools link libc
 let hex0 = import "../hex0/build.ncl" in
-let bash = import "../bash/build.ncl" in
-let coreutils = import "../coreutils/build.ncl" in
+let bash = (import "../hex0/ladder-tools.ncl").bash-bootstrap in
+let coreutils = (import "../hex0/ladder-tools.ncl").coreutils in
 # stage0-hex1: first from-source rung of the amd64 bootstrap ladder, driven by bash
 # and coreutils. build.sh re-assembles hex0 from hex0_AMD64.hex0 with the seed and
 # asserts byte-identity via sha256sum, then assembles hex1 with the rebuilt hex0.
@@ -22,7 +23,8 @@ let amd64_spec =
       } | Source,
       hex0, # seed, installed in the rootfs at /usr/bin/hex0
       bash, # build.sh interpreter
-      coreutils, # sha256sum/cut/head/od/tr/cp/mkdir/chmod
+      coreutils,
+      sealed-glibc, # sha256sum/cut/head/od/tr/cp/mkdir/chmod
     ],
     cmd = "./build.sh",
     outputs = {

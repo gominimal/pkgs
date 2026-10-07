@@ -1,6 +1,7 @@
 # pkgmgr: bootstrap_rung = "hex0"
 let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let sealed-glibc = (import "../hex0/ladder-tools.ncl").glibc in # sealed ladder tools link libc
 # stage0-tcc-0.9.26: janneke's tcc-0.9.26 fork compiled by MesCC (stage0-mes) against mes-libc,
 # then bootstrapped tcc-mes -> tcc-boot0 -> boot1 -> boot2 -> /usr/bin/tcc. Also rebuilds mes-libc
 # with tcc and ships it at /usr/lib/mes for stage0-tcc-0.9.27.
@@ -15,7 +16,7 @@ let { target, .. } = import "config.ncl" in
 # Any downstream spec importing this package must bind the dotted dir name to a dotless variable.
 let stage0-mes = import "../stage0-mes/build.ncl" in # mes-m2, mescc.scm, mes-libc, headers, module trees
 let stage0-mescc-full = import "../stage0-mescc-full/build.ncl" in # kaem (driver), catm, M1, hex2, M2-Mesoplanet, match, simple-patch, blood-elf
-let coreutils = import "../coreutils/build.ncl" in # cp, chmod, mkdir, rm, sha256sum
+let coreutils = (import "../hex0/ladder-tools.ncl").coreutils in # cp, chmod, mkdir, rm, sha256sum
 let amd64_spec =
   {
     name = "stage0-tcc-0.9.26",
@@ -71,7 +72,8 @@ let amd64_spec =
       # toolchain suppliers (chain-enforce predecessor edges):
       stage0-mes, # /usr/bin/{mes-m2,mescc.scm}, /usr/lib/x86_64-mes/**, /usr/include/**, /usr/share/{mes,nyacc}/**
       stage0-mescc-full, # /usr/bin/{kaem,catm,M1,hex2,blood-elf,match,M2-Mesoplanet,simple-patch}
-      coreutils, # /usr/bin/{cp,chmod,mkdir,rm,sha256sum}
+      coreutils,
+      sealed-glibc, # /usr/bin/{cp,chmod,mkdir,rm,sha256sum}
     ],
     # All tcc binaries are static ELF against mes-libc (CONFIG_TCC_STATIC=1): no .interp, no
     # DT_NEEDED, hence allow_missing_interpreter and no runtime_deps.

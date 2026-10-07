@@ -1,20 +1,21 @@
 let { BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let sealed-glibc = (import "../hex0/ladder-tools.ncl").glibc in # sealed ladder tools link libc
 # stage0-binutils-2.30: binutils 2.30 (as, ld, ar, nm, objcopy, objdump, strip, ranlib, libbfd.a,
 # libopcodes.a) built by tcc-musl2 and linked statically against the musl sysroot at
 # /usr/lib/musl-bedrock. The tarball ships every generated file, so no autoreconf/bison/flex/perl
 # are needed. See build.sh.
 let stage0-tcc-0-9-27-musl-s4 = import "../stage0-tcc-0.9.27-musl-s4/build.ncl" in # CC: /usr/bin/tcc-musl2 + /usr/lib/tcc/libtcc1.a
 let stage0-musl-1-1-24-cc2 = import "../stage0-musl-1.1.24-cc2/build.ncl" in # link target: musl libc.a + crt + headers, and the /usr/lib/musl-bedrock sysroot
-let bash = import "../bash/build.ncl" in # build.sh + configure shell
-let make = import "../make/build.ncl" in
-let sed = import "../sed/build.ncl" in
-let grep = import "../grep/build.ncl" in
-let coreutils = import "../coreutils/build.ncl" in
-let tar = import "../tar/build.ncl" in
-let xz = import "../xz/build.ncl" in # .tar.xz source
-let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # configure's awk
-let diffutils = import "../diffutils/build.ncl" in # cmp for move-if-change / config.status
+let bash = (import "../hex0/ladder-tools.ncl").bash-bootstrap in # build.sh + configure shell
+let make = (import "../hex0/ladder-tools.ncl").make in
+let sed = (import "../hex0/ladder-tools.ncl").sed in
+let grep = (import "../hex0/ladder-tools.ncl").grep in
+let coreutils = (import "../hex0/ladder-tools.ncl").coreutils in
+let tar = (import "../hex0/ladder-tools.ncl").tar in
+let xz = (import "../hex0/ladder-tools.ncl").xz in # .tar.xz source
+let gawk-bootstrap = (import "../hex0/ladder-tools.ncl").gawk-bootstrap in # configure's awk
+let diffutils = (import "../hex0/ladder-tools.ncl").diffutils in # cmp for move-if-change / config.status
 # pkgmgr: bootstrap_rung = "hex0"
 let version = "2.30" in
 let amd64_spec =
@@ -41,6 +42,7 @@ let amd64_spec =
       sed,
       grep,
       coreutils,
+      sealed-glibc,
       tar,
       xz,
       gawk-bootstrap,
