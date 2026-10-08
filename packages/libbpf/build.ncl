@@ -8,7 +8,7 @@ let elfutils = import "../elfutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "1.7.0" in
+let version = "1.8.0" in
 {
   name = "libbpf",
 
@@ -16,7 +16,7 @@ let version = "1.7.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/libbpf/libbpf/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "7ab5feffbf78557f626f2e3e3204788528394494715a30fc2070fcddc2051b7b",
+      sha256 = "b7a1e685f90f6a63ead0dd85d053694b222975da8d09c1a966041cff6f0055ff",
       extract = true,
       strip_prefix = "libbpf-%{version}",
     } | Source,
