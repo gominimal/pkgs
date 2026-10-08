@@ -9,7 +9,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.19.4" in
+let version = "1.19.6" in
 {
   name = "libkrun",
 
@@ -41,7 +41,7 @@ let version = "1.19.4" in
     { file = "0001-vsock-bound-outstanding-packets.patch" } | Local,
     {
       url = "https://github.com/containers/libkrun/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "e8775fab2b460972a67ca6cd936296bb79cdb078d852d712a283cb290dd0b284",
+      sha256 = "7025d72208172dc06f791ad5af7ccaafeabdac9869f74ccb45fb6d4f6e5991cd",
       extract = true,
       strip_prefix = "libkrun-%{version}",
     } | Source,
