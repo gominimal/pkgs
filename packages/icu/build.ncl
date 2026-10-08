@@ -15,7 +15,7 @@ let version = "78.3" in
     { file = "minibazel.py" } | Local,
     # The tag, not the release tarballs: the data as text and the generators' sources, no prebuilt data.
     {
-      url = "https://github.com/unicode-org/icu/archive/refs/tags/release-%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/icu-release-%{version}.tar.gz",
       sha256 = "f06bcab72736ee9d55689033b8198a178562354128cf38edb2afc2e67e3fd931",
     } | Source,
     base,

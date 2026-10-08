@@ -3,7 +3,7 @@ set -e
 
 # The release tarballs carry ICU's data prebuilt (icudt*.dat and the core Unicode property tables). The tag
 # tarball has all of it as text, plus the generators; everything below is compiled from that.
-tar -xof "release-${MINIMAL_ARG_VERSION}.tar.gz"
+tar -xof "icu-release-${MINIMAL_ARG_VERSION}.tar.gz"
 S=$PWD/icu-release-${MINIMAL_ARG_VERSION}
 C=$S/icu4c/source
 
