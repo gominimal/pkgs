@@ -85,6 +85,29 @@ let abi = std.string.join "." (std.array.slice 0 2 (std.string.split "." version
     } | Attrs,
 
   tests = {
+    # A gem extension carrying GCC 14's new errors (here: a method function
+    # of the wrong pointer type, as in scout_apm 5.x) still builds and loads.
+    legacy_c_extension_builds =
+      {
+        class = 'Standalone,
+        test_deps = [base, toolchain, make],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              d=$(mktemp -d) && cd "$d"
+              printf '%s\n' '#include <ruby.h>' 'static VALUE legacy(void) { return INT2FIX(42); }' \
+                'void Init_legacy(void) { rb_define_singleton_method(rb_cObject, "legacy", legacy, 0); }' > legacy.c
+              printf '%s\n' 'require "mkmf"' 'create_makefile("legacy")' > extconf.rb
+              ruby extconf.rb >/dev/null
+              make CC=gcc >build.log 2>&1 || { cat build.log >&2; exit 1; }
+              test "$(ruby -I. -rlegacy -e 'print Object.legacy')" = 42
+            "%
+          ],
+        ],
+      } | Test,
     smoketest =
       {
         class = 'Standalone,

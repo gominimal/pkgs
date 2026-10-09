@@ -40,3 +40,17 @@ printf '%s\n' \
   'update: --bindir ~/.local/bin' \
   'uninstall: --bindir ~/.local/bin' \
   > "$OUTPUT_DIR/usr/etc/gemrc"
+
+# GCC 14 turned several long-tolerated warnings into errors, so native
+# extensions of older gems that compile fine under GCC 13 or clang now fail
+# here (scout_apm 5.x: incompatible-pointer-types). Downgrade exactly those
+# back to warnings for gem extension builds: mkmf takes its flags from the
+# installed rbconfig, not from $CFLAGS, and Ruby itself is already built.
+# (CONFIG["CFLAGS"], not "warnflags": configuring with our own CFLAGS above
+# drops $(cflags), and with it $(warnflags), from extension Makefiles.)
+rbconfig=$(find "$OUTPUT_DIR/usr/lib/ruby" -name rbconfig.rb | head -1)
+[ -n "$rbconfig" ] || { echo "rbconfig.rb not found under $OUTPUT_DIR/usr/lib/ruby" >&2; exit 1; }
+gcc14_errors="-Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-error=return-mismatch -Wno-error=declaration-missing-parameter-type"
+sed -i "s|^\(  CONFIG\[\"CFLAGS\"\] = \"[^\"]*\)\"|\1 $gcc14_errors\"|" "$rbconfig"
+grep -q 'CONFIG\["CFLAGS"\] = ".*-Wno-error=incompatible-pointer-types' "$rbconfig" \
+  || { echo "failed to extend CFLAGS in $rbconfig" >&2; exit 1; }
