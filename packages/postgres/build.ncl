@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let make = import "../make/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let base = import "../base/build.ncl" in
@@ -13,6 +13,9 @@ let readline = import "../readline/build.ncl" in
 let icu = import "../icu/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+# Minimal sessions set LANG=C.UTF-8, which the glibc locale-archive lacks;
+# without it `initdb` aborts with "invalid locale settings".
+let glibc-locale-c-utf8 = import "../glibc-locale-c-utf8/build.ncl" in
 
 let version = "18.6" in
 {
@@ -38,6 +41,7 @@ let version = "18.6" in
     icu,
     zstd,
     zlib,
+    glibc-locale-c-utf8,
   ],
 
   cmd = "./build.sh",
@@ -61,4 +65,15 @@ let version = "18.6" in
         repo = "postgres",
       },
     } | Attrs,
+  tests = {
+    # A default `initdb` under the session locale must succeed and pick UTF8.
+    initdb_c_utf8 =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "d=$(mktemp -d) && LANG=C.UTF-8 LC_ALL= /bin/initdb -D \"$d/data\" >\"$d/log\" 2>&1 || { cat \"$d/log\" >&2; exit 1; }; grep -q 'encoding has accordingly been set to \"UTF8\"' \"$d/log\""],
+        ],
+      } | Test,
+  },
 } | BuildSpec
