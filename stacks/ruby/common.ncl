@@ -29,6 +29,12 @@ let parts = {
   build_env_vars = {
     # gcc ships no `cc`, and many native gem builds call `cc` unless CC says
     # otherwise (hiredis-client, ...). Same as the rust stack.
+    # Bundler installs gem executables (rails, rspec, sidekiq, dotenv, ...)
+    # into $GEM_HOME/bin, which is not on PATH; Procfile lines such as
+    # `dotenv bundle exec sidekiq` then die with 127. Put them where the
+    # session PATH (and the ruby package's gemrc) already looks. Sessions
+    # run with HOME=/home.
+    BUNDLE_SYSTEM_BINDIR = "/home/.local/bin",
     CC = "gcc",
     CXX = "g++",
     # Selenium (Rails system tests, Capybara): use the packaged headless
