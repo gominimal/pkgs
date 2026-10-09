@@ -50,7 +50,7 @@ let version = "1.19.6" in
     # https://github.com/gominimal/minimal/issues/2103
     { file = "0002-vsock-refuse-stream-when-unix-proxy-creation-fails.patch" } | Local,
     {
-      url = "https://github.com/containers/libkrun/archive/refs/tags/v%{version}.tar.gz",
+      url = "https://github.com/libkrun/libkrun/archive/refs/tags/v%{version}.tar.gz",
       sha256 = "7025d72208172dc06f791ad5af7ccaafeabdac9869f74ccb45fb6d4f6e5991cd",
       extract = true,
       strip_prefix = "libkrun-%{version}",
@@ -92,7 +92,7 @@ let version = "1.19.6" in
     license_spdx = "Apache-2.0",
     source_provenance = {
       category = 'GithubRepo,
-      owner = "containers",
+      owner = "libkrun",
       repo = "libkrun",
     },
   },

@@ -22,7 +22,7 @@ let version = "5.6.1" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/containers/libkrunfw/archive/refs/tags/v%{version}.tar.gz",
+      url = "https://github.com/libkrun/libkrunfw/archive/refs/tags/v%{version}.tar.gz",
       sha256 = "b8ec9f2205f1092a5fcd8ab8ecb8e1a939dea15bb842d844da99c5a062e3f453",
       extract = true,
       strip_prefix = "libkrunfw-%{version}",
@@ -75,7 +75,7 @@ let version = "5.6.1" in
     license_spdx = "(LGPL-2.1-only AND GPL-2.0-only)",
     source_provenance = {
       category = 'GithubRepo,
-      owner = "containers",
+      owner = "libkrun",
       repo = "libkrunfw",
     },
   },
