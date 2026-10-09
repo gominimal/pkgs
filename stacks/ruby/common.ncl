@@ -58,7 +58,14 @@ let any_gem = fun names => std.array.flat_map gem names in
     "node-lts" = [
       { file_regexes."package.json" = "*" },
     ],
-    "yarn" = [{ file_regexes."yarn.lock" = "*" }],
+    # Yarn 1 lockfiles say so on their first lines; Yarn 2+ ("berry") ones
+    # carry `__metadata:` and get the Corepack-backed yarn, which runs the
+    # release pinned in package.json's packageManager.
+    "yarn" = [{ file_regexes."yarn.lock" = "# yarn lockfile v1" }],
+    "yarn-corepack" = [
+      { file_regexes."yarn.lock" = "(?m)^__metadata:" },
+      { file_regexes."package.json" = "\"packageManager\"\\s*:\\s*\"yarn@[2-9]" },
+    ],
     "pnpm" = [{ file_regexes."pnpm-lock.yaml" = "*" }],
     "bun" = [{ file_regexes."bun.lockb" = "*" }, { file_regexes."bun.lock" = "*" }],
   },

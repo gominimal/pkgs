@@ -22,6 +22,7 @@ let zlib = import "../zlib/build.ncl" in
 # put exactly one Ruby package in a loadout. Stays on the 3.3 series; bump only
 # within it.
 let version = "3.3.12" in
+let abi = std.string.join "." (std.array.slice 0 2 (std.string.split "." version)) in
 {
   name = "ruby-3.3",
   build_deps = [
@@ -68,6 +69,14 @@ let version = "3.3.12" in
     {
       upstream_version = version,
       license_spdx = "Ruby",
+      # Ruby's own gem dir is read-only, so plain `bundle install` failed
+      # ("File system is read-only"). Point GEM_HOME at persistent state:
+      # writable, and gems survive across sessions. One dir per Ruby ABI
+      # (major.minor) so compiled extensions never mix between versions.
+      env_state_wiring = {
+        env_var = "GEM_HOME",
+        prefix = "ruby-gems-%{abi}",
+      },
       source_provenance = {
         category = 'GithubRepo,
         owner = "ruby",
