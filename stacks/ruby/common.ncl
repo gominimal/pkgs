@@ -95,7 +95,13 @@ in
     let { name, ruby_package, series, rails, prio } = args in
     let detect =
       if series == null then
-        if rails then [{ file_regexes."Gemfile.lock" = railties }] else [{ file_regexes."Gemfile" = "*" }]
+        if rails then
+          [
+            { file_regexes."Gemfile.lock" = railties },
+            # Not locked yet (a fresh `rails new --skip-bundle`, a template).
+            { file_regexes."Gemfile" = "(?m)^\\s*gem\\s+[\"']rails[\"']" },
+          ]
+        else [{ file_regexes."Gemfile" = "*" }]
       else
         let entries = version_entries series in
         if rails then
