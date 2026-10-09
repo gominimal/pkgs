@@ -1,5 +1,7 @@
-# Shared by the `ruby` and `rails` stacks: what a Ruby project needs to
-# `bundle install` and run, and which extra packages its Gemfile.lock implies.
+let { stack, .. } = import "minimal.ncl" in
+# Shared by every Ruby stack (`ruby`, `rails`, and the `-3.x` series variants):
+# what a Ruby project needs to `bundle install` and run, which extra packages
+# its Gemfile.lock implies, and how a project's Ruby version is detected.
 #
 # Gems are matched in Gemfile.lock, where each resolved gem sits on its own
 # line indented four spaces under `specs:` (`    pg (1.5.9)`, or with a
@@ -13,7 +15,7 @@ let gem = fun name =>
   ]
 in
 let any_gem = fun names => std.array.flat_map gem names in
-{
+let parts = {
   # Always present: Ruby, a compiler for native extensions (most real
   # Gemfiles have one), and what gem extconf scripts quietly assume.
   # linux_headers: several gems include <linux/*.h>. which: charlock_holmes'
@@ -23,7 +25,6 @@ let any_gem = fun names => std.array.flat_map gem names in
     "libyaml", "libffi", "openssl", "zlib", "readline", "gmp",
     "which", "file", "tzdata", "git",
   ],
-  runtime_packages = ["ruby"],
 
   build_env_vars = {
     # gcc ships no `cc`, and many native gem builds call `cc` unless CC says
@@ -69,4 +70,64 @@ let any_gem = fun names => std.array.flat_map gem names in
     "pnpm" = [{ file_regexes."pnpm-lock.yaml" = "*" }],
     "bun" = [{ file_regexes."bun.lockb" = "*" }, { file_regexes."bun.lock" = "*" }],
   },
+}
+in
+
+# A project asks for Ruby X.Y in any of these places. Each is one matcher entry.
+let version_entries = fun series =>
+  let s = std.string.replace "." "\\." series in
+  [
+    { file_regexes.".ruby-version" = "^(ruby-)?%{s}([.\\s]|$)" },
+    { file_regexes.".tool-versions" = "(?m)^ruby\\s+%{s}([.\\s]|$)" },
+    { file_regexes."Gemfile" = "(?m)^\\s*ruby\\s+[\"'](~>\\s*|>=\\s*)?%{s}([.\"']|$)" },
+    { file_regexes."Gemfile.lock" = "(?m)^RUBY VERSION\\s*\\n\\s+ruby %{s}\\." },
+  ]
+in
+let railties = "(?m)^    railties \\("
+in
+{
+  # Builds one stack.
+  #   ruby_package: which Ruby the session gets (`ruby`, `ruby-3.4`, ...).
+  #   series:       null for the default stack, or "3.4" etc. to match only
+  #                 projects that ask for that Ruby.
+  #   rails:        true to match only Rails apps (railties in Gemfile.lock).
+  mk = fun args =>
+    let { name, ruby_package, series, rails, prio } = args in
+    let detect =
+      if series == null then
+        if rails then [{ file_regexes."Gemfile.lock" = railties }] else [{ file_regexes."Gemfile" = "*" }]
+      else
+        let entries = version_entries series in
+        if rails then
+          # railties AND the version. One regex per file per entry, so when
+          # the version lives in Gemfile.lock too, require both in one regex
+          # (railties sits under GEM, before the RUBY VERSION section).
+          std.array.map
+            (fun e =>
+              if std.record.has_field "Gemfile.lock" e.file_regexes then
+                { file_regexes."Gemfile.lock" = "(?ms)^    railties \\(.*^RUBY VERSION\\s*\\n\\s+ruby %{std.string.replace "." "\\." series}\\." }
+              else
+                { file_regexes = e.file_regexes & { "Gemfile.lock" = railties } }
+            )
+            entries
+        else
+          std.array.map
+            (fun e =>
+              if std.record.has_field "Gemfile" e.file_regexes then e
+              else { file_regexes = e.file_regexes & { "Gemfile" = "*" } }
+            )
+            entries
+    in
+    stack {
+      name = args.name,
+      build_packages = parts.build_packages,
+      runtime_packages = [ruby_package],
+      build_env_vars = parts.build_env_vars,
+      build_cmd = "bundle install",
+      matches_project_if_any =
+        std.array.map
+          (fun d => d & { runtime_package_if_any = parts.runtime_package_if_any })
+          detect,
+      matches_project_priority = prio,
+    },
 }
