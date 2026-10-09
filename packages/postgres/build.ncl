@@ -67,12 +67,14 @@ let version = "18.6" in
     } | Attrs,
   tests = {
     # A default `initdb` under the session locale must succeed and pick UTF8.
+    # initdb always looks up the running user, and CI runs tests as a bare
+    # uid with no passwd entry, so give it one first.
     initdb_c_utf8 =
       {
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          ["/bin/bash", "-c", "d=$(mktemp -d) && LANG=C.UTF-8 LC_ALL= /bin/initdb -D \"$d/data\" >\"$d/log\" 2>&1 || { cat \"$d/log\" >&2; exit 1; }; grep -q 'encoding has accordingly been set to \"UTF8\"' \"$d/log\""],
+          ["/bin/bash", "-c", "if ! id -un >/dev/null 2>&1; then echo \"pgtest:x:$(id -u):$(id -g)::/tmp:/bin/sh\" >> /etc/passwd || { echo \"uid $(id -u) has no passwd entry and /etc/passwd is not writable\" >&2; exit 1; }; fi; d=$(mktemp -d) && LANG=C.UTF-8 LC_ALL= /bin/initdb -D \"$d/data\" >\"$d/log\" 2>&1 || { cat \"$d/log\" >&2; exit 1; }; grep -q 'encoding has accordingly been set to \"UTF8\"' \"$d/log\""],
         ],
       } | Test,
   },

@@ -8,6 +8,8 @@ let nss = import "../nss/build.ncl" in
 let nspr = import "../nspr/build.ncl" in
 let glib = import "../glib/build.ncl" in
 let libxcb = import "../libxcb/build.ncl" in
+# The amd64 build also links libdbus-1 (the arm64 one does not).
+let dbus = import "../dbus/build.ncl" in
 let chromium-headless-shell-bin = import "../chromium-headless-shell-bin/build.ncl" in
 
 # ChromeDriver from Chrome for Testing, pinned to the SAME version as
@@ -50,6 +52,7 @@ let browser_version = "153.0.8010.52" in
     nspr,
     glib,
     libxcb,
+    dbus,
   ],
   cmd = "./build.sh",
   outputs = {
