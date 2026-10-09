@@ -38,7 +38,11 @@ let component = fun base_name amd64_sha arm64_sha =>
   ) target
 in
 {
-  name = "verus",
+  name = "verus-latest",
+  # Tracks upstream's newest weekly stable release (tags release/0.YYYY.MM.DD.<sha>).
+  # Each release re-pins its Rust toolchain and z3, so a bump re-mirrors the
+  # toolchain components, re-vendors the crates and may add a z3-x.y.z package
+  # (pkgmgr's toolchain-bundle bump does this; see gominimal/pkgmgr-rs).
   # Verus: SMT-based verification of Rust code annotated with specs and proofs.
   # rust_verify checks the crate, vstd is the verified standard library, z3
   # 4.16.0 is the solver (Verus refuses any other version).
