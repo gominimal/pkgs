@@ -61,6 +61,9 @@ let parts = {
     # Browser tests.
     "chromium-headless-shell-bin" = any_gem ["selenium-webdriver", "cuprite", "ferrum"],
     "chromedriver-bin" = any_gem ["selenium-webdriver"],
+    # Process runner for Procfile.dev (bin/dev prefers it over foreman;
+    # some apps, e.g. Chatwoot's `make run`, call it directly).
+    "overmind" = [{ file_regexes."Procfile.dev" = "*" }],
     # JavaScript side: jsbundling/cssbundling, Vite, or a frontend in the repo.
     "node-lts" = [
       { file_regexes."package.json" = "*" },
