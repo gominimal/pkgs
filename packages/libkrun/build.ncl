@@ -9,7 +9,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.19.4" in
+let version = "1.19.6" in
 {
   name = "libkrun",
 
@@ -39,9 +39,19 @@ let version = "1.19.4" in
     # fix lands in an upstream release we can pin.
     # https://github.com/gominimal/minimal/issues/869
     { file = "0001-vsock-bound-outstanding-packets.patch" } | Local,
+    # A guest-to-host vsock stream whose host unix socket cannot be created
+    # (EMFILE, ENFILE, ENOBUFS) hit UnixProxy::new(...).unwrap() in
+    # muxer.rs, and the panic aborted the whole VMM. The patch logs the error
+    # and answers that one stream with OP_RST instead, so the guest's
+    # connect() fails and the VM keeps running. 1.19.6 does not fix this.
+    #
+    # Identical to the patch gominimal/minimal carries at
+    # vendor/libkrun/patches/ (#2105); drop it once upstream releases the fix.
+    # https://github.com/gominimal/minimal/issues/2103
+    { file = "0002-vsock-refuse-stream-when-unix-proxy-creation-fails.patch" } | Local,
     {
       url = "https://github.com/containers/libkrun/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "e8775fab2b460972a67ca6cd936296bb79cdb078d852d712a283cb290dd0b284",
+      sha256 = "7025d72208172dc06f791ad5af7ccaafeabdac9869f74ccb45fb6d4f6e5991cd",
       extract = true,
       strip_prefix = "libkrun-%{version}",
     } | Source,
