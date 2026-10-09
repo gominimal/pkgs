@@ -42,6 +42,12 @@ let parts = {
     # Databases and services.
     "postgres" = any_gem ["pg"],
     "glibc-locale-c-utf8" = any_gem ["pg"],
+    "pgvector" =
+      any_gem ["neighbor", "pgvector"]
+      @ [
+        { file_regexes."db/schema.rb" = "enable_extension \"vector\"" },
+        { file_regexes."db/structure.sql" = "(?i)CREATE EXTENSION (IF NOT EXISTS )?vector" },
+      ],
     "mariadb" = any_gem ["mysql2", "trilogy"],
     "sqlite" = any_gem ["sqlite3"],
     "redis" = any_gem ["redis", "redis-client", "sidekiq", "resque", "kredis", "hiredis-client"],

@@ -69,6 +69,15 @@ let version = "18.6" in
     # A default `initdb` under the session locale must succeed and pick UTF8.
     # initdb always looks up the running user, and CI runs tests as a bare
     # uid with no passwd entry, so give it one first.
+    # The contrib extensions Rails apps commonly enable are installed.
+    contrib_extensions =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "for e in pg_trgm pgcrypto pg_stat_statements citext hstore unaccent btree_gin fuzzystrmatch; do test -f /usr/share/postgresql/extension/$e.control || { echo \"missing extension $e\" >&2; exit 1; }; done"],
+        ],
+      } | Test,
     initdb_c_utf8 =
       {
         class = 'Standalone,

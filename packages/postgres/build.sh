@@ -23,3 +23,9 @@ export CXXFLAGS="${CFLAGS}"
 make -j$(nproc)
 # make check # Needs user lookup to function
 make DESTDIR=$OUTPUT_DIR install
+# contrib: the extensions apps enable as a matter of course (pg_trgm,
+# pgcrypto, pg_stat_statements, citext, hstore, unaccent, ...). Without them
+# `enable_extension` in a Rails schema fails with "extension ... is not
+# available".
+make -C contrib -j$(nproc)
+make -C contrib DESTDIR=$OUTPUT_DIR install
