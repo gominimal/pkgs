@@ -21,7 +21,27 @@ in
   build_deps = [
     { file = "build.sh" } | Local,
     match {
-      { arch = 'Amd64, .. } => go-1-24-9,
+      { arch = 'Amd64, .. } =>
+        if (import "../hex0/amd64-ladder.ncl").enabled then
+          go-1-24-9
+        else
+          # BEDROCK (amd64, interim): build-bot's own output of the go-1.24.9 rung
+          # (gominimal/pkgs 9d20a830 commit map), sha-pinned. Same layout as the rung
+          # (usr/lib/go-1.24.9), so build.sh is unchanged. See hex0/amd64-ladder.ncl.
+          (
+            {
+              name = "go-1.24.9 (bedrock)",
+              prebuilt = true,
+              build_deps = [
+                {
+                  url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/4c339316e715b94c3df09424058161a9f0b08dd97017fde88edf1150247131a7/go1.24.9-x86_64.tar.zst",
+                  sha256 = "4c339316e715b94c3df09424058161a9f0b08dd97017fde88edf1150247131a7",
+                  extract = true,
+                } | Source,
+              ],
+              outputs = { usr = { glob = "usr/**/*", allow_executable = true } | OutputData },
+            } | BuildSpec
+          ),
       { arch = 'Arm64, .. } =>
         {
           # BEDROCK ROOT (arm64): this bootstrap Go is go1.24.9 from the hex0-rooted arm

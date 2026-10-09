@@ -76,7 +76,11 @@ in
 # This package exists on amd64 only (the amd64 bootstrap chain). On arm64 the spec is an empty
 # collection: no build runs and nothing on the arm graph depends on it.
 match {
-  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Amd64, .. } =>
+    if (import "../hex0/amd64-ladder.ncl").enabled then
+      amd64_spec
+    else
+      ({ name = "stage0-gcc-15.2.0", build_deps = [] } | BuildSpec),
   { arch = 'Arm64, .. } =>
     {
       name = "stage0-gcc-15.2.0",

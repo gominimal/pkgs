@@ -41,7 +41,32 @@ let version = "1.98.1" in
     # into bootstrap.toml [build] rustc/cargo; x.py never downloads a stage0.
     @ (
       match {
-        { arch = 'Amd64, .. } => [rustc-1-97-1],
+        { arch = 'Amd64, .. } =>
+          if (import "../hex0/amd64-ladder.ncl").enabled then
+            [rustc-1-97-1]
+          else
+            [
+              # BEDROCK (amd64, interim): build-bot's own output of the rustc-1.97.1 rung
+              # (gominimal/pkgs 9d20a830 commit map), sha-pinned. Same layout as the rung
+              # (usr/lib/rustc-1.97.1), so build.sh is unchanged; same runtime deps as the
+              # rung. See hex0/amd64-ladder.ncl.
+              (
+                {
+                  name = "rustc-1.97.1 (bedrock)",
+                  prebuilt = true,
+                  build_deps = [
+                    {
+                      url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/6ec57e96b11bd62097d5f7480909f651ec2537a10ef15224f42be2e674d89d11/rustc-1.97.1-x86_64.tar.zst",
+                      sha256 = "6ec57e96b11bd62097d5f7480909f651ec2537a10ef15224f42be2e674d89d11",
+                      extract = true,
+                    } | Source,
+                  ],
+                  # = the rung's runtime_deps (rustc-1.97.1/build.ncl amd64_spec).
+                  runtime_deps = [libffi, llvm, openssl, sqlite, subsetOf gcc ["libgcc", "libstdcpp"]],
+                  outputs = { usr = { glob = "usr/**/*", allow_executable = true } | OutputData },
+                } | BuildSpec
+              ),
+            ],
         { arch = 'Arm64, .. } =>
           [
             # arm64 stage0: rustc-1.97.1 built by the same rung recipes on arm64 hardware.  The

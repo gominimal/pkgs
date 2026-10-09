@@ -63,7 +63,11 @@ in
 # amd64 only: this rung belongs to the amd64 bootstrap ladder.  On arm64 the shipped go recipe
 # consumes a sha-pinned prebuilt instead, so this spec collapses to an empty collection there.
 match {
-  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Amd64, .. } =>
+    if (import "../hex0/amd64-ladder.ncl").enabled then
+      amd64_spec
+    else
+      ({ name = "go-1.17.13", build_deps = [] } | BuildSpec),
   { arch = 'Arm64, .. } =>
     {
       name = "go-1.17.13",
