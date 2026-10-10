@@ -30,6 +30,15 @@ let version = "2026e" in
       upstream_version = version,
       license_spdx = "LicenseRef-Public-Domain",
       repology_project = "tzdata",
+      # The tz project's own repository (IANA's tz coordinator publishes there; its tags match
+      # this version, e.g. 2026e). Gives the package an advisory identity: NVD has no CPE for the
+      # tz database under any vendor, so without this it was unmonitorable (pkgmgr coverage gap).
+      # The download stays on data.iana.org above; provenance only drives advisory/version lookups.
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "eggert",
+        repo = "tz",
+      },
     } | Attrs,
 
   tests = {
