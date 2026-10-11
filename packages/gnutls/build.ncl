@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -63,4 +63,8 @@ let version = "3.8.13" in
         name = "gnutls",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/gnutls-cli --version",
+  },
 } | BuildSpec

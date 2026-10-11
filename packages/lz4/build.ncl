@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let tar = import "../tar/build.ncl" in
@@ -97,4 +97,8 @@ let version = "1.10.0" in
         repo = "lz4",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/lz4 --version",
+  },
 } | BuildSpec

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
@@ -47,4 +47,8 @@ let version = "1.0.16" in
         repo = "fribidi",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/fribidi --version",
+  },
 } | BuildSpec

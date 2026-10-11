@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -47,4 +47,8 @@ let version = "2.8.5" in
         repo = "libexpat",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/xmlwf -v",
+  },
 } | BuildSpec

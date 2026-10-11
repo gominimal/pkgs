@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let meson = import "../meson/build.ncl" in
@@ -41,4 +41,8 @@ let version = "1.5.4" in
       upstream_version = version,
       license_spdx = "BSD-2-Clause",
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/dav1d --version",
+  },
 } | BuildSpec
