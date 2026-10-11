@@ -11,7 +11,7 @@ export LD=gcc
 BUILDROOT="$(pwd)"
 export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$BUILDROOT=/builddir"
 export CARGO_HOME="$BUILDROOT/.cargo-home"
-VENDOR_TARBALL="$BUILDROOT/charon-vendor-0.1.223.tar.gz"
+VENDOR_TARBALL="$BUILDROOT/charon-vendor-0.1.281.tar.gz"
 
 # The Rust workspace is the repo's charon/ subdir.
 cd charon
@@ -28,13 +28,16 @@ mkdir -p .cargo
 cat > .cargo/config.toml <<'CFG'
 [source.crates-io]
 replace-with = "vendored-sources"
-[source."git+https://github.com/Nadrieril/serde_state?branch=main"]
-git = "https://github.com/Nadrieril/serde_state"
-branch = "main"
+
+[source."git+https://github.com/Nadrieril/specr?branch=bump-toolchain"]
+git = "https://github.com/Nadrieril/specr"
+branch = "bump-toolchain"
 replace-with = "vendored-sources"
+
 [source."git+https://github.com/Nadrieril/tracing-tree"]
 git = "https://github.com/Nadrieril/tracing-tree"
 replace-with = "vendored-sources"
+
 [source.vendored-sources]
 directory = "vendor"
 CFG

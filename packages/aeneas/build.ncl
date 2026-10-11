@@ -1,6 +1,6 @@
 # AeneasVerif/aeneas — translates Rust (via a charon .llbc) to pure functional
 # models for F*/Coq/Lean/HOL4. Pinned to commit
-# b059c34a7c347c32856af26772c9336e41c66a11 (2026-07-13), whose `charon-pin`
+# d119a474f852781f8ae88a85424f2f8ba8407b82 (2026-07-13), whose `charon-pin`
 # matches our charon-ml 0.1.223 exactly. Sourced from github tarball, mirrored to
 # gs://.
 #
@@ -29,16 +29,16 @@ let visitors = import "../visitors/build.ncl" in
 let ppxlib = import "../ppxlib/build.ncl" in
 let menhir = import "../menhir/build.ncl" in
 let zarith = import "../zarith/build.ncl" in
-let version = "20260713" in
+let version = "20261008" in
 {
   name = "aeneas",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/aeneas-%{version}.tar.gz",
-      sha256 = "7d6b6d675a0c352363b7d57a0a9065a58c385309ce421f24259f1a55af89d12b",
+      sha256 = "029208b5750d911c17e133a12cf7e410d4e67659ddcaf568b258f4b1da6497af",
       extract = true,
-      strip_prefix = "AeneasVerif-aeneas-b059c34", # github sha-suffixed top-dir
+      strip_prefix = "AeneasVerif-aeneas-d119a47", # github sha-suffixed top-dir
     } | Source,
     base,
     ocaml,

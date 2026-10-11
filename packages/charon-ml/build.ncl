@@ -1,5 +1,5 @@
 # AeneasVerif/charon — the OCaml bindings (charon-ml/), pinned to charon 0.1.223
-# (commit 5a5017333554ec1e95cae3c4fe05f5bd90b44487, 2026-07-11). Builds the
+# (commit 798016509139eb51f0d764645f76d068d34ba5f6, 2026-07-11). Builds the
 # `charon` findlib lib (LLBC/ULLBC deserialization) + `name_matcher_parser`
 # (ocamllex+menhir grammar). This is the OCaml half only — the `charon` Rust
 # binary that emits .llbc is a separate package (a later Rust PR); aeneas links
@@ -20,20 +20,21 @@ let yojson = import "../yojson/build.ncl" in
 let zarith = import "../zarith/build.ncl" in
 let easy_logging = import "../easy_logging/build.ncl" in
 let unionfind = import "../unionfind/build.ncl" in
+let logs = import "../logs/build.ncl" in
 let visitors = import "../visitors/build.ncl" in
 let menhir = import "../menhir/build.ncl" in
 let ppx_deriving = import "../ppx_deriving/build.ncl" in
 let ppxlib = import "../ppxlib/build.ncl" in
-let version = "0.1.223" in
+let version = "0.1.281" in
 {
   name = "charon-ml",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/charon-ml-%{version}.tar.gz",
-      sha256 = "a7953f71f598725eefb33671301a99ae5f683055184a6038f8a0da9fbb8b7d9a",
+      sha256 = "62b7e812977136a0a36c197c43a89c90e43ab53932439cc6a1db2f5f8f42e71a",
       extract = true,
-      strip_prefix = "AeneasVerif-charon-5a50173", # github sha-suffixed top-dir
+      strip_prefix = "AeneasVerif-charon-7980165", # github sha-suffixed top-dir
     } | Source,
     base,
     ocaml,
@@ -43,6 +44,7 @@ let version = "0.1.223" in
     zarith,
     easy_logging,
     unionfind,
+    logs,
     visitors,
     menhir,
     ppx_deriving,
@@ -59,6 +61,7 @@ let version = "0.1.223" in
     zarith,
     easy_logging,
     unionfind,
+    logs,
     visitors,
     menhir,
     ppx_deriving,
