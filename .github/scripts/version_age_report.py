@@ -465,12 +465,12 @@ def main() -> int:
             catalog = json.load(f)
     except (OSError, json.JSONDecodeError) as e:
         emit("## version-age report (informational, non-blocking)\n\n"
-             f"> `minimal dump` output was unavailable ({type(e).__name__}); "
+             f"> catalog dump (`mip dump`) output was unavailable ({type(e).__name__}); "
              "skipping the version-age report for this run. Non-blocking.\n")
         return 0
     if not isinstance(catalog, list):
         emit("## version-age report (informational, non-blocking)\n\n"
-             "> `minimal dump` returned an unexpected shape; skipping. "
+             "> catalog dump (`mip dump`) returned an unexpected shape; skipping. "
              "Non-blocking.\n")
         return 0
 

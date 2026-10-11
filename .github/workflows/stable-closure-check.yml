@@ -24,11 +24,15 @@ jobs:
         with:
           fetch-depth: 0       # need merge-base with origin/main and origin/stable
       - run: git fetch origin stable:refs/remotes/origin/stable
-      - uses: ./.github/actions/setup-minimal   # puts `minimal` on PATH
+      # Pinned, sha256-verified evaluator (puts `mip` on PATH), NOT the public
+      # shim's stale `minimal`, whose dumps fail on current stdlib features and
+      # turned every run into an UNVERIFIED verdict.
+      - uses: ./.github/actions/setup-mip
       - name: Runtime-closure vs stable
         run: |
           set -uo pipefail
           python3 .github/scripts/stable-closure-check.py \
+            --minimal-bin mip \
             --changed origin/main --format text --no-fail \
             | tee closure.txt
           {
