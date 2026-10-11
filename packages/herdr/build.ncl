@@ -22,14 +22,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let version = "0.9.1" in
+let version = "0.9.3" in
 {
   name = "herdr",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/herdrdev/herdr/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "03403d3ef80dcf2b954dd5d27eb636e6c4f5279d240b48de272b7f53e4b73093",
+      sha256 = "e48f6706440c92362773663131ef5b524c62549523e50a03f2b55d315edca100",
       extract = true,
       strip_prefix = "herdr-%{version}",
     } | Source,
