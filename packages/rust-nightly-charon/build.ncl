@@ -18,7 +18,7 @@ let zlib = import "../zlib/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let date = "2026-06-01" in
+let date = "2026-09-17" in
 # An arch-selected component tarball (raw — build.sh runs its install.sh).
 let component = fun base_name amd64_sha arm64_sha =>
   (match {
@@ -44,23 +44,23 @@ in
     # rustc + cargo + rust-std + rustc-dev, per-arch. rust-src is arch-independent.
     component
       "rustc-nightly"
-      "85e06d9b1091f2da0f924172be6861ce072e75ad86eaa6ec13d89e371c72c2e5"
-      "5aff9565275eb446d8d27066ab4339540aff4d294f74be9b099a3a3c7cd155be",
+      "6c4b66572411880b75f845892414e9b0ea04dfbbc50e0ce5394bd162c3e0dda6"
+      "e9b1db78f180ea7805ba677a9cac85d464fef749f43fe9f4970d32c7bde6a06c",
     component
       "cargo-nightly"
-      "73f5400ac6e4a789e4253acfa507bfcff786d4a8c9b41d03cedb32428ea3dc68"
-      "3a6193c1897239a1e44f5264f7423db109796c5d5a8e6416e07b39e33b4554f3",
+      "155812325ded8f28460f91584a641b38ffb6292c1f7ba993c464376dd2e849af"
+      "7eba15269abd35e3bf31749b7ddca8232fb37a38c24e3ca3dd7af717c6d05832",
     component
       "rust-std-nightly"
-      "b97e4593630291e9666f5da3905e44247eead514951c792b4a606fb08d7f6a3d"
-      "e02008ad12b3c834cf6f384dab677f5a747d28e1cd7522ecf0a88485f118eb4e",
+      "ce0462a1f0c3d6bf22fb952918a9840f1e85e6c1c3edd1d7840a90ab0a08dd8c"
+      "a1e410947d61dd29d5d9978828cf9deca022788c1decbe2d0d8a826c01694f2b",
     component
       "rustc-dev-nightly"
-      "fbc098037c9fa37a0c2c0bda6151734c204c5ec071071395ccbdf797e865b21d"
-      "1ee8a9d97024ab6379e0ec8c0bfc20a40d99c5b2b745465dc42b84f44db2f7ac",
+      "53e753dcf3977aa70779320f6dc3819b94f50a0529ac54725cb2e496a6b7fccb"
+      "683b2ec19437f4a975f67ed91bea4e6e470d7dcaeacbb1d7fb0ebc7495936374",
     {
       url = "gs://minimal-staging-archives/rust-src-nightly-%{date}.tar.xz",
-      sha256 = "3ce6b9d679b5d1840d3ed276e74c8d6b4b1da5ebef2eeb542b588de04ada039f",
+      sha256 = "cd272bc7b901f15464a44cbae891c3c7fd1847d6309eb7546fbf785bcadc8d7c",
       extract = false,
     } | Source,
     base,
