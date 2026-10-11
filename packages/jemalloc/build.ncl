@@ -12,7 +12,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let version = "5.3.1" in
+let version = "5.4.0" in
 {
   name = "jemalloc",
   build_deps = [
@@ -33,7 +33,7 @@ let version = "5.3.1" in
     gcc,
     {
       url = "gs://minimal-staging-archives/jemalloc/jemalloc/%{version}.tar.gz",
-      sha256 = "7b30f6116f11d736badd48c903cba2b3344a88d62e3a7b892434f870e860b1c0",
+      sha256 = "077ad99d4bf61d03c01a35e8f765d245cab777b429498ddded9490f1d8c0935b",
       extract = true,
       strip_prefix = "jemalloc-%{version}",
     } | Source,
@@ -69,7 +69,7 @@ let version = "5.3.1" in
         test_deps = [base, toolchain, pkgconf],
         cmds = [
           # Compile-link-RUN a real jemalloc consumer, and lock the version-stamp
-          # fix (jemalloc-config must report 5.3.1, not the git-archive 0.0.0).
+          # fix (jemalloc-config must report 5.4.0, not the git-archive 0.0.0).
           [
             "/bin/bash",
             "-c",
