@@ -1,6 +1,8 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let llvm = import "../llvm/build.ncl" in
@@ -33,7 +35,6 @@ let version = "1.99.0" in
       libssh2,
       pkgconf,
       python,
-      toolchain,
     ]
     # stage0 = the rustc-1.98.1 rung on BOTH arches (1.99.0's src/stage0 pins 1.98.0; x.py's
     # check_stage0_version accepts any 1.98.x).  amd64: built by the chain gcc-15.2.0 -> mrustc
@@ -57,6 +58,9 @@ let version = "1.99.0" in
     openssl,
     sqlite,
     subsetOf gcc ["libgcc", "libstdcpp"],
+    # rustc links through `cc` by default; toolchain brings gcc (which provides `cc`), binutils,
+    # glibc and the kernel headers, the same set the rust stack adds
+    toolchain,
   ],
 
   cmd = "./build.sh",
@@ -87,4 +91,18 @@ let version = "1.99.0" in
       },
       build_cost_multiple = 3,
     } | Attrs,
+
+  tests = {
+    # Only rust's own runtime closure may supply the `cc` that rustc links through here.
+    compile_exec_hello =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils],
+        cmds = [
+          ["/bin/bash", "-c", "echo 'fn main() { println!(\"hello\"); }' > hello.rs"],
+          ["/bin/rustc", "hello.rs", "-o", "hello"],
+          ["/bin/bash", "-c", "test \"$(./hello)\" = hello"],
+        ],
+      } | Test,
+  },
 } | BuildSpec

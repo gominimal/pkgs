@@ -64,6 +64,9 @@ let version = "15.2.0" in
     zstd,
   ],
   runtime_deps = [
+    # gcc drives `as` and `ld` for every compile, and C programs routinely include kernel headers
+    binutils,
+    linux_headers,
     gmp,
     mpc,
     mpfr,
@@ -169,7 +172,7 @@ let version = "15.2.0" in
     compile_exec_code =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, binutils, coreutils], # TODO: Some of these need to be runtime_deps
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           ["/bin/bash", "-c", "echo 'int main() { return 0; }' > hello.c"],
           ["/bin/gcc", "hello.c", "-o", "hello"],
@@ -181,7 +184,7 @@ let version = "15.2.0" in
     compile_exec_output =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, binutils, coreutils, grep], # TODO: Some of these need to be runtime_deps
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "cat > print.c << 'EOF'\n#include <stdio.h>\nint main() {\n    printf(\"Hello World\");\n    return 0;\n}\nEOF"],
           ["/bin/gcc", "print.c", "-o", "print"],
@@ -193,7 +196,7 @@ let version = "15.2.0" in
     compile_exec_math =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, binutils, coreutils, grep], # TODO: Some of these need to be runtime_deps
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "cat > math.c << 'EOF'\n#include <stdio.h>\nint main() {\n    int result = 2 + 2;\n    printf(\"%d\", result);\n    return 0;\n}\nEOF"],
           ["/bin/gcc", "math.c", "-o", "math"],
@@ -204,7 +207,7 @@ let version = "15.2.0" in
     compile_exec_linking =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, binutils, coreutils, grep], # TODO: Some of these need to be runtime_deps
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "cat > func.c << 'EOF'\nint multiply(int a, int b) {\n    return a * b;\n}\nEOF"],
           ["/bin/bash", "-c", "cat > main.c << 'EOF'\n#include <stdio.h>\nint multiply(int a, int b);\nint main() {\n    printf(\"%d\", multiply(6, 7));\n    return 0;\n}\nEOF"],
@@ -212,6 +215,21 @@ let version = "15.2.0" in
           ["/bin/gcc", "-c", "main.c", "-o", "main.o"],
           ["/bin/gcc", "main.o", "func.o", "-o", "multi"],
           ["/bin/bash", "-c", "./multi | grep -q '^42$'"],
+        ],
+      } | Test,
+
+    # Only the compiler's own runtime closure may supply as, ld and the kernel headers here.
+    compile_exec_cc_cxx_kernel_headers =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils],
+        cmds = [
+          ["/bin/bash", "-c", "echo 'int main() { return 0; }' > hello.c"],
+          ["/bin/cc", "hello.c", "-o", "hello"],
+          ["/bin/bash", "-c", "./hello"],
+          ["/bin/bash", "-c", "printf '#include <linux/types.h>\\n#include <iostream>\\nint main() { __u32 x = 42; std::cout << x; return 0; }\\n' > hello.cc"],
+          ["/bin/g++", "hello.cc", "-o", "hellocc"],
+          ["/bin/bash", "-c", "test \"$(./hellocc)\" = 42"],
         ],
       } | Test,
   },
