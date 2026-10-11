@@ -1,0 +1,20 @@
+Create missing parents of the gem bindir (backport of RubyGems 4.0's
+ensure_writable_dir). With the site gemrc's `--bindir ~/.local/bin`, a
+`gem install` in a home without ~/.local failed with ENOENT.
+
+--- a/lib/rubygems/installer.rb
++++ b/lib/rubygems/installer.rb
+@@ -955,11 +955,8 @@
+   end
+ 
+   def ensure_writable_dir(dir) # :nodoc:
+-    begin
+-      Dir.mkdir dir, *[options[:dir_mode] && 0755].compact
+-    rescue SystemCallError
+-      raise unless File.directory? dir
+-    end
++    require "fileutils"
++    FileUtils.mkdir_p dir, mode: options[:dir_mode] && 0755
+ 
+     raise Gem::FilePermissionError.new(dir) unless File.writable? dir
+   end
