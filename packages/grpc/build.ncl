@@ -1,6 +1,6 @@
 let { subsetOf, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 
-let version = "1.83.1" in
+let version = "1.84.0" in
 
 let base = import "../base/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
@@ -26,7 +26,7 @@ let python = import "../python/build.ncl" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/grpc/grpc/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "60caa8397426d8a500e3e57ab6a49d1cb5aa62a36f2591eb9da3d77fa38ad8c9",
+      sha256 = "17a4d25717f4871eb71cfdf191f7491f66a59c8ebc782ab53d52fcbfc478959f",
       extract = true,
       strip_prefix = "grpc-%{version}",
     } | Source,
