@@ -1,0 +1,71 @@
+--- a/ghc/rts/Interpreter.c	2026-09-26 08:07:55
++++ b/ghc/rts/Interpreter.c	2026-09-26 08:07:55
+@@ -682,7 +682,7 @@
+                  StgDouble stackDbl, discrDbl;
+                  ASSERT(sizeofW(StgDouble) == StackWord(0));
+                  stackDbl = PK_DBL( & StackWord(1) );
+-                 discrDbl = PK_DBL( & BCO_LIT(discr) );
++                 discrDbl = PK_DBL( (W_*)&literals[discr] );
+                  if (stackDbl >= discrDbl)
+                     bciPtr = failto;
+                  goto nextInsn;
+@@ -694,7 +694,7 @@
+                  StgDouble stackDbl, discrDbl;
+                  ASSERT(sizeofW(StgDouble) == StackWord(0));
+                  stackDbl = PK_DBL( & StackWord(1) );
+-                 discrDbl = PK_DBL( & BCO_LIT(discr) );
++                 discrDbl = PK_DBL( (W_*)&literals[discr] );
+                  if (stackDbl != discrDbl)
+                     bciPtr = failto;
+                  goto nextInsn;
+@@ -706,7 +706,7 @@
+                  StgFloat stackFlt, discrFlt;
+                  ASSERT(sizeofW(StgFloat) == StackWord(0));
+                  stackFlt = PK_FLT( & StackWord(1) );
+-                 discrFlt = PK_FLT( & BCO_LIT(discr) );
++                 discrFlt = PK_FLT( (W_*)&literals[discr] );
+                  if (stackFlt >= discrFlt)
+                     bciPtr = failto;
+                  goto nextInsn;
+@@ -718,7 +718,7 @@
+                  StgFloat stackFlt, discrFlt;
+                  ASSERT(sizeofW(StgFloat) == StackWord(0));
+                  stackFlt = PK_FLT( & StackWord(1) );
+-                 discrFlt = PK_FLT( & BCO_LIT(discr) );
++                 discrFlt = PK_FLT( (W_*)&literals[discr] );
+                  if (stackFlt != discrFlt)
+                     bciPtr = failto;
+                  goto nextInsn;
+--- a/libraries/network/Makefile	2026-09-26 08:07:55
++++ b/libraries/network/Makefile	2026-09-26 08:07:55
+@@ -11,8 +11,8 @@
+ PACKAGE_DEPS	= base
+ 
+ SRC_HC_OPTS	+= -Iinclude -\#include HsNet.h
+-SRC_CC_OPTS     += -Iinclude -I. -I$(GHC_INCLUDE_DIR)
+-SRC_HSC2HS_OPTS += -Iinclude
++SRC_CC_OPTS     += -Iinclude -I. -I$(GHC_INCLUDE_DIR) -D_GNU_SOURCE
++SRC_HSC2HS_OPTS += -Iinclude --cflag=-D_GNU_SOURCE
+ 
+ Network/Socket_HC_OPTS += -cpp
+ 
+--- a/libraries/network/cbits/ancilData.c	2026-09-26 08:07:55
++++ b/libraries/network/cbits/ancilData.c	2026-09-26 08:07:55
+@@ -18,7 +18,7 @@
+  *
+  */
+ 
+-StgInt
++int
+ sendAncillary(int sock,
+ 	      int level,
+ 	      int type,
+@@ -62,7 +62,7 @@
+   return sendmsg(sock,&msg,flags);
+ }
+ 
+-StgInt
++int
+ recvAncillary(int  sock,
+ 	      int* pLevel,
+ 	      int* pType,

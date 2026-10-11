@@ -1,0 +1,18 @@
+--- a/configure	2009-07-14
++++ b/configure	2026-09-30
+@@ -2393,6 +2393,15 @@
+         HostVendor_CPP='unknown'
+         HostOS_CPP='linux'
+         ;;
++aarch64-*-linux*)
++        HostPlatform=aarch64-unknown-linux
++        TargetPlatform=aarch64-unknown-linux
++        BuildPlatform=aarch64-unknown-linux
++        HostPlatform_CPP='aarch64_unknown_linux'
++        HostArch_CPP='aarch64'
++        HostVendor_CPP='unknown'
++        HostOS_CPP='linux'
++        ;;
+ x86_64-*-linux*)
+         HostPlatform=x86_64-unknown-linux
+         TargetPlatform=x86_64-unknown-linux

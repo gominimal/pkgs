@@ -1,0 +1,461 @@
+--- a/ghc/rts/GC.c
++++ b/ghc/rts/GC.c
+@@ -1182,7 +1182,7 @@
+ 	  prev = &old_all_threads;
+ 	  for (t = old_all_threads; t != END_TSO_QUEUE; t = next) {
+ 	      
+-	      (StgClosure *)tmp = isAlive((StgClosure *)t);
++	      tmp = (__typeof__(tmp)) (isAlive((StgClosure *)t));
+ 	      
+ 	      if (tmp != NULL) {
+ 		  t = tmp;
+@@ -1229,7 +1229,7 @@
+ 	  StgTSO *t, *tmp, *next;
+ 	  for (t = old_all_threads; t != END_TSO_QUEUE; t = next) {
+ 	      next = t->global_link;
+-	      (StgClosure *)tmp = evacuate((StgClosure *)t);
++	      tmp = (__typeof__(tmp)) (evacuate((StgClosure *)t));
+ 	      tmp->global_link = resurrected_threads;
+ 	      resurrected_threads = tmp;
+ 	  }
+@@ -1267,7 +1267,7 @@
+       // w might be WEAK, EVACUATED, or DEAD_WEAK (actually CON_STATIC) here
+       ASSERT(w->header.info == &stg_DEAD_WEAK_info 
+ 	     || get_itbl(w)->type == WEAK || get_itbl(w)->type == EVACUATED);
+-      (StgClosure *)w = evacuate((StgClosure *)w);
++      w = (__typeof__(w)) (evacuate((StgClosure *)w));
+       *last_w = w;
+       last_w = &(w->link);
+   }
+@@ -2198,7 +2198,7 @@
+ scavengeTSO (StgTSO *tso)
+ {
+   // chase the link field for any TSOs on the same queue 
+-  (StgClosure *)tso->link = evacuate((StgClosure *)tso->link);
++  tso->link = (__typeof__(tso->link)) (evacuate((StgClosure *)tso->link));
+   if (   tso->why_blocked == BlockedOnMVar
+ 	 || tso->why_blocked == BlockedOnBlackHole
+ 	 || tso->why_blocked == BlockedOnException
+@@ -2271,9 +2271,9 @@
+     { 
+ 	StgMVar *mvar = ((StgMVar *)p);
+ 	evac_gen = 0;
+-	(StgClosure *)mvar->head = evacuate((StgClosure *)mvar->head);
+-	(StgClosure *)mvar->tail = evacuate((StgClosure *)mvar->tail);
+-	(StgClosure *)mvar->value = evacuate((StgClosure *)mvar->value);
++	mvar->head = (__typeof__(mvar->head)) (evacuate((StgClosure *)mvar->head));
++	mvar->tail = (__typeof__(mvar->tail)) (evacuate((StgClosure *)mvar->tail));
++	mvar->value = (__typeof__(mvar->value)) (evacuate((StgClosure *)mvar->value));
+ 	evac_gen = saved_evac_gen;
+ 	recordMutable((StgMutClosure *)mvar);
+ 	failed_to_evac = rtsFalse; // mutable.
+@@ -2344,7 +2344,7 @@
+ 
+ 	end = (P_)((StgClosure *)p)->payload + info->layout.payload.ptrs;
+ 	for (p = (P_)((StgClosure *)p)->payload; p < end; p++) {
+-	    (StgClosure *)*p = evacuate((StgClosure *)*p);
++	    *p = (__typeof__(*p)) (evacuate((StgClosure *)*p));
+ 	}
+ 	p += info->layout.payload.nptrs;
+ 	break;
+@@ -2404,8 +2404,7 @@
+     case BLACKHOLE_BQ:
+     { 
+ 	StgBlockingQueue *bh = (StgBlockingQueue *)p;
+-	(StgClosure *)bh->blocking_queue = 
+-	    evacuate((StgClosure *)bh->blocking_queue);
++	bh->blocking_queue = (__typeof__(bh->blocking_queue)) (evacuate((StgClosure *)bh->blocking_queue));
+ 	recordMutable((StgMutClosure *)bh);
+ 	failed_to_evac = rtsFalse;
+ 	p += BLACKHOLE_sizeW();
+@@ -2447,7 +2446,7 @@
+ 	evac_gen = 0;		// repeatedly mutable 
+ 	next = p + mut_arr_ptrs_sizeW((StgMutArrPtrs*)p);
+ 	for (p = (P_)((StgMutArrPtrs *)p)->payload; p < next; p++) {
+-	    (StgClosure *)*p = evacuate((StgClosure *)*p);
++	    *p = (__typeof__(*p)) (evacuate((StgClosure *)*p));
+ 	}
+ 	evac_gen = saved_evac_gen;
+ 	recordMutable((StgMutClosure *)q);
+@@ -2462,7 +2461,7 @@
+ 
+ 	next = p + mut_arr_ptrs_sizeW((StgMutArrPtrs*)p);
+ 	for (p = (P_)((StgMutArrPtrs *)p)->payload; p < next; p++) {
+-	    (StgClosure *)*p = evacuate((StgClosure *)*p);
++	    *p = (__typeof__(*p)) (evacuate((StgClosure *)*p));
+ 	}
+ 	// it's tempting to recordMutable() if failed_to_evac is
+ 	// false, but that breaks some assumptions (eg. every
+@@ -2492,8 +2491,7 @@
+ 	StgInfoTable *rip = get_closure_info(p, &size, &ptrs, &nonptrs, &vhs, str);
+ #endif
+ 	StgRBH *rbh = (StgRBH *)p;
+-	(StgClosure *)rbh->blocking_queue = 
+-	    evacuate((StgClosure *)rbh->blocking_queue);
++	rbh->blocking_queue = (__typeof__(rbh->blocking_queue)) (evacuate((StgClosure *)rbh->blocking_queue));
+ 	recordMutable((StgMutClosure *)to);
+ 	failed_to_evac = rtsFalse;  // mutable anyhow.
+ 	IF_DEBUG(gc,
+@@ -2508,11 +2506,9 @@
+     { 
+ 	StgBlockedFetch *bf = (StgBlockedFetch *)p;
+ 	// follow the pointer to the node which is being demanded 
+-	(StgClosure *)bf->node = 
+-	    evacuate((StgClosure *)bf->node);
++	bf->node = (__typeof__(bf->node)) (evacuate((StgClosure *)bf->node));
+ 	// follow the link to the rest of the blocking queue 
+-	(StgClosure *)bf->link = 
+-	    evacuate((StgClosure *)bf->link);
++	bf->link = (__typeof__(bf->link)) (evacuate((StgClosure *)bf->link));
+ 	if (failed_to_evac) {
+ 	    failed_to_evac = rtsFalse;
+ 	    recordMutable((StgMutClosure *)bf);
+@@ -2535,8 +2531,7 @@
+     case FETCH_ME_BQ: // cf. BLACKHOLE_BQ
+     { 
+ 	StgFetchMeBlockingQueue *fmbq = (StgFetchMeBlockingQueue *)p;
+-	(StgClosure *)fmbq->blocking_queue = 
+-	    evacuate((StgClosure *)fmbq->blocking_queue);
++	fmbq->blocking_queue = (__typeof__(fmbq->blocking_queue)) (evacuate((StgClosure *)fmbq->blocking_queue));
+ 	if (failed_to_evac) {
+ 	    failed_to_evac = rtsFalse;
+ 	    recordMutable((StgMutClosure *)fmbq);
+@@ -2603,9 +2598,9 @@
+ 	{
+ 	    StgMVar *mvar = ((StgMVar *)p);
+ 	    evac_gen = 0;
+-	    (StgClosure *)mvar->head = evacuate((StgClosure *)mvar->head);
+-	    (StgClosure *)mvar->tail = evacuate((StgClosure *)mvar->tail);
+-	    (StgClosure *)mvar->value = evacuate((StgClosure *)mvar->value);
++	    mvar->head = (__typeof__(mvar->head)) (evacuate((StgClosure *)mvar->head));
++	    mvar->tail = (__typeof__(mvar->tail)) (evacuate((StgClosure *)mvar->tail));
++	    mvar->value = (__typeof__(mvar->value)) (evacuate((StgClosure *)mvar->value));
+ 	    evac_gen = saved_evac_gen;
+ 	    failed_to_evac = rtsFalse; // mutable.
+ 	    break;
+@@ -2653,7 +2648,7 @@
+ 	    
+ 	    end = (P_)((StgClosure *)p)->payload + info->layout.payload.ptrs;
+ 	    for (p = (P_)((StgClosure *)p)->payload; p < end; p++) {
+-		(StgClosure *)*p = evacuate((StgClosure *)*p);
++		*p = (__typeof__(*p)) (evacuate((StgClosure *)*p));
+ 	    }
+ 	    break;
+ 	}
+@@ -2696,8 +2691,7 @@
+ 	case BLACKHOLE_BQ:
+ 	{ 
+ 	    StgBlockingQueue *bh = (StgBlockingQueue *)p;
+-	    (StgClosure *)bh->blocking_queue = 
+-		evacuate((StgClosure *)bh->blocking_queue);
++	    bh->blocking_queue = (__typeof__(bh->blocking_queue)) (evacuate((StgClosure *)bh->blocking_queue));
+ 	    failed_to_evac = rtsFalse;
+ 	    break;
+ 	}
+@@ -2730,7 +2724,7 @@
+ 	    evac_gen = 0;		// repeatedly mutable 
+ 	    next = p + mut_arr_ptrs_sizeW((StgMutArrPtrs*)p);
+ 	    for (p = (P_)((StgMutArrPtrs *)p)->payload; p < next; p++) {
+-		(StgClosure *)*p = evacuate((StgClosure *)*p);
++		*p = (__typeof__(*p)) (evacuate((StgClosure *)*p));
+ 	    }
+ 	    evac_gen = saved_evac_gen;
+ 	    failed_to_evac = rtsFalse; // mutable anyhow.
+@@ -2744,7 +2738,7 @@
+ 	    
+ 	    next = p + mut_arr_ptrs_sizeW((StgMutArrPtrs*)p);
+ 	    for (p = (P_)((StgMutArrPtrs *)p)->payload; p < next; p++) {
+-		(StgClosure *)*p = evacuate((StgClosure *)*p);
++		*p = (__typeof__(*p)) (evacuate((StgClosure *)*p));
+ 	    }
+ 	    break;
+ 	}
+@@ -2768,8 +2762,7 @@
+ 	    StgInfoTable *rip = get_closure_info(p, &size, &ptrs, &nonptrs, &vhs, str);
+ #endif
+ 	    StgRBH *rbh = (StgRBH *)p;
+-	    (StgClosure *)rbh->blocking_queue = 
+-		evacuate((StgClosure *)rbh->blocking_queue);
++	    rbh->blocking_queue = (__typeof__(rbh->blocking_queue)) (evacuate((StgClosure *)rbh->blocking_queue));
+ 	    recordMutable((StgMutClosure *)rbh);
+ 	    failed_to_evac = rtsFalse;  // mutable anyhow.
+ 	    IF_DEBUG(gc,
+@@ -2782,11 +2775,9 @@
+ 	{ 
+ 	    StgBlockedFetch *bf = (StgBlockedFetch *)p;
+ 	    // follow the pointer to the node which is being demanded 
+-	    (StgClosure *)bf->node = 
+-		evacuate((StgClosure *)bf->node);
++	    bf->node = (__typeof__(bf->node)) (evacuate((StgClosure *)bf->node));
+ 	    // follow the link to the rest of the blocking queue 
+-	    (StgClosure *)bf->link = 
+-		evacuate((StgClosure *)bf->link);
++	    bf->link = (__typeof__(bf->link)) (evacuate((StgClosure *)bf->link));
+ 	    if (failed_to_evac) {
+ 		failed_to_evac = rtsFalse;
+ 		recordMutable((StgMutClosure *)bf);
+@@ -2807,8 +2798,7 @@
+ 	case FETCH_ME_BQ: // cf. BLACKHOLE_BQ
+ 	{ 
+ 	    StgFetchMeBlockingQueue *fmbq = (StgFetchMeBlockingQueue *)p;
+-	    (StgClosure *)fmbq->blocking_queue = 
+-		evacuate((StgClosure *)fmbq->blocking_queue);
++	    fmbq->blocking_queue = (__typeof__(fmbq->blocking_queue)) (evacuate((StgClosure *)fmbq->blocking_queue));
+ 	    if (failed_to_evac) {
+ 		failed_to_evac = rtsFalse;
+ 		recordMutable((StgMutClosure *)fmbq);
+@@ -2923,7 +2913,7 @@
+ 	
+ 	end = (StgPtr)((StgClosure *)p)->payload + info->layout.payload.ptrs;
+ 	for (q = (StgPtr)((StgClosure *)p)->payload; q < end; q++) {
+-	    (StgClosure *)*q = evacuate((StgClosure *)*q);
++	    *q = (__typeof__(*q)) (evacuate((StgClosure *)*q));
+ 	}
+ 	break;
+     }
+@@ -2954,7 +2944,7 @@
+ 	recordMutable((StgMutClosure *)p);
+ 	next = p + mut_arr_ptrs_sizeW((StgMutArrPtrs*)p);
+ 	for (p = (P_)((StgMutArrPtrs *)p)->payload; p < next; p++) {
+-	    (StgClosure *)*p = evacuate((StgClosure *)*p);
++	    *p = (__typeof__(*p)) (evacuate((StgClosure *)*p));
+ 	}
+ 	evac_gen = saved_evac_gen;
+ 	failed_to_evac = rtsFalse;
+@@ -2968,7 +2958,7 @@
+       
+ 	next = p + mut_arr_ptrs_sizeW((StgMutArrPtrs*)p);
+ 	for (p = (P_)((StgMutArrPtrs *)p)->payload; p < next; p++) {
+-	    (StgClosure *)*p = evacuate((StgClosure *)*p);
++	    *p = (__typeof__(*p)) (evacuate((StgClosure *)*p));
+ 	}
+ 	break;
+     }
+@@ -3158,7 +3148,7 @@
+ 	
+ 	end = (P_)p + mut_arr_ptrs_sizeW((StgMutArrPtrs*)p);
+ 	for (q = (P_)((StgMutArrPtrs *)p)->payload; q < end; q++) {
+-	  (StgClosure *)*q = evacuate((StgClosure *)*q);
++	  *q = (__typeof__(*q)) (evacuate((StgClosure *)*q));
+ 	}
+ 	continue;
+       }
+@@ -3171,7 +3161,7 @@
+ 	evac_gen = gen->no;
+ 	end = (P_)p + mut_arr_ptrs_sizeW((StgMutArrPtrs*)p);
+ 	for (q = (P_)((StgMutArrPtrs *)p)->payload; q < end; q++) {
+-	  (StgClosure *)*q = evacuate((StgClosure *)*q);
++	  *q = (__typeof__(*q)) (evacuate((StgClosure *)*q));
+ 	}
+ 	evac_gen = 0;
+ 	p->mut_link = NULL;
+@@ -3191,9 +3181,9 @@
+     case MVAR:
+       {
+ 	StgMVar *mvar = (StgMVar *)p;
+-	(StgClosure *)mvar->head = evacuate((StgClosure *)mvar->head);
+-	(StgClosure *)mvar->tail = evacuate((StgClosure *)mvar->tail);
+-	(StgClosure *)mvar->value = evacuate((StgClosure *)mvar->value);
++	mvar->head = (__typeof__(mvar->head)) (evacuate((StgClosure *)mvar->head));
++	mvar->tail = (__typeof__(mvar->tail)) (evacuate((StgClosure *)mvar->tail));
++	mvar->value = (__typeof__(mvar->value)) (evacuate((StgClosure *)mvar->value));
+ 	p->mut_link = gen->mut_list;
+ 	gen->mut_list = p;
+ 	continue;
+@@ -3217,8 +3207,7 @@
+     case BLACKHOLE_BQ:
+       { 
+ 	StgBlockingQueue *bh = (StgBlockingQueue *)p;
+-	(StgClosure *)bh->blocking_queue = 
+-	  evacuate((StgClosure *)bh->blocking_queue);
++	bh->blocking_queue = (__typeof__(bh->blocking_queue)) (evacuate((StgClosure *)bh->blocking_queue));
+ 	p->mut_link = gen->mut_list;
+ 	gen->mut_list = p;
+ 	continue;
+@@ -3254,8 +3243,7 @@
+ 	// char str[80];
+ 	// StgInfoTable *rip = get_closure_info(p, &size, &ptrs, &nonptrs, &vhs, str);
+ 	StgRBH *rbh = (StgRBH *)p;
+-	(StgClosure *)rbh->blocking_queue = 
+-	  evacuate((StgClosure *)rbh->blocking_queue);
++	rbh->blocking_queue = (__typeof__(rbh->blocking_queue)) (evacuate((StgClosure *)rbh->blocking_queue));
+ 	if (failed_to_evac) {
+ 	  failed_to_evac = rtsFalse;
+ 	  recordMutable((StgMutClosure *)rbh);
+@@ -3269,11 +3257,9 @@
+       { 
+ 	StgBlockedFetch *bf = (StgBlockedFetch *)p;
+ 	// follow the pointer to the node which is being demanded 
+-	(StgClosure *)bf->node = 
+-	  evacuate((StgClosure *)bf->node);
++	bf->node = (__typeof__(bf->node)) (evacuate((StgClosure *)bf->node));
+ 	// follow the link to the rest of the blocking queue 
+-	(StgClosure *)bf->link = 
+-	  evacuate((StgClosure *)bf->link);
++	bf->link = (__typeof__(bf->link)) (evacuate((StgClosure *)bf->link));
+ 	if (failed_to_evac) {
+ 	  failed_to_evac = rtsFalse;
+ 	  recordMutable((StgMutClosure *)bf);
+@@ -3293,8 +3279,7 @@
+     case FETCH_ME_BQ: // cf. BLACKHOLE_BQ
+       { 
+ 	StgFetchMeBlockingQueue *fmbq = (StgFetchMeBlockingQueue *)p;
+-	(StgClosure *)fmbq->blocking_queue = 
+-	  evacuate((StgClosure *)fmbq->blocking_queue);
++	fmbq->blocking_queue = (__typeof__(fmbq->blocking_queue)) (evacuate((StgClosure *)fmbq->blocking_queue));
+ 	if (failed_to_evac) {
+ 	  failed_to_evac = rtsFalse;
+ 	  recordMutable((StgMutClosure *)fmbq);
+@@ -3375,7 +3360,7 @@
+ 	next = (P_)p->payload + info->layout.payload.ptrs;
+ 	// evacuate the pointers 
+ 	for (q = (P_)p->payload; q < next; q++) {
+-	  (StgClosure *)*q = evacuate((StgClosure *)*q);
++	  *q = (__typeof__(*q)) (evacuate((StgClosure *)*q));
+ 	}
+ 	break;
+       }
+@@ -3434,7 +3419,7 @@
+       // otherwise, must be a pointer into the allocation space. 
+ #endif
+ 
+-      (StgClosure *)*p = evacuate((StgClosure *)q);
++      *p = (__typeof__(*p)) (evacuate((StgClosure *)q));
+       p++; 
+       continue;
+     }
+@@ -3542,7 +3527,7 @@
+     small_bitmap:
+       while (bitmap != 0) {
+ 	if ((bitmap & 1) == 0) {
+-	  (StgClosure *)*p = evacuate((StgClosure *)*p);
++	  *p = (__typeof__(*p)) (evacuate((StgClosure *)*p));
+ 	}
+ 	p++;
+ 	bitmap = bitmap >> 1;
+@@ -3568,14 +3553,14 @@
+ 	  q = p + BITS_IN(W_);
+ 	  while (bitmap != 0) {
+ 	    if ((bitmap & 1) == 0) {
+-	      (StgClosure *)*p = evacuate((StgClosure *)*p);
++	      *p = (__typeof__(*p)) (evacuate((StgClosure *)*p));
+ 	    }
+ 	    p++;
+ 	    bitmap = bitmap >> 1;
+ 	  }
+ 	  if (i+1 < large_bitmap->size) {
+ 	    while (p < q) {
+-	      (StgClosure *)*p = evacuate((StgClosure *)*p);
++	      *p = (__typeof__(*p)) (evacuate((StgClosure *)*p));
+ 	      p++;
+ 	    }
+ 	  }
+@@ -4088,7 +4073,7 @@
+ 	sp -= 1;
+       }
+     }
+-    (P_)prev_frame = (P_)frame + displacement;
++    prev_frame = (__typeof__(prev_frame)) ((P_)frame + displacement);
+     frame = next_frame;
+   }
+ 
+--- a/ghc/rts/Stable.c
++++ b/ghc/rts/Stable.c
+@@ -190,7 +190,7 @@
+    */
+   p = (StgPtr)removeIndirections((StgClosure*)p);
+ 
+-  (void *)sn = lookupHashTable(addrToStableHash,(W_)p);
++  sn = (__typeof__(sn)) (lookupHashTable(addrToStableHash,(W_)p));
+   
+   if (sn != 0) {
+     ASSERT(stable_ptr_table[sn].addr == p);
+@@ -198,7 +198,7 @@
+     return sn;
+   } else {
+     sn = stable_ptr_free - stable_ptr_table;
+-    (P_)stable_ptr_free  = stable_ptr_free->addr;
++    stable_ptr_free = (__typeof__(stable_ptr_free)) (stable_ptr_free->addr);
+     stable_ptr_table[sn].ref = 0;
+     stable_ptr_table[sn].addr = p;
+     stable_ptr_table[sn].sn_obj = NULL;
+@@ -392,7 +392,7 @@
+ 		    continue;
+ 		    
+ 		} else {
+-		    (StgClosure *)p->addr = isAlive((StgClosure *)p->addr);
++		    p->addr = (__typeof__(p->addr)) (isAlive((StgClosure *)p->addr));
+ 		    IF_DEBUG(stable, fprintf(stderr,"Stable name %d still alive at %p, ref %d\n", p - stable_ptr_table, p->addr, p->ref));
+ 		}
+ 	    }
+--- a/ghc/rts/BlockAlloc.c
++++ b/ghc/rts/BlockAlloc.c
+@@ -262,7 +262,7 @@
+   nat n;
+ 
+   n = p->blocks * BLOCK_SIZE / MBLOCK_SIZE + 1;
+-  for (; n > 0; (W_)p += MBLOCK_SIZE, n--) {
++  for (; n > 0; p = (__typeof__(p)) ((W_)p + MBLOCK_SIZE), n--) {
+     initMBlock((void *)((W_)p & ~MBLOCK_MASK));
+     initGroup(BLOCKS_PER_MBLOCK, p);
+     freeGroup(p);
+@@ -294,7 +294,7 @@
+ 
+   /* Initialise the start field of each block descriptor
+    */
+-  for (; block <= LAST_BLOCK(mblock); bd += 1, (lnat)block += BLOCK_SIZE) {
++  for (; block <= LAST_BLOCK(mblock); bd += 1, block = (__typeof__(block)) ((lnat)block + BLOCK_SIZE)) {
+     bd->start = block;
+   }
+ }
+--- a/ghc/rts/GCCompact.c
++++ b/ghc/rts/GCCompact.c
+@@ -68,7 +68,7 @@
+     StgPtr q = (StgPtr)*p, r;
+     
+     while (((StgWord)q & 1) != 0) {
+-	(StgWord)q -= 1;	// unset the low bit again
++	q = (__typeof__(q)) ((StgWord)q - 1);	// unset the low bit again
+ 	r = (StgPtr)*q;
+ 	*q = (StgWord)free;
+ 	q = r;
+--- a/ghc/rts/PrimOps.hc
++++ b/ghc/rts/PrimOps.hc
+@@ -287,7 +287,7 @@
+      // have to push the object forward one word so that the goods
+      // fall on an 8-byte boundary.
+      if ((sizeof(StgArrWords) & 7) != 0) {
+-	 ((StgPtr)p)++;
++	 p = (__typeof__(p)) ((StgPtr)p + 1);
+      }
+ 
+      SET_HDR(p, &stg_ARR_WORDS_info, CCCS);
+@@ -1457,7 +1457,7 @@
+     sn_obj->sn = index;
+     stable_ptr_table[index].sn_obj = (StgClosure *)sn_obj;
+   } else {
+-    (StgClosure *)sn_obj = stable_ptr_table[index].sn_obj;
++    sn_obj = (__typeof__(sn_obj)) (stable_ptr_table[index].sn_obj);
+   }
+ 
+   TICK_RET_UNBOXED_TUP(1);
+--- a/ghc/rts/Linker.c
++++ b/ghc/rts/Linker.c
+@@ -2491,7 +2491,7 @@
+ 	 } else {
+             /* No, so look up the name in our global table. */
+             symbol = strtab + sym.st_name;
+-            (void*)S = lookupSymbol( symbol );
++            S = (__typeof__(S)) (lookupSymbol( symbol ));
+ 	 }
+          if (!S) {
+             belch("%s: unknown symbol `%s'", oc->fileName, symbol);
+@@ -2585,7 +2585,7 @@
+ 	 } else {
+             /* No, so look up the name in our global table. */
+             symbol = strtab + sym.st_name;
+-            (void*)S = lookupSymbol( symbol );
++            S = (__typeof__(S)) (lookupSymbol( symbol ));
+ 
+ #ifdef ELF_FUNCTION_DESC
+ 	    /* If a function, already a function descriptor - we would
