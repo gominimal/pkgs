@@ -5,7 +5,7 @@ let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = im
 let base = import "../base/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let version = "3.9.9" in
+let version = "3.9.10" in
 {
   name = "prettier",
   build_deps = [
