@@ -1,22 +1,8 @@
 #!/bin/sh
-# ============================================================================================
-# build.sh — jikes-1.22: the ROOT of the JVM ladder (minimermetic#89).
-#
-#   IS:     /usr/lib/jikes-1.22 — IBM's Java compiler, C++ only, built by the seed-rooted B5 gcc
-#           against the B4 glibc sysroot. Every JDK's javac is Java; this is the one that is not.
-#   IS NOT: a JVM, and it cannot compile a real program alone — it needs a class library on its
-#           -bootclasspath (GNU Classpath 0.93, the next rung) and a VM to run the output (jamvm).
-#
-# Chain: hex0 -> ... -> gcc-15.2.0-glibc (B5) -> THIS.
-#
-# ── LESSONS CARRIED FROM go-1.4 / go-1.17.13 (do not regress) ───────────────────────────────
-#  1. NO findutils in the sandbox — only declared build_deps exist. Assert layouts, don't discover.
-#  2. build.sh must be mode 755. 3. Wipe $OUTPUT_DIR first (res-server persists /build).
-#  4. Link every binary against the B4 loader (explicit --dynamic-linker + rpath), the way go-1.4 does.
-# ── LESSONS FROM THE LAB RUN (jvm-root-probe.sh, 2026-09-11) ────────────────────────────────
-#  jikes 1.22 (2005) compiles cleanly with gcc 12 as plain C++; no patches were needed. It was the
-#  only rung of the whole ladder that "just built".
-# ============================================================================================
+# jikes-1.22: the root of the JVM ladder (see build.ncl). IBM's C++ Java compiler, built by
+# gcc-15.2.0-glibc against the glibc-bedrock-2.42 sysroot, installed at /usr/lib/jikes-1.22.
+# Like go-1.4: only declared build_deps exist (no findutils), so layouts are asserted rather than
+# discovered; $OUTPUT_DIR is wiped first; every binary links the bedrock loader explicitly.
 set -ex
 
 # STALE-STATE GUARD: start from an EMPTY output (pure coreutils; no findutils in the sandbox).

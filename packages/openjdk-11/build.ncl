@@ -86,8 +86,6 @@ let amd64_spec =
       python,
       gawk,
       diffutils,
-      gawk,
-      diffutils,
       xz,
       patch,
       zip,
