@@ -160,7 +160,8 @@ find "$DST/ghc-$V" -name '*.hi-boot' -delete 2>/dev/null || true
 find "$DST/ghc-$V" \( -name config.status -o -name config.log -o -name config.cache \) -type f -delete
 # in-place scripts, package.conf.inplace and the makefiles' recorded top and boot compiler: text files carrying the build root
 grep -rlI "$BUILDROOT" "$DST/ghc-$V" | xargs -r sed -i "s|$S2|$PREFIX/ghc-$V|g; s|$BUILDROOT/bin|$PREFIX/bin|g; s|$BUILDROOT/boot1/ghc|$PREFIX/bin/ghc|g"
-grep -rnI "$BUILDROOT" "$DST/ghc-$V" | head -8 | cut -c1-240 | grep . >&2 && { echo "ghc-5.04.3: build-root paths remain in the installed tree" >&2; exit 1; } || true
+# the tree's own paths, not a bare $BUILDROOT: in the sandbox that is /build, which "foldr/build" matches
+grep -rnIF -e "$S2" -e "$BIN" "$DST/ghc-$V" | head -8 | cut -c1-240 | grep . >&2 && { echo "ghc-5.04.3: build-tree paths remain in the installed tree" >&2; exit 1; } || true
 # the next rung's boot: configure reads --version; the in-place scripts carry -B
 cat > "$DST/bin/ghc" <<EOF
 #!/bin/sh

@@ -204,7 +204,9 @@ cp -a "$W" "$DST/w"
 for d in happyB happyC outB outC tests/run T/comp/obj fakebin; do find "$DST/w/$d" -delete 2>/dev/null || true; done
 find "$DST/w" -type f \( -name '*.o' -path '*/T/*' -o -name '*.err' -o -name '*.log' \) -delete
 grep -rlI --exclude='*.hc' --exclude='*.hi' "$W" "$DST/w" | xargs -r sed -i "s|$W|$PREFIX/w|g"
-grep -rlI "$BUILDROOT" "$DST/w" | grep -v '\.hc$' | head -3 | grep -q . && { echo "ghc-4.08.2: build-root paths remain in the installed tree" >&2; exit 1; } || true
+# the tree's own paths, not a bare $BUILDROOT: in the sandbox that is /build, which "foldr/build" matches
+LEFT=$(grep -rlIF -e "$W" -e "$BIN" "$DST/w" | grep -v '\.hc$' | head -3 || true)
+[ -z "$LEFT" ] || { echo "ghc-4.08.2: build-tree paths remain in the installed tree: $LEFT" >&2; exit 1; }
 # the next rung's boot compiler: configure parses "version M.mm, patchlevel P"; everything else goes to the driver
 mkdir -p "$DST/bin" "$DST/lib"
 # the C compiler wrapper the driver runs, with the regenerated libc.so beside it
