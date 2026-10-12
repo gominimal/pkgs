@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let bison = import "../bison/build.ncl" in
 let flex = import "../flex/build.ncl" in
@@ -94,4 +94,8 @@ let version = "15.1.1" in
       license_spdx = "EPL-1.0",
       repology_project = "graphviz",
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/dot -V",
+  },
 } | BuildSpec

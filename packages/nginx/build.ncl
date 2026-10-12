@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
@@ -61,4 +61,8 @@ let version = "1.31.6" in
         repo = "nginx",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/nginx -v",
+  },
 } | BuildSpec

@@ -17,49 +17,36 @@ let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let xz = import "../xz/build.ncl" in
 
-let version = "3.14.7" in
+let version = "3.14.8" in
 {
   name = "python",
   build_deps = [
     { file = "build.sh" } | Local,
-    # CVE-2026-19672 (PSF-2026-38, gh-155999): tarfile's `data`/`tar` filters
-    # create intermediate directories from the member name as given, so a name
-    # that leaves the destination and comes back creates them outside it even
-    # though the resolved-path containment check passes. Upstream fixed it on
-    # the 3.14 branch two weeks AFTER the 3.14.7 tag, so it is in no released
-    # 3.14.x -- it first ships in 3.14.8. Drop this patch on that bump.
-    { file = "0001-gh-155999-tarfile-normalize-parent-dir-components.patch" } | Local,
     # CVE-2026-87910 (PSF-2026-40, gh-157265): when a hard link falls back to
     # extracting a copy of its target, tarfile called the filter with the
     # link's name and threw the result away, so a custom filter that rejects
     # a member by returning None (instead of raising) was ignored. The stock
     # `data`/`tar` filters raise, so only None-returning custom filters are
     # affected. Fixed on main (fb2f0bbc) and 3.13; the 3.14 backport
-    # (python/cpython#157307) is not in any released 3.14.x -- it is expected
-    # in 3.14.8. Drop this patch on that bump.
+    # (python/cpython#157307) is NOT in 3.14.8 -- its Misc/NEWS has no entry for
+    # gh-157265 and this patch still applies cleanly to the 3.14.8 tree. Drop
+    # it on the first 3.14.x whose changelog lists gh-157265.
+    #
+    # The 3.14.7 recipe also carried gh-155999 (tarfile, CVE-2026-19672),
+    # gh-155694 (urllib, CVE-2026-15806), gh-156002 (zipfile, CVE-2026-15310)
+    # and gh-155292 (stringprep, CVE-2026-17084). All four ship in 3.14.8 and
+    # were dropped; their regression tests below stay as guards.
     { file = "0002-gh-157265-tarfile-honor-filter-none-link-fallback.patch" } | Local,
-    # CVE-2026-15806 (PSF-2026-36, gh-155694): urllib's HTTPPasswordMgr
-    # dropped the URL scheme when matching, so credentials added for
-    # https://host/ were handed out for http://host/ and sent in cleartext.
-    # Fixed on the 3.14 branch after the 3.14.7 tag; first ships in 3.14.8.
-    # Drop this patch on the 3.14.8 bump.
-    { file = "0003-gh-155694-urllib-scope-credentials-by-scheme.patch" } | Local,
-    # CVE-2026-15310 (PSF-2026-39, gh-156002): zipfile decompressed
-    # bzip2/LZMA/Zstandard members without a per-read bound, so a tiny member
-    # read in small chunks still expanded into one huge allocation. Carries
-    # the fix AND its follow-up (monkey-patched decompressors), in that order.
-    # Fixed on the 3.14 branch after the 3.14.7 tag; first ships in 3.14.8.
-    # Drop this patch on the 3.14.8 bump.
-    { file = "0004-gh-156002-zipfile-bound-decompression.patch" } | Local,
-    # CVE-2026-17084 (PSF-2026-37, gh-155292): stringprep (IDNA2003 nameprep)
-    # case-folded with the current Unicode instead of the 3.2.0 that RFC 3454
-    # mandates, so labels with post-3.2 case pairs encoded to non-standard
-    # A-labels. Fixed on the 3.14 branch after the 3.14.7 tag; first ships in
-    # 3.14.8. Drop this patch on the 3.14.8 bump.
-    { file = "0005-gh-155292-stringprep-pin-unicode-3.2.patch" } | Local,
+    # CVE-2025-15367 (gh-143923): poplib built each command from caller-supplied
+    # text and sent it unchecked, so a CR/LF inside an argument injected extra
+    # POP3 commands. Fixed on main (b234a2b6, 3.15.0a6) only: the 3.14 branch has
+    # no commit touching poplib.py since 2025-03-02 and 3.14.8's Misc/NEWS has no
+    # entry for gh-143923. A straight cherry-pick; drop it on the first 3.14.x
+    # whose changelog lists gh-143923.
+    { file = "0003-gh-143923-poplib-reject-control-characters.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/Python-%{version}.tar.xz",
-      sha256 = "3b48dac8fb59f62eaa67ac83c1eb12bda1b7a08406dd286e252c11a66be27f81"
+      sha256 = "c2215904f02b175596dc49351585104f4bc20341e1c47378b26a2c274360ce73"
     } | Source,
     base,
     make,
@@ -163,11 +150,9 @@ let version = "3.14.7" in
         ],
       } | Test,
 
-    # CVE-2026-19672 regression. This test FAILS on stock 3.14.7 and passes
-    # only with the gh-155999 patch applied, so it is the thing that would
-    # catch the patch silently going missing on a future bump -- including the
-    # 3.14.8 bump that is supposed to make it redundant, where dropping the
-    # patch is correct but dropping it too early is not.
+    # CVE-2026-19672 regression. FAILS on 3.14.7 and passes on 3.14.8, which
+    # ships the gh-155999 fix (we carried it as a patch until the 3.14.8 bump).
+    # Kept as the guard that the fix is really in the interpreter we ship.
     #
     # The member name leaves the destination and comes back. The resolved path
     # lands inside, so the containment check passes and the FILE is extracted
@@ -218,9 +203,9 @@ let version = "3.14.7" in
         ],
       } | Test,
 
-    # CVE-2026-87910 regression. FAILS on stock 3.14.7 (checked against the
-    # unpatched Lib/tarfile.py) and passes only with the gh-157265 patch, so
-    # it catches the patch going missing on a bump before 3.14.8.
+    # CVE-2026-87910 regression. FAILS on stock 3.14.7 AND 3.14.8 (checked
+    # against the unpatched Lib/tarfile.py) and passes only with the gh-157265
+    # patch, so it catches the patch going missing.
     #
     # `q` is a hard link to the symlink `a/b/s -> ../escape`. `a/b/s` itself
     # is fine (it resolves inside the destination), so linking fails over to
@@ -280,9 +265,55 @@ let version = "3.14.7" in
         ],
       } | Test,
 
-    # CVE-2026-15806 regression: FAILS on stock 3.14.7 (the https
-    # credentials come back for the http URL, and HTTPPasswordMgrWithPriorAuth
-    # pre-emptively sends them), passes only with the gh-155694 patch.
+    # CVE-2025-15367 regression: FAILS on stock 3.14.8 (poplib sends a command
+    # containing CR/LF verbatim, so a username can smuggle in extra POP3
+    # commands) and passes only with the gh-143923 patch. Exercises `_putcmd`
+    # directly -- no network.
+    poplib_rejects_control_characters =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              cat > poc.py <<'PYEOF'
+              import poplib, sys
+
+              class Fake(poplib.POP3):
+                  def __init__(self):
+                      self.encoding = 'UTF-8'
+                      self._debugging = 0
+                      self.sent = []
+                  def _putline(self, line):
+                      self.sent.append(line)
+
+              failures = []
+              f = Fake()
+              f._putcmd('USER alice')
+              if f.sent != [b'USER alice']:
+                  failures.append('a normal command was not sent: %r' % (f.sent,))
+              for bad in ('USER a\r\nDELE 1', 'USER a\nQUIT', 'NOOP\x00', 'USER a\x7f'):
+                  try:
+                      f._putcmd(bad)
+                  except ValueError:
+                      continue
+                  failures.append('control characters were sent: %r' % (bad,))
+
+              for m in failures:
+                  print('FAIL: ' + m, file=sys.stderr)
+              sys.exit(1 if failures else 0)
+              PYEOF
+              python3 poc.py
+            "%
+          ],
+        ],
+      } | Test,
+
+    # CVE-2026-15806 regression: FAILS on 3.14.7 (the https credentials come
+    # back for the http URL, and HTTPPasswordMgrWithPriorAuth pre-emptively
+    # sends them) and passes on 3.14.8, which ships the gh-155694 fix.
     urllib_credentials_scoped_by_scheme =
       {
         class = 'Standalone,
@@ -327,8 +358,9 @@ let version = "3.14.7" in
 
     # CVE-2026-15310 regression: FAILS on stock 3.14.7, where one read(8192)
     # of a 32 MiB all-zero LZMA (and bzip2, if built) member peaks at ~80+ MiB
-    # because the whole first compressed chunk is expanded at once. With the
-    # gh-156002 patch the peak is the decoder state plus one bounded chunk.
+    # because the whole first compressed chunk is expanded at once. 3.14.8
+    # ships the gh-156002 fix: the peak is the decoder state plus one bounded
+    # chunk.
     zipfile_read_bounds_decompression =
       {
         class = 'Standalone,

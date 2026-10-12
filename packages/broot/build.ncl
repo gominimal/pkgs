@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.60.2" in
+let version = "1.61.0" in
 {
   name = "broot",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/Canop/broot/v%{version}.tar.gz",
-      sha256 = "b68f641c4570e2d7bbf90613e67f9cfddf0df42da993913ddc83e7d8a4e5eae6",
+      sha256 = "458f1be5d78fe3b062618e9b1dbc32cf53171b0ca0769b3f32dfae65e753c264",
       extract = true,
       strip_prefix = "broot-%{version}",
     } | Source,
