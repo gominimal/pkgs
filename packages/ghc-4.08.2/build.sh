@@ -49,14 +49,14 @@ command -v cc > /dev/null || ln -s "$(command -v gcc)" $BIN/cc
 
 # --- P0 ---
 for x in $MHS/mhs $MHS/cpphs; do [ -x "$x" ] || { echo "ghc-4.08.2: missing $x (microhs-0.16)" >&2; exit 1; }; done
-for f in ghc-4.08.2-src.tar.bz2 happy-1.16.tar.gz ghc-4.08.2-microhs-overlay.tar.gz gnu-config-config.guess gnu-config-config.sub; do
+for f in ghc-4.08.2-src.tar.bz2 happy-1.16.tar.gz ghc-4.08.2-microhs-overlay-v2.tar.gz gnu-config-config.guess gnu-config-config.sub; do
   [ -f "$f" ] || { echo "ghc-4.08.2: source $f absent" >&2; exit 1; }
 done
 [ -f /usr/include/gmp.h ] || { echo "ghc-4.08.2: gmp.h missing" >&2; exit 1; }
 
 # --- P1 layout ---
 mkdir -p "$W"
-tar xzf ghc-4.08.2-microhs-overlay.tar.gz -C "$W" --no-same-owner     # D S patches tests scripts happy-1.16/{mhs,gen,regen} T/lib/PrelGHC.hi*
+tar xzf ghc-4.08.2-microhs-overlay-v2.tar.gz -C "$W" --no-same-owner    # D S patches tests scripts happy-1.16/{mhs,gen,regen} T/lib/PrelGHC.hi*
 tar xjf ghc-4.08.2-src.tar.bz2 -C "$W" --no-same-owner                 # ghc-4.08.2/
 tar xzf happy-1.16.tar.gz -C "$W" --no-same-owner                      # happy-1.16/ (the overlay dirs inside it survive)
 # the scripts were written for a tree at /w and a MicroHs at /w/MicroHs-0.16.0.0

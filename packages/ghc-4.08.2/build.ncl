@@ -56,8 +56,8 @@ let spec =
         # first-party: what makes 4.08.2 compile on MicroHs and on a 64-bit modern toolchain. Text only; the
         # generators that produced D/ from the compiler sources (step1c.sh, desugar.py, hiboot2hsboot.py) ride along.
         {
-          url = "gs://minimal-staging-archives/ghc-4.08.2-microhs-overlay.tar.gz",
-          sha256 = "2727566c55180867bee9861d485d379d9cab264dc0fab03a5df5a52c1d013a39",
+          url = "gs://minimal-staging-archives/ghc-4.08.2-microhs-overlay-v2.tar.gz",
+          sha256 = "273e9347bd97d3f54cd3e527396562ec6be9312da500e8c64c295fb782f8fb2c",
           extract = false,
         } | Source,
         # the tarball's 2001 config.guess/config.sub predate x86_64; the modern GNU pair replaces them
