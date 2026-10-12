@@ -7,7 +7,6 @@ let automake = import "../automake/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 let make = import "../make/build.ncl" in
-let patch = import "../patch/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -17,16 +16,12 @@ let version = "5.4.0" in
   name = "jemalloc",
   build_deps = [
     { file = "build.sh" } | Local,
-    # gcc-16 build fix — upstream cherry-pick 1a15fe33 (#2900), matching Wolfi.
-    # Inert on gcc-15 (current); prevents FTBFS once gcc bumps to 16.
-    { file = "jemalloc-gcc16-cxx-exceptions.patch" } | Local,
     base,
     autoconf,
     automake,
     libtool,
     m4,
     make,
-    patch,
     pkgconf,
     toolchain,
     glibc,

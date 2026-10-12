@@ -6,9 +6,6 @@ export CFLAGS="${CFLAGS:-} -ffile-prefix-map=$(pwd)=/builddir -gno-record-gcc-sw
 export CXXFLAGS="$CFLAGS"
 export LDFLAGS="${LDFLAGS:-} -Wl,--build-id=none"
 export ARFLAGS=Drc
-# gcc-16 build fix (upstream cherry-pick 1a15fe33 / #2900) — before autogen so
-# the regenerated configure picks up the new JEMALLOC_HAVE_CXX_EXCEPTIONS check.
-patch -Np1 -i "jemalloc-gcc16-cxx-exceptions.patch"
 # The git-archive has no VERSION file; write the real version so configure
 # stamps 5.4.0 (not the "0.0.0-...-missing_version" fallback) into the outputs.
 echo "$MINIMAL_ARG_VERSION" > VERSION
