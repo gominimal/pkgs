@@ -1,5 +1,5 @@
-# AeneasVerif/charon — the OCaml bindings (charon-ml/), pinned to charon 0.1.223
-# (commit 798016509139eb51f0d764645f76d068d34ba5f6, 2026-07-11). Builds the
+# AeneasVerif/charon — the OCaml bindings (charon-ml/), pinned to charon 0.1.281
+# (commit 798016509139eb51f0d764645f76d068d34ba5f6, 2026-10-03). Builds the
 # `charon` findlib lib (LLBC/ULLBC deserialization) + `name_matcher_parser`
 # (ocamllex+menhir grammar). This is the OCaml half only — the `charon` Rust
 # binary that emits .llbc is a separate package (a later Rust PR); aeneas links
@@ -18,7 +18,6 @@ let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let yojson = import "../yojson/build.ncl" in
 let zarith = import "../zarith/build.ncl" in
-let easy_logging = import "../easy_logging/build.ncl" in
 let unionfind = import "../unionfind/build.ncl" in
 let logs = import "../logs/build.ncl" in
 let visitors = import "../visitors/build.ncl" in
@@ -42,7 +41,6 @@ let version = "0.1.281" in
     ocamlfind,
     yojson,
     zarith,
-    easy_logging,
     unionfind,
     logs,
     visitors,
@@ -59,7 +57,6 @@ let version = "0.1.281" in
     ocaml,
     yojson,
     zarith,
-    easy_logging,
     unionfind,
     logs,
     visitors,

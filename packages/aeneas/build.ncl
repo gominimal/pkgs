@@ -1,7 +1,7 @@
 # AeneasVerif/aeneas — translates Rust (via a charon .llbc) to pure functional
 # models for F*/Coq/Lean/HOL4. Pinned to commit
-# d119a474f852781f8ae88a85424f2f8ba8407b82 (2026-07-13), whose `charon-pin`
-# matches our charon-ml 0.1.223 exactly. Sourced from github tarball, mirrored to
+# d119a474f852781f8ae88a85424f2f8ba8407b82 (2026-10-08), whose `charon-pin`
+# (7980165, charon 0.1.281) matches our charon and charon-ml exactly. Sourced from github tarball, mirrored to
 # gs://.
 #
 # build.sh patches out three opam deps that aren't packaged for minimal, none of
@@ -21,6 +21,7 @@ let ocamlfind = import "../ocamlfind/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let charon-ml = import "../charon-ml/build.ncl" in
+let easy_logging = import "../easy_logging/build.ncl" in # src/dune links it directly; charon-ml moved to `logs` at 0.1.281
 let charon = import "../charon/build.ncl" in
 let ocamlgraph = import "../ocamlgraph/build.ncl" in
 let ppx_deriving = import "../ppx_deriving/build.ncl" in
@@ -45,6 +46,7 @@ let version = "20261008" in
     dune,
     ocamlfind,
     charon-ml,
+    easy_logging,
     ocamlgraph,
     ppx_deriving,
     ppx_deriving_yojson,
@@ -63,6 +65,7 @@ let version = "20261008" in
     ocaml,
     zarith,
     charon-ml,
+    easy_logging,
     charon,
   ],
   attrs =

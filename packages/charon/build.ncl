@@ -3,7 +3,7 @@
 # compiler's internal librustc_driver.so), so it builds against the pinned
 # `rust-nightly-charon` toolchain, offline from a vendored crate set.
 #
-# Pinned to commit 798016509139eb51f0d764645f76d068d34ba5f6 (v0.1.223) — the same
+# Pinned to commit 798016509139eb51f0d764645f76d068d34ba5f6 (v0.1.281, 2026-10-03) — the same
 # commit charon-ml is pinned to. Source is the shared AeneasVerif/charon repo
 # tarball; the 347-crate dependency set is vendored (charon-vendor-*.tar.gz) so
 # the build is hermetic + offline (no `needs { internet }`).
