@@ -9,6 +9,11 @@ let rust = import "../rust/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let gdbm = import "../gdbm/build.ncl" in
+# Sessions set LANG=C.UTF-8, which the glibc locale-archive lacks. Without it
+# setlocale fails and Encoding.default_external falls back to US-ASCII, so a
+# Rails app's string handling would depend on whether postgres (the only
+# other carrier) is in the loadout. Until the glibc fold-in lands.
+let glibc-locale-c-utf8 = import "../glibc-locale-c-utf8/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let libyaml = import "../libyaml/build.ncl" in
@@ -40,6 +45,7 @@ let version = "3.3.12" in
   ],
   runtime_deps = [
     glibc,
+    glibc-locale-c-utf8,
     subsetOf gcc ["libgcc", "libstdcpp"],
     gdbm,
     gmp,
@@ -81,7 +87,7 @@ let version = "3.3.12" in
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          ["/bin/bash", "-c", "/usr/bin/ruby --version | grep -q '^ruby 3\\.3\\.12'"],
+          ["/bin/bash", "-c", "/usr/bin/ruby --version | grep -qF 'ruby %{version} '"],
         ],
       } | Test,
 
@@ -91,6 +97,16 @@ let version = "3.3.12" in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "ruby -e 'puts 1+1' | grep -q '^2$'"],
+        ],
+      } | Test,
+
+    # Under the session locale Ruby must read and write UTF-8, not US-ASCII.
+    utf8_default_external =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "LANG=C.UTF-8 LC_ALL=C.UTF-8 ruby -e 'exit(Encoding.default_external == Encoding::UTF_8 ? 0 : 1)'"],
         ],
       } | Test,
 

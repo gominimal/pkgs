@@ -22,10 +22,10 @@ let chromium-headless-shell-bin = import "../chromium-headless-shell-bin/build.n
 #
 # License: the CfT chromedriver zip carries LICENSE.chromedriver, the
 # Chromium BSD-3-Clause grant, with no proprietary terms (unlike the full
-# CfT `chrome` bundle, which ships Widevine). Verified at 153.0.8010.52.
+# CfT `chrome` bundle, which ships Widevine). Verified at 153.0.8010.52; now 155.0.8059.39 (CfT hashes re-checked 2026-10-12).
 #
 # Bump `browser_version` together with chromium-headless-shell-bin.
-let browser_version = "153.0.8010.52" in
+let browser_version = "155.0.8059.39" in
 {
   name = "chromedriver-bin",
   build_deps = [
@@ -34,12 +34,12 @@ let browser_version = "153.0.8010.52" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chromedriver-linux64.zip",
-          sha256 = "7726029da262768fd8770212ac54296f4d31afe790a951f98d5580437da533b1",
+          sha256 = "a65f025c692e686ec2a21fa6b9639c69fa9813683a47af9cabf1ba0b1f453e42",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux-arm64/chromedriver-linux-arm64.zip",
-          sha256 = "e980d699cb5366e2c5e8b985f1eeba1d1ddc9452dc898fdf47a337946007d15a",
+          sha256 = "e375914dc2ee52c38ffc6db4ee8276b462a2872f94ca458c18d787e0f761b129",
         } | Source,
     } target,
     base,
