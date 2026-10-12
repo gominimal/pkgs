@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 
 # TODO: When packaging i see errors like: /usr/bin/bison: m4 subprocess failed: No such file or directory
@@ -85,4 +85,8 @@ let version = "3.8.2" in
         name = "bison",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/bison --version",
+  },
 } | BuildSpec

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let libidn2 = import "../libidn2/build.ncl" in
 let libunistring = import "../libunistring/build.ncl" in
@@ -48,4 +48,8 @@ let version = "0.23.3" in
         repo = "libpsl",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/psl --version",
+  },
 } | BuildSpec

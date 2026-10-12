@@ -39,7 +39,7 @@ let version = "0.1.4" in
       source_provenance = {
         category = 'GithubRepo,
         owner = "BurntSushi",
-        repo = "biff",
+        repo = "bttf",
       },
     } | Attrs,
 } | BuildSpec

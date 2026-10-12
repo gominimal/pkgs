@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let gawk = import "../gawk/build.ncl" in
@@ -59,4 +59,8 @@ let version = "8.10.2" in
         repo = "redis",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/redis-server --version",
+  },
 } | BuildSpec
