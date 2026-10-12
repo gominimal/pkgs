@@ -22,13 +22,43 @@ let gcc = import "../gcc/build.ncl" in
 # pkgmgr: bootstrap_rung = "rust"
 let version = "1.98.1" in
 let stage0_version = "1.97.1" in
-# stage0 by arch.  amd64: the rustc-1.97.1 rung.  arm64: the rung chain is amd64-only, so take the
+# stage0 by arch.  amd64: the rustc-1.97.1 rung, or its sealed bedrock tarball while
+# hex0/amd64-ladder.ncl is off.  arm64: the rung chain is amd64-only, so take the
 # same sha-pinned rustc-1.97.1 bedrock tarball packages/rust 1.98.1 used; build.sh points at its
 # extracted ./rustc-1.97.1-aarch64.  This rung builds on BOTH arches so packages/rust 1.99 gets a
 # 1.98.1 stage0 from the builder on arm64 too, with no new hand-built prebuilt.
 let stage0 =
   match {
-    { arch = 'Amd64, .. } => rustc-1-97-1,
+    { arch = 'Amd64, .. } =>
+      if (import "../hex0/amd64-ladder.ncl").enabled then
+        rustc-1-97-1
+      else
+        # BEDROCK (amd64, interim, see hex0/amd64-ladder.ncl): build-bot's own output of the
+        # rustc-1.97.1 rung (gominimal/pkgs 9d20a830 commit map), sha-pinned. Same layout as the
+        # rung (usr/lib/rustc-1.97.1), so build.sh is unchanged; same runtime deps as the rung.
+        #
+        # LLVM bumpers: unlike the arm64 tarball below, which bundles its own libLLVM.so.21.1,
+        # this one was built `host-llvm: external, link-shared`. It ships only
+        # librustc_driver-*.so and loads the LIVE `llvm` package's libLLVM at run time. With the
+        # chain on, an llvm soname bump rebuilt the rung; with it off, the bump breaks this stage0
+        # (and so rust on amd64) until the tarball is regenerated against the new llvm, or the
+        # switch is flipped back on.
+        (
+          {
+            name = "rustc-1.97.1 (bedrock)",
+            prebuilt = true,
+            build_deps = [
+              {
+                url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/6ec57e96b11bd62097d5f7480909f651ec2537a10ef15224f42be2e674d89d11/rustc-1.97.1-x86_64.tar.zst",
+                sha256 = "6ec57e96b11bd62097d5f7480909f651ec2537a10ef15224f42be2e674d89d11",
+                extract = true,
+              } | Source,
+            ],
+            # = the rung's runtime_deps (rustc-1.97.1/build.ncl amd64_spec).
+            runtime_deps = [libffi, llvm, openssl, sqlite, subsetOf gcc ["libgcc", "libstdcpp"]],
+            outputs = { usr = { glob = "usr/**/*", allow_executable = true } | OutputData },
+          } | BuildSpec
+        ),
     { arch = 'Arm64, .. } =>
       {
         url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/de0724a4bf882c5f4641dc6edd6284ee0fa565a405d4ea264a4f305e3bfe5e6e/rustc-1.97.1-aarch64.tar.zst",

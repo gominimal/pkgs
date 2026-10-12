@@ -64,6 +64,8 @@ in
 # consumes a sha-pinned prebuilt instead, so this spec collapses to an empty collection there.
 match {
   { arch = 'Amd64, .. } =>
+    # While hex0/amd64-ladder.ncl is off, amd64 is an empty stub too: `go`/`rust` take sealed
+    # tarballs of the chain's last rungs instead (see that file).
     if (import "../hex0/amd64-ladder.ncl").enabled then
       amd64_spec
     else

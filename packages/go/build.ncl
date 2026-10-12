@@ -2,7 +2,8 @@ let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = impo
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-# amd64 bootstraps from the go-1.24.9 rung, the top of the go-1.4 -> ... -> 1.24.9 ladder.
+# amd64 bootstraps from the go-1.24.9 rung, the top of the go-1.4 -> ... -> 1.24.9 ladder, or,
+# while hex0/amd64-ladder.ncl is off, from a sealed tarball of that rung's output (below).
 # arm64 bootstraps from a sha-pinned go1.24.9 GOROOT tarball (the Source below): Go 1.5 was the
 # first release with an arm64 port, so the C-hosted go-1.4 root cannot produce one.
 let go-1-24-9 = import "../go-1.24.9/build.ncl" in
