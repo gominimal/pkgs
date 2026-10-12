@@ -21,18 +21,18 @@ See discussion at:
 
 Patch-Source: https://sources.debian.org/data/main/g/gnupg2/2.2.27-2/debian/patches/debian-packaging/avoid-beta-warning.patch
 
---- gnupg-2.4.8.orig/autogen.sh
-+++ gnupg-2.4.8/autogen.sh
-@@ -221,7 +221,7 @@ if [ "$myhost" = "find-version" ]; then
-     esac
+--- gnupg-2.5.24.orig/autogen.sh
++++ gnupg-2.5.24/autogen.sh
+@@ -259,7 +259,7 @@
+     matchexcl="--exclude $package-*beta*"
  
      beta=no
 -    if [ -e .git ]; then
 +    if false; then
        ingit=yes
-       tmp=$(git describe --match "${matchstr1}" --long 2>/dev/null)
-       tmp=$(echo "$tmp" | sed s/^"$package"//)
-@@ -237,8 +237,8 @@ if [ "$myhost" = "find-version" ]; then
+       tmp=$(git describe --match "${matchstr1}" $matchexcl --long 2>/dev/null)
+       if [ -n "$tmp" ]; then
+@@ -285,8 +285,8 @@
        rvd=$((0x$(echo ${rev} | dd bs=1 count=4 2>/dev/null)))
      else
        ingit=no
@@ -40,6 +40,6 @@ Patch-Source: https://sources.debian.org/data/main/g/gnupg2/2.2.27-2/debian/patc
 -      tmp="-unknown"
 +      beta=no
 +      tmp=""
+       cid="0000000"
        rev="0000000"
        rvd="0"
-     fi

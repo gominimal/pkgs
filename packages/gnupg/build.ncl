@@ -42,7 +42,6 @@ let version = "2.5.24" in
   name = "gnupg",
   build_deps = [
     { file = "build.sh" } | Local,
-    { file = "libassun-version.patch" } | Local,
     { file = "0010-avoid-beta-warning.patch" } | Local,
     { file = "0210-dirmngr-hkp-avoid-potential-race-condition-when-some-host-die.patch" } | Local,
     { file = "fix-i18n.patch" } | Local,
