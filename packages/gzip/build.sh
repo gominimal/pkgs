@@ -49,7 +49,9 @@ make -j$(nproc)
 # build looks like. Run the suite, but tolerate a failure ONLY from that test;
 # anything else fails the build with the log. Same pattern as packages/check.
 if ! make check; then
-  unexpected=$(grep '^FAIL:' tests/test-suite.log 2>/dev/null \
+  # ERROR: (a framework failure, exit 99) and XPASS: are failures too; a
+  # FAIL:-only filter let them through whenever pipe-output also failed.
+  unexpected=$(grep -E '^(FAIL|ERROR|XPASS):' tests/test-suite.log 2>/dev/null \
     | grep -v -xE 'FAIL: pipe-output' || true)
   if [ -n "$unexpected" ] || ! grep -q '^FAIL: pipe-output$' tests/test-suite.log 2>/dev/null; then
     echo "UNEXPECTED gzip test failures (not in the known-flaky allowlist):" >&2
