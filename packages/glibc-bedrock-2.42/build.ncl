@@ -154,7 +154,7 @@ match {
               extract = true,
             } | Source,
           ],
-          outputs = amd64_spec.outputs,
+          outputs = all_outputs,
         } | BuildSpec
       ),
   { arch = 'Arm64, .. } =>

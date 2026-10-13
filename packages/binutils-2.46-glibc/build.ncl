@@ -20,6 +20,27 @@ let findutils = import "../findutils/build.ncl" in # mtime guard: find . -exec t
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # configure's awk
 # pkgmgr: bootstrap_rung = "hex0"
 let version = "2.46.0" in
+# Shared by the from-source spec and the sealed (switch-off) spec below.
+let all_runtime_deps = [
+  subsetOf glibc-bedrock ["sysroot_lib"],
+]
+in
+let all_outputs = {
+  # as/ld/ar/nm/objcopy/objdump/ranlib/readelf/strip + addr2line/c++filt/size/strings + the
+  # x86_64-linux-gnu-<tool> symlinks. allow_executable: ELF programs exported as OutputData rather
+  # than OutputBin because consumers reach them by absolute path under this package's own prefix.
+  bin = { glob = "usr/bin/*", allow_executable = true } | OutputData,
+  # libbfd.so*/libopcodes.so* (--enable-shared) plus the .a files
+  libs = { glob = "usr/lib/*.{a,so*}" } | OutputLib,
+  # bfd-plugins dir (--enable-plugins) + ldscripts
+  bfdplugins = { glob = "usr/lib/bfd-plugins/**" } | OutputLib,
+  ldscripts = { glob = "usr/lib/ldscripts/*" } | OutputData,
+  # bfd.h / ansidecl.h / ...
+  headers = { glob = "usr/include/**" } | OutputData,
+  # No etc output: production's etc/gprofng.rc comes from gprofng, which is disabled here, and an
+  # empty glob fails output enumeration.
+}
+in
 let amd64_spec =
   {
     name = "binutils-2.46-glibc",
@@ -55,26 +76,10 @@ let amd64_spec =
     # missing-runtime_deps check fails. Only sysroot_lib: the full glibc-bedrock would put a second
     # usr/include and usr/bin next to the toolchain glibc in every consumer sandbox.
     # find_lib_in_deps globs `**/<soname>`, so the versioned sysroot path matches.
-    runtime_deps = [
-      subsetOf glibc-bedrock ["sysroot_lib"],
-    ],
+    runtime_deps = all_runtime_deps,
 
     cmd = "./build.sh",
-    outputs = {
-      # as/ld/ar/nm/objcopy/objdump/ranlib/readelf/strip + addr2line/c++filt/size/strings + the
-      # x86_64-linux-gnu-<tool> symlinks. allow_executable: ELF programs exported as OutputData rather
-      # than OutputBin because consumers reach them by absolute path under this package's own prefix.
-      bin = { glob = "usr/bin/*", allow_executable = true } | OutputData,
-      # libbfd.so*/libopcodes.so* (--enable-shared) plus the .a files
-      libs = { glob = "usr/lib/*.{a,so*}" } | OutputLib,
-      # bfd-plugins dir (--enable-plugins) + ldscripts
-      bfdplugins = { glob = "usr/lib/bfd-plugins/**" } | OutputLib,
-      ldscripts = { glob = "usr/lib/ldscripts/*" } | OutputData,
-      # bfd.h / ansidecl.h / ...
-      headers = { glob = "usr/include/**" } | OutputData,
-      # No etc output: production's etc/gprofng.rc comes from gprofng, which is disabled here, and an
-      # empty glob fails output enumeration.
-    },
+    outputs = all_outputs,
     attrs =
       {
         upstream_version = version,
@@ -109,8 +114,8 @@ match {
               extract = true,
             } | Source,
           ],
-          runtime_deps = amd64_spec.runtime_deps,
-          outputs = amd64_spec.outputs,
+          runtime_deps = all_runtime_deps,
+          outputs = all_outputs,
         } | BuildSpec
       ),
   { arch = 'Arm64, .. } =>
