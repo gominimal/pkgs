@@ -97,7 +97,6 @@ open(p,'w').write(s); sys.exit(0 if n==1 or '$1_filename :=' in s else 1)   # up
 PPEOF
 # hotspot takes gcc/g++ from PATH (hence CCDIR), the rest from CC/CXX
 export JAVA_HOME="${BOOT}" PATH="${BOOT}/bin:${CCDIR}:${PATH}"
-export SOURCE_DATE_EPOCH=315532802   # 1980-01-01T00:00:02Z, the earliest date jmod --date accepts; JDK 13+ configure reads it
 # --- configure + make ---
 # extra-cflags come last in the JDK's CFLAGS: gnu17 keeps gcc 15 off C23 (K&R `()` prototypes in libnet's gio
 # shims), and gcc 14's incompatible-pointer-types error is a warning again (jtreg's libTestJNI.c)
