@@ -11,10 +11,11 @@
 # and backed up build-bot. The tarballs are build-bot's own outputs of those
 # rungs at gominimal/pkgs 9d20a830 (sha = its commit map).
 #
-# NEW CONSUMERS: anything that imports a chain package (e.g. the jvm ladder's
-# gcc-15.2.0-glibc / binutils-2.46-glibc / glibc-bedrock-2.42 roots) gets an
-# EMPTY stub on amd64 while this is off. Git cannot see that; give it a sealed
-# tarball the same way, or flip this back first.
+# NEW CONSUMERS: the three bedrock roots (gcc-15.2.0-glibc, binutils-2.46-glibc,
+# glibc-bedrock-2.42) take the same sealed artifacts the production toolchain
+# anchors on, so importing them works either way. Every OTHER chain package is
+# an EMPTY stub on amd64 while this is off, and git cannot see that: give a new
+# consumer of one a sealed tarball the same way, or flip this back first.
 #
 # The amd64 rustc tarball loads the LIVE llvm's libLLVM (see rustc-1.98.1):
 # an llvm soname bump needs the tarball regenerated while this is off.
