@@ -145,6 +145,7 @@ cp -a $TREE "$DST/ghc-$V"
 find "$DST/ghc-$V" \( -name '*.o' -o -name '*.hc' -o -name '*.log' -o -name '*_stub.c' \) -type f -delete
 find "$DST/ghc-$V/compiler/stage1" -delete 2>/dev/null || true   # the compiler 5.04.3 built; stage 2 is the product
 find "$DST/ghc-$V" \( -name config.status -o -name config.log -o -name config.cache \) -type f -delete   # configure's records
+find "$DST/ghc-$V" -xtype l -delete   # links into what was pruned (compiler/ghc-inplace -> stage1/)
 # NUL-separated: file names may contain spaces
 grep -rlIZF -e "$TREE" -e "$BUILDROOT/bin" -e "$BUILDROOT/home" "$DST/ghc-$V" | xargs -0 -r sed -i "s|$TREE|$PREFIX/ghc-$V|g; s|$BUILDROOT/bin|$PREFIX/bin|g; s|$BUILDROOT/home|/tmp|g"
 # the tree's own paths, not a bare $BUILDROOT: in the sandbox that is /build, which "foldr/build" matches
