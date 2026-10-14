@@ -17,6 +17,7 @@ let automake = import "../automake/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let make = import "../make/build.ncl" in
+let llvm = import "../llvm/build.ncl" in
 let ghc-9-6-7 = import "../ghc-9.6.7/build.ncl" in # the boot: the top of the source-only ladder
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # the amd64 boot's binaries and C wrapper use its sysroot
 let happy = import "../happy/build.ncl" in
@@ -65,6 +66,7 @@ let version = "9.10.3" in
         { arch = 'Arm64, .. } =>
           [
             ghc-9-6-7,
+            llvm, # ld.lld: the ghc-9.6.7 boot's settings link with it (build-time only; see build.sh)
             {
               url = "https://downloads.haskell.org/~ghc/%{version}/hadrian-bootstrap-sources/hadrian-bootstrap-sources-9.6.4.tar.gz",
               sha256 = "1bac1634cf6a396e77df044d57a96757e84f5d0cf4f1c113637dde5bee7104ee",

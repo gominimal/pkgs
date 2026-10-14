@@ -86,8 +86,9 @@ cd $TREE
 # host-named subdirectory, where the Makefile's header copy and libtool install are pointed
 if [ $PA = aarch64 ]; then
   rm libffi/libffi-3.0.8.tar.gz; cp $BUILDROOT/libffi-3.5.2.tar.gz libffi/
-  sed -i 's|$(CP) build/include/ffi.h \.|$(CP) build/*/include/ffi.h build/*/include/ffitarget.h .|; s|(cd build; \./libtool|(cd build/*/; ./libtool|' libffi/Makefile
-  grep -q 'build/\*/include/ffitarget.h' libffi/Makefile && grep -q 'cd build/\*/; ./libtool' libffi/Makefile || { echo "ghc-6.10.4: libffi Makefile repoint did not apply" >&2; exit 1; }
+  # build/ also holds libffi's per-subdir dirs: name the host dir (bash's cd rejects several arguments), and fail if cd does
+  sed -i 's|$(CP) build/include/ffi.h \.|$(CP) build/aarch64-*/include/ffi.h build/aarch64-*/include/ffitarget.h .|; s|(cd build; \./libtool|(cd build/aarch64-*/ \&\& ./libtool|' libffi/Makefile
+  grep -q 'build/aarch64-\*/include/ffitarget.h' libffi/Makefile && grep -q 'cd build/aarch64-\*/ && ./libtool' libffi/Makefile || { echo "ghc-6.10.4: libffi Makefile repoint did not apply" >&2; exit 1; }
 fi
 CC=gcc89 ./configure $CFGTR --with-ghc=$BOOTDIR/ghc --with-gcc=gcc89 > configure.log 2>&1 || { tail -20 configure.log >&2; echo "ghc-6.10.4: configure failed" >&2; exit 1; }
 grep -a 'checking for ghc-pkg' configure.log | grep -q "$BOOTDIR" || { echo "ghc-6.10.4: configure did not take the boot ghc-pkg" >&2; exit 1; }

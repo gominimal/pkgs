@@ -12,6 +12,7 @@ let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.
 let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
 let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
+let llvm = import "../llvm/build.ncl" in
 let gmp = import "../gmp/build.ncl" in # integer-gmp
 let ncurses = import "../ncurses/build.ncl" in # terminfo
 let bash = import "../bash/build.ncl" in
@@ -35,7 +36,8 @@ let m4 = import "../m4/build.ncl" in
 let version = "9.6.7" in
 let is_arm = target.arch == 'Arm64 in
 # x86_64 compiles with the bedrock gcc against its glibc sysroot; aarch64 with the toolchain, itself hex0-rooted
-let cc_build = if is_arm then [toolchain] else [gcc-bedrock, binutils-bedrock, glibc-bedrock] in
+# aarch64: llvm for ld.lld, which the ghc-9.2.8 boot's settings link with (-fuse-ld=lld)
+let cc_build = if is_arm then [toolchain, llvm] else [gcc-bedrock, binutils-bedrock, glibc-bedrock] in
 let spec =
   {
     name = "ghc-9.6.7",

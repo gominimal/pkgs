@@ -100,9 +100,13 @@ if [ -n "$PSEUDO_LIBS" ]; then
   fi
 fi
 
-# Now we can configure GHC.
+# Now we can configure GHC. On aarch64 lld is in the build closure (the boot links with it) but not a
+# runtime dep, so the shipped settings must not pick it up.
+LDOPT=()
+[ "$(uname -m)" = aarch64 ] && LDOPT=(--disable-ld-override)
 ./configure \
   --prefix=/usr \
+  "${LDOPT[@]}" \
   GHC="${BOOT}"
 
 # Hadrian flags. These MUST be identical for the build and the install invocation:
@@ -120,6 +124,14 @@ _build/bin/hadrian "${HADRIAN_FLAGS[@]}"
 
 # And install!
 DESTDIR=$OUTPUT_DIR _build/bin/hadrian "${HADRIAN_FLAGS[@]}" install --prefix=/usr
+
+if [ "$(uname -m)" = aarch64 ]; then
+  S="$(find "$OUTPUT_DIR" -type f -name settings -path '*/lib/*' | head -1)"
+  if [ -n "$S" ] && grep -q 'lld' "$S"; then
+    echo "ERROR: the shipped settings link with lld, which is not a runtime dep: $S" >&2
+    exit 1
+  fi
+fi
 
 # Refresh the package database cache so downstream builds don't see stale cache warnings
 GHC_PKG="$(find "$OUTPUT_DIR" -name ghc-pkg -type f | head -1)"
