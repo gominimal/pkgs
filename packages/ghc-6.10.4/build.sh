@@ -111,7 +111,7 @@ GhcHcOpts           += +RTS -K512m -M8g -RTS -pgmP cpp-gap
 GhcLibHcOpts        += +RTS -K512m -RTS -pgmP cpp-gap
 GhcStage2HcOpts     += +RTS -K512m -RTS -pgmP cpp-gap
 EOF
-make > all.log 2>&1 || { grep -aiE 'error:|\*\*\*|panic|Segmentation|not in scope|parse error' all.log | grep -v warning | head -12 >&2; echo "ghc-6.10.4: make failed" >&2; exit 1; }
+make > all.log 2>&1 || { tail -30 all.log >&2; grep -aiE 'error:|\*\*\*|panic|Segmentation|not in scope|parse error' all.log | grep -v warning | head -12 >&2; echo "ghc-6.10.4: make failed" >&2; exit 1; }
 G=$TREE/ghc/stage2-inplace/ghc   # 6.10 moved the in-place compiler out of compiler/
 $G --version 2>&1 | grep -q "version $V" || { echo "ghc-6.10.4: stage 2 compiler does not report $V" >&2; exit 1; }
 
