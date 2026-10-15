@@ -117,6 +117,12 @@ cargo run --release -p cargo-verus -- build --release --manifest-path vstd/Cargo
 
 mkdir -p "$VDIR"
 cp -R target-verus/release/. "$VDIR/"
+# Cargo's bookkeeping came along with the release dir: .fingerprint/ carries build
+# timestamps and dep-info hashes that differ on every build (2026-10 prod-pair diff:
+# 31 of the 33 differing files), incremental/ and build/ hold compiler scratch, the
+# .d files are make-style dep lists with build paths. verus loads none of them.
+rm -r -f "$VDIR/.fingerprint" "$VDIR/incremental" "$VDIR/build"
+find "$VDIR" -maxdepth 2 -name '*.d' -type f -delete
 
 # 5. PATH wrappers.
 mkdir -p "$OUTPUT_DIR/usr/bin"
