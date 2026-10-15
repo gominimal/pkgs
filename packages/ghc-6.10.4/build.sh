@@ -48,6 +48,10 @@ esac
 [ -x $BOOTDIR/ghc ] && [ -x $BOOTDIR/ghc-pkg ] || { echo "ghc-6.10.4: no boot compiler at $BOOTDIR (ghc-6.6.1)" >&2; exit 1; }
 $BOOTDIR/ghc --version 2>&1 | grep -q 'version 6.6.1' || { echo "ghc-6.10.4: boot compiler is not 6.6.1" >&2; exit 1; }
 [ -f ghc-$V-src.tar.bz2 ] || { echo "ghc-6.10.4: source absent" >&2; exit 1; }
+# the bootstrapping Cabal preprocesses hpc's .hsc with the hsc2hs on PATH: the boot tree's own
+H=/usr/lib/ghc-6.6.1/ghc-6.6.1/utils/hsc2hs/hsc2hs-inplace
+[ -x $H ] || { echo "ghc-6.10.4: no hsc2hs in the boot tree ($H)" >&2; exit 1; }
+ln -sf $H $BIN/hsc2hs
 [ -f /usr/include/curses.h ] || { echo "ghc-6.10.4: curses.h missing (terminfo)" >&2; exit 1; }
 [ -f /usr/include/gmp.h ] || { echo "ghc-6.10.4: gmp.h missing" >&2; exit 1; }
 
