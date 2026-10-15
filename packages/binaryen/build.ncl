@@ -9,7 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 
 # Binaryen tags its releases version_<N>; the directory and the tag both use
 # that form, so the bare number is kept separate from the tag it builds.
-let version = "124" in
+let version = "133" in
 {
   name = "binaryen",
 
@@ -17,7 +17,7 @@ let version = "124" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/WebAssembly/binaryen/archive/refs/tags/version_%{version}.tar.gz",
-      sha256 = "b8d06af81a8c2bb27c34d1f9e3cf7c621f93fc901f896809e0490f3586a63ca4",
+      sha256 = "2f3e3d9edc56751499571da073a8a81943ca3fcbc08a945d2c619a7a1d4eb88b",
       extract = true,
       strip_prefix = "binaryen-version_%{version}",
     } | Source,

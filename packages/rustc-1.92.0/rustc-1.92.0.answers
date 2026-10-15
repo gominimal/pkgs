@@ -1,0 +1,9 @@
+# rustc-1.92.0.answers — byte-seal pins for packages/rustc-1.92.0, in `sha256sum` format.
+# build.sh P6 runs `sha256sum -c` on this file from ${OUTPUT_DIR} when it contains a `<64 hex>  <path>`
+# line; with none present the seal is skipped.  To arm: add `{ file = "rustc-1.92.0.answers" } | Local`
+# to build.ncl's build_deps and paste the two sums below, uncommented.
+# Pin only bin/rustc and bin/cargo; lib/rustlib/** is covered transitively by them.
+#
+# UNPINNED
+# usr/lib/rustc-1.92.0/bin/rustc
+# usr/lib/rustc-1.92.0/bin/cargo

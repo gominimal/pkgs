@@ -1,4 +1,5 @@
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let curl = import "../curl/build.ncl" in
@@ -8,40 +9,56 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let python = import "../python/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
+let libssh2 = import "../libssh2/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-
-let version = "1.98.1" in
+let rustc-1-98-1 = import "../rustc-1.98.1/build.ncl" in # the stage0
+let version = "1.99.0" in
 {
   name = "rust",
-  build_deps = [
-    { file = "bootstrap.toml" } | Local,
-    { file = "build.sh" } | Local,
+  build_deps =
+    [
+      { file = "bootstrap.toml" } | Local,
+      { file = "build.sh" } | Local,
+      {
+        url = "gs://minimal-staging-archives/rustc-%{version}-src.tar.xz",
+        sha256 = "cc41916a8c84f5d9ec4f55561b44e39f43b647b133f8a6f51be9ea13c83f7036",
+        extract = true,
+        strip_prefix = "rustc-%{version}-src",
+      } | Source,
+      base,
+      cmake,
+      curl,
+      # the stage0 cargo is dynamically linked against libssh2.so.1
+      libssh2,
+      pkgconf,
+      python,
+      toolchain,
+    ]
+    # stage0 = the rustc-1.98.1 rung on BOTH arches (1.99.0's src/stage0 pins 1.98.0; x.py's
+    # check_stage0_version accepts any 1.98.x).  amd64: built by the chain gcc-15.2.0 -> mrustc
+    # 0.12.0 -> rustc-1.90.0 -> ... -> 1.97.1 -> 1.98.1, or, while hex0/amd64-ladder.ncl is off,
+    # from the sealed rustc-1.97.1 bedrock tarball (see rustc-1.98.1/build.ncl).  arm64: the rung builds from the sha-pinned
+    # rustc-1.97.1 bedrock tarball, so no new hand-built prebuilt is needed.  build.sh injects it into
+    # bootstrap.toml [build] rustc/cargo; x.py never downloads a stage0.
+    @ [rustc-1-98-1],
+  # The build itself is offline (build.sh stubs curl/wget/git and fails on any attempt). The flags stay
+  # because the builder grants a package network access when ANY of its dependencies declares it, and
+  # the Rust programs that depend on this package still fetch their crates during their own builds.
+  needs =
     {
-      url = "gs://minimal-staging-archives/rustc-%{version}-src.tar.xz",
-      sha256 = "be1816e7f6c40abb90245ad6e024bed2a7e88d7dda4561e4d5470207df616b9f",
-      extract = true,
-      strip_prefix = "rustc-%{version}-src",
-    } | Source,
-    base,
-    cmake,
-    curl,
-    pkgconf,
-    python,
-    toolchain,
-  ],
+      dns = {},
+      internet = {},
+    } | Needs,
   runtime_deps = [
+    # libssh2 must also be a runtime dep: the shipped cargo carries a DT_NEEDED on libssh2.so.1.
+    libssh2,
     libffi,
     llvm,
     openssl,
     sqlite,
     subsetOf gcc ["libgcc", "libstdcpp"],
   ],
-  needs =
-    {
-      dns = {},
-      internet = {},
-    } | Needs,
 
   cmd = "./build.sh",
   outputs = {

@@ -54,6 +54,7 @@ let version = "4.0.6" in
     ruby_data = { glob = "usr/lib/ruby/**", allow_executable = true } | OutputData,
     includes = { glob = "usr/include/ruby*/**" } | OutputData,
     pkgconfigs = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
+    gemrc = { glob = "usr/etc/gemrc" } | OutputData,
   },
 
   attrs =
@@ -82,6 +83,40 @@ let version = "4.0.6" in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "ruby -e 'puts 1+1' | grep -q '^2$'"],
+        ],
+      } | Test,
+
+    # `gem install` puts a gem's executable in ~/.local/bin, where the session
+    # PATH resolves it, even when the user's own gemrc sets `gem:` flags; and
+    # `gem uninstall` removes it again (gominimal/inbox#584).
+    gem_global_install =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              # Standalone tests run with the build-sandbox env (HOME=/state/home,
+              # no ~/.local/bin on PATH), so each lookup below spells out a
+              # session-like PATH that carries ~/.local/bin.
+              printf 'gem: --no-document\n' > "$HOME/.gemrc"
+              mkdir -p /tmp/g/bin && cd /tmp/g
+              printf '#!/usr/bin/env ruby\nputs "ok"\n' > bin/gbin && chmod +x bin/gbin
+              printf '%s\n' 'Gem::Specification.new do |s|' \
+                '  s.name = "gbin"; s.version = "0.0.1"; s.summary = "t"; s.authors = ["t"]' \
+                '  s.files = ["bin/gbin"]; s.executables = ["gbin"]' \
+                'end' > gbin.gemspec
+              gem build gbin.gemspec
+              gem install --local ./gbin-0.0.1.gem
+              test "$(PATH=/usr/bin:/bin:$HOME/.local/bin command -v gbin)" = "$HOME/.local/bin/gbin"
+              test "$(PATH=/usr/bin:/bin:$HOME/.local/bin gbin)" = ok
+              gem uninstall -x gbin
+              test ! -e "$HOME/.local/bin/gbin"
+            "%
+          ],
         ],
       } | Test,
   },

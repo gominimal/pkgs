@@ -16,7 +16,7 @@ let glibc = import "../glibc/build.ncl" in
 #    declared no runtime_deps).
 # Source points at the upstream release asset directly (like ghidra) rather than
 # a gs:// mirror — acceptable for this low-churn, no-CVE package.
-let version = "1.19.0" in
+let version = "1.21.1" in
 {
   name = "varlock",
   build_deps = [
@@ -25,12 +25,12 @@ let version = "1.19.0" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://github.com/dmno-dev/varlock/releases/download/varlock%40%{version}/varlock-linux-x64.tar.gz",
-          sha256 = "a47efbb732325c65b1f557d3479cd99bab8859220d15622bdeeb9206d810b44a",
+          sha256 = "3920b4696e1922287402113dad73a31b7dea94973ccbba8f2628020a20d2243a",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://github.com/dmno-dev/varlock/releases/download/varlock%40%{version}/varlock-linux-arm64.tar.gz",
-          sha256 = "9b15499e8e916166857a459f36f59f544bc0a1b074d875f8b10504c1afdfe222",
+          sha256 = "01dfd04aa833c445e1f11d7206f80b4ef5f7793161abcd1cc5b76e3b9346225c",
         } | Source,
     } target,
     base,

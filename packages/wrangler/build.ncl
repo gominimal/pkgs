@@ -3,7 +3,7 @@ let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 
-let version = "4.125.0" in
+let version = "4.135.0" in
 {
   name = "wrangler",
   build_deps = [

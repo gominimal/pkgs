@@ -1,0 +1,32 @@
+#if __TINYC__
+/* amd64 fix: mes's stack-based va_list (char*, &last+8) assumes all varargs sit contiguous on the
+   stack (the mescc/i386 convention), but tcc-mes emits the SysV amd64 ABI (varargs in registers
+   rdi-r9, then stack) -> tcc-mes-compiled vfprintf/snprintf read phantom stack slots -> crash. Use
+   tcc-0.9.26's OWN SysV-correct va_list (verbatim from its include/stdarg.h; __va_start/__va_arg
+   live in libtcc1.a). mescc does NOT define __TINYC__, so it keeps the stack version (R1 unaffected). */
+typedef struct {
+    unsigned int gp_offset;
+    unsigned int fp_offset;
+    union {
+        unsigned int overflow_offset;
+        char *overflow_arg_area;
+    };
+    char *reg_save_area;
+} __va_list_struct;
+typedef __va_list_struct va_list[1];
+void __va_start(__va_list_struct *ap, void *fp);
+void *__va_arg(__va_list_struct *ap, int arg_type, int size, int align);
+#define va_start(ap, last) __va_start(ap, __builtin_frame_address(0))
+#define va_arg(ap, type) (*(type *)(__va_arg(ap, __builtin_va_arg_types(type), sizeof(type), __alignof__(type))))
+#define va_arg8(ap, type) va_arg(ap, type)
+#define va_copy(dest, src) (*(dest) = *(src))
+#define va_end(ap)
+#else
+typedef char *va_list;
+#define va_start(ap, last) (void)((ap) = (char*)(&(last)) + sizeof (void*))
+#define va_arg(ap, type) (type)(((long*)((ap) = ((ap) + sizeof (void*))))[-1])
+#define va_align(ap, alignment) ((char*)((((unsigned long) (ap)) + (alignment) - 1) &~ ((alignment) - 1)))
+#define va_arg8(ap, type) (type)(((double*)((ap) = (va_align((ap), 8) + sizeof(double))))[-1])
+#define va_end(ap) (void)((ap) = 0)
+#define va_copy(dest, src) dest = src
+#endif

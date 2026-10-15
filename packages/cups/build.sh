@@ -10,6 +10,9 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
+# Upstream fix for the 2.4.20 no-DNS-SD build break (OpenPrinting/cups#1740); see build.ncl.
+patch -Np1 -i ./0001-dest-enumeration-without-dnssd.patch
+
 ./configure --prefix=/usr \
             --disable-static \
             --with-tls=openssl \

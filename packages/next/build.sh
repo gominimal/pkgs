@@ -76,7 +76,16 @@ echo '{"private":true}' > package.json
 
 # Install sharp without scripts (skip prebuilt download), then compile native addon.
 # Use npm here (not pnpm) so node_modules is flat, avoiding pnpm symlinks in the output.
-npm install --ignore-scripts sharp node-addon-api node-gyp
+#
+# PINNED, exact versions: an unpinned `npm install sharp` floats to whatever npm
+# has today, so the build is neither reproducible nor stable. sharp 0.35.5
+# (2026-09-27) raised its floor to libvips >=8.18.7 and every rebuild of next
+# after that FTBFS on `#error "libvips version 8.18.7+ is required"` against our
+# libvips 8.18.6. Move SHARP_VERSION together with packages/libvips: it must
+# satisfy next's own `optionalDependencies.sharp` range AND sharp's
+# `config.libvips` floor (`npm view sharp@<v> config.libvips`).
+SHARP_VERSION=0.35.4
+npm install --ignore-scripts "sharp@$SHARP_VERSION" node-addon-api@8.9.2 node-gyp@13.0.2
 export PATH="$SHARP_STAGING/node_modules/.bin:$PATH"
 cd node_modules/sharp
 

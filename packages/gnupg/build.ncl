@@ -34,15 +34,14 @@ let patch = import "../patch/build.ncl" in
 # the rule never fires and we keep the complete docs.
 #
 # It is also better provenance: gnupg.org publishes a detached PGP signature
-# (gnupg-2.4.9.tar.bz2.sig) alongside it, while GitHub's archive/refs/tags
+# (gnupg-2.5.24.tar.bz2.sig) alongside it, while GitHub's archive/refs/tags
 # tarballs are generated on demand, unsigned, and have changed compression in
 # the past — silently changing the sha256 for an unchanged tag.
-let version = "2.4.9" in
+let version = "2.5.24" in
 {
   name = "gnupg",
   build_deps = [
     { file = "build.sh" } | Local,
-    { file = "libassun-version.patch" } | Local,
     { file = "0010-avoid-beta-warning.patch" } | Local,
     { file = "0210-dirmngr-hkp-avoid-potential-race-condition-when-some-host-die.patch" } | Local,
     { file = "fix-i18n.patch" } | Local,
@@ -79,7 +78,7 @@ let version = "2.4.9" in
     patch,
     {
       url = "gs://minimal-staging-archives/gnupg-%{version}.tar.bz2",
-      sha256 = "dd17ab2e9a04fd79d39d853f599cbc852062ddb9ab52a4ddeb4176fd8b302964",
+      sha256 = "bf149d01a2b9fcc0e4589b8ae8697d3d5c557ea48ed95a3fa55dd3b1187e6039",
       extract = true,
       strip_prefix = "gnupg-%{version}",
     } | Source,

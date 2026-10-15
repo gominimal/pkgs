@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let attr = import "../attr/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
@@ -89,4 +89,8 @@ let version = "2.4.0" in
         usr = { glob = "usr/**/*" } | OutputLib,
       },
     } | BuildSpec,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/getfacl --version",
+  },
 } | BuildSpec

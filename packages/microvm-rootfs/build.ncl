@@ -87,7 +87,10 @@ in
     # shells out to git; e2fsprogs for mkfs.ext4, which the guest uses to format
     # the per-VM writable volume (/dev/vdb) on first boot; iproute2-minimal and
     # util-linux-misc for the real ip and nsenter (network/namespace plumbing —
-    # busybox's applets are subsets); fstrim to reclaim space from /dev/vdb.
+    # busybox's applets are subsets); fstrim to reclaim space from /dev/vdb;
+    # nftables for nft, which the guest minimald uses to load its host-address
+    # classifier table (`socket cgroupv2` matches need NFT_SOCKET in the
+    # virtio-linux kernel).
     apk
       "bash-5.3.9-r1"
       "95f4f976bdf2f4ca18ff41c32916eb6d7b12a0dae12504d55d04427460d6542f"
@@ -109,11 +112,15 @@ in
       "5ef23a7fd11df32dae739de6f3faca463711809eeab0391c38ad268636ee0b70"
       "7a40bb386c19e7945e09683402adf2e30b15ce0003267376aa758280ce96dc27",
     apk
+      "nftables-1.1.6-r1"
+      "e350dc0ae7667486f925a6719add6df562055799baf0e402077ef2b11839ac9e"
+      "edca96e6160479bd734bb6cdb8412f84f689c6a771fdec75ce2c1c18f3e7cf42",
+    apk
       "util-linux-misc-2.42.3-r1"
       "b04d1b39317348f03872bcafb5f5662d0e3f957b44469bef70a688c8a54a7e71"
       "8cba67c052d9932c61db6b32f3a6042b62cca642f16479ba066c59a5a97ffc55",
 
-    # Shared-library closure of the six packages above, resolved against the
+    # Shared-library closure of the seven packages above, resolved against the
     # v3.24 main APKINDEX. Alpine deps are recorded as sonames, so this is the
     # transitive set needed for them to load — nothing here is a direct guest
     # tool. It must be re-resolved as a unit on an Alpine bump.
@@ -129,6 +136,14 @@ in
       "e2fsprogs-libs-1.47.4-r0"
       "52124971ae397d599aadd79263fcd68fc9e271922ccf8185b124f35fe24c60c8"
       "2e067395a6981b06cfd2cd3abf0e6c6574f7ef64d02e01f75fc5323d4a337fb9",
+    apk
+      "gmp-6.3.0-r4"
+      "4dab6e86b850fe1b5bc0cf2fac17efa4d7f648bea44f3d9019694cc1e1cb12b7"
+      "85323ef5bce8ff234736dc2d6592ea37aebdc6348a531e27430bdfe38364d256",
+    apk
+      "jansson-2.15.0-r0"
+      "a13822f5ca1772cced4bb7d3d178ec5dee770d8accba5b4816b2ddc413e6f055"
+      "7681b41486e1f2b2efce11875c839533464ae8857d30fc49130f0039c6585fdb",
     apk
       "libblkid-2.42.3-r1"
       "9d0f24976c575c53c12526b6e078edf34c980c153bc8e5f1c1053cbece5b8cfa"
@@ -177,6 +192,10 @@ in
       "libncursesw-6.6_p20260516-r0"
       "51a7aa4b3ec40b144d0801c0544e0a9f62e2a41d04b6067bb5e95786040741c6"
       "cf8caa8a88bc4ce9d9e395567fefaf9ef7fbd55c50ae6155b35c1b58f3755023",
+    apk
+      "libnftnl-1.3.1-r0"
+      "8b31395671e910c294d7f0e29d3ac3c7efe9d89264db255f39aa9944dd4b6cac"
+      "2f4cf35959fde00fdba0dd35ef12a6739739b504e8319c97e30bd4834f98d924",
     apk
       "libpsl-0.21.5-r3"
       "b31e91371425d5f80c1db5cba2a849956b65c802add0b49de844b2ca961aa8da"

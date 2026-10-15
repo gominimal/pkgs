@@ -1,0 +1,2 @@
+# Byte-identity pins for stage0-gcc-4.7.4. Unpinned: capture cc1/cc1plus/xgcc/libgcc.a shas from a
+# first build and pin them here, then enable the sha256sum gate in build.sh.

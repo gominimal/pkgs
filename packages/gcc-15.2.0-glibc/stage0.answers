@@ -1,0 +1,5 @@
+# No byte-identity pins for gcc-15.2.0-glibc. It is built by stage0-gcc-15.2.0, a different compiler
+# than the one that built the prebuilt gcc, so byte parity with the prebuilt is not expected and
+# build.sh has no `sha256sum -c` gate. build.sh enforces a functional gate instead: cross-DSO C++
+# exception handling through the fresh libgcc_s.so.1, backtrace(3), long-double/%.17g/%a printf,
+# and __thread TLS across two translation units. Nothing to pin here.

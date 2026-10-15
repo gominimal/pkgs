@@ -1,0 +1,9 @@
+# Checked from $OUTPUT_DIR by `sha256sum -c` in build.sh; a mismatch fails the build.
+# No upstream amd64 reference exists (live-bootstrap builds musl for i386 only), so these
+# values were recorded from this recipe's own build and confirmed by a second identical build.
+e12bb52caa7d870be51dd1246142044b95b7ee44a953e630805da6f1816d44ca  usr/lib/libc.a
+c5b1dbf178abecda16bfe7e4028fecd8ce975a2e45c9b09c2d34635f39574adb  usr/lib/crt1.o
+8c243a82aa43a9d72ff580c168c1627dbb7a64d43447f5d84a2f721b16c6db37  usr/lib/crti.o
+d6646d8b28bae17ff833effbed132fbf7eaacc592eac56f0931b8ec914f61237  usr/lib/crtn.o
+# Scrt1.o and rcrt1.o are not built (skip-pic-crt.patch). The stub archives from makefile.patch
+# are zero-byte files and are not pinned individually.

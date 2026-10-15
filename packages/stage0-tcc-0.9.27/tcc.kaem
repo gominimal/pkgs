@@ -1,0 +1,145 @@
+# tcc.kaem: stage0-tcc-0.9.27 driver, derived from live-bootstrap steps/tcc-0.9.27/pass1.kaem.
+# Run by /usr/bin/kaem --strict, so every non-zero child aborts the build.
+# tcc-0.9.26 compiles mainline tcc-0.9.27 in one shot; tcc-0.9.27 then rebuilds mes-libc with
+# -c/-ar only (it links no executable here). See build.ncl for the patch-set rationale.
+# phases: env, patches, tcc-0.9.27 compile, mes-libc rebuild, sha gate.
+set -ex
+
+# env: no mescc, so no MES_PREFIX/GUILE_LOAD_PATH/arena settings.
+ARCH=amd64
+PREFIX=/usr
+OUTPUT_DIR=/build/output
+# /usr is read-only: tcc-0.9.27 and the rebuilt mes-libc are written to the staging tree under OUTPUT_DIR.
+BINDIR=/build/output/usr/bin
+LIBDIR=/build/output/usr/lib/mes
+# staging bin (fresh tcc/tcc-0.9.27) plus the consumer /usr/bin (tcc-0.9.26, kaem tools, coreutils).
+PATH=/build/output/usr/bin:/usr/bin
+TCC_PKG=tcc-0.9.27
+MES_PKG=mes-0.27.1
+# amd64 arm of upstream's if/match, hardcoded.
+MES_ARCH=x86_64
+TCC_TARGET_ARCH=X86_64
+HAVE_LONG_LONG=1
+
+# staging dirs must exist before the first write.
+mkdir -p ${BINDIR}
+mkdir -p ${LIBDIR}
+
+# Source{extract=true} already unpacked both trees as siblings at /build (CWD), so upstream's
+# mkdir/unbz2/ungz/untar step is dropped; the relative cd hops below resolve as upstream.
+
+# --- patches ---
+# tcctools.c: relocate the -ar archiver's fopen() (compiled via ONE_SOURCE, so load-bearing).
+simple-patch ${TCC_PKG}/tcctools.c remove-fileopen.before remove-fileopen.after
+simple-patch ${TCC_PKG}/tcctools.c addback-fileopen.before addback-fileopen.after
+# tccelf.c: upstream's fiwix paddr handling + null-reloc guard.
+simple-patch ${TCC_PKG}/tccelf.c fiwix-paddr.before fiwix-paddr.after
+simple-patch ${TCC_PKG}/tccelf.c check-reloc-null.before check-reloc-null.after
+# upstream's three tcc-0.9.27 patches from live-bootstrap steps/tcc-0.9.27/patches, as
+# simple-patch pairs (hunk bodies unchanged):
+#   ignore-static-inside-array (tccgen.c post_type): skip static/const/volatile/restrict/'*' inside
+#     array parameter brackets; without it tcc-0.9.27 segfaults on musl's `char buf[static N]`.
+#   dont-skip-weak-symbols-ar (tcctools.c): index STB_WEAK symbols in `tcc -ar` archives so
+#     musl's weak-alias-heavy libc.a links.
+#   static-link (libtcc.c): default s->static_link=1 (mes libc is static-only).
+simple-patch ${TCC_PKG}/tccgen.c ignore-static-inside-array.before ignore-static-inside-array.after
+simple-patch ${TCC_PKG}/tcctools.c dont-skip-weak-symbols-ar.before dont-skip-weak-symbols-ar.after
+simple-patch ${TCC_PKG}/libtcc.c static-link.before static-link.after
+# tccgen.c case '-': negate a float constant by flipping its sign bit. tcc-0.9.26 folds -0.0 to
+# NaN, so the IEEE subtract(-0,x) path rejects negated float literals in static initializers
+# as non-constant (and segfaults) on musl's math tables.
+simple-patch ${TCC_PKG}/tccgen.c neg-float-const.before neg-float-const.after
+# tccgen.c gen_cast signed-int->float: direct signed cast instead of the `-(long double)-x`
+# trick, which folds to NaN under tcc-0.9.26 for the same reason.
+simple-patch ${TCC_PKG}/tccgen.c cast-signed-direct.before cast-signed-direct.after
+
+# empty config.h for both trees: BOOTSTRAP/HAVE_* defines arrive via -D.
+catm ${TCC_PKG}/config.h
+catm ${MES_PKG}/include/mes/config.h
+
+# --- compile tcc-0.9.27 with tcc-0.9.26 ---
+# tcc-0.9.26 bakes CONFIG_TCC_CRTPREFIX=/usr/lib/mes and TCC_LIBGCC=/usr/lib/mes/libc.a, so it
+# links this static tcc-0.9.27 against the read-only consumer mes-libc. The -D CONFIG_* below
+# are baked into tcc-0.9.27 and point at the consumer /usr/lib/mes for the musl rungs.
+# -I: mes headers from stage0-mes's single-writer sysroot, never the merged /usr/include, whose
+# owner is a first-writer-wins draw against coreutils' glibc headers. `.` first keeps tcc's own
+# headers ahead of the libc tree.
+cd ${TCC_PKG}
+# -w: tcc-0.9.26's warning formatter goes through the mes-libc va_list path and crashes on the
+# first warning; tcc-0.9.27's source trips one. Warnings do not affect codegen.
+tcc-0.9.26 \
+    -v \
+    -w \
+    -static \
+    -o ${BINDIR}/tcc \
+    -D TCC_TARGET_${TCC_TARGET_ARCH}=1 \
+    -D CONFIG_TCCDIR=\"/usr/lib/mes/tcc\" \
+    -D CONFIG_TCC_CRTPREFIX=\"/usr/lib/mes\" \
+    -D CONFIG_TCC_ELFINTERP=\"/mes/loader\" \
+    -D CONFIG_TCC_LIBPATHS=\"/usr/lib/mes:/usr/lib/mes/tcc\" \
+    -D CONFIG_TCC_SYSINCLUDEPATHS=\"${PREFIX}/include/mes\" \
+    -D TCC_LIBGCC=\"/usr/lib/mes/libc.a\" \
+    -D CONFIG_TCC_STATIC=1 \
+    -D CONFIG_USE_LIBGCC=1 \
+    -D TCC_VERSION=\"0.9.27\" \
+    -D ONE_SOURCE=1 \
+    -I . \
+    -I /usr/lib/mes-bedrock/include \
+    -I /usr/lib/mes-bedrock/include/mes \
+    tcc.c
+chmod 755 ${BINDIR}/tcc
+cp ${BINDIR}/tcc ${BINDIR}/tcc-0.9.27
+chmod 755 ${BINDIR}/tcc-0.9.27
+
+# test the fresh tcc-0.9.27
+tcc -version
+
+# --- rebuild the mes C library with tcc-0.9.27 ---
+cd ../${MES_PKG}
+
+# Populate include/arch/ as mes configure.sh does; dirent.h includes <arch/syscall.h>.
+mkdir -p include/arch
+cp include/linux/${MES_ARCH}/kernel-stat.h include/arch/kernel-stat.h
+cp include/linux/${MES_ARCH}/signal.h include/arch/signal.h
+cp include/linux/${MES_ARCH}/syscall.h include/arch/syscall.h
+
+# reused patches (see build.ncl): basic-asm setjmp, and mes stdarg.h -> SysV under __TINYC__.
+# cwd is ${MES_PKG}; the Local patch files are one level up.
+simple-patch lib/${MES_ARCH}-mes-gcc/setjmp.c ../fix-setjmp.before ../fix-setjmp.after
+simple-patch include/stdarg.h ../fix-stdarg.before ../fix-stdarg.after
+
+# unified libc file: the same mes-0.27.1 amd64 file list as stage0-tcc-0.9.26.
+cd lib
+catm ../unified-libc.c ctype/isalnum.c ctype/isalpha.c ctype/isascii.c ctype/iscntrl.c ctype/isdigit.c ctype/isgraph.c ctype/islower.c ctype/isnumber.c ctype/isprint.c ctype/ispunct.c ctype/isspace.c ctype/isupper.c ctype/isxdigit.c ctype/tolower.c ctype/toupper.c dirent/closedir.c dirent/__getdirentries.c dirent/opendir.c linux/readdir.c linux/access.c linux/brk.c linux/chdir.c linux/chmod.c linux/clock_gettime.c linux/close.c linux/dup2.c linux/dup.c linux/execve.c linux/fcntl.c linux/fork.c linux/fsync.c linux/fstat.c linux/_getcwd.c linux/getdents.c linux/getegid.c linux/geteuid.c linux/getgid.c linux/getpid.c linux/getppid.c linux/getrusage.c linux/gettimeofday.c linux/getuid.c linux/ioctl.c linux/ioctl3.c linux/kill.c linux/link.c linux/lseek.c linux/lstat.c linux/malloc.c linux/mkdir.c linux/mknod.c linux/nanosleep.c linux/_open3.c linux/pipe.c linux/_read.c linux/readlink.c linux/rename.c linux/rmdir.c linux/setgid.c linux/settimer.c linux/setuid.c linux/signal.c linux/sigprogmask.c linux/symlink.c linux/stat.c linux/time.c linux/unlink.c linux/waitpid.c linux/wait4.c linux/${MES_ARCH}-mes-gcc/_exit.c linux/${MES_ARCH}-mes-gcc/syscall.c linux/${MES_ARCH}-mes-gcc/_write.c math/ceil.c math/fabs.c math/floor.c mes/abtod.c mes/abtol.c mes/__assert_fail.c mes/assert_msg.c mes/__buffered_read.c mes/__init_io.c mes/cast.c mes/dtoab.c mes/eputc.c mes/eputs.c mes/fdgetc.c mes/fdgets.c mes/fdputc.c mes/fdputs.c mes/fdungetc.c mes/globals.c mes/itoa.c mes/ltoab.c mes/ltoa.c mes/__mes_debug.c mes/mes_open.c mes/ntoab.c mes/oputc.c mes/oputs.c mes/search-path.c mes/ultoa.c mes/utoa.c posix/alarm.c posix/buffered-read.c posix/execl.c posix/execlp.c posix/execv.c posix/execvp.c posix/getcwd.c posix/getenv.c posix/isatty.c posix/mktemp.c posix/open.c posix/pathconf.c posix/raise.c posix/sbrk.c posix/setenv.c posix/sleep.c posix/unsetenv.c posix/wait.c posix/write.c stdio/clearerr.c stdio/fclose.c stdio/fdopen.c stdio/feof.c stdio/ferror.c stdio/fflush.c stdio/fgetc.c stdio/fgets.c stdio/fileno.c stdio/fopen.c stdio/fprintf.c stdio/fputc.c stdio/fputs.c stdio/fread.c stdio/freopen.c stdio/fscanf.c stdio/fseek.c stdio/ftell.c stdio/fwrite.c stdio/getc.c stdio/getchar.c stdio/perror.c stdio/printf.c stdio/putc.c stdio/putchar.c stdio/remove.c stdio/snprintf.c stdio/sprintf.c stdio/sscanf.c stdio/ungetc.c stdio/vfprintf.c stdio/vfscanf.c stdio/vprintf.c stdio/vsnprintf.c stdio/vsprintf.c stdio/vsscanf.c stdlib/abort.c stdlib/abs.c stdlib/alloca.c stdlib/atexit.c stdlib/atof.c stdlib/atoi.c stdlib/atol.c stdlib/calloc.c stdlib/__exit.c stdlib/exit.c stdlib/free.c stdlib/mbstowcs.c stdlib/puts.c stdlib/qsort.c stdlib/realloc.c stdlib/strtod.c stdlib/strtof.c stdlib/strtol.c stdlib/strtold.c stdlib/strtoll.c stdlib/strtoul.c stdlib/strtoull.c string/bcmp.c string/bcopy.c string/bzero.c string/index.c string/memchr.c string/memcmp.c string/memcpy.c string/memmem.c string/memmove.c string/memset.c string/rindex.c string/strcat.c string/strchr.c string/strcmp.c string/strcpy.c string/strcspn.c string/strdup.c string/strerror.c string/strlen.c string/strlwr.c string/strncat.c string/strncmp.c string/strncpy.c string/strpbrk.c string/strrchr.c string/strspn.c string/strstr.c string/strupr.c stub/atan2.c stub/bsearch.c stub/chown.c stub/__cleanup.c stub/cos.c stub/ctime.c stub/exp.c stub/fpurge.c stub/freadahead.c stub/frexp.c stub/getgrgid.c stub/getgrnam.c stub/getlogin.c stub/getpgid.c stub/getpgrp.c stub/getpwnam.c stub/getpwuid.c stub/gmtime.c stub/ldexp.c stub/localtime.c stub/log.c stub/mktime.c stub/modf.c stub/mprotect.c stub/pclose.c stub/popen.c stub/pow.c stub/putenv.c stub/rand.c stub/realpath.c stub/rewind.c stub/setbuf.c stub/setgrent.c stub/setlocale.c stub/setvbuf.c stub/sigaction.c stub/sigaddset.c stub/sigblock.c stub/sigdelset.c stub/sigemptyset.c stub/sigsetmask.c stub/sin.c stub/sys_siglist.c stub/system.c stub/sqrt.c stub/strftime.c stub/times.c stub/ttyname.c stub/umask.c stub/utime.c ${MES_ARCH}-mes-gcc/setjmp.c
+cd ..
+
+# crt1.o
+tcc -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o ${LIBDIR}/crt1.o lib/linux/${MES_ARCH}-mes-gcc/crt1.c
+# crtn.o/crti.o are empty on amd64 (no x86_64 crtn.c/crti.c); catm them empty.
+catm ${LIBDIR}/crtn.o
+catm ${LIBDIR}/crti.o
+
+# libc.a. -w: unified-libc.c's redefined-macro warnings would hit the same warning-formatter crash.
+tcc -w -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} -o unified-libc.o unified-libc.c
+tcc -ar cr ${LIBDIR}/libc.a unified-libc.o
+
+# libtcc1.a: tcc-0.9.27's own libtcc1.c + va_list.o (the x86_64 set; i386 omits va_list.o).
+mkdir ${LIBDIR}/tcc
+tcc -c -D TCC_TARGET_${TCC_TARGET_ARCH}=1 -o libtcc1.o ../${TCC_PKG}/lib/libtcc1.c
+tcc -c -D TCC_TARGET_${TCC_TARGET_ARCH}=1 -o va_list.o ../${TCC_PKG}/lib/va_list.c
+tcc -ar cr ${LIBDIR}/tcc/libtcc1.a libtcc1.o va_list.o
+
+# libgetopt.a
+tcc -c -D HAVE_CONFIG_H=1 -I include -I include/linux/${MES_ARCH} lib/posix/getopt.c
+tcc -ar cr ${LIBDIR}/libgetopt.a getopt.o
+
+# return to /build absolutely: our trees and the Local files sit there, one level shallower than upstream.
+cd /build
+
+# Byte-identity gate. amd64 has no upstream fixed point (live-bootstrap ships only an x86
+# checksum), so stage0.answers holds the values recorded from this recipe's own build.
+# Paths are the staging paths.
+sha256sum -c stage0.answers
+
+# Every output was written directly into OUTPUT_DIR, so there is no copy step; build.ncl's
+# outputs globs match the on-disk tree.

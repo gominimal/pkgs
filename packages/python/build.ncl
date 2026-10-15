@@ -17,21 +17,36 @@ let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let xz = import "../xz/build.ncl" in
 
-let version = "3.14.7" in
+let version = "3.14.8" in
 {
   name = "python",
   build_deps = [
     { file = "build.sh" } | Local,
-    # CVE-2026-19672 (PSF-2026-38, gh-155999): tarfile's `data`/`tar` filters
-    # create intermediate directories from the member name as given, so a name
-    # that leaves the destination and comes back creates them outside it even
-    # though the resolved-path containment check passes. Upstream fixed it on
-    # the 3.14 branch two weeks AFTER the 3.14.7 tag, so it is in no released
-    # 3.14.x -- it first ships in 3.14.8. Drop this patch on that bump.
-    { file = "0001-gh-155999-tarfile-normalize-parent-dir-components.patch" } | Local,
+    # CVE-2026-87910 (PSF-2026-40, gh-157265): when a hard link falls back to
+    # extracting a copy of its target, tarfile called the filter with the
+    # link's name and threw the result away, so a custom filter that rejects
+    # a member by returning None (instead of raising) was ignored. The stock
+    # `data`/`tar` filters raise, so only None-returning custom filters are
+    # affected. Fixed on main (fb2f0bbc) and 3.13; the 3.14 backport
+    # (python/cpython#157307) is NOT in 3.14.8 -- its Misc/NEWS has no entry for
+    # gh-157265 and this patch still applies cleanly to the 3.14.8 tree. Drop
+    # it on the first 3.14.x whose changelog lists gh-157265.
+    #
+    # The 3.14.7 recipe also carried gh-155999 (tarfile, CVE-2026-19672),
+    # gh-155694 (urllib, CVE-2026-15806), gh-156002 (zipfile, CVE-2026-15310)
+    # and gh-155292 (stringprep, CVE-2026-17084). All four ship in 3.14.8 and
+    # were dropped; their regression tests below stay as guards.
+    { file = "0002-gh-157265-tarfile-honor-filter-none-link-fallback.patch" } | Local,
+    # CVE-2025-15367 (gh-143923): poplib built each command from caller-supplied
+    # text and sent it unchecked, so a CR/LF inside an argument injected extra
+    # POP3 commands. Fixed on main (b234a2b6, 3.15.0a6) only: the 3.14 branch has
+    # no commit touching poplib.py since 2025-03-02 and 3.14.8's Misc/NEWS has no
+    # entry for gh-143923. A straight cherry-pick; drop it on the first 3.14.x
+    # whose changelog lists gh-143923.
+    { file = "0003-gh-143923-poplib-reject-control-characters.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/Python-%{version}.tar.xz",
-      sha256 = "3b48dac8fb59f62eaa67ac83c1eb12bda1b7a08406dd286e252c11a66be27f81"
+      sha256 = "c2215904f02b175596dc49351585104f4bc20341e1c47378b26a2c274360ce73"
     } | Source,
     base,
     make,
@@ -102,6 +117,16 @@ let version = "3.14.7" in
         ],
       } | Test,
 
+    # base carries tzdata, so zoneinfo resolves IANA zone names without extra packages
+    smoketest_zoneinfo =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/python3", "-c", "import zoneinfo; zoneinfo.ZoneInfo('Europe/Paris')"],
+        ],
+      } | Test,
+
     smoketest_math =
       {
         class = 'Standalone,
@@ -125,11 +150,9 @@ let version = "3.14.7" in
         ],
       } | Test,
 
-    # CVE-2026-19672 regression. This test FAILS on stock 3.14.7 and passes
-    # only with the gh-155999 patch applied, so it is the thing that would
-    # catch the patch silently going missing on a future bump -- including the
-    # 3.14.8 bump that is supposed to make it redundant, where dropping the
-    # patch is correct but dropping it too early is not.
+    # CVE-2026-19672 regression. FAILS on 3.14.7 and passes on 3.14.8, which
+    # ships the gh-155999 fix (we carried it as a patch until the 3.14.8 bump).
+    # Kept as the guard that the fix is really in the interpreter we ship.
     #
     # The member name leaves the destination and comes back. The resolved path
     # lands inside, so the containment check passes and the FILE is extracted
@@ -172,6 +195,278 @@ let version = "3.14.7" in
 
               for f in failures:
                   print('FAIL: ' + f)
+              sys.exit(1 if failures else 0)
+              PYEOF
+              python3 poc.py
+            "%
+          ],
+        ],
+      } | Test,
+
+    # CVE-2026-87910 regression. FAILS on stock 3.14.7 AND 3.14.8 (checked
+    # against the unpatched Lib/tarfile.py) and passes only with the gh-157265
+    # patch, so it catches the patch going missing.
+    #
+    # `q` is a hard link to the symlink `a/b/s -> ../escape`. `a/b/s` itself
+    # is fine (it resolves inside the destination), so linking fails over to
+    # extracting a copy as `q`, where `../escape` DOES leave the destination.
+    # The filter rejects that by returning None; unpatched tarfile ignores
+    # the None and creates `q -> ../escape` anyway.
+    tarfile_link_fallback_honors_filter_none =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              cat > poc.py <<'PYEOF'
+              import io, os, sys, tarfile, tempfile
+
+              work = tempfile.mkdtemp()
+              dest = os.path.join(work, 'dest')
+              os.makedirs(dest)
+
+              buf = io.BytesIO()
+              with tarfile.open(fileobj=buf, mode='w') as tf:
+                  s = tarfile.TarInfo('a/b/s')
+                  s.type = tarfile.SYMTYPE
+                  s.linkname = '../escape'
+                  tf.addfile(s)
+                  q = tarfile.TarInfo('q')
+                  q.type = tarfile.LNKTYPE
+                  q.linkname = 'a/b/s'
+                  tf.addfile(q)
+              buf.seek(0)
+
+              def skip_unsafe(member, path):
+                  try:
+                      return tarfile.data_filter(member, path)
+                  except tarfile.FilterError:
+                      return None
+
+              with tarfile.open(fileobj=buf, mode='r') as tf:
+                  tf.extractall(dest, filter=skip_unsafe)
+
+              failures = []
+              if os.path.lexists(os.path.join(dest, 'q')):
+                  failures.append('rejected link fallback extracted anyway as dest/q')
+              if os.readlink(os.path.join(dest, 'a', 'b', 's')) != '../escape':
+                  failures.append('expected dest/a/b/s -> ../escape')
+
+              for f in failures:
+                  print('FAIL: ' + f)
+              sys.exit(1 if failures else 0)
+              PYEOF
+              python3 poc.py
+            "%
+          ],
+        ],
+      } | Test,
+
+    # CVE-2025-15367 regression: FAILS on stock 3.14.8 (poplib sends a command
+    # containing CR/LF verbatim, so a username can smuggle in extra POP3
+    # commands) and passes only with the gh-143923 patch. Exercises `_putcmd`
+    # directly -- no network.
+    poplib_rejects_control_characters =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              cat > poc.py <<'PYEOF'
+              import poplib, sys
+
+              class Fake(poplib.POP3):
+                  def __init__(self):
+                      self.encoding = 'UTF-8'
+                      self._debugging = 0
+                      self.sent = []
+                  def _putline(self, line):
+                      self.sent.append(line)
+
+              failures = []
+              f = Fake()
+              f._putcmd('USER alice')
+              if f.sent != [b'USER alice']:
+                  failures.append('a normal command was not sent: %r' % (f.sent,))
+              for bad in ('USER a\r\nDELE 1', 'USER a\nQUIT', 'NOOP\x00', 'USER a\x7f'):
+                  try:
+                      f._putcmd(bad)
+                  except ValueError:
+                      continue
+                  failures.append('control characters were sent: %r' % (bad,))
+
+              for m in failures:
+                  print('FAIL: ' + m, file=sys.stderr)
+              sys.exit(1 if failures else 0)
+              PYEOF
+              python3 poc.py
+            "%
+          ],
+        ],
+      } | Test,
+
+    # CVE-2026-15806 regression: FAILS on 3.14.7 (the https credentials come
+    # back for the http URL, and HTTPPasswordMgrWithPriorAuth pre-emptively
+    # sends them) and passes on 3.14.8, which ships the gh-155694 fix.
+    urllib_credentials_scoped_by_scheme =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              cat > poc.py <<'PYEOF'
+              import sys, urllib.request
+
+              failures = []
+              mgr = urllib.request.HTTPPasswordMgr()
+              mgr.add_password('realm', 'https://example.com/', 'user', 'secret')
+              got = mgr.find_user_password('realm', 'https://example.com/')
+              if got != ('user', 'secret'):
+                  failures.append('https credentials not found for https URL: %r' % (got,))
+              got = mgr.find_user_password('realm', 'http://example.com/')
+              if got != (None, None):
+                  failures.append('https credentials returned for http URL: %r' % (got,))
+
+              prior = urllib.request.HTTPPasswordMgrWithPriorAuth()
+              handler = urllib.request.HTTPBasicAuthHandler(prior)
+              handler.add_password(None, 'https://example.com/', 'user', 'secret',
+                                   is_authenticated=True)
+              req = urllib.request.Request('http://example.com/')
+              handler.http_request(req)
+              if req.has_header('Authorization'):
+                  failures.append('pre-emptive Authorization sent to http URL: %r'
+                                  % req.get_header('Authorization'))
+
+              for f in failures:
+                  print('FAIL: ' + f, file=sys.stderr)
+              sys.exit(1 if failures else 0)
+              PYEOF
+              python3 poc.py
+            "%
+          ],
+        ],
+      } | Test,
+
+    # CVE-2026-15310 regression: FAILS on stock 3.14.7, where one read(8192)
+    # of a 32 MiB all-zero LZMA (and bzip2, if built) member peaks at ~80+ MiB
+    # because the whole first compressed chunk is expanded at once. 3.14.8
+    # ships the gh-156002 fix: the peak is the decoder state plus one bounded
+    # chunk.
+    zipfile_read_bounds_decompression =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              cat > poc.py <<'PYEOF'
+              import io, sys, tracemalloc, zipfile
+
+              methods = []
+              for name, mod, const in (('lzma', 'lzma', zipfile.ZIP_LZMA),
+                                       ('bzip2', 'bz2', zipfile.ZIP_BZIP2)):
+                  try:
+                      __import__(mod)
+                  except ImportError:
+                      print('skip: %s module not built' % mod, file=sys.stderr)
+                      continue
+                  methods.append((name, const))
+              if not any(n == 'lzma' for n, _ in methods):
+                  print('FAIL: lzma module missing; nothing exercises the fix', file=sys.stderr)
+                  sys.exit(1)
+
+              SIZE = 32 * 1024 * 1024
+              # liblzma's decoder state (an 8 MiB dictionary at the default preset) is
+              # allocated through PyMem and so counted by tracemalloc; 16 MiB leaves room
+              # for it while an unbounded read of the 32 MiB member peaks far above.
+              LIMIT = 16 * 1024 * 1024
+              failures = []
+              for name, const in methods:
+                  buf = io.BytesIO()
+                  # Explicit timestamp: the test sandbox clock can read 1970,
+                  # which a zip header cannot encode (DOS dates start 1980).
+                  zi = zipfile.ZipInfo('big', date_time=(1980, 1, 1, 0, 0, 0))
+                  zi.compress_type = const
+                  with zipfile.ZipFile(buf, 'w') as zf:
+                      zf.writestr(zi, b'\0' * SIZE)
+                  data = buf.getvalue()
+                  with zipfile.ZipFile(io.BytesIO(data)) as zf:
+                      with zf.open('big') as f:
+                          tracemalloc.start()
+                          chunk = f.read(8192)
+                          _, peak = tracemalloc.get_traced_memory()
+                          tracemalloc.stop()
+                  print('%s: archive %d bytes, read(8192) peak %d bytes' % (name, len(data), peak),
+                    file=sys.stderr)
+                  if chunk != b'\0' * 8192:
+                      failures.append('%s: wrong data from read(8192)' % name)
+                  if peak > LIMIT:
+                      failures.append('%s: read(8192) peaked at %d bytes (> %d)' % (name, peak, LIMIT))
+
+              for f in failures:
+                  print('FAIL: ' + f, file=sys.stderr)
+              sys.exit(1 if failures else 0)
+              PYEOF
+              python3 poc.py
+            "%
+          ],
+        ],
+      } | Test,
+
+    # CVE-2026-17084 regression: FAILS on stock 3.14.7, where these letters
+    # (uncased in Unicode 3.2.0, cased by 16.0) are folded by stringprep and
+    # so encode to non-standard A-labels. Expected A-labels are upstream's
+    # from test_codecs.test_new_unicode_case_folding.
+    idna_nameprep_uses_unicode_3_2_case_folding =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              cat > poc.py <<'PYEOF'
+              import sys, stringprep
+              from encodings import idna
+
+              failures = []
+              # Letters with no case mapping in Unicode 3.2.0 that gained one later.
+              # RFC 3454 B.3 is fixed at Unicode 3.2.0, so they must map to themselves.
+              for ch in ('\N{CHEROKEE LETTER A}', '\N{GEORGIAN CAPITAL LETTER AN}',
+                         '\N{CYRILLIC LETTER PALOCHKA}', '\N{ROMAN NUMERAL REVERSED ONE HUNDRED}'):
+                  got = stringprep.map_table_b3(ch)
+                  if got != ch:
+                      failures.append('map_table_b3(U+%04X) = %r, want identity' % (ord(ch), got))
+              # A case mapping that DID exist in 3.2 must still apply.
+              if stringprep.map_table_b3('A') != 'a':
+                  failures.append('map_table_b3("A") no longer lowercases')
+
+              cases = [
+                  ('\N{CHEROKEE LETTER A}\N{CHEROKEE LETTER A}', b'xn--58da'),
+                  ('\N{GEORGIAN CAPITAL LETTER AN}.', b'xn--7md.'),
+                  ('\N{CYRILLIC LETTER PALOCHKA}.example', b'xn--d5a.example'),
+                  ('\N{ROMAN NUMERAL REVERSED ONE HUNDRED}.example.', b'xn--q5g.example.'),
+                  ('pyth\xf6n.org', b'xn--pythn-mua.org'),
+              ]
+              for u, want in cases:
+                  got = u.encode('idna')
+                  if got != want:
+                      failures.append('%a.encode("idna") = %r, want %r' % (u, got, want))
+
+              for f in failures:
+                  print('FAIL: ' + f, file=sys.stderr)
               sys.exit(1 if failures else 0)
               PYEOF
               python3 poc.py

@@ -7,14 +7,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "26.8.15" in
+let version = "26.9.1" in
 {
   name = "yazi",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/sxyazi/yazi/v%{version}.tar.gz",
-      sha256 = "60bd4ca56398f0f6ea6dcf88cc18e325583bf5328aeec51d396070944a9495c8",
+      sha256 = "66857f1b670469daf258edd0bb2ea51d9ad3e2cab4eea9684028c80059fd6862",
       extract = true,
       strip_prefix = "yazi-%{version}",
     } | Source,

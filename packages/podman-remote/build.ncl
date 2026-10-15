@@ -5,14 +5,14 @@ let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "6.1.2" in
+let version = "6.1.3" in
 {
   name = "podman-remote",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/containers/podman/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "a4b2b10bd560cf9b4c50c282bd04bb74486ff6c78bebd51427f779fe985fc1bb",
+      url = "https://github.com/podman-container-tools/podman/archive/refs/tags/v%{version}.tar.gz",
+      sha256 = "6253aee14e573f747ca77e5a83a0df4ef9c2f609604f56715070ed06b6f9ddd8",
       extract = true,
       strip_prefix = "podman-%{version}",
     } | Source,
@@ -33,7 +33,7 @@ let version = "6.1.2" in
   attrs =
     {
       upstream_version = version,
-      source_provenance = { category = 'GithubRepo, owner = "containers", repo = "podman" },
+      source_provenance = { category = 'GithubRepo, owner = "podman-container-tools", repo = "podman" },
       license_spdx = "Apache-2.0",
     } | Attrs,
 } | BuildSpec
