@@ -14,7 +14,10 @@ doc-stage = 2
 extended = true
 # No "src": the rust-src install step is gated on `extended && tools.contains("src")`, and a
 # bundled rust-src is what x.py would compile instead of the in-tree source.
-tools = ["cargo", "clippy", "rustfmt", "rust-analyzer"]
+# "rustdoc" must be listed: once `tools` is set, dist::Rustc ships the rustdoc
+# binary only if the list names it (src/bootstrap/.../dist.rs, Rustc::prepare_image).
+# Without it `cargo test` cannot run doctests ("could not execute process `rustdoc`").
+tools = ["cargo", "clippy", "rustfmt", "rust-analyzer", "rustdoc"]
 
 docs = false
 
