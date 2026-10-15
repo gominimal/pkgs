@@ -86,7 +86,8 @@ let spec =
         patch,
       ]
       @ cc_build
-      @ arm_sources,
+      @ arm_sources
+      @ (if is_arm then [] else [{ file = "build-with-context.sh" } | Local]),
     # the driver runs gcc on the C it emits and the perl mangler/splitter; the RTS links libgmp
     runtime_deps =
       [
@@ -96,7 +97,8 @@ let spec =
         bash,
       ]
       @ cc_runtime,
-    cmd = "./build.sh",
+    # x86_64 reports the make log around the first failure; aarch64 runs build.sh directly
+    cmd = if is_arm then "./build.sh" else "./build-with-context.sh",
     outputs = {
       prefix = { glob = "usr/lib/ghc-7.0.4/**", allow_executable = true } | OutputData,
     },
