@@ -18,7 +18,7 @@ let version = "3.0.11" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://ftp.gnu.org/gnu/guile/guile-%{version}.tar.xz",
+      url = "gs://minimal-staging-archives/guile-%{version}.tar.xz",
       sha256 = "818c79d236657a7fa96fb364137cc7b41b3bdee0d65c6174ca03769559579460",
       extract = true,
       strip_prefix = "guile-%{version}",

@@ -11,7 +11,7 @@ let version = "8.2.12" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/ivmai/bdwgc/releases/download/v%{version}/gc-%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/gc-%{version}.tar.gz",
       sha256 = "42e5194ad06ab6ffb806c83eb99c03462b495d979cda782f3c72c08af833cd4e",
       extract = true,
       strip_prefix = "gc-%{version}",
