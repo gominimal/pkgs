@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 
 let version = "0.8.4" in
 
@@ -54,5 +54,9 @@ let glibc = import "../glibc/build.ncl" in
       owner = "Cyan4973",
       repo = "xxHash",
     },
+  },
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/xxhsum --version",
   },
 } | BuildSpec

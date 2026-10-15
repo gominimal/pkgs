@@ -1,9 +1,9 @@
 #!/bin/sh
 set -ex
 
-# Go 1.27 json/v2 fix (upstream trivy dc3c56eed5), applied by name and proven
-# to have landed. Drop at the next trivy release.
-patch -Np1 -i go127-json-skipfunc.patch
+# Go 1.27 json/v2: trivy 0.75.0 includes upstream dc3c56eed5, so the backported
+# go127-json-skipfunc.patch was dropped (it reported every hunk as already applied).
+# The guard below still proves no Go-1.26-only json/v2 usage remains.
 # Fail if ANY Go-1.26-only json/v2 usage survives anywhere in the tree, not
 # just the lines this patch touches.
 # One grep (no pipe): its exit status alone means "a match exists", which is

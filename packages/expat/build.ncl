@@ -1,17 +1,17 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.8.4" in
+let version = "2.9.0" in
 {
   name = "expat",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/expat-%{version}.tar.xz",
-      sha256 = "656ae1cc8da3b4ea513bb4e254f33e6243938084c0ec6239da873376b09985a7",
+      sha256 = "1e6371862cc31999b368c3b89b49994f0677e1bab5f1b2b85ae3741f5d803051",
       extract = true,
       strip_prefix = "expat-%{version}",
     } | Source,
@@ -47,4 +47,8 @@ let version = "2.8.4" in
         repo = "libexpat",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/xmlwf -v",
+  },
 } | BuildSpec

@@ -1,0 +1,53 @@
+name: Setup mip (pinned evaluator)
+description: >-
+  Put a PINNED, sha256-verified `mip` on PATH: the same evaluator build the
+  pkgsec runner uses (release 25d38aaa), instead of whatever the public shim's
+  cli pointer resolves to. That pointer has been stuck at 422f245 (2026-05-28),
+  which predates stdlib features the catalog now uses (e.g. 'Gitlab
+  source_provenance), so every `minimal dump` through the shim failed.
+
+inputs:
+  version:
+    description: minimalone release to fetch
+    default: "25d38aaa"
+  archive-sha256:
+    description: sha256 of minimalone-<version>.tar.zst
+    default: "4b6f92e1dcdf8946b171e264f9143dfdc84e6c9e2c539a31042d1858afaf1a01"
+  mip-sha256:
+    description: sha256 of the extracted mip-linux-amd64 (== the runner's MIP_SHA256 pin)
+    default: "2c5e01cd829d18825ec87393732a15a9ae0ddfbdf0feda220866620c2253a1ed"
+
+runs:
+  using: composite
+  steps:
+    - name: Cache mip
+      id: cache-mip
+      uses: actions/cache@v5
+      with:
+        path: ~/.local/mip
+        key: mip-${{ inputs.version }}-${{ inputs.mip-sha256 }}
+    - name: Fetch and verify mip
+      if: steps.cache-mip.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        ARCHIVE_SHA256: ${{ inputs.archive-sha256 }}
+      run: |
+        set -euo pipefail
+        tmp="$(mktemp -d)"
+        curl --proto '=https' --tlsv1.2 -sSfL -o "$tmp/mo.tar.zst" \
+          "https://storage.googleapis.com/minimal-shim/archives/minimalone-${VERSION}.tar.zst"
+        echo "${ARCHIVE_SHA256}  $tmp/mo.tar.zst" | sha256sum -c -
+        mkdir -p ~/.local/mip
+        zstd -dc "$tmp/mo.tar.zst" | tar -x -C ~/.local/mip ./mip-linux-amd64
+        mv ~/.local/mip/mip-linux-amd64 ~/.local/mip/mip
+        chmod +x ~/.local/mip/mip
+    - name: Verify mip and add to PATH
+      shell: bash
+      env:
+        MIP_SHA256: ${{ inputs.mip-sha256 }}
+      run: |
+        set -euo pipefail
+        # Checked on EVERY run, cache hit or not: the cache is not a trust root.
+        echo "${MIP_SHA256}  $HOME/.local/mip/mip" | sha256sum -c -
+        echo "$HOME/.local/mip" >> "$GITHUB_PATH"

@@ -11,7 +11,7 @@ let version = "6.1.3" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/containers/podman/archive/refs/tags/v%{version}.tar.gz",
+      url = "https://github.com/podman-container-tools/podman/archive/refs/tags/v%{version}.tar.gz",
       sha256 = "6253aee14e573f747ca77e5a83a0df4ef9c2f609604f56715070ed06b6f9ddd8",
       extract = true,
       strip_prefix = "podman-%{version}",
@@ -33,7 +33,7 @@ let version = "6.1.3" in
   attrs =
     {
       upstream_version = version,
-      source_provenance = { category = 'GithubRepo, owner = "containers", repo = "podman" },
+      source_provenance = { category = 'GithubRepo, owner = "podman-container-tools", repo = "podman" },
       license_spdx = "Apache-2.0",
     } | Attrs,
 } | BuildSpec

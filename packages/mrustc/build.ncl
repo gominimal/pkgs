@@ -100,7 +100,13 @@ in
 # artifacts are consumed as sha-pinned Sources elsewhere, so the spec is an empty collection
 # (no build, no outputs, no dependents).
 match {
-  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Amd64, .. } =>
+    # While hex0/amd64-ladder.ncl is off, amd64 is an empty stub too: `go`/`rust` take sealed
+    # tarballs of the chain's last rungs instead (see that file).
+    if (import "../hex0/amd64-ladder.ncl").enabled then
+      amd64_spec
+    else
+      ({ name = "mrustc", build_deps = [] } | BuildSpec),
   { arch = 'Arm64, .. } =>
     {
       name = "mrustc",
