@@ -123,7 +123,9 @@ if [ "${ARCH}" = aarch64 ]; then
   grep -q 'libffi/build/inst/include/' libffi/ghc.mk || { echo "ghc-${VERSION}: libffi header path not repointed" >&2; exit 1; }
   printf 'GhcUnregisterised = YES\nGhcWithNativeCodeGen = NO\nGhcWithInterpreter = NO\nGhcWithSMP = NO\nGhcEnableTablesNextToCode = NO\nGhcRTSWays = \n' >> mk/build.mk
 fi
-CC="${CC}" ./configure ${CFGX} --prefix="${PREFIX}" --with-ghc="${BOOT}" --with-gcc="${CC}" > ../configure.log 2>&1 \
+# binutils' bfd.h and libbfd are in the closure: keep the rts's libbfd debug symbolizer and -lbfd/-liberty out
+ac_cv_header_bfd_h=no ac_cv_lib_iberty_xmalloc=no ac_cv_lib_bfd_bfd_uncompress_section_contents=no \
+  CC="${CC}" ./configure ${CFGX} --prefix="${PREFIX}" --with-ghc="${BOOT}" --with-gcc="${CC}" > ../configure.log 2>&1 \
   || { tail -30 ../configure.log >&2; echo "ghc-${VERSION}: configure failed" >&2; exit 1; }
 make -j"${JOBS}" > ../make.log 2>&1 || { grep -n -B3 -m3 -E ' error:|Segmentation|internal error|\*\*\*' ../make.log | grep -v warning >&2; tail -20 ../make.log >&2; echo "ghc-${VERSION}: make failed" >&2; exit 1; }
 

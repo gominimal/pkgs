@@ -105,7 +105,9 @@ if [ "$(uname -m)" = aarch64 ]; then
   sed -i "s|cd libffi/build \&\& ./libtool|cd libffi/build/$D \&\& ./libtool|; s|build/libtool|build/$D/libtool|g; s|libffi/build/.libs|libffi/build/$D/.libs|; /libffi.selinux-detection/d" libffi/ghc.mk
   grep -q "libffi/build/$D/include" rts/ghc.mk && grep -q "cd libffi/build/$D && ./libtool" libffi/ghc.mk || { echo "ghc-7.0.4: libffi rules not repointed" >&2; exit 1; }
 fi
-CC=gcc89 ./configure --prefix=$PREFIX --with-ghc=$BOOTDIR/ghc --with-ghc-pkg=$BOOTDIR/ghc-pkg --with-gcc=gcc89 > configure.log 2>&1 || { tail -20 configure.log >&2; echo "ghc-7.0.4: configure failed" >&2; exit 1; }
+# binutils' bfd.h and libbfd are in the closure: keep the rts's libbfd debug symbolizer and -lbfd/-liberty out
+ac_cv_header_bfd_h=no ac_cv_lib_iberty_xmalloc=no ac_cv_lib_bfd_bfd_init=no \
+  CC=gcc89 ./configure --prefix=$PREFIX --with-ghc=$BOOTDIR/ghc --with-ghc-pkg=$BOOTDIR/ghc-pkg --with-gcc=gcc89 > configure.log 2>&1 || { tail -20 configure.log >&2; echo "ghc-7.0.4: configure failed" >&2; exit 1; }
 cat > mk/build.mk <<'EOF'
 HADDOCK_DOCS        = NO
 BUILD_DOCBOOK_HTML  = NO

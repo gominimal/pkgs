@@ -161,7 +161,9 @@ GhcLibHcOpts        = -O
 EOF
 # aarch64 has no native code generator before 9.2: unregisterised, tables apart from code, vanilla RTS only
 [ "${ARCH}" = aarch64 ] && printf 'GhcUnregisterised   = YES\nGhcWithNativeCodeGen = NO\nGhcWithSMP          = NO\nGhcEnableTablesNextToCode = NO\nGhcRTSWays          =\nGhcNotThreaded      = YES\n' >> mk/build.mk
-CC="${CC}" ./configure --prefix="${PREFIX}" --with-ghc="${BOOTDIR}/ghc" --with-ghc-pkg="${BOOTDIR}/ghc-pkg" --with-gcc="${CC}" > ../configure.log 2>&1 \
+# binutils' bfd.h and libbfd are in the closure: keep the rts's libbfd debug symbolizer and -lbfd/-liberty out
+ac_cv_header_bfd_h=no ac_cv_lib_iberty_xmalloc=no ac_cv_lib_bfd_bfd_uncompress_section_contents=no \
+  CC="${CC}" ./configure --prefix="${PREFIX}" --with-ghc="${BOOTDIR}/ghc" --with-ghc-pkg="${BOOTDIR}/ghc-pkg" --with-gcc="${CC}" > ../configure.log 2>&1 \
   || { tail -30 ../configure.log >&2; echo "ghc-${VERSION}: configure failed" >&2; exit 1; }
 "${MK}" -j"${JOBS}" > ../make.log 2>&1 || { grep -n -B3 -m3 -E ' error:|Segmentation|internal error|\*\*\*' ../make.log | grep -v warning >&2; tail -20 ../make.log >&2; echo "ghc-${VERSION}: make failed" >&2; exit 1; }
 [ -x inplace/bin/ghc-stage2 ] || { echo "ghc-${VERSION}: inplace/bin/ghc-stage2 missing" >&2; exit 1; }
