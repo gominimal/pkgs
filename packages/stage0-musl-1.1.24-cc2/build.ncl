@@ -23,6 +23,7 @@ let coreutils = import "../coreutils/build.ncl" in # rm/mkdir/cp/chmod/install/c
 let tar = import "../tar/build.ncl" in # build.sh `tar -xf`
 let gzip = import "../gzip/build.ncl" in # tar's .gz decompression
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # musl's configure uses awk once
+# pkgmgr: bootstrap_rung = "hex0"
 let version = "1.1.24" in # source tarball version; the -cc2 suffix is only in `name`
 let amd64_spec =
   {
@@ -80,7 +81,13 @@ in
 # amd64 only. arm64 consumes prebuilt bedrock artifacts as sha-pinned Sources instead,
 # so on arm64 this spec is an empty collection: nothing builds and nothing depends on it.
 match {
-  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Amd64, .. } =>
+    # While hex0/amd64-ladder.ncl is off, amd64 is an empty stub too: `go`/`rust` take sealed
+    # tarballs of the chain's last rungs instead (see that file).
+    if (import "../hex0/amd64-ladder.ncl").enabled then
+      amd64_spec
+    else
+      ({ name = "stage0-musl-1.1.24-cc2", build_deps = [] } | BuildSpec),
   { arch = 'Arm64, .. } =>
     {
       name = "stage0-musl-1.1.24-cc2",

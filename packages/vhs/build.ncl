@@ -3,14 +3,14 @@ let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "0.12.0" in
+let version = "0.12.1" in
 {
   name = "vhs",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/charmbracelet/vhs/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "2e4a3b940f66ffbe1f66ded3b6253c9f3185a69567596e80d08c50cee77eaedf",
+      sha256 = "ba9fbcb40133d1734c580ccb6b0fcae9673bf51d227f00877ac581c56ad15b77",
       extract = true,
       strip_prefix = "vhs-%{version}",
     } | Source,

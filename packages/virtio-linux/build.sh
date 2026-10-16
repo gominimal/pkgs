@@ -131,10 +131,18 @@ want MEMORY_HOTPLUG MEMORY_HOTREMOVE VIRTIO_MEM
 # virtiofs, below) mappable without going through the guest page cache.
 want ZONE_DEVICE LIBNVDIMM VIRTIO_PMEM DAX FS_DAX
 
-# vsock + virtio-vsock for host<->guest sockets. The loopback transport lets
-# guest-local services speak vsock without a host peer, which is what most
-# vsock-based agents test against.
-want VSOCKETS VSOCKETS_LOOPBACK VIRTIO_VSOCKETS
+# vsock + virtio-vsock for host<->guest sockets.
+want VSOCKETS VIRTIO_VSOCKETS
+
+# No loopback transport. The vsock channel into a Minimal guest is host->guest
+# only: the in-VM daemon's listener is meant for the host-side helper, and
+# nothing in the guest speaks vsock to itself. With the loopback transport
+# built in, a guest process can reach a guest listener by dialling CID 1 or the
+# guest's own CID, which af_vsock routes to this transport (since 5.6). Leaving
+# it out makes such a connect fail with no transport at all, so the guest adds
+# no second path beside the daemon's own peer-CID check. Pinned off rather than
+# merely dropped from want(): kconfig would otherwise be free to turn it back on.
+nope VSOCKETS_LOOPBACK
 
 # virtiofs (needs FUSE). DAX mapping and passthrough are what make it fast
 # enough to use as a real rootfs/workspace share.
@@ -207,6 +215,20 @@ want NF_CONNTRACK NF_NAT NF_NAT_MASQUERADE
 want NF_TABLES NF_TABLES_INET NF_TABLES_IPV4 NF_TABLES_IPV6
 want NFT_CT NFT_NAT NFT_MASQ NFT_COMPAT NFT_LIMIT NFT_LOG
 want NFT_REJECT NFT_REJECT_IPV4 NFT_REJECT_IPV6 NFT_FIB_IPV4 NFT_FIB_IPV6
+# The guest minimald loads a host-address classifier table (`inet
+# minimal_class`) that keys on the sending socket's cgroup: `socket cgroupv2
+# level N "<path>"` is NFT_SOCKET, whose tristate has no default, so
+# olddefconfig leaves it off. NF_SOCKET_IPV4/IPV6 are what it selects and
+# SOCK_CGROUP_DATA (selected via CGROUP_BPF) is what backs the cgroupv2 key;
+# NFT_REJECT_INET is `reject with icmpx` in an inet table. Those four follow
+# from symbols already on; they are listed so the assert below catches a drop.
+# The rest of that table (ct, nat, limit, log, reject) is wanted above.
+want NFT_SOCKET NF_SOCKET_IPV4 NF_SOCKET_IPV6 SOCK_CGROUP_DATA NFT_REJECT_INET
+# The same table marks each new flow with its box's verdict and reads the
+# mark back (`ct mark set ct mark and ... or ...`, NET-078): `ct mark` is
+# NF_CONNTRACK_MARK, which defconfig leaves off, and without it nft_ct
+# answers EOPNOTSUPP, so `nft -c` rejects the whole table ("Not supported").
+want NF_CONNTRACK_MARK
 want IP_NF_IPTABLES IP_NF_IPTABLES_LEGACY IP_NF_FILTER IP_NF_NAT IP_NF_MANGLE
 want IP_NF_TARGET_MASQUERADE IP_NF_TARGET_REJECT IP_NF_TARGET_REDIRECT
 want IP6_NF_IPTABLES IP6_NF_IPTABLES_LEGACY IP6_NF_FILTER IP6_NF_NAT

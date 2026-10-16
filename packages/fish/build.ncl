@@ -13,14 +13,14 @@ let gcc = import "../gcc/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
 
-let version = "4.8.1" in
+let version = "4.9.3" in
 {
   name = "fish",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/fish-shell/fish-shell/releases/download/%{version}/fish-%{version}.tar.xz",
-      sha256 = "0eb86a851e865e934a7c2091a73d7695225e78f0e00a7bb96d5f877d76c65782",
+      sha256 = "20998a25f73217ddcc19f499055fd587e9912d1ad6e7109120fbcf2871f0b98c",
       extract = true,
       strip_prefix = "fish-%{version}",
     } | Source,

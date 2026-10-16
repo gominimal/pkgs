@@ -43,10 +43,29 @@ install -m 755 native/package/pnpm $PREFIX/pnpm
 
 # `pn` is pnpm; `pnpx`/`pnx` are `pnpm dlx`. Upstream ships them as sh scripts
 # that resolve their own symlink chain and exec the `pnpm` beside them (the
-# binary only infers `dlx` from current_exe(), which a symlink cannot change).
+# binary only infers `dlx` from current_exe(), which a symlink cannot change),
+# so each /usr/bin entry execs its libexec counterpart by real path.
+#
+# Wrappers rather than symlinks: pnpm refuses global installs when its global
+# bin dir is not on PATH, and the sandbox PATH is fixed (`pnpm setup` has
+# nothing to edit). pnpm 12 reads PNPM_CONFIG_GLOBAL_BIN_DIR
+# (crates/config/src/env_overlay.rs) and uses it in place of the
+# `<pnpm home>/bin` it would otherwise derive (derive_layout.rs), so the
+# wrapper defaults only that: global bins land in ~/.local/bin (on the session
+# PATH) while the store and global package dir stay where pnpm puts them.
+# A caller's own PNPM_CONFIG_GLOBAL_BIN_DIR wins, and so does a caller's
+# PNPM_HOME, whose bin/ they expect to be the global bin dir. The env var does
+# outrank a `globalBinDir` in pnpm's config files. See gominimal/inbox#584.
 for b in pnpm pn pnpx pnx; do
-  ln -s ../libexec/pnpm/$b $OUTPUT_DIR/usr/bin/$b
-  test -x $OUTPUT_DIR/usr/bin/$b || { echo "pnpm: $b is not executable" >&2; exit 1; }
+  cat > "$OUTPUT_DIR/usr/bin/$b" <<WRAPPER
+#!/bin/sh
+if [ -n "\${HOME:-}" ] && [ -z "\${PNPM_HOME:-}" ]; then
+  : "\${PNPM_CONFIG_GLOBAL_BIN_DIR:=\$HOME/.local/bin}"
+  export PNPM_CONFIG_GLOBAL_BIN_DIR
+fi
+exec /usr/libexec/pnpm/$b "\$@"
+WRAPPER
+  chmod +x "$OUTPUT_DIR/usr/bin/$b"
 done
 
 # The payload the binary looks for must be where it looks.

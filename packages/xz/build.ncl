@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -99,4 +99,8 @@ let version = "5.8.4" in
         repo = "xz",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/xz --version",
+  },
 } | BuildSpec

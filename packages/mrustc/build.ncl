@@ -41,6 +41,7 @@ let grep = import "../grep/build.ncl" in # assertions
 let coreutils = import "../coreutils/build.ncl" in # sha256sum/cp/mkdir/nproc/touch/cut/od/date
 let tar = import "../tar/build.ncl" in # plain .tar unpack (--no-same-owner)
 let patch = import "../patch/build.ncl" in # aarch64-support.patch (unconditional), hir-ord-unevaluated.patch (conditional)
+# pkgmgr: bootstrap_rung = "rust"
 let version = "0.12.0" in
 let commit = "1d552cadf1c58bce8b9b431a5714dcea113dde38" in
 let amd64_spec =
@@ -99,7 +100,13 @@ in
 # artifacts are consumed as sha-pinned Sources elsewhere, so the spec is an empty collection
 # (no build, no outputs, no dependents).
 match {
-  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Amd64, .. } =>
+    # While hex0/amd64-ladder.ncl is off, amd64 is an empty stub too: `go`/`rust` take sealed
+    # tarballs of the chain's last rungs instead (see that file).
+    if (import "../hex0/amd64-ladder.ncl").enabled then
+      amd64_spec
+    else
+      ({ name = "mrustc", build_deps = [] } | BuildSpec),
   { arch = 'Arm64, .. } =>
     {
       name = "mrustc",

@@ -104,7 +104,7 @@ let version = "12.5.1" in
         cmds = [
           ["/bin/bash", "-c", "out=$(pnpm --version 2>&1) && echo \"$out\" && test \"$out\" = '%{version}'"],
           ["/bin/bash", "-c", "out=$(pn --version 2>&1) && test \"$out\" = '%{version}'"],
-          ["/bin/bash", "-c", "file -L /usr/bin/pnpm | grep -q ELF"],
+          ["/bin/bash", "-c", "file -L /usr/libexec/pnpm/pnpm | grep -q ELF"],
           ["/bin/bash", "-c", "! pnpm --version 2>&1 | grep -qi download"],
         ],
       } | Test,
@@ -116,6 +116,39 @@ let version = "12.5.1" in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "set -e; mkdir -p /tmp/p && cd /tmp/p && printf '%s' '{\"name\":\"t\",\"version\":\"1.0.0\",\"scripts\":{\"postinstall\":\"command -v node-gyp > gyp.txt && node --version > node.txt\"}}' > package.json && pnpm install --offline 2>&1 | tee log.txt; if grep -qi download log.txt; then exit 1; fi; grep -q '/usr/libexec/pnpm/dist/node-gyp-bin/node-gyp' gyp.txt; test -s node.txt"],
+        ],
+      } | Test,
+    # `pnpm add -g` lands a package's bin in ~/.local/bin, where the session
+    # PATH resolves it (gominimal/inbox#584); caller overrides still win.
+    global_install =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              # Standalone tests run with the build-sandbox env (HOME=/state/home,
+              # no ~/.local/bin on PATH), so PATH is extended here to stand in
+              # for the session PATH, which carries ~/.local/bin.
+              export PATH="$PATH:$HOME/.local/bin"
+              mkdir -p /tmp/g/bin && cd /tmp/g
+              printf '%s' '{"name":"gbin","version":"1.0.0","bin":{"gbin":"bin/gbin"}}' > package.json
+              printf '#!/bin/sh\necho ok\n' > bin/gbin && chmod +x bin/gbin
+              pnpm add -g file:/tmp/g
+              test "$(PATH=/usr/bin:/bin:$HOME/.local/bin command -v gbin)" = "$HOME/.local/bin/gbin"
+              test "$(PATH=/usr/bin:/bin:$HOME/.local/bin gbin)" = ok
+
+              # The store stays where pnpm puts it, not dragged under ~/.local.
+              if pnpm store path | grep -q '/\.local/store'; then exit 1; fi
+
+              # A caller's own bin dir, or PNPM_HOME, wins over the default.
+              test "$(PATH="$PATH:/tmp/xb" PNPM_CONFIG_GLOBAL_BIN_DIR=/tmp/xb pnpm bin -g)" = /tmp/xb
+              test "$(PATH="$PATH:/tmp/ph/bin" PNPM_HOME=/tmp/ph pnpm bin -g)" = /tmp/ph/bin
+            "%
+          ],
         ],
       } | Test,
   },

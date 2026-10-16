@@ -1,3 +1,4 @@
+# pkgmgr: bootstrap_rung = "hex0"
 let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # stage0-tcc-0.9.27-musl-s3: the musl relink. s1's mes-linked tcc-musl recompiles tcc.c against
@@ -47,7 +48,13 @@ in
 # amd64 only: this rung belongs to the hex0-rooted amd64 ladder. On arm64 the spec collapses to
 # an empty collection (no build, no outputs, nothing depends on it).
 match {
-  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Amd64, .. } =>
+    # While hex0/amd64-ladder.ncl is off, amd64 is an empty stub too: `go`/`rust` take sealed
+    # tarballs of the chain's last rungs instead (see that file).
+    if (import "../hex0/amd64-ladder.ncl").enabled then
+      amd64_spec
+    else
+      ({ name = "stage0-tcc-0.9.27-musl-s3", build_deps = [] } | BuildSpec),
   { arch = 'Arm64, .. } =>
     {
       name = "stage0-tcc-0.9.27-musl-s3",

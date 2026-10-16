@@ -44,7 +44,7 @@ let version = "1.24.1" in
       license_spdx = "Apache-2.0",
       source_provenance = {
         category = 'GithubRepo,
-        owner = "containers",
+        owner = "podman-container-tools",
         repo = "skopeo",
       },
       build_cost_multiple = 2,

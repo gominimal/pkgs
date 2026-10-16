@@ -1,6 +1,7 @@
 let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash = import "../bash/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
@@ -69,6 +70,7 @@ in
   runtime_deps = [
     glibc,
     git,
+    bash, # the /usr/bin wrappers are #!/bin/sh scripts (bash provides bin/sh)
   ],
   needs =
     {
@@ -85,6 +87,7 @@ in
     bash_completion = { glob = "usr/share/bash-completion/completions/bun" } | OutputData,
     fish_completion = { glob = "usr/share/fish/vendor_completions.d/bun.fish" } | OutputData,
     zsh_completion = { glob = "usr/share/zsh/site-functions/_bun" } | OutputData,
+    libexec = { glob = "usr/libexec/bun/**", allow_executable = true } | OutputData,
   },
 
   attrs =
@@ -104,7 +107,9 @@ in
     } | Attrs,
 
   tests = {
-    smoketest = standaloneTest "/bin/bun --version",
+    # The raw ELF, not the /usr/bin wrapper: standaloneTest runs with no shell
+    # in the sandbox, so a #!/bin/sh wrapper would ENOENT there.
+    smoketest = standaloneTest "/usr/libexec/bun/bun --version",
 
     eval =
       {
@@ -112,6 +117,36 @@ in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "bun --eval 'console.log(1+1)' | grep -q '^2$'"],
+        ],
+      } | Test,
+    # `bun add -g` lands a package's bin in ~/.local/bin, where the session
+    # PATH resolves it, backed by a global dir outside the cache
+    # (gominimal/inbox#584).
+    global_install =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              # Standalone tests run with the build-sandbox env (HOME=/state/home,
+              # no ~/.local/bin on PATH), so each lookup below spells out a
+              # session-like PATH that carries ~/.local/bin.
+              mkdir -p /tmp/g/bin && cd /tmp/g
+              printf '%s' '{"name":"gbin","version":"1.0.0","bin":{"gbin":"bin/gbin"}}' > package.json
+              printf '#!/bin/sh\necho ok\n' > bin/gbin && chmod +x bin/gbin
+              cd / && bun add -g file:/tmp/g
+              test "$(PATH=/usr/bin:/bin:$HOME/.local/bin command -v gbin)" = "$HOME/.local/bin/gbin"
+              test "$(PATH=/usr/bin:/bin:$HOME/.local/bin gbin)" = ok
+              test -f "$HOME/.local/share/bun/global/package.json"
+
+              # A caller's BUN_INSTALL keeps bun's own <BUN_INSTALL>/bin layout.
+              test "$(BUN_INSTALL=/tmp/bi bun --eval 'console.log(process.env.BUN_INSTALL_BIN ?? "unset")')" = unset
+            "%
+          ],
         ],
       } | Test,
   },

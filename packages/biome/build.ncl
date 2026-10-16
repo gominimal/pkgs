@@ -7,7 +7,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.5.14" in
+let version = "2.5.15" in
 {
   name = "biome",
 
@@ -15,7 +15,7 @@ let version = "2.5.14" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/biomejs/biome/archive/refs/tags/@biomejs/biome@%{version}.tar.gz",
-      sha256 = "5b87b7df94e8c6b968d44daecf92c46231908012be5f6f41ac33bcabbd53e66e",
+      sha256 = "0212a8f9e351e2d47580cf8371948dd477ceb01e0fef1a65f81061a2a4a39039",
       extract = true,
       strip_prefix = "biome--biomejs-biome-%{version}",
     } | Source,

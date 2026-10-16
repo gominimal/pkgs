@@ -50,6 +50,7 @@ let coreutils = import "../coreutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
 let findutils = import "../findutils/build.ncl" in # install-phase build-path sweep
 let diffutils = import "../diffutils/build.ncl" in # `patch` uses cmp on some paths
+# pkgmgr: bootstrap_rung = "rust"
 let version = "1.90.0" in
 let mrustc_version = "0.12.0" in
 let mrustc_commit = "1d552cadf1c58bce8b9b431a5714dcea113dde38" in
@@ -134,7 +135,13 @@ in
 # artifacts are consumed as sha-pinned Sources elsewhere, so the spec is an empty collection
 # (no build, no outputs, no dependents).
 match {
-  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Amd64, .. } =>
+    # While hex0/amd64-ladder.ncl is off, amd64 is an empty stub too: `go`/`rust` take sealed
+    # tarballs of the chain's last rungs instead (see that file).
+    if (import "../hex0/amd64-ladder.ncl").enabled then
+      amd64_spec
+    else
+      ({ name = "mrustc-rustc-1.90.0", build_deps = [] } | BuildSpec),
   { arch = 'Arm64, .. } =>
     {
       name = "mrustc-rustc-1.90.0",
