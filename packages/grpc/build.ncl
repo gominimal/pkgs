@@ -30,6 +30,16 @@ let python = import "../python/build.ncl" in
       extract = true,
       strip_prefix = "grpc-%{version}",
     } | Source,
+    # grpc 1.84.0 added `third_party/grpc-proto` as a git submodule, which the
+    # GitHub tag archive leaves empty (CMake then can't find
+    # grpc/reflection/v1/reflection.proto). Pinned to the submodule commit at
+    # v1.84.0; the sha256 is the one grpc's own CMakeLists.txt records for this
+    # archive. build.sh unpacks it into place. Re-check the pin on every bump.
+    {
+      url = "https://github.com/grpc/grpc-proto/archive/ec30f589e2519d595688b9a42f88a91bdd6b733f.tar.gz",
+      sha256 = "5e9b520b22afbd53a662cc29017064be253c1dfa6df8958738594e7fec6ade33",
+      extract = false,
+    } | Source,
     base,
     toolchain,
     make,
