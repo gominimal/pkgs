@@ -29,7 +29,10 @@ done
 # The Makefile's recipes take no LDFLAGS, so the linker flag rides in the
 # *_EXTRA compiler flags (both are passed to the link). The .so is linked with
 # -static-libstdc++ -static-libgcc by upstream, so it needs only glibc.
+# CC/CXX on the command line: make's built-in CC=cc beats the Makefile's
+# `CC ?= gcc`, and there is no `cc` here.
 make -j"$(nproc)" \
+  CC=gcc CXX=g++ \
   JAVA_HOME="$JAVA_HOME" \
   CFLAGS_EXTRA="$REPRO" \
   CXXFLAGS_EXTRA="$REPRO" \
