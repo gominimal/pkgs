@@ -28,6 +28,7 @@ LOADER="${SR}/lib/ld-linux-x86-64.so.2"
 # /usr/lib, where the production glibc lives. Run every executable that loads through it against the
 # sysroot's libc; production tools are left alone.
 B4BIN="${BUILDROOT}/b4-bin"; mkdir -p "${B4BIN}"
+set +x
 IFS=:; for d in ${PATH}; do
   for f in "${d}"/*; do
     n="${f##*/}"
@@ -36,6 +37,8 @@ IFS=:; for d in ${PATH}; do
     printf '#!/bin/sh\nLD_LIBRARY_PATH=%s/lib exec %s "$@"\n' "${SR}" "${f}" > "${B4BIN}/${n}"; chmod +x "${B4BIN}/${n}"
   done
 done; unset IFS
+set -x
+ls "${B4BIN}"
 export PATH="${B4BIN}:${PATH}"
 BGCC="$(command -v gcc || true)"; BGXX="$(command -v g++ || true)"
 if [ -z "${BGCC}" ] || [ -z "${BGXX}" ]; then echo "jikes infra: B5 gcc/g++ not on PATH" >&2; exit 1; fi
