@@ -22,12 +22,22 @@ if [ -d "$JLINE_DIR" ]; then
   mkdir -p "$JLINE_DIR/Linux"
   mv "$JLINE_DIR/.keep" "$JLINE_DIR/Linux/$JLINE_ARCH"
   # The prebuilt lib was linked against a pre-2.34 glibc: it NEEDs
-  # libutil.so.1 for openpty, its only libutil symbol. Since glibc 2.34
-  # openpty lives in libc (exported at the same GLIBC_2.2.5 / GLIBC_2.17
-  # versions) and libutil.so.1 is an empty stub, which the missing-runtime_deps
-  # checker rightly reports as not providing it. The lib already NEEDs
-  # libc.so.6, so drop the stale entry rather than chase the stub.
-  patchelf --remove-needed libutil.so.1 "$JLINE_DIR/Linux/$JLINE_ARCH/libjlinenative.so"
+  # libutil.so.1 for openpty (its only libutil symbol), recorded in BOTH
+  # DT_NEEDED and the version-needs table (.gnu.version_r: "required from
+  # libutil.so.1: GLIBC_2.2.5"). Since glibc 2.34 openpty lives in libc at
+  # that same version and libutil.so.1 is an empty stub, so minimal-check's
+  # missing-runtime_deps reports openpty missing. --replace-needed renames
+  # the file in both places, pointing the requirement at libc.so.6, which
+  # defines it. (--remove-needed only drops DT_NEEDED, leaving a version
+  # requirement on a library that is no longer loaded.)
+  JLINE_LIB="$JLINE_DIR/Linux/$JLINE_ARCH/libjlinenative.so"
+  patchelf --replace-needed libutil.so.1 libc.so.6 "$JLINE_LIB"
+  # Fail closed if either table still names libutil.
+  if patchelf --print-needed "$JLINE_LIB" | grep -qx libutil.so.1 \
+     || objdump -p "$JLINE_LIB" | grep -q 'required from libutil'; then
+    echo "libjlinenative.so still depends on libutil.so.1" >&2
+    exit 1
+  fi
 fi
 
 # Create wrapper script that sets M2_HOME
