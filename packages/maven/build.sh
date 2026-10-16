@@ -21,6 +21,13 @@ if [ -d "$JLINE_DIR" ]; then
   find "$JLINE_DIR" -mindepth 1 -maxdepth 1 ! -name .keep -exec rm -rf {} +
   mkdir -p "$JLINE_DIR/Linux"
   mv "$JLINE_DIR/.keep" "$JLINE_DIR/Linux/$JLINE_ARCH"
+  # The prebuilt lib was linked against a pre-2.34 glibc: it NEEDs
+  # libutil.so.1 for openpty, its only libutil symbol. Since glibc 2.34
+  # openpty lives in libc (exported at the same GLIBC_2.2.5 / GLIBC_2.17
+  # versions) and libutil.so.1 is an empty stub, which the missing-runtime_deps
+  # checker rightly reports as not providing it. The lib already NEEDs
+  # libc.so.6, so drop the stale entry rather than chase the stub.
+  patchelf --remove-needed libutil.so.1 "$JLINE_DIR/Linux/$JLINE_ARCH/libjlinenative.so"
 fi
 
 # Create wrapper script that sets M2_HOME

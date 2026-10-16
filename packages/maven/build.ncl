@@ -3,6 +3,7 @@ let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
+let patchelf = import "../patchelf/build.ncl" in
 
 let version = "3.10.0" in
 {
@@ -14,6 +15,7 @@ let version = "3.10.0" in
       sha256 = "a46cc51bc74fa23fd267c7a0b9132b146dcf526da60d31aa5174e565632e9e0e",
     } | Source,
     base,
+    patchelf, # drops libjlinenative's stale libutil.so.1 NEEDED (build.sh)
   ],
   runtime_deps = [
     bash, # mvn is a shell script
