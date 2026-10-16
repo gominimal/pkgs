@@ -35,7 +35,10 @@ IFS=:; for d in ${PATH}; do
     n="${f##*/}"
     [ -f "${f}" ] && [ -x "${f}" ] && [ ! -e "${B4BIN}/${n}" ] || continue
     if head -c 4096 "${f}" | grep -qaF "${LOADER}"; then
-      printf '#!/bin/sh\nLD_LIBRARY_PATH=%s/lib exec %s "$@"\n' "${SR}" "${f}" > "${B4BIN}/${n}"
+      # the drivers search -B first, ahead of their own tool dirs: that is how gcc and collect2 find
+      # the wrapped as and ld below rather than an unwrapped copy (e.g. /usr/x86_64-linux-gnu/bin/as)
+      case "${n}" in *gcc-ar|*gcc-nm|*gcc-ranlib) B= ;; *gcc|*gcc-[0-9]*|*g++|*c++|cpp|*gfortran) B="-B${B4BIN}/" ;; *) B= ;; esac
+      printf '#!/bin/sh\nLD_LIBRARY_PATH=%s/lib exec %s %s "$@"\n' "${SR}" "${f}" "${B}" > "${B4BIN}/${n}"
     else
       case "${n}" in as|ld|ld.bfd|ld.gold) ;; *) continue ;; esac
       printf '#!/bin/sh\nunset LD_LIBRARY_PATH\nexec %s "$@"\n' "${f}" > "${B4BIN}/${n}"
