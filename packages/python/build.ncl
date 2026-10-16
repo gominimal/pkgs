@@ -7,7 +7,6 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let util-linux = import "../util-linux/build.ncl" in
-let patch = import "../patch/build.ncl" in
 
 let bash = import "../bash/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
@@ -22,28 +21,12 @@ let version = "3.15.0" in
   name = "python",
   build_deps = [
     { file = "build.sh" } | Local,
-    # CVE-2026-87910 (PSF-2026-40, gh-157265): when a hard link falls back to
-    # extracting a copy of its target, tarfile called the filter with the
-    # link's name and threw the result away, so a custom filter that rejects
-    # a member by returning None (instead of raising) was ignored. The stock
-    # `data`/`tar` filters raise, so only None-returning custom filters are
-    # affected. Fixed on main (fb2f0bbc) and 3.13; the 3.14 backport
-    # (python/cpython#157307) is NOT in 3.14.8 -- its Misc/NEWS has no entry for
-    # gh-157265 and this patch still applies cleanly to the 3.14.8 tree. Drop
-    # it on the first 3.14.x whose changelog lists gh-157265.
-    #
-    # The 3.14.7 recipe also carried gh-155999 (tarfile, CVE-2026-19672),
-    # gh-155694 (urllib, CVE-2026-15806), gh-156002 (zipfile, CVE-2026-15310)
-    # and gh-155292 (stringprep, CVE-2026-17084). All four ship in 3.14.8 and
-    # were dropped; their regression tests below stay as guards.
-    { file = "0002-gh-157265-tarfile-honor-filter-none-link-fallback.patch" } | Local,
-    # CVE-2025-15367 (gh-143923): poplib built each command from caller-supplied
-    # text and sent it unchecked, so a CR/LF inside an argument injected extra
-    # POP3 commands. Fixed on main (b234a2b6, 3.15.0a6) only: the 3.14 branch has
-    # no commit touching poplib.py since 2025-03-02 and 3.14.8's Misc/NEWS has no
-    # entry for gh-143923. A straight cherry-pick; drop it on the first 3.14.x
-    # whose changelog lists gh-143923.
-    { file = "0003-gh-143923-poplib-reject-control-characters.patch" } | Local,
+    # No backported patches on 3.15.0. Both 3.14.8 carries are upstream here:
+    # gh-157265 (CVE-2026-87910, PSF-2026-40, tarfile hard-link filter
+    # fallback) ships in 3.15.0rc3 and gh-143923 (CVE-2025-15367, poplib
+    # CR/LF injection) in 3.15.0a6, per CPython's Misc/NEWS.d; both patches
+    # reverse-apply cleanly to the v3.15.0 tree. Their regression tests below
+    # stay as guards.
     {
       url = "gs://minimal-staging-archives/Python-%{version}.tar.xz",
       sha256 = "ba4bed1ba346b916890b76d9e320451420aa69f6408997d33c66482eeae3d575"
@@ -54,7 +37,6 @@ let version = "3.15.0" in
     ncurses,
     pkgconf,
     sqlite,
-    patch,
     toolchain,
     util-linux,
   ],
@@ -205,7 +187,8 @@ let version = "3.15.0" in
 
     # CVE-2026-87910 regression. FAILS on stock 3.14.7 AND 3.14.8 (checked
     # against the unpatched Lib/tarfile.py) and passes only with the gh-157265
-    # patch, so it catches the patch going missing.
+    # fix (carried as a patch on 3.14.8, upstream since 3.15.0rc3), so it
+    # catches the fix going missing.
     #
     # `q` is a hard link to the symlink `a/b/s -> ../escape`. `a/b/s` itself
     # is fine (it resolves inside the destination), so linking fails over to
@@ -267,7 +250,8 @@ let version = "3.15.0" in
 
     # CVE-2025-15367 regression: FAILS on stock 3.14.8 (poplib sends a command
     # containing CR/LF verbatim, so a username can smuggle in extra POP3
-    # commands) and passes only with the gh-143923 patch. Exercises `_putcmd`
+    # commands) and passes only with the gh-143923 fix (carried as a patch on
+    # 3.14.8, upstream since 3.15.0a6). Exercises `_putcmd`
     # directly -- no network.
     poplib_rejects_control_characters =
       {
