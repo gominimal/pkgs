@@ -11,6 +11,7 @@ let libunistring = import "../libunistring/build.ncl" in
 let tar = import "../tar/build.ncl" in
 let xz = import "../xz/build.ncl" in
 let readline = import "../readline/build.ncl" in # the REPL; guile-readline.so links it
+let bash = import "../bash/build.ncl" in # guild, guile-config, guile-snarf and guile-tools are /bin/sh scripts
 
 # GNU Guile, built from its C sources: build.sh deletes the tarball's prebuilt .go bytecode, so every
 # compiled module comes from the C interpreter bootstrapping the compiler. The one pre-generated input
@@ -45,6 +46,7 @@ let version = "3.0.11" in
     libffi,
     libunistring,
     readline,
+    bash,
   ],
 
   cmd = "./build.sh",
@@ -52,10 +54,14 @@ let version = "3.0.11" in
     include version,
   },
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    guile_bin = { glob = "usr/bin/guile" } | OutputBin,
+    guild = { glob = "usr/bin/guild" } | OutputBin,
+    guile_config = { glob = "usr/bin/guile-config" } | OutputBin,
+    guile_snarf = { glob = "usr/bin/guile-snarf" } | OutputBin,
+    guile_tools = { glob = "usr/bin/guile-tools" } | OutputBin,
     libs = { glob = "usr/lib/*.so*" } | OutputLib,
-    # compiled modules and extensions
-    modules = { glob = "usr/lib/guile/**" } | OutputData,
+    # compiled modules (.go files are ELF) and the readline extension, loaded by guile itself
+    modules = { glob = "usr/lib/guile/**", allow_executable = true } | OutputData,
     pkgconfigs = { glob = "usr/lib/pkgconfig/**" } | OutputData,
     includes = { glob = "usr/include/**" } | OutputData,
     # Scheme sources and aclocal macros
