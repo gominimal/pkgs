@@ -1,6 +1,7 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
+let glibc = import "../glibc/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 
 let version = "3.10.0" in
@@ -16,6 +17,7 @@ let version = "3.10.0" in
   ],
   runtime_deps = [
     bash, # mvn is a shell script
+    glibc, # libjlinenative.so (JLine's native terminal support, 3.10.0+)
     jdk,
   ],
 
@@ -26,7 +28,13 @@ let version = "3.10.0" in
 
   outputs = {
     mvn = { glob = "usr/bin/mvn" } | OutputBin,
-    maven_home = { glob = "usr/share/maven/**" } | OutputData,
+    # Maven 3.10.0 bundles JLine's native terminal library; bin/mvn points JLine
+    # at it with -Dlibrary.jline.path=$MAVEN_HOME/lib/jline-native, which looks
+    # under <OS>/<arch>/. build.sh keeps only Linux/<host arch>. Declared as a
+    # library, with maven_home's data glob allowed to span it -- the same split
+    # packages/jdk uses for usr/lib/jvm/lib.
+    jline_native = { glob = "usr/share/maven/lib/jline-native/**/*.so" } | OutputLib,
+    maven_home = { glob = "usr/share/maven/**", allow_executable = true } | OutputData,
   },
 
   attrs =
