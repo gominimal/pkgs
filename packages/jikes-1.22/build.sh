@@ -24,9 +24,9 @@ LOADER="${SR}/lib/ld-linux-x86-64.so.2"
 # ============================================================================================
 # P0 — PRECONDITIONS: the seed-rooted B5 gcc AND g++ (jikes is C++), binutils, the B4 sysroot.
 # ============================================================================================
-# The B5 toolchain and B4 binutils carry no RUNPATH, and their loader (the sysroot's ld.so) searches
-# /usr/lib, where the production glibc lives. Run every executable that loads through it against the
-# sysroot's libc; production tools are left alone.
+# The B5 gcc carries no RUNPATH, and its loader (the sysroot's ld.so) searches /usr/lib, where the
+# production glibc lives. Run every executable that loads through that ld.so against the sysroot's
+# libc; production tools (binutils included) are left alone.
 B4BIN="${BUILDROOT}/b4-bin"; mkdir -p "${B4BIN}"
 set +x
 IFS=:; for d in ${PATH}; do
