@@ -44,6 +44,13 @@ fi
 cat > $OUTPUT_DIR/usr/bin/mvn << 'EOF'
 #!/bin/sh
 export M2_HOME=/usr/share/maven
+# MAVEN_REPO_LOCAL is the session state dir minimal wires for this package
+# (attrs.env_state_wiring). Maven has no env var for its local repository,
+# so pass it as -Dmaven.repo.local; a -Dmaven.repo.local the caller passes
+# comes later on the command line and still wins.
+if [ -n "${MAVEN_REPO_LOCAL:-}" ]; then
+  exec /usr/share/maven/bin/mvn "-Dmaven.repo.local=$MAVEN_REPO_LOCAL" "$@"
+fi
 exec /usr/share/maven/bin/mvn "$@"
 EOF
 chmod +x $OUTPUT_DIR/usr/bin/mvn
