@@ -25,6 +25,27 @@ JVMFLAGS="-Xnocompact -Xnoinlining"   # jamvm: without these the class-library b
 for t in gcc g++ ld ar ranlib make sed grep tar find xargs sha256sum python3 awk diff unzip zip; do
   command -v "$t" >/dev/null 2>&1 || { echo "ecj4-bootstrap-4.2.1: '$t' not on PATH" >&2; exit 1; }
 done
+# The B5 gcc carries no RUNPATH, and its loader (the sysroot's ld.so) searches /usr/lib, where the
+# production glibc lives. Start each of its programs through that ld.so with --library-path, which
+# binds the sysroot's libc to that process only: an exported LD_LIBRARY_PATH would reach the
+# production as, ld and /bin/sh that gcc runs, and they abort on the 2.42 libc. The drivers search
+# -B first, which is how they find the wrapped cc1/cc1plus/collect2.
+B4BIN="${BUILDROOT}/b4-bin"; mkdir -p "${B4BIN}"
+GCCLIBEXEC="/usr/libexec/gcc/x86_64-linux-gnu/${GCC_VERSION}"
+b4wrap() { # name real-path extra-args
+  printf '#!/bin/sh\nexec %s --library-path %s/lib %s %s "$@"\n' "${LOADER}" "${SR}" "$2" "$3" > "${B4BIN}/$1"
+  chmod +x "${B4BIN}/$1"
+}
+case $- in *x*) B4X=1 ;; *) B4X= ;; esac; set +x
+for f in /usr/bin/* "${GCCLIBEXEC}"/*; do
+  n="${f##*/}"
+  [ -f "${f}" ] && [ -x "${f}" ] && [ ! -e "${B4BIN}/${n}" ] || continue
+  head -c 4096 "${f}" | grep -qaF "${LOADER}" || continue
+  case "${n}" in *gcc-ar|*gcc-nm|*gcc-ranlib) B= ;; *gcc|*gcc-[0-9]*|*g++|*c++|cpp|*gfortran) B="-B${B4BIN}/" ;; *) B= ;; esac
+  b4wrap "${n}" "${f}" "${B}"
+done
+[ -n "${B4X}" ] && set -x
+export PATH="${B4BIN}:${PATH}"
 BGCC="$(command -v gcc)"; BGXX="$(command -v g++)"
 GCCVER="$("${BGCC}" -dumpversion 2>/dev/null || echo unknown)"
 [ "${GCCVER}" = "${GCC_VERSION}" ] || { echo "ecj4-bootstrap-4.2.1: gcc -dumpversion='${GCCVER}', expected '${GCC_VERSION}'" >&2; exit 1; }

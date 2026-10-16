@@ -35,7 +35,7 @@ b4wrap() { # name real-path extra-args
   printf '#!/bin/sh\nexec %s --library-path %s/lib %s %s "$@"\n' "${LOADER}" "${SR}" "$2" "$3" > "${B4BIN}/$1"
   chmod +x "${B4BIN}/$1"
 }
-set +x
+case $- in *x*) B4X=1 ;; *) B4X= ;; esac; set +x
 for f in /usr/bin/* "${GCCLIBEXEC}"/*; do
   n="${f##*/}"
   [ -f "${f}" ] && [ -x "${f}" ] && [ ! -e "${B4BIN}/${n}" ] || continue
@@ -43,8 +43,7 @@ for f in /usr/bin/* "${GCCLIBEXEC}"/*; do
   case "${n}" in *gcc-ar|*gcc-nm|*gcc-ranlib) B= ;; *gcc|*gcc-[0-9]*|*g++|*c++|cpp|*gfortran) B="-B${B4BIN}/" ;; *) B= ;; esac
   b4wrap "${n}" "${f}" "${B}"
 done
-set -x
-ls "${B4BIN}"
+[ -n "${B4X}" ] && set -x
 export PATH="${B4BIN}:${PATH}"
 BGCC="$(command -v gcc || true)"; BGXX="$(command -v g++ || true)"
 if [ -z "${BGCC}" ] || [ -z "${BGXX}" ]; then echo "jikes infra: B5 gcc/g++ not on PATH" >&2; exit 1; fi

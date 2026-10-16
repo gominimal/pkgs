@@ -9,7 +9,9 @@ let { target, .. } = import "config.ncl" in
 # amd64 only (see the match at the bottom).
 let openjdk-10 = import "../openjdk-10/build.ncl" in # the boot JDK
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
-let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
+# production binutils: the sealed binutils-2.46-glibc shares sonames (libsframe.so.3) with it in
+# /usr/lib, and a mixed pair crashes as
+let binutils = import "../binutils/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -74,7 +76,7 @@ let amd64_spec =
       } | Source,
       openjdk-10,
       gcc-bedrock,
-      binutils-bedrock,
+      binutils,
       glibc-bedrock,
       bash,
       make,

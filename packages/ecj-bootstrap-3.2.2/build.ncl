@@ -13,7 +13,9 @@ let jamvm-1-5-1 = import "../jamvm-1.5.1/build.ncl" in # runs the wrapper
 let classpath-0-93 = import "../classpath-0.93/build.ncl" in
 let ant-bootstrap-1-8-4 = import "../ant-bootstrap-1.8.4/build.ncl" in # on the compile classpath
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
-let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
+# production binutils: the sealed binutils-2.46-glibc shares sonames (libsframe.so.3) with it in
+# /usr/lib, and a mixed pair crashes as
+let binutils = import "../binutils/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -44,7 +46,7 @@ let amd64_spec =
       classpath-0-93,
       ant-bootstrap-1-8-4,
       gcc-bedrock,
-      binutils-bedrock,
+      binutils,
       glibc-bedrock,
       unzip,
       zip,
