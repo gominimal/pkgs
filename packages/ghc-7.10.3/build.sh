@@ -76,6 +76,8 @@ mkfixlib() {
   mkdir -p "$1"
   [ "${ARCH}" = x86_64 ] || return 0
   sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@${SR}/lib/\1@g" "${SR}/lib/libc.so" > "$1/libc.so"
+  # libm.so is a linker script naming /usr/lib/libm.so.6, which in the sandbox is the production libm
+  sed -E "s@[^ ()]*/(libm\.so\.6|libmvec\.so\.1)@${SR}/lib/\1@g" "${SR}/lib/libm.so" > "$1/libm.so"
   if grep -q '/build/output' "$1/libc.so"; then echo "ghc-${VERSION}: libc.so fixup failed" >&2; exit 1; fi
 }
 # Pre-9.0 C on a modern gcc: no PIE (static objects are linked into PIE-unaware binaries),

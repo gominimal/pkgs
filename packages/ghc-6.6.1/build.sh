@@ -39,6 +39,8 @@ if [ "$(uname -m)" = x86_64 ]; then
   mkdir -p $BIN/fixlib
   # the sysroot's libc.so is a linker script with staging paths; regenerate it
   sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@$SR/lib/\1@g" $SR/lib/libc.so > $BIN/fixlib/libc.so
+  # libm.so is a linker script naming /usr/lib/libm.so.6, which in the sandbox is the production libm
+  sed -E "s@[^ ()]*/(libm\.so\.6|libmvec\.so\.1)@$SR/lib/\1@g" $SR/lib/libm.so > $BIN/fixlib/libm.so
   grep -q '/build/output' $BIN/fixlib/libc.so && { echo "ghc-6.6.1: libc.so fixup failed" >&2; exit 1; }
   # gcc (and cc): the first gcc on PATH that is not one of these wrappers (each rung ships one), given the sysroot's headers and, when linking, its
   # libraries and loader ahead of /usr/lib, where the toolchain glibc also lives
