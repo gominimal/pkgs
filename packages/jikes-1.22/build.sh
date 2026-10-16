@@ -24,6 +24,19 @@ LOADER="${SR}/lib/ld-linux-x86-64.so.2"
 # ============================================================================================
 # P0 — PRECONDITIONS: the seed-rooted B5 gcc AND g++ (jikes is C++), binutils, the B4 sysroot.
 # ============================================================================================
+# The B5 toolchain and B4 binutils carry no RUNPATH, and their loader (the sysroot's ld.so) searches
+# /usr/lib, where the production glibc lives. Run every executable that loads through it against the
+# sysroot's libc; production tools are left alone.
+B4BIN="${BUILDROOT}/b4-bin"; mkdir -p "${B4BIN}"
+IFS=:; for d in ${PATH}; do
+  for f in "${d}"/*; do
+    n="${f##*/}"
+    [ -f "${f}" ] && [ -x "${f}" ] && [ ! -e "${B4BIN}/${n}" ] || continue
+    head -c 4096 "${f}" | grep -qaF "${LOADER}" || continue
+    printf '#!/bin/sh\nLD_LIBRARY_PATH=%s/lib exec %s "$@"\n' "${SR}" "${f}" > "${B4BIN}/${n}"; chmod +x "${B4BIN}/${n}"
+  done
+done; unset IFS
+export PATH="${B4BIN}:${PATH}"
 BGCC="$(command -v gcc || true)"; BGXX="$(command -v g++ || true)"
 if [ -z "${BGCC}" ] || [ -z "${BGXX}" ]; then echo "jikes infra: B5 gcc/g++ not on PATH" >&2; exit 1; fi
 for t in as ld ar ranlib make sed grep tar bzip2 bash sha256sum cp mkdir; do
