@@ -46,6 +46,12 @@ let version = "3.10.0" in
       upstream_version = version,
       binary_from = "https://archive.apache.org/dist/maven/",
       license_spdx = "Apache-2.0",
+      # The local repository (~/.m2/repository) as a session state dir, like
+      # gradle's GRADLE_USER_HOME; /usr/bin/mvn turns it into -Dmaven.repo.local.
+      env_state_wiring = {
+        env_var = "MAVEN_REPO_LOCAL",
+        prefix = "maven",
+      },
     } | Attrs,
 
   tests = {
@@ -55,6 +61,28 @@ let version = "3.10.0" in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "mvn --version 2>&1 | grep -q 'Apache Maven'"],
+        ],
+      } | Test,
+
+    # The wrapper hands MAVEN_REPO_LOCAL to Maven. A packaging=pom project's
+    # `validate` binds no plugins, so this runs offline.
+    repo_local_from_state_dir =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -euo pipefail
+              mkdir -p proj && cd proj
+              printf '%s' '<project><modelVersion>4.0.0</modelVersion><groupId>t</groupId><artifactId>t</artifactId><version>1</version><packaging>pom</packaging></project>' > pom.xml
+              out=$(MAVEN_REPO_LOCAL=/tmp/m2-state-repo mvn -o -X validate 2>&1)
+              grep -qF 'BUILD SUCCESS' <<<"$out"
+              grep -qF '/tmp/m2-state-repo' <<<"$out"
+            "%
+          ],
         ],
       } | Test,
   },
