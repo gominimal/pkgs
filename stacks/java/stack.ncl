@@ -7,11 +7,12 @@ let { stack, .. } = import "minimal.ncl" in
 #   mvn -q package                      # Maven projects
 #   gradle build                        # Gradle projects (Groovy or Kotlin DSL)
 #   jdtls                               # LSP for editors / agents (stdio)
-#   $JAVA_HOME/bin/jdb -attach 5005     # debug; jcmd / jfr profile (jdk)
+#   jdb -attach 5005                    # debug; jcmd / jfr profile (jdk)
 #
 # It is the union of the `maven` and `gradle` stacks' setup plus the language
-# server, on the CURRENT LTS (`jdk` is the LTS meta; pin `jdk-21` / `jdk-25`
-# in the project when a specific line matters). The JDK itself is most of the
+# server, pinned to Java 25 (`jdk-25`, the current LTS) like the `maven` and
+# `gradle` stacks, so a project's Java doesn't move when the `jdk` meta rolls
+# to the next LTS; use `jdk-21` / `jdk-27` in the project for another line. The JDK itself is most of the
 # toolbox: javac, jshell, jdb, jcmd, jfr, jdeps, jlink, jpackage, javadoc,
 # javap all ship in it — so unlike the `rust` / `go` stacks there is no
 # separate debugger, profiler or linker package to list.
@@ -33,7 +34,7 @@ stack {
 
     # THE ANCHOR: the current LTS JDK (compiler, runtime, jshell, jdb, jfr,
     # jcmd, jlink, ...). Ships no `JAVA_HOME` of its own — see below.
-    "jdk",
+    "jdk-25",
 
     # Both mainstream build tools. Each also works as a launcher for the
     # project's own plugins (Error Prone, SpotBugs, Spotless, OpenRewrite,
@@ -48,7 +49,7 @@ stack {
     "jdtls",
   ],
 
-  runtime_packages = ["jdk"],
+  runtime_packages = ["jdk-25"],
 
   build_env_vars = {
     # Gradle's and Maven's launchers both want JAVA_HOME and the jdk package
