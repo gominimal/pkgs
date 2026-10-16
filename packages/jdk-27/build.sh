@@ -15,7 +15,9 @@ mkdir -p $OUTPUT_DIR/usr/{bin,lib/jvm}
 # Install the JDK
 cp -r . $OUTPUT_DIR/usr/lib/jvm/
 
-# Symlink key binaries
-for bin in java javac jar jlink jmod jpackage jshell keytool; do
-    ln -sv ../lib/jvm/bin/$bin $OUTPUT_DIR/usr/bin/$bin
+# Put every JDK tool on PATH (jdb, jcmd, jfr, jstack, jmap, javap, jdeps,
+# javadoc, ... -- not just the eight that used to be listed here).
+for path in "$OUTPUT_DIR"/usr/lib/jvm/bin/*; do
+    bin=$(basename "$path")
+    ln -sv "../lib/jvm/bin/$bin" "$OUTPUT_DIR/usr/bin/$bin"
 done
