@@ -101,12 +101,11 @@ if [ -n "$PSEUDO_LIBS" ]; then
 fi
 
 # Now we can configure GHC. On aarch64 lld is in the build closure (the boot links with it) but not a
-# runtime dep, so the shipped settings must not pick it up.
-LDOPT=()
-[ "$(uname -m)" = aarch64 ] && LDOPT=(--disable-ld-override)
+# runtime dep, so the shipped settings must not pick it up. The environment form of --disable-ld-override
+# also reaches the bindist's own configure, which `hadrian install` runs without our flags.
+[ "$(uname -m)" = aarch64 ] && export enable_ld_override=no
 ./configure \
   --prefix=/usr \
-  "${LDOPT[@]}" \
   GHC="${BOOT}"
 
 # Hadrian flags. These MUST be identical for the build and the install invocation:
