@@ -87,7 +87,7 @@ if [ ! -x "jikes-${VERSION}/configure" ]; then echo "jikes infra: expected jikes
 cd "jikes-${VERSION}"
 CC="${BUILDROOT}/cc-wrap" CXX="${BUILDROOT}/cxx-wrap" CFLAGS="-O2" CXXFLAGS="-O2" \
   ./configure --prefix="${PREFIX}" --disable-dependency-tracking \
-  || { grep -v '^| ' config.log | tail -40 | cut -c1-200 >&2; exit 1; }
+  || { sed -n '/C++ compiler default output/,/^## -/p' config.log | grep -v '^| ' | head -45 | cut -c1-220 >&2; exit 1; }
 make -j"$(nproc 2>/dev/null || echo 4)"
 make install DESTDIR="${OUTPUT_DIR}"
 cd "${BUILDROOT}"
