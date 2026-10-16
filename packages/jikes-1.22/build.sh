@@ -96,7 +96,25 @@ if [ ! -x "jikes-${VERSION}/configure" ]; then echo "jikes infra: expected jikes
 cd "jikes-${VERSION}"
 CC="${BUILDROOT}/cc-wrap" CXX="${BUILDROOT}/cxx-wrap" CFLAGS="-O2" CXXFLAGS="-O2" \
   ./configure --prefix="${PREFIX}" --disable-dependency-tracking \
-  || { sed -n '/C++ compiler default output/,/^## -/p' config.log | grep -v '^| ' | head -45 | cut -c1-220 >&2; exit 1; }
+  || {
+    set +x
+    {
+      echo "--- which as gcc runs"
+      echo 'int main(){return 0;}' > /tmp/t.cc
+      "${BUILDROOT}/cxx-wrap" -v -O2 /tmp/t.cc -o /tmp/t 2>&1 | grep -E '^ ?/|COMPILER_PATH|^ +as |/as ' | cut -c1-200
+      echo "--- every as"
+      for a in $(command -v -a as) /usr/x86_64-linux-gnu/bin/as /usr/lib/gcc/x86_64-linux-gnu/15.2.0/as /usr/libexec/gcc/x86_64-linux-gnu/15.2.0/as; do
+        [ -e "$a" ] || continue
+        if head -c 4096 "$a" | grep -qaF "${LOADER}"; then k=bedrock-loader; elif head -c 64 "$a" | grep -qa '^#!'; then k=script; else k=production-loader; fi
+        echo "$a $k $(ls -la "$a" | cut -c1-80)"
+      done
+      echo "--- as --version, plain and with the sysroot path"
+      /usr/bin/as --version 2>&1 | head -1
+      LD_LIBRARY_PATH="${SR}/lib" /usr/bin/as --version 2>&1 | head -1
+      ls -la /usr/lib/libsframe.so* /usr/lib/libbfd*.so 2>&1 | cut -c1-120
+    } >&2
+    exit 1
+  }
 make -j"$(nproc 2>/dev/null || echo 4)"
 make install DESTDIR="${OUTPUT_DIR}"
 cd "${BUILDROOT}"
