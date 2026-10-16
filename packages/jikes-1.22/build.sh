@@ -25,27 +25,24 @@ LOADER="${SR}/lib/ld-linux-x86-64.so.2"
 # P0 — PRECONDITIONS: the seed-rooted B5 gcc AND g++ (jikes is C++), binutils, the B4 sysroot.
 # ============================================================================================
 # The B5 gcc carries no RUNPATH, and its loader (the sysroot's ld.so) searches /usr/lib, where the
-# production glibc lives. Run every executable that loads through that ld.so against the sysroot's
-# libc. gcc's children inherit that; the production as and ld it runs must not, so they get a
-# wrapper that drops it.
+# production glibc lives. Start each of its programs through that ld.so with --library-path, which
+# binds the sysroot's libc to that process only: an exported LD_LIBRARY_PATH would reach the
+# production as, ld and /bin/sh that gcc runs, and they abort on the 2.42 libc. The drivers search
+# -B first, which is how they find the wrapped cc1/cc1plus/collect2.
 B4BIN="${BUILDROOT}/b4-bin"; mkdir -p "${B4BIN}"
+GCCLIBEXEC="/usr/libexec/gcc/x86_64-linux-gnu/${GCC_VERSION}"
+b4wrap() { # name real-path extra-args
+  printf '#!/bin/sh\nexec %s --library-path %s/lib %s %s "$@"\n' "${LOADER}" "${SR}" "$2" "$3" > "${B4BIN}/$1"
+  chmod +x "${B4BIN}/$1"
+}
 set +x
-IFS=:; for d in ${PATH}; do
-  for f in "${d}"/*; do
-    n="${f##*/}"
-    [ -f "${f}" ] && [ -x "${f}" ] && [ ! -e "${B4BIN}/${n}" ] || continue
-    if head -c 4096 "${f}" | grep -qaF "${LOADER}"; then
-      # the drivers search -B first, ahead of their own tool dirs: that is how gcc and collect2 find
-      # the wrapped as and ld below rather than an unwrapped copy (e.g. /usr/x86_64-linux-gnu/bin/as)
-      case "${n}" in *gcc-ar|*gcc-nm|*gcc-ranlib) B= ;; *gcc|*gcc-[0-9]*|*g++|*c++|cpp|*gfortran) B="-B${B4BIN}/" ;; *) B= ;; esac
-      printf '#!/bin/sh\nLD_LIBRARY_PATH=%s/lib exec %s %s "$@"\n' "${SR}" "${f}" "${B}" > "${B4BIN}/${n}"
-    else
-      case "${n}" in as|ld|ld.bfd|ld.gold) ;; *) continue ;; esac
-      printf '#!/bin/sh\nunset LD_LIBRARY_PATH\nexec %s "$@"\n' "${f}" > "${B4BIN}/${n}"
-    fi
-    chmod +x "${B4BIN}/${n}"
-  done
-done; unset IFS
+for f in /usr/bin/* "${GCCLIBEXEC}"/*; do
+  n="${f##*/}"
+  [ -f "${f}" ] && [ -x "${f}" ] && [ ! -e "${B4BIN}/${n}" ] || continue
+  head -c 4096 "${f}" | grep -qaF "${LOADER}" || continue
+  case "${n}" in *gcc-ar|*gcc-nm|*gcc-ranlib) B= ;; *gcc|*gcc-[0-9]*|*g++|*c++|cpp|*gfortran) B="-B${B4BIN}/" ;; *) B= ;; esac
+  b4wrap "${n}" "${f}" "${B}"
+done
 set -x
 ls "${B4BIN}"
 export PATH="${B4BIN}:${PATH}"
