@@ -17,6 +17,25 @@ export HOME=$BUILDROOT/home; mkdir -p $HOME   # ghc-pkg reads $HOME
 if [ "$(uname -m)" = x86_64 ]; then
   SR=/usr/lib/glibc-bedrock-2.42; LOADER=$SR/lib/ld-linux-x86-64.so.2
   [ -e $SR/lib/libc.so ] && [ -e $LOADER ] || { echo "ghc-6.6.1: glibc sysroot missing at $SR" >&2; exit 1; }
+  # The bedrock gcc carries no RUNPATH, and its loader (the sysroot's ld.so) searches /usr/lib, where the
+  # production glibc lives. Start each of its programs through that ld.so with --library-path, which binds
+  # the sysroot's libc to that process only: an exported LD_LIBRARY_PATH would reach the production as, ld
+  # and /bin/sh that gcc runs. The drivers search -B first, which is how they find the wrapped cc1/collect2.
+  B4BIN="$PWD/b4-bin"; mkdir -p "$B4BIN"
+  b4wrap() { # name real-path extra-args
+    printf '#!/bin/sh\nexec %s --library-path %s/lib %s %s "$@"\n' "$LOADER" "$SR" "$2" "$3" > "$B4BIN/$1"
+    chmod +x "$B4BIN/$1"
+  }
+  case $- in *x*) B4X=1 ;; *) B4X= ;; esac; set +x
+  for f in /usr/bin/* /usr/libexec/gcc/x86_64-linux-gnu/*/*; do
+    n="${f##*/}"
+    [ -f "$f" ] && [ -x "$f" ] && [ ! -e "$B4BIN/$n" ] || continue
+    head -c 4096 "$f" | grep -qaF "$LOADER" || continue
+    case "$n" in *gcc-ar|*gcc-nm|*gcc-ranlib) B= ;; *gcc|*gcc-[0-9]*|*g++|*c++|cpp|*gfortran) B="-B$B4BIN/" ;; *) B= ;; esac
+    b4wrap "$n" "$f" "$B"
+  done
+  [ -n "$B4X" ] && set -x
+  export PATH="$B4BIN:$PATH"
   mkdir -p $BIN/fixlib
   # the sysroot's libc.so is a linker script with staging paths; regenerate it
   sed -E "s@[^ ()]*/(libc\.so\.6|libc_nonshared\.a|ld-linux-x86-64\.so\.2)@$SR/lib/\1@g" $SR/lib/libc.so > $BIN/fixlib/libc.so

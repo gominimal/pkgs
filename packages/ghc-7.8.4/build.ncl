@@ -7,7 +7,9 @@ let { target, .. } = import "config.ncl" in
 # No `needs`: nothing here touches the network. amd64 only (see the match at the bottom).
 let ghc-boot = import "../ghc-7.6.3/build.ncl" in # the previous rung
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
-let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
+# production binutils: the sealed binutils-2.46-glibc shares sonames (libsframe.so.3) with it in
+# /usr/lib, and a mixed pair crashes as
+let binutils = import "../binutils/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
 let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
 let gmp = import "../gmp/build.ncl" in # integer-gmp
@@ -30,7 +32,7 @@ let patch = import "../patch/build.ncl" in # and patches it
 let version = "7.8.4" in
 let is_arm = target.arch == 'Arm64 in
 # x86_64 compiles with the bedrock gcc against its glibc sysroot; aarch64 with the toolchain, itself hex0-rooted
-let cc_build = if is_arm then [toolchain] else [gcc-bedrock, binutils-bedrock, glibc-bedrock] in
+let cc_build = if is_arm then [toolchain] else [gcc-bedrock, binutils, glibc-bedrock] in
 let arm_extra =
   if is_arm then
     [

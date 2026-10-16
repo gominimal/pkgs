@@ -7,7 +7,9 @@ let ghc-6-10-4 = import "../ghc-6.10.4/build.ncl" in # the boot compiler
 let gmp = import "../gmp/build.ncl" in # the RTS's Integer
 let ncurses = import "../ncurses/build.ncl" in # the terminfo library binds it
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # the C compiler, hex0-rooted; build.sh wraps it against the sysroot
-let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
+# production binutils: the sealed binutils-2.46-glibc shares sonames (libsframe.so.3) with it in
+# /usr/lib, and a mixed pair crashes as
+let binutils = import "../binutils/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
 let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
 let glibc = import "../glibc/build.ncl" in
@@ -27,8 +29,8 @@ let patch = import "../patch/build.ncl" in
 let version = "7.0.4" in
 let is_arm = target.arch == 'Arm64 in
 # x86_64 compiles with the bedrock gcc against its glibc sysroot; aarch64 with the toolchain, itself hex0-rooted
-let cc_build = if is_arm then [toolchain] else [gcc-bedrock, binutils-bedrock, glibc-bedrock] in
-let cc_runtime = if is_arm then [glibc, toolchain] else [subsetOf glibc-bedrock ["sysroot_lib"], gcc-bedrock, binutils-bedrock] in
+let cc_build = if is_arm then [toolchain] else [gcc-bedrock, binutils, glibc-bedrock] in
+let cc_runtime = if is_arm then [glibc, toolchain] else [subsetOf glibc-bedrock ["sysroot_lib"], gcc-bedrock, binutils] in
 let arm_sources =
   if is_arm then
     [
