@@ -20,6 +20,7 @@ let tar = import "../tar/build.ncl" in
 let xz = import "../xz/build.ncl" in # .tar.xz source
 let findutils = import "../findutils/build.ncl" in # mtime guard: find . -exec touch
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # gcc's build regenerates options.c via awk
+# pkgmgr: bootstrap_rung = "hex0"
 let version = "10.4.0" in
 let amd64_spec =
   {
@@ -73,10 +74,15 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# This package exists on amd64 only (the amd64 bootstrap chain). On arm64 the spec is an empty
-# collection: no build runs and nothing on the arm graph depends on it.
+# This package builds on amd64 only, and only while hex0/amd64-ladder.ncl is enabled (the amd64
+# bootstrap chain). On arm64, and on amd64 while the switch is off, the spec is an empty collection:
+# no build runs, and `go`/`rust` take sealed tarballs of the chain's last rungs instead.
 match {
-  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Amd64, .. } =>
+    if (import "../hex0/amd64-ladder.ncl").enabled then
+      amd64_spec
+    else
+      ({ name = "stage0-gcc-10.4.0", build_deps = [] } | BuildSpec),
   { arch = 'Arm64, .. } =>
     {
       name = "stage0-gcc-10.4.0",

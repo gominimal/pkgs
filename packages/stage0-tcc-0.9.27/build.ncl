@@ -1,3 +1,4 @@
+# pkgmgr: bootstrap_rung = "hex0"
 let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # stage0-tcc-0.9.27: mainline tinycc 0.9.27 compiled in one shot by stage0-tcc-0.9.26's tcc
@@ -97,7 +98,13 @@ in
 # amd64 only: this rung belongs to the hex0-rooted amd64 ladder. On arm64 the spec collapses to
 # an empty collection (no build, no outputs, nothing depends on it).
 match {
-  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Amd64, .. } =>
+    # While hex0/amd64-ladder.ncl is off, amd64 is an empty stub too: `go`/`rust` take sealed
+    # tarballs of the chain's last rungs instead (see that file).
+    if (import "../hex0/amd64-ladder.ncl").enabled then
+      amd64_spec
+    else
+      ({ name = "stage0-tcc-0.9.27", build_deps = [] } | BuildSpec),
   { arch = 'Arm64, .. } =>
     {
       name = "stage0-tcc-0.9.27",

@@ -15,6 +15,7 @@ let sed = import "../sed/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in # sha256sum/cp/mkdir/uname/timeout/rm
 let tar = import "../tar/build.ncl" in
+# pkgmgr: bootstrap_rung = "go"
 let version = "1.22.6" in
 let amd64_spec =
   {
@@ -62,7 +63,13 @@ in
 # amd64 only: this rung belongs to the amd64 bootstrap ladder.  On arm64 the shipped go recipe
 # consumes a sha-pinned prebuilt instead, so this spec collapses to an empty collection there.
 match {
-  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Amd64, .. } =>
+    # While hex0/amd64-ladder.ncl is off, amd64 is an empty stub too: `go`/`rust` take sealed
+    # tarballs of the chain's last rungs instead (see that file).
+    if (import "../hex0/amd64-ladder.ncl").enabled then
+      amd64_spec
+    else
+      ({ name = "go-1.22.6", build_deps = [] } | BuildSpec),
   { arch = 'Arm64, .. } =>
     {
       name = "go-1.22.6",

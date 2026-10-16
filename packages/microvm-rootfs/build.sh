@@ -195,7 +195,8 @@ for f in \
   sbin/ip \
   sbin/mkfs.ext4 \
   sbin/fstrim \
-  usr/bin/nsenter; do
+  usr/bin/nsenter \
+  usr/sbin/nft; do
   # -L as well as -e: /bin/sh is an absolute symlink to /bin/busybox, which
   # only resolves once the image is the root.
   [ -e "$STAGE/$f" ] || [ -L "$STAGE/$f" ] || {

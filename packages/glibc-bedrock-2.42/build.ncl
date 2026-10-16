@@ -31,6 +31,7 @@ let xz = import "../xz/build.ncl" in
 let bison = import "../bison/build.ncl" in # intl/plural.c is not shipped in the 2.42 tarball, so bison always regenerates it
 let m4 = import "../m4/build.ncl" in # bison runtime dep
 let python = import "../python/build.ncl" in # gen-as-const.py
+# pkgmgr: bootstrap_rung = "hex0"
 let version = "2.42" in
 
 # Outputs follow the production glibc package (plain /usr, --prefix=/usr, libc_cv_slibdir=/usr/lib),
@@ -130,10 +131,32 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# This package exists on amd64 only (the amd64 bootstrap chain). On arm64 the spec is an empty
-# collection: no build runs and nothing on the arm graph depends on it.
+# This package builds on amd64 only, and only while hex0/amd64-ladder.ncl is enabled (the amd64
+# bootstrap chain). While the switch is off, amd64 takes the sealed artifact below instead (no
+# build); on arm64 the spec is an empty collection.
 match {
-  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Amd64, .. } =>
+    if (import "../hex0/amd64-ladder.ncl").enabled then
+      amd64_spec
+    else
+      # SEALED (switch off): the same sha-pinned artifact the production toolchain
+      # package already anchors on (see packages/glibc/build.ncl), with this
+      # package's own outputs, so anything that imports it (the jvm ladder roots) gets a
+      # real tree rather than an empty stub. Provenance: gominimal/minimermetic#16.
+      (
+        {
+          name = "glibc-bedrock-2.42",
+          prebuilt = true,
+          build_deps = [
+            {
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/d0850b659687f160368bf87a57d02cfbbe0f1a5fe6ab4b623ca8296b5659126f/glibc-bedrock-2.42-2.42.tar.zst",
+              sha256 = "d0850b659687f160368bf87a57d02cfbbe0f1a5fe6ab4b623ca8296b5659126f",
+              extract = true,
+            } | Source,
+          ],
+          outputs = all_outputs,
+        } | BuildSpec
+      ),
   { arch = 'Arm64, .. } =>
     {
       name = "glibc-bedrock-2.42",
