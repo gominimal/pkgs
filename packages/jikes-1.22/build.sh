@@ -30,7 +30,13 @@ for t in as ld ar ranlib make sed grep tar bzip2 bash sha256sum cp mkdir; do
   command -v "$t" >/dev/null 2>&1 || { echo "jikes infra: '$t' not on PATH" >&2; exit 1; }
 done
 GCCVER="$("${BGCC}" -dumpversion 2>/dev/null || echo unknown)"
-[ "${GCCVER}" = "${GCC_VERSION}" ] || { echo "jikes infra: gcc -dumpversion='${GCCVER}', expected '${GCC_VERSION}' (B5)" >&2; exit 1; }
+if [ "${GCCVER}" != "${GCC_VERSION}" ]; then
+  # the driver's own error, and which loader and libc it resolves (it has no RUNPATH)
+  "${BGCC}" -dumpversion 2>&1 | head -5 >&2 || true
+  ls -la "${BGCC}" /usr/lib/libc.so.6 /usr/lib/ld-linux-x86-64.so.2 "${SR}/lib/libc.so.6" "${LOADER}" >&2 2>&1 || true
+  sha256sum /usr/lib/libc.so.6 "${SR}/lib/libc.so.6" >&2 2>&1 || true
+  echo "jikes infra: gcc -dumpversion='${GCCVER}', expected '${GCC_VERSION}' (B5)" >&2; exit 1
+fi
 [ -e "${SR}/lib/libc.so" ] || { echo "jikes infra: B4 sysroot missing at ${SR}" >&2; exit 1; }
 [ -e "${LOADER}" ]         || { echo "jikes infra: B4 loader missing at ${LOADER}" >&2; exit 1; }
 [ -e "${SRC_TARBALL}" ]    || { echo "jikes infra: source ${SRC_TARBALL} absent" >&2; exit 1; }
