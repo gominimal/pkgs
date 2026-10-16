@@ -9,6 +9,12 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let pnpm = import "../pnpm/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+let llvm = import "../llvm/build.ncl" in
+let wasi-libc = import "../wasi-libc/build.ncl" in
+let llhttp-wasm-rebuild = import "../llhttp-wasm-rebuild/build.ncl" in
+
+# undici whose llhttp C rebuilds the wasm next bundles into its edge runtime.
+let undici = "6.28.0" in
 
 let version = "16.4.1" in
 {
@@ -21,6 +27,13 @@ let version = "16.4.1" in
       extract = true,
       strip_prefix = "next.js-%{version}",
     } | Source,
+    {
+      url = "gs://minimal-staging-archives/undici-%{undici}.tar.gz",
+      sha256 = "555a14624f66628d8aa7fcd0691ab2371f3e4512c40358bb7320bfabbb6763ec",
+    } | Source,
+    llvm, # clang + wasm-ld for the llhttp wasm
+    wasi-libc,
+    llhttp-wasm-rebuild,
     base,
     glib,
     make,
