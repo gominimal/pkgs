@@ -26,15 +26,21 @@ LOADER="${SR}/lib/ld-linux-x86-64.so.2"
 # ============================================================================================
 # The B5 gcc carries no RUNPATH, and its loader (the sysroot's ld.so) searches /usr/lib, where the
 # production glibc lives. Run every executable that loads through that ld.so against the sysroot's
-# libc; production tools (binutils included) are left alone.
+# libc. gcc's children inherit that; the production as and ld it runs must not, so they get a
+# wrapper that drops it.
 B4BIN="${BUILDROOT}/b4-bin"; mkdir -p "${B4BIN}"
 set +x
 IFS=:; for d in ${PATH}; do
   for f in "${d}"/*; do
     n="${f##*/}"
     [ -f "${f}" ] && [ -x "${f}" ] && [ ! -e "${B4BIN}/${n}" ] || continue
-    head -c 4096 "${f}" | grep -qaF "${LOADER}" || continue
-    printf '#!/bin/sh\nLD_LIBRARY_PATH=%s/lib exec %s "$@"\n' "${SR}" "${f}" > "${B4BIN}/${n}"; chmod +x "${B4BIN}/${n}"
+    if head -c 4096 "${f}" | grep -qaF "${LOADER}"; then
+      printf '#!/bin/sh\nLD_LIBRARY_PATH=%s/lib exec %s "$@"\n' "${SR}" "${f}" > "${B4BIN}/${n}"
+    else
+      case "${n}" in as|ld|ld.bfd|ld.gold) ;; *) continue ;; esac
+      printf '#!/bin/sh\nunset LD_LIBRARY_PATH\nexec %s "$@"\n' "${f}" > "${B4BIN}/${n}"
+    fi
+    chmod +x "${B4BIN}/${n}"
   done
 done; unset IFS
 set -x
