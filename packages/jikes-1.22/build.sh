@@ -86,7 +86,8 @@ tar --no-same-owner -xjf "${SRC_TARBALL}"
 if [ ! -x "jikes-${VERSION}/configure" ]; then echo "jikes infra: expected jikes-${VERSION}/configure after untar" >&2; ls -la >&2; exit 1; fi
 cd "jikes-${VERSION}"
 CC="${BUILDROOT}/cc-wrap" CXX="${BUILDROOT}/cxx-wrap" CFLAGS="-O2" CXXFLAGS="-O2" \
-  ./configure --prefix="${PREFIX}" --disable-dependency-tracking
+  ./configure --prefix="${PREFIX}" --disable-dependency-tracking \
+  || { grep -v '^| ' config.log | tail -40 | cut -c1-200 >&2; exit 1; }
 make -j"$(nproc 2>/dev/null || echo 4)"
 make install DESTDIR="${OUTPUT_DIR}"
 cd "${BUILDROOT}"
