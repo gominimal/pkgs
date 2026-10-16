@@ -10,6 +10,9 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export GUILE_AUTO_COMPILE=0
 
+tar -xJof "guile-${MINIMAL_ARG_VERSION}.tar.xz"
+cd "guile-${MINIMAL_ARG_VERSION}"
+
 # The tarball ships compiled bytecode for the bootstrap modules (prebuilt/*/ice-9/*.go). Delete it so the
 # build compiles them from source with the C interpreter.
 find prebuilt -name '*.go' -delete

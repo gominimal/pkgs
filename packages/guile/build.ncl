@@ -8,6 +8,9 @@ let bdwgc = import "../bdwgc/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let libunistring = import "../libunistring/build.ncl" in
+let tar = import "../tar/build.ncl" in
+let xz = import "../xz/build.ncl" in
+let readline = import "../readline/build.ncl" in # the REPL; guile-readline.so links it
 
 # GNU Guile, built from its C sources: build.sh deletes the tarball's prebuilt .go bytecode, so every
 # compiled module comes from the C interpreter bootstrapping the compiler. The one pre-generated input
@@ -20,8 +23,8 @@ let version = "3.0.11" in
     {
       url = "gs://minimal-staging-archives/guile-%{version}.tar.xz",
       sha256 = "818c79d236657a7fa96fb364137cc7b41b3bdee0d65c6174ca03769559579460",
-      extract = true,
-      strip_prefix = "guile-%{version}",
+      # untarred by build.sh: prebuilt/<triple>/Makefile.in are hard links, which extraction drops
+      extract = false,
     } | Source,
     base,
     make,
@@ -31,6 +34,9 @@ let version = "3.0.11" in
     gmp,
     libffi,
     libunistring,
+    tar,
+    xz,
+    readline,
   ],
   runtime_deps = [
     glibc,
@@ -38,6 +44,7 @@ let version = "3.0.11" in
     gmp,
     libffi,
     libunistring,
+    readline,
   ],
 
   cmd = "./build.sh",
