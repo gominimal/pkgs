@@ -10,7 +10,11 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
-cmake -B build
+# GGML_NATIVE defaults ON and adds -march=native, so the generated code follows the CPU
+# of whichever res-server rung the build landed on (2026-10 prod-pair diff: 31% of
+# libllama-server-impl.so regenerated between two builds, identical symbol set). The
+# explicit $MARCH in CFLAGS is the target; let it be the only one.
+cmake -B build -DGGML_NATIVE=OFF
 cmake --build build --config Release -j $(nproc)
 
 mkdir -pv $OUTPUT_DIR/usr/{bin,lib}
