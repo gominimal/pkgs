@@ -13,6 +13,11 @@ let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.
 # /usr/lib, and a mixed pair crashes as
 let binutils = import "../binutils/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
+let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
+let glibc = import "../glibc/build.ncl" in
+let automake = import "../automake/build.ncl" in
+let libtool = import "../libtool/build.ncl" in
+let is_arm = target.arch == 'Arm64 in
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -54,82 +59,85 @@ let libxt = import "../libxt/build.ncl" in
 let xorgproto = import "../xorgproto/build.ncl" in
 # pkgmgr: bootstrap_rung = "jvm"
 let version = "13.0.14" in
-let amd64_spec =
+let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
   {
     name = "openjdk-13",
-    build_deps = [
-      { file = "build.sh" } | Local,
-      { file = "openjdk-13-classlist-reproducibility.patch" } | Local, # the CDS classlist is sorted (comments first, classes, then @lambda lines) before it is packed into java.base.jmod; 17+ do this natively
-      { file = "openjdk-10-jtask-reproducibility.patch" } | Local, # deterministic output
-      { file = "openjdk-12-modulehashes-reproducibility.patch" } | Local, # ModuleHashes over module contents, names sorted (JDK-8240734, JDK-8243666)
-      { file = "openjdk-11-moduledescriptor-hash.patch" } | Local, # ModuleDescriptor hashes modifiers by ordinal, not identity (JDK-8275509, JDK-8290041)
-      {
-        # https://github.com/openjdk/jdk13u/archive/refs/tags/jdk-13.0.14-ga.tar.gz
-        url = "gs://minimal-staging-archives/jdk-13.0.14-ga.tar.gz",
-        sha256 = "8969ccf51ba394e1a953ddce768eb46c275c146cb7488439316306aef8699b15",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      openjdk-12,
-      gcc-bedrock,
-      binutils,
-      glibc-bedrock,
-      bash,
-      make,
-      sed,
-      grep,
-      coreutils,
-      findutils,
-      tar,
-      python,
-      gawk,
-      diffutils,
-      gzip,
-      patch,
-      zip,
-      unzip,
-      cpio,
-      file,
-      which,
-      pkgconf,
-      autoconf,
-      m4,
-      zlib,
-      freetype,
-      cups,
-      alsa-lib,
-      lcms2,
-      fontconfig,
-      libpng,
-      libjpeg-turbo,
-      giflib,
-      libx11,
-      libxext,
-      libxrender,
-      libxtst,
-      libxi,
-      libxinerama,
-      libxrandr,
-      libxcomposite,
-      libxt,
-      xorgproto,
-    ],
+    build_deps =
+      [
+        (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
+        { file = "openjdk-13-classlist-reproducibility.patch" } | Local, # the CDS classlist is sorted (comments first, classes, then @lambda lines) before it is packed into java.base.jmod; 17+ do this natively
+        { file = "openjdk-10-jtask-reproducibility.patch" } | Local, # deterministic output
+        { file = "openjdk-12-modulehashes-reproducibility.patch" } | Local, # ModuleHashes over module contents, names sorted (JDK-8240734, JDK-8243666)
+        { file = "openjdk-11-moduledescriptor-hash.patch" } | Local, # ModuleDescriptor hashes modifiers by ordinal, not identity (JDK-8275509, JDK-8290041)
+        {
+          # https://github.com/openjdk/jdk13u/archive/refs/tags/jdk-13.0.14-ga.tar.gz
+          url = "gs://minimal-staging-archives/jdk-13.0.14-ga.tar.gz",
+          sha256 = "8969ccf51ba394e1a953ddce768eb46c275c146cb7488439316306aef8699b15",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        openjdk-12,
+      ]
+      @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
+      @ [
+        bash,
+        make,
+        sed,
+        grep,
+        coreutils,
+        findutils,
+        tar,
+        python,
+        gawk,
+        diffutils,
+        gzip,
+        patch,
+        zip,
+        unzip,
+        cpio,
+        file,
+        which,
+        pkgconf,
+        autoconf,
+        m4,
+        zlib,
+        freetype,
+        cups,
+        alsa-lib,
+        lcms2,
+        fontconfig,
+        libpng,
+        libjpeg-turbo,
+        giflib,
+        libx11,
+        libxext,
+        libxrender,
+        libxtst,
+        libxi,
+        libxinerama,
+        libxrandr,
+        libxcomposite,
+        libxt,
+        xorgproto,
+      ],
     # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, lcms2, libpng, giflib and libjpeg
-    runtime_deps = [
-      glibc-bedrock,
-      zlib,
-      freetype,
-      libpng,
-      giflib,
-      libjpeg-turbo,
-      lcms2,
-      alsa-lib,
-      libx11,
-      libxext,
-      libxi,
-      libxrender,
-      libxtst,
-    ],
-    cmd = "./build.sh",
+    runtime_deps =
+      []
+      @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
+      @ [
+        zlib,
+        freetype,
+        libpng,
+        giflib,
+        libjpeg-turbo,
+        lcms2,
+        alsa-lib,
+        libx11,
+        libxext,
+        libxi,
+        libxrender,
+        libxtst,
+      ],
+    cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path
       prefix = { glob = "usr/lib/openjdk-13/**", allow_executable = true } | OutputData,
@@ -148,13 +156,4 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# amd64 only: this rung belongs to the amd64 bootstrap ladder; the spec collapses to an empty
-# collection on arm64.
-match {
-  { arch = 'Amd64, .. } => amd64_spec,
-  { arch = 'Arm64, .. } =>
-    {
-      name = "openjdk-13",
-      build_deps = [],
-    } | BuildSpec,
-} target
+amd64_spec
