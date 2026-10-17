@@ -83,6 +83,9 @@ for d in corba jaxp jaxws jdk langtools hotspot; do mkdir -p "openjdk.src/$d" &&
 ( cd openjdk.src/hotspot && patch -p1 < ../../../icedtea-7-hotspot-pointer-comparison.patch )
 # aarch64 HotSpot: a C++11-only construct in sharedRuntime_aarch64.cpp (Guix's patch)
 ( cd openjdk.src/hotspot && patch -p1 < ../../../icedtea-7-hotspot-aarch64-use-c++98.patch )
+# glibc 2.42+'s <stdlib.h> declares uabs(int); HotSpot's own uabs overloads collide (icedtea-8 renames them the same way)
+grep -rl '\buabs\b' openjdk.src/hotspot/src | xargs -r sed -i 's/\buabs\b/hs_uabs/g'
+if grep -rqw 'uabs' openjdk.src/hotspot/src; then echo "icedtea-7: uabs rename did not apply" >&2; exit 1; fi
 sed -i 's/__DATE__/""/; s/__TIME__/""/' openjdk.src/hotspot/src/share/vm/runtime/vm_version.cpp   # the VM banner's build date
 # --- source fixes ---
 sed -i 's|DISTRIBUTION_ID="\$(DIST_ID)"|DISTRIBUTION_ID="\\"minimal\\""|' Makefile.in
