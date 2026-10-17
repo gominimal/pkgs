@@ -17,6 +17,13 @@ let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.
 # /usr/lib, and a mixed pair crashes as
 let binutils = import "../binutils/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
+let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
+let glibc = import "../glibc/build.ncl" in
+let autoconf = import "../autoconf/build.ncl" in # aarch64: config.sub refresh, autoreconf
+let automake = import "../automake/build.ncl" in
+let libtool = import "../libtool/build.ncl" in
+let m4 = import "../m4/build.ncl" in
+let is_arm = target.arch == 'Arm64 in
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -31,11 +38,11 @@ let unzip = import "../unzip/build.ncl" in
 let zip = import "../zip/build.ncl" in
 # pkgmgr: bootstrap_rung = "jvm"
 let version = "4.2.1" in
-let amd64_spec =
+let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
   {
     name = "ecj4-bootstrap-4.2.1",
     build_deps = [
-      { file = "build.sh" } | Local,
+      (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
       {
         # a zip archive of the sources
         url = "gs://minimal-staging-archives/ecjsrc-4.2.1.jar",
@@ -46,9 +53,9 @@ let amd64_spec =
       jamvm-2-0-0,
       classpath-devel,
       ant-bootstrap-1-8-4,
-      gcc-bedrock,
-      binutils,
-      glibc-bedrock,
+    ]
+    @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
+    @ [
       unzip,
       zip,
       bash,
@@ -67,7 +74,7 @@ let amd64_spec =
       jamvm-2-0-0,
       classpath-devel,
     ],
-    cmd = "./build.sh",
+    cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path
       prefix = { glob = "usr/lib/ecj4-bootstrap-4.2.1/**", allow_executable = true } | OutputData,
@@ -86,13 +93,4 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# amd64 only: this rung belongs to the amd64 bootstrap ladder; the spec collapses to an empty
-# collection on arm64.
-match {
-  { arch = 'Amd64, .. } => amd64_spec,
-  { arch = 'Arm64, .. } =>
-    {
-      name = "ecj4-bootstrap-4.2.1",
-      build_deps = [],
-    } | BuildSpec,
-} target
+amd64_spec
