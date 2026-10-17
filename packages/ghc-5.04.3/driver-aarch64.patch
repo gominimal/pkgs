@@ -1,0 +1,15 @@
+--- a/ghc/compiler/main/DriverFlags.hs
++++ b/ghc/compiler/main/DriverFlags.hs
+@@ -535,6 +535,12 @@
+ --		       )
+ 
+ machdepCCOpts 
++   | prefixMatch "aarch64"  cTARGETPLATFORM
++      -- unregisterised via-C with gcc >= 14: 1990s C (implicit int/decls, pointer punning),
++      -- and a non-PIE link (the RTS tells static data from heap by address)
++	= return ( ["-std=gnu89", "-fno-strict-aliasing", "-Wno-implicit-function-declaration",
++		    "-Wno-int-conversion", "-Wno-incompatible-pointer-types", "-no-pie"], [] )
++
+    | prefixMatch "alpha"   cTARGETPLATFORM  
+ 	= return ( ["-static", "-w", "-mieee"], [] )
+ 	-- For now, to suppress the gcc warning "call-clobbered
