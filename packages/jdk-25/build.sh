@@ -1,5 +1,5 @@
 #!/bin/bash
-# OpenJDK from the openjdk/jdk25u tag archive, booted by ../openjdk-25 (the top of the JVM ladder) and
+# OpenJDK from the openjdk/jdk25u tag archive, booted by ../openjdk-25 (a rung of the JVM ladder) and
 # compiled by the production toolchain. Installs at /usr/lib/jvm; every tool is linked from /usr/bin.
 set -eu
 trap 'echo "jdk-25: failed at line $LINENO: $BASH_COMMAND" >&2' ERR

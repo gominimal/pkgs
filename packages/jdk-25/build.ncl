@@ -1,6 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 # jdk-25: the current Java LTS line. OpenJDK built from the openjdk/jdk25u tag that Eclipse Temurin's
-# release of the same version is built from, booted by ../openjdk-25 (the top of the JVM ladder) and
+# release of the same version is built from, booted by ../openjdk-25 (a rung of the JVM ladder) and
 # compiled by the production toolchain. Same /usr/lib/jvm layout and outputs as the Temurin package
 # it replaces. Leaves out the CDS archives and src.zip, which do not reproduce.
 let openjdk-25 = import "../openjdk-25/build.ncl" in # the boot JDK
