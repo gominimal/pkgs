@@ -38,31 +38,32 @@ let version = "1.8.4" in
 let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
   {
     name = "ant-bootstrap-1.8.4",
-    build_deps = [
-      (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
-      {
-        url = "gs://minimal-staging-archives/apache-ant-1.8.4-src.tar.bz2",
-        sha256 = "5de65f7ba3f67e436ffffcdc0a73f591d1006e9fb41af8632c1f1f84d4a3e0b1",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      jikes-1-22,
-      jamvm-1-5-1,
-      classpath-0-93,
-    ]
-    @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
-    @ [
-      bash,
-      make,
-      sed,
-      grep,
-      coreutils,
-      findutils,
-      tar,
-      bzip2,
-      python,
-      gawk,
-      diffutils,
-    ],
+    build_deps =
+      [
+        (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
+        {
+          url = "gs://minimal-staging-archives/apache-ant-1.8.4-src.tar.bz2",
+          sha256 = "5de65f7ba3f67e436ffffcdc0a73f591d1006e9fb41af8632c1f1f84d4a3e0b1",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        jikes-1-22,
+        jamvm-1-5-1,
+        classpath-0-93,
+      ]
+      @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
+      @ [
+        bash,
+        make,
+        sed,
+        grep,
+        coreutils,
+        findutils,
+        tar,
+        bzip2,
+        python,
+        gawk,
+        diffutils,
+      ],
     cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path

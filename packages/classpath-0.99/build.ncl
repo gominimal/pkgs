@@ -41,41 +41,42 @@ let version = "0.99" in
 let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
   {
     name = "classpath-0.99",
-    build_deps = [
-      (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
-      {
-        url = "gs://minimal-staging-archives/classpath-0.99.tar.gz",
-        sha256 = "f929297f8ae9b613a1a167e231566861893260651d913ad9b6c11933895fecc8",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      ecj-bootstrap-3-2-2,
-      jamvm-1-5-1,
-      classpath-0-93,
-    ]
-    @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
-    @ [
-      fastjar,
-      zip,
-      zlib,
-      bash,
-      make,
-      sed,
-      grep,
-      coreutils,
-      findutils,
-      tar,
-      gzip,
-      python,
-      gawk,
-      diffutils,
-    ],
+    build_deps =
+      [
+        (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
+        {
+          url = "gs://minimal-staging-archives/classpath-0.99.tar.gz",
+          sha256 = "f929297f8ae9b613a1a167e231566861893260651d913ad9b6c11933895fecc8",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        ecj-bootstrap-3-2-2,
+        jamvm-1-5-1,
+        classpath-0-93,
+      ]
+      @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
+      @ [
+        fastjar,
+        zip,
+        zlib,
+        bash,
+        make,
+        sed,
+        grep,
+        coreutils,
+        findutils,
+        tar,
+        gzip,
+        python,
+        gawk,
+        diffutils,
+      ],
     # the tool wrappers (javah, rmic, …) exec jamvm-1.5.1
-    runtime_deps = [
-      jamvm-1-5-1,
-    ]
-    @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
-    @ [
-    ],
+    runtime_deps =
+      [
+        jamvm-1-5-1,
+      ]
+      @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
+      @ [],
     cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path

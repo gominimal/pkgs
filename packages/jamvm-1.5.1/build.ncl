@@ -40,45 +40,47 @@ let version = "1.5.1" in
 let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
   {
     name = "jamvm-1.5.1",
-    build_deps = [
-      (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
-    ]
-    @ (if is_arm then [{ file = "jamvm-1.5.1-aarch64-support.patch" } | Local] else [])
-    @ [
-      { file = "jamvm-1.5.1-jni-return-width.patch" } | Local, # JNI trampoline stored all of %rax for jboolean returns
-      {
-        url = "gs://minimal-staging-archives/jamvm-1.5.1.tar.gz",
-        sha256 = "663895bd69caf3a1fda6af5eea8263d90a5fd35ca8f4c32e2210ac410788901a",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      classpath-0-93,
-      jikes-1-22,
-      patch,
-    ]
-    @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
-    @ [
-      zlib,
-      zip,
-      bash,
-      make,
-      sed,
-      grep,
-      coreutils,
-      findutils,
-      tar,
-      gzip,
-      python,
-      gawk,
-      diffutils,
-    ],
+    build_deps =
+      [
+        (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
+      ]
+      @ (if is_arm then [{ file = "jamvm-1.5.1-aarch64-support.patch" } | Local] else [])
+      @ [
+        { file = "jamvm-1.5.1-jni-return-width.patch" } | Local, # JNI trampoline stored all of %rax for jboolean returns
+        {
+          url = "gs://minimal-staging-archives/jamvm-1.5.1.tar.gz",
+          sha256 = "663895bd69caf3a1fda6af5eea8263d90a5fd35ca8f4c32e2210ac410788901a",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        classpath-0-93,
+        jikes-1-22,
+        patch,
+      ]
+      @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
+      @ [
+        zlib,
+        zip,
+        bash,
+        make,
+        sed,
+        grep,
+        coreutils,
+        findutils,
+        tar,
+        gzip,
+        python,
+        gawk,
+        diffutils,
+      ],
     # the VM is configured for classpath-0.93; links libz
-    runtime_deps = [
-      classpath-0-93,
-    ]
-    @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
-    @ [
-      zlib,
-    ],
+    runtime_deps =
+      [
+        classpath-0-93,
+      ]
+      @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
+      @ [
+        zlib,
+      ],
     cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path

@@ -38,37 +38,37 @@ let version = "0.93" in
 let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
   {
     name = "classpath-0.93",
-    build_deps = [
-      (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
-      {
-        url = "gs://minimal-staging-archives/classpath-0.93.tar.gz",
-        sha256 = "df2d093612abd23fe67e9409d89bb2a8e79b1664fe2b2da40e1c8ed693e32945",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      jikes-1-22,
-    ]
-    @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
-    @ [
-      zip,
-      zlib,
-      bash,
-      make,
-      sed,
-      grep,
-      coreutils,
-      findutils,
-      tar,
-      gzip,
-      python,
-      gawk,
-      diffutils,
-    ],
+    build_deps =
+      [
+        (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
+        {
+          url = "gs://minimal-staging-archives/classpath-0.93.tar.gz",
+          sha256 = "df2d093612abd23fe67e9409d89bb2a8e79b1664fe2b2da40e1c8ed693e32945",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        jikes-1-22,
+      ]
+      @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
+      @ [
+        zip,
+        zlib,
+        bash,
+        make,
+        sed,
+        grep,
+        coreutils,
+        findutils,
+        tar,
+        gzip,
+        python,
+        gawk,
+        diffutils,
+      ],
     # native libraries
-    runtime_deps = [
-    ]
-    @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
-    @ [
-    ],
+    runtime_deps =
+      []
+      @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
+      @ [],
     cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path

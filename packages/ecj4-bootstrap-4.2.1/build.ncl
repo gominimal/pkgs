@@ -41,34 +41,35 @@ let version = "4.2.1" in
 let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
   {
     name = "ecj4-bootstrap-4.2.1",
-    build_deps = [
-      (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
-      {
-        # a zip archive of the sources
-        url = "gs://minimal-staging-archives/ecjsrc-4.2.1.jar",
-        sha256 = "d261b2158f598640f1923805d2e9bf47eb21d8333f4e1b37f59f847ad00d48f4",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      ecj-bootstrap-3-2-2,
-      jamvm-2-0-0,
-      classpath-devel,
-      ant-bootstrap-1-8-4,
-    ]
-    @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
-    @ [
-      unzip,
-      zip,
-      bash,
-      make,
-      sed,
-      grep,
-      coreutils,
-      findutils,
-      tar,
-      python,
-      gawk,
-      diffutils,
-    ],
+    build_deps =
+      [
+        (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
+        {
+          # a zip archive of the sources
+          url = "gs://minimal-staging-archives/ecjsrc-4.2.1.jar",
+          sha256 = "d261b2158f598640f1923805d2e9bf47eb21d8333f4e1b37f59f847ad00d48f4",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        ecj-bootstrap-3-2-2,
+        jamvm-2-0-0,
+        classpath-devel,
+        ant-bootstrap-1-8-4,
+      ]
+      @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
+      @ [
+        unzip,
+        zip,
+        bash,
+        make,
+        sed,
+        grep,
+        coreutils,
+        findutils,
+        tar,
+        python,
+        gawk,
+        diffutils,
+      ],
     # the javac wrapper runs ecj on jamvm-2.0.0 against classpath-devel
     runtime_deps = [
       jamvm-2-0-0,

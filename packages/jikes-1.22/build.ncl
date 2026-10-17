@@ -32,24 +32,25 @@ let version = "1.22" in
 let spec =
   {
     name = "jikes-1.22",
-    build_deps = [
-      (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
-      {
-        url = "gs://minimal-staging-archives/jikes-%{version}.tar.bz2",
-        sha256 = "0cb02c763bc441349f6d38cacd52adf762302cce3a08e269f1f75f726e6e14e3",
-        extract = false, # build.sh untars with --no-same-owner (chown-hostile sandbox)
-      } | Source,
-    ]
-    @ (if is_arm then [toolchain, automake] else [gcc-bedrock, binutils, glibc-bedrock])
-    @ [
-      bash,
-      make,
-      sed,
-      grep,
-      coreutils,
-      tar,
-      bzip2,
-    ],
+    build_deps =
+      [
+        (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
+        {
+          url = "gs://minimal-staging-archives/jikes-%{version}.tar.bz2",
+          sha256 = "0cb02c763bc441349f6d38cacd52adf762302cce3a08e269f1f75f726e6e14e3",
+          extract = false, # build.sh untars with --no-same-owner (chown-hostile sandbox)
+        } | Source,
+      ]
+      @ (if is_arm then [toolchain, automake] else [gcc-bedrock, binutils, glibc-bedrock])
+      @ [
+        bash,
+        make,
+        sed,
+        grep,
+        coreutils,
+        tar,
+        bzip2,
+      ],
     build_args = {
       include version,
     },

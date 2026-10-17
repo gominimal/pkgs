@@ -63,88 +63,89 @@ let version = "10+46" in
 let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
   {
     name = "openjdk-10",
-    build_deps = [
-      (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
-      { file = "openjdk-10-char-reproducibility.patch" } | Local, # deterministic output
-      { file = "openjdk-10-classlist-reproducibility.patch" } | Local, # the CDS classlist is sorted (comments first, classes, then @lambda lines) before it is packed into java.base.jmod; 17+ do this natively
-      { file = "openjdk-10-corba-reproducibility.patch" } | Local, # deterministic output
-      { file = "openjdk-10-idlj-reproducibility.patch" } | Local, # deterministic output
-      { file = "openjdk-10-module-reproducibility.patch" } | Local, # deterministic output
-      { file = "openjdk-10-module3-reproducibility.patch" } | Local, # deterministic output
-      { file = "openjdk-10-module4-reproducibility.patch" } | Local, # deterministic output
-      { file = "openjdk-10-jar-reproducibility.patch" } | Local, # deterministic output
-      { file = "openjdk-10-jtask-reproducibility.patch" } | Local, # deterministic output
-      { file = "openjdk-10-pointer-comparison.patch" } | Local, # ordered pointer/integer comparisons gcc 11+ reject
-      { file = "openjdk-10-setsignalhandler.patch" } | Local, # a signal-handler prototype gcc 11+ rejects
-      { file = "openjdk-currency-time-bomb2.patch" } | Local, # GenerateCurrencyData fails once the data file is older than 10 years
-      {
-        # https://github.com/openjdk/jdk/archive/refs/tags/jdk-10+46.tar.gz
-        url = "gs://minimal-staging-archives/jdk-10+46.tar.gz",
-        sha256 = "18aa4b2f73d1b30370991bb4929f49ba19f4c2f87d9710c0fe9de423c818f1ee",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      openjdk-9,
-    ]
-    @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
-    @ [
-      bash,
-      make,
-      sed,
-      grep,
-      coreutils,
-      findutils,
-      tar,
-      python,
-      gawk,
-      diffutils,
-      gzip,
-      patch,
-      zip,
-      unzip,
-      cpio,
-      file,
-      which,
-      pkgconf,
-      autoconf,
-      m4,
-      zlib,
-      freetype,
-      cups,
-      alsa-lib,
-      lcms2,
-      fontconfig,
-      libpng,
-      libjpeg-turbo,
-      giflib,
-      libx11,
-      libxext,
-      libxrender,
-      libxtst,
-      libxi,
-      libxinerama,
-      libxrandr,
-      libxcomposite,
-      libxt,
-      xorgproto,
-    ],
+    build_deps =
+      [
+        (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
+        { file = "openjdk-10-char-reproducibility.patch" } | Local, # deterministic output
+        { file = "openjdk-10-classlist-reproducibility.patch" } | Local, # the CDS classlist is sorted (comments first, classes, then @lambda lines) before it is packed into java.base.jmod; 17+ do this natively
+        { file = "openjdk-10-corba-reproducibility.patch" } | Local, # deterministic output
+        { file = "openjdk-10-idlj-reproducibility.patch" } | Local, # deterministic output
+        { file = "openjdk-10-module-reproducibility.patch" } | Local, # deterministic output
+        { file = "openjdk-10-module3-reproducibility.patch" } | Local, # deterministic output
+        { file = "openjdk-10-module4-reproducibility.patch" } | Local, # deterministic output
+        { file = "openjdk-10-jar-reproducibility.patch" } | Local, # deterministic output
+        { file = "openjdk-10-jtask-reproducibility.patch" } | Local, # deterministic output
+        { file = "openjdk-10-pointer-comparison.patch" } | Local, # ordered pointer/integer comparisons gcc 11+ reject
+        { file = "openjdk-10-setsignalhandler.patch" } | Local, # a signal-handler prototype gcc 11+ rejects
+        { file = "openjdk-currency-time-bomb2.patch" } | Local, # GenerateCurrencyData fails once the data file is older than 10 years
+        {
+          # https://github.com/openjdk/jdk/archive/refs/tags/jdk-10+46.tar.gz
+          url = "gs://minimal-staging-archives/jdk-10+46.tar.gz",
+          sha256 = "18aa4b2f73d1b30370991bb4929f49ba19f4c2f87d9710c0fe9de423c818f1ee",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        openjdk-9,
+      ]
+      @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
+      @ [
+        bash,
+        make,
+        sed,
+        grep,
+        coreutils,
+        findutils,
+        tar,
+        python,
+        gawk,
+        diffutils,
+        gzip,
+        patch,
+        zip,
+        unzip,
+        cpio,
+        file,
+        which,
+        pkgconf,
+        autoconf,
+        m4,
+        zlib,
+        freetype,
+        cups,
+        alsa-lib,
+        lcms2,
+        fontconfig,
+        libpng,
+        libjpeg-turbo,
+        giflib,
+        libx11,
+        libxext,
+        libxrender,
+        libxtst,
+        libxi,
+        libxinerama,
+        libxrandr,
+        libxcomposite,
+        libxt,
+        xorgproto,
+      ],
     # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, lcms2, libpng, giflib and libjpeg
-    runtime_deps = [
-    ]
-    @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
-    @ [
-      zlib,
-      freetype,
-      libpng,
-      giflib,
-      libjpeg-turbo,
-      lcms2,
-      alsa-lib,
-      libx11,
-      libxext,
-      libxi,
-      libxrender,
-      libxtst,
-    ],
+    runtime_deps =
+      []
+      @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
+      @ [
+        zlib,
+        freetype,
+        libpng,
+        giflib,
+        libjpeg-turbo,
+        lcms2,
+        alsa-lib,
+        libx11,
+        libxext,
+        libxi,
+        libxrender,
+        libxtst,
+      ],
     cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path

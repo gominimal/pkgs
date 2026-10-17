@@ -63,79 +63,80 @@ let version = "19.0.2" in
 let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
   {
     name = "openjdk-19",
-    build_deps = [
-      (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
-      { file = "openjdk-15-xcursor-no-dynamic.patch" } | Local, # link libXcursor instead of dlopen()ing it by bare name
-      {
-        # https://github.com/openjdk/jdk19u/archive/refs/tags/jdk-19.0.2-ga.tar.gz
-        url = "gs://minimal-staging-archives/jdk-19.0.2-ga.tar.gz",
-        sha256 = "c297c9d0a09721e84c420e7893ff9ba2e0c4e27370507dec4b356b59e6c8e7a2",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      openjdk-18,
-    ]
-    @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
-    @ [
-      bash,
-      make,
-      sed,
-      grep,
-      coreutils,
-      findutils,
-      tar,
-      python,
-      gawk,
-      diffutils,
-      gzip,
-      patch,
-      zip,
-      unzip,
-      cpio,
-      file,
-      which,
-      pkgconf,
-      autoconf,
-      m4,
-      zlib,
-      freetype,
-      cups,
-      alsa-lib,
-      lcms2,
-      fontconfig,
-      libpng,
-      libjpeg-turbo,
-      giflib,
-      libx11,
-      libxext,
-      libxrender,
-      libxtst,
-      libxi,
-      libxinerama,
-      libxrandr,
-      libxcomposite,
-      libxt,
-      xorgproto,
-      libxcursor,
-    ],
+    build_deps =
+      [
+        (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
+        { file = "openjdk-15-xcursor-no-dynamic.patch" } | Local, # link libXcursor instead of dlopen()ing it by bare name
+        {
+          # https://github.com/openjdk/jdk19u/archive/refs/tags/jdk-19.0.2-ga.tar.gz
+          url = "gs://minimal-staging-archives/jdk-19.0.2-ga.tar.gz",
+          sha256 = "c297c9d0a09721e84c420e7893ff9ba2e0c4e27370507dec4b356b59e6c8e7a2",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        openjdk-18,
+      ]
+      @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
+      @ [
+        bash,
+        make,
+        sed,
+        grep,
+        coreutils,
+        findutils,
+        tar,
+        python,
+        gawk,
+        diffutils,
+        gzip,
+        patch,
+        zip,
+        unzip,
+        cpio,
+        file,
+        which,
+        pkgconf,
+        autoconf,
+        m4,
+        zlib,
+        freetype,
+        cups,
+        alsa-lib,
+        lcms2,
+        fontconfig,
+        libpng,
+        libjpeg-turbo,
+        giflib,
+        libx11,
+        libxext,
+        libxrender,
+        libxtst,
+        libxi,
+        libxinerama,
+        libxrandr,
+        libxcomposite,
+        libxt,
+        xorgproto,
+        libxcursor,
+      ],
     # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, lcms2, libpng, giflib and libjpeg
-    runtime_deps = [
-    ]
-    @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
-    @ [
-      zlib,
-      freetype,
-      libpng,
-      giflib,
-      libjpeg-turbo,
-      lcms2,
-      alsa-lib,
-      libx11,
-      libxext,
-      libxi,
-      libxrender,
-      libxtst,
-      libxcursor,
-    ],
+    runtime_deps =
+      []
+      @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
+      @ [
+        zlib,
+        freetype,
+        libpng,
+        giflib,
+        libjpeg-turbo,
+        lcms2,
+        alsa-lib,
+        libx11,
+        libxext,
+        libxi,
+        libxrender,
+        libxtst,
+        libxcursor,
+      ],
     cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path

@@ -43,50 +43,52 @@ let version = "2.0.0" in
 let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
   {
     name = "jamvm-2.0.0",
-    build_deps = [
-      (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
-    ]
-    @ (if is_arm then [{ file = "jamvm-2.0.0-aarch64-support.patch" } | Local] else [])
-    @ [
-      { file = "jamvm-2.0.0-disable-branch-patching.patch" } | Local, # the JIT-less interpreter's branch patching is not thread-safe on modern CPUs
-      { file = "jamvm-2.0.0-guard-fp-opcodes.patch" } | Local, # floating-point opcodes guarded when the FPU flags are not what 2014 assumed
-      {
-        url = "gs://minimal-staging-archives/jamvm-2.0.0.tar.gz",
-        sha256 = "76428e96df0ae9dd964c7a7c74c1e9a837e2f312c39e9a357fa8178f7eff80da",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      ecj-bootstrap-3-2-2,
-      jamvm-1-5-1,
-      classpath-0-93,
-      classpath-devel,
-    ]
-    @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
-    @ [
-      zlib,
-      libffi,
-      zip,
-      patch,
-      bash,
-      make,
-      sed,
-      grep,
-      coreutils,
-      findutils,
-      tar,
-      gzip,
-      python,
-      gawk,
-      diffutils,
-    ],
+    build_deps =
+      [
+        (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
+      ]
+      @ (if is_arm then [{ file = "jamvm-2.0.0-aarch64-support.patch" } | Local] else [])
+      @ [
+        { file = "jamvm-2.0.0-disable-branch-patching.patch" } | Local, # the JIT-less interpreter's branch patching is not thread-safe on modern CPUs
+        { file = "jamvm-2.0.0-guard-fp-opcodes.patch" } | Local, # floating-point opcodes guarded when the FPU flags are not what 2014 assumed
+        {
+          url = "gs://minimal-staging-archives/jamvm-2.0.0.tar.gz",
+          sha256 = "76428e96df0ae9dd964c7a7c74c1e9a837e2f312c39e9a357fa8178f7eff80da",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        ecj-bootstrap-3-2-2,
+        jamvm-1-5-1,
+        classpath-0-93,
+        classpath-devel,
+      ]
+      @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
+      @ [
+        zlib,
+        libffi,
+        zip,
+        patch,
+        bash,
+        make,
+        sed,
+        grep,
+        coreutils,
+        findutils,
+        tar,
+        gzip,
+        python,
+        gawk,
+        diffutils,
+      ],
     # the VM is configured for classpath-devel; links libz and libffi
-    runtime_deps = [
-      classpath-devel,
-    ]
-    @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
-    @ [
-      zlib,
-      libffi,
-    ],
+    runtime_deps =
+      [
+        classpath-devel,
+      ]
+      @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
+      @ [
+        zlib,
+        libffi,
+      ],
     cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path

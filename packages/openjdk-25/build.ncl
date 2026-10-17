@@ -62,76 +62,77 @@ let version = "25.0.2" in
 let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
   {
     name = "openjdk-25",
-    build_deps = [
-      (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
-      {
-        # https://github.com/openjdk/jdk25u/archive/refs/tags/jdk-25.0.2-ga.tar.gz
-        url = "gs://minimal-staging-archives/jdk-25.0.2-ga.tar.gz",
-        sha256 = "e4b935e999a28ee732dfb932dcef4a8591b42f6fcd182099319db68e9d8017ff",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      openjdk-24,
-    ]
-    @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
-    @ [
-      bash,
-      make,
-      sed,
-      grep,
-      coreutils,
-      findutils,
-      tar,
-      python,
-      gawk,
-      diffutils,
-      gzip,
-      patch,
-      zip,
-      unzip,
-      cpio,
-      file,
-      which,
-      pkgconf,
-      autoconf,
-      m4,
-      zlib,
-      freetype,
-      cups,
-      alsa-lib,
-      lcms2,
-      fontconfig,
-      libpng,
-      libjpeg-turbo,
-      giflib,
-      libx11,
-      libxext,
-      libxrender,
-      libxtst,
-      libxi,
-      libxinerama,
-      libxrandr,
-      libxcomposite,
-      libxt,
-      xorgproto,
-    ],
+    build_deps =
+      [
+        (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
+        {
+          # https://github.com/openjdk/jdk25u/archive/refs/tags/jdk-25.0.2-ga.tar.gz
+          url = "gs://minimal-staging-archives/jdk-25.0.2-ga.tar.gz",
+          sha256 = "e4b935e999a28ee732dfb932dcef4a8591b42f6fcd182099319db68e9d8017ff",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        openjdk-24,
+      ]
+      @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
+      @ [
+        bash,
+        make,
+        sed,
+        grep,
+        coreutils,
+        findutils,
+        tar,
+        python,
+        gawk,
+        diffutils,
+        gzip,
+        patch,
+        zip,
+        unzip,
+        cpio,
+        file,
+        which,
+        pkgconf,
+        autoconf,
+        m4,
+        zlib,
+        freetype,
+        cups,
+        alsa-lib,
+        lcms2,
+        fontconfig,
+        libpng,
+        libjpeg-turbo,
+        giflib,
+        libx11,
+        libxext,
+        libxrender,
+        libxtst,
+        libxi,
+        libxinerama,
+        libxrandr,
+        libxcomposite,
+        libxt,
+        xorgproto,
+      ],
     # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, lcms2, libpng, giflib and libjpeg
-    runtime_deps = [
-    ]
-    @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
-    @ [
-      zlib,
-      freetype,
-      libpng,
-      giflib,
-      libjpeg-turbo,
-      lcms2,
-      alsa-lib,
-      libx11,
-      libxext,
-      libxi,
-      libxrender,
-      libxtst,
-    ],
+    runtime_deps =
+      []
+      @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
+      @ [
+        zlib,
+        freetype,
+        libpng,
+        giflib,
+        libjpeg-turbo,
+        lcms2,
+        alsa-lib,
+        libx11,
+        libxext,
+        libxi,
+        libxrender,
+        libxtst,
+      ],
     cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path

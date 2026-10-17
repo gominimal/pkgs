@@ -68,125 +68,126 @@ let version = "2.6.13" in
 let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
   {
     name = "icedtea-7",
-    build_deps = [
-      (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
-    ]
-    @ (if is_arm then [{ file = "icedtea-7-hotspot-aarch64-use-c++98.patch" } | Local] else [])
-    @ [
-      { file = "jdk-currency-time-bomb.patch" } | Local, # GenerateCurrencyData fails once the data file is older than 10 years
-      { file = "icedtea-7-hotspot-pointer-comparison.patch" } | Local, # ordered pointer/integer comparisons gcc 11+ reject
-      {
-        # the IcedTea harness: configure, Makefile, boot patches
-        url = "gs://minimal-staging-archives/icedtea-2.6.13.tar.xz",
-        sha256 = "104e84205d1176e217e24f770784c53d1cd666aeb23ab0bae8ac858e5b0e63f0",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      {
-        # the openjdk drop, upstream basename openjdk.tar.bz2
-        url = "gs://minimal-staging-archives/icedtea7-2.6.13-openjdk.tar.bz2",
-        sha256 = "14a9f90e2fe5c0bb73dc8ffcc9ea5dc76d3ce7a74a0c901cfd0b0ae3fc8c6450",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      {
-        # the corba drop, upstream basename corba.tar.bz2
-        url = "gs://minimal-staging-archives/icedtea7-2.6.13-corba.tar.bz2",
-        sha256 = "df1154915cad317b93555b563fc12acad1b92e5f2870642736f186b7a4d80f14",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      {
-        # the jaxp drop, upstream basename jaxp.tar.bz2
-        url = "gs://minimal-staging-archives/icedtea7-2.6.13-jaxp.tar.bz2",
-        sha256 = "143a5b957fbb00889ff9d38a4bf391218786b6a33664235279edbb6e79a3decc",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      {
-        # the jaxws drop, upstream basename jaxws.tar.bz2
-        url = "gs://minimal-staging-archives/icedtea7-2.6.13-jaxws.tar.bz2",
-        sha256 = "d3e3d55d6e2231c4420d30d124f72c56695d45e8a398e3cc7ba21ff2a93c1284",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      {
-        # the jdk drop, upstream basename jdk.tar.bz2
-        url = "gs://minimal-staging-archives/icedtea7-2.6.13-jdk.tar.bz2",
-        sha256 = "adbda93d1e9be89447e009733a6c9050c6e6cebda3c674a76ebbeb8986623534",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      {
-        # the langtools drop, upstream basename langtools.tar.bz2
-        url = "gs://minimal-staging-archives/icedtea7-2.6.13-langtools.tar.bz2",
-        sha256 = "12036b985f8811cdadf6d5bf840f90bab25f4da1cc3e86bab9c3f6efcc10055b",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      {
-        # the hotspot drop, upstream basename hotspot.tar.bz2
-        url = "gs://minimal-staging-archives/icedtea7-2.6.13-hotspot.tar.bz2",
-        sha256 = "9ae3d6d43ff771cf02b8c7805ac0f0a457f5fa7026b1334ea1085262d3d86d9d",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      jamvm-2-0-0,
-      classpath-devel,
-      ecj4-bootstrap-4-2-1,
-      ant-bootstrap-1-8-4,
-    ]
-    @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
-    @ [
-      bash,
-      make,
-      sed,
-      grep,
-      gawk,
-      coreutils,
-      findutils,
-      diffutils,
-      tar,
-      xz,
-      bzip2,
-      gzip,
-      patch,
-      zip,
-      unzip,
-      cpio,
-      file,
-      which,
-      pkgconf,
-      libxslt,
-      wget,
-      perl,
-      zlib,
-      freetype,
-      cups,
-      alsa-lib,
-      lcms2,
-      fontconfig,
-      libx11,
-      libxext,
-      libxrender,
-      libxtst,
-      libxi,
-      libxinerama,
-      libxcomposite,
-      libxt,
-      xorgproto,
-      python,
-    ],
+    build_deps =
+      [
+        (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
+      ]
+      @ (if is_arm then [{ file = "icedtea-7-hotspot-aarch64-use-c++98.patch" } | Local] else [])
+      @ [
+        { file = "jdk-currency-time-bomb.patch" } | Local, # GenerateCurrencyData fails once the data file is older than 10 years
+        { file = "icedtea-7-hotspot-pointer-comparison.patch" } | Local, # ordered pointer/integer comparisons gcc 11+ reject
+        {
+          # the IcedTea harness: configure, Makefile, boot patches
+          url = "gs://minimal-staging-archives/icedtea-2.6.13.tar.xz",
+          sha256 = "104e84205d1176e217e24f770784c53d1cd666aeb23ab0bae8ac858e5b0e63f0",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        {
+          # the openjdk drop, upstream basename openjdk.tar.bz2
+          url = "gs://minimal-staging-archives/icedtea7-2.6.13-openjdk.tar.bz2",
+          sha256 = "14a9f90e2fe5c0bb73dc8ffcc9ea5dc76d3ce7a74a0c901cfd0b0ae3fc8c6450",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        {
+          # the corba drop, upstream basename corba.tar.bz2
+          url = "gs://minimal-staging-archives/icedtea7-2.6.13-corba.tar.bz2",
+          sha256 = "df1154915cad317b93555b563fc12acad1b92e5f2870642736f186b7a4d80f14",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        {
+          # the jaxp drop, upstream basename jaxp.tar.bz2
+          url = "gs://minimal-staging-archives/icedtea7-2.6.13-jaxp.tar.bz2",
+          sha256 = "143a5b957fbb00889ff9d38a4bf391218786b6a33664235279edbb6e79a3decc",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        {
+          # the jaxws drop, upstream basename jaxws.tar.bz2
+          url = "gs://minimal-staging-archives/icedtea7-2.6.13-jaxws.tar.bz2",
+          sha256 = "d3e3d55d6e2231c4420d30d124f72c56695d45e8a398e3cc7ba21ff2a93c1284",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        {
+          # the jdk drop, upstream basename jdk.tar.bz2
+          url = "gs://minimal-staging-archives/icedtea7-2.6.13-jdk.tar.bz2",
+          sha256 = "adbda93d1e9be89447e009733a6c9050c6e6cebda3c674a76ebbeb8986623534",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        {
+          # the langtools drop, upstream basename langtools.tar.bz2
+          url = "gs://minimal-staging-archives/icedtea7-2.6.13-langtools.tar.bz2",
+          sha256 = "12036b985f8811cdadf6d5bf840f90bab25f4da1cc3e86bab9c3f6efcc10055b",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        {
+          # the hotspot drop, upstream basename hotspot.tar.bz2
+          url = "gs://minimal-staging-archives/icedtea7-2.6.13-hotspot.tar.bz2",
+          sha256 = "9ae3d6d43ff771cf02b8c7805ac0f0a457f5fa7026b1334ea1085262d3d86d9d",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        jamvm-2-0-0,
+        classpath-devel,
+        ecj4-bootstrap-4-2-1,
+        ant-bootstrap-1-8-4,
+      ]
+      @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
+      @ [
+        bash,
+        make,
+        sed,
+        grep,
+        gawk,
+        coreutils,
+        findutils,
+        diffutils,
+        tar,
+        xz,
+        bzip2,
+        gzip,
+        patch,
+        zip,
+        unzip,
+        cpio,
+        file,
+        which,
+        pkgconf,
+        libxslt,
+        wget,
+        perl,
+        zlib,
+        freetype,
+        cups,
+        alsa-lib,
+        lcms2,
+        fontconfig,
+        libx11,
+        libxext,
+        libxrender,
+        libxtst,
+        libxi,
+        libxinerama,
+        libxcomposite,
+        libxt,
+        xorgproto,
+        python,
+      ],
     # java loads libz; AWT, sound and font code load the X libraries, alsa, fontconfig, lcms2 and the bundled freetype (which loads libpng)
-    runtime_deps = [
-    ]
-    @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
-    @ [
-      zlib,
-      freetype,
-      libpng,
-      lcms2,
-      fontconfig,
-      alsa-lib,
-      libx11,
-      libxext,
-      libxi,
-      libxrender,
-      libxtst,
-      libxcomposite,
-    ],
+    runtime_deps =
+      []
+      @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
+      @ [
+        zlib,
+        freetype,
+        libpng,
+        lcms2,
+        fontconfig,
+        alsa-lib,
+        libx11,
+        libxext,
+        libxi,
+        libxrender,
+        libxtst,
+        libxcomposite,
+      ],
     cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path
