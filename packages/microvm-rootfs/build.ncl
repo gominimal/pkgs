@@ -169,9 +169,9 @@ in
       "1c108314af454a885ac0b053201db57027470c4f2309412c016897e2a2bf5d0e"
       "78c5a1993342ab1bdcdce30639fd0937e8000f6d0d85cea171f573d31decd036",
     apk
-      "libexpat-2.8.4-r0"
-      "ca1be5be36985a8370f4a8e9e33a25788ac95260295718e1b0b721a16bb2aa61"
-      "34fa41e3994d9a844f50a7c01cb40bb2e272fa7f506b96e92a2b4a20b23a81bc",
+      "libexpat-2.8.5-r0"
+      "568a12a4889a00711d1c80c197a5540ee1cdec26c1c59da38f8342ad69e7eff9"
+      "2e56946bc495cbed9eb1ad70859a79cba9db6420016453e065a0628848b32c7e",
     apk
       "libfdisk-2.42.3-r1"
       "061e5c9c82eff00f806bd51bdd414d3ff6aaec99de02ed4c1b60f3e13578e2b7"
@@ -217,13 +217,13 @@ in
       "e0c546b9461bdce206a90bc720cb69aa4628b5a5b8d908c3e5084e00f28f6a9d"
       "ce83be6d0bd10584a53c3a5868cc1595ce5f0f8e0b621f8f7f70b6144e521fc9",
     apk
-      "nghttp2-libs-1.69.0-r0"
-      "10ec950fca526db87bbdc0702ba623fca6639df15abb48229f548d6812563b33"
-      "7d7705cea464389989d3ca6b9505dbfce3cf25cfca1eeb06709a9909f93f4f11",
+      "nghttp2-libs-1.70.0-r0"
+      "7ef451f4dcdc065aa872c2f3c78b9d9bb4348caa5bcc70dee0c9e1fcf8e4c1fd"
+      "f0c4014eb2f10308dcdfd84cd49c121673c7b78cb8182b6e7a1388d8ae112a3b",
     apk
-      "pcre2-10.48-r0"
-      "0e8a425ec23fca1b549e83758b385e7186a070597e8dc014163462f960079167"
-      "cffaedb6cf404647619a8b0323958d293d9cd240e8f887c16bdf4b0a039f993a",
+      "pcre2-10.49-r0"
+      "03efd0b29f7f38deb10a9ccb54f56e19683eb7ac27eb1f347e6dbd2e59ea000d"
+      "2919897914820f42a17a8d7d37df310d2dfad1c82ebe5f539cc5c765f916752a",
     apk
       "readline-8.3.3-r1"
       "9f0ae0923c02b0d6aba62e9173542b65396ba3f0efefcbf087ea32f1120e7b34"
@@ -266,13 +266,13 @@ in
     # >= 3.5.8-r0; keeping a stale override is how an image ends up pinned
     # BELOW its base layer.
     apk
-      "libcrypto3-3.5.8-r0"
-      "35b892813c23664a3592e4fc8c12a03538a22c579057655361c7043305272a9a"
-      "161223a16f042b8e469e9441291e071464fd91d4f4bbe6f496ee8d0abd4e0701",
+      "libcrypto3-3.5.9-r0"
+      "2676a2b0b6e23ea2edccf3ee982b9842a665d52603d047de3d0a185dc316d983"
+      "6632d758d8f5e9ea3b650fe966f23bbf9a202f8b8dceecac93da135dec5e3689",
     apk
-      "libssl3-3.5.8-r0"
-      "d6ec970cc10e01539e41626f720c4e0ac69016eaa2079a10ef776ffd3243db5b"
-      "aca521e5ae4a321322a9d47ed64a1775f5ab1ffd215d1e9fc0433c58f7bfd037",
+      "libssl3-3.5.9-r0"
+      "20ac252b276d73f2c69c1d25f84537c7fba81caefc026c6be1094b394af2082e"
+      "05e3393fb95aa5751ca2f9d242f659f6cff82c1cc7767cc2df4a086f7ad01877",
   ],
 
   cmd = "./build.sh",
