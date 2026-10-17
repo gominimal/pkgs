@@ -142,7 +142,7 @@ bash ./configure --with-boot-jdk="${BOOT}" --with-build-user=minimal --disable-o
   || { grep -n -iE 'error|could not|cannot|not found' ../configure.log | tail -8 >&2 || true; echo "openjdk-11: configure failed" >&2; exit 1; }
 # JDK 10's AVX-512 intrinsics miscompile on AVX-512 hosts; every JVM of the build (boot, interim, exploded image) runs with AVX2.
 # Set after configure: the "Picked up JAVA_TOOL_OPTIONS" banner breaks its boot-JDK version parse.
-export JAVA_TOOL_OPTIONS="-XX:UseAVX=2"
+# (x86_64 pins -XX:UseAVX=2 here against an AVX-512 miscompile; the option does not exist on aarch64)
 make JOBS="${JOBS}" all > ../make.log 2>&1 \
   || { grep -nE 'error:|Error [0-9]|\*\*\* \[' ../make.log | grep -v Werror | tail -8 >&2 || true; tail -10 ../make.log >&2; echo "openjdk-11: make failed" >&2; exit 1; }
 IMG="$(ls -d build/*/images/jdk | head -1)"
