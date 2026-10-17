@@ -58,7 +58,7 @@ export JAVA_HOME="${BOOT}" PATH="${BOOT}/bin:${CCDIR}:${PATH}"
 bash ./configure --with-boot-jdk="${BOOT}" --with-build-user=minimal --disable-warnings-as-errors --with-native-debug-symbols=none \
   "--with-extra-cflags=-std=gnu17 -Wno-error=int-conversion -Wno-error=incompatible-pointer-types" --without-gtest \
   --with-version-pre= --with-version-opt= --with-version-build="${MINIMAL_ARG_BUILD_NUM}" --with-vendor-name=minimal \
-  --with-hotspot-build-time=1970-01-01T00:00:01 --enable-reproducible-build --with-source-date=315532802 \
+  --with-hotspot-build-time=1970-01-01T00:00:01 --with-source-date=315532802 \
   --with-giflib=system --with-lcms=system --with-libjpeg=system --with-libpng=system --with-zlib=system \
   --with-freetype-include=/usr/include/freetype2 --with-freetype-lib=/usr/lib > ../configure.log 2>&1 \
   || { grep -n -iE 'error|could not|cannot|not found' ../configure.log | tail -8 >&2 || true; echo "jdk-21: configure failed" >&2; exit 1; }
