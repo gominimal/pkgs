@@ -1,0 +1,35 @@
+--- a/ghc/compiler/utils/UniqFM.lhs	2026-09-26 09:58:04
++++ b/ghc/compiler/utils/UniqFM.lhs	2026-09-26 09:58:04
+@@ -48,7 +48,8 @@
+ 
+ import {-# SOURCE #-} Name	( Name )
+ 
+-import Unique		( Uniquable(..), Unique, getKey, mkUniqueGrimily )
++import Unique		( Uniquable(..), Unique, mkUniqueGrimily )
++import qualified Unique ( getKey )
+ import Panic
+ import GlaExts		-- Lots of Int# operations
+ import FastTypes
+@@ -64,6 +65,9 @@
+ We use @FiniteMaps@, with a (@getUnique@-able) @Unique@ as ``key''.
+ 
+ \begin{code}
++getKey :: Unique -> FastInt
++getKey u = word2Int# (int2Word# (Unique.getKey u) `and#` int2Word# 4611686018427387903#)
++
+ emptyUFM	:: UniqFM elt
+ isNullUFM	:: UniqFM elt -> Bool
+ unitUFM		:: Uniquable key => key -> elt -> UniqFM elt
+@@ -762,8 +766,10 @@
+   | otherwise	= getCommonNodeUFMData_ p j (j2 `quotFastInt` (p `quotFastInt` p2))
+   where
+     l  = (_ILIT(1) :: FastInt)
+-    j  = i  `quotFastInt` (p  `shiftL_` l)
+-    j2 = i2 `quotFastInt` (p2 `shiftL_` l)
++    j  = prefixAt i  p
++    j2 = prefixAt i2 p2
++    -- a node whose width reaches the word's top bit spans every key: the prefix is 0, not a division by zero
++    prefixAt k q = let d = q `shiftL_` l in if d ==# _ILIT(0) then _ILIT(0) else k `quotFastInt` d
+ 
+     getCommonNodeUFMData_ :: FastInt -> FastInt -> FastInt -> NodeUFMData
+ 
