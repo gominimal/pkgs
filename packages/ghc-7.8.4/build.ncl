@@ -85,8 +85,10 @@ let spec =
         patch,
       ]
       @ cc_build
-      @ arm_extra,
-    cmd = "./build.sh",
+      @ arm_extra
+      @ (if is_arm then [] else [{ file = "amd64-env.sh" } | Local]),
+    # x86_64 runs build.sh with the sysroot's iconv modules; aarch64 runs it directly
+    cmd = if is_arm then "./build.sh" else "./amd64-env.sh",
     outputs = {
       # The next rung consumes the tree by absolute path: compiler, ghc-pkg, package db, libraries
       # and the C compiler wrapper `settings` names.

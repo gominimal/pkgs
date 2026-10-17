@@ -1,6 +1,9 @@
 #!/bin/bash
 # x86_64 entry point: build.sh, and when the build fails, the lines of the make log just before make's
 # first "] Error", each cut to 160 columns (link lines run to kilobytes; failure output is truncated to ~4 KiB)
+# the bedrock sysroot's libc looks for its iconv modules in /usr/lib/gconv, which in the sandbox holds
+# production glibc's; ghc-stage2's text encodings (mkTextEncoding) need the sysroot's own
+export GCONV_PATH=/usr/lib/glibc-bedrock-2.42/lib/gconv
 ./build.sh && exit 0
 rc=$?
 L=$(find /build -maxdepth 3 -name all.log -type f 2>/dev/null | head -1)
