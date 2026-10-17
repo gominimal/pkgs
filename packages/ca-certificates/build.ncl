@@ -6,8 +6,8 @@ let openssl = import "../openssl/build.ncl" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/ssl-certs-complete.tar.gz",
-      sha256 = "4b080b63089e05eede8f2f653c6b8329d2a8332285b393bb7844dc8c8d9d062d"
+      url = "gs://minimal-staging-archives/ssl-certs-complete-v2.tar.gz",
+      sha256 = "72411982d730dda927844404cc803dab348548685ac95cbc6b73273abfc30257"
     } | Source,
     base-bootstrap,
     openssl,
