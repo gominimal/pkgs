@@ -108,6 +108,12 @@ done
 # the boot JDK's tools on PATH; hotspot takes gcc/g++ from PATH (hence CCDIR), the jdk makefiles from CC/CXX
 export JAVA_HOME="${JDK7}" PATH="${JDK7}/bin:${ANT}/bin:${CCDIR}:${PATH}" ANT_HOME="${ANT}" ANT_OPTS="-Xmx8g" DISABLE_HOTSPOT_OS_VERSION_CHECK=ok
 # --- configure + make ---
+# the bundled libpng turns on its ARM NEON paths on aarch64, but the JDK build never compiles libpng's neon
+# sources (undefined png_init_filter_functions_neon): pin them off in every bundled copy
+for f in $(find . -path '*libpng/pngpriv.h' -type f); do
+  grep -q 'minimal: no neon' "$f" && continue
+  { printf '/* minimal: no neon */\n#ifndef PNG_ARM_NEON_OPT\n#define PNG_ARM_NEON_OPT 0\n#endif\n'; cat "$f"; } > "$f.neon" && mv "$f.neon" "$f"
+done
 refresh_config
 ./configure "CFLAGS=-fcommon -Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-error=incompatible-pointer-types -Wno-error=int-conversion" "CXXFLAGS=-fcommon" \
   --enable-bootstrap --disable-downloading --disable-tests --disable-docs --disable-nss \

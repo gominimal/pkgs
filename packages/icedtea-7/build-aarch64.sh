@@ -134,6 +134,12 @@ export CLASSPATH="${GLIBJ}:${TOOLSZIP}" JAVACFLAGS="-cp ${GLIBJ}:${TOOLSZIP}"
 export ALT_COMPILER_PATH="${CCDIR}" ALT_OBJCOPY="$(command -v objcopy)" ALT_CUPS_HEADERS_PATH=/usr/include \
   ALT_FREETYPE_HEADERS_PATH=/usr/include/freetype2 ALT_FREETYPE_LIB_PATH=/usr/lib DISABLE_HOTSPOT_OS_VERSION_CHECK=ok
 # --- configure + make ---
+# the bundled libpng turns on its ARM NEON paths on aarch64, but the JDK build never compiles libpng's neon
+# sources (undefined png_init_filter_functions_neon): pin them off in every bundled copy
+for f in $(find . -path '*libpng/pngpriv.h' -type f); do
+  grep -q 'minimal: no neon' "$f" && continue
+  { printf '/* minimal: no neon */\n#ifndef PNG_ARM_NEON_OPT\n#define PNG_ARM_NEON_OPT 0\n#endif\n'; cat "$f"; } > "$f.neon" && mv "$f.neon" "$f"
+done
 refresh_config
 ./configure --enable-bootstrap --disable-downloading --disable-tests --disable-docs --without-rhino --disable-nss \
   --disable-system-sctp --disable-system-pcsc --disable-system-kerberos --disable-system-gtk --disable-system-gio --disable-system-gconf \

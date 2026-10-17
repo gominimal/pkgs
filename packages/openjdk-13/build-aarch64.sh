@@ -124,6 +124,12 @@ export JAVA_HOME="${BOOT}" PATH="${BOOT}/bin:${CCDIR}:${PATH}"
 # --- configure + make ---
 # extra-cflags come last in the JDK's CFLAGS: gnu17 keeps gcc 15 off C23 (K&R `()` prototypes in libnet's gio
 # shims), and gcc 14's incompatible-pointer-types error is a warning again (jtreg's libTestJNI.c)
+# the bundled libpng turns on its ARM NEON paths on aarch64, but the JDK build never compiles libpng's neon
+# sources (undefined png_init_filter_functions_neon): pin them off in every bundled copy
+for f in $(find . -path '*libpng/pngpriv.h' -type f); do
+  grep -q 'minimal: no neon' "$f" && continue
+  { printf '/* minimal: no neon */\n#ifndef PNG_ARM_NEON_OPT\n#define PNG_ARM_NEON_OPT 0\n#endif\n'; cat "$f"; } > "$f.neon" && mv "$f.neon" "$f"
+done
 bash ./configure --with-boot-jdk="${BOOT}" --with-build-user=minimal --disable-option-checking --disable-warnings-as-errors --with-native-debug-symbols=none \
   "--with-extra-cflags=-std=gnu17 -fcommon -fno-delete-null-pointer-checks -fno-lifetime-dse -Wno-error=int-conversion -Wno-error=incompatible-pointer-types" --disable-hotspot-gtest --with-version-pre= --with-hotspot-build-time=1970-01-01T00:00:01 --enable-reproducible-build \
   --with-giflib=system --with-lcms=system --with-libjpeg=system --with-libpng=system --with-zlib=system \
