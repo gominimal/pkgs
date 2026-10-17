@@ -97,6 +97,10 @@ find . -type f \( -name '*.bin' -o -name '*.exe' -o -name '*.jar' \) -delete
 # the certificate converter is run as a script with an interpreter line naming a full path
 [ -f src/java.base/share/data/blockedcertsconverter/blocked.certs.pem ] && sed -i 's|^#!.*|#! java BlockedCertsConverter SHA-256|' src/java.base/share/data/blockedcertsconverter/blocked.certs.pem
 sed -i 's/__DATE__/""/; s/__TIME__/""/' src/hotspot/share/runtime/abstract_vm_version.cpp
+# libsplashscreen links with -flto; lto-wrapper re-runs the bedrock gcc by its real path, outside the
+# loader wrapper, where it picks up the production libc.so.6 (GLIBC_PRIVATE lookup error)
+sed -i 's/LINK_TIME_OPTIMIZATION := true/LINK_TIME_OPTIMIZATION := false/' make/modules/java.desktop/lib/ClientLibraries.gmk
+grep -q 'LINK_TIME_OPTIMIZATION := false' make/modules/java.desktop/lib/ClientLibraries.gmk
 # --disable-warnings-as-errors does not reach the jtreg native libraries
 [ ! -f make/autoconf/generated-configure.sh ] || sed -i 's/-Werror//g' make/autoconf/generated-configure.sh
 echo "26.0.2.1" > .src-rev
