@@ -13,6 +13,11 @@ let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.
 # /usr/lib, and a mixed pair crashes as
 let binutils = import "../binutils/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
+let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
+let glibc = import "../glibc/build.ncl" in
+let automake = import "../automake/build.ncl" in
+let libtool = import "../libtool/build.ncl" in
+let is_arm = target.arch == 'Arm64 in
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -54,11 +59,11 @@ let libxt = import "../libxt/build.ncl" in
 let xorgproto = import "../xorgproto/build.ncl" in
 # pkgmgr: bootstrap_rung = "jvm"
 let version = "24.0.1" in
-let amd64_spec =
+let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
   {
     name = "openjdk-24",
     build_deps = [
-      { file = "build.sh" } | Local,
+      (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
       {
         # https://github.com/openjdk/jdk24u/archive/refs/tags/jdk-24.0.1-ga.tar.gz
         url = "gs://minimal-staging-archives/jdk-24.0.1-ga.tar.gz",
@@ -66,9 +71,9 @@ let amd64_spec =
         extract = false, # build.sh untars with --no-same-owner
       } | Source,
       openjdk-23,
-      gcc-bedrock,
-      binutils,
-      glibc-bedrock,
+    ]
+    @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
+    @ [
       bash,
       make,
       sed,
@@ -111,7 +116,9 @@ let amd64_spec =
     ],
     # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, lcms2, libpng, giflib and libjpeg
     runtime_deps = [
-      glibc-bedrock,
+    ]
+    @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
+    @ [
       zlib,
       freetype,
       libpng,
@@ -125,7 +132,7 @@ let amd64_spec =
       libxrender,
       libxtst,
     ],
-    cmd = "./build.sh",
+    cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path
       prefix = { glob = "usr/lib/openjdk-24/**", allow_executable = true } | OutputData,
@@ -144,13 +151,4 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# amd64 only: this rung belongs to the amd64 bootstrap ladder; the spec collapses to an empty
-# collection on arm64.
-match {
-  { arch = 'Amd64, .. } => amd64_spec,
-  { arch = 'Arm64, .. } =>
-    {
-      name = "openjdk-24",
-      build_deps = [],
-    } | BuildSpec,
-} target
+amd64_spec
