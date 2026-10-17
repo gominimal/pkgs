@@ -20,7 +20,12 @@ let zstd = import "../zstd/build.ncl" in
 let gtest = import "../gtest/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let llvm = import "../llvm/build.ncl" in
+let wasi-libc = import "../wasi-libc/build.ncl" in
+let llhttp-wasm-rebuild = import "../llhttp-wasm-rebuild/build.ncl" in
 
+# undici bundled under deps/npm; its llhttp C rebuilds npm's wasm blobs.
+let npm-undici = "6.28.0" in
 let version = "26.10.0" in
 {
   name = "node",
@@ -33,7 +38,14 @@ let version = "26.10.0" in
     # Adapts the Mach-O SEA injection to the LIEF 1.x Section API — see
     # the patch header. Build-time only: it rewrites the source tree.
     { file = "lief-1.x-macho-section-ctor.patch" } | Local,
+    {
+      url = "gs://minimal-staging-archives/undici-%{npm-undici}.tar.gz",
+      sha256 = "555a14624f66628d8aa7fcd0691ab2371f3e4512c40358bb7320bfabbb6763ec",
+    } | Source,
     base,
+    llvm, # clang + wasm-ld for the llhttp wasm
+    wasi-libc,
+    llhttp-wasm-rebuild, # rebuilds and splices undici's llhttp wasm blobs
     make,
     pkgconf,
     patch,
