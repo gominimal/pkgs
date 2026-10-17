@@ -9,7 +9,8 @@ let { target, .. } = import "config.ncl" in
 # Built by gcc-15.2.0-glibc against the glibc-bedrock-2.42 sysroot; installs at /usr/lib/jikes-1.22.
 # Source: https://sourceforge.net/projects/jikes/files/Jikes/1.22/jikes-1.22.tar.bz2, mirrored to
 # gs://minimal-staging-archives/. No `needs`: nothing here touches the network.
-# amd64 only (see the match at the bottom).
+# aarch64 builds with the toolchain gcc (itself built from the hex0 seed) against production glibc,
+# through build-aarch64.sh; x86_64 keeps build.sh and the bedrock sysroot.
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # B5 seed-rooted gcc + g++ + libstdc++
 # production binutils: the sealed binutils-2.46-glibc shares sonames (libsframe.so.3) with it in
 # /usr/lib, and a mixed pair crashes as
@@ -22,21 +23,25 @@ let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let tar = import "../tar/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in # the source is a .tar.bz2
+let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
+let glibc = import "../glibc/build.ncl" in
+let automake = import "../automake/build.ncl" in # aarch64: a config.sub that knows aarch64
+let is_arm = target.arch == 'Arm64 in
 # pkgmgr: bootstrap_rung = "jvm"
 let version = "1.22" in
-let amd64_spec =
+let spec =
   {
     name = "jikes-1.22",
     build_deps = [
-      { file = "build.sh" } | Local,
+      (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
       {
         url = "gs://minimal-staging-archives/jikes-%{version}.tar.bz2",
         sha256 = "0cb02c763bc441349f6d38cacd52adf762302cce3a08e269f1f75f726e6e14e3",
         extract = false, # build.sh untars with --no-same-owner (chown-hostile sandbox)
       } | Source,
-      gcc-bedrock,
-      binutils,
-      glibc-bedrock,
+    ]
+    @ (if is_arm then [toolchain, automake] else [gcc-bedrock, binutils, glibc-bedrock])
+    @ [
       bash,
       make,
       sed,
@@ -48,11 +53,9 @@ let amd64_spec =
     build_args = {
       include version,
     },
-    # the interpreter is the sysroot's ld.so
-    runtime_deps = [
-      glibc-bedrock,
-    ],
-    cmd = "./build.sh",
+    # the interpreter: the sysroot's ld.so on x86_64, the system one on aarch64
+    runtime_deps = if is_arm then [glibc, toolchain] else [glibc-bedrock],
+    cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
     outputs = {
       # OutputData + allow_executable, NOT OutputBin: links against the B4 sysroot loader at a
       # non-standard .interp path (the binutils-2.46-glibc / go-1.4 precedent), consumed by the
@@ -70,13 +73,4 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# ARCH SCOPE: amd64 only — the hex0-rooted amd64 ladder. On arm64 this collapses to an
-# explicitly-EMPTY collection (the go-1.4 precedent): no build runs, nothing ships.
-match {
-  { arch = 'Amd64, .. } => amd64_spec,
-  { arch = 'Arm64, .. } =>
-    {
-      name = "jikes-1.22",
-      build_deps = [],
-    } | BuildSpec,
-} target
+spec

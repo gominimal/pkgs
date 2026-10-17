@@ -13,6 +13,13 @@ let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.
 # /usr/lib, and a mixed pair crashes as
 let binutils = import "../binutils/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
+let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
+let glibc = import "../glibc/build.ncl" in
+let autoconf = import "../autoconf/build.ncl" in # aarch64: config.sub refresh, autoreconf
+let automake = import "../automake/build.ncl" in
+let libtool = import "../libtool/build.ncl" in
+let m4 = import "../m4/build.ncl" in
+let is_arm = target.arch == 'Arm64 in
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -28,20 +35,20 @@ let zlib = import "../zlib/build.ncl" in # java.util.zip
 let gzip = import "../gzip/build.ncl" in
 # pkgmgr: bootstrap_rung = "jvm"
 let version = "0.93" in
-let amd64_spec =
+let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
   {
     name = "classpath-0.93",
     build_deps = [
-      { file = "build.sh" } | Local,
+      (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
       {
         url = "gs://minimal-staging-archives/classpath-0.93.tar.gz",
         sha256 = "df2d093612abd23fe67e9409d89bb2a8e79b1664fe2b2da40e1c8ed693e32945",
         extract = false, # build.sh untars with --no-same-owner
       } | Source,
       jikes-1-22,
-      gcc-bedrock,
-      binutils,
-      glibc-bedrock,
+    ]
+    @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
+    @ [
       zip,
       zlib,
       bash,
@@ -58,9 +65,11 @@ let amd64_spec =
     ],
     # native libraries
     runtime_deps = [
-      glibc-bedrock,
+    ]
+    @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
+    @ [
     ],
-    cmd = "./build.sh",
+    cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path
       prefix = { glob = "usr/lib/classpath-0.93/**", allow_executable = true } | OutputData,
@@ -78,13 +87,4 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# amd64 only: this rung belongs to the amd64 bootstrap ladder; the spec collapses to an empty
-# collection on arm64.
-match {
-  { arch = 'Amd64, .. } => amd64_spec,
-  { arch = 'Arm64, .. } =>
-    {
-      name = "classpath-0.93",
-      build_deps = [],
-    } | BuildSpec,
-} target
+amd64_spec
