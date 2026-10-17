@@ -75,6 +75,19 @@ JAVAC=/usr/lib/ecj-bootstrap-3.2.2/bin/javac; ECJJAR=/usr/lib/ecj-bootstrap-3.2.
 # --- P2 build ---
 mkdir src && tar -xzf classpath-devel-e7c13ee0-src2.tar.gz -C src --strip-components=1
 cd src
+# fdlibm's ieeefp.h predates aarch64 and stops with "Endianess not declared"; add it next to the other
+# architectures (Guix's classpath-aarch64-support.patch)
+if ! grep -q __aarch64__ native/fdlibm/ieeefp.h; then
+  python3 - native/fdlibm/ieeefp.h <<'PYEOF'
+import sys
+p = sys.argv[1]; s = open(p).read()
+anchor = "#ifdef __hppa__"
+assert s.count(anchor) == 1, "ieeefp.h anchor"
+s = s.replace(anchor, "#ifdef __aarch64__\n#ifdef __BIG_ENDIAN__\n#define __IEEE_BIG_ENDIAN\n#else\n#define __IEEE_LITTLE_ENDIAN\n#endif\n#endif\n\n" + anchor)
+open(p, "w").write(s)
+PYEOF
+fi
+grep -q __aarch64__ native/fdlibm/ieeefp.h || { echo "fdlibm aarch64 endianness did not apply" >&2; exit 1; }
 # ecj 3.2.2 predates @Override on interface methods
 find java -name '*.java' -exec sed -i 's/@Override//' {} +
 autoreconf -vif > ../autoreconf.log 2>&1 || { tail -20 ../autoreconf.log >&2; echo "classpath-devel: autoreconf failed" >&2; exit 1; }
