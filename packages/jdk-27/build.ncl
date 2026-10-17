@@ -1,48 +1,122 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
-let { target, .. } = import "config.ncl" in
+# jdk-27: the current Java feature release (non-LTS), for projects that opt into the newest language
+# and JVM features. OpenJDK built from the openjdk/jdk27u tag that Eclipse Temurin's release of the
+# same version is built from, booted by ../openjdk-26 (the top of the JVM ladder) and compiled by the
+# production toolchain. Same /usr/lib/jvm layout and outputs as the Temurin package it replaces.
+# Leaves out the CDS archives and src.zip, which do not reproduce.
+let openjdk-26 = import "../openjdk-26/build.ncl" in # the boot JDK
 let base = import "../base/build.ncl" in
-let alsa-lib = import "../alsa-lib/build.ncl" in
+let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let bash = import "../bash/build.ncl" in
+let make = import "../make/build.ncl" in
+let sed = import "../sed/build.ncl" in
+let grep = import "../grep/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let findutils = import "../findutils/build.ncl" in
+let tar = import "../tar/build.ncl" in
+let python = import "../python/build.ncl" in # normalises the zip archives after install
+let gawk = import "../gawk/build.ncl" in # configure scripts and config.status
+let diffutils = import "../diffutils/build.ncl" in
+let gzip = import "../gzip/build.ncl" in
+let patch = import "../patch/build.ncl" in
+let zip = import "../zip/build.ncl" in
+let unzip = import "../unzip/build.ncl" in
+let cpio = import "../cpio/build.ncl" in
+let file = import "../file/build.ncl" in
+let which = import "../which/build.ncl" in
+let pkgconf = import "../pkgconf/build.ncl" in
+let autoconf = import "../autoconf/build.ncl" in # configure regenerates itself
+let m4 = import "../m4/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+let freetype = import "../freetype/build.ncl" in
+let cups = import "../cups/build.ncl" in
+let alsa-lib = import "../alsa-lib/build.ncl" in
+let lcms2 = import "../lcms2/build.ncl" in
+let fontconfig = import "../fontconfig/build.ncl" in
+let libpng = import "../libpng/build.ncl" in
+let libjpeg-turbo = import "../libjpeg-turbo/build.ncl" in
+let giflib = import "../giflib/build.ncl" in
+let libx11 = import "../libx11/build.ncl" in
+let libxext = import "../libxext/build.ncl" in
+let libxrender = import "../libxrender/build.ncl" in
+let libxtst = import "../libxtst/build.ncl" in
+let libxi = import "../libxi/build.ncl" in
+let libxinerama = import "../libxinerama/build.ncl" in
+let libxrandr = import "../libxrandr/build.ncl" in
+let libxcomposite = import "../libxcomposite/build.ncl" in
+let libxt = import "../libxt/build.ncl" in
+let xorgproto = import "../xorgproto/build.ncl" in
 
 let version = "27" in
 let build_num = "35" in
-let dl_base = "https://github.com/adoptium/temurin27-binaries/releases/download/jdk-%{version}+%{build_num}" in
-
-let { amd64_sha256, arm64_sha256 } = {
-  amd64_sha256 = "1cf69a4848ffb728b3b260dfd45206a51566ab571a02a30092271d4c580bccbc",
-  arm64_sha256 = "e4ec5c7276290c7bde0baecba9a29be4962f5388684296406a9799d465936087",
-}
-in
-
-# Eclipse Temurin 27, the current Java feature release (non-LTS; Adoptium's
-# prebuilt OpenJDK binaries). Its own package, separate from `jdk` (the LTS
-# line), so projects opt into the newest language/JVM features explicitly.
-# Non-LTS: superseded by JDK 28 in March 2027. A GA release has no dotted
-# version: tag `jdk-27+35`, assets `..._27_35.tar.gz`, top dir `jdk-27+35`.
-# Same layout and outputs as packages/jdk.
 {
   name = "jdk-27",
   build_deps = [
     { file = "build.sh" } | Local,
-    match {
-      { arch = 'Amd64, .. } =>
-        {
-          url = "%{dl_base}/OpenJDK27U-jdk_x64_linux_hotspot_%{version}_%{build_num}.tar.gz",
-          sha256 = amd64_sha256,
-        } | Source,
-      { arch = 'Arm64, .. } =>
-        {
-          url = "%{dl_base}/OpenJDK27U-jdk_aarch64_linux_hotspot_%{version}_%{build_num}.tar.gz",
-          sha256 = arm64_sha256,
-        } | Source,
-    } target,
-    base,
-  ],
-  runtime_deps = [
+    {
+      # https://github.com/openjdk/jdk27u/archive/refs/tags/jdk-27-ga.tar.gz
+      url = "gs://minimal-staging-archives/jdk-%{version}-ga.tar.gz",
+      sha256 = "190d752bdfd630334684f6f2968160bf75740ee29fe79662162f8bbade26908d",
+      extract = false, # build.sh untars with --no-same-owner
+    } | Source,
+    openjdk-26,
+    toolchain,
+    bash,
+    make,
+    sed,
+    grep,
+    coreutils,
+    findutils,
+    tar,
+    python,
+    gawk,
+    diffutils,
+    gzip,
+    patch,
+    zip,
+    unzip,
+    cpio,
+    file,
+    which,
+    pkgconf,
+    autoconf,
+    m4,
+    zlib,
+    freetype,
+    cups,
     alsa-lib,
+    lcms2,
+    fontconfig,
+    libpng,
+    libjpeg-turbo,
+    giflib,
+    libx11,
+    libxext,
+    libxrender,
+    libxtst,
+    libxi,
+    libxinerama,
+    libxrandr,
+    libxcomposite,
+    libxt,
+    xorgproto,
+  ],
+  # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, lcms2, libpng, giflib and libjpeg
+  runtime_deps = [
     glibc,
     zlib,
+    freetype,
+    libpng,
+    giflib,
+    libjpeg-turbo,
+    lcms2,
+    alsa-lib,
+    libx11,
+    libxext,
+    libxi,
+    libxrender,
+    libxtst,
   ],
 
   cmd = "./build.sh",
@@ -58,18 +132,20 @@ in
     jvm_libs = { glob = "usr/lib/jvm/lib/**/*.so*" } | OutputLib,
     jvm_libdata = { glob = "usr/lib/jvm/lib/**", allow_executable = true } | OutputData,
 
-    jvm_data = { glob = "usr/lib/jvm/{jmod,conf,legal}/**" } | OutputData,
+    jvm_data = { glob = "usr/lib/jvm/{jmods,conf,legal}/**" } | OutputData,
+    jvm_release = { glob = "usr/lib/jvm/release" } | OutputData,
     jvm_includes = { glob = "usr/lib/jvm/include/**" } | OutputData,
   },
 
   attrs =
     {
       upstream_version = version,
+      build_cost_multiple = 12,
       license_spdx = "GPL-2.0-only WITH Classpath-exception-2.0",
       source_provenance = {
         category = 'GithubRepo,
-        owner = "adoptium",
-        repo = "temurin27-binaries",
+        owner = "openjdk",
+        repo = "jdk27u",
       },
     } | Attrs,
 
