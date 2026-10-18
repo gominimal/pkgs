@@ -185,6 +185,14 @@ let browser_version = "155.0.8059.84" in
       # Chromium sources are BSD-3-Clause, but these are Google's
       # branded binaries and ship without that grant.
       license_spdx = "LicenseRef-Google-Chrome-for-Testing-ToS",
+      # NOT the origin of these bytes (`binary_from` says where they come
+      # from), but LOAD-BEARING for vulnerability scanning: supply-chain's
+      # cpe_remap maps pkg:github/microsoft/playwright -> google:chrome, which
+      # is how BOTH chromium packages see Chrome's CVEs at all. Removing it
+      # (or changing it) without a matching cpe_remap/cpe_identity entry
+      # makes this package scan 0/0/0 — a silent false negative. Kept in
+      # lockstep with chromium-headless-shell-bin; re-identifying the pair
+      # is a separate, coordinated change (pkgmgr-rs#825).
       source_provenance = {
         category = 'GithubRepo,
         owner = "microsoft",
