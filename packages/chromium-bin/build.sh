@@ -1,14 +1,16 @@
 #!/bin/bash
 set -euo pipefail
 
-# One zip arrives in the cwd. Extract into a scratch dir so we can
-# discover its (arch-dependent) top-level directory name.
+# One complete Chrome for Testing `chrome` zip arrives in the cwd — a
+# straight extract. (Before the CfT move amd64 came from the
+# chromium-browser-snapshots bucket and arm64 from Playwright's CDN, which
+# stopped publishing arm64 builds after r1243.)
 mkdir -p _full
-# amd64 zip from the chromium-browser-snapshots bucket is named
-# chrome-linux.zip; arm64 zip from Playwright's CDN is
-# chromium-linux-arm64.zip. Each build fetches exactly one zip into
-# the cwd, so a broad glob is fine.
-unzip -q chrom*-linux*.zip -d _full
+if [ "$(uname -m)" = "x86_64" ]; then
+  unzip -q chrome-linux64.zip -d _full
+else
+  unzip -q chrome-linux-arm64.zip -d _full
+fi
 
 # The zip is expected to extract to exactly one top-level directory —
 # fail loudly if that ever changes.
@@ -19,13 +21,31 @@ if [ "${#entries[@]}" -ne 1 ] || [ ! -d "${entries[0]}" ]; then
 fi
 FULL_INNER=$(basename "${entries[0]}")
 
-# Both zips extract to chrome-linux/, but Playwright's x64 registry
-# expects chrome-linux64/chrome (its arm64 registry expects
-# chrome-linux/chrome) — normalize on x86_64 so registry discovery via
-# PLAYWRIGHT_BROWSERS_PATH keeps working on both arches.
-if [ "$(uname -m)" = "x86_64" ] && [ "$FULL_INNER" = "chrome-linux" ]; then
-  mv _full/chrome-linux _full/chrome-linux64
-  FULL_INNER=chrome-linux64
+if [ ! -x "_full/$FULL_INNER/chrome" ]; then
+  echo "expected an executable _full/$FULL_INNER/chrome in the CfT bundle" >&2
+  exit 1
+fi
+
+# Fail closed on runtime files whose absence would surface only at first
+# launch (a FATAL on missing icudtl.dat / v8 snapshot, or --dump-dom
+# quietly returning nothing).
+for required in icudtl.dat v8_context_snapshot.bin resources.pak chrome_100_percent.pak; do
+  if [ ! -s "_full/$FULL_INNER/$required" ]; then
+    echo "CfT bundle is missing $required — refusing to ship an incomplete browser" >&2
+    exit 1
+  fi
+done
+
+# LICENSING: the CfT `chrome` bundle ships Google's Widevine CDM
+# (WidevineCdm/_platform_specific/linux_<arch>/libwidevinecdm.so) under a
+# license that forbids distribution without a separate agreement with
+# Google ("The Software is not open source software"). Never ship it.
+# Chrome runs without it; only EME/DRM media playback is lost.
+rm -rf "_full/$FULL_INNER/WidevineCdm"
+if find "_full/$FULL_INNER" -iname '*widevine*' | grep -q .; then
+  echo "Widevine files survived the strip — refusing to ship them:" >&2
+  find "_full/$FULL_INNER" -iname '*widevine*' >&2
+  exit 1
 fi
 
 REV="${MINIMAL_ARG_REVISION}"
@@ -37,6 +57,16 @@ FULL_DEST="$SHARE/chromium-${REV}"
 
 install -d "$FULL_DEST"
 cp -R "_full/$FULL_INNER" "$FULL_DEST/$FULL_INNER"
+
+# COMPAT (arm64): the pre-CfT arm64 leg (Playwright's own build) extracted
+# to `chrome-linux/chrome`, which playwright-core <= 1.62 looked for on
+# arm64. CfT (and playwright-core >= 1.63) use `chrome-linux-arm64/chrome`.
+# Keep the old name as a symlink so anything that hardcoded the previous
+# path keeps resolving. amd64 is unaffected: `chrome-linux64` was already
+# its directory name.
+if [ "$FULL_INNER" != "chrome-linux" ] && [ "$FULL_INNER" != "chrome-linux64" ]; then
+  ln -s "$FULL_INNER" "$FULL_DEST/chrome-linux"
+fi
 
 # Playwright's installer writes this marker after a successful download;
 # without it @playwright/test treats the install as incomplete and tries
