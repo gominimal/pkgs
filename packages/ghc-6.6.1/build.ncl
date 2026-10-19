@@ -12,9 +12,6 @@ let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # the C compiler, he
 # /usr/lib, and a mixed pair crashes as
 let binutils = import "../binutils/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
-# build-time: the sysroot only. The sealed tarball is prebuilt, so a bare import lands it whole, including a
-# complete glibc 2.42 at /usr/lib that collides with production glibc there (lowest spec hash wins; pkgs#937)
-let glibc-bedrock-sysroot = subsetOf glibc-bedrock ["sysroot_lib", "sysroot_include"] in
 let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
 let glibc = import "../glibc/build.ncl" in
 let base = import "../base/build.ncl" in
@@ -35,8 +32,12 @@ let patch = import "../patch/build.ncl" in
 let version = "6.6.1" in
 let is_arm = target.arch == 'Arm64 in
 # x86_64 compiles with the bedrock gcc against its glibc sysroot; aarch64 with the toolchain, itself hex0-rooted
-let cc_build = if is_arm then [toolchain] else [gcc-bedrock, binutils, glibc-bedrock-sysroot] in
-let cc_runtime = if is_arm then [glibc, toolchain] else [subsetOf glibc-bedrock ["sysroot_lib"], gcc-bedrock, binutils] in
+let cc_build = if is_arm then [toolchain] else [gcc-bedrock, binutils] in
+# The sysroot is taken only as a subsetOf slice, and only through runtime_deps (a spec's own runtime_deps
+# are in its build sandbox too). glibc-bedrock-2.42 is prebuilt, so a bare import lands its whole tarball,
+# a complete glibc 2.42 at /usr/lib included, which collides with production glibc there (the lowest spec
+# hash wins). A subsetOf in build_deps is no alternative: the builder does not implement it yet.
+let cc_runtime = if is_arm then [glibc, toolchain] else [subsetOf glibc-bedrock ["sysroot_lib", "sysroot_include"], gcc-bedrock, binutils] in
 let spec =
   {
     name = "ghc-6.6.1",
