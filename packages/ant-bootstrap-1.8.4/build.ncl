@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # ant-bootstrap-1.8.4: one rung of the JVM ladder (jikes-1.22 -> classpath-0.93 -> jamvm-1.5.1 ->
 # ant-bootstrap-1.8.4 -> ecj-bootstrap-3.2.2 -> classpath-0.99 -> classpath-devel -> jamvm-2.0.0
@@ -14,7 +14,7 @@ let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.
 # production binutils: the sealed binutils-2.46-glibc shares sonames (libsframe.so.3) with it in
 # /usr/lib, and a mixed pair crashes as
 let binutils = import "../binutils/build.ncl" in
-let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
+let glibc-bedrock = subsetOf (import "../glibc-bedrock-2.42/build.ncl") ["sysroot_lib", "sysroot_include"] in # sysroot only: the sealed tarball also carries a whole glibc 2.42 at /usr/lib
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
