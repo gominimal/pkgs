@@ -100,7 +100,7 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # Playwright build. `browser_version` is the CfT Stable version and is the
 # only pin to bump.
 let revision = "1243" in
-let browser_version = "153.0.8010.52" in
+let browser_version = "155.0.8059.84" in
 {
   name = "chromium-headless-shell-bin",
   build_deps = [
@@ -113,12 +113,12 @@ let browser_version = "153.0.8010.52" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chrome-headless-shell-linux64.zip",
-          sha256 = "944dc1eae654637fed4d57650198774f9c43b45f34e48febb84f43c541b5de76",
+          sha256 = "a5d71b91aa996fef00517cd212b2dfb816b43055edefbe727e6fd562d4ae1f9c",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux-arm64/chrome-headless-shell-linux-arm64.zip",
-          sha256 = "d8e97f3bf2537280a60f4b9bae8e9f463d112c9cdce349f89c2c7611150282d7",
+          sha256 = "0c83c2520b513835c712590781adbdbcab4c14ca04d4809be5055ff2c8937a51",
         } | Source,
     } target,
     base,

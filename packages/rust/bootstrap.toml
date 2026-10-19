@@ -15,8 +15,6 @@ extended = true
 # No "src": the rust-src install step is gated on `extended && tools.contains("src")`, and a
 # bundled rust-src is what x.py would compile instead of the in-tree source.
 tools = ["cargo", "clippy", "rustfmt", "rust-analyzer"]
-# Use libtest built from the source tree instead of the precompiled one from stage 0.
-compiletest-use-stage0-libtest = false
 
 docs = false
 

@@ -11,14 +11,14 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.9.3" in
+let version = "0.9.6" in
 {
   name = "libcap-ng",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/stevegrubb/libcap-ng/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "fe11ebbb55904763b3532f19069f13ec319042634620180a03bd4653d301563e",
+      sha256 = "399040138e0ca62fa2bcabd63da9af4431a246ef7a654561a0ca3cb00010a539",
       extract = true,
       strip_prefix = "libcap-ng-%{version}",
     } | Source,
