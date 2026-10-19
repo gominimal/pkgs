@@ -66,6 +66,12 @@ let all_outputs = {
   sysroot_include = { glob = "usr/lib/glibc-bedrock-2.42/include/**" } | OutputData,
 }
 in
+# The sealed artifact (switch off, below) holds only the versioned sysroot.
+let sealed_outputs = {
+  sysroot_lib = all_outputs.sysroot_lib,
+  sysroot_include = all_outputs.sysroot_include,
+}
+in
 let amd64_spec =
   {
     name = "glibc-bedrock-2.42",
@@ -139,22 +145,37 @@ match {
     if (import "../hex0/amd64-ladder.ncl").enabled then
       amd64_spec
     else
-      # SEALED (switch off): the same sha-pinned artifact the production toolchain
-      # package already anchors on (see packages/glibc/build.ncl), with this
-      # package's own outputs, so anything that imports it (the jvm ladder roots) gets a
-      # real tree rather than an empty stub. Provenance: gominimal/minimermetic#16.
+      # SEALED (switch off): the sysroot subtree (usr/lib/glibc-bedrock-2.42/**) of the
+      # sha-pinned bedrock artifact the production toolchain anchors on (d0850b65…, see
+      # packages/glibc/build.ncl; provenance gominimal/minimermetic#16), so anything that
+      # imports it (the jvm ladder roots) gets a real tree rather than an empty stub.
+      #
+      # A prebuilt lands as its WHOLE tarball: minimal skips `outputs` globs for it, and
+      # only a consumer's `subsetOf` filters. d0850b65 also carries a full top-level glibc
+      # 2.42 (usr/lib/libc.so.6, ld-linux-x86-64.so.2, crt*.o, gconv, usr/include, usr/bin)
+      # for its role as the production glibc's replace_on_cycle root. Imported bare, that
+      # collides with the production glibc in the sandbox's merged /usr/lib, and the lower
+      # spec hash wins (collisions only warn), so a rehash anywhere upstream could put a
+      # 2.42 libc under 2.44-linked tools (pkgs#895: classpath-0.93 `sort: GLIBC_2.43 not
+      # found`). This artifact is that one with every entry outside
+      # usr/lib/glibc-bedrock-2.42 dropped: the kept tar records are byte-identical to
+      # d0850b65's (same order, headers, mtimes; uncompressed tar sha256 96759457…),
+      # recompressed with zstd -5 --no-check (minimal's compress_dir level). The top-level
+      # tree was unused here: the sysroot is a superset of its headers and libraries, and
+      # every consumer reaches glibc through SR=/usr/lib/glibc-bedrock-2.42. Hence
+      # `sealed_outputs`, not `all_outputs`: the outputs now say what the tarball holds.
       (
         {
           name = "glibc-bedrock-2.42",
           prebuilt = true,
           build_deps = [
             {
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/d0850b659687f160368bf87a57d02cfbbe0f1a5fe6ab4b623ca8296b5659126f/glibc-bedrock-2.42-2.42.tar.zst",
-              sha256 = "d0850b659687f160368bf87a57d02cfbbe0f1a5fe6ab4b623ca8296b5659126f",
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/62d398ef1e1b689664b982f43d0cfb3570ee2133c6be3ded434c4bb9d1c747bc/glibc-bedrock-2.42-sysroot-2.42.tar.zst",
+              sha256 = "62d398ef1e1b689664b982f43d0cfb3570ee2133c6be3ded434c4bb9d1c747bc",
               extract = true,
             } | Source,
           ],
-          outputs = all_outputs,
+          outputs = sealed_outputs,
         } | BuildSpec
       ),
   { arch = 'Arm64, .. } =>
