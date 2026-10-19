@@ -16,16 +16,64 @@ permissions:
   contents: write
 
 jobs:
+  # On a pull request, check only what the PR touched: its packages and
+  # stacks, by name. The full check (every package's standalone tests, about
+  # nine minutes after a disk-free step of one to three) stays for pushes to
+  # main, the merge queue and dispatch. A PR that changes anything outside
+  # packages/ and stacks/ (the workflows, minimal.toml) takes the full check
+  # too; one that changes only prose (*.md, legal/) runs nothing.
   minimal-check:
     runs-on: ubuntu-latest
     steps:
+      - id: scope
+        name: Decide what to check
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          # The changed-file list comes from the API, not from a checkout: the
+          # PR's base is not in a shallow clone, and one request is cheaper
+          # than deepening the clone to find it.
+          files=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files" --paginate --jq '.[].filename')
+          # Prose is set aside first, wherever it lives: a README under a
+          # package is not a reason to check that package.
+          code=$(printf '%s\n' "$files" | grep -vE '(^|/)[^/]*\.md$|^legal/' || true)
+          pkgs=$(printf '%s\n' "$code" | sed -n 's#^packages/\([^/]*\)/.*#\1#p' | sort -u | paste -sd, -)
+          stacks=$(printf '%s\n' "$code" | sed -n 's#^stacks/\([^/]*\)/.*#\1#p' | sort -u | paste -sd, -)
+          other=$(printf '%s\n' "$code" | grep -vE '^(packages|stacks)/' || true)
+          if [ -n "$other" ]; then
+            echo "full check: the PR changes files outside packages/ and stacks/:"
+            printf '%s\n' "$other" | sed 's/^/  /'
+            echo "mode=full" >> "$GITHUB_OUTPUT"
+          elif [ -z "$pkgs$stacks" ]; then
+            echo "nothing to check: the PR changes only prose"
+            echo "mode=none" >> "$GITHUB_OUTPUT"
+          else
+            echo "scoped check: packages [$pkgs] stacks [$stacks]"
+            { echo "mode=scoped"; echo "packages=$pkgs"; echo "stacks=$stacks"; } >> "$GITHUB_OUTPUT"
+          fi
       - name: Free Disk Space
+        # Only the full check needs the room: a scoped check materializes a
+        # handful of packages, and this step alone took 93-203 s per run.
+        if: steps.scope.outputs.mode != 'scoped' && steps.scope.outputs.mode != 'none'
         uses: endersonmenezes/free-disk-space@v3 # Use @main for latest, @v3 for stable
         with:
             remove_android: true
             remove_dotnet: true
             remove_haskell: true
       - uses: actions/checkout@v6
-      - uses: gominimal/check@v1
+        if: steps.scope.outputs.mode != 'none'
+      - name: Check the changed packages and stacks
+        if: steps.scope.outputs.mode == 'scoped'
+        uses: gominimal/check@v1
+        with:
+            channel: unstable
+            packages: ${{ steps.scope.outputs.packages }}
+            stacks: ${{ steps.scope.outputs.stacks }}
+      - name: Check everything
+        if: steps.scope.outputs.mode != 'scoped' && steps.scope.outputs.mode != 'none'
+        uses: gominimal/check@v1
         with:
             channel: unstable
