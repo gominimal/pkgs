@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # ghc-9.6.7: one rung of the GHC ladder (7.6.3 -> 7.8.4 -> 7.10.3 -> 8.2.2 -> 8.6.5 -> 8.10.7 -> 9.2.8 -> 9.6.7 -> ghc).
 # Builds GHC 9.6.7 with Hadrian from the pinned source tarball with ../ghc-9.2.8 as the boot compiler
@@ -13,6 +13,9 @@ let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.
 # /usr/lib, and a mixed pair crashes as
 let binutils = import "../binutils/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
+# build-time: the sysroot only. The sealed tarball is prebuilt, so a bare import lands it whole, including a
+# complete glibc 2.42 at /usr/lib that collides with production glibc there (lowest spec hash wins; pkgs#937)
+let glibc-bedrock-sysroot = subsetOf glibc-bedrock ["sysroot_lib", "sysroot_include"] in
 let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
 let llvm = import "../llvm/build.ncl" in
 let gmp = import "../gmp/build.ncl" in # integer-gmp
@@ -39,7 +42,7 @@ let version = "9.6.7" in
 let is_arm = target.arch == 'Arm64 in
 # x86_64 compiles with the bedrock gcc against its glibc sysroot; aarch64 with the toolchain, itself hex0-rooted
 # aarch64: llvm for ld.lld, which the ghc-9.2.8 boot's settings link with (-fuse-ld=lld)
-let cc_build = if is_arm then [toolchain, llvm] else [gcc-bedrock, binutils, glibc-bedrock] in
+let cc_build = if is_arm then [toolchain, llvm] else [gcc-bedrock, binutils, glibc-bedrock-sysroot] in
 let spec =
   {
     name = "ghc-9.6.7",

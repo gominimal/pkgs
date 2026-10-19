@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let alex = import "../alex/build.ncl" in
 let base = import "../base/build.ncl" in
@@ -20,6 +20,9 @@ let make = import "../make/build.ncl" in
 let llvm = import "../llvm/build.ncl" in
 let ghc-9-6-7 = import "../ghc-9.6.7/build.ncl" in # the boot: the top of the source-only ladder
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # the amd64 boot's binaries and C wrapper use its sysroot
+# build-time: the sysroot only. The sealed tarball is prebuilt, so a bare import lands it whole, including a
+# complete glibc 2.42 at /usr/lib that collides with production glibc there (lowest spec hash wins; pkgs#937)
+let glibc-bedrock-sysroot = subsetOf glibc-bedrock ["sysroot_lib", "sysroot_include"] in
 let happy = import "../happy/build.ncl" in
 
 let version = "9.10.3" in
@@ -56,7 +59,7 @@ let version = "9.10.3" in
         { arch = 'Amd64, .. } =>
           [
             ghc-9-6-7,
-            glibc-bedrock,
+            glibc-bedrock-sysroot,
             {
               url = "https://downloads.haskell.org/~ghc/%{version}/hadrian-bootstrap-sources/hadrian-bootstrap-sources-9.6.4.tar.gz",
               sha256 = "1bac1634cf6a396e77df044d57a96757e84f5d0cf4f1c113637dde5bee7104ee",
