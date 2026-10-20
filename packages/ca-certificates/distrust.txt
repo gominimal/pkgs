@@ -73,3 +73,28 @@ cert a4b72dbd37256324b557b9176f8cba4310ddffbcc4609977e2463f3504a716c8  EM DV TLS
 cert 169a0523c5e071aa4e298286dbd4ee0e40c8c06abb6b0c077d132f001fa19240  EM EV TLS CA - G3C <- emSign Root TLS CA - G3 (malleated signature)
 cert ab7292f82267333031f512379fdbada949dfa49d3c046cc8fa7f34117c342986  EM OV CS CA - G3C <- emSign Root CS CA - G3 (malleated signature)
 cert a104b1314df8e02f7de27ddc287d0961d6e6824ad4dafc3d11064f24c1b653d5  EM OV TLS CA - G3C <- emSign Root TLS CA - G3 (malleated signature)
+
+# ======================================================================================
+# Roots removed from Mozilla's store for cause, which the pre-2026-10-20 package still
+# shipped in its ca-certificates.crt (a 2021-22 era bundle). Listed so a stale bundle
+# can never come back.
+#
+# TrustCor (distrusted 2022-11 after reporting on its ownership ties to a spyware vendor):
+#   https://bugzilla.mozilla.org/show_bug.cgi?id=1803453  (server distrust-after)
+#   https://bugzilla.mozilla.org/show_bug.cgi?id=1851049  (removal from NSS)
+# E-Tugra (removed 2023 after a security incident in its systems):
+#   https://bugzilla.mozilla.org/show_bug.cgi?id=1842928  (removal from NSS)
+#   https://bugzilla.mozilla.org/show_bug.cgi?id=1822936  (expired root removal)
+# ======================================================================================
+cert b0bfd52bb0d7d9bd92bf5d4dc13da255c02c542f378365ea893911f55e55f23c  E-Tugra Certification Authority
+spki c1ad1b1898ec395048df070bfa217e25c913bed8ca6b73de085528846a0103c1  E-Tugra Certification Authority (key)
+cert 873f4685fa7f563625252e6d36bcd7f16fc24951f264e47e1b954f4908cdca13  E-Tugra Global Root CA ECC v3
+spki 56f2ea8684106d0c73333951059d2bff9ace0a9934f015c5d84c5a959dfbb3cc  E-Tugra Global Root CA ECC v3 (key)
+cert ef66b0b10a3cdb9f2e3648c76bd2af18ead2bfe6f117655e28c4060da1a3f4c2  E-Tugra Global Root CA RSA v3
+spki b3effbf46bcf66aedf71427e6bd60bf1a1878c7b72cab178703485fda6e3db38  E-Tugra Global Root CA RSA v3 (key)
+cert 5a885db19c01d912c5759388938cafbbdf031ab2d48e91ee15589b42971d039c  TrustCor ECA-1
+spki 7afe4b071a2f1f46f8ba944a26d584d5960b92fb48c3ba1b7cab84905f32aacd  TrustCor ECA-1 (key)
+cert d40e9c86cd8fe468c1776959f49ea774fa548684b6c406f3909261f4dce2575c  TrustCor RootCert CA-1
+spki ea87f462deefffbd7775aa2a4b7e0fcb91c22eee6df69ed90100ccc73b311476  TrustCor RootCert CA-1 (key)
+cert 0753e940378c1bd5e3836e395daea5cb839e5046f1bd0eae1951cf10fec7c965  TrustCor RootCert CA-2
+spki c63d68c648a18b77641c427a669d61c9768a55f4fcd0322eac96c57700299cf1  TrustCor RootCert CA-2 (key)

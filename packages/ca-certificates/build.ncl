@@ -32,6 +32,10 @@ let date = std.string.replace "." "-" version in
   cmd = "./build.sh",
   outputs = {
     certs = { glob = "etc/ssl/certs/*" } | OutputData,
+    # OpenSSL's default CAfile (openssl is built --openssldir=/etc/ssl); a symlink to
+    # certs/ca-certificates.crt. Nothing shipped it before, so default-store clients
+    # without a CApath fallback had no roots.
+    bundle = { glob = "etc/ssl/cert.pem" } | OutputData,
   },
 
   attrs =
@@ -39,6 +43,11 @@ let date = std.string.replace "." "-" version in
       upstream_version = version,
       license_spdx = "MPL-2.0",
       needed_for_internet = {},
+      source_provenance = {
+        category = 'Website,
+        homepage = "https://curl.se/docs/caextract.html",
+        downloads_page = "https://curl.se/ca/",
+      },
     } | Attrs,
 
   # build.sh already fails the build on a distrusted root, a compromised chain that
@@ -63,13 +72,16 @@ let date = std.string.replace "." "-" version in
           ["/bin/bash", "-c", "test ! -e /etc/ssl/certs/emSign_ECC_Root_CA_-_G3.crt && test ! -e /etc/ssl/certs/Comodo_AAA_Services_root.crt"],
         ],
       } | Test,
-    # The hashed directory works (curl is built --with-ca-path=/etc/ssl/certs).
+    # The hashed directory works (curl is built --with-ca-path=/etc/ssl/certs), and so
+    # does openssl's built-in default store (/etc/ssl/cert.pem + /etc/ssl/certs).
     capath_lookup =
       {
         class = 'Standalone,
         test_deps = [bash, openssl],
         cmds = [
           ["/bin/bash", "-c", "openssl verify -no-CAfile -no-CAstore -CApath /etc/ssl/certs /etc/ssl/certs/ISRG_Root_X1.crt"],
+          ["/bin/bash", "-c", "openssl verify -no-CApath -no-CAstore -CAfile /etc/ssl/cert.pem /etc/ssl/certs/ISRG_Root_X2.crt"],
+          ["/bin/bash", "-c", "openssl verify /etc/ssl/certs/ISRG_Root_X1.crt"],
         ],
       } | Test,
   },

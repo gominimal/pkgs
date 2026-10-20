@@ -3,11 +3,15 @@
 # https://curl.se/docs/caextract.html), then refuses to finish if the result trusts
 # anything in distrust.txt or fails the chain tests below.
 #
-# Output layout (unchanged paths for consumers):
+# Output layout. The bundle, the per-root files and the hash links are all generated
+# from the one source, and step 4 asserts they hold exactly the same certificates:
 #   etc/ssl/certs/ca-certificates.crt   every trusted root, PEM, one file
-#                                       (gnutls's default trust file; Go, Rust, curl -k-less)
+#                                       (gnutls's default trust file; Go, rustls, bun)
 #   etc/ssl/certs/<Label>.crt           one PEM per root, Debian-style names
-#   etc/ssl/certs/<subject-hash>.<n>    OpenSSL CApath links (curl --with-ca-path, openssl)
+#   etc/ssl/certs/<subject-hash>.<n>    OpenSSL CApath links (curl --with-ca-path,
+#                                       openssl, python ssl, git, wget, ruby)
+#   etc/ssl/cert.pem                    -> certs/ca-certificates.crt; OpenSSL's default
+#                                       CAfile, since openssl is built --openssldir=/etc/ssl
 set -eu
 
 SRC=$(ls cacert-*.pem)
@@ -57,12 +61,14 @@ for cert in *.crt; do
 done
 cd - >/dev/null
 
+ln -s certs/ca-certificates.crt "$OUTPUT_DIR/etc/ssl/cert.pem"
+
 # --- 4. Distrust gate: no certificate in the output may match distrust.txt. --------
 # Every PEM block of every output file is checked (the per-root files AND the
 # combined bundle), by certificate SHA-256 and by SubjectPublicKeyInfo SHA-256.
 grep -E '^(cert|spki) [0-9a-f]{64}( |$)' "$DISTRUST" | awk '{print $1 " " $2}' > "$WORK/deny"
 deny_count=$(($(wc -l < "$WORK/deny")))
-if [ "$deny_count" -lt 40 ]; then
+if [ "$deny_count" -lt 53 ]; then
   echo "FAIL: distrust.txt parsed to only $deny_count entries; refusing to trust a truncated list" >&2
   exit 1
 fi
@@ -104,12 +110,25 @@ if [ "$control_hits" -ne 4 ]; then
   exit 1
 fi
 
-( cd "$CERTS" && fingerprints ./*.crt ) > "$WORK/output.fps"
-output_certs=$(grep -c '^cert ' "$WORK/output.fps")
-if [ "$output_certs" -ne $((2 * src_count)) ]; then
-  echo "FAIL: gate fingerprinted $output_certs certificates, expected $((2 * src_count))" >&2
+# Bundle and per-root files are fingerprinted separately: they must be the SAME set
+# (the old tarball's bundle and directory disagreed by 34 roots).
+( cd "$CERTS" && for c in ./*.crt; do [ "$c" = ./ca-certificates.crt ] || fingerprints "$c"; done ) > "$WORK/files.fps"
+fingerprints "$CERTS/ca-certificates.crt" > "$WORK/bundle.fps"
+fingerprints "$OUTPUT_DIR/etc/ssl/cert.pem" > "$WORK/certpem.fps"
+for fps in files bundle certpem; do
+  n=$(grep -c '^cert ' "$WORK/$fps.fps")
+  if [ "$n" -ne "$src_count" ]; then
+    echo "FAIL: $fps holds $n certificates, expected $src_count" >&2
+    exit 1
+  fi
+  sort "$WORK/$fps.fps" > "$WORK/$fps.sorted"
+done
+if ! cmp -s "$WORK/files.sorted" "$WORK/bundle.sorted" || ! cmp -s "$WORK/files.sorted" "$WORK/certpem.sorted"; then
+  echo "FAIL: ca-certificates.crt, cert.pem and the per-root files differ:" >&2
+  diff "$WORK/files.sorted" "$WORK/bundle.sorted" >&2 || true
   exit 1
 fi
+cat "$WORK/files.fps" "$WORK/bundle.fps" > "$WORK/output.fps"
 if grep -xF -f "$WORK/deny" "$WORK/output.fps" > "$WORK/hits"; then
   echo "FAIL: output contains distrusted certificates/keys (see distrust.txt):" >&2
   cat "$WORK/hits" >&2
@@ -131,7 +150,8 @@ fi
 # A chain from a compromised intermediate must be rejected for lack of an issuer,
 # via both the bundle file and the hashed directory ...
 for chain in test-chain-emudhra-emsign.pem test-chain-emudhra-aaa.pem; do
-  for store in "-CAfile $BUNDLE -no-CApath -no-CAstore" "-CApath $CERTS -no-CAfile -no-CAstore"; do
+  for store in "-CAfile $BUNDLE -no-CApath -no-CAstore" "-CApath $CERTS -no-CAfile -no-CAstore" \
+               "-CAfile $OUTPUT_DIR/etc/ssl/cert.pem -no-CApath -no-CAstore"; do
     if openssl verify -no_check_time $store -untrusted "$chain" "$chain" > "$WORK/v.out" 2>&1; then
       echo "FAIL: $chain VERIFIES against $store (CVE-2026-111943 not fixed):" >&2
       cat "$WORK/v.out" >&2
@@ -155,7 +175,8 @@ done
 
 # A legitimate chain must still verify, via the bundle and via the hash links.
 for good in test-good-letsencrypt-r12.pem test-good-letsencrypt-e7.pem; do
-  for store in "-CAfile $BUNDLE -no-CApath -no-CAstore" "-CApath $CERTS -no-CAfile -no-CAstore"; do
+  for store in "-CAfile $BUNDLE -no-CApath -no-CAstore" "-CApath $CERTS -no-CAfile -no-CAstore" \
+               "-CAfile $OUTPUT_DIR/etc/ssl/cert.pem -no-CApath -no-CAstore"; do
     if ! openssl verify -no_check_time $store "$good" > "$WORK/v.out" 2>&1; then
       echo "FAIL: legitimate $good does not verify against $store:" >&2
       cat "$WORK/v.out" >&2
