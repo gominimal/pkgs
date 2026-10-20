@@ -7,6 +7,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 let version = "1.9.1" in
 {
   name = "tealdeer",
@@ -50,6 +51,28 @@ let version = "1.9.1" in
           # Smoke test ported from the Wolfi recipe's test block.
           ["/bin/bash", "-c", "tldr --version"],
           ["/bin/bash", "-c", "tldr --help"],
+        ],
+      } | Test,
+    # The default config this build writes names the native-roots backend,
+    # and the compiled-in webpki backend is gone.
+    system_ca_default =
+      {
+        class = 'Standalone,
+        test_deps = [base, ca-certificates],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              export TEALDEER_CONFIG_DIR="$(mktemp -d)"
+              tldr --seed-config
+              grep -qx 'tls_backend = "rustls-with-native-roots"' "$TEALDEER_CONFIG_DIR/config.toml"
+              printf '[updates]\ntls_backend = "rustls-with-webpki-roots"\n' > /tmp/webpki.toml
+              ! tldr --config-path /tmp/webpki.toml --show-paths > /tmp/out 2>&1
+              grep -q 'Unsupported TLS backend' /tmp/out
+            "%
+          ],
         ],
       } | Test,
   },
