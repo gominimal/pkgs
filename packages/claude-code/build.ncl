@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -8,6 +8,7 @@ let git = import "../git/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let openssh = import "../openssh/build.ncl" in
 let ripgrep = import "../ripgrep/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let { version, amd64_sha256, arm64_sha256, gcs_bucket } = {
   gcs_bucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases",
@@ -70,4 +71,30 @@ in
       # Claude code wires `.claude.json`, which contains anthropic credentials for the user
       env_file_mappings = [{ read_only = false, path = "~/.claude.json", class = 'Credential }],
     } | Attrs,
+
+  tests = {
+    # The /usr/bin wrapper defaults CLAUDE_CODE_CERT_STORE to `system` when
+    # the system bundle is present, and leaves a caller's own value alone.
+    # `bash -x` shows what the wrapper exported before it exec'd the binary.
+    system_cert_store =
+      {
+        class = 'Standalone,
+        test_deps = [base, ca-certificates],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              test -s /etc/ssl/certs/ca-certificates.crt
+              bash -x /usr/bin/claude --version > /tmp/out 2> /tmp/trace
+              grep -q '^[0-9]' /tmp/out
+              grep -qx '+ export CLAUDE_CODE_CERT_STORE=system' /tmp/trace
+              CLAUDE_CODE_CERT_STORE=bundled,system bash -x /usr/bin/claude --version > /tmp/out 2> /tmp/trace
+              ! grep -q 'export CLAUDE_CODE_CERT_STORE' /tmp/trace
+            "%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

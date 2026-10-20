@@ -5,6 +5,7 @@ let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let python = import "../python/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let version = "2.9.7" in
 {
@@ -65,6 +66,27 @@ let version = "2.9.7" in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "deno eval 'console.log(1+1)' | grep -q '^2$'"],
+        ],
+      } | Test,
+    # The /usr/bin wrapper defaults DENO_TLS_CA_STORE to `system` when the
+    # system bundle is present, and leaves a caller's own value alone.
+    system_ca_store =
+      {
+        class = 'Standalone,
+        test_deps = [base, ca-certificates],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              store='console.log(Deno.env.get("DENO_TLS_CA_STORE") ?? "unset")'
+              test -s /etc/ssl/certs/ca-certificates.crt
+              test "$(deno eval "$store")" = system
+              test "$(DENO_TLS_CA_STORE=mozilla deno eval "$store")" = mozilla
+              test "$(DENO_TLS_CA_STORE= deno eval "$store")" = ""
+            "%
+          ],
         ],
       } | Test,
     # `deno install -g` lands a script in ~/.local/bin, where the session PATH

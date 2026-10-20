@@ -15,6 +15,17 @@ if [ -z "\${MINIMAL_CLAUDE_NO_PLUGIN:-}" ] && [ -d "\$min_plugin" ]; then
   set -- "--plugin-dir=\$min_plugin" "\$@"
 fi
 
+# Trust only the system CA store (/etc/ssl/certs), so a fix to ca-certificates
+# reaches Claude Code without a rebuild (CVE-2026-111943, eMudhra). Claude
+# Code's own default is "bundled,system", a union: a root removed from
+# ca-certificates would still be trusted through the Mozilla set compiled into
+# the binary. Only when the system bundle exists, since "system" alone with no
+# ca-certificates installed would trust nothing. A caller's own value, even an
+# empty one, still wins.
+if [ -z "\${CLAUDE_CODE_CERT_STORE+set}" ] && [ -s /etc/ssl/certs/ca-certificates.crt ]; then
+  export CLAUDE_CODE_CERT_STORE=system
+fi
+
 DISABLE_AUTOUPDATER=1 USE_BUILTIN_RIPGREP=0 exec /usr/share/claude/versions/$MINIMAL_ARG_VERSION "\$@"
 EOF
 
