@@ -36,6 +36,12 @@ let atk = import "../atk/build.ncl" in
 let at-spi2-core = import "../at-spi2-core/build.ncl" in
 let eudev = import "../eudev/build.ncl" in
 let liberation-fonts = import "../liberation-fonts/build.ncl" in
+# Machine-wide enterprise policy in /etc/chromium/policies/managed/. Today it
+# distrusts the CVE-2026-111943 eMudhra keys (CADistrustedCertificates); see
+# packages/chromium-policies/build.ncl. Both legs of this package read that
+# directory (the binaries contain "/etc/chromium/policies"). Any replacement
+# Chromium-branded build must keep this runtime dep.
+let chromium-policies = import "../chromium-policies/build.ncl" in
 
 # Prebuilt full Chromium browser (headed mode), named with the
 # Gentoo/AUR `-bin` convention. The headless-shell variant ships in a
@@ -160,6 +166,7 @@ let ungoogled_revision = "1" in
     at-spi2-core,
     eudev,
     liberation-fonts,
+    chromium-policies,
   ],
 
   cmd = "./build.sh",
@@ -235,6 +242,17 @@ let ungoogled_revision = "1" in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "d=/usr/share/playwright-browsers/chromium-%{revision}; case \"$(uname -m)\" in x86_64) i=chrome-linux64 ;; *) i=chrome-linux-arm64; test -x \"$d/chrome-linux/chrome\" ;; esac && test -x \"$d/$i/chrome\" && test -e \"$d/INSTALLATION_COMPLETE\" && test ! -e \"$d/$i/libqt5_shim.so\" && test ! -e \"$d/$i/libqt6_shim.so\" && ! find \"$d/\" -iname '*widevine*' | grep -q ."],
+        ],
+      } | Test,
+    # The CVE-2026-111943 distrust policy is installed where this browser reads
+    # it. (Whether the browser applies it needs network; see
+    # packages/chromium-policies/build.ncl and the PR that added it.)
+    policy_installed =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "grep -q CADistrustedCertificates /etc/chromium/policies/managed/ca-distrusted-certificates.json"],
         ],
       } | Test,
   },
