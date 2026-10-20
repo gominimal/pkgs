@@ -372,7 +372,27 @@ Declares the package's output as a checked-in prebuilt binary rather than someth
 
 The source tarball for a `prebuilt = true` package must already match the on-disk layout that the package emits — there's no build step to move files around. For example, a prebuilt `bash` package needs its tarball to contain the binary at `usr/bin/bash` so it lands where the `OutputBin` glob expects it.
 
+## Trust store
 
+The system trust store is the `ca-certificates` package. It installs the PEM bundle `/etc/ssl/certs/ca-certificates.crt`, one `<Label>.crt` file per root, and the OpenSSL `<subject_hash>.<n>` links next to them. `openssl` is built with `--openssldir=/etc/ssl`, so OpenSSL, curl, git, Python's `ssl`, Ruby, Go and rustls-native-certs all look for roots there.
+
+### How the store reaches an environment
+
+Every environment mounts exactly a dependency closure and nothing else. A build sandbox gets the package's build and runtime deps with their runtime closures. A standalone test, a session or task, and an OCI image get the runtime closure of their packages. `ca-certificates` gets into a closure in one of two ways:
+
+1. **Injected.** `ca-certificates` sets `attrs.needed_for_internet`. minimal adds every package with that attribute to the closure of any package that declares `needs.internet`. The injection then follows that package into the closure of everything that depends on it at runtime (minimal `crates/graph/src/transitives.rs`, `Transitives::new_with_seenset`). `curl` and `wget` declare `needs.internet`, so anything that brings in curl, git for example, also gets the store. The injected edge is not part of any spec hash, so a new bundle rebuilds none of these packages.
+2. **Declared.** `ca-certificates` is listed in `runtime_deps`. This edge is hashed, so every bundle update rebuilds the package and everything that depends on it.
+
+The planner also adds `needed_for_internet` packages to the top level of every build plan (the `HACK` in `ExecPlan::with_toplevels`, `crates/graph/src/planner.rs`). That only gets `ca-certificates` **built**. It does not put it into any environment. A session with `packages = ["python"]` has no `/etc/ssl/certs`.
+
+### Rules
+
+- **Declare the store when you read it.** If a package's binaries verify TLS against `/etc/ssl/certs` at runtime and nothing in its runtime closure already brings in `ca-certificates`, add `ca-certificates` to its `runtime_deps`. `ruby`, `typst`, `atuin`, `gws` and `skopeo` do this.
+- **Not in the toolchain closure.** `python`, `perl` and `openssl` are build inputs of nearly every package. A `ca-certificates` edge on any one of them rehashes about 90% of the tree now, and again on every bundle update. `openssl` cannot take the edge at all, because `ca-certificates` build-depends on it. These three get the store only when something else in the environment brings it in. If you ship a Python or Perl program that talks TLS, add `ca-certificates` to that package.
+- **Do not use `needs.internet` to get the store.** It also gives network access to the package's own build and to the build of everything that has it in its closure.
+- **Do not embed a trust store.** A runtime reads `/etc/ssl/certs` through a build flag, a config default or a wrapper. It does not compile in its own roots or vendor a certifi-style bundle. Several upstreams default to a store of their own: node's bundled roots, bun, deno's webpki-roots, the JDK `cacerts` keystore, Chromium's root store, gcloud's vendored bundles, and Rust crates that pin `webpki-roots`. Switch them to the system store where upstream allows it. Where it does not, the package applies the shared denylist below, and its `build.ncl` says why it cannot use the system store.
+- **One denylist.** Distrusted roots, intermediates and keys are listed in `packages/ca-certificates/` as SHA-256 fingerprints of certificates and SPKIs. Each incident gets its own block that cites its CVE and the Mozilla/NSS bugs. The `ca-certificates` build fails if any certificate it ships matches. Patched embedded stores read the same list rather than keeping their own copy. Append a block for each incident and never delete one.
+- **When a CA is distrusted:** rebuild `ca-certificates` from a dated curl/Mozilla extract, append the incident's block to the denylist, then fix every embedded store listed above. A package that only reads `/etc/ssl/certs` needs no edit; it gets the new bundle through its closure.
 
 ## Creating packages workflow
 

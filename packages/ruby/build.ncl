@@ -1,4 +1,5 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -32,6 +33,8 @@ let version = "4.0.6" in
     rust,
   ],
   runtime_deps = [
+    # Verifies TLS against /etc/ssl/certs at runtime; see AGENTS.md "Trust store".
+    ca-certificates,
     glibc,
     subsetOf gcc ["libgcc", "libstdcpp"],
     gdbm,
@@ -83,6 +86,36 @@ let version = "4.0.6" in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "ruby -e 'puts 1+1' | grep -q '^2$'"],
+        ],
+      } | Test,
+
+    # OpenSSL's default paths (OPENSSLDIR=/etc/ssl) reach the store that the
+    # ca-certificates runtime dep installs: every live per-root file under
+    # /etc/ssl/certs must verify through `set_default_paths` alone. Offline;
+    # without the runtime dep the directory is empty and the test fails. The
+    # empty-store check is the control: no root verifies against no paths.
+    trust_store =
+      {
+        class = 'Standalone,
+        cmds = [
+          [
+            "/usr/bin/ruby",
+            "-ropenssl",
+            "-e",
+            m%"
+              dir = "/etc/ssl/certs"
+              now = Time.now
+              files = Dir.glob("#{dir}/*.crt") - ["#{dir}/ca-certificates.crt"]
+              roots = files.map { |f| OpenSSL::X509::Certificate.new(File.read(f)) }
+              abort "only #{roots.size} roots under #{dir}" if roots.size < 100
+              abort "control: an empty store verified a root" if roots.any? { |c| OpenSSL::X509::Store.new.verify(c) }
+              live = roots.select { |c| c.not_before <= now && now < c.not_after }
+              store = OpenSSL::X509::Store.new
+              store.set_default_paths
+              bad = live.reject { |c| store.verify(c) }
+              abort "default paths reject #{bad.size} of #{live.size} live roots, e.g. #{bad.first.subject}" unless bad.empty?
+            "%
+          ],
         ],
       } | Test,
 

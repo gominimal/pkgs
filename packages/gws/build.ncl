@@ -1,4 +1,5 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -23,6 +24,8 @@ let version = "0.22.5" in
   ],
 
   runtime_deps = [
+    # Verifies TLS against /etc/ssl/certs at runtime; see AGENTS.md "Trust store".
+    ca-certificates,
     glibc,
     subsetOf gcc ["libgcc"],
   ],

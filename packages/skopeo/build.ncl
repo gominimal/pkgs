@@ -1,4 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -26,6 +27,8 @@ let version = "1.24.1" in
   ],
 
   runtime_deps = [
+    # Verifies TLS against /etc/ssl/certs at runtime; see AGENTS.md "Trust store".
+    ca-certificates,
     glibc,
   ],
 
