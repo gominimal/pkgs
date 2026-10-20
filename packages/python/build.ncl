@@ -18,6 +18,8 @@ let zlib = import "../zlib/build.ncl" in
 let xz = import "../xz/build.ncl" in
 
 let version = "3.14.8" in
+# pip wheel that ensurepip installs; see the CVE-2026-111943 note on its Source.
+let bundled_pip_version = "26.2.2" in
 {
   name = "python",
   build_deps = [
@@ -44,6 +46,21 @@ let version = "3.14.8" in
     # entry for gh-143923. A straight cherry-pick; drop it on the first 3.14.x
     # whose changelog lists gh-143923.
     { file = "0003-gh-143923-poplib-reject-control-characters.patch" } | Local,
+    # CVE-2026-111943 (eMudhra intermediate key compromise, Mozilla bug
+    # 2083449): 3.14.8 bundles pip 26.2.1 for ensurepip, and its vendored
+    # certifi 2026.06.17 still trusts "emSign ECC Root CA - G3" (SHA-256
+    # 86A1ECBA...A36BBE6B), which Mozilla has distrusted. pip loads truststore
+    # (the system store) AND certifi.where() and trusts the union, so a fixed
+    # system bundle does not remove G3 from pip's trust. pip 26.2.2 differs
+    # from 26.2.1 only in vendoring certifi 2026.10.19 (G3 removed) and its
+    # version string. build.sh swaps the bundled wheel and `_PIP_VERSION`,
+    # which is how CPython itself updates ensurepip ("Update bundled pip to
+    # X"). Drop this on the first 3.14.x whose Lib/ensurepip/_bundled carries
+    # pip >= 26.2.2.
+    {
+      url = "https://files.pythonhosted.org/packages/py3/p/pip/pip-%{bundled_pip_version}-py3-none-any.whl",
+      sha256 = "fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70",
+    } | Source,
     {
       url = "gs://minimal-staging-archives/Python-%{version}.tar.xz",
       sha256 = "c2215904f02b175596dc49351585104f4bc20341e1c47378b26a2c274360ce73"
@@ -72,6 +89,7 @@ let version = "3.14.8" in
   cmd = "./build.sh",
   build_args = {
     include version,
+    include bundled_pip_version,
   },
   outputs = {
     # Wildcards avoid coupling to a specific python minor version. Future
@@ -269,6 +287,60 @@ let version = "3.14.8" in
     # containing CR/LF verbatim, so a username can smuggle in extra POP3
     # commands) and passes only with the gh-143923 patch. Exercises `_putcmd`
     # directly -- no network.
+    # CVE-2026-111943 regression: FAILS on stock 3.14.8, whose ensurepip
+    # installs pip 26.2.1 with a vendored certifi that still trusts emSign ECC
+    # Root CA - G3. Checks the root by its SHA-256 fingerprint, in both the pip
+    # the interpreter ships in site-packages and the wheel ensurepip would
+    # install from. No network.
+    pip_certifi_distrusts_emsign_ecc_g3 =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              cat > poc.py <<'PYEOF'
+              import hashlib, re, ssl, sys, zipfile
+              import ensurepip, pip
+              from pip._vendor import certifi
+
+              G3 = '86a1ecba089c4a8d3bbe2734c612ba341d813e043cf9e8a862cd5c57a36bbe6b'
+
+              def fingerprints(pem):
+                  return {hashlib.sha256(ssl.PEM_cert_to_DER_cert(c)).hexdigest()
+                          for c in re.findall(r'-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----',
+                                              pem, re.S)}
+
+              failures = []
+              if pip.__version__ != '26.2.2':
+                  failures.append('site-packages pip is %s, want 26.2.2' % pip.__version__)
+              if ensurepip.version() != '26.2.2':
+                  failures.append('ensurepip bundles pip %s, want 26.2.2' % ensurepip.version())
+
+              installed = fingerprints(open(certifi.where()).read())
+              if len(installed) < 100:
+                  failures.append('pip certifi bundle has only %d roots' % len(installed))
+              if G3 in installed:
+                  failures.append('site-packages pip certifi trusts emSign ECC Root CA - G3')
+
+              with ensurepip._get_pip_whl_path_ctx() as whl:
+                  with zipfile.ZipFile(whl) as z:
+                      bundled = fingerprints(z.read('pip/_vendor/certifi/cacert.pem').decode())
+              if G3 in bundled:
+                  failures.append('ensurepip wheel certifi trusts emSign ECC Root CA - G3')
+
+              for f in failures:
+                  print('FAIL: ' + f, file=sys.stderr)
+              sys.exit(1 if failures else 0)
+              PYEOF
+              python3 poc.py
+            "%
+          ],
+        ],
+      } | Test,
+
     poplib_rejects_control_characters =
       {
         class = 'Standalone,
