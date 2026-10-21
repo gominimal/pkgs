@@ -22,6 +22,10 @@ patch -Np1 -i "../0002-gh-157265-tarfile-honor-filter-none-link-fallback.patch"
 # placement as 0002.
 patch -Np1 -i "../0003-gh-143923-poplib-reject-control-characters.patch"
 
+# CVE-2026-12345 (TemporaryDirectory cleanup race, gh-157579) -- upstream's own
+# 3.14 backport, merged after 3.14.8 was cut. Same fail-closed placement.
+patch -Np1 -i "../0004-gh-157579-tempfile-cleanup-race.patch"
+
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
   aarch64) MARCH="-march=armv8-a" ;;

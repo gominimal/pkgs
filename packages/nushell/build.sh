@@ -28,6 +28,22 @@ export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1
 # std exposes no knob to pin its hasher, so pin the build's entropy itself: an
 # LD_PRELOAD that makes getrandom/getentropy deterministic, so every build-time
 # HashMap iterates stably. Applies to rustc + all proc-macros for this build only.
+# CVE-2026-111943: move upstream's Cargo.lock to rustls-webpki 0.103.16 and
+# webpki-roots / webpki-root-certs 1.0.10 (see build.ncl). Applied by name so a
+# missing or stale patch fails the build.
+patch -Np1 -i ./cve-2026-111943-webpki-lock.patch
+# Prove it landed, fail-closed: the fixed verifier is locked, and no pre-fix
+# rustls-webpki 0.103.x or webpki-roots / webpki-root-certs 1.0.x remains.
+grep -A1 '^name = "rustls-webpki"$' Cargo.lock | grep -q '^version = "0.103.16"$' || {
+  echo "ERROR: rustls-webpki 0.103.16 is not in Cargo.lock (CVE-2026-111943)" >&2
+  exit 1
+}
+if grep -A1 -E '^name = "(rustls-webpki|webpki-roots|webpki-root-certs)"$' Cargo.lock |
+  grep -qE '^version = "(0[.]103[.]([0-9]|1[0-5])|1[.]0[.][0-9])"$'; then
+  echo "ERROR: a pre-CVE-2026-111943 rustls-webpki / webpki-roots is still in Cargo.lock" >&2
+  exit 1
+fi
+
 cat > /tmp/detrand.c <<'CEOF'
 #include <stddef.h>
 #include <sys/types.h>
@@ -44,7 +60,7 @@ CEOF
 gcc -shared -fPIC -O2 -o /tmp/libdetrand.so /tmp/detrand.c
 
 # Scope the shim to the cargo build only — no global export/unset window.
-LD_PRELOAD=/tmp/libdetrand.so cargo build --release
+LD_PRELOAD=/tmp/libdetrand.so cargo build --locked --release
 
 mkdir -p $OUTPUT_DIR/usr/bin
 install -m 755 target/release/nu $OUTPUT_DIR/usr/bin/nu
