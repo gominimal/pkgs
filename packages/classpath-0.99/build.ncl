@@ -15,6 +15,13 @@ let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.
 # /usr/lib, and a mixed pair crashes as
 let binutils = import "../binutils/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
+let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
+let glibc = import "../glibc/build.ncl" in
+let autoconf = import "../autoconf/build.ncl" in # aarch64: config.sub refresh, autoreconf
+let automake = import "../automake/build.ncl" in
+let libtool = import "../libtool/build.ncl" in
+let m4 = import "../m4/build.ncl" in
+let is_arm = target.arch == 'Arm64 in
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -31,43 +38,46 @@ let zlib = import "../zlib/build.ncl" in
 let gzip = import "../gzip/build.ncl" in
 # pkgmgr: bootstrap_rung = "jvm"
 let version = "0.99" in
-let amd64_spec =
+let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
   {
     name = "classpath-0.99",
-    build_deps = [
-      { file = "build.sh" } | Local,
-      {
-        url = "gs://minimal-staging-archives/classpath-0.99.tar.gz",
-        sha256 = "f929297f8ae9b613a1a167e231566861893260651d913ad9b6c11933895fecc8",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      ecj-bootstrap-3-2-2,
-      jamvm-1-5-1,
-      classpath-0-93,
-      gcc-bedrock,
-      binutils,
-      glibc-bedrock,
-      fastjar,
-      zip,
-      zlib,
-      bash,
-      make,
-      sed,
-      grep,
-      coreutils,
-      findutils,
-      tar,
-      gzip,
-      python,
-      gawk,
-      diffutils,
-    ],
+    build_deps =
+      [
+        (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
+        {
+          url = "gs://minimal-staging-archives/classpath-0.99.tar.gz",
+          sha256 = "f929297f8ae9b613a1a167e231566861893260651d913ad9b6c11933895fecc8",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        ecj-bootstrap-3-2-2,
+        jamvm-1-5-1,
+        classpath-0-93,
+      ]
+      @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
+      @ [
+        fastjar,
+        zip,
+        zlib,
+        bash,
+        make,
+        sed,
+        grep,
+        coreutils,
+        findutils,
+        tar,
+        gzip,
+        python,
+        gawk,
+        diffutils,
+      ],
     # the tool wrappers (javah, rmic, …) exec jamvm-1.5.1
-    runtime_deps = [
-      jamvm-1-5-1,
-      glibc-bedrock,
-    ],
-    cmd = "./build.sh",
+    runtime_deps =
+      [
+        jamvm-1-5-1,
+      ]
+      @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
+      @ [],
+    cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path
       prefix = { glob = "usr/lib/classpath-0.99/**", allow_executable = true } | OutputData,
@@ -85,13 +95,4 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# amd64 only: this rung belongs to the amd64 bootstrap ladder; the spec collapses to an empty
-# collection on arm64.
-match {
-  { arch = 'Amd64, .. } => amd64_spec,
-  { arch = 'Arm64, .. } =>
-    {
-      name = "classpath-0.99",
-      build_deps = [],
-    } | BuildSpec,
-} target
+amd64_spec
