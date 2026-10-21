@@ -698,8 +698,11 @@ are documented once, publicly, at:
 **<https://minimal.dev/docs/reference/reproducibility>**
 
 Read that page rather than a copy of it here. It also covers what the build sandbox already
-sets for you (`SOURCE_DATE_EPOCH=0`, `PYTHONHASHSEED=0`, both of which the checker **rejects**
-if you set them again), and how to verify: build twice, diff the two `$OUTPUT_DIR` trees.
+sets for you (`SOURCE_DATE_EPOCH=0`, `PYTHONHASHSEED=0`; the checker **rejects** setting either
+to `0` again), and how to verify: build twice, diff the two `$OUTPUT_DIR` trees. A tool that
+cannot use epoch 0 (e.g. jmod rejects pre-1980 dates) should get its date through its own
+option, not by re-exporting `SOURCE_DATE_EPOCH`: the checker does not catch a non-zero
+override, but it changes the date for every tool in the build.
 
 Two things specific to this repo, which the public page does not carry:
 

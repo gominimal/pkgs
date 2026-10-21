@@ -15,7 +15,7 @@ cd source
 # Remove deprecated cmake_policy(SET ... OLD) calls unsupported by modern CMake
 sed -i '/cmake_policy.*OLD/d' CMakeLists.txt
 
-cmake -B build \
+cmake -B build -G Ninja \
   -DCMAKE_INSTALL_PREFIX=/usr \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_LIBDIR=lib \
@@ -23,5 +23,5 @@ cmake -B build \
   -DENABLE_SHARED=ON \
   -DENABLE_CLI=ON
 
-make -C build -j$(nproc)
-make -C build DESTDIR="$OUTPUT_DIR" install
+ninja -C build
+DESTDIR="$OUTPUT_DIR" ninja -C build install
