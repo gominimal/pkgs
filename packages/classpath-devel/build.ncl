@@ -17,6 +17,9 @@ let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.
 # /usr/lib, and a mixed pair crashes as
 let binutils = import "../binutils/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
+let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
+let glibc = import "../glibc/build.ncl" in
+let is_arm = target.arch == 'Arm64 in
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -40,52 +43,55 @@ let pkgconf = import "../pkgconf/build.ncl" in # configure macros
 let perl = import "../perl/build.ncl" in # autotools
 # pkgmgr: bootstrap_rung = "jvm"
 let version = "0.99.e7c13ee0" in
-let amd64_spec =
+let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
   {
     name = "classpath-devel",
-    build_deps = [
-      { file = "build.sh" } | Local,
-      {
-        # git snapshot of classpath at e7c13ee0cf2005206fbec0eca677f8cf66d5a103 (top dir classpath-git, no build products)
-        url = "gs://minimal-staging-archives/classpath-devel-e7c13ee0-src2.tar.gz",
-        sha256 = "0d4cebf7faf9339c29a8048c3599da272805add3afc5ca1d014d38d94293ee9c",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      ecj-bootstrap-3-2-2,
-      jamvm-1-5-1,
-      classpath-0-93,
-      classpath-0-99,
-      gcc-bedrock,
-      binutils,
-      glibc-bedrock,
-      fastjar,
-      zip,
-      zlib,
-      autoconf,
-      automake,
-      gettext,
-      libtool,
-      m4,
-      pkgconf,
-      perl,
-      gawk,
-      bash,
-      make,
-      sed,
-      grep,
-      coreutils,
-      findutils,
-      tar,
-      gzip,
-      python,
-      diffutils,
-    ],
+    build_deps =
+      [
+        (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
+        {
+          # git snapshot of classpath at e7c13ee0cf2005206fbec0eca677f8cf66d5a103 (top dir classpath-git, no build products)
+          url = "gs://minimal-staging-archives/classpath-devel-e7c13ee0-src2.tar.gz",
+          sha256 = "0d4cebf7faf9339c29a8048c3599da272805add3afc5ca1d014d38d94293ee9c",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        ecj-bootstrap-3-2-2,
+        jamvm-1-5-1,
+        classpath-0-93,
+        classpath-0-99,
+      ]
+      @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
+      @ [
+        fastjar,
+        zip,
+        zlib,
+        autoconf,
+        automake,
+        gettext,
+        libtool,
+        m4,
+        pkgconf,
+        perl,
+        gawk,
+        bash,
+        make,
+        sed,
+        grep,
+        coreutils,
+        findutils,
+        tar,
+        gzip,
+        python,
+        diffutils,
+      ],
     # the tool wrappers (javah, rmic, …) exec jamvm-1.5.1
-    runtime_deps = [
-      jamvm-1-5-1,
-      glibc-bedrock,
-    ],
-    cmd = "./build.sh",
+    runtime_deps =
+      [
+        jamvm-1-5-1,
+      ]
+      @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
+      @ [],
+    cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path
       prefix = { glob = "usr/lib/classpath-devel/**", allow_executable = true } | OutputData,
@@ -103,13 +109,4 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# amd64 only: this rung belongs to the amd64 bootstrap ladder; the spec collapses to an empty
-# collection on arm64.
-match {
-  { arch = 'Amd64, .. } => amd64_spec,
-  { arch = 'Arm64, .. } =>
-    {
-      name = "classpath-devel",
-      build_deps = [],
-    } | BuildSpec,
-} target
+amd64_spec

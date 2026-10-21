@@ -13,6 +13,11 @@ let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.
 # /usr/lib, and a mixed pair crashes as
 let binutils = import "../binutils/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
+let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
+let glibc = import "../glibc/build.ncl" in
+let automake = import "../automake/build.ncl" in
+let libtool = import "../libtool/build.ncl" in
+let is_arm = target.arch == 'Arm64 in
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -54,88 +59,91 @@ let libxt = import "../libxt/build.ncl" in
 let xorgproto = import "../xorgproto/build.ncl" in
 # pkgmgr: bootstrap_rung = "jvm"
 let version = "9+181" in
-let amd64_spec =
+let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
   {
     name = "openjdk-9",
-    build_deps = [
-      { file = "build.sh" } | Local,
-      { file = "openjdk-9-pointer-comparison.patch" } | Local, # ordered pointer/integer comparisons gcc 11+ reject
-      { file = "openjdk-9-classlist-reproducibility.patch" } | Local, # the CDS classlist is sorted (comments first, classes, then @lambda lines) before it is packed into java.base.jmod; 17+ do this natively
-      { file = "openjdk-currency-time-bomb.patch" } | Local, # GenerateCurrencyData fails once the data file is older than 10 years
-      { file = "openjdk-9-jar-reproducibility.patch" } | Local, # deterministic output
-      { file = "openjdk-9-module-reproducibility.patch" } | Local, # deterministic output
-      { file = "openjdk-9-module2-reproducibility.patch" } | Local, # deterministic output
-      { file = "openjdk-9-module3-reproducibility.patch" } | Local, # deterministic output
-      { file = "openjdk-9-idlj-reproducibility.patch" } | Local, # deterministic output
-      { file = "openjdk-9-setsignalhandler.patch" } | Local, # a signal-handler prototype gcc 11+ rejects
-      { file = "openjdk-9-modulehashes-order.patch" } | Local, # ModuleHashes names in sorted order
-      {
-        # https://github.com/openjdk/jdk/archive/refs/tags/jdk-9+181.tar.gz
-        url = "gs://minimal-staging-archives/jdk-9+181.tar.gz",
-        sha256 = "b484c197a5ebdf95c80ad7d9a2cb65c0e2794f405f6c0094b1b33b36aeb27d01",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      icedtea-8,
-      gcc-bedrock,
-      binutils,
-      glibc-bedrock,
-      bash,
-      make,
-      sed,
-      grep,
-      coreutils,
-      findutils,
-      tar,
-      python,
-      gawk,
-      diffutils,
-      gzip,
-      patch,
-      zip,
-      unzip,
-      cpio,
-      file,
-      which,
-      pkgconf,
-      autoconf,
-      m4,
-      zlib,
-      freetype,
-      cups,
-      alsa-lib,
-      lcms2,
-      fontconfig,
-      libpng,
-      libjpeg-turbo,
-      giflib,
-      libx11,
-      libxext,
-      libxrender,
-      libxtst,
-      libxi,
-      libxinerama,
-      libxrandr,
-      libxcomposite,
-      libxt,
-      xorgproto,
-    ],
+    build_deps =
+      [
+        (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
+        { file = "openjdk-9-pointer-comparison.patch" } | Local, # ordered pointer/integer comparisons gcc 11+ reject
+        { file = "openjdk-9-classlist-reproducibility.patch" } | Local, # the CDS classlist is sorted (comments first, classes, then @lambda lines) before it is packed into java.base.jmod; 17+ do this natively
+        { file = "openjdk-currency-time-bomb.patch" } | Local, # GenerateCurrencyData fails once the data file is older than 10 years
+        { file = "openjdk-9-jar-reproducibility.patch" } | Local, # deterministic output
+        { file = "openjdk-9-module-reproducibility.patch" } | Local, # deterministic output
+        { file = "openjdk-9-module2-reproducibility.patch" } | Local, # deterministic output
+        { file = "openjdk-9-module3-reproducibility.patch" } | Local, # deterministic output
+        { file = "openjdk-9-idlj-reproducibility.patch" } | Local, # deterministic output
+        { file = "openjdk-9-setsignalhandler.patch" } | Local, # a signal-handler prototype gcc 11+ rejects
+        { file = "openjdk-9-modulehashes-order.patch" } | Local, # ModuleHashes names in sorted order
+        {
+          # https://github.com/openjdk/jdk/archive/refs/tags/jdk-9+181.tar.gz
+          url = "gs://minimal-staging-archives/jdk-9+181.tar.gz",
+          sha256 = "b484c197a5ebdf95c80ad7d9a2cb65c0e2794f405f6c0094b1b33b36aeb27d01",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        icedtea-8,
+      ]
+      @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
+      @ [
+        bash,
+        make,
+        sed,
+        grep,
+        coreutils,
+        findutils,
+        tar,
+        python,
+        gawk,
+        diffutils,
+        gzip,
+        patch,
+        zip,
+        unzip,
+        cpio,
+        file,
+        which,
+        pkgconf,
+        autoconf,
+        m4,
+        zlib,
+        freetype,
+        cups,
+        alsa-lib,
+        lcms2,
+        fontconfig,
+        libpng,
+        libjpeg-turbo,
+        giflib,
+        libx11,
+        libxext,
+        libxrender,
+        libxtst,
+        libxi,
+        libxinerama,
+        libxrandr,
+        libxcomposite,
+        libxt,
+        xorgproto,
+      ],
     # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, lcms2, libpng, giflib and libjpeg
-    runtime_deps = [
-      glibc-bedrock,
-      zlib,
-      freetype,
-      libpng,
-      giflib,
-      libjpeg-turbo,
-      lcms2,
-      alsa-lib,
-      libx11,
-      libxext,
-      libxi,
-      libxrender,
-      libxtst,
-    ],
-    cmd = "./build.sh",
+    runtime_deps =
+      []
+      @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
+      @ [
+        zlib,
+        freetype,
+        libpng,
+        giflib,
+        libjpeg-turbo,
+        lcms2,
+        alsa-lib,
+        libx11,
+        libxext,
+        libxi,
+        libxrender,
+        libxtst,
+      ],
+    cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path
       prefix = { glob = "usr/lib/openjdk-9/**", allow_executable = true } | OutputData,
@@ -154,13 +162,4 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# amd64 only: this rung belongs to the amd64 bootstrap ladder; the spec collapses to an empty
-# collection on arm64.
-match {
-  { arch = 'Amd64, .. } => amd64_spec,
-  { arch = 'Arm64, .. } =>
-    {
-      name = "openjdk-9",
-      build_deps = [],
-    } | BuildSpec,
-} target
+amd64_spec

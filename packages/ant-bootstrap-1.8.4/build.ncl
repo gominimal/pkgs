@@ -15,6 +15,13 @@ let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.
 # /usr/lib, and a mixed pair crashes as
 let binutils = import "../binutils/build.ncl" in
 let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
+let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
+let glibc = import "../glibc/build.ncl" in
+let autoconf = import "../autoconf/build.ncl" in # aarch64: config.sub refresh, autoreconf
+let automake = import "../automake/build.ncl" in
+let libtool = import "../libtool/build.ncl" in
+let m4 = import "../m4/build.ncl" in
+let is_arm = target.arch == 'Arm64 in
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -28,35 +35,36 @@ let diffutils = import "../diffutils/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in # the source is a .tar.bz2
 # pkgmgr: bootstrap_rung = "jvm"
 let version = "1.8.4" in
-let amd64_spec =
+let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
   {
     name = "ant-bootstrap-1.8.4",
-    build_deps = [
-      { file = "build.sh" } | Local,
-      {
-        url = "gs://minimal-staging-archives/apache-ant-1.8.4-src.tar.bz2",
-        sha256 = "5de65f7ba3f67e436ffffcdc0a73f591d1006e9fb41af8632c1f1f84d4a3e0b1",
-        extract = false, # build.sh untars with --no-same-owner
-      } | Source,
-      jikes-1-22,
-      jamvm-1-5-1,
-      classpath-0-93,
-      gcc-bedrock,
-      binutils,
-      glibc-bedrock,
-      bash,
-      make,
-      sed,
-      grep,
-      coreutils,
-      findutils,
-      tar,
-      bzip2,
-      python,
-      gawk,
-      diffutils,
-    ],
-    cmd = "./build.sh",
+    build_deps =
+      [
+        (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
+        {
+          url = "gs://minimal-staging-archives/apache-ant-1.8.4-src.tar.bz2",
+          sha256 = "5de65f7ba3f67e436ffffcdc0a73f591d1006e9fb41af8632c1f1f84d4a3e0b1",
+          extract = false, # build.sh untars with --no-same-owner
+        } | Source,
+        jikes-1-22,
+        jamvm-1-5-1,
+        classpath-0-93,
+      ]
+      @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
+      @ [
+        bash,
+        make,
+        sed,
+        grep,
+        coreutils,
+        findutils,
+        tar,
+        bzip2,
+        python,
+        gawk,
+        diffutils,
+      ],
+    cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
     outputs = {
       # consumed by the next rung by absolute path
       prefix = { glob = "usr/lib/ant-bootstrap-1.8.4/**", allow_executable = true } | OutputData,
@@ -75,13 +83,4 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# amd64 only: this rung belongs to the amd64 bootstrap ladder; the spec collapses to an empty
-# collection on arm64.
-match {
-  { arch = 'Amd64, .. } => amd64_spec,
-  { arch = 'Arm64, .. } =>
-    {
-      name = "ant-bootstrap-1.8.4",
-      build_deps = [],
-    } | BuildSpec,
-} target
+amd64_spec
