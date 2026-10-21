@@ -14,7 +14,7 @@ let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # B5 seed-rooted gcc
 # production binutils: the sealed binutils-2.46-glibc shares sonames (libsframe.so.3) with it in
 # /usr/lib, and a mixed pair crashes as
 let binutils = import "../binutils/build.ncl" in
-let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # B4 sysroot
+let glibc-bedrock-2-42-sysroot = import "../glibc-bedrock-2.42-sysroot/build.ncl" in # the sysroot only (see that package)
 let bash = import "../bash/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -36,7 +36,7 @@ let amd64_spec =
       } | Source,
       gcc-bedrock,
       binutils,
-      glibc-bedrock,
+      glibc-bedrock-2-42-sysroot,
       bash,
       make,
       sed,
@@ -50,7 +50,7 @@ let amd64_spec =
     },
     # the interpreter is the sysroot's ld.so
     runtime_deps = [
-      glibc-bedrock,
+      glibc-bedrock-2-42-sysroot,
     ],
     cmd = "./build.sh",
     outputs = {
