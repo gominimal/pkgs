@@ -1,4 +1,5 @@
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glib = import "../glib/build.ncl" in
@@ -11,6 +12,13 @@ let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
 let version = "16.4.1" in
+# The native SWC compiler Next loads at build/dev time. Upstream publishes it as a
+# per-platform npm package (`@next/swc-linux-<arch>-gnu`) that `next` lists as an
+# optionalDependency; the source build above does not produce it. Without it, every
+# `next build` tries to download one into next's own tree, which is read-only here.
+# Bump these alongside `version`: the binary must match next exactly.
+let swc_amd64_sha256 = "78a7aa9334cfcb3b15ae3bdd19944aa6d7754639dc534fb0123a3d8fd4f00f47" in
+let swc_arm64_sha256 = "ea6ca74538e44799986dbea7ae0b7142b37abf5d6b16fcf34566221c3e7b86ea" in
 {
   name = "next",
   build_deps = [
@@ -21,6 +29,18 @@ let version = "16.4.1" in
       extract = true,
       strip_prefix = "next.js-%{version}",
     } | Source,
+    match {
+      { arch = 'Amd64, .. } =>
+        {
+          url = "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-%{version}.tgz",
+          sha256 = swc_amd64_sha256,
+        } | Source,
+      { arch = 'Arm64, .. } =>
+        {
+          url = "https://registry.npmjs.org/@next/swc-linux-arm64-gnu/-/swc-linux-arm64-gnu-%{version}.tgz",
+          sha256 = swc_arm64_sha256,
+        } | Source,
+    } target,
     base,
     glib,
     make,
