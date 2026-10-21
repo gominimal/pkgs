@@ -22,6 +22,9 @@ patch -Np1 -i "../0002-gh-157265-tarfile-honor-filter-none-link-fallback.patch"
 # placement as 0002.
 patch -Np1 -i "../0003-gh-143923-poplib-reject-control-characters.patch"
 
+# CVE-2026-12345 (TemporaryDirectory cleanup race, gh-157579) -- upstream's own
+# 3.14 backport, merged after 3.14.8 was cut. Same fail-closed placement.
+patch -Np1 -i "../0004-gh-157579-tempfile-cleanup-race.patch"
 # CVE-2026-111943 -- see the note on the pip wheel Source in build.ncl. Replace
 # the pip wheel ensurepip bundles (26.2.1, whose vendored certifi still trusts
 # the distrusted emSign ECC Root CA - G3) with ${MINIMAL_ARG_BUNDLED_PIP_VERSION},

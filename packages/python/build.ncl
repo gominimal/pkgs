@@ -46,6 +46,14 @@ let bundled_pip_version = "26.2.2" in
     # entry for gh-143923. A straight cherry-pick; drop it on the first 3.14.x
     # whose changelog lists gh-143923.
     { file = "0003-gh-143923-poplib-reject-control-characters.patch" } | Local,
+    # CVE-2026-12345 (PSF-2026-42, gh-157579): TemporaryDirectory cleanup
+    # resolved paths again while resetting permissions, so an attacker who can
+    # modify the tree during cleanup could swap a directory for a symlink and
+    # have files outside the temporary directory removed. Upstream's own 3.14
+    # backport (python/cpython#158430, merge 58ed0259, merged 2026-10-09 after
+    # 3.14.8 was cut), byte-for-byte; it applies at fuzz 0 to 3.14.8. Drop it on
+    # the first 3.14.x whose changelog lists gh-157579 (3.14.9 should).
+    { file = "0004-gh-157579-tempfile-cleanup-race.patch" } | Local,
     # CVE-2026-111943 (eMudhra intermediate key compromise, Mozilla bug
     # 2083449): 3.14.8 bundles pip 26.2.1 for ensurepip, and its vendored
     # certifi 2026.06.17 still trusts "emSign ECC Root CA - G3" (SHA-256
@@ -372,6 +380,52 @@ let bundled_pip_version = "26.2.2" in
                   except ValueError:
                       continue
                   failures.append('control characters were sent: %r' % (bad,))
+
+              for m in failures:
+                  print('FAIL: ' + m, file=sys.stderr)
+              sys.exit(1 if failures else 0)
+              PYEOF
+              python3 poc.py
+            "%
+          ],
+        ],
+      } | Test,
+
+    # CVE-2026-12345 regression (gh-157579). The race itself is not
+    # reproducible deterministically, so this guards the fix's presence and its
+    # normal behaviour: on Linux the patched cleanup works relative to open
+    # directory fds (`tempfile._rmtree_use_dir_fd`) and rmtree passes the fd to
+    # its error hook (`_onexc_kwargs`). FAILS on stock 3.14.8 (neither exists).
+    # Then a tree with a read-only subdirectory, which forces the
+    # permission-reset path the fix rewrote, must still clean up completely.
+    tempfile_cleanup_race_fix =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              cat > poc.py <<'PYEOF'
+              import inspect, os, shutil, stat, sys, tempfile
+
+              failures = []
+              if getattr(tempfile, '_rmtree_use_dir_fd', None) is not True:
+                  failures.append('tempfile does not clean up via directory fds')
+              if '_onexc_kwargs' not in inspect.signature(shutil.rmtree).parameters:
+                  failures.append('shutil.rmtree lacks the gh-157579 onexc kwargs')
+
+              d = tempfile.TemporaryDirectory()
+              root = d.name
+              sub = os.path.join(root, 'ro')
+              os.mkdir(sub)
+              with open(os.path.join(sub, 'f'), 'w') as fh:
+                  fh.write('x')
+              os.chmod(sub, stat.S_IRUSR | stat.S_IXUSR)
+              d.cleanup()
+              if os.path.exists(root):
+                  failures.append('cleanup left %s behind' % root)
 
               for m in failures:
                   print('FAIL: ' + m, file=sys.stderr)
