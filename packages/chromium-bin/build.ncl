@@ -107,6 +107,12 @@ let chromium-policies = import "../chromium-policies/build.ncl" in
 let revision = "1243" in
 let browser_version = "155.0.8059.84" in
 let ungoogled_revision = "1" in
+# The one release tarball for this arch: the Source in build_deps and
+# `binary_from` both use it, so the two cannot drift.
+let release_url =
+  let arch_tag = match { { arch = 'Amd64, .. } => "x86_64", { arch = 'Arm64, .. } => "arm64" } target in
+  "https://github.com/ungoogled-software/ungoogled-chromium-portablelinux/releases/download/%{browser_version}-%{ungoogled_revision}/ungoogled-chromium-%{browser_version}-%{ungoogled_revision}-%{arch_tag}_linux.tar.xz"
+in
 {
   name = "chromium-bin",
   build_deps = [
@@ -117,12 +123,12 @@ let ungoogled_revision = "1" in
     match {
       { arch = 'Amd64, .. } =>
         {
-          url = "https://github.com/ungoogled-software/ungoogled-chromium-portablelinux/releases/download/%{browser_version}-%{ungoogled_revision}/ungoogled-chromium-%{browser_version}-%{ungoogled_revision}-x86_64_linux.tar.xz",
+          url = release_url,
           sha256 = "7e376c47b2650f846984f32e4962b33703e5abe09681009cf4f3f336e1125f13",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
-          url = "https://github.com/ungoogled-software/ungoogled-chromium-portablelinux/releases/download/%{browser_version}-%{ungoogled_revision}/ungoogled-chromium-%{browser_version}-%{ungoogled_revision}-arm64_linux.tar.xz",
+          url = release_url,
           sha256 = "5b4de24d19d7a5e5240233a4efd2f1f62be50f82793ee1b90673479148474ade",
         } | Source,
     } target,
@@ -193,17 +199,14 @@ let ungoogled_revision = "1" in
       # CVE ranges apply to `upstream_version` as-is. Removing or changing
       # this without a matching cpe_remap/cpe_identity entry makes the
       # package scan 0/0/0 — a silent false negative. Re-identifying the
-      # pair is a separate, coordinated change (pkgmgr-rs#825).
+      # pair is a separate, coordinated change, tracked in
+      # gominimal/pkgmgr-rs#1029 (needs a supply-chain cpe_remap first).
       source_provenance = {
         category = 'GithubRepo,
         owner = "microsoft",
         repo = "playwright",
       },
-      binary_from =
-        match {
-          { arch = 'Amd64, .. } => "https://github.com/ungoogled-software/ungoogled-chromium-portablelinux/releases/download/%{browser_version}-%{ungoogled_revision}/ungoogled-chromium-%{browser_version}-%{ungoogled_revision}-x86_64_linux.tar.xz",
-          { arch = 'Arm64, .. } => "https://github.com/ungoogled-software/ungoogled-chromium-portablelinux/releases/download/%{browser_version}-%{ungoogled_revision}/ungoogled-chromium-%{browser_version}-%{ungoogled_revision}-arm64_linux.tar.xz",
-        } target,
+      binary_from = release_url,
     } | Attrs,
 
   tests = {
@@ -241,7 +244,7 @@ let ungoogled_revision = "1" in
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          ["/bin/bash", "-c", "d=/usr/share/playwright-browsers/chromium-%{revision}; case \"$(uname -m)\" in x86_64) i=chrome-linux64 ;; *) i=chrome-linux-arm64; test -x \"$d/chrome-linux/chrome\" ;; esac && test -x \"$d/$i/chrome\" && test -e \"$d/INSTALLATION_COMPLETE\" && test ! -e \"$d/$i/libqt5_shim.so\" && test ! -e \"$d/$i/libqt6_shim.so\" && ! find \"$d/\" -iname '*widevine*' | grep -q ."],
+          ["/bin/bash", "-c", "d=/usr/share/playwright-browsers/chromium-%{revision}; case \"$(uname -m)\" in x86_64) i=chrome-linux64 ;; *) i=chrome-linux-arm64; test -x \"$d/chrome-linux/chrome\" ;; esac && test -x \"$d/$i/chrome\" && test -e \"$d/INSTALLATION_COMPLETE\" && test ! -e \"$d/$i/libqt5_shim.so\" && test ! -e \"$d/$i/libqt6_shim.so\" && test ! -e \"$d/$i/chrome-wrapper\" && ! find \"$d/\" -iname '*widevine*' | grep -q ."],
         ],
       } | Test,
     # The CVE-2026-111943 distrust policy is installed where this browser reads

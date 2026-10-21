@@ -39,13 +39,17 @@ done
 
 # The Qt shims are dlopen'd only for a Qt UI and NEED libQt5*/libQt6*,
 # which pkgs does not provide. Chromium falls back to its own UI without
-# them, so drop them rather than ship unloadable objects.
-rm -f "$SRC/libqt5_shim.so" "$SRC/libqt6_shim.so"
+# them, so drop them rather than ship unloadable objects. `chrome-wrapper`
+# is upstream's desktop launcher script; nothing calls it (our wrapper is
+# /usr/bin/chromium), so drop it too.
+rm -f "$SRC/libqt5_shim.so" "$SRC/libqt6_shim.so" "$SRC/chrome-wrapper"
 
 # LICENSING: ungoogled-chromium ships no Widevine CDM, and it must stay
 # that way (Google's CDM license forbids redistribution). Fail if a
 # future tarball ever bundles one.
-if find "$SRC" -iname '*widevine*' | grep -q .; then
+# (No `find | grep -q`: under pipefail a SIGPIPE on find would make the
+# condition false and let the guard pass.)
+if [ -n "$(find "$SRC" -iname '*widevine*' -print -quit)" ]; then
   echo "tarball contains Widevine files — refusing to ship them:" >&2
   find "$SRC" -iname '*widevine*' >&2
   exit 1
