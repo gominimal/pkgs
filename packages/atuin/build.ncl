@@ -1,5 +1,4 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
-let ca-certificates = import "../ca-certificates/build.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -13,6 +12,7 @@ let openssl = import "../openssl/build.ncl" in
 
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let version = "18.23.0" in
 {
@@ -33,9 +33,9 @@ let version = "18.23.0" in
   ],
 
   runtime_deps = [
+    glibc,
     # Verifies TLS against /etc/ssl/certs at runtime; see AGENTS.md "Trust store".
     ca-certificates,
-    glibc,
     subsetOf gcc ["libgcc"],
     # The native-tls switch makes openssl a RUNTIME dep too, not just a build
     # one: the binary dynamically links libssl.so.3 + libcrypto.so.3. The

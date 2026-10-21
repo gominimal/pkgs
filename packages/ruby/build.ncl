@@ -1,5 +1,4 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
-let ca-certificates = import "../ca-certificates/build.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -7,6 +6,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let rust = import "../rust/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let gdbm = import "../gdbm/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
@@ -33,9 +33,9 @@ let version = "4.0.6" in
     rust,
   ],
   runtime_deps = [
+    glibc,
     # Verifies TLS against /etc/ssl/certs at runtime; see AGENTS.md "Trust store".
     ca-certificates,
-    glibc,
     subsetOf gcc ["libgcc", "libstdcpp"],
     gdbm,
     gmp,
@@ -94,6 +94,8 @@ let version = "4.0.6" in
     # /etc/ssl/certs must verify through `set_default_paths` alone. Offline;
     # without the runtime dep the directory is empty and the test fails. The
     # empty-store check is the control: no root verifies against no paths.
+    # The 100-root floor counts LIVE roots, so a wrong sandbox clock that
+    # filters every root out fails the test instead of verifying nothing.
     trust_store =
       {
         class = 'Standalone,
@@ -107,9 +109,9 @@ let version = "4.0.6" in
               now = Time.now
               files = Dir.glob("#{dir}/*.crt") - ["#{dir}/ca-certificates.crt"]
               roots = files.map { |f| OpenSSL::X509::Certificate.new(File.read(f)) }
-              abort "only #{roots.size} roots under #{dir}" if roots.size < 100
               abort "control: an empty store verified a root" if roots.any? { |c| OpenSSL::X509::Store.new.verify(c) }
               live = roots.select { |c| c.not_before <= now && now < c.not_after }
+              abort "only #{live.size} live roots (of #{roots.size}) under #{dir} at #{now}" if live.size < 100
               store = OpenSSL::X509::Store.new
               store.set_default_paths
               bad = live.reject { |c| store.verify(c) }
