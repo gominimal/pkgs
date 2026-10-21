@@ -273,6 +273,24 @@ in
       "libssl3-3.5.9-r0"
       "20ac252b276d73f2c69c1d25f84537c7fba81caefc026c6be1094b394af2082e"
       "05e3393fb95aa5751ca2f9d242f659f6cff82c1cc7767cc2df4a086f7ad01877",
+
+    # The CA trust store, same override pattern. alpine-minirootfs-3.24.1 ships
+    # ca-certificates-bundle 20260611-r0 (119 roots), which still trusts
+    # "emSign ECC Root CA - G3" (SHA-256 86A1ECBA...A36BBE6B). Its operator,
+    # eMudhra, had an intermediate key compromised (CVE-2026-111943, Mozilla
+    # bug 2083449) and Mozilla distrusted the root; 20261020-r0 (118 roots) is
+    # Alpine's rebuild without it. The package is a single file,
+    # etc/ssl/certs/ca-certificates.crt (plus the etc/ssl/cert.pem and
+    # etc/ssl1.1 symlinks), and has no install script, so overlaying it replaces
+    # the base layer's bundle outright; build.sh's apk-db reconcile then moves
+    # the recorded `V:` to 20261020-r0.
+    #
+    # DROP THIS once `alpine_release` reaches a minirootfs carrying
+    # >= 20261020-r0.
+    apk
+      "ca-certificates-bundle-20261020-r0"
+      "d0a573c27d337c369ad3abe3f39f09ffe67b95af23861577a8d134738375176a"
+      "bb008f6d214b6af7576324659856fb63dc8dcb4373f8345ff706388696f1254d",
   ],
 
   cmd = "./build.sh",
