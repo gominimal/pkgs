@@ -7,14 +7,14 @@ let { target, .. } = import "config.ncl" in
 # and whichever lands first wins (pkgs#895: classpath-0.93's sort/env failed on GLIBC_2.43).
 # A collection, because a subset is only supported as a runtime dep: `subsetOf` in build_deps
 # panics in minimal's executor (op/src/specs.rs, `todo!("input: ...")`).
-let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in
+let glibc-bedrock-2-42 = import "../glibc-bedrock-2.42/build.ncl" in
 match {
   { arch = 'Amd64, .. } =>
     {
       name = "glibc-bedrock-2.42-sysroot",
       build_deps = [],
       runtime_deps = [
-        subsetOf glibc-bedrock ["sysroot_lib", "sysroot_include"],
+        subsetOf glibc-bedrock-2-42 ["sysroot_lib", "sysroot_include"],
       ],
       cmd = "",
       outputs = {},
