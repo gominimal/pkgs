@@ -8,6 +8,7 @@ let git = import "../git/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let openssh = import "../openssh/build.ncl" in
 let ripgrep = import "../ripgrep/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let { version, amd64_sha256, arm64_sha256, gcs_bucket } = {
   gcs_bucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases",
@@ -48,6 +49,9 @@ in
     glibc,
     ripgrep,
     openssh,
+    # The wrapper defaults CLAUDE_CODE_CERT_STORE=system (CVE-2026-111943), so
+    # the OS store must be present or Claude Code cannot reach its API.
+    ca-certificates,
   ],
 
   cmd = "./build.sh",
