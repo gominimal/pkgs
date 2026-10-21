@@ -67,7 +67,9 @@ let openssl = import "../openssl/build.ncl" in
 
   tests = {
     # The installed file is the policy build.sh checked: one key per entry,
-    # exactly the 9 SPKI hashes build.sh's EXPECTED_SPKIS lists.
+    # exactly the 9 SPKI hashes build.sh's EXPECTED_SPKIS lists. The list is
+    # repeated here because a standalone test cannot read build.sh; edit both
+    # (drift fails this test, and it prints the diff).
     policy_installed =
       {
         class = 'Standalone,
@@ -94,7 +96,11 @@ let openssl = import "../openssl/build.ncl" in
                 e0254c7fcdc265e2f0f8a428dabb75ab4ae039b4872d62f5ee57f0877d5a8a41 \
                 ebed6475c2c2d80fcb199f3fe8dd6e6b3ce60b77eb15d4e42c3dec0c6f5b5105 \
                 ec4ffa1ad0ac88081314b7aaffef6a91f97cd57291bb5ba686c5415f5eb4f6b6)
-              [ "$got" = "$want" ]
+              if [ "$got" != "$want" ]; then
+                echo "policy SPKI set differs from the expected 9 (- expected, + installed):" >&2
+                diff <(printf '%s\n' "$want") <(printf '%s\n' "$got") >&2 || true
+                exit 1
+              fi
             "%,
           ],
         ],

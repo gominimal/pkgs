@@ -8,8 +8,7 @@ name: chromium-policy-distrust
 # the hashes; this check stops the two drifting apart. Rationale in
 # .github/scripts/chromium_policy_distrust_check.py.
 #
-# Until distrust.txt exists on main (gominimal/pkgs#948) the job warns and
-# passes; it enforces from the first PR that has both files.
+# A missing distrust.txt fails the job (it is never a warn-and-pass).
 
 on:
   workflow_dispatch: {}
@@ -33,6 +32,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
 
       - name: policy keys are listed in distrust.txt
         run: python3 .github/scripts/chromium_policy_distrust_check.py .
