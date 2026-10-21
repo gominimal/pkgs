@@ -1,6 +1,7 @@
 let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 let python = import "../python/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
@@ -41,6 +42,10 @@ in
   ],
   runtime_deps = [
     base,
+    # The SDK's installation properties point core/custom_ca_certs_file at this
+    # package's /etc/ssl/certs/ca-certificates.crt (see build.sh, CVE-2026-111943),
+    # and gcloud rejects that property when the file does not exist.
+    ca-certificates,
     python,
     glibc,
     subsetOf sqlite ["libs"],
@@ -67,6 +72,22 @@ in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "gcloud config set project test-project 2>/dev/null && gcloud config get project 2>/dev/null | grep -q 'test-project'"],
+        ],
+      } | Test,
+
+    # CVE-2026-111943: the SDK's vendored CA bundles still trust emSign ECC Root
+    # CA - G3, so build.sh points core/custom_ca_certs_file at the system store
+    # in the installation properties. Offline: checks that a user with no config
+    # of their own resolves the property to the system bundle, that the bundle
+    # is there, and that gsutil's and bq's bootstraps still forward it.
+    ca_certs_from_system_store =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "export CLOUDSDK_CONFIG=$(mktemp -d) && test \"$(gcloud config get core/custom_ca_certs_file 2>/dev/null)\" = /etc/ssl/certs/ca-certificates.crt"],
+          ["/bin/bash", "-c", "test -s /etc/ssl/certs/ca-certificates.crt"],
+          ["/bin/bash", "-c", "grep -q 'properties.VALUES.core.custom_ca_certs_file' /usr/lib/google-cloud-sdk/bin/bootstrapping/gsutil.py && grep -q 'properties.VALUES.core.custom_ca_certs_file' /usr/lib/google-cloud-sdk/bin/bootstrapping/bq.py"],
         ],
       } | Test,
   },
