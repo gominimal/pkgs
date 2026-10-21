@@ -36,3 +36,7 @@ cp -r sysroot/include sysroot/lib "$OUTPUT_DIR/usr/lib/wasi/"
 mkdir -p "$OUTPUT_DIR/usr/share/licenses/wasi-libc"
 cp LICENSE LICENSE-APACHE LICENSE-APACHE-LLVM LICENSE-MIT \
   "$OUTPUT_DIR/usr/share/licenses/wasi-libc/"
+# The bundled third-party notices: cloudlibc (BSD-2-Clause) and musl (MIT).
+# Renamed on install because cloudlibc's file is also called LICENSE.
+cp libc-bottom-half/cloudlibc/LICENSE "$OUTPUT_DIR/usr/share/licenses/wasi-libc/LICENSE-cloudlibc"
+cp libc-top-half/musl/COPYRIGHT "$OUTPUT_DIR/usr/share/licenses/wasi-libc/COPYRIGHT-musl"

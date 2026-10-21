@@ -11,6 +11,11 @@ let tag = "wasi-sdk-21" in
 
   build_deps = [
     { file = "build.sh" } | Local,
+    # Mirror of the upstream tag archive
+    #   https://github.com/WebAssembly/wasi-libc/archive/refs/tags/%{tag}.tar.gz
+    # To audit it, fetch that URL and compare sha256. The archive is a
+    # `git archive`, so `gunzip -c <file> | git get-tar-commit-id` must also
+    # print the commit the tag points at (c5264e2bbe532994d06b039005f2af91bedcc1a6).
     {
       url = "gs://minimal-staging-archives/wasi-libc-%{tag}.tar.gz",
       sha256 = "4a2a3e3b120ba1163c57f34ac79c3de720a8355ee3a753d81f1f0c58c4cf6017",

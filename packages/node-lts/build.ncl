@@ -24,7 +24,8 @@ let llhttp-wasm-rebuild = import "../llhttp-wasm-rebuild/build.ncl" in
 let patch = import "../patch/build.ncl" in
 
 # undici bundled under deps/npm; its llhttp C rebuilds npm's wasm blobs.
-let npm-undici = "6.26.0" in
+# Forwarded to build.sh as MINIMAL_ARG_NPM_UNDICI.
+let npm_undici = "6.26.0" in
 let version = "24.19.0" in
 {
   name = "node-lts",
@@ -35,7 +36,7 @@ let version = "24.19.0" in
       sha256 = "16fe258006a6e86844fbe05b3b5e1e5623ca8d3da54e32d98d9e83234bf25b01",
     } | Source,
     {
-      url = "gs://minimal-staging-archives/undici-%{npm-undici}.tar.gz",
+      url = "gs://minimal-staging-archives/undici-%{npm_undici}.tar.gz",
       sha256 = "fc371d680e507ddf32f4944cf6b355a520f16ef5fc4987e0f25dc668372475c7",
     } | Source,
     # CVE-2026-111943 (eMudhra key compromise): backports of nodejs/node#66871
@@ -77,6 +78,7 @@ let version = "24.19.0" in
   cmd = "./build.sh",
   build_args = {
     include version,
+    include npm_undici,
   },
 
   outputs = {

@@ -25,7 +25,8 @@ let wasi-libc = import "../wasi-libc/build.ncl" in
 let llhttp-wasm-rebuild = import "../llhttp-wasm-rebuild/build.ncl" in
 
 # undici bundled under deps/npm; its llhttp C rebuilds npm's wasm blobs.
-let npm-undici = "6.28.0" in
+# Forwarded to build.sh as MINIMAL_ARG_NPM_UNDICI.
+let npm_undici = "6.28.0" in
 let version = "26.10.0" in
 {
   name = "node",
@@ -39,7 +40,7 @@ let version = "26.10.0" in
     # the patch header. Build-time only: it rewrites the source tree.
     { file = "lief-1.x-macho-section-ctor.patch" } | Local,
     {
-      url = "gs://minimal-staging-archives/undici-%{npm-undici}.tar.gz",
+      url = "gs://minimal-staging-archives/undici-%{npm_undici}.tar.gz",
       sha256 = "555a14624f66628d8aa7fcd0691ab2371f3e4512c40358bb7320bfabbb6763ec",
     } | Source,
     # CVE-2026-111943 (eMudhra key compromise): backports of nodejs/node#66871
@@ -80,6 +81,7 @@ let version = "26.10.0" in
   cmd = "./build.sh",
   build_args = {
     include version,
+    include npm_undici,
   },
 
   outputs = {

@@ -37,7 +37,7 @@ fi
 # llhttp wasm: rebuilt from undici's C and spliced over the sha-pinned shipped
 # base64 blobs. Every pin fails the build on a node bump until re-derived.
 LH="python3 /usr/share/llhttp-wasm-rebuild/rebuild-llhttp-wasm.py"
-NPM_UNDICI=6.26.0
+NPM_UNDICI="${MINIMAL_ARG_NPM_UNDICI:?build.ncl forwards npm_undici}"
 NPM_LH=deps/npm/node_modules/undici/lib/llhttp
 $LH check-tree --undici 7.29.0 --npm-undici "$NPM_UNDICI"
 $LH build deps/undici/src ../wasm --version 7.29.0 --llhttp 9.3.0 --sysroot /usr/lib/wasi

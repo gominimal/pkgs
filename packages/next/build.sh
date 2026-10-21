@@ -74,7 +74,7 @@ NEXT_DIR="$OUTPUT_DIR/usr/libexec/next/lib/node_modules/next"
 # llhttp wasm: the edge runtime bundles undici 6's llhttp pair base64 in four files.
 # Rebuilt from undici's C and spliced over the sha-pinned shipped blobs.
 LH="python3 /usr/share/llhttp-wasm-rebuild/rebuild-llhttp-wasm.py"
-UNDICI=6.28.0
+UNDICI="${MINIMAL_ARG_UNDICI:?build.ncl forwards undici}"
 mkdir -p /tmp/llhttp
 tar -xof "$SRC_ROOT/undici-$UNDICI.tar.gz" -C /tmp/llhttp
 $LH build "/tmp/llhttp/undici-$UNDICI" /tmp/llhttp/wasm --version "$UNDICI" --llhttp 8.1.0 --sysroot /usr/lib/wasi

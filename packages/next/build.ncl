@@ -14,6 +14,7 @@ let wasi-libc = import "../wasi-libc/build.ncl" in
 let llhttp-wasm-rebuild = import "../llhttp-wasm-rebuild/build.ncl" in
 
 # undici whose llhttp C rebuilds the wasm next bundles into its edge runtime.
+# Forwarded to build.sh as MINIMAL_ARG_UNDICI.
 let undici = "6.28.0" in
 
 let version = "16.4.1" in
@@ -58,6 +59,7 @@ let version = "16.4.1" in
   cmd = "./build.sh",
   build_args = {
     include version,
+    include undici,
   },
 
   outputs = {
