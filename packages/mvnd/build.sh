@@ -27,10 +27,20 @@ find "$INSTALL/mvn/lib/jansi-native" -mindepth 1 -maxdepth 1 -type d -name Windo
 # MVND_HOME so the client finds its daemon jars and embedded Maven.
 # The embedded Maven's own bin/mvn is deliberately NOT put on PATH: the
 # `maven` package owns /usr/bin/mvn.
+# MAVEN_REPO_LOCAL is the local repository the `maven` package wires to a
+# session state dir. mvnd has no environment binding for it, so forward it
+# as -Dmaven.repo.local, the way /usr/bin/mvn does: with both packages in a
+# session, mvn and mvnd then share one repository instead of downloading
+# everything twice. A -Dmaven.repo.local the caller passes comes later and
+# still wins. (Daemon state needs no forwarding: the client reads
+# MVND_DAEMON_STORAGE itself; see env_state_wiring in build.ncl.)
 cat > "$OUTPUT_DIR/usr/bin/mvnd" << 'EOF'
 #!/bin/sh
 export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm}"
 export MVND_HOME=/usr/share/mvnd
+if [ -n "${MAVEN_REPO_LOCAL:-}" ]; then
+  exec /usr/share/mvnd/bin/mvnd "-Dmaven.repo.local=$MAVEN_REPO_LOCAL" "$@"
+fi
 exec /usr/share/mvnd/bin/mvnd "$@"
 EOF
 chmod 0755 "$OUTPUT_DIR/usr/bin/mvnd"

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
@@ -47,6 +47,15 @@ in
     glibc, # native client: libc, libdl, libpthread, librt (+ ld-linux-aarch64 on arm64)
     jdk, # the daemon is a JVM process; the wrapper defaults JAVA_HOME here
   ],
+  # Not for mvnd's own build (that is offline): the abstract network dep a
+  # package that builds WITH mvnd inherits, as for jbang, maven, curl, go and
+  # uv. Resolving plugins and dependencies from Maven Central is mvnd's job;
+  # only a fully populated local repository with -o runs offline.
+  needs =
+    {
+      dns = {},
+      internet = {},
+    } | Needs,
 
   cmd = "./build.sh",
   build_args = {
@@ -65,6 +74,14 @@ in
       upstream_version = version,
       license_spdx = "Apache-2.0",
       binary_from = "https://github.com/apache/maven-mvnd/releases",
+      # Daemon registry and logs (default ~/.m2/mvnd) as a session state dir,
+      # like gradle's GRADLE_USER_HOME. The native client reads
+      # MVND_DAEMON_STORAGE directly. The local repository is maven's
+      # MAVEN_REPO_LOCAL, which the wrapper forwards (build.sh).
+      env_state_wiring = {
+        env_var = "MVND_DAEMON_STORAGE",
+        prefix = "mvnd",
+      },
       source_provenance = {
         category = 'GithubRepo,
         owner = "apache",
@@ -74,7 +91,9 @@ in
 
   # Each test keeps daemon state and the local repository in its own cwd
   # (HOME may not be writable) and stops the daemon at the end, so no JVM
-  # outlives the test.
+  # outlives the test. They set MVND_DAEMON_STORAGE and MAVEN_REPO_LOCAL,
+  # the two variables a session wires, so they also exercise the client's
+  # env binding and the wrapper's forwarding.
   tests = {
     # --version goes through the daemon: the client prints its own version,
     # then starts a daemon JVM that reports the embedded Maven.
@@ -83,7 +102,7 @@ in
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          ["/bin/bash", "-c", "mvnd -B -Dmvnd.daemonStorage=\"$PWD/mvnd\" -Dmaven.repo.local=\"$PWD/repo\" --version > out.txt 2>&1; rc=$?; mvnd -Dmvnd.daemonStorage=\"$PWD/mvnd\" --stop >/dev/null 2>&1; exit $rc"],
+          ["/bin/bash", "-c", "export MVND_DAEMON_STORAGE=\"$PWD/mvnd\" MAVEN_REPO_LOCAL=\"$PWD/repo\"; mvnd -B --version > out.txt 2>&1; rc=$?; mvnd --stop >/dev/null 2>&1; exit $rc"],
           ["/bin/bash", "-c", "grep -qF 'mvnd) %{version}' out.txt"],
           ["/bin/bash", "-c", "grep -qF 'Apache Maven %{maven_version}' out.txt"],
         ],
@@ -98,8 +117,11 @@ in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "printf '<project xmlns=\"http://maven.apache.org/POM/4.0.0\">\\n  <modelVersion>4.0.0</modelVersion>\\n  <groupId>dev.minimal</groupId>\\n  <artifactId>smoke</artifactId>\\n  <version>1</version>\\n  <packaging>pom</packaging>\\n</project>\\n' > pom.xml"],
-          ["/bin/bash", "-c", "mvnd -B -o -Dmvnd.daemonStorage=\"$PWD/mvnd\" -Dmaven.repo.local=\"$PWD/repo\" validate > out.txt 2>&1; rc=$?; mvnd -Dmvnd.daemonStorage=\"$PWD/mvnd\" --stop >/dev/null 2>&1; exit $rc"],
-          ["/bin/bash", "-c", "grep -qF 'BUILD SUCCESS' out.txt"],
+          ["/bin/bash", "-c", "export MVND_DAEMON_STORAGE=\"$PWD/mvnd\" MAVEN_REPO_LOCAL=\"$PWD/repo\"; mvnd -B -o -X validate > out.txt 2>&1; rc=$?; mvnd --stop >/dev/null 2>&1; exit $rc"],
+          ["/bin/bash", "-c", "grep -qF 'BUILD SUCCESS' out.txt || { cat out.txt; exit 1; }"],
+          # The daemon used the wired storage and the forwarded repository.
+          ["/bin/bash", "-c", "ls \"$PWD/mvnd\"/*/registry.bin >/dev/null 2>&1 || ls \"$PWD/mvnd\"/registry.bin >/dev/null 2>&1 || { ls -R \"$PWD/mvnd\"; exit 1; }"],
+          ["/bin/bash", "-c", "grep -qF \"$PWD/repo\" out.txt || { grep -i 'local repository' out.txt; exit 1; }"],
         ],
       } | Test,
   },
