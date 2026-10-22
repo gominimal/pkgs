@@ -3,12 +3,12 @@ let { standaloneTest, upstream, Attrs, BuildSpec, Local, Needs, OutputBin, Sourc
 let base = import "../base/build.ncl" in
 let zig = import "../zig/build.ncl" in
 
-let version = "0.17.0" in
+let version = "0.16.0" in
 {
   name = "zls",
   # Zig language server, built from source with the zig package.
   # zls versions track zig minor versions; keep this in lockstep with
-  # the upstream zig package (currently 0.17.0).
+  # the upstream zig package (currently 0.16.0).
   #
   # Needs network: `zig build` fetches the dependencies declared in
   # build.zig.zon (known_folders, diffz, lsp_kit, ...), each verified
@@ -17,7 +17,7 @@ let version = "0.17.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/zigtools/zls/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "f77940720768daf67c01802ea3cf3029dfd8a74afd7b68b39676c4f814dd992e",
+      sha256 = "e7c5936f5b3a057ce851be0876e4e259b5c4d02f9aae038cd24a5d6b586b029f",
       extract = true,
       strip_prefix = "zls-%{version}",
     } | Source,
