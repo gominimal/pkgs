@@ -59,12 +59,6 @@ a task, one of them silently wins, and its row reports the wrong runtime. So `li
 `offline` carry everything else plus jdk-25. `*-alt` carries node-lts and jdk-21.
 `*-jdk27` carries jdk-27. Each split task restricts itself with `--rows`.
 
-run.sh never exits 125. If `min task run` returns 125 with the output cut off mid-run,
-min dropped the task's output stream, and the fix is to rerun. A scheduled run should
-retry on 125. During development this hit 3 of about 20 streamed `live` runs. When
-run.sh ran 6 times back to back inside a single task, with its output going to files,
-there were 0 failures in 6.
-
 A full `live` run takes about 16 s inside the box (about 30 s wall with session setup).
 `offline` takes about 8 s. Probes run 8 at a time (`--jobs`), and each one has a hard
 deadline (`--timeout`, default 15 s). The single-threaded harness this replaces took 2 to
@@ -124,7 +118,7 @@ and negcontrol verdicts, and the exit code.
 | openssl | **path** | `openssl verify` against OpenSSL's default store (OPENSSLDIR, or SSL_CERT_FILE/DIR). Inside the box that store is our package's, never the host's; the header prints `openssl version -d`. |
 | gnutls-cli | **path** | `certtool --verify` with no CA argument, so it uses gnutls's system trust and runs gnutls's real chain verifier. |
 | java | **path** | PKIX `CertPathBuilder` over the default JSSE trust store. It applies `blocked.certs` and `disabledAlgorithms`. Its error message hides expiry ("unable to find valid certification path"), so the positives and NEGCONTROL are what catch a stale chain. |
-| go | **path** | `x509.Certificate.Verify` with the system pool, which is exactly what `crypto/tls` uses. That includes Go's distrusted-SPKI list. |
+| go | **path** | `x509.Certificate.Verify` with the system pool, which is exactly what `crypto/tls` uses. That includes Go's distrusted-SPKI list. The probe decides on the error type: only `UnknownAuthorityError`, or `NoValidChains` with an empty detail (go1.27.3 returns that only when the distrusted-SPKI list dropped every chain), counts as REJECTED. EKU, policy, name-constraint and expiry failures are ERR. |
 | python-urllib | store | Python has no chain-verify API, and a handshake needs a private key we don't have. This row feeds `ssl.get_default_verify_paths()` to `openssl verify -x509_strict -partial_chain`, the 3.13+ default-context flags. Python links that same libssl. |
 | pip | store | Same, over the union of the system paths (truststore) and pip's vendored certifi. pip 24.2+ trusts both. |
 | httpie | store | Same, over the union of the system paths and requests' bundle. httpie 3.2.x calls `load_default_certs()` (`ensure_default_certs_loaded`) before requests adds certifi. A certifi-only model read FIXED at the pre-fix pin while live connected to all 12 hosts. |
@@ -191,6 +185,51 @@ offline already runs the same PKIX code.
 5. **Weekly regression.** Run `min update`, then all six tasks, for every directory under
    `incidents/`. Any non-zero exit needs a human. Exit 3 most often means a chain has
    gone stale (NEGCONTROL BROKEN), and the fix is to re-capture it.
+
+## Who runs it, and who owns a failure
+
+**Phase 1 (now): a manual playbook.** Nothing runs this on a schedule yet, and it is not
+a CI check. Whoever drives an incident runs it, following the playbook above: baseline,
+per PR, after merge. Run it too on any PR that changes a trust store or a TLS client
+(`ca-certificates`, a runtime that bundles its own roots, a Rust crate lock that pins
+webpki). That person owns the result and posts the table on the PR.
+
+**Phase 2: a weekly scheduled run.** `min update`, then all six tasks for every directory
+under `incidents/`, retrying once on exit 125. A non-zero exit posts to **#pkgmgr-mgr**
+(Slack channel `C0B1J3S34SV`). That is the channel the pkgmgr runner's failure backstop
+posts to, so the same pkgsec on-call that watches the nightly runs owns it. Tracked with
+the weekly `pkgmgr truststores` scan (gominimal/pkgmgr-rs#1021). Until it exists, there
+is no alert, only the manual runs.
+
+## Maintenance
+
+- **Six tasks.** The package lists are split three ways because some packages install
+  the same paths (see "Why six tasks"). When you add a client, add its package to every
+  task whose rows should see it, and keep `live-*` and `offline-*` identical apart from
+  `--mode`. Adding a jdk or node flavour means a new task pair, not another entry in an
+  existing one.
+- **The pin.** `[upstream] locked_commit` is what gets tested, never the checkout this
+  file sits in. Today it pins the pkgs main commit the last full run was verified at. To
+  test current main, run `min update` (in a scratch copy, see "Running it") and commit
+  the new pin with the run's results. To test a PR, point `[upstream]` at its head (step
+  3 of the playbook). Don't commit a PR-head pin.
+- **Chain expiry.** Offline verifies at `verify_at`, so captured chains never go stale
+  there. Live mode handshakes with the real targets, though, and their leaves expire:
+  for cve-2026-111943, all 12 on 2027-05-03. On that day NEGCONTROL reads BROKEN and
+  every live run exits 3. run.sh prints the earliest target leaf expiry in its header,
+  warns from 60 days before (`EXPIRY_WARN_DAYS` overrides), and puts it in the JSON as
+  `earliest_target_leaf_expiry`. Before it passes, re-capture `chains/bad/` from the
+  targets (if the disclosure re-issued them) and move `verify_at`. Otherwise retire the
+  incident's live tasks and keep offline.
+- **The targets are someone else's hosts.** `*.we-have-a-problem.com` are the
+  disclosure's demonstration sites. If they go away, NEGCONTROL reads BROKEN in live
+  mode, and offline keeps working from `chains/`. The positives (`letsencrypt.org`,
+  `www.google.com`) rotate their own certs, so live mode needs no upkeep for them.
+- **Exit 125.** run.sh never exits 125. If `min task run` returns 125 with the output
+  cut off mid-run, min dropped the task's output stream, and the fix is to rerun.
+  During development this hit 3 of about 20 streamed `live` runs. When run.sh ran 6
+  times back to back inside a single task, with its output going to files, there were 0
+  failures in 6. The scheduled run retries once on 125.
 
 ## Security
 

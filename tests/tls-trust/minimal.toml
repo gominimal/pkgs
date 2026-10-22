@@ -19,7 +19,7 @@
 [upstream]
 repo = "https://github.com/gominimal/pkgs"
 branch = "main"
-locked_commit = "0618accaa3b8923508cb75222268c0b91532e8df"
+locked_commit = "befeac7d8f90252327a3279399a8e210b5b59054"
 
 [tasks.live]
 args.profile = { type = "string", default = "incidents/cve-2026-111943", help = "profile directory" }

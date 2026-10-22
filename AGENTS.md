@@ -72,6 +72,25 @@ stacks should use `stack` and live at `stacks/<name>/stack.ncl`.
 
 Current stacks cover: aeneas, bun, cabal, cmake, deno, go, gradle, make, maven, meson, npm, ocaml, odin, pip, pnpm, pulumi-go, pulumi-nodejs, rust, shell, stack, uv, zig.
 
+### Tests
+
+`tests/<name>/` holds checks that exercise packages the way users get them, across
+several packages at once. A single package's checks stay in that package's `tests`
+block. Each directory under `tests/`:
+
+ * is a self-contained min project: its own `minimal.toml`, with `[upstream]` pinning
+   `gominimal/pkgs` (`locked_commit`) and `[tasks]` to run. It is not a package or a
+   stack, nothing imports it, and the package checks never evaluate it;
+ * tests the commit its pin names, never the checkout it sits in. `min update` re-pins
+   it to main, or `[upstream]` can point at a PR head;
+ * has a README saying how to run it, what each result means, and who acts on a
+   failure;
+ * holds no secrets or private keys. Captured data (certificates, fixtures) is public,
+   pinned by checksum, and cites its source;
+ * has no `profiles/` subdirectory, because min reserves `profiles/<name>/profile.ncl`.
+
+Current tests: `tls-trust` (every TLS client refuses a distrusted CA, per incident).
+
 
 
 ## Package declarations

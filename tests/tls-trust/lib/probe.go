@@ -18,7 +18,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -80,20 +79,26 @@ func main() {
 		return
 	}
 	fmt.Println(err)
+	// Decide on the error TYPE, never its text. Only two outcomes are trust
+	// refusals (crypto/x509 verify.go, go1.27.3):
+	//   - UnknownAuthorityError: no path to a root in the pool.
+	//   - CertificateInvalidError{NoValidChains} with an EMPTY Detail: chains
+	//     were built to a trusted root and every one was then dropped by
+	//     containsDistrustedSPKIHash, the only filter that drops silently.
+	//     Policy and EKU drops fill Detail (or return IncompatibleUsage), and a
+	//     name-constraint drop returns CANotAuthorizedForThisName.
+	// Everything else (expiry, EKU, policy, constraints, hostname, parse) is
+	// not a trust decision and stays unmarked, so it classifies as ERR.
 	var ua x509.UnknownAuthorityError
 	var ci x509.CertificateInvalidError
 	switch {
 	case errors.As(err, &ua):
 		fmt.Println("@@REJECTED@@ unknown authority")
-	case errors.As(err, &ci) && ci.Reason == x509.Expired:
-		fmt.Println("expired: not a trust decision")
-	case strings.Contains(strings.ToLower(err.Error()), "distrust"), strings.Contains(strings.ToLower(err.Error()), "untrusted"):
-		fmt.Println("@@REJECTED@@ distrusted")
-	case strings.Contains(err.Error(), "no valid chains built"):
-		// Chains were built to a trusted root, then every one was dropped:
-		// that is how go1.27.3's distrusted-SPKI filter reports (it would
-		// also cover a policy failure; the pre-fix pin accepting the same
-		// chains is what pins it on the SPKI list).
+	case errors.As(err, &ci) && ci.Reason == x509.NoValidChains && ci.Detail == "":
 		fmt.Println("@@REJECTED@@ every built chain was dropped (distrusted SPKI)")
+	case errors.As(err, &ci):
+		fmt.Printf("not a trust decision (x509.InvalidReason %d)\n", ci.Reason)
+	default:
+		fmt.Println("not a trust decision")
 	}
 }

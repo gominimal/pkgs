@@ -17,9 +17,18 @@ have() { command -v "$1" >/dev/null 2>&1; }
 # Only certificate-verification errors count as a correct rejection, and of
 # those only TRUST failures: NOT_TRUST_RE (expiry, name mismatch) wins over
 # CERT_RE and classifies as ERR, so e.g. Go's "x509: certificate has expired"
-# or a hostname mismatch can never read as FIXED.
-NOT_TRUST_RE='certificate has expired|certificate is expired|CERT_HAS_EXPIRED|not yet valid|CERT_NOT_YET_VALID|x509: certificate is valid for|ERR_TLS_CERT_ALTNAME_INVALID|Hostname mismatch|hostname mismatch|does not match target host|NotValidForName|no alternative certificate subject name matches|certificate subject name .* does not match|The certificate has expired|validity check failed'
-CERT_RE='certificate verify failed|CERTIFICATE_VERIFY_FAILED|SSL certificate problem|unable to get local issuer|unable to get issuer|UNABLE_TO_GET_ISSUER_CERT|UNABLE_TO_VERIFY_LEAF_SIGNATURE|SELF_SIGNED_CERT_IN_CHAIN|CERT_UNTRUSTED|CERT_REVOKED|certificate is NOT trusted|PKI verification of server certificate failed|issuer is not known|x509: |failed to verify certificate|PKIX path|CertPathValidatorException|CertificateException|UnknownIssuer|invalid peer certificate|signed by unknown authority|unable to verify the first certificate|verify error:|Verify return code: [1-9]|server certificate verification failed|ERR_TLS_CERT|untrusted|distrusted|revoked|cannot verify .*certificate|SSLCertVerificationError|ssl certificate'
+# or a hostname mismatch can never read as FIXED. rustls (uv, deno) says
+# "certificate expired" / "certificate not valid yet".
+NOT_TRUST_RE='certificate has expired|certificate is expired|certificate expired|certificate not valid yet|CERT_HAS_EXPIRED|not yet valid|CERT_NOT_YET_VALID|x509: certificate is valid for|ERR_TLS_CERT_ALTNAME_INVALID|Hostname mismatch|hostname mismatch|does not match target host|NotValidForName|no alternative certificate subject name matches|certificate subject name .* does not match|The certificate has expired|validity check failed'
+# Go: only its two trust failures count. "signed by unknown authority" is
+# x509.UnknownAuthorityError. "no valid chains built" with NOTHING after it is
+# CertificateInvalidError{NoValidChains, Detail: ""}, which go1.27.3 returns
+# only when every built chain was dropped by the distrusted-SPKI list
+# (crypto/x509 verify.go: policy and EKU drops add a Detail, constraint drops
+# return a different error). So "x509: " alone, or "tls: failed to verify
+# certificate:" (Go's prefix on every x509 error, EKU and policy included),
+# is never a refusal.
+CERT_RE='certificate verify failed|CERTIFICATE_VERIFY_FAILED|SSL certificate problem|unable to get local issuer|unable to get issuer|UNABLE_TO_GET_ISSUER_CERT|UNABLE_TO_VERIFY_LEAF_SIGNATURE|SELF_SIGNED_CERT_IN_CHAIN|CERT_UNTRUSTED|CERT_REVOKED|certificate is NOT trusted|PKI verification of server certificate failed|issuer is not known|x509: certificate signed by unknown authority|x509: no valid chains built *($|[^: ])|PKIX path|CertPathValidatorException|CertificateException|UnknownIssuer|invalid peer certificate|unable to verify the first certificate|verify error:|Verify return code: [1-9]|server certificate verification failed|ERR_TLS_CERT|untrusted|distrusted|revoked|cannot verify .*certificate|SSLCertVerificationError|ssl certificate'
 # rc=124/137: the backstop deadline in to() killed the probe.
 NET_RE='^rc=(124|137)( |$)|Could not resolve|resolve host|Name or service not known|Temporary failure in name resolution|getaddrinfo|ENOTFOUND|EAI_AGAIN|dns error|No address associated|timed out|[Tt]imeout|TimeoutError|ETIMEDOUT|Connection refused|ECONNREFUSED|Network is unreachable|No route to host|ECONNRESET|connection reset|UnknownHostException|no such host|i/o timeout|CONNECT_TIMEOUT|UND_ERR_SOCKET'
 

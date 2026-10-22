@@ -95,6 +95,30 @@ if [ "$MODE" = offline ]; then
   for ((j = 0; j < NT; j++)); do [ -s "$(target_arg $j)" ] || die "missing chain $(target_arg $j)"; done
 fi
 
+# Leaf expiry of the captured BAD chains. Offline verifies at verify_at, so it
+# never goes stale, but live mode handshakes with the real targets, and the day
+# their leaves expire NEGCONTROL reads BROKEN and every run exits 3. Warn early
+# enough to re-capture (README "Maintenance"); EXPIRY_WARN_DAYS overrides 60.
+EXPIRY_WARN_DAYS=${EXPIRY_WARN_DAYS:-60}
+EARLIEST_EXPIRY="" EARLIEST_EXPIRY_HOST=""
+for ((j = 0; j < NB; j++)); do
+  f=$PROFILE/chains/bad/${T_HOST[$j]}.pem
+  [ -s "$f" ] || continue
+  e=$(openssl x509 -in "$f" -noout -enddate 2>/dev/null | sed 's/^notAfter=//')
+  e=$(date -u -d "$e" +%s 2>/dev/null) || continue
+  if [ -z "$EARLIEST_EXPIRY" ] || [ "$e" -lt "$EARLIEST_EXPIRY" ]; then EARLIEST_EXPIRY=$e EARLIEST_EXPIRY_HOST=${T_HOST[$j]}; fi
+done
+EXPIRY_NOTE=""
+if [ -n "$EARLIEST_EXPIRY" ]; then
+  days=$(( (EARLIEST_EXPIRY - $(date -u +%s)) / 86400 ))
+  when=$(date -u -d "@$EARLIEST_EXPIRY" +%Y-%m-%d)
+  if [ "$days" -lt 0 ]; then
+    EXPIRY_NOTE="WARNING: target leaf $EARLIEST_EXPIRY_HOST expired on $when; live NEGCONTROL will read BROKEN until chains/ is re-captured"
+  elif [ "$days" -le "$EXPIRY_WARN_DAYS" ]; then
+    EXPIRY_NOTE="WARNING: target leaf $EARLIEST_EXPIRY_HOST expires on $when ($days days); re-capture chains/ before then (README: Maintenance)"
+  fi
+fi
+
 # ---------------------------------------------------------------- sandbox
 W=$(mktemp -d "${TMPDIR:-/tmp}/tls-trust.XXXXXX") || die "mktemp failed"
 trap 'rm -rf "$W"' EXIT
@@ -160,6 +184,8 @@ PIN=$(sed -n 's/^locked_commit *= *"\(.*\)"/\1/p' "$HERE/minimal.toml" 2>/dev/nu
 echo "=== tls-trust: profile $(basename "$PROFILE"), mode $MODE ==="
 echo "date: $(date -u +%Y-%m-%dT%H:%M:%SZ)   host: $(uname -srm)   pkgs pin: ${PIN:-unknown}   jobs: $JOBS   timeout: ${TIMEOUT}s"
 [ "$MODE" = offline ] && echo "offline verification instant (expected.txt verify_at): $VERIFY_AT_ISO"
+[ -n "$EARLIEST_EXPIRY" ] && echo "earliest target leaf expiry: $(date -u -d "@$EARLIEST_EXPIRY" +%Y-%m-%d) ($EARLIEST_EXPIRY_HOST)"
+[ -n "$EXPIRY_NOTE" ] && echo "$EXPIRY_NOTE"
 echo "system bundle: ${BUNDLE:-NOT FOUND} ($BUNDLE_N certs); openssl $(openssl version -d 2>/dev/null)"
 for ((k = 0; k < ${#ANCHOR_FPS[@]}; k++)); do
   if [[ " ${ANCHORS_IN_BUNDLE[*]-} " == *" ${ANCHOR_FPS[$k]} "* ]]; then s=YES; else s=no; fi
@@ -291,6 +317,7 @@ else
   echo "what each offline row proves:"
   for i in "${SEL[@]}"; do printf '  %-15s %s\n' "${R_NAME[$i]}" "${R_PROOF[$i]}"; done
 fi
+[ -n "$EXPIRY_NOTE" ] && echo "$EXPIRY_NOTE"
 echo "SUMMARY: FIXED=$N_FIXED VULNERABLE=$N_VULN INCONCLUSIVE=$N_INC N/A=$N_NA   SELFTEST=$SELFTEST_V (must be FIXED)   NEGCONTROL=$NEGCTL_V (must be VULNERABLE)"
 echo "runtime: ${RUNTIME}s   exit: $RC"
 
@@ -316,6 +343,8 @@ if [ -n "$JSON" ]; then
     printf '"timestamp":%s,"verify_at":%s,"jobs":%s,"timeout_s":%s,"runtime_s":%s,' \
       "$(json_str "$(date -u +%Y-%m-%dT%H:%M:%SZ)")" "$(json_str "$VERIFY_AT_ISO")" "$JOBS" "$TIMEOUT" "$RUNTIME"
     printf '"selftest":%s,"negcontrol":%s,"exit_code":%s,' "$(json_str "$SELFTEST_V")" "$(json_str "$NEGCTL_V")" "$RC"
+    printf '"earliest_target_leaf_expiry":%s,"expiry_warning":%s,' \
+      "$(json_str "$([ -n "$EARLIEST_EXPIRY" ] && date -u -d "@$EARLIEST_EXPIRY" +%Y-%m-%dT%H:%M:%SZ)")" "$(json_str "$EXPIRY_NOTE")"
     printf '"summary":{"FIXED":%s,"VULNERABLE":%s,"INCONCLUSIVE":%s,"NA":%s},"rows":[' $N_FIXED $N_VULN $N_INC $N_NA
     first=1
     for i in "${SEL[@]}"; do
