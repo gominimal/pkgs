@@ -13,7 +13,7 @@ let version = "0.11.2" in
   # binaries exist only for linux-x86_64 (no arm64), so the jar is the one
   # artifact that covers both arches: one sha256, no per-arch dispatch. It is
   # self-contained (picocli, dagger and jackson are shaded in) and needs Java 25
-  # (class file version 69); our jdk is 25.
+  # (class file version 69).
   #
   # Prebuilt, not built from source: the build is Maven (via the Maven Wrapper)
   # resolving from Maven Central. Same tradeoff as maven / gradle / jdtls.
