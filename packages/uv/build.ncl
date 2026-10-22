@@ -7,7 +7,7 @@ let make = import "../make/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "0.12.23" in
+let version = "0.13.4" in
 {
   name = "uv",
   build_deps = [
@@ -19,10 +19,13 @@ let version = "0.12.23" in
     # (plus whatever cargo had to move with them). Drop on the first upstream
     # release whose Cargo.lock already has those versions; a version bump that
     # keeps it fails at `patch` rather than silently shipping the old lock.
+    # 0.13.4's own lock already has webpki-root-certs 1.0.10, so the patch now
+    # moves only rustls-webpki 0.103.14 -> 0.103.16 (aws-lc-rs 1.18.0 already
+    # satisfies its ^1.18).
     { file = "cve-2026-111943-webpki-lock.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/uv-%{version}.tar.gz",
-      sha256 = "662023e7453d40c2e751ddc9f0c9dc27e09f27324ca7e81249b3d15a5e5e364f"
+      sha256 = "182d66815490dbb497b456a6fde93c7e66ae7f27a50a2065b3b5a06fbb3a20bd"
     } | Source,
     base,
     patch,

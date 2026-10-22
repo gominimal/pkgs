@@ -22,31 +22,30 @@ let llvm = import "../llvm/build.ncl" in
 let wasi-libc = import "../wasi-libc/build.ncl" in
 let llhttp-wasm-rebuild = import "../llhttp-wasm-rebuild/build.ncl" in
 let amaro-wasm = import "../amaro-wasm/build.ncl" in
-let patch = import "../patch/build.ncl" in
 
-# undici bundled under deps/npm; its llhttp C rebuilds npm's wasm blobs.
-# Forwarded to build.sh as MINIMAL_ARG_NPM_UNDICI.
-let npm_undici = "6.26.0" in
-let version = "24.19.0" in
+# What this node tree bundles, verified by build.sh (check-tree / build fail on a mismatch),
+# so a node bump re-derives each one here: undici under deps/undici (its llhttp C rebuilds
+# the wasm js2c'd into node), the undici npm vendors under deps/npm (rebuilt from the
+# mirrored release tarball below), and amaro (its swc wasm comes from packages/amaro-wasm).
+let undici = "7.30.1" in
+let undici_llhttp = "9.3.0" in
+let npm_undici = "6.28.0" in
+let amaro = "1.1.11" in
+let version = "24.22.1" in
 {
   name = "node-lts",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/node-v%{version}.tar.gz",
-      sha256 = "16fe258006a6e86844fbe05b3b5e1e5623ca8d3da54e32d98d9e83234bf25b01",
+      url = "https://nodejs.org/dist/v%{version}/node-v%{version}.tar.gz",
+      sha256 = "001773d9bd53fbd27a25efd42aa6a9693ebfe500998ca9bec635e9b6ee79bc91",
     } | Source,
     {
       url = "gs://minimal-staging-archives/undici-%{npm_undici}.tar.gz",
-      sha256 = "fc371d680e507ddf32f4944cf6b355a520f16ef5fc4987e0f25dc668372475c7",
+      sha256 = "555a14624f66628d8aa7fcd0691ab2371f3e4512c40358bb7320bfabbb6763ec",
     } | Source,
-    # CVE-2026-111943 (eMudhra key compromise): backports of nodejs/node#66871
-    # (SPKI blocklist in TLS chain verification) and nodejs/node#66877 (drop the
-    # emSign roots removed in NSS 3.131.1), both merged to main 2026-10-20 and
-    # unreleased. Build-time only; see the patch headers. Drop both on the first
-    # release whose changelog lists them.
-    { file = "cve-2026-111943-tls-spki-blocklist.patch" } | Local,
-    { file = "cve-2026-111943-drop-emsign-roots.patch" } | Local,
+    # 24.22.1 carries the CVE-2026-111943 fixes upstream (nodejs/node#66871 SPKI
+    # blocklist, #66877 NSS 3.131.1 roots), so the backports are no longer carried.
     base,
     llvm, # clang + wasm-ld for the llhttp wasm
     wasi-libc,
@@ -54,7 +53,6 @@ let version = "24.19.0" in
     amaro-wasm, # amaro's TypeScript-stripper wasm, rebuilt from swc
     make,
     pkgconf,
-    patch,
     python,
     toolchain,
   ],
@@ -80,7 +78,10 @@ let version = "24.19.0" in
   cmd = "./build.sh",
   build_args = {
     include version,
+    include undici,
+    include undici_llhttp,
     include npm_undici,
+    include amaro,
   },
 
   outputs = {
@@ -151,7 +152,7 @@ let version = "24.19.0" in
     # CVE-2026-111943: the emSign roots NSS 3.131.1 removed must be gone from
     # the BUNDLED store (what `tls` trusts by default). FAILS on stock node
     # (checked against node 26.9.0: all three are present) and
-    # passes only with cve-2026-111943-drop-emsign-roots.patch.
+    # passes from 26.12.1 / 24.22.1 on (upstream nodejs/node#66877).
     emsign_roots_removed =
       {
         class = 'Standalone,
