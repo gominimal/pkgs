@@ -47,7 +47,10 @@ export M2_HOME=/usr/share/maven
 # MAVEN_REPO_LOCAL is the session state dir minimal wires for this package
 # (attrs.env_state_wiring). Maven has no env var for its local repository,
 # so pass it as -Dmaven.repo.local; a -Dmaven.repo.local the caller passes
-# comes later on the command line and still wins.
+# comes later on the command line and still wins. When it is set it also
+# overrides a <localRepository> in the user's settings.xml (a -D system
+# property beats settings), which is intended: the state dir is the one
+# repository a session keeps.
 if [ -n "${MAVEN_REPO_LOCAL:-}" ]; then
   exec /usr/share/maven/bin/mvn "-Dmaven.repo.local=$MAVEN_REPO_LOCAL" "$@"
 fi

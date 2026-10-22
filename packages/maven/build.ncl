@@ -76,6 +76,8 @@ let version = "3.10.0" in
             "-c",
             m%"
               set -euo pipefail
+              out=""
+              trap 'echo "$out" >&2' ERR
               mkdir -p proj && cd proj
               printf '%s' '<project><modelVersion>4.0.0</modelVersion><groupId>t</groupId><artifactId>t</artifactId><version>1</version><packaging>pom</packaging></project>' > pom.xml
               out=$(MAVEN_REPO_LOCAL=/tmp/m2-state-repo mvn -o -X validate 2>&1)
