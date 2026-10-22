@@ -21,6 +21,16 @@ let version = "b10357" in
       extract = true,
       strip_prefix = "llama.cpp-%{version}",
     } | Source,
+    {
+      # llama-server's web UI for this build number, mirrored from
+      # https://huggingface.co/buckets/ggml-org/llama-ui/resolve/%{version}/dist.tar.gz
+      # (sha256 matches upstream's dist.tar.gz.sha256). build.sh unpacks it into
+      # tools/ui/dist so the build doesn't fetch the moving `latest` UI.
+      # Bump with `version`.
+      url = "gs://minimal-staging-archives/ggml-org/llama-ui/%{version}-dist.tar.gz",
+      sha256 = "68f883c9592b049e696a0837359a46f59ac3236188510bf92b477917a76f6dbc",
+      extract = false,
+    } | Source,
     base,
     git,
     make,
@@ -34,6 +44,9 @@ let version = "b10357" in
     subsetOf gcc ["libgcc", "libstdcpp", "libgomp"],
   ],
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
   outputs = {
     llama-server = { glob = "usr/bin/llama-server" } | OutputBin,
     llama-cli = { glob = "usr/bin/llama-cli" } | OutputBin,
