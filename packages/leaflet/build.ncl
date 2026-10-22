@@ -43,7 +43,10 @@ let version = "1.9.4" in
         owner = "Leaflet",
         repo = "Leaflet",
       },
-      # The registry tarball ships the rollup-built dist/ (no Leaflet build step here).
+      # The registry tarball ships the rollup-built dist/ (no Leaflet build step here):
+      # upstream's `npm run build` is rollup + uglify-js with rollup-plugin-git-version/
+      # git-rev-sync, network-fetched devDependencies that also read a .git checkout,
+      # which the npm tarball lacks. dist/ is plain JS/CSS (no native code).
       binary_from = "https://registry.npmjs.org/leaflet/-/leaflet-%{version}.tgz",
     } | Attrs,
 } | BuildSpec
