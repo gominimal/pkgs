@@ -11,7 +11,7 @@ let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # compiles the .hc a
 # production binutils: the sealed binutils-2.46-glibc shares sonames (libsframe.so.3) with it in
 # /usr/lib, and a mixed pair crashes as
 let binutils = import "../binutils/build.ncl" in
-let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
+let glibc-bedrock-sysroot = import "../glibc-bedrock-2.42-sysroot/build.ncl" in # sysroot only (see that package)
 let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
 let gmp = import "../gmp/build.ncl" in # integer-gmp
 let ncurses = import "../ncurses/build.ncl" in # terminfo
@@ -32,7 +32,7 @@ let patch = import "../patch/build.ncl" in # the build system patches the bundle
 let version = "7.6.3" in
 let is_arm = target.arch == 'Arm64 in
 # x86_64 compiles with the bedrock gcc against its glibc sysroot; aarch64 with the toolchain, itself hex0-rooted
-let cc_build = if is_arm then [toolchain] else [gcc-bedrock, binutils, glibc-bedrock] in
+let cc_build = if is_arm then [toolchain] else [gcc-bedrock, binutils, glibc-bedrock-sysroot] in
 let arm_extra =
   if is_arm then
     [

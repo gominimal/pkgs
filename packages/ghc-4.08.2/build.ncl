@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # ghc-4.08.2: the first GHC of the source-only ladder (microhs-0.16 -> ghc-4.08.2 -> 5.04.3 -> 6.6.1 -> 6.10.4 ->
 # 7.0.4 -> 7.6.3 -> ...). GHC 4.08.2's compiler is compiled by MicroHs from a desugared copy of its own sources, that
@@ -14,7 +14,7 @@ let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # the C compiler, he
 # production binutils: the sealed binutils-2.46-glibc shares sonames (libsframe.so.3) with it in
 # /usr/lib, and a mixed pair crashes as
 let binutils = import "../binutils/build.ncl" in
-let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
+let glibc-bedrock-sysroot = import "../glibc-bedrock-2.42-sysroot/build.ncl" in # sysroot only (see that package)
 let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
 let glibc = import "../glibc/build.ncl" in
 let base = import "../base/build.ncl" in
@@ -35,8 +35,8 @@ let patch = import "../patch/build.ncl" in
 let version = "4.08.2" in
 let is_arm = target.arch == 'Arm64 in
 # x86_64 compiles with the bedrock gcc against its glibc sysroot; aarch64 with the toolchain, itself hex0-rooted
-let cc_build = if is_arm then [toolchain] else [gcc-bedrock, binutils, glibc-bedrock] in
-let cc_runtime = if is_arm then [glibc, toolchain] else [subsetOf glibc-bedrock ["sysroot_lib"], gcc-bedrock, binutils] in
+let cc_build = if is_arm then [toolchain] else [gcc-bedrock, binutils, glibc-bedrock-sysroot] in
+let cc_runtime = if is_arm then [glibc, toolchain] else [glibc-bedrock-sysroot, gcc-bedrock, binutils] in
 let spec =
   {
     name = "ghc-4.08.2",
