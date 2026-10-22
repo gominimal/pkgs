@@ -9,14 +9,14 @@ let xtrans = import "../xtrans/build.ncl" in
 let libxcb = import "../libxcb/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.8.13" in
+let version = "1.8.14" in
 {
   name = "libx11",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libX11-%{version}.tar.xz",
-      sha256 = "69606f485c2c07c14ef64f75b7bb326d48587af33795d9ab3e607c0b5f94f11c",
+      sha256 = "bbc78c46217174655c2b32b138ad119f3ac15f50808b4d0b3a2677a4b1afc950",
       extract = true,
       strip_prefix = "libX11-%{version}",
     } | Source,

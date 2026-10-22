@@ -20,6 +20,10 @@ export CXXFLAGS="${CFLAGS}"
 
 make -j$(nproc)
 make DESTDIR=$OUTPUT_DIR install
+# The bundled gems' extension dirs keep their mkmf.log / gem_make.out: build logs that
+# record gcc's random /tmp/ccXXXXXX.o names, so every build differs in them and nothing
+# else (2026-10 prod-pair diff: 1 of 2926 files). Same cleanup as ruby-lsp.
+find "$OUTPUT_DIR" \( -name mkmf.log -o -name gem_make.out \) -delete
 
 # gem auto-falls back to user installs (the store is read-only), but its
 # binstubs then land in ~/.local/share/gem/ruby/<v>/bin — off PATH. RubyGems'
