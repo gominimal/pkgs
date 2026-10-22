@@ -9,12 +9,12 @@ let toolchain = import "../toolchain/build.ncl" in
 let go-1-24-9 = import "../go-1.24.9/build.ncl" in
 let git = import "../git/build.ncl" in
 
-let version = "1.27.1" in
+let version = "1.27.3" in
 let variants = {
   # Bumping go means updating `version` and `source_sha256` only.  The bootstrap pins change
   # only when go's minimum bootstrap version (src/cmd/dist/buildtool.go) moves past 1.24.
   source_url = "https://go.dev/dl/go%{version}.src.tar.gz",
-  source_sha256 = "4e408abae126d916b6164627193f2c54f0e3ca1312d693b86db45f862ab238b1",
+  source_sha256 = "6e7749035cf360f06b2575d162ea79df9fda8ef671889e5c375f8e50777f26bb",
 }
 in
 {
