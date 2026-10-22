@@ -1,0 +1,96 @@
+# tests/tls-trust: TLS trust verification for the packages users get.
+#
+# This is its own project. [upstream] pins gominimal/pkgs, so the clients come
+# from that commit exactly as a user's project would get them, not from the
+# checkout this file sits in. `min update` re-pins to the tip of main.
+# README.md covers pointing it at a PR head instead, and the per-incident
+# playbook.
+#
+#   min task run live    -C tests/tls-trust --no-input        # handshakes, the 12 + 2 hosts
+#   min task run offline -C tests/tls-trust --no-input        # no network, captured chains
+#   min task run live -C tests/tls-trust --no-input -- --only '^(curl|go)$'
+#
+# The tasks are split three ways because these packages install the same
+# paths: node vs node-lts (usr/bin/node), and jdk-21 / jdk-25 / jdk-27
+# (usr/lib/jvm/...). If two of them share a task, one silently wins and its row
+# reports the wrong runtime. `*-alt` carries node-lts + jdk-21, `*-jdk27`
+# carries jdk-27, and the main tasks carry everything else. Each split task
+# restricts itself with --rows, and every task runs SELFTEST + NEGCONTROL.
+[upstream]
+repo = "https://github.com/gominimal/pkgs"
+branch = "main"
+locked_commit = "0618accaa3b8923508cb75222268c0b91532e8df"
+
+[tasks.live]
+args.profile = { type = "string", default = "incidents/cve-2026-111943", help = "profile directory" }
+args.only = { type = "string", default = "", help = "regex over row names" }
+args.jobs = { type = "string", default = "8", help = "parallel probes" }
+args.timeout = { type = "string", default = "15", help = "per-probe timeout, seconds" }
+args.details = { type = "string", default = "fail", help = "raw probe output: fail, all or none" }
+packages = [
+  "base", "bash", "coreutils", "grep", "sed", "gawk", "findutils", "which",
+  "ca-certificates", "curl", "wget", "openssl", "gnutls", "git",
+  "python", "uv", "httpie", "node", "bun", "deno", "jdk-25", "go",
+]
+bash = "bash ./run.sh --mode live --profile '%{profile}' --only '%{only}' --jobs '%{jobs}' --timeout '%{timeout}' --details '%{details}' --json -"
+
+[tasks.live-alt]
+args.profile = { type = "string", default = "incidents/cve-2026-111943", help = "profile directory" }
+args.only = { type = "string", default = "", help = "regex over row names" }
+args.jobs = { type = "string", default = "8", help = "parallel probes" }
+args.timeout = { type = "string", default = "15", help = "per-probe timeout, seconds" }
+args.details = { type = "string", default = "fail", help = "raw probe output: fail, all or none" }
+packages = [
+  "base", "bash", "coreutils", "grep", "sed", "gawk", "findutils", "which",
+  "ca-certificates", "curl", "openssl", "node-lts", "jdk-21",
+]
+bash = "bash ./run.sh --mode live --profile '%{profile}' --rows '^(node|node-sysca|node-blocklist|java|java-blocklist)$' --only '%{only}' --jobs '%{jobs}' --timeout '%{timeout}' --details '%{details}' --json -"
+
+[tasks.live-jdk27]
+args.profile = { type = "string", default = "incidents/cve-2026-111943", help = "profile directory" }
+args.only = { type = "string", default = "", help = "regex over row names" }
+args.jobs = { type = "string", default = "8", help = "parallel probes" }
+args.timeout = { type = "string", default = "15", help = "per-probe timeout, seconds" }
+args.details = { type = "string", default = "fail", help = "raw probe output: fail, all or none" }
+packages = [
+  "base", "bash", "coreutils", "grep", "sed", "gawk", "findutils", "which",
+  "ca-certificates", "curl", "openssl", "jdk-27",
+]
+bash = "bash ./run.sh --mode live --profile '%{profile}' --rows '^(java|java-blocklist)$' --only '%{only}' --jobs '%{jobs}' --timeout '%{timeout}' --details '%{details}' --json -"
+
+[tasks.offline]
+args.profile = { type = "string", default = "incidents/cve-2026-111943", help = "profile directory" }
+args.only = { type = "string", default = "", help = "regex over row names" }
+args.jobs = { type = "string", default = "8", help = "parallel probes" }
+args.timeout = { type = "string", default = "15", help = "per-probe timeout, seconds" }
+args.details = { type = "string", default = "fail", help = "raw probe output: fail, all or none" }
+packages = [
+  "base", "bash", "coreutils", "grep", "sed", "gawk", "findutils", "which",
+  "ca-certificates", "curl", "wget", "openssl", "gnutls", "git",
+  "python", "uv", "httpie", "node", "bun", "deno", "jdk-25", "go",
+]
+bash = "bash ./run.sh --mode offline --profile '%{profile}' --only '%{only}' --jobs '%{jobs}' --timeout '%{timeout}' --details '%{details}' --json -"
+
+[tasks.offline-alt]
+args.profile = { type = "string", default = "incidents/cve-2026-111943", help = "profile directory" }
+args.only = { type = "string", default = "", help = "regex over row names" }
+args.jobs = { type = "string", default = "8", help = "parallel probes" }
+args.timeout = { type = "string", default = "15", help = "per-probe timeout, seconds" }
+args.details = { type = "string", default = "fail", help = "raw probe output: fail, all or none" }
+packages = [
+  "base", "bash", "coreutils", "grep", "sed", "gawk", "findutils", "which",
+  "ca-certificates", "curl", "openssl", "node-lts", "jdk-21",
+]
+bash = "bash ./run.sh --mode offline --profile '%{profile}' --rows '^(node|node-sysca|node-blocklist|java|java-blocklist)$' --only '%{only}' --jobs '%{jobs}' --timeout '%{timeout}' --details '%{details}' --json -"
+
+[tasks.offline-jdk27]
+args.profile = { type = "string", default = "incidents/cve-2026-111943", help = "profile directory" }
+args.only = { type = "string", default = "", help = "regex over row names" }
+args.jobs = { type = "string", default = "8", help = "parallel probes" }
+args.timeout = { type = "string", default = "15", help = "per-probe timeout, seconds" }
+args.details = { type = "string", default = "fail", help = "raw probe output: fail, all or none" }
+packages = [
+  "base", "bash", "coreutils", "grep", "sed", "gawk", "findutils", "which",
+  "ca-certificates", "curl", "openssl", "jdk-27",
+]
+bash = "bash ./run.sh --mode offline --profile '%{profile}' --rows '^(java|java-blocklist)$' --only '%{only}' --jobs '%{jobs}' --timeout '%{timeout}' --details '%{details}' --json -"
