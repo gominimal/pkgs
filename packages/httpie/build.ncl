@@ -16,15 +16,22 @@ let uv = import "../uv/build.ncl" in
 # common cases but not a drop-in: different flag surface, no sessions, no
 # plugins. Both can coexist.)
 #
-# `needs` is set because pip resolves the dependency tree from PyPI at build
-# time. That is the trade for not vendoring 12 packages: the build reaches the
-# network, and the lockfile is upstream's own metadata rather than ours.
+# The dependency closure is pinned in requirements.lock (version + sha256 for
+# every distribution), which build.sh installs with --require-hashes. It used to
+# be resolved from PyPI at build time with no pins, so the shipped tree, and
+# certifi's CA bundle in particular, was whatever PyPI served that day. The lock
+# also holds certifi at or above 2026.10.19, the first release without emSign ECC
+# Root CA - G3 (CVE-2026-111943).
+#
+# `needs` is still set: pip fetches the locked wheels, and httpie's build
+# backend, from PyPI during the build.
 let version = "3.2.4" in
 
 {
   name = "httpie",
   build_deps = [
     { file = "build.sh" } | Local,
+    { file = "requirements.lock" } | Local,
     {
       url = "https://github.com/httpie/httpie/archive/refs/tags/%{version}.tar.gz",
       sha256 = "b185cd8d81325f97c773582e50f1c5e047c2d8575b53d676469c9daf2a52f341",
@@ -84,6 +91,42 @@ let version = "3.2.4" in
           # entrypoint pulls in requests/rich/pygments, so a missing dependency
           # surfaces here rather than at first real use.
           ["/bin/bash", "-c", "/bin/http --help >/dev/null"],
+        ],
+      } | Test,
+
+    # CVE-2026-111943 regression: the CA bundle requests verifies against must
+    # not trust emSign ECC Root CA - G3 (distrusted by Mozilla, bug 2083449).
+    # Checked by SHA-256 fingerprint, offline. FAILS with certifi <= 2026.07.22.
+    certifi_distrusts_emsign_ecc_g3 =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              cat > poc.py <<'PYEOF'
+              import hashlib, re, ssl, sys
+              import requests.certs
+
+              G3 = '86a1ecba089c4a8d3bbe2734c612ba341d813e043cf9e8a862cd5c57a36bbe6b'
+              pem = open(requests.certs.where()).read()
+              fps = {hashlib.sha256(ssl.PEM_cert_to_DER_cert(c)).hexdigest()
+                     for c in re.findall(r'-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----',
+                                         pem, re.S)}
+              failures = []
+              if len(fps) < 100:
+                  failures.append('certifi bundle has only %d roots' % len(fps))
+              if G3 in fps:
+                  failures.append('certifi trusts emSign ECC Root CA - G3')
+              for f in failures:
+                  print('FAIL: ' + f, file=sys.stderr)
+              sys.exit(1 if failures else 0)
+              PYEOF
+              python3 poc.py
+            "%
+          ],
         ],
       } | Test,
   },
