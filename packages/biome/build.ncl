@@ -1,5 +1,6 @@
 let { standaloneTest, subsetOf, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let make = import "../make/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -13,6 +14,14 @@ let version = "2.5.15" in
 
   build_deps = [
     { file = "build.sh" } | Local,
+    # CVE-2026-111943 (eMudhra intermediate key compromise): pins rustls-webpki
+    # 0.103.16 (RUSTSEC-2026-0382, distrusts the 8 intermediates) and
+    # webpki-roots / webpki-root-certs 1.0.10 (RUSTSEC-2026-0383, drops emSign ECC
+    # Root CA - G3) in upstream's Cargo.lock. Lock-only: version + checksum lines
+    # (plus whatever cargo had to move with them). Drop on the first upstream
+    # release whose Cargo.lock already has those versions; a version bump that
+    # keeps it fails at `patch` rather than silently shipping the old lock.
+    { file = "cve-2026-111943-webpki-lock.patch" } | Local,
     {
       url = "https://github.com/biomejs/biome/archive/refs/tags/@biomejs/biome@%{version}.tar.gz",
       sha256 = "0212a8f9e351e2d47580cf8371948dd477ceb01e0fef1a65f81061a2a4a39039",
@@ -20,6 +29,7 @@ let version = "2.5.15" in
       strip_prefix = "biome--biomejs-biome-%{version}",
     } | Source,
     base,
+    patch,
     make,
     rust,
     toolchain,
