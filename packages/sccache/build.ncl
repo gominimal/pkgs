@@ -10,7 +10,7 @@ let openssl = import "../openssl/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let version = "0.17.0" in
+let version = "0.18.0" in
 {
   name = "sccache",
   build_deps = [
@@ -25,7 +25,7 @@ let version = "0.17.0" in
     { file = "cve-2026-111943-webpki-lock.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/mozilla/sccache/v%{version}.tar.gz",
-      sha256 = "49949ad1cf175c49da126dbb0c2e6a56bd9d1f626e8cc0be17b9668b914145c6",
+      sha256 = "14e37fc2cb4f21c188789d518e170181b7cd1ba523152880cdf8009269d79732",
       extract = true,
       strip_prefix = "sccache-%{version}",
     } | Source,
