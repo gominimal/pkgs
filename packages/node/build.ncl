@@ -9,7 +9,6 @@ let coreutils = import "../coreutils/build.ncl" in
 let c-ares = import "../c-ares/build.ncl" in
 let icu = import "../icu/build.ncl" in
 let lief = import "../lief/build.ncl" in
-let patch = import "../patch/build.ncl" in
 let libuv = import "../libuv/build.ncl" in
 let nghttp2 = import "../nghttp2/build.ncl" in
 let nghttp3 = import "../nghttp3/build.ncl" in
@@ -21,29 +20,24 @@ let gtest = import "../gtest/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "26.10.0" in
+let version = "26.12.1" in
 {
   name = "node",
   build_deps = [
     { file = "build.sh" } | Local,
+    # The release tarball nodejs.org publishes (same source as node-lts),
+    # verifiable against https://nodejs.org/dist/v<version>/SHASUMS256.txt.
+    # 26.12.1 carries upstream what this package used to patch in: the LIEF 1.x
+    # Section API (`#if LIEF_VERSION_MAJOR >= 1` in src/node_sea_bin.cc) and the
+    # CVE-2026-111943 fixes (nodejs/node#66871 SPKI blocklist, #66877 NSS 3.131.1
+    # roots), so no patches are carried.
     {
-      url = "gs://minimal-staging-archives/node-%{version}.tar.gz",
-      sha256 = "dadc307a5353706728704a90316800df6834cb4928d0a227451295166a3b3d27",
+      url = "https://nodejs.org/dist/v%{version}/node-v%{version}.tar.gz",
+      sha256 = "717244a8d757672ec86aae5077fca31e50f84b094441ec51bdf397aab12c304e",
     } | Source,
-    # Adapts the Mach-O SEA injection to the LIEF 1.x Section API — see
-    # the patch header. Build-time only: it rewrites the source tree.
-    { file = "lief-1.x-macho-section-ctor.patch" } | Local,
-    # CVE-2026-111943 (eMudhra key compromise): backports of nodejs/node#66871
-    # (SPKI blocklist in TLS chain verification) and nodejs/node#66877 (drop the
-    # emSign roots removed in NSS 3.131.1), both merged to main 2026-10-20 and
-    # unreleased. Build-time only; see the patch headers. Drop both on the first
-    # release whose changelog lists them.
-    { file = "cve-2026-111943-tls-spki-blocklist.patch" } | Local,
-    { file = "cve-2026-111943-drop-emsign-roots.patch" } | Local,
     base,
     make,
     pkgconf,
-    patch,
     python,
     toolchain,
   ],
@@ -129,7 +123,7 @@ let version = "26.10.0" in
     # CVE-2026-111943: the emSign roots NSS 3.131.1 removed must be gone from
     # the BUNDLED store (what `tls` trusts by default). FAILS on stock node
     # (checked against node 26.9.0: all three are present) and
-    # passes only with cve-2026-111943-drop-emsign-roots.patch.
+    # passes from 26.12.1 / 24.22.1 on (upstream nodejs/node#66877).
     emsign_roots_removed =
       {
         class = 'Standalone,

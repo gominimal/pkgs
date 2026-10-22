@@ -6,31 +6,15 @@ export CC=gcc
 tar -xof "node-v${MINIMAL_ARG_VERSION}.tar.gz"
 cd "node-v${MINIMAL_ARG_VERSION}"
 
-# Applied by name, never a glob, so a patch that stops being fetched fails the
-# build instead of being silently skipped (same convention as packages/node).
-# CVE-2026-111943 (compromised eMudhra intermediate keys, Mozilla bug 2083449).
-# Backports of nodejs/node#66871 (SPKI blocklist in TLS chain verification) and
-# the root-store half of nodejs/node#66877 (drop the emSign roots NSS 3.131.1
-# removed). Both merged to node main on 2026-10-20 and are NOT in a release yet;
-# see each patch header for the deviations from upstream and when to drop them.
-#
-# The bundled root store is what `tls` trusts by default (we do not configure
-# --use-openssl-ca), so the ca-certificates fix does not reach it; and the
-# blocklist is needed even with the roots gone, because a chain through a
-# compromised key also verifies against any OTHER store that still carries a
-# path to it (system store, a caller's `ca`, the Sectigo cross-sign).
-patch -Np1 -i "../cve-2026-111943-tls-spki-blocklist.patch"
-patch -Np1 -i "../cve-2026-111943-drop-emsign-roots.patch"
-
-# Prove both landed (patch can exit 0 on an already-applied hunk): the
-# blocklist table, its install on every SecureContext, and the root gone.
+# CVE-2026-111943 is fixed upstream (nodejs/node#66871 SPKI blocklist,
+# #66877 NSS 3.131.1 roots). Fail the build if a future version regresses either.
 grep -q "constexpr SpkiHash kBlockedSPKIs" src/crypto/crypto_context.cc &&
 grep -q "InstallCertVerifyCallback(sc->ctx_.get());" src/crypto/crypto_context.cc || {
-  echo "ERROR: CVE-2026-111943 SPKI blocklist patch did not land in src/crypto/crypto_context.cc" >&2
+  echo "ERROR: upstream CVE-2026-111943 SPKI blocklist missing from src/crypto/crypto_context.cc" >&2
   exit 1
 }
 if grep -q "emSign ECC Root CA - G3" src/node_root_certs.h; then
-  echo "ERROR: CVE-2026-111943 root removal did not land in src/node_root_certs.h" >&2
+  echo "ERROR: emSign ECC Root CA - G3 is back in src/node_root_certs.h (CVE-2026-111943)" >&2
   exit 1
 fi
 
