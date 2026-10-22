@@ -87,11 +87,13 @@ for c in $LH_CARRIERS; do
   LH_EXPECT="$LH_EXPECT --expect $c=2"
 done
 # Every other wasm in the tree is still upstream's, by exact path: a new carrier fails here.
-# Still upstream's: @mswjs llhttp (test mode only), og's resvg (Rust) and yoga (emscripten),
+# Still upstream's: @mswjs llhttp (test mode only), og's resvg (Rust) and yoga (emscripten; also
+# base64 in index.node.js),
 # webpack's and loader-utils' xxhash64/md4 (AssemblyScript), source-map08 (Rust).
 $LH census -C "$NEXT_DIR" --wasm /tmp/llhttp/wasm/llhttp.wasm --wasm /tmp/llhttp/wasm/llhttp_simd.wasm $LH_EXPECT \
   --allow-path 'dist/compiled/@mswjs/interceptors/ClientRequest/llhttp/llhttp.wasm' \
-  --allow-path 'dist/compiled/@vercel/og/*' \
+  --allow-path 'dist/compiled/@vercel/og/resvg.wasm' --allow-path 'dist/compiled/@vercel/og/yoga.wasm' \
+  --allow-path 'dist/compiled/@vercel/og/index.node.js' \
   --allow-path 'dist/compiled/loader-utils2/index.js' --allow-path 'dist/compiled/loader-utils3/index.js' \
   --allow-path 'dist/compiled/webpack/bundle5.js' --allow-path 'dist/compiled/source-map08/mappings.wasm' \
   .

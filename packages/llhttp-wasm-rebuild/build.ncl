@@ -10,8 +10,10 @@ let python = import "../python/build.ncl" in
     { file = "build.sh" } | Local,
     { file = "rebuild-llhttp-wasm.py" } | Local,
     base,
-    python,
+    python, # build.sh runs the selftest
   ],
+  # node, node-lts and next run the installed script with python3
+  runtime_deps = [python],
   cmd = "./build.sh",
   outputs = {
     script = { glob = "usr/share/llhttp-wasm-rebuild/rebuild-llhttp-wasm.py" } | OutputData,
