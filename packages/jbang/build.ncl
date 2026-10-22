@@ -54,6 +54,12 @@ let version = "0.142.0" in
       upstream_version = version,
       license_spdx = "MIT",
       binary_from = "https://github.com/jbangdev/jbang/releases",
+      # jbang keeps its script cache, compiled jars and any downloaded JDKs in
+      # JBANG_DIR (default ~/.jbang, which a session may not be able to write).
+      env_state_wiring = {
+        env_var = "JBANG_DIR",
+        prefix = "jbang",
+      },
       source_provenance = {
         category = 'GithubRepo,
         owner = "jbangdev",
