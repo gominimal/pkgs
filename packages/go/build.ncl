@@ -2,18 +2,19 @@ let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = impo
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-# amd64 bootstraps from the go-1.24.9 rung, the top of the go-1.4 -> ... -> 1.24.9 ladder.
+# amd64 bootstraps from the go-1.24.9 rung, the top of the go-1.4 -> ... -> 1.24.9 ladder, or,
+# while hex0/amd64-ladder.ncl is off, from a sealed tarball of that rung's output (below).
 # arm64 bootstraps from a sha-pinned go1.24.9 GOROOT tarball (the Source below): Go 1.5 was the
 # first release with an arm64 port, so the C-hosted go-1.4 root cannot produce one.
 let go-1-24-9 = import "../go-1.24.9/build.ncl" in
 let git = import "../git/build.ncl" in
 
-let version = "1.27.1" in
+let version = "1.27.3" in
 let variants = {
   # Bumping go means updating `version` and `source_sha256` only.  The bootstrap pins change
   # only when go's minimum bootstrap version (src/cmd/dist/buildtool.go) moves past 1.24.
   source_url = "https://go.dev/dl/go%{version}.src.tar.gz",
-  source_sha256 = "4e408abae126d916b6164627193f2c54f0e3ca1312d693b86db45f862ab238b1",
+  source_sha256 = "6e7749035cf360f06b2575d162ea79df9fda8ef671889e5c375f8e50777f26bb",
 }
 in
 {
@@ -21,7 +22,27 @@ in
   build_deps = [
     { file = "build.sh" } | Local,
     match {
-      { arch = 'Amd64, .. } => go-1-24-9,
+      { arch = 'Amd64, .. } =>
+        if (import "../hex0/amd64-ladder.ncl").enabled then
+          go-1-24-9
+        else
+          # BEDROCK (amd64, interim): build-bot's own output of the go-1.24.9 rung
+          # (gominimal/pkgs 9d20a830 commit map), sha-pinned. Same layout as the rung
+          # (usr/lib/go-1.24.9), so build.sh is unchanged. See hex0/amd64-ladder.ncl.
+          (
+            {
+              name = "go-1.24.9 (bedrock)",
+              prebuilt = true,
+              build_deps = [
+                {
+                  url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/4c339316e715b94c3df09424058161a9f0b08dd97017fde88edf1150247131a7/go1.24.9-x86_64.tar.zst",
+                  sha256 = "4c339316e715b94c3df09424058161a9f0b08dd97017fde88edf1150247131a7",
+                  extract = true,
+                } | Source,
+              ],
+              outputs = { usr = { glob = "usr/**/*", allow_executable = true } | OutputData },
+            } | BuildSpec
+          ),
       { arch = 'Arm64, .. } =>
         {
           # BEDROCK ROOT (arm64): this bootstrap Go is go1.24.9 from the hex0-rooted arm

@@ -37,7 +37,8 @@ let version = "1.99.0" in
     ]
     # stage0 = the rustc-1.98.1 rung on BOTH arches (1.99.0's src/stage0 pins 1.98.0; x.py's
     # check_stage0_version accepts any 1.98.x).  amd64: built by the chain gcc-15.2.0 -> mrustc
-    # 0.12.0 -> rustc-1.90.0 -> ... -> 1.97.1 -> 1.98.1.  arm64: the rung builds from the sha-pinned
+    # 0.12.0 -> rustc-1.90.0 -> ... -> 1.97.1 -> 1.98.1, or, while hex0/amd64-ladder.ncl is off,
+    # from the sealed rustc-1.97.1 bedrock tarball (see rustc-1.98.1/build.ncl).  arm64: the rung builds from the sha-pinned
     # rustc-1.97.1 bedrock tarball, so no new hand-built prebuilt is needed.  build.sh injects it into
     # bootstrap.toml [build] rustc/cargo; x.py never downloads a stage0.
     @ [rustc-1-98-1],

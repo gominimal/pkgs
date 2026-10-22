@@ -7,33 +7,28 @@ let automake = import "../automake/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 let make = import "../make/build.ncl" in
-let patch = import "../patch/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let version = "5.3.1" in
+let version = "5.4.0" in
 {
   name = "jemalloc",
   build_deps = [
     { file = "build.sh" } | Local,
-    # gcc-16 build fix — upstream cherry-pick 1a15fe33 (#2900), matching Wolfi.
-    # Inert on gcc-15 (current); prevents FTBFS once gcc bumps to 16.
-    { file = "jemalloc-gcc16-cxx-exceptions.patch" } | Local,
     base,
     autoconf,
     automake,
     libtool,
     m4,
     make,
-    patch,
     pkgconf,
     toolchain,
     glibc,
     gcc,
     {
       url = "gs://minimal-staging-archives/jemalloc/jemalloc/%{version}.tar.gz",
-      sha256 = "7b30f6116f11d736badd48c903cba2b3344a88d62e3a7b892434f870e860b1c0",
+      sha256 = "077ad99d4bf61d03c01a35e8f765d245cab777b429498ddded9490f1d8c0935b",
       extract = true,
       strip_prefix = "jemalloc-%{version}",
     } | Source,
@@ -69,7 +64,7 @@ let version = "5.3.1" in
         test_deps = [base, toolchain, pkgconf],
         cmds = [
           # Compile-link-RUN a real jemalloc consumer, and lock the version-stamp
-          # fix (jemalloc-config must report 5.3.1, not the git-archive 0.0.0).
+          # fix (jemalloc-config must report 5.4.0, not the git-archive 0.0.0).
           [
             "/bin/bash",
             "-c",

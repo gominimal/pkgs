@@ -23,6 +23,37 @@ let findutils = import "../findutils/build.ncl" in # mtime guard: find . -exec t
 let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # gcc's build regenerates options.cc via awk
 # pkgmgr: bootstrap_rung = "hex0"
 let version = "15.2.0" in
+# Shared by the from-source spec and the sealed (switch-off) spec below.
+let all_runtime_deps = [
+  subsetOf glibc-bedrock ["sysroot_lib"],
+]
+in
+let all_outputs = {
+  # gcc/g++/gfortran/cpp drivers (+ the x86_64-linux-gnu- driver)
+  bins = { glob = "usr/bin/*" } | OutputBin,
+
+  # the glibc-linked shared runtime libs downstream packages link
+  libs = { glob = "usr/lib/**/*.{a,o,so*}", allow_data = true } | OutputLib, # allow_data: a few .so files are linker scripts/stubs
+  libatomic = { glob = "usr/lib/libatomic.so*" } | OutputLib,
+  libgcc = { glob = "usr/lib/libgcc_s.so*", allow_data = true } | OutputLib, # libgcc_s.so is a linker script the checker cannot parse
+  libgomp = { glob = "usr/lib/libgomp.so*" } | OutputLib,
+  libstdcpp = { glob = "usr/lib/libstdc++*.so*", allow_data = true } | OutputLib,
+  libquadmath = { glob = "usr/lib/libquadmath*.so*" } | OutputLib, # fortran/quad; empty if only c,c++ are built
+
+  # cc1 + cc1plus + collect2 + lto1 + lto-wrapper (+ f951 with fortran)
+  libexec_bins = { glob = "usr/libexec/gcc/*/*/{cc1,cc1plus,f951,collect2,lto1,lto-wrapper}" } | OutputBin,
+  liblto_plugin = { glob = "usr/libexec/gcc/*/*/liblto_plugin.so" } | OutputLib,
+  # libgcc.a + crtbegin/crtend.o + specs + gcc's internal and libstdc++ target headers
+  internals = { glob = "usr/lib/gcc/**", allow_executable = true } | OutputData,
+  libs_all = { glob = "usr/lib/**", allow_executable = true } | OutputData,
+  ltconfigs = { glob = "usr/lib/**/*.la" } | OutputData,
+
+  # the C++ standard headers at /usr/include/c++/15.2.0/
+  cxx_headers = { glob = "usr/include/c++/**" } | OutputData,
+  includes = { glob = "usr/include/**" } | OutputData,
+  share_data = { glob = "usr/share/gcc-*/**" } | OutputData,
+}
+in
 let amd64_spec =
   {
     name = "gcc-15.2.0-glibc",
@@ -60,37 +91,11 @@ let amd64_spec =
     # missing-runtime_deps check fails. Only sysroot_lib: the full glibc-bedrock would put a second
     # usr/include and usr/bin next to the toolchain glibc in every consumer sandbox.
     # find_lib_in_deps globs `**/<soname>`, so the versioned sysroot path matches.
-    runtime_deps = [
-      subsetOf glibc-bedrock ["sysroot_lib"],
-    ],
+    runtime_deps = all_runtime_deps,
 
     cmd = "./build.sh",
     # outputs follow the production gcc package so the shared runtime libs are captured.
-    outputs = {
-      # gcc/g++/gfortran/cpp drivers (+ the x86_64-linux-gnu- driver)
-      bins = { glob = "usr/bin/*" } | OutputBin,
-
-      # the glibc-linked shared runtime libs downstream packages link
-      libs = { glob = "usr/lib/**/*.{a,o,so*}", allow_data = true } | OutputLib, # allow_data: a few .so files are linker scripts/stubs
-      libatomic = { glob = "usr/lib/libatomic.so*" } | OutputLib,
-      libgcc = { glob = "usr/lib/libgcc_s.so*", allow_data = true } | OutputLib, # libgcc_s.so is a linker script the checker cannot parse
-      libgomp = { glob = "usr/lib/libgomp.so*" } | OutputLib,
-      libstdcpp = { glob = "usr/lib/libstdc++*.so*", allow_data = true } | OutputLib,
-      libquadmath = { glob = "usr/lib/libquadmath*.so*" } | OutputLib, # fortran/quad; empty if only c,c++ are built
-
-      # cc1 + cc1plus + collect2 + lto1 + lto-wrapper (+ f951 with fortran)
-      libexec_bins = { glob = "usr/libexec/gcc/*/*/{cc1,cc1plus,f951,collect2,lto1,lto-wrapper}" } | OutputBin,
-      liblto_plugin = { glob = "usr/libexec/gcc/*/*/liblto_plugin.so" } | OutputLib,
-      # libgcc.a + crtbegin/crtend.o + specs + gcc's internal and libstdc++ target headers
-      internals = { glob = "usr/lib/gcc/**", allow_executable = true } | OutputData,
-      libs_all = { glob = "usr/lib/**", allow_executable = true } | OutputData,
-      ltconfigs = { glob = "usr/lib/**/*.la" } | OutputData,
-
-      # the C++ standard headers at /usr/include/c++/15.2.0/
-      cxx_headers = { glob = "usr/include/c++/**" } | OutputData,
-      includes = { glob = "usr/include/**" } | OutputData,
-      share_data = { glob = "usr/share/gcc-*/**" } | OutputData,
-    },
+    outputs = all_outputs,
     attrs =
       {
         upstream_version = version,
@@ -103,10 +108,33 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# This package exists on amd64 only (the amd64 bootstrap chain). On arm64 the spec is an empty
-# collection: no build runs and nothing on the arm graph depends on it.
+# This package builds on amd64 only, and only while hex0/amd64-ladder.ncl is enabled (the amd64
+# bootstrap chain). While the switch is off, amd64 takes the sealed artifact below instead (no
+# build); on arm64 the spec is an empty collection.
 match {
-  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Amd64, .. } =>
+    if (import "../hex0/amd64-ladder.ncl").enabled then
+      amd64_spec
+    else
+      # SEALED (switch off): the same sha-pinned artifact the production toolchain
+      # package already anchors on (see packages/gcc/build.ncl), with this
+      # package's own outputs, so anything that imports it (the jvm ladder roots) gets a
+      # real tree rather than an empty stub. Provenance: gominimal/minimermetic#16.
+      (
+        {
+          name = "gcc-15.2.0-glibc",
+          prebuilt = true,
+          build_deps = [
+            {
+              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/617e2057a63fc5d7840b752a8b1cdfdbef3ba193c36eed52ebb97396122cb148/gcc-15.2.0-glibc-15.2.0.tar.zst",
+              sha256 = "617e2057a63fc5d7840b752a8b1cdfdbef3ba193c36eed52ebb97396122cb148",
+              extract = true,
+            } | Source,
+          ],
+          runtime_deps = all_runtime_deps,
+          outputs = all_outputs,
+        } | BuildSpec
+      ),
   { arch = 'Arm64, .. } =>
     {
       name = "gcc-15.2.0-glibc",

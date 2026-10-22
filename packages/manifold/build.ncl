@@ -9,14 +9,14 @@ let glibc = import "../glibc/build.ncl" in
 let clipper2 = import "../clipper2/build.ncl" in
 let onetbb = import "../onetbb/build.ncl" in
 
-let version = "3.5.2" in
+let version = "3.5.4" in
 {
   name = "manifold",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/elalish/manifold/manifold-%{version}.tar.gz",
-      sha256 = "ce5f4d87877daca99a910d0af73c028f2a36b9288dd2bf3cd1cecf8faff9f7c8",
+      sha256 = "db2a8e7aac6abac12fe54fa7b055d24741362b5706fee6f5c5b8f0bccd2de4ec",
       extract = true,
       strip_prefix = "manifold-%{version}",
     } | Source,

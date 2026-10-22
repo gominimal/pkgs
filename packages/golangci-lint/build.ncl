@@ -4,14 +4,14 @@ let glibc = import "../glibc/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "2.14.0" in
+let version = "2.15.0" in
 {
   name = "golangci-lint",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/golangci/golangci-lint/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "f32ec6d5e9ddde780132b808a4ced3de8b5965d99d9771a2b9e68750bb5b0068",
+      sha256 = "5411598703f014f1128b209f3d46da6f9f2c99a68783c90f846b4db1c8c08742",
       extract = true,
     } | Source,
     base,
