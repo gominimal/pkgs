@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let bash = import "../bash/build.ncl" in
@@ -24,6 +24,15 @@ let version = "3.10.0" in
     glibc, # libjlinenative.so (JLine's native terminal support, 3.10.0+)
     jdk,
   ],
+  # Not for maven's own build (that is offline): the abstract network dep a
+  # package that builds WITH maven inherits, as for jbang, mvnd, curl, go and
+  # uv. Resolving plugins and dependencies from Maven Central is maven's job;
+  # only a fully populated local repository with -o runs offline.
+  needs =
+    {
+      dns = {},
+      internet = {},
+    } | Needs,
 
   cmd = "./build.sh",
   build_args = {
