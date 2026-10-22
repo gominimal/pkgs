@@ -18,28 +18,21 @@ let zstd = import "../zstd/build.ncl" in
 let gtest = import "../gtest/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let patch = import "../patch/build.ncl" in
 
-let version = "24.19.0" in
+let version = "24.22.1" in
 {
   name = "node-lts",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://nodejs.org/dist/v%{version}/node-v%{version}.tar.gz",
-      sha256 = "16fe258006a6e86844fbe05b3b5e1e5623ca8d3da54e32d98d9e83234bf25b01",
+      sha256 = "001773d9bd53fbd27a25efd42aa6a9693ebfe500998ca9bec635e9b6ee79bc91",
     } | Source,
-    # CVE-2026-111943 (eMudhra key compromise): backports of nodejs/node#66871
-    # (SPKI blocklist in TLS chain verification) and nodejs/node#66877 (drop the
-    # emSign roots removed in NSS 3.131.1), both merged to main 2026-10-20 and
-    # unreleased. Build-time only; see the patch headers. Drop both on the first
-    # release whose changelog lists them.
-    { file = "cve-2026-111943-tls-spki-blocklist.patch" } | Local,
-    { file = "cve-2026-111943-drop-emsign-roots.patch" } | Local,
+    # 24.22.1 carries the CVE-2026-111943 fixes upstream (nodejs/node#66871 SPKI
+    # blocklist, #66877 NSS 3.131.1 roots), so the backports are no longer carried.
     base,
     make,
     pkgconf,
-    patch,
     python,
     toolchain,
   ],
@@ -126,7 +119,7 @@ let version = "24.19.0" in
     # CVE-2026-111943: the emSign roots NSS 3.131.1 removed must be gone from
     # the BUNDLED store (what `tls` trusts by default). FAILS on stock node
     # (checked against node 26.9.0: all three are present) and
-    # passes only with cve-2026-111943-drop-emsign-roots.patch.
+    # passes from 26.12.1 / 24.22.1 on (upstream nodejs/node#66877).
     emsign_roots_removed =
       {
         class = 'Standalone,
