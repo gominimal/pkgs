@@ -5,6 +5,7 @@ let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let python = import "../python/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let version = "2.9.7" in
 {
@@ -30,6 +31,9 @@ let version = "2.9.7" in
     glibc,
     subsetOf gcc ["libgcc"],
     bash, # the /usr/bin wrapper is a #!/bin/sh script (bash provides bin/sh)
+    # The wrapper defaults DENO_TLS_CA_STORE=system (CVE-2026-111943), so the
+    # OS store must be present or every TLS connection fails.
+    ca-certificates,
   ],
 
   cmd = "./build.sh",
@@ -65,6 +69,24 @@ let version = "2.9.7" in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "deno eval 'console.log(1+1)' | grep -q '^2$'"],
+        ],
+      } | Test,
+    # CVE-2026-111943: the wrapper defaults deno to the OS trust store, and a
+    # caller's own choice still wins.
+    tls_ca_store_default =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              test "$(env -u DENO_TLS_CA_STORE deno eval 'console.log(Deno.env.get("DENO_TLS_CA_STORE"))')" = system
+              test "$(DENO_TLS_CA_STORE=mozilla deno eval 'console.log(Deno.env.get("DENO_TLS_CA_STORE"))')" = mozilla
+            "%
+          ],
         ],
       } | Test,
     # `deno install -g` lands a script in ~/.local/bin, where the session PATH

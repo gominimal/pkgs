@@ -372,7 +372,31 @@ Declares the package's output as a checked-in prebuilt binary rather than someth
 
 The source tarball for a `prebuilt = true` package must already match the on-disk layout that the package emits — there's no build step to move files around. For example, a prebuilt `bash` package needs its tarball to contain the binary at `usr/bin/bash` so it lands where the `OutputBin` glob expects it.
 
+## Trust store
 
+The system trust store is the `ca-certificates` package. It installs the PEM bundle `/etc/ssl/certs/ca-certificates.crt`, one `<Label>.crt` file per root, and the OpenSSL `<subject_hash>.<n>` links next to them. `openssl` is built with `--openssldir=/etc/ssl`, so OpenSSL and what links it (curl, git, Python's `ssl`, Ruby) look for roots there. Go's `crypto/x509` and rustls-native-certs (through openssl-probe) do not go through openssldir: they probe `/etc/ssl/certs` themselves, which this layout also satisfies.
+
+### How the store reaches an environment
+
+Every environment mounts exactly a dependency closure and nothing else. A build sandbox gets the package's build and runtime deps with their runtime closures. A standalone test, a session or task, and an OCI image get the runtime closure of their packages. `ca-certificates` gets into a closure in one of two ways:
+
+1. **Injected.** `ca-certificates` sets `attrs.needed_for_internet`. minimal adds every package with that attribute to the closure of any package that declares `needs.internet`. The injection then follows that package into the closure of everything that depends on it at runtime (minimal `crates/graph/src/transitives.rs`, `Transitives::new_with_seenset`). `curl` and `wget` declare `needs.internet`, so anything that brings in curl, git for example, also gets the store. The injected edge is not part of any spec hash, so a new bundle rebuilds none of these packages.
+2. **Declared.** `ca-certificates` is listed in `runtime_deps`. This edge is hashed, so every bundle update rebuilds the package and everything that depends on it.
+
+The planner also adds `needed_for_internet` packages to the top level of every build plan (the `HACK` in `ExecPlan::with_toplevels`, `crates/graph/src/planner.rs`). That only gets `ca-certificates` **built**. It does not put it into any environment. A session with `packages = ["python"]` has no `/etc/ssl/certs`.
+
+### Rules
+
+- **Declare the store when you read it.** If a package's binaries verify TLS against `/etc/ssl/certs` at runtime and nothing in its runtime closure already brings in `ca-certificates`, add `ca-certificates` to its `runtime_deps`. `ruby`, `typst`, `atuin`, `gws` and `skopeo` do this.
+- **Not in the toolchain closure.** `python`, `perl` and `openssl` are build inputs of nearly every package. A `ca-certificates` edge on any one of them rehashes about 90% of the tree now, and again on every bundle update. `openssl` cannot take the edge at all, because `ca-certificates` build-depends on it. These three get the store only when something else in the environment brings it in. If you ship a Python or Perl program that talks TLS, add `ca-certificates` to that package.
+- **Do not use `needs.internet` to get the store.** It also gives network access to the package's own build and to the build of everything that has it in its closure.
+- **Do not embed a trust store.** A runtime reads `/etc/ssl/certs` through a build flag, a config default or a wrapper. It does not compile in its own roots or vendor a certifi-style bundle. Several upstreams default to a store of their own: node's bundled roots, bun, deno's webpki-roots, the JDK `cacerts` keystore, Chromium's root store, gcloud's vendored bundles, and Rust crates that pin `webpki-roots`. Switch them to the system store where upstream allows it. Where it does not, the package applies the denylist below, and its `build.ncl` says why it cannot use the system store.
+- **Denylists: two today, meant to be one.** Distrusted roots, intermediates and keys are listed as SHA-256 fingerprints in two files under `packages/ca-certificates/`, and an incident has to land in both until they converge (gominimal/pkgmgr-rs#1020):
+  - `distrust.txt` (`<cert|spki> <sha256>  <note>` lines, one block per incident citing its CVE and the Mozilla/NSS bugs). Read by the `ca-certificates` build gate (the build fails if any certificate it ships matches), by the Chromium policy checker (`.github/scripts/chromium_policy_distrust_check.py`, which requires every key in `packages/chromium-policies/ca-distrusted-certificates.json` to be an `spki` line here) and by `pkgmgr truststores`.
+  - `cve-2026-111943-blocked-sha256.txt`, exposed through `cve-2026-111943.ncl`. Read by the JDK patch (`packages/jdk/cve-2026-111943.sh`, used by jdk-21, jdk-25 and jdk-27), which needs all 48 certificate fingerprints, every malleable encoding of the compromised intermediates, because `blocked.certs` matches whole certificates, not keys.
+
+  Append a block for each incident and never delete one. Patched embedded stores read one of these files rather than keeping their own copy.
+- **When a CA is distrusted:** rebuild `ca-certificates` from a dated curl/Mozilla extract, append the incident's block to `distrust.txt` (and, while the JDK patch still reads its own file, give it the incident's full certificate fingerprints), then fix every embedded store listed above. A package that only reads `/etc/ssl/certs` needs no edit; it gets the new bundle through its closure.
 
 ## Creating packages workflow
 
@@ -698,8 +722,11 @@ are documented once, publicly, at:
 **<https://minimal.dev/docs/reference/reproducibility>**
 
 Read that page rather than a copy of it here. It also covers what the build sandbox already
-sets for you (`SOURCE_DATE_EPOCH=0`, `PYTHONHASHSEED=0`, both of which the checker **rejects**
-if you set them again), and how to verify: build twice, diff the two `$OUTPUT_DIR` trees.
+sets for you (`SOURCE_DATE_EPOCH=0`, `PYTHONHASHSEED=0`; the checker **rejects** setting either
+to `0` again), and how to verify: build twice, diff the two `$OUTPUT_DIR` trees. A tool that
+cannot use epoch 0 (e.g. jmod rejects pre-1980 dates) should get its date through its own
+option, not by re-exporting `SOURCE_DATE_EPOCH`: the checker does not catch a non-zero
+override, but it changes the date for every tool in the build.
 
 Two things specific to this repo, which the public page does not carry:
 
