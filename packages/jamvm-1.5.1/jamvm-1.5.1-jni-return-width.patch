@@ -1,0 +1,55 @@
+JNI return values: store only the bits the ABI defines. The x86_64 trampoline copied the whole %rax into the
+Java stack slot for every integer-class return type; for jboolean/jbyte only %al is defined and newer compilers
+leave other bits set, so a false became true. Same widening as jamvm 2.0.0.
+
+--- a/src/os/linux/x86_64/callNative.S	2026-09-22 14:27:57
++++ b/src/os/linux/x86_64/callNative.S	2026-09-22 14:27:57
+@@ -212,12 +212,25 @@
+     je      double_ret
+     cmpq    $70, %rbx                /* 'F' */
+     je      float_ret
+-
+-    movq    %rax, (%rcx)
+-
+     cmpq    $74, %rbx                /* 'J' */
+-    je      double_inc
++    je      long_ret
++    cmpq    $76, %rbx                /* 'L' */
++    je      int_ret
++    cmpq    $91, %rbx                /* '[' */
++    je      int_ret
++    cmpq    $73, %rbx                /* 'I' */
++    je      int_ret
++    cmpq    $67, %rbx                /* 'C' */
++    je      char_ret
++    cmpq    $83, %rbx                /* 'S' */
++    je      short_ret
+ 
++    /* remaining types Z and B: the ABI defines only %al, the
++       rest of %rax is whatever the callee left there */
++    movsbq  %al, %rax
++
++int_ret:
++    movq    %rax, (%rcx)
+     addq    $8, %rcx
+ 
+ return:
+@@ -232,6 +245,18 @@
+     movq    %rcx, %rax
+     retq
+ 
++char_ret:
++    movzwq  %ax, %rax
++    jmp     int_ret
++
++short_ret:
++    movswq  %ax, %rax
++    jmp     int_ret
++
++long_ret:
++    movq    %rax, (%rcx)
++    jmp     double_inc
++
+ double_ret:
+     movsd   %xmm0, (%rcx)
+ double_inc:

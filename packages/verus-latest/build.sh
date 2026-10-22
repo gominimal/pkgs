@@ -112,11 +112,31 @@ ln -s "$(command -v "z3-$MINIMAL_ARG_Z3")" z3
 # 4. Upstream's "Build with Cargo" steps (BUILD.md).
 # tools/bump_crate_versions is a maintainers' crate-publishing tool and the only
 # member that pulls in openssl-sys; nothing installed depends on it.
-cargo build --release --workspace --exclude bump_crate_versions
-cargo run --release -p cargo-verus -- build --release --manifest-path vstd/Cargo.toml
+# Deterministic build-time entropy, the shim zola and nushell already use: interposes
+# getrandom/getentropy so build.rs / proc-macro / rustc-internal HashMaps iterate in the
+# same order every build. It wraps only the BUILD; the produced binaries are unaffected.
+cat > /tmp/detrand.c <<'SHIM'
+#include <stddef.h>
+#include <sys/types.h>
+ssize_t getrandom(void *buf, size_t n, unsigned int flags) {
+    unsigned char *p = buf; size_t i;
+    for (i = 0; i < n; i++) p[i] = (unsigned char)(0xA5 ^ (i * 157));
+    return (ssize_t)n;
+}
+int getentropy(void *buf, size_t n) { getrandom(buf, n, 0); return 0; }
+SHIM
+gcc -shared -fPIC -O2 -o /tmp/detrand.so /tmp/detrand.c
+LD_PRELOAD=/tmp/detrand.so cargo build --release --workspace --exclude bump_crate_versions
+LD_PRELOAD=/tmp/detrand.so cargo run --release -p cargo-verus -- build --release --manifest-path vstd/Cargo.toml
 
 mkdir -p "$VDIR"
 cp -R target-verus/release/. "$VDIR/"
+# Cargo's bookkeeping came along with the release dir: .fingerprint/ carries build
+# timestamps and dep-info hashes that differ on every build (2026-10 prod-pair diff:
+# 31 of the 33 differing files), incremental/ and build/ hold compiler scratch, the
+# .d files are make-style dep lists with build paths. verus loads none of them.
+rm -r -f "$VDIR/.fingerprint" "$VDIR/incremental" "$VDIR/build"
+find "$VDIR" -maxdepth 2 -name '*.d' -type f -delete
 
 # 5. PATH wrappers.
 mkdir -p "$OUTPUT_DIR/usr/bin"
