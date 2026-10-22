@@ -57,7 +57,20 @@ let version = "b10357" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "MIT",
+      # llama.cpp itself is MIT. What ships also carries:
+      # - vendor/ C++: cpp-httplib, nlohmann/json (MIT); miniaudio, stb,
+      #   sheredom/subprocess.h (public domain or Unlicense).
+      # - The embedded web UI (llama-ui dist for this build, in
+      #   libllama-server-impl.so): 402 npm packages per tools/ui's
+      #   package-lock.json. Mostly MIT and ISC, plus BSD-3-Clause (d3 modules,
+      #   highlight.js), Apache-2.0 (pdfjs-dist, dexie, @internationalized/date,
+      #   @swc/helpers, @chevrotain/types, aria-query, axobject-query),
+      #   BSD-2-Clause (entities, json-schema-typed), DOMPurify
+      #   (MPL-2.0 OR Apache-2.0; Apache-2.0 taken), robust-predicates
+      #   (Unlicense), tslib (0BSD). The KaTeX fonts embedded in its CSS are MIT.
+      # The minified bundle keeps only pdf.js's Apache-2.0 header and ships no
+      # license texts or NOTICE files: tracked in pkgs#994.
+      license_spdx = "MIT AND Apache-2.0 AND BSD-3-Clause AND BSD-2-Clause AND ISC AND 0BSD AND Unlicense",
       source_provenance = {
         category = 'GithubRepo,
         owner = "ggml-org",
