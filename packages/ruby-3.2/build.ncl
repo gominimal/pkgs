@@ -7,6 +7,7 @@ let patch = import "../patch/build.ncl" in
 let rust = import "../rust/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let gdbm = import "../gdbm/build.ncl" in
 # Sessions set LANG=C.UTF-8, which the glibc locale-archive lacks. Without it
@@ -45,6 +46,8 @@ let version = "3.2.11" in
   ],
   runtime_deps = [
     glibc,
+    # Verifies TLS against /etc/ssl/certs at runtime; see AGENTS.md "Trust store".
+    ca-certificates,
     glibc-locale-c-utf8,
     subsetOf gcc ["libgcc", "libstdcpp"],
     gdbm,
@@ -107,6 +110,38 @@ let version = "3.2.11" in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "LANG=C.UTF-8 LC_ALL=C.UTF-8 ruby -e 'exit(Encoding.default_external == Encoding::UTF_8 ? 0 : 1)'"],
+        ],
+      } | Test,
+
+    # OpenSSL's default paths (OPENSSLDIR=/etc/ssl) reach the store that the
+    # ca-certificates runtime dep installs: every live per-root file under
+    # /etc/ssl/certs must verify through `set_default_paths` alone. Offline;
+    # without the runtime dep the directory is empty and the test fails. The
+    # empty-store check is the control: no root verifies against no paths.
+    # The 100-root floor counts LIVE roots, so a wrong sandbox clock that
+    # filters every root out fails the test instead of verifying nothing.
+    trust_store =
+      {
+        class = 'Standalone,
+        cmds = [
+          [
+            "/usr/bin/ruby",
+            "-ropenssl",
+            "-e",
+            m%"
+              dir = "/etc/ssl/certs"
+              now = Time.now
+              files = Dir.glob("#{dir}/*.crt") - ["#{dir}/ca-certificates.crt"]
+              roots = files.map { |f| OpenSSL::X509::Certificate.new(File.read(f)) }
+              abort "control: an empty store verified a root" if roots.any? { |c| OpenSSL::X509::Store.new.verify(c) }
+              live = roots.select { |c| c.not_before <= now && now < c.not_after }
+              abort "only #{live.size} live roots (of #{roots.size}) under #{dir} at #{now}" if live.size < 100
+              store = OpenSSL::X509::Store.new
+              store.set_default_paths
+              bad = live.reject { |c| store.verify(c) }
+              abort "default paths reject #{bad.size} of #{live.size} live roots, e.g. #{bad.first.subject}" unless bad.empty?
+            "%
+          ],
         ],
       } | Test,
 

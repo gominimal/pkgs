@@ -12,20 +12,24 @@ let libxcb = import "../libxcb/build.ncl" in
 let dbus = import "../dbus/build.ncl" in
 let chromium-headless-shell-bin = import "../chromium-headless-shell-bin/build.ncl" in
 
-# ChromeDriver from Chrome for Testing, pinned to the SAME version as
-# chromium-headless-shell-bin so the two always match (ChromeDriver
-# refuses a browser of a different major). Lets Selenium-driven browser
-# tests (Rails system tests, Capybara + selenium-webdriver) run against
-# packaged binaries instead of Selenium Manager downloading an unpinned
-# Chrome + driver (~400 MB) at test time. Point Selenium at them with
-# SE_OFFLINE=true and the browser/driver paths (see the test below).
+# ChromeDriver from Chrome for Testing, at the SAME version as
+# chromium-headless-shell-bin (ChromeDriver refuses a browser of a
+# different major). Lets Selenium-driven browser tests (Rails system
+# tests, Capybara + selenium-webdriver) run against packaged binaries
+# instead of Selenium Manager downloading an unpinned Chrome + driver
+# (~400 MB) at test time. Point Selenium at them with SE_OFFLINE=true and
+# the browser/driver paths (see the test below).
 #
 # License: the CfT chromedriver zip carries LICENSE.chromedriver, the
 # Chromium BSD-3-Clause grant, with no proprietary terms (unlike the full
-# CfT `chrome` bundle, which ships Widevine). Verified at 153.0.8010.52; now 155.0.8059.39 (CfT hashes re-checked 2026-10-12).
+# CfT `chrome` bundle, which ships Widevine). Re-checked at 155.0.8059.84.
 #
-# Bump `browser_version` together with chromium-headless-shell-bin.
-let browser_version = "155.0.8059.39" in
+# The version is NOT pinned here: it is chromium-headless-shell-bin's
+# `upstream_version`, so the pair cannot drift. Bumping the browser changes
+# the URLs below, and this package's build then fails on the two sha256s
+# until they are updated in the same change. That failure is the point:
+# a silent mismatch would ship a driver that refuses the browser.
+let browser_version = chromium-headless-shell-bin.attrs.upstream_version in
 {
   name = "chromedriver-bin",
   build_deps = [
@@ -34,12 +38,12 @@ let browser_version = "155.0.8059.39" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chromedriver-linux64.zip",
-          sha256 = "a65f025c692e686ec2a21fa6b9639c69fa9813683a47af9cabf1ba0b1f453e42",
+          sha256 = "4fe2433044363e5233d642e70fa50278b471bda08032d922402c8bd7c6d743fd",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux-arm64/chromedriver-linux-arm64.zip",
-          sha256 = "e375914dc2ee52c38ffc6db4ee8276b462a2872f94ca458c18d787e0f761b129",
+          sha256 = "738853f050812e78e249c2ba8b46e4b6dfee9521bbfdd86d04f882fbf4ef5f47",
         } | Source,
     } target,
     base,
