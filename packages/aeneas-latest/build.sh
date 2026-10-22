@@ -81,4 +81,7 @@ mkdir -p "$OUTPUT_DIR/usr/share/aeneas-latest"
 cp "$ROOT/aeneas-lean-4.34.patch" "$ROOT/lake-manifest.json" "$OUTPUT_DIR/usr/share/aeneas-latest/"
 # Build manifest: what was installed (the per-package olean counts), so a
 # consumer can tell a complete package from a truncated one at a glance.
-{ echo "aeneas-latest $MINIMAL_ARG_VERSION"; for d in "$OUT"/*/; do n="$(basename "$d")"; echo "$n $(find "$d" -name "*.olean" | wc -l) oleans $(du -sk "$d" | cut -f1) KB"; done; echo "total files: $(find "$OUT" -type f | wc -l)"; } > "$OUTPUT_DIR/usr/share/aeneas-latest/MANIFEST"
+# Sizes are summed file bytes, not `du -sk`: disk usage depends on block
+# allocation and differed by 8 KB between two builds with identical files
+# (2026-10 prod-pair diff: the only differing file in 13843).
+{ echo "aeneas-latest $MINIMAL_ARG_VERSION"; for d in "$OUT"/*/; do n="$(basename "$d")"; echo "$n $(find "$d" -name "*.olean" | wc -l) oleans $(find "$d" -type f -printf "%s\n" | awk "{s+=\$1} END {printf \"%d\", s/1024}") KB"; done; echo "total files: $(find "$OUT" -type f | wc -l)"; } > "$OUTPUT_DIR/usr/share/aeneas-latest/MANIFEST"

@@ -1,0 +1,28 @@
+--- a/jdk/src/java.base/share/classes/jdk/internal/module/ModuleHashes.java	2026-09-22 21:44:39
++++ b/jdk/src/java.base/share/classes/jdk/internal/module/ModuleHashes.java	2026-09-22 21:44:39
+@@ -36,6 +36,7 @@
+ import java.util.Arrays;
+ import java.util.Collections;
+ import java.util.HashMap;
++import java.util.TreeMap;
+ import java.util.Map;
+ import java.util.Objects;
+ import java.util.Set;
+@@ -161,7 +162,7 @@
+      * @throws UncheckedIOException if an I/O error occurs
+      */
+     static ModuleHashes generate(Set<ModuleReference> mrefs, String algorithm) {
+-        Map<String, byte[]> nameToHash = new HashMap<>();
++        Map<String, byte[]> nameToHash = new TreeMap<>();
+         for (ModuleReference mref : mrefs) {
+             try (ModuleReader reader = mref.open()) {
+                 byte[] hash = computeHash(reader, algorithm);
+@@ -227,7 +228,7 @@
+         final Map<String, byte[]> nameToHash;
+ 
+         Builder(String algorithm, int initialCapacity) {
+-            this.nameToHash = new HashMap<>(initialCapacity);
++            this.nameToHash = new TreeMap<>();
+             this.algorithm =  Objects.requireNonNull(algorithm);
+         }
+ 
