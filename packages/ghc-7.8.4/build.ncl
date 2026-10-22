@@ -4,7 +4,8 @@ let { target, .. } = import "config.ncl" in
 # Builds GHC 7.8.4 from the pinned source tarball with ../ghc-7.6.3 as the boot compiler and installs
 # the whole compiler at /usr/lib/ghc-7.8.4 for the next rung; nothing lands on /usr/bin.
 # Source: https://downloads.haskell.org/~ghc/7.8.4/ghc-7.8.4-src.tar.xz mirrored to gs://minimal-staging-archives/.
-# No `needs`: nothing here touches the network. amd64 only (see the match at the bottom).
+# No `needs`: nothing here touches the network. Both arches: x86_64 builds with the bedrock gcc against the
+# glibc-bedrock-2.42 sysroot, aarch64 with the hex0-rooted toolchain (the `is_arm` matches below).
 let ghc-boot = import "../ghc-7.6.3/build.ncl" in # the previous rung
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
 # production binutils: the sealed binutils-2.46-glibc shares sonames (libsframe.so.3) with it in

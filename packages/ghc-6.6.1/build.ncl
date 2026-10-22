@@ -82,6 +82,7 @@ let spec =
       {
         upstream_version = version,
         license_spdx = "BSD-3-Clause",
+        build_cost_multiple = 3,
         repology_project = "ghc",
         source_provenance = {
           category = 'Website,

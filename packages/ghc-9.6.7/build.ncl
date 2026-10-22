@@ -6,7 +6,8 @@ let { target, .. } = import "config.ncl" in
 # Hadrian itself is built by the boot compiler from the offline bootstrap sources tarball (no
 # cabal-install, no network).
 # Sources from https://downloads.haskell.org/~ghc/9.6.7/ mirrored to gs://minimal-staging-archives/.
-# No `needs`: nothing here touches the network. amd64 only (see the match at the bottom).
+# No `needs`: nothing here touches the network. Both arches: x86_64 builds with the bedrock gcc against the
+# glibc-bedrock-2.42 sysroot, aarch64 with the hex0-rooted toolchain (the `is_arm` matches below).
 let ghc-boot = import "../ghc-9.2.8/build.ncl" in # the previous rung
 let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
 # production binutils: the sealed binutils-2.46-glibc shares sonames (libsframe.so.3) with it in

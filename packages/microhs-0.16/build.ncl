@@ -14,6 +14,13 @@ let glibc = import "../glibc/build.ncl" in
 # yields a Haskell compiler. Root of the source-only GHC ladder (microhs -> ghc-4.08.2 -> 5.04.3 -> 6.6.1 -> 6.10.4 ->
 # 7.0.4 -> 7.6.3 -> ...). Installs at /usr/lib/microhs-0.16; nothing lands on /usr/bin.
 # Source mirrored to gs://minimal-staging-archives/ from hackage. No `needs`: nothing here touches the network.
+#
+# TRUST ROOT. The ladder takes no GHC binary as input, but it does not start from hand-written code either:
+# what gcc compiles here is upstream's *generated* generated/mhs.c, MicroHs compiled to C by MicroHs itself. It
+# matches the Hackage 0.16.0.0 release byte-for-byte (the sha256 below), but it is compiled Haskell, so this rung
+# trusts the MicroHs release, not just a C compiler. The second input is ghc-4.08.2's first-party overlay (see
+# that package). Mitigation for both: ghc-7.6.3's diverse-roots check, which rebuilds 7.6.3 from this ladder and
+# from an independent GHC root and requires every generated .hc file to be identical (1016/1016 at #774).
 # pkgmgr: bootstrap_rung = "ghc"
 let version = "0.16.0.0" in
 let is_arm = target.arch == 'Arm64 in
@@ -54,6 +61,7 @@ let spec =
       {
         upstream_version = version,
         license_spdx = "Apache-2.0",
+        build_cost_multiple = 1,
         repology_project = "microhs",
         source_provenance = {
           category = 'GithubRepo,

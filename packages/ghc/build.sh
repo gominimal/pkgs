@@ -62,16 +62,18 @@ chmod +x "$STUB_DIR/sphinx-build"
 # Ensure stubs and build-produced tools are in PATH
 export PATH="$STUB_DIR:$PWD/_build/bin:$PATH"
 
-# Boot compiler: the ghc-9.6.7 ladder rung when present, else a ghc on PATH.
+# Boot compiler: the ghc-9.6.7 ladder rung, always. No fallback to a ghc on PATH: that would silently build
+# from whatever host GHC happened to be there and break the source-only chain.
 if [ -x /usr/lib/ghc-9.6.7/bin/ghc ]; then
   BOOT=/usr/lib/ghc-9.6.7/bin/ghc; BOOT_PKG=/usr/lib/ghc-9.6.7/bin/ghc-pkg
 else
-  BOOT="$(command -v ghc)"; BOOT_PKG="$(command -v ghc-pkg)"
+  echo "ERROR: boot compiler /usr/lib/ghc-9.6.7/bin/ghc is missing (the ghc-9.6.7 rung is a build dep)" >&2
+  exit 1
 fi
 echo "boot compiler: ${BOOT} ($("${BOOT}" --numeric-version))"
 
-# Bootstrap Hadrian from the offline sources tarball (one per boot: 9.6.4's plan for the 9.6.7
-# rung, 9.8.1's for the bindist). Its plan-bootstrap.json pins the versions of the packages bundled
+# Bootstrap Hadrian from the offline sources tarball (9.6.4's plan, for the 9.6.7 rung boot).
+# Its plan-bootstrap.json pins the versions of the packages bundled
 # with the boot it was generated for and bootstrap.py checks them against the boot's ghc-pkg
 # exactly, so rewrite them to what this boot ships and repack before passing --bootstrap-sources.
 HBS="$(ls ../hadrian-bootstrap-sources-*.tar.gz | head -1)"
@@ -130,6 +132,24 @@ if [ "$(uname -m)" = aarch64 ]; then
     echo "ERROR: the shipped settings link with lld, which is not a runtime dep: $S" >&2
     exit 1
   fi
+fi
+
+# amd64 twin of the lld check: the boot builds against the glibc-bedrock-2.42 sysroot, which is a build dep
+# only, so nothing shipped may name it: not the settings file (C compiler and linker flags), and no ELF
+# interpreter, RPATH or RUNPATH.
+if [ "$(uname -m)" = x86_64 ]; then
+  BR=/usr/lib/glibc-bedrock-2.42
+  bad=0
+  while IFS= read -r -d '' S; do
+    if grep -q "$BR" "$S"; then echo "ERROR: shipped settings name the bedrock sysroot: $S" >&2; bad=1; fi
+  done < <(find "$OUTPUT_DIR" -type f -name settings -path '*/lib/*' -print0)
+  while IFS= read -r -d '' f; do
+    if [ "$(head -c 4 "$f" | od -An -c | tr -d ' ')" = '177ELF' ] \
+       && readelf -d -l "$f" 2>/dev/null | grep -E 'RPATH|RUNPATH|interpreter' | grep -q "$BR"; then
+      echo "ERROR: shipped ELF references the bedrock sysroot: $f" >&2; bad=1
+    fi
+  done < <(find "$OUTPUT_DIR" -type f -print0)
+  [ "$bad" = 0 ] || exit 1
 fi
 
 # Refresh the package database cache so downstream builds don't see stale cache warnings
