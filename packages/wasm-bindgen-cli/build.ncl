@@ -17,8 +17,8 @@ let version = "0.2.100" in
     {
       url = "https://static.crates.io/crates/wasm-bindgen-cli/wasm-bindgen-cli-%{version}.crate",
       sha256 = "9e7f06f41580c87b6f4f84176d033f09c0838db1523a8d1899064b53cbb92c59",
-      extract = true,
-      strip_prefix = "wasm-bindgen-cli-%{version}",
+      # a .crate is a gzipped tar; build.sh unpacks it (Source extraction keys on the extension)
+      extract = false,
     } | Source,
     base,
     rust,
@@ -38,6 +38,9 @@ let version = "0.2.100" in
     } | Needs,
 
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
 
   outputs = {
     bins = { glob = "usr/bin/wasm-bindgen" } | OutputBin,
