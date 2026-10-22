@@ -15,6 +15,17 @@ for jar in "$SRC"/lib/*.jar; do
   install -m 0644 "$jar" "$INSTALL/lib/"
 done
 install -m 0644 "$SRC/LICENSE" "$SRC/NOTICE" "$INSTALL/"
+# licenses/ holds the texts for the bundled jars' licenses (BSD-2-Clause,
+# BSD-2-Clause-FreeBSD, Bouncy Castle, CC0, EDL-1.0, MIT, jzlib), which BSD
+# and MIT require to travel with the jars. SWIDTAG/ is the distribution's
+# ISO 19770-2 software ID tag. Both are kept whole, as PMD and SpotBugs keep
+# their trees; the test -s guards below fail closed if either disappears.
+for d in licenses SWIDTAG; do
+  mkdir -p "$INSTALL/$d"
+  for f in "$SRC/$d"/*; do
+    install -m 0644 "$f" "$INSTALL/$d/"
+  done
+done
 
 # Wrapper. The upstream launcher resolves APP_HOME from its own path, uses
 # $JAVA_HOME/bin/java if JAVA_HOME is set and `java` on PATH otherwise (the
@@ -27,3 +38,5 @@ chmod 0755 "$OUTPUT_DIR/usr/bin/jreleaser"
 
 # Fail closed if the distribution layout changes.
 test -s "$INSTALL/lib/jreleaser-${MINIMAL_ARG_VERSION}.jar"
+test -s "$INSTALL/licenses/LICENSE-MIT"
+test -s "$INSTALL/SWIDTAG/swid-tag.xml"

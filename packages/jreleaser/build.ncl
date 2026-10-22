@@ -56,13 +56,17 @@ let version = "1.26.0" in
 
   outputs = {
     jreleaser = { glob = "usr/bin/jreleaser" } | OutputBin,
-    launcher = { glob = "usr/share/jreleaser/bin/jreleaser" } | OutputBin,
+    # allow_executable: the tree carries upstream's bin/jreleaser launcher,
+    # which /usr/bin/jreleaser execs (the same split as pmd and spotbugs).
     jreleaser_home = { glob = "usr/share/jreleaser/**", allow_executable = true } | OutputData,
   },
 
   attrs =
     {
       upstream_version = version,
+      # JReleaser's own code. lib/ also bundles jars under BSD-2-Clause,
+      # BSD-2-Clause-FreeBSD, Bouncy Castle (MIT-style), CC0-1.0, EDL-1.0,
+      # MIT and the jzlib licence; their texts ship in licenses/ (build.sh).
       license_spdx = "Apache-2.0",
       binary_from = "https://github.com/jreleaser/jreleaser/releases",
       source_provenance = {
