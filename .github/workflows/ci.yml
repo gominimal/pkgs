@@ -14,57 +14,54 @@ env:
 
 permissions:
   contents: write
+  # The scope step reads the PR's file list. Listing any permission sets the
+  # rest to none, and the files API works without this only while the repo
+  # is public.
+  pull-requests: read
 
 jobs:
-  # On a pull request, check only what the PR touched: its packages and
-  # stacks, by name. The full check (every package's standalone tests, about
-  # nine minutes after a disk-free step of one to three) stays for pushes to
-  # main, the merge queue and dispatch. A PR that changes anything outside
-  # packages/ and stacks/ (the workflows, minimal.toml) takes the full check
-  # too; one that changes only prose (*.md, legal/) runs nothing.
+  # On a pull request, check what the PR can affect: the packages and stacks
+  # it touches, every package that depends on one of them (transitively), and
+  # the stacks naming any of those. .github/scripts/ci_scope.py decides, and
+  # falls back to the full check (every package's standalone tests, about
+  # nine minutes after a disk-free step of one to three) when the scope can't
+  # be trusted or wouldn't be cheaper: files outside packages/<name>/ and
+  # stacks/<name>/ (workflows, scripts, minimal.toml), a removed package or
+  # stack, a file list the API truncated, or more than 50 packages in scope.
+  # A PR that changes only prose (*.md, legal/) runs nothing. Pushes to main,
+  # the merge queue and dispatch always run the full check.
   minimal-check:
     runs-on: ubuntu-latest
     steps:
+      # The scope is computed from the checkout (the PR merged into main), so
+      # the checkout comes first; it is needed by every mode except "none".
+      - uses: actions/checkout@v6
       - id: scope
         name: Decide what to check
         if: github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          CHANGED_FILES: ${{ github.event.pull_request.changed_files }}
         run: |
           set -euo pipefail
-          # The changed-file list comes from the API, not from a checkout: the
-          # PR's base is not in a shallow clone, and one request is cheaper
-          # than deepening the clone to find it.
-          files=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files" --paginate --jq '.[].filename')
-          # Prose is set aside first, wherever it lives: a README under a
-          # package is not a reason to check that package.
-          code=$(printf '%s\n' "$files" | grep -vE '(^|/)[^/]*\.md$|^legal/' || true)
-          pkgs=$(printf '%s\n' "$code" | sed -n 's#^packages/\([^/]*\)/.*#\1#p' | sort -u | paste -sd, -)
-          stacks=$(printf '%s\n' "$code" | sed -n 's#^stacks/\([^/]*\)/.*#\1#p' | sort -u | paste -sd, -)
-          other=$(printf '%s\n' "$code" | grep -vE '^(packages|stacks)/' || true)
-          if [ -n "$other" ]; then
-            echo "full check: the PR changes files outside packages/ and stacks/:"
-            printf '%s\n' "$other" | sed 's/^/  /'
-            echo "mode=full" >> "$GITHUB_OUTPUT"
-          elif [ -z "$pkgs$stacks" ]; then
-            echo "nothing to check: the PR changes only prose"
-            echo "mode=none" >> "$GITHUB_OUTPUT"
-          else
-            echo "scoped check: packages [$pkgs] stacks [$stacks]"
-            { echo "mode=scoped"; echo "packages=$pkgs"; echo "stacks=$stacks"; } >> "$GITHUB_OUTPUT"
-          fi
+          # The changed-file list comes from the API, not from git: the PR's
+          # base is not in a shallow clone. previous_filename is kept so a
+          # rename counts both its paths.
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files" --paginate \
+            --jq '.[] | {filename, previous_filename, status}' > "$RUNNER_TEMP/pr-files.jsonl"
+          python3 .github/scripts/ci_scope.py \
+            --files-jsonl "$RUNNER_TEMP/pr-files.jsonl" --changed-files "$CHANGED_FILES"
       - name: Free Disk Space
-        # Only the full check needs the room: a scoped check materializes a
-        # handful of packages, and this step alone took 93-203 s per run.
-        if: steps.scope.outputs.mode != 'scoped' && steps.scope.outputs.mode != 'none'
+        # This step alone took 93-203 s per run. A small scoped check (ten
+        # packages or fewer, most PRs) doesn't need the room; a larger one
+        # may, since it materializes the dependents too.
+        if: steps.scope.outputs.mode != 'none' && steps.scope.outputs.small != 'true'
         uses: endersonmenezes/free-disk-space@v3 # Use @main for latest, @v3 for stable
         with:
             remove_android: true
             remove_dotnet: true
             remove_haskell: true
-      - uses: actions/checkout@v6
-        if: steps.scope.outputs.mode != 'none'
       - name: Check the changed packages and stacks
         if: steps.scope.outputs.mode == 'scoped'
         uses: gominimal/check@v1
