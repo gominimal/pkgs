@@ -126,8 +126,10 @@ match {
           prebuilt = true,
           build_deps = [
             {
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/617e2057a63fc5d7840b752a8b1cdfdbef3ba193c36eed52ebb97396122cb148/gcc-15.2.0-glibc-15.2.0.tar.zst",
-              sha256 = "617e2057a63fc5d7840b752a8b1cdfdbef3ba193c36eed52ebb97396122cb148",
+              # gen-1 of gominimal/bootstrap (generations/gen-1/manifest.json): built from the hex0 seed
+              # and reproduced byte for byte on two independent machines before publishing.
+              url = "gs://minimal-bootstrap/gen-1/sha256/0880fa31188fc7a12379450f90fa50a2e6038bb4159d3c31df89bb8f3b8a50b2/gcc-15.2.0-glibc-x86_64.tar.zst",
+              sha256 = "0880fa31188fc7a12379450f90fa50a2e6038bb4159d3c31df89bb8f3b8a50b2",
               extract = true,
             } | Source,
           ],
