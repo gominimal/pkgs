@@ -25,6 +25,11 @@ let version = "1.2.16.1" in
     # latest release; Debian carries the same commit as 1.2.16.1-2. Verbatim
     # `git format-patch` of that commit, applied fail-closed in build.sh.
     { file = "CVE-2026-90781.patch" } | Local,
+    # f84cd4ce "follows" upstream 1e27d63ef6d1 (2026-06-02), which fixes the
+    # same one-byte overrun on the numid= branch of the same function and is
+    # also not in 1.2.16.1. f84cd4ce alone leaves that site open, so both are
+    # carried. Verbatim `git format-patch` of 1e27d63e.
+    { file = "CVE-2026-90781-numid.patch" } | Local,
     base,
     make,
     patch,

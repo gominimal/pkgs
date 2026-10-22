@@ -4,7 +4,8 @@ set -e
 # Security backport (see build.ncl). `set -e` plus patch's non-zero exit on a
 # rejected hunk means a stale patch ABORTS the build rather than silently
 # shipping an unpatched libasound.
-patch -Np1 -i "CVE-2026-90781.patch"   # control/ctlparse.c  name= one-byte stack overrun
+patch -Np1 -i "CVE-2026-90781-numid.patch"   # control/ctlparse.c  numid= one-byte stack overrun (1e27d63e)
+patch -Np1 -i "CVE-2026-90781.patch"         # control/ctlparse.c  name= one-byte stack overruns (f84cd4ce)
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
@@ -23,10 +24,11 @@ make check
 # Regression test for CVE-2026-90781. The overrun is a single '\0' written one
 # byte past a stack array, which corrupts nothing observable on its own, so the
 # test compiles ctlparse.c itself under AddressSanitizer (the copy inside
-# libasound.so is not instrumented) and parses an element id whose quoted and
-# unquoted names are 100 characters long. Unpatched, ASan reports
-# stack-buffer-overflow and the build fails; patched, the name is truncated
-# in bounds. Built in a scratch dir, never installed.
+# libasound.so is not instrumented) and parses element ids that hit each of
+# the three copy loops with 100 characters: a quoted name, an unquoted name,
+# and a numid. Unpatched, ASan reports stack-buffer-overflow and the build
+# fails; patched, each copy stops in bounds. Built in a scratch dir, never
+# installed.
 mkdir -p cve-test
 cat > cve-test/ctlparse_overrun.c <<'EOF'
 #include "../src/control/ctlparse.c"
@@ -45,12 +47,18 @@ static int parse(const char *s)
 
 int main(void)
 {
-	char quoted[128] = "name='", unquoted[128] = "name=";
+	char quoted[128] = "name='", unquoted[128] = "name=", numid[128] = "numid=";
 	memset(quoted + 6, 'A', 100);
 	strcpy(quoted + 106, "'");
 	memset(unquoted + 5, 'B', 100);
 	unquoted[105] = '\0';
+	memset(numid + 6, '1', 100);
+	numid[106] = '\0';
 	if (parse(quoted) < 0 || parse(unquoted) < 0)
+		return 1;
+	/* A 100-digit numid is out of range, so the parse is rejected. What
+	 * matters is that the copy into buf stayed in bounds getting there. */
+	if (parse(numid) >= 0)
 		return 1;
 	return 0;
 }
