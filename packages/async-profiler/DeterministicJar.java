@@ -2,10 +2,11 @@
 // order, directory entries included, and one fixed timestamp on every entry.
 //
 // `jar --create` cannot do both at once. Fed only files (a sorted list), it
-// writes no directory entries, and TLA+ needs them: SANY and TLC locate their
-// standard modules with ClassLoader.getResource("tla2sany"), which is null for
-// a jar without a "tla2sany/" entry. Fed directories, it recurses in
+// writes no directory entries, which code that looks up a package directory
+// with ClassLoader.getResource("<dir>") needs. Fed directories, it recurses in
 // filesystem order, so the entry order would depend on the build host.
+//
+// Shared shape with packages/tlaplus/DeterministicJar.java; keep them in step.
 //
 // Run in source-file mode: java DeterministicJar.java <out.jar> <manifest> <root>
 import java.io.IOException;

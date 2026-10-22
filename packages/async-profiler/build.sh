@@ -8,9 +8,9 @@ set -eux
 
 TOP=$(pwd)
 export JAVA_HOME=/usr/lib/jvm
-# asprof and jattach print __DATE__ in --version; gcc takes it from here.
-# 2026-07-20, the v4.5 release date.
-export SOURCE_DATE_EPOCH=1784505600
+# asprof and jattach print __DATE__ in --version, and jfrconv a build date
+# (below). Both come from SOURCE_DATE_EPOCH, which the sandbox already sets
+# (AGENTS.md), so they're deterministic without overriding it here.
 
 REPRO="-ffile-prefix-map=$TOP=/builddir -gno-record-gcc-switches -Wl,--build-id=none"
 
@@ -69,7 +69,8 @@ printf 'Manifest-Version: 1.0\nMain-Class: one.convert.Main\n' > build/converter
   build/jar/jfr-converter.jar build/converter-manifest.txt build/converter
 
 # jfrconv: upstream's shell launcher with the converter jar appended to it
-# (the launcher runs `java -jar "$0"`). BUILD_DATE comes from the fixed epoch.
+# (the launcher runs `java -jar "$0"`). BUILD_DATE comes from the sandbox's
+# SOURCE_DATE_EPOCH.
 build_date=$(date -u -d "@$SOURCE_DATE_EPOCH" "+%b %d %Y")
 sed -e "s/PROFILER_VERSION/$MINIMAL_ARG_VERSION/g" -e "s/BUILD_DATE/$build_date/g" \
   src/launcher/launcher.sh > build/bin/jfrconv
