@@ -28,11 +28,13 @@ build() {
   v=$1; w=$2
   rm -rf "$w"; mkdir -p "$w"
   tar -xof "$TOP/v$v.tar.gz" -C "$w" "amaro-$v/deps/swc"
+  # From the binding's directory, as wasm-pack runs it, so its .cargo/config.toml (the 2 MiB
+  # stack) applies along with the workspace's; the stack size is repeated in case the env value
+  # replaces rather than extends it.
+  cd "$w/amaro-$v/deps/swc/bindings/binding_typescript_wasm"
+  CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS="-Clink-arg=-zstack-size=2097152 --remap-path-prefix=$w=/builddir --remap-path-prefix=$LIB=/rustc/library --remap-path-prefix=$HOME/.cargo=/cargo" \
+    cargo build --release --locked -Zbuild-std=std,panic_abort --target wasm32-unknown-unknown
   cd "$w/amaro-$v/deps/swc"
-  # The env rustflags replace binding_typescript_wasm/.cargo/config.toml's, so its stack size is
-  # repeated here.
-  CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS="-C link-args=-z stack-size=2097152 --remap-path-prefix=$w=/builddir --remap-path-prefix=$LIB=/rustc/library --remap-path-prefix=$HOME/.cargo=/cargo" \
-    cargo build --release --locked -Zbuild-std=std,panic_abort --target wasm32-unknown-unknown -p binding_typescript_wasm
   wasm-bindgen --target nodejs --out-name wasm --out-dir pkg --typescript \
     target/wasm32-unknown-unknown/release/binding_typescript_wasm.wasm
   cd "$TOP"
