@@ -1,0 +1,13 @@
+diff --git a/make/jdk/src/classes/build/tools/cldrconverter/CLDRConverter.java b/make/jdk/src/classes/build/tools/cldrconverter/CLDRConverter.java
+index e827fbf771a..b598f3ff3fc 100644
+--- a/make/jdk/src/classes/build/tools/cldrconverter/CLDRConverter.java
++++ b/make/jdk/src/classes/build/tools/cldrconverter/CLDRConverter.java
+@@ -685,7 +685,7 @@ private static Map<String, Object> extractCurrencyNames(Map<String, Object> map,
+     }
+ 
+     private static Map<String, Object> extractZoneNames(Map<String, Object> map, String id) {
+-        Map<String, Object> names = new HashMap<>();
++        Map<String, Object> names = new TreeMap<>(KeyComparator.INSTANCE);
+ 
+         getAvailableZoneIds().stream().forEach(tzid -> {
+             // If the tzid is deprecated, get the data for the replacement id
