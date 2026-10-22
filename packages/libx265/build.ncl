@@ -2,7 +2,7 @@ let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Sourc
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
-let make = import "../make/build.ncl" in
+let ninja = import "../ninja/build.ncl" in
 let nasm = import "../nasm/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -21,7 +21,7 @@ let version = "4.2" in
     base,
     toolchain,
     cmake,
-    make,
+    ninja,
     nasm,
   ],
   runtime_deps = [

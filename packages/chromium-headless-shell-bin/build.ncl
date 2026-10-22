@@ -99,6 +99,25 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # pinned to playwright-core ^1.59 still resolve. It no longer names a
 # Playwright build. `browser_version` is the CfT Stable version and is the
 # only pin to bump.
+#
+# ⚠ CVE-2026-111943 (eMudhra intermediate key compromise): NOT MITIGATED
+# HERE, and no package-side mitigation exists. chromium-bin distrusts the
+# compromised keys through the `CADistrustedCertificates` enterprise policy
+# shipped by chromium-policies. chrome-headless-shell cannot read it: it
+# has no platform policy loader (Chromium deleted headless/lib/browser/
+# policy/ between 145 and 150), and the 155.0.8059.84 binary contains no
+# /etc/.../policies path and no "CADistrustedCertificates" string. Adding
+# the chromium-policies dep here would only look like a fix.
+# Its compiled-in Chrome Root Store still holds emSign ECC Root CA - G3, its
+# blocklist lacks the 8 keys, and it gets no CRLSet or root-store updates.
+# The upstream fix (chromium/src da63b94c blocklist, 8793082f root store
+# v43, both 2026-10-20 on main) is in no released build yet; Beta
+# 157.0.8103.6 and Canary 158.0.8113.0 lack both. Bump to the first CfT
+# Stable that carries them. Until then, a consumer that browses untrusted
+# sites (agent-browser) is safer driving chromium-bin's `chromium
+# --headless`, which reads the policy. Tracked in gominimal/pkgmgr-rs#1028
+# (trigger: the first CfT Stable carrying both commits; Chrome expects its
+# root-store update in Stable 2026-10-27).
 let revision = "1243" in
 let browser_version = "155.0.8059.84" in
 {
