@@ -1,0 +1,100 @@
+# Certificates and keys this package must never ship. build.sh fails the build if any
+# certificate in the output matches a line here, either by SHA-256 of the DER
+# certificate ("cert") or by SHA-256 of its DER SubjectPublicKeyInfo ("spki").
+# The SPKI lines catch every certificate for a key, including re-issues, cross-signs
+# and signature-malleated copies; the cert lines document the exact objects.
+#
+# CVE-2026-111943: eMudhra intermediate CA private-key compromise. Eight EC P-384
+# intermediate keys were generated with tiny private scalars, so anyone can recover
+# them from the public certificates. Each key has two certificates: one issued by
+# emSign Root TLS/CS CA - G3 (which chains into Mozilla-derived bundles through a
+# cross-sign from emSign ECC Root CA - G3), and one cross-signed by Sectigo's
+# AAA Certificate Services.
+#   Incident:   https://bugzilla.mozilla.org/show_bug.cgi?id=2083449
+#   NSS root removal (emSign ECC Root CA - G3, NSS 3.131.1):
+#               https://bugzilla.mozilla.org/show_bug.cgi?id=2084101
+#   Disclosure: https://emudhra.we-have-a-problem.com/
+#   Trust-store guidance:
+#               https://groups.google.com/a/mozilla.org/g/dev-security-policy/c/0R3XLJL6FuE
+#   Go's equivalent SPKI block: https://github.com/golang/go/issues/82345
+#
+# Format: <cert|spki> <64 lowercase hex>  <free-text note>. '#' starts a comment.
+# To add an incident, append a block with its own citation header; never delete one.
+
+# --- Roots that anchor the compromised chains (both were in the old bundle) ---
+cert 86a1ecba089c4a8d3bbe2734c612ba341d813e043cf9e8a862cd5c57a36bbe6b  emSign ECC Root CA - G3 (root)
+spki 8d417db2dd8bf5e3084d1e3f196d583849d81bdd4c00c70b9d39369e96b8c782  emSign ECC Root CA - G3 (root key)
+cert d7a7a0fb5d7e2731d771e9484ebcdef71d5f0c3e0a2948782bc83ee0ea699ef4  AAA Certificate Services (root)
+spki bd153ed7b0434f6886b17bce8bbe84ed340c7132d702a8f4fa318f756ecbd6f3  AAA Certificate Services (root key)
+
+# --- Direct issuers of the compromised intermediates (never Mozilla roots; listed so
+# --- a future bundle or cross-cert cannot carry them in) ---
+cert 7dd78d5f4f13459a83dff9abbba62edbaf6f2d102bf257fd712f4d9f2746ed8d  emSign Root TLS CA - G3 (self-signed)
+spki c619e4780ed8e0abeda24ad732567de4383a7ea941338f6d1a7d1b49ac792fe9  emSign Root TLS CA - G3 (key; also covers every cross-cert of it)
+cert f2edaaff3d9b701fb4d14c9f285f8c0bad90fc3bcc1fa07d47f4718edaba34a5  emSign Root CS CA - G3 (self-signed)
+spki 0a6c2b2ca5b364207954171987ac9d2178561569d8205457e77ca90c32ede282  emSign Root CS CA - G3 (key; also covers every cross-cert of it)
+cert 3094025792039a68af6e553686410bdab7c0d4a36b9084cba64202e35d6ebbdd  emSign Root TLS CA - G3, cross-signed by emSign ECC Root CA - G3
+
+# --- The 8 compromised intermediate keys (SPKI = every certificate for that key) ---
+spki ebed6475c2c2d80fcb199f3fe8dd6e6b3ce60b77eb15d4e42c3dec0c6f5b5105  EM DV TLS CA - G3B
+spki e0254c7fcdc265e2f0f8a428dabb75ab4ae039b4872d62f5ee57f0877d5a8a41  EM EV TLS CA - G3B
+spki ec4ffa1ad0ac88081314b7aaffef6a91f97cd57291bb5ba686c5415f5eb4f6b6  EM OV CS CA - G3B
+spki 43bffa19d6ef651451f6841e019931e96f6f2eaeff28ab4b6f1ce4576de2717b  EM OV TLS CA - G3B
+spki 49dd353dc2b919a3770645117d0e60c16115e7d1bc259eefe734b00ea434fe5f  EM DV TLS CA - G3C
+spki 5c0660a2b164910d8ff589c18e14552e9e0ec237dcefe2cb736d41a4811f81a0  EM EV TLS CA - G3C
+spki 92c063d67e8f14db71d288e11266ffdaf69cbf115f7bab14f3bc2f68d25e0e30  EM OV CS CA - G3C
+spki 63ecefee431d49523bc1136c4e72d0206a477086caf606cd5cf025686c109cf8  EM OV TLS CA - G3C
+
+# --- The 16 compromised intermediate certificates (8 keys x {emSign, Sectigo AAA} issuer) ---
+cert 45a883f349aedfd5f3a649b5498ffb121712ba8b448f3f2a91dbc5a766fcddbe  EM DV TLS CA - G3B <- AAA Certificate Services
+cert 42c4accd12c4f59597925e1a08a7a90102608543809308d50ec427e118ba1493  EM DV TLS CA - G3B <- emSign Root TLS CA - G3
+cert 579480aea166290bd3c643589e795fc0d0e54e86505d180f1dff99efd3199512  EM EV TLS CA - G3B <- AAA Certificate Services
+cert e7568fe6e12331f4fd7de61da4c7559d0f8eb192a218d4741a3ba75184333838  EM EV TLS CA - G3B <- emSign Root TLS CA - G3
+cert a496e23ac0cab8155fc9b117b97eae368efcbb9041aec8804d5a308d2d01c2d8  EM OV CS CA - G3B <- AAA Certificate Services
+cert 9e39de2881273acc225a149c72ba3e0f51424963669ab633ee1dc7df5db067b4  EM OV CS CA - G3B <- emSign Root CS CA - G3
+cert 5f1ded4dd590af74631290cf073b122a2aac6a1fa479778a0bd43579bd832699  EM OV TLS CA - G3B <- AAA Certificate Services
+cert 98b896625c0c230adeec3eb2cf6aad5001ecf9156a68644e82374ce5833bc25b  EM OV TLS CA - G3B <- emSign Root TLS CA - G3
+cert 62b7f9868263f72f6911fc78ceaf72c1979158b7368bf648683bb2aa39b02e72  EM DV TLS CA - G3C <- AAA Certificate Services
+cert 0164d7ceae5bb909c272af151ff44b1177ae9b47d9424b94f1d9558c30934d19  EM DV TLS CA - G3C <- emSign Root TLS CA - G3
+cert fd9d5c2dbbd4995ab69b8d50c439d9527b00529199c2fd01b2174eb58f07021f  EM EV TLS CA - G3C <- AAA Certificate Services
+cert 432ec25f0d28de9006d97bf752f17bbb2cd41f669933fcb072d9a1148d0261f3  EM EV TLS CA - G3C <- emSign Root TLS CA - G3
+cert 84112972b8e59d14560ae7e7119654474aad119990cf3722bfc1e3b91615e1fd  EM OV CS CA - G3C <- AAA Certificate Services
+cert 4b2460a466f95fd40113bcdcca2ceb29b3b093921de45474da7df48874c630b1  EM OV CS CA - G3C <- emSign Root CS CA - G3
+cert 7485b51c0ed192878fa1d2f948fb529ae1842cc5086c4b67f7be5b2039de9489  EM OV TLS CA - G3C <- AAA Certificate Services
+cert cb6e15165ac802e9b3f993f16c25d41f4e81c21ebde71ae1b012ac00bf9c7c3f  EM OV TLS CA - G3C <- emSign Root TLS CA - G3
+
+# --- 8 ECDSA-malleated twins of the emSign-issued certificates: (r, n-s) is an equally
+# --- valid signature, so these byte-different certificates verify too ---
+cert 37e866582d43c35d7c17d47794b974f291b3047b868dc123382477f7a08aefa8  EM DV TLS CA - G3B <- emSign Root TLS CA - G3 (malleated signature)
+cert ef34030c01b13bf42b534072dcc3c75b13c009dc9241119ada39e2c15e2afd2e  EM EV TLS CA - G3B <- emSign Root TLS CA - G3 (malleated signature)
+cert 5d8fc3ecddb4ddb243aee5c306bcfde670adf2d66b193dd3aa2d6b2fb91869be  EM OV CS CA - G3B <- emSign Root CS CA - G3 (malleated signature)
+cert 33c1bcdc6da52df950b3b14121127da1955f7f31f828497a7608986eb2ddcc09  EM OV TLS CA - G3B <- emSign Root TLS CA - G3 (malleated signature)
+cert a4b72dbd37256324b557b9176f8cba4310ddffbcc4609977e2463f3504a716c8  EM DV TLS CA - G3C <- emSign Root TLS CA - G3 (malleated signature)
+cert 169a0523c5e071aa4e298286dbd4ee0e40c8c06abb6b0c077d132f001fa19240  EM EV TLS CA - G3C <- emSign Root TLS CA - G3 (malleated signature)
+cert ab7292f82267333031f512379fdbada949dfa49d3c046cc8fa7f34117c342986  EM OV CS CA - G3C <- emSign Root CS CA - G3 (malleated signature)
+cert a104b1314df8e02f7de27ddc287d0961d6e6824ad4dafc3d11064f24c1b653d5  EM OV TLS CA - G3C <- emSign Root TLS CA - G3 (malleated signature)
+
+# ======================================================================================
+# Roots removed from Mozilla's store for cause, which the pre-2026-10-20 package still
+# shipped in its ca-certificates.crt (a 2021-22 era bundle). Listed so a stale bundle
+# can never come back.
+#
+# TrustCor (distrusted 2022-11 after reporting on its ownership ties to a spyware vendor):
+#   https://bugzilla.mozilla.org/show_bug.cgi?id=1803453  (server distrust-after)
+#   https://bugzilla.mozilla.org/show_bug.cgi?id=1851049  (removal from NSS)
+# E-Tugra (removed 2023 after a security incident in its systems):
+#   https://bugzilla.mozilla.org/show_bug.cgi?id=1842928  (removal from NSS)
+#   https://bugzilla.mozilla.org/show_bug.cgi?id=1822936  (expired root removal)
+# ======================================================================================
+cert b0bfd52bb0d7d9bd92bf5d4dc13da255c02c542f378365ea893911f55e55f23c  E-Tugra Certification Authority
+spki c1ad1b1898ec395048df070bfa217e25c913bed8ca6b73de085528846a0103c1  E-Tugra Certification Authority (key)
+cert 873f4685fa7f563625252e6d36bcd7f16fc24951f264e47e1b954f4908cdca13  E-Tugra Global Root CA ECC v3
+spki 56f2ea8684106d0c73333951059d2bff9ace0a9934f015c5d84c5a959dfbb3cc  E-Tugra Global Root CA ECC v3 (key)
+cert ef66b0b10a3cdb9f2e3648c76bd2af18ead2bfe6f117655e28c4060da1a3f4c2  E-Tugra Global Root CA RSA v3
+spki b3effbf46bcf66aedf71427e6bd60bf1a1878c7b72cab178703485fda6e3db38  E-Tugra Global Root CA RSA v3 (key)
+cert 5a885db19c01d912c5759388938cafbbdf031ab2d48e91ee15589b42971d039c  TrustCor ECA-1
+spki 7afe4b071a2f1f46f8ba944a26d584d5960b92fb48c3ba1b7cab84905f32aacd  TrustCor ECA-1 (key)
+cert d40e9c86cd8fe468c1776959f49ea774fa548684b6c406f3909261f4dce2575c  TrustCor RootCert CA-1
+spki ea87f462deefffbd7775aa2a4b7e0fcb91c22eee6df69ed90100ccc73b311476  TrustCor RootCert CA-1 (key)
+cert 0753e940378c1bd5e3836e395daea5cb839e5046f1bd0eae1951cf10fec7c965  TrustCor RootCert CA-2
+spki c63d68c648a18b77641c427a669d61c9768a55f4fcd0322eac96c57700299cf1  TrustCor RootCert CA-2 (key)

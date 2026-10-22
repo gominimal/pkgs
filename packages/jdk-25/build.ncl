@@ -4,6 +4,8 @@ let base = import "../base/build.ncl" in
 let alsa-lib = import "../alsa-lib/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+# not the `jdk` meta-package: the inputs of build.sh's CVE-2026-111943 step
+let jdk = import "../jdk/cve-2026-111943.ncl" in
 
 let version = "25.0.4.1" in
 let build_num = "1" in
@@ -36,6 +38,10 @@ in
         } | Source,
     } target,
     base,
+    jdk.script,
+    jdk.program,
+    jdk.fixtures,
+    jdk.blocked_sha256,
   ],
   runtime_deps = [
     alsa-lib,
@@ -89,6 +95,18 @@ in
           ["/bin/bash", "-c", "echo 'public class Hi { public static void main(String[] a) { System.out.println(\"ok\"); } }' > Hi.java"],
           ["/bin/javac", "Hi.java"],
           ["/bin/bash", "-c", "java Hi | grep -q '^ok$'"],
+        ],
+      } | Test,
+
+    # CVE-2026-111943: the shipped trust store no longer holds emSign ECC Root CA - G3 or
+    # AAA Certificate Services, still holds the rest, and blocked.certs lists the compromised
+    # intermediates (one ECDSA-malleated encoding checked; the build checks all 48).
+    cve_2026_111943 =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "set -eu; ks=$(keytool -list -cacerts -storepass changeit -v 2>&1); n=$(grep -c '^Alias name:' <<< \"$ks\"); echo \"cacerts entries: $n\"; [ \"$n\" -ge 80 ]; if grep -E 'SHA256: (86:A1:EC:BA:08:9C:4A:8D|D7:A7:A0:FB:5D:7E:27:31)' <<< \"$ks\"; then echo 'distrusted root still in cacerts'; exit 1; fi; bc=/usr/lib/jvm/lib/security/blocked.certs; head -n 1 $bc | grep -qx 'Algorithm=SHA-256'; grep -qx 37E866582D43C35D7C17D47794B974F291B3047B868DC123382477F7A08AEFA8 $bc"],
         ],
       } | Test,
   },

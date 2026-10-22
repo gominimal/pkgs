@@ -18,6 +18,7 @@ let curl = import "../curl/build.ncl" in
 let automake = import "../automake/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
 let unzip = import "../unzip/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 let version = "1.3.14" in
@@ -31,6 +32,10 @@ in
   name = "bun",
   build_deps = [
     { file = "build.sh" } | Local,
+    # CVE-2026-111943: drops the three emSign roots NSS 3.131.1 removed from
+    # bun's compiled-in root store. See the patch header; drop it on the first
+    # bun release containing oven-sh/bun#46159.
+    { file = "cve-2026-111943-remove-emsign-roots.patch" } | Local,
     {
       url = "https://github.com/oven-sh/bun/archive/refs/tags/bun-v%{version}.tar.gz",
       sha256 = "112a5915992807f04b183854d360c2bf87ac7c1587fb5da3c560bdbb75b8c92e",
@@ -66,6 +71,7 @@ in
     automake,
     libtool,
     unzip,
+    patch,
   ],
   runtime_deps = [
     glibc,
@@ -117,6 +123,36 @@ in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "bun --eval 'console.log(1+1)' | grep -q '^2$'"],
+        ],
+      } | Test,
+    # CVE-2026-111943: the compiled-in store (tls.rootCertificates) must not
+    # carry the three emSign roots the patch removes, matched by SHA-256 of the
+    # DER, with at least 100 roots so an empty store cannot pass.
+    emsign_roots_removed =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              cat > /tmp/emsign.js <<'JS'
+              const { X509Certificate, createHash } = require("node:crypto");
+              const { rootCertificates } = require("node:tls");
+              const removed = [
+                "86a1ecba089c4a8d3bbe2734c612ba341d813e043cf9e8a862cd5c57a36bbe6b",
+                "125609aa301da0a249b97a8239cb6a34216f44dcac9f3954b14292f2e8c8608f",
+                "bc4d809b15189d78db3e1d8cf4f9726a795da1643ca5f1358e1ddb0edc0d7eb3",
+              ];
+              const fps = new Set(rootCertificates.map(p => createHash("sha256").update(new X509Certificate(p).raw).digest("hex")));
+              const left = removed.filter(h => fps.has(h));
+              if (fps.size < 100 || left.length) { console.log(`roots=${fps.size} still bundled: ${left}`); process.exit(1); }
+              JS
+              bun /tmp/emsign.js
+            "%
+          ],
         ],
       } | Test,
     # `bun add -g` lands a package's bin in ~/.local/bin, where the session
