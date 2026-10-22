@@ -21,6 +21,7 @@ let gcc = import "../gcc/build.ncl" in
 let llvm = import "../llvm/build.ncl" in
 let wasi-libc = import "../wasi-libc/build.ncl" in
 let llhttp-wasm-rebuild = import "../llhttp-wasm-rebuild/build.ncl" in
+let amaro-wasm = import "../amaro-wasm/build.ncl" in
 let patch = import "../patch/build.ncl" in
 
 # undici bundled under deps/npm; its llhttp C rebuilds npm's wasm blobs.
@@ -50,6 +51,7 @@ let version = "24.19.0" in
     llvm, # clang + wasm-ld for the llhttp wasm
     wasi-libc,
     llhttp-wasm-rebuild, # rebuilds and splices undici's llhttp wasm blobs
+    amaro-wasm, # amaro's TypeScript-stripper wasm, rebuilt from swc
     make,
     pkgconf,
     patch,
@@ -107,6 +109,15 @@ let version = "24.19.0" in
     } | Attrs,
 
   tests = {
+    type_strip =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "printf 'interface P { n: number }\\nconst p: P = { n: 6 };\\nconsole.log(p.n * 7);\\n' > t.ts"],
+          ["/bin/bash", "-c", "node t.ts | grep -qx 42"],
+        ],
+      } | Test,
     eval =
       {
         class = 'Standalone,

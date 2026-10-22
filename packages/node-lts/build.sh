@@ -47,13 +47,17 @@ $LH splice deps/undici/undici.js 57184a16144b5bc880e29105fa35d75c93dd318563e1b74
 $LH splice deps/undici/undici.js 2434215e1f7fa0163f22ce895ddbeb83984fa0aa51e123164e053213e5aca028 ../wasm/llhttp_simd.wasm
 $LH splice "$NPM_LH/llhttp-wasm.js" b96063c7ce14045f91f17489d8b30a2bf5129308bd801d7dde715579d16d0e21 ../wasm-npm/llhttp.wasm
 $LH splice "$NPM_LH/llhttp_simd-wasm.js" 989f2025b23e92ae5093ceb357093df7bdf2e1e7f1f1bf383b0a4dc69a78151d ../wasm-npm/llhttp_simd.wasm
-# Never installed; amaro (swc wasm) is configured out below.
+# Never installed.
 rm deps/undici/src/lib/llhttp/llhttp.wasm deps/undici/src/lib/llhttp/llhttp_simd.wasm \
    deps/undici/src/lib/llhttp/llhttp-wasm.js deps/undici/src/lib/llhttp/llhttp_simd-wasm.js
-rm -r deps/amaro
-LH_WASM="--wasm ../wasm/llhttp.wasm --wasm ../wasm/llhttp_simd.wasm --wasm ../wasm-npm/llhttp.wasm --wasm ../wasm-npm/llhttp_simd.wasm"
+# amaro (`node x.ts` type stripping): swc's wasm, rebuilt by packages/amaro-wasm and spliced
+# over the sha-pinned shipped blob; --wasm-bindgen also renames the glue's one renumbered shim.
+AMARO=/usr/share/amaro-wasm/1.1.10/wasm_bg.wasm
+grep -q '"version": "1.1.10"' deps/amaro/package.json || { echo "deps/amaro is not 1.1.10" >&2; exit 1; }
+$LH splice deps/amaro/dist/index.js 8d7f6dd739cbf565ef93a02c5c2a69b512ea06c7e02efb75112662505fcc2c5f "$AMARO" --wasm-bindgen
+LH_WASM="--wasm ../wasm/llhttp.wasm --wasm ../wasm/llhttp_simd.wasm --wasm ../wasm-npm/llhttp.wasm --wasm ../wasm-npm/llhttp_simd.wasm --wasm $AMARO"
 $LH census $LH_WASM --allow-path 'deps/v8/third_party/wasm-api/example/*' --allow-path 'deps/v8/test/*' --allow-path 'deps/v8/src/runtime/runtime-test-wasm.cc' --allow-path 'deps/v8/samples/*' \
-    --expect deps/undici/undici.js=2 --expect "$NPM_LH/llhttp-wasm.js=1" --expect "$NPM_LH/llhttp_simd-wasm.js=1" \
+    --expect deps/undici/undici.js=2 --expect "$NPM_LH/llhttp-wasm.js=1" --expect "$NPM_LH/llhttp_simd-wasm.js=1" --expect deps/amaro/dist/index.js=1 \
     deps lib src
 
 case $(uname -m) in
@@ -67,10 +71,12 @@ export CXXFLAGS="${CFLAGS}"
 
 ./configure --prefix=/usr \
     --with-intl=system-icu --shared-openssl --shared-zlib --shared-zstd --shared-sqlite --shared-libuv \
-    --shared-nghttp2 --shared-nghttp3 --shared-ngtcp2 --shared-gtest --shared-cares \
-    --without-amaro
+    --shared-nghttp2 --shared-nghttp3 --shared-ngtcp2 --shared-gtest --shared-cares
     # Note: --shared-lief is omitted; that configure option was not added until Node.js v25.
 make -j$(nproc)
+# type stripping runs on the rebuilt amaro
+printf 'const n: number = 6;\nconsole.log(n * 7);\n' > ../strip.ts
+out/Release/node ../strip.ts | grep -qx 42
 $LH smoke out/Release/node ../wasm/llhttp.wasm ../wasm/llhttp_simd.wasm \
     ../wasm-npm/llhttp.wasm ../wasm-npm/llhttp_simd.wasm --require deps/npm/node_modules/undici --fetch
 make DESTDIR=$OUTPUT_DIR install

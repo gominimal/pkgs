@@ -357,17 +357,32 @@ def wasm_info(b):
     return {"imports": imports, "exports": exports, "feats": feats, "ids": set(ids)}
 
 
-def gate(shipped, rebuilt, label):
-    """Rebuilt blob must present the shipped blob's tables and no extra wasm features."""
+WBG_CLOSURE = re.compile(r"__wbindgen_closure_wrapper[0-9]+")
+
+
+def gate(shipped, rebuilt, label, wbg=False):
+    """Rebuilt blob must present the shipped blob's tables and no extra wasm features.
+
+    wbg (wasm-bindgen modules): wasm-bindgen numbers its closure-wrapper shim after a function
+    index, so one import may differ, if both sides are such a shim with the same module, kind and
+    signature; it is returned as (shipped name, rebuilt name) for the carrier's glue to follow.
+    Features may be any the shipped blob already uses."""
     a, r = wasm_info(shipped), wasm_info(rebuilt)
-    errs = []
+    errs, renames = [], []
     for k in ("imports", "exports"):
-        if a[k] != r[k]:
-            errs.append("%s differ: missing %s, extra %s" % (k, sorted(a[k] - r[k]), sorted(r[k] - a[k])))
+        miss, extra = a[k] - r[k], r[k] - a[k]
+        if wbg and k == "imports":
+            m = [x for x in miss if WBG_CLOSURE.fullmatch(x[1])]
+            e = [x for x in extra if WBG_CLOSURE.fullmatch(x[1])]
+            if len(m) == 1 and len(e) == 1 and (m[0][0], m[0][2], m[0][3]) == (e[0][0], e[0][2], e[0][3]):
+                renames.append((m[0][1], e[0][1]))
+                miss, extra = miss - set(m), extra - set(e)
+        if miss or extra:
+            errs.append("%s differ: missing %s, extra %s" % (k, sorted(miss), sorted(extra)))
     simd = "simd128" in a["feats"]
     if simd != ("simd128" in r["feats"]):
         errs.append("simd128 use differs: shipped %s, rebuilt %s" % (simd, not simd))
-    allowed = GATE_ALLOWED | ({"simd128"} if simd else set())
+    allowed = GATE_ALLOWED | ({"simd128"} if simd else set()) | (set(a["feats"]) if wbg else set())
     extra = sorted(set(r["feats"]) - allowed)
     if extra:
         errs.append("features not allowed: %s" % ", ".join("%s x%d" % (f, r["feats"][f]) for f in extra))
@@ -375,8 +390,10 @@ def gate(shipped, rebuilt, label):
         errs.append("sections not in shipped blob: %s" % sorted(r["ids"] - a["ids"]))
     if errs:
         raise Fail("%s: gate failed\n  " % label + "\n  ".join(errs))
-    log("@@GATE ok %s imports=%d exports=%d feats=%s" % (
-        label, len(r["imports"]), len(r["exports"]), dict(r["feats"]) or "{}"))
+    log("@@GATE ok %s imports=%d exports=%d feats=%s%s" % (
+        label, len(r["imports"]), len(r["exports"]), dict(r["feats"]) or "{}",
+        "".join(" rename=%s->%s" % rn for rn in renames)))
+    return renames
 
 
 # ---------------------------------------------------------------- carriers
@@ -433,7 +450,7 @@ def carriers(data):
             yield (kind, m.start(), None)
 
 
-def splice(path, pin, rebuilt_path):
+def splice(path, pin, rebuilt_path, wbg=False):
     data = open(path, "rb").read()
     new = open(rebuilt_path, "rb").read()
     hits = []
@@ -444,8 +461,14 @@ def splice(path, pin, rebuilt_path):
     if len(hits) != 1:
         raise Fail("%s: shipped blob %s found %d times, want exactly 1" % (path, pin[:16], len(hits)))
     m, shipped = hits[0]
-    gate(shipped, new, "%s <- %s" % (path, os.path.basename(rebuilt_path)))
+    renames = gate(shipped, new, "%s <- %s" % (path, os.path.basename(rebuilt_path)), wbg)
     out = data[:m.start()] + base64.b64encode(new) + data[m.end():]
+    for old, nw in renames:
+        o, n = old.encode(), nw.encode()
+        word = lambda s: re.compile(rb"(?<![\w$])" + re.escape(s) + rb"(?![\w$])")
+        if len(word(o).findall(out)) != 1 or word(n).findall(out):
+            raise Fail("%s: glue must name %s exactly once and %s not at all" % (path, old, nw))
+        out = word(o).sub(n, out)
     got = collections.Counter(sha(b) for b in (b64_decode(x.group(0)) for x in B64_ALIGNED.finditer(out)) if b)
     if pin != sha(new) and got[pin]:
         raise Fail("%s: shipped blob still present after splice" % path)
@@ -676,11 +699,11 @@ def _vec(items):
     return _leb(len(items)) + b"".join(items)
 
 
-def mkwasm(imports=("wasm_on_url",), exports=("malloc", "llhttp_execute"), body=b"\x41\x00\x0b", simd=False):
-    """Tiny module: imports env.<name> (i32,i32,i32)->i32, exports memory + funcs sharing one body."""
+def mkwasm(imports=("wasm_on_url",), exports=("malloc", "llhttp_execute"), body=b"\x41\x00\x0b", simd=False, module="env"):
+    """Tiny module: imports <module>.<name> (i32,i32,i32)->i32, exports memory + funcs sharing one body."""
     t3 = b"\x60\x03\x7f\x7f\x7f\x01\x7f"
     types = _sec(1, _vec([t3]))
-    imp = _sec(2, _vec([_str("env") + _str(n) + b"\x00\x00" for n in imports]))
+    imp = _sec(2, _vec([_str(module) + _str(n) + b"\x00\x00" for n in imports]))
     nf = len(exports)
     fn = _sec(3, _vec([b"\x00"] * nf))
     mem = _sec(5, _vec([b"\x00\x01"]))
@@ -730,6 +753,17 @@ def selftest():
     _expect_fail(wasm_info, bad_unknown, contains="unknown opcode")
     _expect_fail(wasm_info, b"\0asm\x02\0\0\0", contains="not a wasm v1")
 
+    log("selftest: wasm-bindgen gate")
+    P = "__wbindgen_placeholder__"
+    wb_shipped = mkwasm(imports=("__wbg_log_1", "__wbindgen_closure_wrapper10"), module=P)
+    wb_good = mkwasm(imports=("__wbg_log_1", "__wbindgen_closure_wrapper12"), module=P, body=b"\x41\x01\x0b")
+    wb_two = mkwasm(imports=("__wbg_log_2", "__wbindgen_closure_wrapper12"), module=P, body=b"\x41\x01\x0b")
+    _expect_fail(gate, wb_shipped, wb_good, "wbg strict", contains="imports differ")
+    assert gate(wb_shipped, wb_good, "wbg", True) == [("__wbindgen_closure_wrapper10", "__wbindgen_closure_wrapper12")]
+    _expect_fail(gate, wb_shipped, wb_two, "wbg two", True, contains="imports differ")
+    gate(bad_bulk, bad_bulk, "wbg shipped feats", True)
+    _expect_fail(gate, shipped, bad_bulk, "wbg new feats", True, contains="bulk-memory")
+
     cwd = os.getcwd()
     with tempfile.TemporaryDirectory() as td:
         def tree():
@@ -769,6 +803,21 @@ def selftest():
             _expect_fail(census, ["deps"], [sha(good), sha(good_simd)], ["deps/v8/third_party/wasm-api/example/*"],
                          {"deps/undici/undici.js": (3, True), "deps/npm/node_modules/undici/lib/llhttp/llhttp-wasm.js": (1, True)},
                          contains="expected 3+")
+
+            log("selftest: wasm-bindgen splice renames the glue")
+            os.chdir(td)
+            glue = ("imports.wbg.__wbindgen_closure_wrapper10 = function() {};\n"
+                    "var bytes = Buffer.from(\"%s\", \"base64\");\n" % base64.b64encode(wb_shipped).decode())
+            for name, b in (("wb.js", glue.encode()), ("wb_good.wasm", wb_good)):
+                with open(name, "wb") as f:
+                    f.write(b)
+            _expect_fail(splice, "wb.js", sha(wb_shipped), "wb_good.wasm", contains="imports differ")
+            splice("wb.js", sha(wb_shipped), "wb_good.wasm", True)
+            got = open("wb.js").read()
+            assert "__wbindgen_closure_wrapper12 = " in got and "wrapper10" not in got, got[:120]
+            with open("wb.js", "w") as f:
+                f.write(glue + "// __wbindgen_closure_wrapper10 again\n")
+            _expect_fail(splice, "wb.js", sha(wb_shipped), "wb_good.wasm", True, contains="exactly once")
 
             log("selftest: splice rejects")
             root = tree()
@@ -873,6 +922,8 @@ def main(argv):
     p.add_argument("carrier")
     p.add_argument("shipped_sha")
     p.add_argument("rebuilt")
+    p.add_argument("--wasm-bindgen", action="store_true",
+                   help="wasm-bindgen module: allow its renumbered closure-wrapper import (renamed in the glue) and the shipped blob's features")
     p = sp.add_parser("census")
     p.add_argument("roots", nargs="+")
     p.add_argument("-C", dest="chdir")
@@ -893,7 +944,7 @@ def main(argv):
         elif a.cmd == "build":
             build(a.src, a.outdir, a.version, a.llhttp, a.cc, a.sysroot, a.rt, a.dry_run)
         elif a.cmd == "splice":
-            splice(a.carrier, a.shipped_sha, a.rebuilt)
+            splice(a.carrier, a.shipped_sha, a.rebuilt, a.wasm_bindgen)
         elif a.cmd == "census":
             shas = [sha(open(w, "rb").read()) for w in a.wasm]
             if a.chdir:
