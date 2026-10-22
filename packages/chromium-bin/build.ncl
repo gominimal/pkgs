@@ -1,7 +1,6 @@
-let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
-let unzip = import "../unzip/build.ncl" in
 
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -44,7 +43,7 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # Chromium-branded build must keep this runtime dep.
 let chromium-policies = import "../chromium-policies/build.ncl" in
 
-# Prebuilt full chromium browser (headed mode), named with the
+# Prebuilt full Chromium browser (headed mode), named with the
 # Gentoo/AUR `-bin` convention. The headless-shell variant ships in a
 # sibling pkg `chromium-headless-shell-bin` so consumers (and download
 # size) only pay for the variant they need. Building chromium from
@@ -52,68 +51,93 @@ let chromium-policies = import "../chromium-policies/build.ncl" in
 # checkout, and 4-8 hours of build time — none of which is packaged.
 # CLAUDE.md's "build from source" rule has an explicit carve-out for
 # this case. The bare `chromium` name is intentionally left available
-# for a future source-built pkg.
+# for a future source-built pkg (pkgmgr-rs#681).
 #
-# ⚠ CHANNEL: pre-stable BY DESIGN (pkgmgr-rs#646). This pair tracks
-# Playwright's pinned Chromium, which rides ahead of the stable channel
-# (the arm64 legs exist only for Playwright's revisions). CVEs are
-# published only against stable, so a 0/0/0 scan here means "ahead of
-# the published feed", NOT "audited clean" — and a held pin ages into
-# known-vulnerable as its major reaches stable. pkgmgr's nightly sweep
-# bumps the pair and alerts from the day that happens.
+# SOURCE (INTERIM, decided 2026-10-20): ungoogled-chromium-portablelinux
+# (github.com/ungoogled-software/ungoogled-chromium-portablelinux), one
+# `*_linux.tar.xz` per arch from the GitHub release tagged
+# `<chromium version>-<ungoogled_revision>`. It is a Stable-branch
+# Chromium build (is_official_build, use_sysroot) with ungoogled's patch
+# set on top, published for x86_64 AND arm64 for every Stable point
+# release, ~2 days after Google. It is the stop-gap, not the end state:
+# it is what lets the package track Stable on both arches again while the
+# source build (#681) or another source is worked out.
 #
-# Source mix — both legs are true open-source Chromium (BSD-3-Clause),
-# deliberately NOT Chrome for Testing: CfT is a *branded Google Chrome*
-# build governed by the Chrome ToS, which does not permit redistribution
-# — and our binary cache redistributes (gominimal/inbox#284). Playwright
-# itself stopped publishing its own linux-x64 Chromium (its registry now
-# fetches CfT directly for x64), so:
-#   amd64 → Chromium's official snapshot bucket
-#     (chromium-browser-snapshots), pinned to `snapshot_position` — the
-#     main-branch position Chrome `browser_version` branched from
-#     (chromiumdash fetch_version), i.e. the same code the arm64 build
-#     was cut from, minus branch cherry-picks.
-#   arm64 → Playwright's own arm64 Chromium build on cdn.playwright.dev
-#     (Google publishes no linux-arm64; Playwright still builds arm64).
+# WHY WE MOVED: the old legs were both dead ends. arm64 came from
+# Playwright's CDN, and Playwright stopped building linux-arm64 Chromium
+# after r1243 (153.0.8010.12). amd64 came from chromium-browser-snapshots,
+# which builds only main-branch positions — never a Stable-branch
+# cherry-pick — so its binary was older code than the `browser_version`
+# it was labelled with. Chrome for Testing (pkgs#928) ships both arches
+# but is Google-branded under the Chrome ToS with a proprietary Widevine
+# CDM, which our public binary cache cannot redistribute.
 #
-# `revision` is the Playwright browser-revision number from
-# packages/playwright-core/browsers.json. Revision 1243 ↔ Chrome 153.0.8010.12
-# ↔ playwright-core ^1.59. `snapshot_position` must be re-derived whenever
-# `browser_version` bumps. Keep all three in lockstep with
-# chromium-headless-shell-bin.
+# LICENSING: BSD-3-Clause (ungoogled-chromium's own LICENSE) over
+# Chromium's BSD-3-Clause and bundled third-party licenses (listed at
+# chrome://credits). Redistributable. No Widevine CDM in the tarball
+# (build.sh fails if one ever appears). PATENT NOTE: built with
+# `proprietary_codecs=true ffmpeg_branding="Chrome"` (H.264/AAC decoders
+# in the bundled ffmpeg), as every redistributed Chromium binary we
+# evaluated is — copyright permits redistribution; patent licensing is a
+# separate question.
 #
-# Consumer note (Playwright): files are laid out under
-# /usr/share/playwright-browsers/chromium-<rev>/ in Playwright's
-# registry layout, so installing both this pkg and
-# chromium-headless-shell-bin and setting
-# `PLAYWRIGHT_BROWSERS_PATH=/usr/share/playwright-browsers` lets
-# @playwright/test discover both binaries with zero further config —
-# provided the installed playwright-core revision matches `revision`.
-# If it doesn't, pass `executablePath: '/bin/chromium'` (or
-# '/bin/chromium-headless-shell' from the headless-shell pkg) to
-# bypass the registry lookup. See packages/chromium-bin/README.md.
+# BEHAVIOUR vs vanilla Chromium (ungoogled's patch set): no Safe Browsing,
+# no Google sign-in / sync, no Google API keys; installing from the Chrome
+# Web Store does not work (domain substitution breaks the CRX install
+# flow). Unpacked extensions via `--load-extension` work. No Widevine,
+# so no DRM (EME) playback.
+#
+# PINS: `browser_version` is the Chromium version (also `upstream_version`,
+# so scanning compares the real Stable version). `ungoogled_revision` is
+# ungoogled's packaging revision — the `-N` in the release tag; a `-2` of
+# the same Chromium version is an update. pkgmgr's chromium resolver bumps
+# both and both sha256s, and proposes a release only when BOTH arch
+# tarballs are attached. `revision` is ONLY the Playwright registry
+# directory key (`chromium-<revision>` under /usr/share/playwright-browsers),
+# kept in lockstep with chromium-headless-shell-bin; it names no build.
+#
+# Consumer note (Playwright): the browser is laid out as
+# /usr/share/playwright-browsers/chromium-<revision>/chrome-linux64/chrome
+# (amd64) or .../chrome-linux-arm64/chrome (arm64, plus a `chrome-linux`
+# compat symlink to the pre-2026-10 arm64 path), so
+# `PLAYWRIGHT_BROWSERS_PATH=/usr/share/playwright-browsers` lets a
+# playwright-core 1.63.x (revision 1243) consumer discover it with no
+# further config. Any other playwright-core version: pass
+# `executablePath: '/bin/chromium'`. See packages/chromium-bin/README.md.
 let revision = "1243" in
-let browser_version = "153.0.8010.12" in
-let snapshot_position = "1681086" in
+let browser_version = "155.0.8059.84" in
+let ungoogled_revision = "1" in
+# The one release tarball for this arch: the Source in build_deps and
+# `binary_from` both use it, so the two cannot drift.
+let release_url =
+  let arch_tag = match { { arch = 'Amd64, .. } => "x86_64", { arch = 'Arm64, .. } => "arm64" } target in
+  "https://github.com/ungoogled-software/ungoogled-chromium-portablelinux/releases/download/%{browser_version}-%{ungoogled_revision}/ungoogled-chromium-%{browser_version}-%{ungoogled_revision}-%{arch_tag}_linux.tar.xz"
+in
 {
   name = "chromium-bin",
   build_deps = [
     { file = "build.sh" } | Local,
+    # One tarball per arch, straight from the GitHub release. Upstream
+    # publishes no checksum file or signature; each sha256 was computed
+    # from the download and matches the asset digest GitHub reports.
     match {
       { arch = 'Amd64, .. } =>
         {
-          url = "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/chrome-linux.zip",
-          sha256 = "4cd65eb42af4eb7942b0af2a328af13b3808db672ad62b2d4af84e27aa17ba3b",
+          url = release_url,
+          sha256 = "7e376c47b2650f846984f32e4962b33703e5abe09681009cf4f3f336e1125f13",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
-          url = "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-linux-arm64.zip",
-          sha256 = "f144b7f58b61c6bea2c192c4c178faa9b606bdf758e2d47ca99fa03f759a13e4",
+          url = release_url,
+          sha256 = "5b4de24d19d7a5e5240233a4efd2f1f62be50f82793ee1b90673479148474ade",
         } | Source,
     } target,
     base,
-    unzip,
   ],
+  # Covers every DT_NEEDED of `chrome` and `chromedriver` on both arches
+  # (sysroot build: max GLIBC_2.25 / GCC_4.5.0). The rest are dlopen'd or
+  # reached through those (fontconfig/freetype/harfbuzz/fribidi via pango,
+  # libdrm/libxshmfence via mesa's gbm, libxtst/libxrender, fonts).
   runtime_deps = [
     bash,
     glibc,
@@ -155,6 +179,7 @@ let snapshot_position = "1681086" in
   build_args = {
     include revision,
     include browser_version,
+    include ungoogled_revision,
   },
 
   outputs = {
@@ -166,26 +191,60 @@ let snapshot_position = "1681086" in
     {
       upstream_version = browser_version,
       license_spdx = "BSD-3-Clause",
+      # NOT the origin of these bytes (`binary_from` says where they come
+      # from), but LOAD-BEARING for vulnerability scanning: supply-chain's
+      # cpe_remap maps pkg:github/microsoft/playwright -> google:chrome,
+      # which is how BOTH chromium packages see Chrome's CVEs at all.
+      # ungoogled-chromium <v>-N is Chromium <v> plus patches, so Chrome's
+      # CVE ranges apply to `upstream_version` as-is. Removing or changing
+      # this without a matching cpe_remap/cpe_identity entry makes the
+      # package scan 0/0/0 — a silent false negative. Re-identifying the
+      # pair is a separate, coordinated change, tracked in
+      # gominimal/pkgmgr-rs#1029 (needs a supply-chain cpe_remap first).
       source_provenance = {
         category = 'GithubRepo,
         owner = "microsoft",
         repo = "playwright",
       },
-      binary_from =
-        match {
-          { arch = 'Amd64, .. } => "https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/%{snapshot_position}/chrome-linux.zip",
-          { arch = 'Arm64, .. } => "https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/%{revision}/chromium-linux-arm64.zip",
-        } target,
+      binary_from = release_url,
     } | Attrs,
 
   tests = {
-    smoketest = standaloneTest "/bin/chromium --version",
+    # The exact pinned version as a whole token, not just "it runs".
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "v=$(/bin/chromium --version); echo \"$v\"; case \" $v \" in *\" %{browser_version} \"*) ;; *) echo \"expected %{browser_version}\" >&2; exit 1 ;; esac"],
+        ],
+      } | Test,
+    # Offline: render a data: URL headlessly and read the DOM back.
     launch_check =
       {
         class = 'Standalone,
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "/bin/chromium --headless --no-sandbox --disable-gpu --disable-dev-shm-usage --dump-dom 'data:text/html,<title>chromium-launch-ok</title>' | grep -q chromium-launch-ok"],
+        ],
+      } | Test,
+    # The bundled chromedriver matches the browser exactly.
+    chromedriver_check =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "d=/usr/share/playwright-browsers/chromium-%{revision}; case \"$(uname -m)\" in x86_64) i=chrome-linux64 ;; *) i=chrome-linux-arm64 ;; esac; v=$(\"$d/$i/chromedriver\" --version); echo \"$v\"; case \" $v \" in *\" %{browser_version} \"*) ;; *) echo \"expected %{browser_version}\" >&2; exit 1 ;; esac"],
+        ],
+      } | Test,
+    # Playwright registry layout in place; Qt shims and any Widevine CDM
+    # NOT shipped.
+    layout_check =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "d=/usr/share/playwright-browsers/chromium-%{revision}; case \"$(uname -m)\" in x86_64) i=chrome-linux64 ;; *) i=chrome-linux-arm64; test -x \"$d/chrome-linux/chrome\" ;; esac && test -x \"$d/$i/chrome\" && test -e \"$d/INSTALLATION_COMPLETE\" && test ! -e \"$d/$i/libqt5_shim.so\" && test ! -e \"$d/$i/libqt6_shim.so\" && test ! -e \"$d/$i/chrome-wrapper\" && ! find \"$d/\" -iname '*widevine*' | grep -q ."],
         ],
       } | Test,
     # The CVE-2026-111943 distrust policy is installed where this browser reads
