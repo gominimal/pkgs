@@ -8,14 +8,14 @@ let xorgproto = import "../xorgproto/build.ncl" in
 let libx11 = import "../libx11/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.9.12" in
+let version = "0.9.13" in
 {
   name = "libxrender",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libXrender-%{version}.tar.xz",
-      sha256 = "b832128da48b39c8d608224481743403ad1691bf4e554e4be9c174df171d1b97",
+      sha256 = "3fe88c609df6782e1e7af2e4de36b2563d70cd70ff7dcb1cda561ad64912bb64",
       extract = true,
       strip_prefix = "libXrender-%{version}",
     } | Source,

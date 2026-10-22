@@ -2,6 +2,7 @@
 # with outputs + runtime_deps refined from a verified `minimal package` build.
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -14,6 +15,14 @@ let version = "0.17.0" in
   name = "sccache",
   build_deps = [
     { file = "build.sh" } | Local,
+    # CVE-2026-111943 (eMudhra intermediate key compromise): pins rustls-webpki
+    # 0.103.16 (RUSTSEC-2026-0382, distrusts the 8 intermediates) and
+    # webpki-roots / webpki-root-certs 1.0.10 (RUSTSEC-2026-0383, drops emSign ECC
+    # Root CA - G3) in upstream's Cargo.lock. Lock-only: version + checksum lines
+    # (plus whatever cargo had to move with them). Drop on the first upstream
+    # release whose Cargo.lock already has those versions; a version bump that
+    # keeps it fails at `patch` rather than silently shipping the old lock.
+    { file = "cve-2026-111943-webpki-lock.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/mozilla/sccache/v%{version}.tar.gz",
       sha256 = "49949ad1cf175c49da126dbb0c2e6a56bd9d1f626e8cc0be17b9668b914145c6",
@@ -21,6 +30,7 @@ let version = "0.17.0" in
       strip_prefix = "sccache-%{version}",
     } | Source,
     base,
+    patch,
     rust,
     toolchain,
     make,

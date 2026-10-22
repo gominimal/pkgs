@@ -54,6 +54,49 @@ if [ "$(uname -m)" = aarch64 ]; then
   grep -q 'arm64 hangs at 72 codegen shards' scripts/build/zig.ts || { echo "ERROR: zig codegen-thread cap did not apply — bun's scripts/build/zig.ts changed; revisit the arm64 hang." >&2; exit 1; }
 fi
 
+# CVE-2026-111943: remove the three emSign roots NSS 3.131.1 dropped from the
+# compiled-in root store (see the patch header). Applied by name, never a glob,
+# so a patch that stops being fetched fails the build. `patch` can exit 0 on an
+# already-applied hunk, so also prove the labels are gone and the store still
+# has a sane size. The built binary is checked by fingerprint further down.
+patch -Np1 -i cve-2026-111943-remove-emsign-roots.patch
+for label in "emSign ECC Root CA - G3" "emSign Root CA - C1" "emSign ECC Root CA - C3"; do
+  if grep -qF "/* $label */" packages/bun-usockets/src/crypto/root_certs.h; then
+    echo "ERROR: CVE-2026-111943 root '$label' still in root_certs.h" >&2
+    exit 1
+  fi
+done
+roots=$(grep -c 'BEGIN CERTIFICATE' packages/bun-usockets/src/crypto/root_certs.h)
+[ "$roots" -ge 100 ] || { echo "ERROR: root_certs.h has only $roots roots after the CVE-2026-111943 patch" >&2; exit 1; }
+
+# Fingerprint check run against a bun binary: none of the removed roots may be
+# in tls.rootCertificates (the compiled-in store), by SHA-256 of the DER, and
+# the store must have at least 100 roots so an empty one cannot pass.
+cat > ./minimal-check-emsign-roots.js <<'JS'
+const { X509Certificate, createHash } = require("node:crypto");
+const { rootCertificates } = require("node:tls");
+const removed = {
+  "86a1ecba089c4a8d3bbe2734c612ba341d813e043cf9e8a862cd5c57a36bbe6b": "emSign ECC Root CA - G3",
+  "125609aa301da0a249b97a8239cb6a34216f44dcac9f3954b14292f2e8c8608f": "emSign Root CA - C1",
+  "bc4d809b15189d78db3e1d8cf4f9726a795da1643ca5f1358e1ddb0edc0d7eb3": "emSign ECC Root CA - C3",
+};
+const fps = new Set(rootCertificates.map(p => createHash("sha256").update(new X509Certificate(p).raw).digest("hex")));
+const left = Object.keys(removed).filter(h => fps.has(h)).map(h => removed[h]);
+if (fps.size < 100 || left.length) {
+  console.log(`roots=${fps.size} still bundled: ${left.join(", ") || "none"}`);
+  process.exit(1);
+}
+console.log(`roots=${fps.size} ok`);
+JS
+# Control: the stock bootstrap bun still bundles all three, so the check must
+# fail on it, naming all three. Matching the message (not just a non-zero
+# exit) means a crash in the check cannot pass as the expected failure.
+control=$(bun ./minimal-check-emsign-roots.js || true)
+case "$control" in
+  *"still bundled: emSign ECC Root CA - G3, emSign Root CA - C1, emSign ECC Root CA - C3") ;;
+  *) echo "ERROR: emSign root check did not flag the stock bootstrap bun (got: $control); the check is broken" >&2; exit 1 ;;
+esac
+
 # Initialize a git repo so nested dep version generation works
 # (it runs "git rev-parse HEAD" to get version strings for bundled packages)
 git init -q
@@ -62,6 +105,9 @@ git -c user.email=build@local -c user.name=build commit -q -m "v${MINIMAL_ARG_VE
 # Build via bun's own build orchestration (handles bun install, codegen, cmake
 # deps, zig, linking, and strip). Outputs the stripped binary at build/release/bun.
 bun run build:release
+
+# CVE-2026-111943: the binary we ship must not bundle the removed roots.
+build/release/bun ./minimal-check-emsign-roots.js
 
 # Install. The real binary lives in libexec; /usr/bin carries wrappers so
 # `bun add -g` lands its bins in ~/.local/bin (on the session PATH) rather
