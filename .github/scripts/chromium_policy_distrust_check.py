@@ -13,9 +13,9 @@ The reverse is not required. distrust.txt also lists roots and issuers that
 the Chrome Root Store never trusted (e.g. Sectigo AAA, emSign Root TLS CA - G3),
 which the policy has no reason to repeat.
 
-Exit codes: 0 aligned (or distrust.txt not on this branch yet, which is
-reported as a warning), 1 drift or a malformed input, 2 the built-in negative
-control failed (the check itself is broken).
+Exit codes: 0 aligned, 1 drift, a malformed input or a missing distrust.txt
+(a renamed or moved denylist must fail the job, not disable it), 2 the
+built-in negative control failed (the check itself is broken).
 
 Pure standard library: the SPKI is cut out of the DER by a minimal parser,
 so the result does not depend on the runner's openssl.
@@ -97,7 +97,15 @@ def load_policy_spkis(path: str) -> list[str]:
     certs = doc.get("CADistrustedCertificates") if isinstance(doc, dict) else None
     if not isinstance(certs, list) or not certs:
         raise ValueError(f"{path}: no CADistrustedCertificates list")
-    return [spki_sha256(base64.b64decode(c, validate=True)) for c in certs]
+    out: list[str] = []
+    for i, c in enumerate(certs):
+        if not isinstance(c, str):
+            raise ValueError(
+                f"{path}: CADistrustedCertificates[{i}] is {type(c).__name__}, "
+                "not a base64 string"
+            )
+        out.append(spki_sha256(base64.b64decode(c, validate=True)))
+    return out
 
 
 def missing(policy_spkis: list[str], deny: set[str]) -> list[str]:
@@ -118,11 +126,11 @@ def main() -> int:
 
     if not os.path.exists(deny_path):
         print(
-            f"::warning::{DENYLIST} is not on this branch yet (it arrives with "
-            "gominimal/pkgs#948); the policy/denylist alignment check activates "
-            "once it lands."
+            f"::error::{DENYLIST} not found; the policy/denylist alignment "
+            "check cannot run. If the denylist moved, update DENYLIST here and "
+            "the workflow's paths filter."
         )
-        return 0
+        return 1
 
     try:
         deny = load_denylist_spkis(deny_path)

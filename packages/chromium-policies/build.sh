@@ -14,7 +14,15 @@ POLICY=ca-distrusted-certificates.json
 # certificate per key covers every certificate for that key (the emSign-issued
 # copy, the Sectigo AAA cross-sign, and the ECDSA-malleated twins).
 # Keep in step with packages/ca-certificates/distrust.txt (`spki` lines);
-# .github/scripts/chromium_policy_distrust_check.py enforces that in CI.
+# .github/scripts/chromium_policy_distrust_check.py enforces that in CI. The
+# same 9 hashes are repeated in build.ncl's policy_installed test.
+#
+# Hash method: here (and in the standalone test) the SPKI is openssl's
+# re-encoding of the parsed public key (`x509 -pubkey | pkey -pubin -outform
+# DER`); Chromium and the CI checker hash the certificate's SPKI bytes as
+# they appear in the DER. Those agree for any canonically DER-encoded SPKI,
+# and they agree for all 9 below (checked against both); a non-canonical
+# encoding in a future entry would show up as a mismatch here or in CI.
 EXPECTED_SPKIS='
 ebed6475c2c2d80fcb199f3fe8dd6e6b3ce60b77eb15d4e42c3dec0c6f5b5105 EM DV TLS CA - G3B
 e0254c7fcdc265e2f0f8a428dabb75ab4ae039b4872d62f5ee57f0877d5a8a41 EM EV TLS CA - G3B
@@ -84,8 +92,10 @@ check_policy "$POLICY"
 
 # --- 2. Negative controls: the check must reject broken policies, so a check
 # that always passes cannot go unnoticed. -----------------------------------
+NEG_CONTROLS=0
 expect_reject() {
   local label=$1 file=$2
+  NEG_CONTROLS=$((NEG_CONTROLS + 1))
   if check_policy "$file" 2>/dev/null; then
     echo "FAIL: negative control '$label' was accepted; check_policy is broken" >&2
     exit 1
@@ -110,4 +120,4 @@ expect_reject "extra policy in this file" neg-extra.json
 install -d "$OUTPUT_DIR/etc/chromium/policies/managed"
 install -m 0644 "$POLICY" "$OUTPUT_DIR/etc/chromium/policies/managed/$POLICY"
 
-echo "chromium-policies: $POLICY passes ($(jq '.CADistrustedCertificates | length' "$POLICY") keys); 5 negative controls rejected"
+echo "chromium-policies: $POLICY passes ($(jq '.CADistrustedCertificates | length' "$POLICY") keys); $NEG_CONTROLS negative controls rejected"

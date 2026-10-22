@@ -115,7 +115,9 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # 157.0.8103.6 and Canary 158.0.8113.0 lack both. Bump to the first CfT
 # Stable that carries them. Until then, a consumer that browses untrusted
 # sites (agent-browser) is safer driving chromium-bin's `chromium
-# --headless`, which reads the policy.
+# --headless`, which reads the policy. Tracked in gominimal/pkgmgr-rs#1028
+# (trigger: the first CfT Stable carrying both commits; Chrome expects its
+# root-store update in Stable 2026-10-27).
 let revision = "1243" in
 let browser_version = "155.0.8059.84" in
 {
