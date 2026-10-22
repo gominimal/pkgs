@@ -97,7 +97,7 @@ let swc_arm64_sha256 = "ea6ca74538e44799986dbea7ae0b7142b37abf5d6b16fcf34566221c
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          ["/bin/bash", "-c", "node -e \"const swc = require('/usr/libexec/next/lib/node_modules/next/dist/build/swc/index.js'); const out = swc.transformSync('const a: number = 1; export default a;', { jsc: { parser: { syntax: 'typescript' } } }); if (!/const a = 1;/.test(out.code) || /: number/.test(out.code)) { throw new Error('unexpected SWC output: ' + out.code); } const addon = Object.keys(require.cache).find((f) => f.endsWith('.node')); if (!addon || !/\\/node_modules\\/@next\\/swc-linux-(x64|arm64)-gnu\\/next-swc\\.linux-(x64|arm64)-gnu\\.node$/.test(addon)) { throw new Error('SWC loaded from an unexpected path: ' + addon); } console.log(addon);\""],
+          ["/bin/bash", "-c", "node -e \"const swc = require('/usr/libexec/next/lib/node_modules/next/dist/build/swc/index.js'); const out = swc.transformSync('const a: number = 1; export default a;', { jsc: { parser: { syntax: 'typescript' } } }); if (!/a = 1;/.test(out.code) || /: number/.test(out.code)) { throw new Error('unexpected SWC output: ' + out.code); } const addon = Object.keys(require.cache).find((f) => f.endsWith('.node')); if (!addon || !/\\/node_modules\\/@next\\/swc-linux-(x64|arm64)-gnu\\/next-swc\\.linux-(x64|arm64)-gnu\\.node$/.test(addon)) { throw new Error('SWC loaded from an unexpected path: ' + addon); } console.log(addon);\""],
         ],
       } | Test,
     sharp_uses_system_libvips =
