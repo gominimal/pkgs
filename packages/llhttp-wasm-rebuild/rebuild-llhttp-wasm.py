@@ -2,7 +2,7 @@
 """Regenerate undici's llhttp wasm from in-tree C and replace the shipped blobs.
 
   check-tree  node tree tripwires: pinned undici / npm-undici versions, no cjs lexer wasm
-  build       pin build/wasm.js flags, compile llhttp{,_simd}.wasm twice, require identical bytes
+  build       pin build/{wasm,llhttp}.js flags, compile llhttp{,_simd}.wasm twice, require identical bytes
   splice      decode the pinned shipped blob in a carrier, gate tables+features, replace it once
   census      every wasm carrier under the roots is an allowed sha or on an allowed path
   smoke       instantiate blobs under a built node and parse a POST; optional loopback fetch
@@ -26,7 +26,9 @@ import tempfile
 
 MAGIC = b"\0asm\x01\0\0\0"
 
-# deps/undici/src/build/wasm.js, identical in undici v6.26.0, v6.28.0, v7.29.0, v8.10.2.
+# deps/undici/src/build/wasm.js, identical in undici v6.26.0, v6.28.0, v7.29.0, v7.30.1, v8.10.2;
+# renamed build/llhttp.js in v8.12 (beside the new build/milo.js) with the same lines (v8.12.2).
+WASM_JS_NAMES = ("build/wasm.js", "build/llhttp.js")
 WASM_JS_PINNED = (
     "let WASM_CFLAGS = process.env.WASM_CFLAGS || '--sysroot=/usr/share/wasi-sysroot -target wasm32-unknown-wasi'",
     "WASM_CFLAGS += ' -Ofast -fno-exceptions -fvisibility=hidden -mexec-model=reactor'",
@@ -574,11 +576,15 @@ def check_undici_src(src, version, llhttp):
     srcs = sorted(f for f in os.listdir(os.path.join(src, "deps/llhttp/src")) if f.endswith(".c"))
     if tuple(srcs) != LLHTTP_SRCS:
         raise Fail("%s/deps/llhttp/src/*.c is %s, want %s" % (src, srcs, list(LLHTTP_SRCS)))
-    lines = {l.strip() for l in open(os.path.join(src, "build/wasm.js"))}
+    found = [n for n in WASM_JS_NAMES if os.path.isfile(os.path.join(src, n))]
+    if len(found) != 1:
+        raise Fail("%s: want exactly one of %s, found %s" % (src, list(WASM_JS_NAMES), found))
+    script = found[0]
+    lines = {l.strip() for l in open(os.path.join(src, script))}
     missing = [l for l in WASM_JS_PINNED if l not in lines]
     if missing:
-        raise Fail("%s/build/wasm.js flags drifted; missing:\n  %s" % (src, "\n  ".join(missing)))
-    log("@@PIN ok %s/build/wasm.js flags" % src)
+        raise Fail("%s/%s flags drifted; missing:\n  %s" % (src, script, "\n  ".join(missing)))
+    log("@@PIN ok %s/%s flags" % (src, script))
 
 
 def compile_cmd(cc, sysroot, rt, out, simd):
@@ -892,6 +898,15 @@ def selftest():
             open(os.path.join(src, "build/wasm.js"), "w").write(
                 "\n".join(WASM_JS_PINNED).replace("-Ofast", "-O3") + "\n")
             _expect_fail(check_undici_src, src, "8.10.2", "9.3.1", contains="flags drifted")
+            # undici 8.12 renamed build/wasm.js -> build/llhttp.js: either name, never both or neither
+            os.rename(os.path.join(src, "build/wasm.js"), os.path.join(src, "build/llhttp.js"))
+            open(os.path.join(src, "build/llhttp.js"), "w").write("\n".join(WASM_JS_PINNED) + "\n")
+            check_undici_src(src, "8.10.2", "9.3.1")
+            open(os.path.join(src, "build/wasm.js"), "w").write("\n".join(WASM_JS_PINNED) + "\n")
+            _expect_fail(check_undici_src, src, "8.10.2", "9.3.1", contains="want exactly one")
+            os.unlink(os.path.join(src, "build/wasm.js"))
+            os.unlink(os.path.join(src, "build/llhttp.js"))
+            _expect_fail(check_undici_src, src, "8.10.2", "9.3.1", contains="want exactly one")
         finally:
             os.chdir(cwd)
 

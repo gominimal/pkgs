@@ -21,10 +21,13 @@ fi
 # llhttp wasm: rebuilt from undici's C and spliced over the sha-pinned shipped
 # base64 blobs. Every pin fails the build on a node bump until re-derived.
 LH="python3 /usr/share/llhttp-wasm-rebuild/rebuild-llhttp-wasm.py"
+UNDICI="${MINIMAL_ARG_UNDICI:?build.ncl forwards undici}"
+UNDICI_LLHTTP="${MINIMAL_ARG_UNDICI_LLHTTP:?build.ncl forwards undici_llhttp}"
 NPM_UNDICI="${MINIMAL_ARG_NPM_UNDICI:?build.ncl forwards npm_undici}"
+AMARO_VERSION="${MINIMAL_ARG_AMARO:?build.ncl forwards amaro}"
 NPM_LH=deps/npm/node_modules/undici/lib/llhttp
-$LH check-tree --undici 8.10.2 --npm-undici "$NPM_UNDICI"
-$LH build deps/undici/src ../wasm --version 8.10.2 --llhttp 9.3.1 --sysroot /usr/lib/wasi
+$LH check-tree --undici "$UNDICI" --npm-undici "$NPM_UNDICI"
+$LH build deps/undici/src ../wasm --version "$UNDICI" --llhttp "$UNDICI_LLHTTP" --sysroot /usr/lib/wasi
 tar -xof "../undici-${NPM_UNDICI}.tar.gz" -C ..
 $LH build "../undici-${NPM_UNDICI}" ../wasm-npm --version "$NPM_UNDICI" --llhttp 8.1.0 --sysroot /usr/lib/wasi
 $LH splice deps/undici/undici.js ab4573a06c43574936dc98c3943b10a4ee32798e9797329e9f327e5f64115f54 ../wasm/llhttp.wasm
@@ -34,10 +37,13 @@ $LH splice "$NPM_LH/llhttp_simd-wasm.js" 989f2025b23e92ae5093ceb357093df7bdf2e1e
 # Never installed.
 rm deps/undici/src/lib/llhttp/llhttp.wasm deps/undici/src/lib/llhttp/llhttp_simd.wasm \
    deps/undici/src/lib/llhttp/llhttp-wasm.js deps/undici/src/lib/llhttp/llhttp_simd-wasm.js
+# undici 8.12 vendors milo (Rust) as two base64 wasm carriers in its source tree; node's
+# bundled undici.js compiles milo out (`getMiloEnabled } = false ? null : {}`), so never installed.
+rm deps/undici/src/lib/milo/simd.js deps/undici/src/lib/milo/no-simd.js
 # amaro (`node x.ts` type stripping): swc's wasm, rebuilt by packages/amaro-wasm and spliced
 # over the sha-pinned shipped blob; --wasm-bindgen also renames the glue's one renumbered shim.
-AMARO=/usr/share/amaro-wasm/1.1.11/wasm_bg.wasm
-grep -q '"version": "1.1.11"' deps/amaro/package.json || { echo "deps/amaro is not 1.1.11" >&2; exit 1; }
+AMARO=/usr/share/amaro-wasm/$AMARO_VERSION/wasm_bg.wasm
+grep -q "\"version\": \"$AMARO_VERSION\"" deps/amaro/package.json || { echo "deps/amaro is not $AMARO_VERSION" >&2; exit 1; }
 $LH splice deps/amaro/dist/index.js 79c79a0be6c92c7d8a1968cb1a7bed88737755d38d2b47ddfe4da5e51796a4e9 "$AMARO" --wasm-bindgen
 LH_WASM="--wasm ../wasm/llhttp.wasm --wasm ../wasm/llhttp_simd.wasm --wasm ../wasm-npm/llhttp.wasm --wasm ../wasm-npm/llhttp_simd.wasm --wasm $AMARO"
 $LH census $LH_WASM --allow-path 'deps/v8/third_party/wasm-api/example/*' --allow-path 'deps/v8/test/*' --allow-path 'deps/v8/src/runtime/runtime-test-wasm.cc' --allow-path 'deps/v8/samples/*' \
