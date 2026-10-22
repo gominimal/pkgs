@@ -67,7 +67,7 @@ let version = "2.88.4" in
       # is GNOME's own read-only mirror (same tags, same SHAs). Declared as the
       # mirror for the same reason as libxml2/libxslt: the scanner's GithubRepo
       # arm keeps the curated gnome:glib CPE identity in play, which a Gitlab
-      # provenance would bypass (gominimal/pkgmgr-rs#848).
+      # provenance would bypass. Allowed by AGENTS.md "official upstream mirrors".
       source_provenance = {
         category = 'GithubRepo,
         owner = "GNOME",

@@ -330,22 +330,6 @@ upstream_version = version,
 Do NOT set this to point to a mirror or any unofficial copy/website. Prefer to omit this field if you
 are not certain of the canonical origin of source code for this project.
 
-**One exception: official upstream mirrors.** Some upstreams develop on a self-hosted forge but publish an
-official GitHub mirror themselves. GNOME, for example, develops on gitlab.gnome.org and mirrors to
-`github.com/GNOME`. Such a package may declare `'GithubRepo` pointing at the mirror when all of the following
-hold:
-
-- the upstream itself runs or acknowledges the mirror (it is in the upstream's own org, or its docs link it);
-- the mirror carries the same release tags at the same commit SHAs as the canonical forge (spot-check the tag
-  you package);
-- the package needs it for advisory coverage. Today the scanner's GitHub path keeps a package's curated CPE
-  identity, but its GitLab path consults the curated identity only when the GitLab identity holds no
-  advisories at all, so a self-hosted GitLab provenance can drop NVD-CPE coverage.
-
-Say so in a comment beside the provenance block. The packages using this exception are `glib`, `libxml2` and
-`libxslt`. It ends when minimal-supply-chain's GitLab path also consults the curated CPE identity: then move
-them to `'Gitlab` with `host = "gitlab.gnome.org"`.
-
 If it came from github:
 
 ```ncl
@@ -356,6 +340,17 @@ source_provenance = {
 },
 ```
 
+If it came from a GitLab instance (`host` names the instance, e.g. `gitlab.com`; see `packages/psmisc`,
+`packages/tree`):
+
+```ncl
+source_provenance = {
+  category = 'Gitlab,
+  host = "gitlab.com",
+  owner = "<gitlab group or user>",
+  repo = "<gitlab project>",
+},
+```
 
 If its a gnu project:
 
@@ -367,6 +362,27 @@ source_provenance = {
 ```
 
 Omit it if its not one of these variants.
+
+**One exception: official upstream mirrors.** Some upstreams develop on a self-hosted forge but publish an
+official GitHub mirror themselves. GNOME, for example, develops on gitlab.gnome.org and mirrors to
+`github.com/GNOME`. Such a package may declare `'GithubRepo` pointing at the mirror when all of the following
+hold:
+
+- the mirror lives in a GitHub org or account that the upstream project itself controls (a mirror that the
+  upstream's docs merely link to, run by someone else, does not qualify);
+- the mirror carries the same release tags at the same commit SHAs as the canonical forge (spot-check the tag
+  you package);
+- the package needs it for advisory coverage. Today the scanner's GitHub path keeps a package's curated CPE
+  identity, but its GitLab path consults the curated identity only when the GitLab identity holds no
+  advisories at all, so a self-hosted GitLab provenance can drop NVD-CPE coverage.
+
+This covers `source_provenance` only. Where the build fetches its `Source` from is a separate choice: libxml2
+and libxslt fetch the mirror's tag archives, glib a staging copy of GNOME's release tarball.
+
+Say so in a comment beside the provenance block. The packages using this exception are `glib`, `libxml2` and
+`libxslt`; adding a fourth means adding it to this list in the same PR. The exception ends when
+minimal-supply-chain's GitLab path also consults the curated CPE identity (gominimal/pkgmgr-rs#1029): then
+move all three to `'Gitlab` with `host = "gitlab.gnome.org"`.
 
 
 ### Other fields
