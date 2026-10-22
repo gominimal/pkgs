@@ -5,7 +5,7 @@ JAR="google-java-format-${MINIMAL_ARG_VERSION}-all-deps.jar"
 test -f "$JAR"
 
 mkdir -p "$OUTPUT_DIR/usr/bin" "$OUTPUT_DIR/usr/share/google-java-format"
-cp "$JAR" "$OUTPUT_DIR/usr/share/google-java-format/google-java-format.jar"
+install -m 0644 "$JAR" "$OUTPUT_DIR/usr/share/google-java-format/google-java-format.jar"
 
 cat > "$OUTPUT_DIR/usr/bin/google-java-format" << 'WRAPPER'
 #!/bin/sh
