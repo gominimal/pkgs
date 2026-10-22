@@ -435,7 +435,10 @@ Only fall back to a prebuilt binary if the required toolchain genuinely isn't pa
 
 - its sha256 matches the one upstream publishes;
 - `binary_from` records it;
-- it runs on the packaged `jdk` and does not download a JDK of its own.
+- it runs on the packaged `jdk` and does not download a JDK of its own;
+- the tool's own code is complete in that checksummed artifact: every jar it loads to run is bundled (or shaded in), so it starts and runs offline, and it never downloads or executes code of its own outside that sha256.
+
+Fetching on the user's behalf is the tool's job, not part of its own code: Maven and mvnd resolving a project's dependencies and plugins, jbang fetching a script's deps, or a search tool querying Maven Central for metadata. Declare that through `needs`, the same way `cargo`, `uv` and `curl` do. What the rule excludes is a launcher that bootstraps its own implementation from the network (a wrapper that downloads the real tool, a plugin manager that fetches the tool's own components on first run).
 
 This exception does not cover native code shipped alongside the jars (for example a GraalVM native image or bundled `.so` files); justify that separately. When #969 lands, these packages convert to source builds together.
 
