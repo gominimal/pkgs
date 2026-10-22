@@ -431,6 +431,14 @@ Getting this wrong means future version bumps chase a dead repo and `source_prov
 
 Only fall back to a prebuilt binary if the required toolchain genuinely isn't packaged yet, and call that out explicitly in the package.
 
+**JVM tools are such a case for now.** `maven` and `gradle` are themselves upstream binary distributions, and nothing stages Maven Central dependencies for an offline build the way `cargo vendor`, goproxy and `pnpm fetch` do. Until both exist (#969), a tool that is JVM bytecode only may ship its upstream release jar if:
+
+- its sha256 matches the one upstream publishes;
+- `binary_from` records it;
+- it runs on the packaged `jdk` and does not download a JDK of its own.
+
+This exception does not cover native code shipped alongside the jars (for example a GraalVM native image or bundled `.so` files); justify that separately. When #969 lands, these packages convert to source builds together.
+
 #### Example: C library (autotools)
 
 ```nickel
