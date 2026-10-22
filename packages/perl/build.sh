@@ -26,12 +26,16 @@ CF_TIME="$(LC_ALL=C TZ=UTC date -u -d "@${SOURCE_DATE_EPOCH:-0}" 2>/dev/null || 
 # `minimal-<pid>` hostname) into several Config fields: myuname (the "Target
 # system" line, via `uname -a`), myhostname, and the derived cf_email/perladmin.
 # config.over is sourced after all computation, so pin every host-derived field
-# here. myuname keeps the real kernel info with just the nodename sanitized.
-MYUNAME="$(uname -a | awk '{$2="builder"; print}' | tr '[:upper:]' '[:lower:]' | tr -d '/')"
+# here. myuname and osvers must carry NO kernel information: the builders'
+# kernel moved 7.0.0-1013-gcp -> 1014-gcp between two world rebuilds (2026-10-10
+# and 10-11) and Config.pm, Config_heavy.pl ("Target system") and Errno.pm
+# (archname-osvers check) changed with it. Only the arch is real.
+MYUNAME="linux builder 0.0.0 #1 smp $(uname -m) gnulinux"
 cat > config.over <<EOF
 cf_time='$CF_TIME'
 cf_by='builder'
 myuname='$MYUNAME'
+osvers='0.0.0'
 myhostname='builder'
 cf_email='build@builder'
 perladmin='build@builder'
