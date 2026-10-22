@@ -40,6 +40,10 @@ MODE="" PROFILE="" ONLY="" ROWS="" JSON="" JOBS=8 TIMEOUT=15 DETAILS=fail
 die() { echo "run.sh: $*" >&2; exit 3; }
 while [ $# -gt 0 ]; do
   case $1 in
+    --mode|--profile|--only|--rows|--json|--jobs|--timeout|--details)
+      [ $# -ge 2 ] || die "$1 needs a value" ;;
+  esac
+  case $1 in
     --mode) MODE=${2:-}; shift 2 ;;
     --profile) PROFILE=${2:-}; shift 2 ;;
     --only) ONLY=${2:-}; shift 2 ;;
@@ -56,6 +60,7 @@ case $MODE in live|offline) ;; *) die "--mode must be live or offline" ;; esac
 case $JOBS in ''|*[!0-9]*|0) die "--jobs must be a positive integer" ;; esac
 case $TIMEOUT in ''|*[!0-9]*|0) die "--timeout must be a positive integer (seconds)" ;; esac
 case $DETAILS in fail|all|none) ;; *) die "--details must be fail, all or none" ;; esac
+JOBS=$((10#$JOBS)) TIMEOUT=$((10#$TIMEOUT))   # "08" is not octal here
 [ -n "$PROFILE" ] || die "--profile is required"
 [ -d "$PROFILE" ] || PROFILE=$HERE/$PROFILE
 [ -d "$PROFILE" ] || die "no such profile: $PROFILE"
@@ -119,6 +124,9 @@ for ((i = 0; i < ${#R_NAME[@]}; i++)); do
   SEL+=("$i")
 done
 
+# A filter that selects no client must not pass on the controls alone.
+[ ${#SEL[@]} -gt 2 ] || die "no client rows match --rows '${ROWS}' / --only '${ONLY}'"
+
 # ---------------------------------------------------------------- stores
 # The system bundle is the first that exists of the usual paths (what the
 # probes' clients load); the controls derive from it.
@@ -157,7 +165,7 @@ for ((k = 0; k < ${#ANCHOR_FPS[@]}; k++)); do
   if [[ " ${ANCHORS_IN_BUNDLE[*]-} " == *" ${ANCHOR_FPS[$k]} "* ]]; then s=YES; else s=no; fi
   echo "  bundle contains profile anchor '${ANCHOR_NAMES[$k]}': $s"
 done
-env | grep -iE '^(https?_proxy|all_proxy|no_proxy|ssl_cert_file|ssl_cert_dir|node_extra_ca_certs|node_options|requests_ca_bundle|curl_ca_bundle|deno_tls_ca_store|uv_system_certs|pip_cert)=' | sed 's/^/env: /'
+env | grep -iE '^(https?_proxy|all_proxy|no_proxy|ssl_cert_file|ssl_cert_dir|node_extra_ca_certs|node_options|requests_ca_bundle|curl_ca_bundle|deno_tls_ca_store|uv_system_certs|pip_cert)=' | sed -E 's#(://)[^/@]*@#\1***@#; s/^/env: /'
 
 # ---------------------------------------------------------------- run
 RUNNING=0

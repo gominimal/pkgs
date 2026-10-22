@@ -37,9 +37,9 @@ live_pip() {
   o=$(PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_INPUT=1 to python3 -I -m pip download --no-deps --no-cache-dir --retries 0 --timeout "$TIMEOUT" \
         -d "$W/pipdl.$RANDOM" --index-url "https://$1/simple" tls-trust-probe-nonexistent 2>&1); rc=$?
   echo "rc=$rc"; echo "$o" | grep -Ev '^\s*$' | tail -4
-  if ! echo "$o" | grep -Eqi -- "$CERT_RE|SSLError"; then
+  if ! echo "$o" | grep -Eqi -- "$CERT_RE"; then
     echo "$o" | grep -Eqi 'Could not find a version|No matching distribution' && echo "@@CONNECTED@@"
-  else echo "ssl certificate (pip SSLError)"; fi; return 0
+  fi; return 0
 }
 # pip (>= 24.2) trusts the UNION of truststore (the system store, same default
 # paths as python3) and its vendored certifi bundle, so the chain is accepted

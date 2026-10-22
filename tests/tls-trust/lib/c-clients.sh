@@ -3,7 +3,7 @@
 # off_*  CHAIN   -> path validation against the client's default store, no network
 
 live_curl() {
-  local o rc; o=$(to curl -sS -o /dev/null -w '%{http_code}' --max-time "$TIMEOUT" "https://$1/" 2>&1); rc=$?
+  local o rc; o=$(to curl -q -sS -o /dev/null -w '%{http_code}' --max-time "$TIMEOUT" "https://$1/" 2>&1); rc=$?
   echo "rc=$rc $o"; [ $rc -eq 0 ] && echo "@@CONNECTED@@"
   [ $rc -eq 60 ] && echo "SSL certificate problem (curl exit 60)"; return 0
 }
@@ -52,7 +52,7 @@ live_git() {
   echo "rc=$rc"; echo "$o" | tail -3
   # TLS errors win; otherwise any HTTP-level answer means the handshake passed.
   if ! echo "$o" | grep -Eqi -- "$CERT_RE"; then
-    if [ $rc -eq 0 ] || echo "$o" | grep -Eqi 'returned error: [0-9]|not found|not valid: is this a git repository|could not read Username|Authentication failed|dumb http|unexpected'; then echo "@@CONNECTED@@"; fi
+    if [ $rc -eq 0 ] || echo "$o" | grep -Eqi 'returned error: [0-9]|not found|not valid: is this a git repository|could not read Username|Authentication failed|dumb http'; then echo "@@CONNECTED@@"; fi
   fi; return 0
 }
 

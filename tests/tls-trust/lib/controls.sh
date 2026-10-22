@@ -14,7 +14,7 @@
 #   that target means nothing.
 
 live_ctl() { # $1=bundle $2=host
-  local o rc; o=$(to curl -sS -o /dev/null -w '%{http_code}' --max-time "$TIMEOUT" --cacert "$1" --capath "$W/emptydir" "https://$2/" 2>&1); rc=$?
+  local o rc; o=$(to curl -q -sS -o /dev/null -w '%{http_code}' --max-time "$TIMEOUT" --cacert "$1" --capath "$W/emptydir" "https://$2/" 2>&1); rc=$?
   echo "rc=$rc $o"; [ $rc -eq 0 ] && echo "@@CONNECTED@@"
   [ $rc -eq 60 ] && echo "SSL certificate problem (curl exit 60)"; return 0
 }
