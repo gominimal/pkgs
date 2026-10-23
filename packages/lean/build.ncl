@@ -12,14 +12,14 @@ let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let cadical = import "../cadical/build.ncl" in
 
-let version = "4.35.0" in
+let version = "4.34.1" in
 {
   name = "lean",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/leanprover/lean4/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "6747b099d03d3675f2716e7cf5924a16bfbf75822b13a3d36f51f933ffcc307b",
+      sha256 = "9bb0bed7bae752a281e9923163d50da4193e36480cf5f639658e2e1502294056",
     } | Source,
     base,
     toolchain,
