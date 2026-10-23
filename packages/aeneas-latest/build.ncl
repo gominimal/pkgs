@@ -4,22 +4,27 @@ let coreutils = import "../coreutils/build.ncl" in
 let lean = import "../lean/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let git = import "../git/build.ncl" in
-let patch = import "../patch/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let leangz = import "../leangz/build.ncl" in
 let cadical = import "../cadical/build.ncl" in
 
-# The date of the AeneasVerif/aeneas nightly this tracks (505b6ca3).
-let version = "20260912" in
-let aeneas_sha = "505b6ca35217e7be5c96c3e2f8045edfbdf47291" in
+# The date of the AeneasVerif/aeneas main commit this tracks (fdebf20d).
+let version = "20261022" in
+let aeneas_sha = "fdebf20d78e8007bb92fc17068f17fc2e6cfbbbf" in
 {
   name = "aeneas-latest",
   # The Lean side of aeneas — the `Aeneas` Lean library that every model
-  # `aeneas -backend lean` emits `import`s — built for the lean we ship (4.34),
-  # bundled with the exact Mathlib closure it pins. Upstream pins Lean 4.31.0;
-  # `aeneas-lean-4.34.patch` is our port (no `sorry`, proof-script and API
-  # renames only; notes in gominimal/aeneas-lab port/NOTES.md).
+  # `aeneas -backend lean` emits `import`s — built for the lean we ship,
+  # bundled with the exact Mathlib closure it pins. Upstream now targets the
+  # same Lean we ship (lean-toolchain = leanprover/lean4:v4.35.0, Mathlib
+  # v4.35.0), so it builds unpatched; the old 4.34 port patch is gone.
+  #
+  # `lean` and this package move TOGETHER: Mathlib's own tooling is compiled
+  # against the running Lean, so a Mathlib pinned for one Lean minor does not
+  # build on the next (lean 4.35's Lake changed `PackageEntrySrc.path`, which
+  # broke the Sept pin's `Cache/Requests.lean`; pkgs#999). Bump lean only with
+  # an aeneas commit whose backends/lean/lean-toolchain names it.
   #
   # Offline-lake mechanism adopted from nixpkgs `pkgs/build-support/lake`
   # (MIT, © Eelco Dolstra and the Nixpkgs/NixOS contributors): every Lake
@@ -27,74 +32,75 @@ let aeneas_sha = "505b6ca35217e7be5c96c3e2f8045edfbdf47291" in
   # on-disk `.lake/package-overrides.json` tells lake to use those directories,
   # `LAKE_NO_CACHE=1` + an empty `RESERVOIR_API_URL` keep it from reaching out.
   # The ONE network use is Mathlib's own build cache (`lake exe cache get`),
-  # fetching only the olean closure of the 28 Mathlib modules Aeneas imports
+  # fetching only the olean closure of the 31 Mathlib modules Aeneas imports
   # (1,181 files, ~900 MB, versus 5.9 GB for all of Mathlib). Those files are
   # content-addressed, so two builds are byte-identical.
   #
-  # The translator (`aeneas` package, July commit) is NOT bumped here: its
-  # output checks against this library (verified 2026-09-12). Bumping it means
-  # charon b104e24 + rust nightly 2026-08-18 — a separate cascade.
+  # The translator (`aeneas` package) is NOT bumped here. Upstream's library is
+  # now a Lean `module`; the translator's default non-module output (`import
+  # Aeneas`, see aeneas/build.sh `use_lean_modules`) may import a module, and
+  # the `imports_aeneas` test below checks exactly that. Bumping the
+  # translator is the charon/rust-nightly cascade (`pkgmgr bundle-bump aeneas`).
   build_deps = [
     { file = "build.sh" } | Local,
-    { file = "aeneas-lean-4.34.patch" } | Local,
     { file = "lake-manifest.json" } | Local,
     {
-      url = "gs://minimal-staging-archives/aeneas-latest/aeneas-505b6ca.tar.gz",
-      sha256 = "3b52ce3f8bacb01d42124769d2c10b93b3de0b2b9f7228d9eb5ca7e06204bb3c",
+      url = "gs://minimal-staging-archives/aeneas-latest/aeneas-fdebf20.tar.gz",
+      sha256 = "476496fbe2c47e8cf0be818d92b0ba38d7f36cde67b245f78f755440af6decda",
       extract = true,
     } | Source,
-    # leanprover-community/mathlib4 @ d13f23b723b8a846827a245b89c10fc7d3f11612 (lake-manifest.json)
+    # leanprover-community/mathlib4 @ 56a005855ea17e0b0958f73ec801ae140b0a1679 (lake-manifest.json)
     {
-      url = "gs://minimal-staging-archives/aeneas-latest/mathlib-d13f23b.tar.gz",
-      sha256 = "6213b6243560bf435a58217af83b61b693e8d647d01dc3315f9315711acbf4e4",
+      url = "gs://minimal-staging-archives/aeneas-latest/mathlib-56a0058.tar.gz",
+      sha256 = "45567f6e07607b787026d287c8ec1828f6cabc8debe11a45a521750580e3a0d5",
       extract = true,
     } | Source,
-    # leanprover-community/plausible @ 118aa17ee84656b8bd727fef7c458ee8c833385c (lake-manifest.json)
+    # leanprover-community/plausible @ dfa4f38190d07c37e315953e08b90fe2d95b3c24 (lake-manifest.json)
     {
-      url = "gs://minimal-staging-archives/aeneas-latest/plausible-118aa17.tar.gz",
-      sha256 = "dc6ce84f04e481f40984f89ea0f1ad58077693ebba989b233db508151f80be96",
+      url = "gs://minimal-staging-archives/aeneas-latest/plausible-dfa4f38.tar.gz",
+      sha256 = "3f157cbc2450a6d14f32f18c7a1efd12ee8209a335b3c8ea05248eece9beb342",
       extract = true,
     } | Source,
-    # leanprover-community/LeanSearchClient @ ddf04cf3949fa556442341e87d47f9f6e6074707 (lake-manifest.json)
+    # leanprover-community/LeanSearchClient @ d6b4c7be5be75ec4917c873ac50c756dc1436372 (lake-manifest.json)
     {
-      url = "gs://minimal-staging-archives/aeneas-latest/LeanSearchClient-ddf04cf.tar.gz",
-      sha256 = "d3eb9a7e67a956e19ae15561c8925a7bfa7d9629342d6e4ed066baa888802d64",
+      url = "gs://minimal-staging-archives/aeneas-latest/LeanSearchClient-d6b4c7b.tar.gz",
+      sha256 = "bdd04cafc4385c3a236568127692ec197a06b97de413436623cba3e7811e010c",
       extract = true,
     } | Source,
-    # leanprover-community/import-graph @ e928b72544873815af278d38681b31c0293588e3 (lake-manifest.json)
+    # leanprover-community/import-graph @ a41f0e9a4dea23188ea9cc1c41ac9f8bbafe0b93 (lake-manifest.json)
     {
-      url = "gs://minimal-staging-archives/aeneas-latest/importGraph-e928b72.tar.gz",
-      sha256 = "cf9005ef8c691b028b94eb0567aa68a8949cc25f62ca7c04566b842f3489c088",
+      url = "gs://minimal-staging-archives/aeneas-latest/importGraph-a41f0e9.tar.gz",
+      sha256 = "578c04f8b0df045c0e4091cf3633336c4785927269ef77bb47a6080e5d3b2ca5",
       extract = true,
     } | Source,
-    # leanprover-community/ProofWidgets4 @ 106ff4fafc74ef4ac99d81dbf3ab399118f497a5 (lake-manifest.json)
+    # leanprover-community/ProofWidgets4 @ df72b022e558978a1c50264cfc4d7fec86fa8e04 (lake-manifest.json)
     {
-      url = "gs://minimal-staging-archives/aeneas-latest/proofwidgets-106ff4f.tar.gz",
-      sha256 = "42a87df5edde76ddc0830f85420449b2e982e192478da8f4ffd854da10ddffab",
+      url = "gs://minimal-staging-archives/aeneas-latest/proofwidgets-df72b02.tar.gz",
+      sha256 = "1eaae7c4f21d9f0d7595ff7dd8b527b8ac6c59c932c162f5bdd9116f40407dec",
       extract = true,
     } | Source,
-    # leanprover-community/aesop @ 355695d523e41d0554926416cba2a2b3544fbbc9 (lake-manifest.json)
+    # leanprover-community/aesop @ 4a174c490d8707121c4a9290800489f105d85e07 (lake-manifest.json)
     {
-      url = "gs://minimal-staging-archives/aeneas-latest/aesop-355695d.tar.gz",
-      sha256 = "03b43b5a080e6f87458616aea0d793cfc799fb451b1df53da07fce040190648e",
+      url = "gs://minimal-staging-archives/aeneas-latest/aesop-4a174c4.tar.gz",
+      sha256 = "51146a125539b3eab0390c94bf90440cbfd4a4af1ab3fc3a1cc65fa49d248d98",
       extract = true,
     } | Source,
-    # leanprover-community/quote4 @ 6a489d9af5d0c47e5b259e2e8bcdfc1811b5a259 (lake-manifest.json)
+    # leanprover-community/quote4 @ dce0ad79c486cb1fb504af04f953c3466b0c6db8 (lake-manifest.json)
     {
-      url = "gs://minimal-staging-archives/aeneas-latest/Qq-6a489d9.tar.gz",
-      sha256 = "76fcd7fdf920b1017c6dfa07784acfc8741578817b61a4d6d19903a3e42d90b8",
+      url = "gs://minimal-staging-archives/aeneas-latest/Qq-dce0ad7.tar.gz",
+      sha256 = "ea7f24d48b20dc748c419a57926280de9611769f21d9db1dbb0ef7a5e536335f",
       extract = true,
     } | Source,
-    # leanprover-community/batteries @ f2effa3d803fda822b1f97b806c47cf2adfbcbc2 (lake-manifest.json)
+    # leanprover-community/batteries @ 66e469188fe07963e5cf666c7d4433f45b8131c5 (lake-manifest.json)
     {
-      url = "gs://minimal-staging-archives/aeneas-latest/batteries-f2effa3.tar.gz",
-      sha256 = "6e61734699920cd43b2a3fbfcf888876b21ea87a96abd333094712d67375d0eb",
+      url = "gs://minimal-staging-archives/aeneas-latest/batteries-66e4691.tar.gz",
+      sha256 = "e186aeb771cc7abaa64a738f0cee2743e89ca34e09e7efcb48520af847e2e92d",
       extract = true,
     } | Source,
-    # leanprover/lean4-cli @ e92c9f15fdfacc8536f31cfb3b7ad26c3c8cd204 (lake-manifest.json)
+    # leanprover/lean4-cli @ c24fe6078c630e89b489bffe59b3e20ac30d12c8 (lake-manifest.json)
     {
-      url = "gs://minimal-staging-archives/aeneas-latest/Cli-e92c9f1.tar.gz",
-      sha256 = "a7e33931d7174a68264684c70be862802df320f2c82c44af6c7939538cdb3725",
+      url = "gs://minimal-staging-archives/aeneas-latest/Cli-c24fe60.tar.gz",
+      sha256 = "d9647a8d34708a3ecc8eb075c5c2910be9310017ecfb46c77510b2480f55285e",
       extract = true,
     } | Source,
     base,
@@ -113,7 +119,6 @@ let aeneas_sha = "505b6ca35217e7be5c96c3e2f8045edfbdf47291" in
     cadical,
     curl,
     git,
-    patch,
     ca-certificates,
   ],
 
