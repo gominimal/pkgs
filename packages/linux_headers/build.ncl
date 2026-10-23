@@ -50,9 +50,9 @@ let version = "6.12.43" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # gen-1 of gominimal/bootstrap (generations/gen-1/manifest.json): built from the hex0 seed
+              # gen-3 of gominimal/bootstrap (generations/gen-3/manifest.json): built from the hex0 seed
               # and reproduced byte for byte on two independent machines before publishing.
-              url = "gs://minimal-bootstrap/gen-1/sha256/f57bd1fbb754c2b60188d269c10f1936c07a78c5556c927b2dc9720d24d148e8/stage0-linux-headers-6.12.43-x86_64.tar.zst",
+              url = "gs://minimal-bootstrap/gen-3/sha256/f57bd1fbb754c2b60188d269c10f1936c07a78c5556c927b2dc9720d24d148e8/stage0-linux-headers-6.12.43-6.12.43-x86_64.tar.zst",
               sha256 = "f57bd1fbb754c2b60188d269c10f1936c07a78c5556c927b2dc9720d24d148e8",
               extract = true,
             } | Source,

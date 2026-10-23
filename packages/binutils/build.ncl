@@ -101,9 +101,9 @@ let version = "2.47" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # gen-1 of gominimal/bootstrap (generations/gen-1/manifest.json): built from the hex0 seed
+              # gen-3 of gominimal/bootstrap (generations/gen-3/manifest.json): built from the hex0 seed
               # and reproduced byte for byte on two independent machines before publishing.
-              url = "gs://minimal-bootstrap/gen-1/sha256/7fe673db8a870d879aa91c24c0554f233872cc4505acb0929ebd522ecd666e5a/binutils-2.46-glibc-x86_64.tar.zst",
+              url = "gs://minimal-bootstrap/gen-3/sha256/7fe673db8a870d879aa91c24c0554f233872cc4505acb0929ebd522ecd666e5a/binutils-2.46-glibc-2.46.0-x86_64.tar.zst",
               sha256 = "7fe673db8a870d879aa91c24c0554f233872cc4505acb0929ebd522ecd666e5a",
               extract = true,
             } | Source,

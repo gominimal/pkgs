@@ -149,8 +149,10 @@ match {
           prebuilt = true,
           build_deps = [
             {
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/d0850b659687f160368bf87a57d02cfbbe0f1a5fe6ab4b623ca8296b5659126f/glibc-bedrock-2.42-2.42.tar.zst",
-              sha256 = "d0850b659687f160368bf87a57d02cfbbe0f1a5fe6ab4b623ca8296b5659126f",
+              # gen-3 of gominimal/bootstrap (generations/gen-3/manifest.json): built from the hex0 seed
+              # and reproduced byte for byte on two independent machines before publishing.
+              url = "gs://minimal-bootstrap/gen-3/sha256/231f7f3752eb1ecdf413aae53c1b6102f04e7cbf6e553e9e350cb99e0db61d9f/glibc-bedrock-2.42-2.42-x86_64.tar.zst",
+              sha256 = "231f7f3752eb1ecdf413aae53c1b6102f04e7cbf6e553e9e350cb99e0db61d9f",
               extract = true,
             } | Source,
           ],
