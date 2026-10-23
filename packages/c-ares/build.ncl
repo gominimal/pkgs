@@ -5,14 +5,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.34.8" in
+let version = "1.34.9" in
 {
   name = "c-ares",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/c-ares/c-ares/releases/download/v%{version}/c-ares-%{version}.tar.gz",
-      sha256 = "c222b6d681096f9444d2c4863d2c1174019e27cacca0a4a5c114d36dd7d7bf78",
+      sha256 = "9364b70a12eb59a06830fb488d9357f90100dff0d98b23ea3593a183d43e6f2f",
       extract = true,
       strip_prefix = "c-ares-%{version}",
     } | Source,

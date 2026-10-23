@@ -5,12 +5,62 @@ cd codex-rs
 
 export CC=gcc
 export LD=gcc
-export RUSTFLAGS="-C linker=gcc"
+# codegen-units=1 and v0 mangling: with the default parallel codegen the binary came
+# out different on every build (2026-10 prod-pair diff: 36 of 36 differing symbols were
+# `.llvm.<hash>` codegen-unit locals, 49% of the 1.25 GB binary churned). The same two
+# flags fixed nushell and difftastic (gominimal/inbox#253). The release profile keeps
+# line tables and isn't stripped, so both the source and the cargo-home paths are
+# remapped, as nushell and zola do.
+export RUSTFLAGS="-C linker=gcc -C codegen-units=1 -C symbol-mangling-version=v0 --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 
 # Needed for crates that use bindgen / libclang
 export LIBCLANG_PATH="$(dirname $(find /usr/lib -name 'libclang*.so' | head -1))"
 
-cargo build --release -p codex-cli
+# CVE-2026-111943: move upstream's Cargo.lock to rustls-webpki 0.103.16 and
+# webpki-roots / webpki-root-certs 1.0.10 (see build.ncl). Applied by name so a
+# missing or stale patch fails the build.
+patch -Np1 -i ../cve-2026-111943-webpki-lock.patch
+# Prove it landed, fail-closed: the fixed verifier is locked, and no pre-fix
+# rustls-webpki 0.103.x or webpki-roots / webpki-root-certs 1.0.x remains.
+grep -A1 '^name = "rustls-webpki"$' Cargo.lock | grep -q '^version = "0.103.16"$' || {
+  echo "ERROR: rustls-webpki 0.103.16 is not in Cargo.lock (CVE-2026-111943)" >&2
+  exit 1
+}
+if grep -A1 -E '^name = "(rustls-webpki|webpki-roots|webpki-root-certs)"$' Cargo.lock |
+  grep -qE '^version = "(0[.]103[.]([0-9]|1[0-5])|1[.]0[.][0-9])"$'; then
+  echo "ERROR: a pre-CVE-2026-111943 rustls-webpki / webpki-roots is still in Cargo.lock" >&2
+  exit 1
+fi
+
+# All network access happens here, with real entropy: crates and git deps are fetched
+# (and checked against Cargo.lock) before the shim below is loaded, so no TLS session
+# runs with the shim's fixed bytes.
+cargo fetch --locked
+
+# The workspace locks `v8` (rusty_v8), whose build script downloads a prebuilt
+# librusty_v8.a with no checksum. codex-cli doesn't depend on it at this version
+# (only codex-code-mode-runtime and codex-v8-poc do). If that changes, this
+# nonexistent archive path makes v8's build script panic instead of downloading;
+# the fix then is a pinned `Source` for the archive, passed via RUSTY_V8_ARCHIVE.
+export RUSTY_V8_ARCHIVE=/nonexistent/librusty_v8-not-pinned.a
+
+# Deterministic build-time entropy, the shim zola and nushell already use: interposes
+# getrandom/getentropy so build.rs / proc-macro / rustc-internal HashMaps iterate in the
+# same order every build. It wraps only the offline BUILD (`--frozen` refuses any
+# network access); the produced binaries are unaffected.
+shim_dir=$(mktemp -d)
+cat > "$shim_dir/detrand.c" <<'SHIM'
+#include <stddef.h>
+#include <sys/types.h>
+ssize_t getrandom(void *buf, size_t n, unsigned int flags) {
+    unsigned char *p = buf; size_t i;
+    for (i = 0; i < n; i++) p[i] = (unsigned char)(0xA5 ^ (i * 157));
+    return (ssize_t)n;
+}
+int getentropy(void *buf, size_t n) { getrandom(buf, n, 0); return 0; }
+SHIM
+gcc -shared -fPIC -O2 -o "$shim_dir/detrand.so" "$shim_dir/detrand.c"
+LD_PRELOAD="$shim_dir/detrand.so" cargo build --frozen --release -p codex-cli
 
 mkdir -p $OUTPUT_DIR/usr/bin
 install -m 755 target/release/codex $OUTPUT_DIR/usr/bin/codex

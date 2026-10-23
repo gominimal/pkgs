@@ -99,8 +99,27 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # pinned to playwright-core ^1.59 still resolve. It no longer names a
 # Playwright build. `browser_version` is the CfT Stable version and is the
 # only pin to bump.
+#
+# ⚠ CVE-2026-111943 (eMudhra intermediate key compromise): NOT MITIGATED
+# HERE, and no package-side mitigation exists. chromium-bin distrusts the
+# compromised keys through the `CADistrustedCertificates` enterprise policy
+# shipped by chromium-policies. chrome-headless-shell cannot read it: it
+# has no platform policy loader (Chromium deleted headless/lib/browser/
+# policy/ between 145 and 150), and the 155.0.8059.84 binary contains no
+# /etc/.../policies path and no "CADistrustedCertificates" string. Adding
+# the chromium-policies dep here would only look like a fix.
+# Its compiled-in Chrome Root Store still holds emSign ECC Root CA - G3, its
+# blocklist lacks the 8 keys, and it gets no CRLSet or root-store updates.
+# The upstream fix (chromium/src da63b94c blocklist, 8793082f root store
+# v43, both 2026-10-20 on main) is in no released build yet; Beta
+# 157.0.8103.6 and Canary 158.0.8113.0 lack both. Bump to the first CfT
+# Stable that carries them. Until then, a consumer that browses untrusted
+# sites (agent-browser) is safer driving chromium-bin's `chromium
+# --headless`, which reads the policy. Tracked in gominimal/pkgmgr-rs#1028
+# (trigger: the first CfT Stable carrying both commits; Chrome expects its
+# root-store update in Stable 2026-10-27).
 let revision = "1243" in
-let browser_version = "155.0.8059.39" in
+let browser_version = "156.0.8078.47" in
 {
   name = "chromium-headless-shell-bin",
   build_deps = [
@@ -113,12 +132,12 @@ let browser_version = "155.0.8059.39" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chrome-headless-shell-linux64.zip",
-          sha256 = "39dcb8c46550632a3d911850ab3b8af840b4e3f6d8622faa2018eb8756278786",
+          sha256 = "0d5acc62c3e213f8c87d3c298d66ffcf9a236d12ea4b9f85318bf85dbc279daa",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux-arm64/chrome-headless-shell-linux-arm64.zip",
-          sha256 = "9fb86f7c0b2734c5febc0bbb4e85f37da43553f3f8a7970949828c5713e87e94",
+          sha256 = "955059fa7020d7be85eb503e21339fd4d718f51f5996d3b60633fbf908bda132",
         } | Source,
     } target,
     base,
