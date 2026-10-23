@@ -21,8 +21,8 @@ let version = "0.18.0" in
     # Root CA - G3) in upstream's Cargo.lock, and moves the standalone
     # webpki-roots 0.26.2 (its own pre-distrust root list, via hyper-rustls) to
     # the 0.26.11 shim over webpki-roots 1.x. rustls-webpki 0.103.16 needs
-    # aws-lc-rs ^1.18 (-> 1.18.0, which needs aws-lc-sys ^0.44 -> 0.44.0, which
-    # needs pkg-config ^0.3.31 -> 0.3.32), so those move with it. Lock-only:
+    # aws-lc-rs ^1.18, so aws-lc-rs 1.18.2 / aws-lc-sys 0.46.0 / pkg-config
+    # 0.3.34 move with it (same as xh and zizmor). Lock-only:
     # versions, checksums, dependency references. Regenerated for 0.18.0 (pkgs#997).
     # Drop on the first upstream
     # release whose Cargo.lock already has those versions; a version bump that
