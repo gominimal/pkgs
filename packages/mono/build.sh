@@ -82,6 +82,17 @@ JOBS=$(( $(nproc) / 4 ))
 make -j"$JOBS"
 make DESTDIR=$OUTPUT_DIR install
 
+# Reproducibility (install layer): scripts/Makefile.am generates the five mdoc-*
+# wrappers with ONE multi-target rule whose loop writes all five files. Under a
+# parallel make the rule runs once per target, so five loops race on the same
+# files with > and >> and three of the wrappers came out garbled (2026-10
+# world-rebuild pairs: "assemble "$@"\nexec mdoc assemble ..." twice). Rewrite
+# them with the content the rule means to produce.
+for cmd in assemble export-html export-msxdoc update validate; do
+  printf '#!/bin/sh\nexec mdoc %s "$@"\n' "$cmd" > "$OUTPUT_DIR/usr/bin/mdoc-$cmd"
+  chmod 755 "$OUTPUT_DIR/usr/bin/mdoc-$cmd"
+done
+
 # Remove .la files for reproducibility
 find $OUTPUT_DIR -name '*.la' -delete
 

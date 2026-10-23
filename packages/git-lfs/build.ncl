@@ -6,14 +6,14 @@ let git = import "../git/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "3.8.0" in
+let version = "3.8.1" in
 {
   name = "git-lfs",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/git-lfs/git-lfs/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "a12ecfc17ebee002d1f6acca79442029d41cbf5e5b4ba9e02249ed96de20300f",
+      sha256 = "6ab3e7ffa03014f3ca574f06c1df835ccf9e8c079a3c5c1134b95bdff9c106c0",
       extract = true,
       strip_prefix = "git-lfs-%{version}",
     } | Source,
