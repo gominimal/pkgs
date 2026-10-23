@@ -33,7 +33,7 @@ let aeneas_sha = "fdebf20d78e8007bb92fc17068f17fc2e6cfbbbf" in
   # `LAKE_NO_CACHE=1` + an empty `RESERVOIR_API_URL` keep it from reaching out.
   # The ONE network use is Mathlib's own build cache (`lake exe cache get`),
   # fetching only the olean closure of the 31 Mathlib modules Aeneas imports
-  # (1,181 files, ~900 MB, versus 5.9 GB for all of Mathlib). Those files are
+  # (1,474 files as of Mathlib v4.35.0, versus 5.9 GB for all of Mathlib). Those files are
   # content-addressed, so two builds are byte-identical.
   #
   # The translator (`aeneas` package) is NOT bumped here. Upstream's library is
