@@ -14,18 +14,63 @@ env:
 
 permissions:
   contents: write
+  # The scope step reads the PR's file list. Listing any permission sets the
+  # rest to none, and the files API works without this only while the repo
+  # is public.
+  pull-requests: read
 
 jobs:
+  # On a pull request, check what the PR can affect: the packages and stacks
+  # it touches, every package that depends on one of them (transitively), and
+  # the stacks naming any of those. .github/scripts/ci_scope.py decides, and
+  # falls back to the full check (every package's standalone tests, about
+  # nine minutes after a disk-free step of one to three) when the scope can't
+  # be trusted or wouldn't be cheaper: files outside packages/<name>/ and
+  # stacks/<name>/ (workflows, scripts, minimal.toml), a removed package or
+  # stack, a file list the API truncated, or more than 50 packages in scope.
+  # A PR that changes only prose (*.md, legal/) runs nothing. Pushes to main,
+  # the merge queue and dispatch always run the full check.
   minimal-check:
     runs-on: ubuntu-latest
     steps:
+      # The scope is computed from the checkout (the PR merged into main), so
+      # the checkout comes first; it is needed by every mode except "none".
+      - uses: actions/checkout@v6
+      - id: scope
+        name: Decide what to check
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          CHANGED_FILES: ${{ github.event.pull_request.changed_files }}
+        run: |
+          set -euo pipefail
+          # The changed-file list comes from the API, not from git: the PR's
+          # base is not in a shallow clone. previous_filename is kept so a
+          # rename counts both its paths.
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files" --paginate \
+            --jq '.[] | {filename, previous_filename, status}' > "$RUNNER_TEMP/pr-files.jsonl"
+          python3 .github/scripts/ci_scope.py \
+            --files-jsonl "$RUNNER_TEMP/pr-files.jsonl" --changed-files "$CHANGED_FILES"
       - name: Free Disk Space
+        # This step alone took 93-203 s per run. A small scoped check (ten
+        # packages or fewer, most PRs) doesn't need the room; a larger one
+        # may, since it materializes the dependents too.
+        if: steps.scope.outputs.mode != 'none' && steps.scope.outputs.small != 'true'
         uses: endersonmenezes/free-disk-space@v3 # Use @main for latest, @v3 for stable
         with:
             remove_android: true
             remove_dotnet: true
             remove_haskell: true
-      - uses: actions/checkout@v6
-      - uses: gominimal/check@v1
+      - name: Check the changed packages and stacks
+        if: steps.scope.outputs.mode == 'scoped'
+        uses: gominimal/check@v1
+        with:
+            channel: unstable
+            packages: ${{ steps.scope.outputs.packages }}
+            stacks: ${{ steps.scope.outputs.stacks }}
+      - name: Check everything
+        if: steps.scope.outputs.mode != 'scoped' && steps.scope.outputs.mode != 'none'
+        uses: gominimal/check@v1
         with:
             channel: unstable
