@@ -31,8 +31,12 @@ or would not be cheaper:
 
 A rename counts both its paths, so moving a file out of a package checks the
 package it left, and renaming stack.ncl to NOTES.md is not mistaken for prose.
-Only prose (*.md anywhere, legal/) is set aside; a PR of nothing else checks
-nothing.
+Only prose (*.md anywhere, legal/) and tests/<name>/ projects are set aside; a
+PR of nothing else checks nothing. A tests/<name>/ directory is a
+self-contained min project with its own [upstream] pin (AGENTS.md "Tests",
+gominimal/pkgs#976): mip never evaluates it as a package, so it cannot break
+one, and its own workflow (if any) runs it. A loose file directly under
+tests/ is not a project and still runs the full check.
 """
 
 import argparse
@@ -47,6 +51,7 @@ from blast_radius_report import load_graph, transitive_dependents  # noqa: E402
 
 MAX_SCOPED = 50
 PROSE_RE = re.compile(r"(^|/)[^/]*\.md$|^legal/")
+TESTS_RE = re.compile(r"^tests/[^/]+/")
 SCOPED_RE = re.compile(r"^(packages|stacks)/([^/]+)/")
 
 
@@ -63,7 +68,7 @@ def decide(records, changed_files, root: Path, max_scoped=MAX_SCOPED):
         paths.append(r["filename"])
         if r.get("previous_filename"):
             paths.append(r["previous_filename"])
-    code = [p for p in paths if not PROSE_RE.search(p)]
+    code = [p for p in paths if not PROSE_RE.search(p) and not TESTS_RE.match(p)]
 
     other = [p for p in code if not SCOPED_RE.match(p)]
     if other:
@@ -76,7 +81,7 @@ def decide(records, changed_files, root: Path, max_scoped=MAX_SCOPED):
         kind, name = SCOPED_RE.match(p).groups()
         (seed_pkgs if kind == "packages" else seed_stacks).add(name)
     if not seed_pkgs and not seed_stacks:
-        return "none", [], [], ["the PR changes only prose"]
+        return "none", [], [], ["the PR changes only prose or tests/<name>/ projects"]
 
     gone = sorted(
         [f"packages/{n}" for n in seed_pkgs if not (root / "packages" / n / "build.ncl").is_file()]

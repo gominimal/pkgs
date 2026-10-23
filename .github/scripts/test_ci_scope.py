@@ -125,6 +125,23 @@ class Scope(unittest.TestCase):
         self.assertEqual(self.check(records)[0], "none")
         self.assertEqual(old_decide(records)[0], "none")  # unchanged behaviour
 
+    def test_tests_project_checks_nothing(self):
+        # tests/<name>/ is a self-contained min project (pkgs#976), never a package.
+        records = [rec("tests/tls-trust/run.sh"), rec("tests/tls-trust/lib/common.sh", "added")]
+        self.assertEqual(self.check(records)[0], "none")
+        self.assertEqual(old_decide(records)[0], "full")
+
+    def test_tests_project_plus_package_scopes_to_the_package(self):
+        (a,) = leaves(1)
+        records = [rec("tests/tls-trust/minimal.toml"), rec(f"packages/{a}/build.ncl")]
+        self.assertEqual(self.check(records)[:3], ("scoped", [a], []))
+        self.assertEqual(old_decide(records)[0], "full")
+
+    def test_loose_file_under_tests_runs_everything(self):
+        records = [rec("tests/run-all.sh", "added")]
+        self.assertEqual(self.check(records)[0], "full")
+        self.assertEqual(old_decide(records)[0], "full")  # unchanged: not a project
+
     def test_truncated_file_list_runs_everything(self):
         (a,) = leaves(1)
         records = [rec(f"packages/{a}/build.ncl")]
