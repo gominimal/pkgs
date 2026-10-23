@@ -50,12 +50,10 @@ let version = "6.12.43" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
-              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
-              # gominimal/minimermetic#16. Applied by minimermetic's
-              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/083cdb678eb2a154373819a5b3511b2b0e73c6261a010dce896287c742be83c3/stage0-linux-headers-6.12.43-6.12.43.tar.zst",
-              sha256 = "083cdb678eb2a154373819a5b3511b2b0e73c6261a010dce896287c742be83c3",
+              # gen-3 of gominimal/bootstrap (generations/gen-3/manifest.json): built from the hex0 seed
+              # and reproduced byte for byte on two independent machines before publishing.
+              url = "gs://minimal-bootstrap/gen-3/sha256/f57bd1fbb754c2b60188d269c10f1936c07a78c5556c927b2dc9720d24d148e8/stage0-linux-headers-6.12.43-6.12.43-x86_64.tar.zst",
+              sha256 = "f57bd1fbb754c2b60188d269c10f1936c07a78c5556c927b2dc9720d24d148e8",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
