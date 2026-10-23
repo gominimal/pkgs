@@ -1,0 +1,89 @@
+--- a/ghc/rts/Schedule.c
++++ b/ghc/rts/Schedule.c
+@@ -2530,7 +2530,8 @@
+ static StgTSO *
+ threadStackOverflow(StgTSO *tso)
+ {
+-  nat new_stack_size, new_tso_size, diff, stack_words;
++  nat new_stack_size, new_tso_size, stack_words;
++  I_  diff;   /* signed and word-sized: the new stack may sit below the old one */
+   StgPtr new_sp;
+   StgTSO *dest;
+ 
+--- a/ghc/includes/Stg.h
++++ b/ghc/includes/Stg.h
+@@ -198,6 +198,20 @@
+ #include <signal.h>
+ #endif
+ 
++/* glibc's <sys/ucontext.h> (x86_64, _GNU_SOURCE) defines REG_R8..REG_R15 as signal-context
++   register indices; GHC tests the same names for "STG register Rn is a machine register"
++   (PrimOps.hc, Exception.hc). An unregisterised build has none. */
++#ifdef NO_REGS
++#undef REG_R8
++#undef REG_R9
++#undef REG_R10
++#undef REG_R11
++#undef REG_R12
++#undef REG_R13
++#undef REG_R14
++#undef REG_R15
++#endif
++
+ #ifdef HAVE_UNISTD_H
+ #include <unistd.h>
+ #endif
+--- a/ghc/includes/StgMacros.h
++++ b/ghc/includes/StgMacros.h
+@@ -60,7 +60,7 @@
+ #define EDC_		extern DLLIMPORT StgClosure
+ #define IC_		static StgClosure
+ #define ECP_(x)		extern const StgClosure *(x)[]
+-#define EDCP_(x)	extern DLLIMPORT StgClosure *(x)[]
++#define EDCP_(x)	extern DLLIMPORT const StgClosure *(x)[]
+ #define ICP_(x)		static const StgClosure *(x)[]
+ 
+ /* -----------------------------------------------------------------------------
+--- a/ghc/rts/PrimOps.hc
++++ b/ghc/rts/PrimOps.hc
+@@ -22,6 +22,11 @@
+ #include "Itimer.h"
+ #include "Prelude.h"
+ 
++/* GMP >= 6.2's mpz_init allocates lazily: a zero result keeps a static dummy limb, not a heap
++   ByteArray, and the Integer primops return _mp_d as one. The in-tree gmp.h (3.1.1) predates
++   mpz_init2, so declare the library entry point directly. */
++extern void __gmpz_init2 (mpz_ptr, unsigned long int);
++
+ /* ** temporary **
+ 
+    classes CCallable and CReturnable don't really exist, but the
+@@ -693,7 +698,7 @@
+   arg2._mp_size		= (s2);						\
+   arg2._mp_d		= (unsigned long int *) (BYTE_ARR_CTS(d2));	\
+ 									\
+-  STGCALL1(mpz_init,&result);						\
++  STGCALL2(__gmpz_init2,&result,64);						\
+ 									\
+   /* Perform the operation */						\
+   STGCALL3(mp_fun,&result,&arg1,&arg2);					\
+@@ -722,7 +727,7 @@
+   arg1._mp_size		= (s1);						\
+   arg1._mp_d		= (unsigned long int *) (BYTE_ARR_CTS(d1));	\
+ 									\
+-  STGCALL1(mpz_init,&result);						\
++  STGCALL2(__gmpz_init2,&result,64);						\
+ 									\
+   /* Perform the operation */						\
+   STGCALL2(mp_fun,&result,&arg1);					\
+@@ -757,8 +762,8 @@
+   arg2._mp_size		= (s2);						\
+   arg2._mp_d		= (unsigned long int *) (BYTE_ARR_CTS(d2));	\
+ 									\
+-  STGCALL1(mpz_init,&result1);						\
+-  STGCALL1(mpz_init,&result2);						\
++  STGCALL2(__gmpz_init2,&result1,64);						\
++  STGCALL2(__gmpz_init2,&result2,64);						\
+ 									\
+   /* Perform the operation */						\
+   STGCALL4(mp_fun,&result1,&result2,&arg1,&arg2);			\

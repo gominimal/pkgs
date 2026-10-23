@@ -1,0 +1,11 @@
+--- a/configure	2026-09-26 09:11:54
++++ b/configure	2026-09-26 09:11:54
+@@ -2590,7 +2590,7 @@
+       exit 1
+    else
+    $PerlCmd -v >conftest.out 2>&1
+-   if grep "v5.6" conftest.out >/dev/null 2>&1; then
++   if grep "v5\." conftest.out >/dev/null 2>&1; then
+       :
+    else
+       if grep "v5.8" conftest.out >/dev/null 2>&1; then

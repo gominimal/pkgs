@@ -1,0 +1,213 @@
+--- a/lib/Data/Bits/Base.hs
++++ b/lib/Data/Bits/Base.hs
+@@ -120,12 +120,12 @@
+   xor   = primIntXor
+   complement = primIntInv
+   x `shiftL` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftR` (negate i)
+     | i >= _wordSize = 0
+     | otherwise = x `primIntShl` i
+   unsafeShiftL = primIntShl
+   x `shiftR` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftL` (negate i)
+     | i >= _wordSize = 0
+     | otherwise = x `primIntShr` i
+   unsafeShiftR = primIntShr
+--- a/lib/Data/Int/Int16.hs
++++ b/lib/Data/Int/Int16.hs
+@@ -31,7 +31,7 @@
+ -- Do sign extension by shifting, check for overflow/underflow
+ i16 :: Int -> Int16
+ i16 w = if n == 0 then I16 w else
+-        if w' == w then I16 w' else _overflowError
++        I16 w'
+   where n = _wordSize `primIntSub` 16
+         w' = (w `primIntShl` n) `primIntShr` n
+ 
+@@ -99,12 +99,12 @@
+   xor   = ubin16 primIntXor
+   complement = una16 primIntInv
+   x `shiftL` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftR` (negate i)
+     | i >= 16 = 0
+     | True = x `unsafeShiftL` i
+   unsafeShiftL = bini16 primIntShl
+   x `shiftR` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftL` (negate i)
+     | i >= 16 = 0
+     | True = x `unsafeShiftR` i
+   unsafeShiftR = bini16 primIntShr
+--- a/lib/Data/Int/Int32.hs
++++ b/lib/Data/Int/Int32.hs
+@@ -31,7 +31,7 @@
+ -- Do sign extension by shifting, check for overflow/underflow
+ i32 :: Int -> Int32
+ i32 w = if n == 0 then I32 w else
+-        if w' == w then I32 w' else _overflowError
++        I32 w'
+   where n = _wordSize `primIntSub` 32
+         w' = (w `primIntShl` n) `primIntShr` n
+ 
+@@ -99,12 +99,12 @@
+   xor   = ubin32 primIntXor
+   complement = una32 primIntInv
+   x `shiftL` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftR` (negate i)
+     | i >= 32 = 0
+     | True = x `unsafeShiftL` i
+   unsafeShiftL = bini32 primIntShl
+   x `shiftR` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftL` (negate i)
+     | i >= 32 = 0
+     | True = x `unsafeShiftR` i
+   unsafeShiftR = bini32 primIntShr
+--- a/lib/Data/Int/Int64.hs
++++ b/lib/Data/Int/Int64.hs
+@@ -81,12 +81,12 @@
+   xor   = primInt64Xor
+   complement = primInt64Inv
+   x `shiftL` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftR` (negate i)
+     | i >= 64 = 0
+     | otherwise = x `unsafeShiftL` i
+   unsafeShiftL = primInt64Shl
+   x `shiftR` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftL` (negate i)
+     | i >= 64 = 0
+     | otherwise = x `unsafeShiftR` i
+   unsafeShiftR = primInt64Shr
+--- a/lib/Data/Int/Int8.hs
++++ b/lib/Data/Int/Int8.hs
+@@ -31,7 +31,7 @@
+ -- Do sign extension by shifting, check for overflow/underflow
+ i8 :: Int -> Int8
+ i8 w = if n == 0 then I8 w else
+-        if w' == w then I8 w' else _overflowError
++        I8 w'
+   where n = _wordSize `primIntSub` 8
+         w' = (w `primIntShl` n) `primIntShr` n
+ 
+@@ -99,12 +99,12 @@
+   xor   = ubin8 primIntXor
+   complement = una8 primIntInv
+   x `shiftL` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftR` (negate i)
+     | i >= 8 = 0
+     | True = x `unsafeShiftL` i
+   unsafeShiftL = bini8 primIntShl
+   x `shiftR` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftL` (negate i)
+     | i >= 8 = 0
+     | True = x `unsafeShiftR` i
+   unsafeShiftR = bini8 primIntShr
+--- a/lib/Data/Integer.hs
++++ b/lib/Data/Integer.hs
+@@ -80,11 +80,11 @@
+   complement x = negOneI - x -- -x = complement x + 1 => complement x = -1 - x
+   unsafeShiftL = shiftLI
+   x `shiftL` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftR` (negate i)
+     | otherwise = x `unsafeShiftL` i
+   unsafeShiftR = shiftRI
+   x `shiftR` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftL` (negate i)
+     | otherwise = x `unsafeShiftR` i
+   x `shift` i
+     | i < 0 = x `unsafeShiftR` (-i)
+--- a/lib/Data/Word/Word.hs
++++ b/lib/Data/Word/Word.hs
+@@ -128,12 +128,12 @@
+   xor   = primWordXor
+   complement = primWordInv
+   x `shiftL` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftR` (negate i)
+     | i >= _wordSize = 0
+     | otherwise = x `primWordShl` i
+   unsafeShiftL = primWordShl
+   x `shiftR` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftL` (negate i)
+     | i >= _wordSize = 0
+     | otherwise = x `primWordShr` i
+   unsafeShiftR = primWordShr
+--- a/lib/Data/Word/Word16.hs
++++ b/lib/Data/Word/Word16.hs
+@@ -90,12 +90,12 @@
+   xor   = bin16 primWordXor
+   complement = una16 primWordInv
+   x `shiftL` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftR` (negate i)
+     | i >= 16 = 0
+     | otherwise = x `unsafeShiftL` i
+   unsafeShiftL = bini16 primWordShl
+   x `shiftR` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftL` (negate i)
+     | i >= 16 = 0
+     | otherwise = x `unsafeShiftR` i
+   unsafeShiftR = bini16 primWordShr
+--- a/lib/Data/Word/Word32.hs
++++ b/lib/Data/Word/Word32.hs
+@@ -90,12 +90,12 @@
+   xor   = bin32 primWordXor
+   complement = una32 primWordInv
+   x `shiftL` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftR` (negate i)
+     | i >= 32 = 0
+     | otherwise = x `unsafeShiftL` i
+   unsafeShiftL = bini32 primWordShl
+   x `shiftR` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftL` (negate i)
+     | i >= 32 = 0
+     | otherwise = x `unsafeShiftR` i
+   unsafeShiftR = bini32 primWordShr
+--- a/lib/Data/Word/Word64.hs
++++ b/lib/Data/Word/Word64.hs
+@@ -78,12 +78,12 @@
+   xor   = primWord64Xor
+   complement = primWord64Inv
+   x `shiftL` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftR` (negate i)
+     | i >= 64 = 0
+     | otherwise = x `unsafeShiftL` i
+   unsafeShiftL = primWord64Shl
+   x `shiftR` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftL` (negate i)
+     | i >= 64 = 0
+     | otherwise = x `unsafeShiftR` i
+   unsafeShiftR = primWord64Shr
+--- a/lib/Data/Word/Word8.hs
++++ b/lib/Data/Word/Word8.hs
+@@ -90,12 +90,12 @@
+   xor   = bin8 primWordXor
+   complement = una8 primWordInv
+   x `shiftL` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftR` (negate i)
+     | i >= 8 = 0
+     | otherwise = x `unsafeShiftL` i
+   unsafeShiftL = bini8 primWordShl
+   x `shiftR` i
+-    | i < 0 = _overflowError
++    | i < 0 = x `unsafeShiftL` (negate i)
+     | i >= 8 = 0
+     | otherwise = x `unsafeShiftR` i
+   unsafeShiftR = bini8 primWordShr

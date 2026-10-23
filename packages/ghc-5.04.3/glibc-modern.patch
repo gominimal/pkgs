@@ -1,0 +1,32 @@
+--- a/libraries/base/System/CPUTime.hsc	2026-09-26 08:22:29
++++ b/libraries/base/System/CPUTime.hsc	2026-09-26 08:22:29
+@@ -24,6 +24,7 @@
+ import Foreign.C
+ 
+ import Data.Ratio
++import System.IO.Unsafe (unsafePerformIO)
+ 
+ #include "HsBase.h"
+ 
+--- a/libraries/base/Text/Regex/Posix.hsc	2026-09-26 08:22:30
++++ b/libraries/base/Text/Regex/Posix.hsc	2026-09-26 08:22:30
+@@ -130,7 +130,7 @@
+ -- Flags for regexec
+ #enum Int,, \
+ 	REG_NOTBOL, \
+-	REG_NOTEOL \
++	REG_NOTEOL
+ 
+ -- Return values from regexec
+ #enum Int,, \
+--- a/hslibs/text/cbits/regex.c	2026-09-26 08:22:30
++++ b/hslibs/text/cbits/regex.c	2026-09-26 08:22:30
+@@ -934,7 +934,7 @@
+    syntax, so it can be changed between regex compilations.  */
+ /* This has no initializer because initialized variables in Emacs
+    become read-only after dumping.  */
+-static reg_syntax_t re_syntax_options;
++reg_syntax_t re_syntax_options;
+ 
+ 
+ /* Specify the precise syntax of regexps for compilation.  This provides
