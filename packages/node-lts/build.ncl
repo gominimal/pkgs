@@ -18,7 +18,19 @@ let zstd = import "../zstd/build.ncl" in
 let gtest = import "../gtest/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let llvm = import "../llvm/build.ncl" in
+let wasi-libc = import "../wasi-libc/build.ncl" in
+let llhttp-wasm-rebuild = import "../llhttp-wasm-rebuild/build.ncl" in
+let amaro-wasm = import "../amaro-wasm/build.ncl" in
 
+# What this node tree bundles, verified by build.sh (check-tree / build fail on a mismatch),
+# so a node bump re-derives each one here: undici under deps/undici (its llhttp C rebuilds
+# the wasm js2c'd into node), the undici npm vendors under deps/npm (rebuilt from the
+# mirrored release tarball below), and amaro (its swc wasm comes from packages/amaro-wasm).
+let undici = "7.30.1" in
+let undici_llhttp = "9.3.0" in
+let npm_undici = "6.28.0" in
+let amaro = "1.1.11" in
 let version = "24.22.1" in
 {
   name = "node-lts",
@@ -28,9 +40,17 @@ let version = "24.22.1" in
       url = "https://nodejs.org/dist/v%{version}/node-v%{version}.tar.gz",
       sha256 = "001773d9bd53fbd27a25efd42aa6a9693ebfe500998ca9bec635e9b6ee79bc91",
     } | Source,
+    {
+      url = "gs://minimal-staging-archives/undici-%{npm_undici}.tar.gz",
+      sha256 = "555a14624f66628d8aa7fcd0691ab2371f3e4512c40358bb7320bfabbb6763ec",
+    } | Source,
     # 24.22.1 carries the CVE-2026-111943 fixes upstream (nodejs/node#66871 SPKI
     # blocklist, #66877 NSS 3.131.1 roots), so the backports are no longer carried.
     base,
+    llvm, # clang + wasm-ld for the llhttp wasm
+    wasi-libc,
+    llhttp-wasm-rebuild, # rebuilds and splices undici's llhttp wasm blobs
+    amaro-wasm, # amaro's TypeScript-stripper wasm, rebuilt from swc
     make,
     pkgconf,
     python,
@@ -58,6 +78,10 @@ let version = "24.22.1" in
   cmd = "./build.sh",
   build_args = {
     include version,
+    include undici,
+    include undici_llhttp,
+    include npm_undici,
+    include amaro,
   },
 
   outputs = {
@@ -86,6 +110,15 @@ let version = "24.22.1" in
     } | Attrs,
 
   tests = {
+    type_strip =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "printf 'interface P { n: number }\\nconst p: P = { n: 6 };\\nconsole.log(p.n * 7);\\n' > t.ts"],
+          ["/bin/bash", "-c", "node t.ts | grep -qx 42"],
+        ],
+      } | Test,
     eval =
       {
         class = 'Standalone,
