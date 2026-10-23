@@ -26,13 +26,15 @@ let chromium-headless-shell-bin = import "../chromium-headless-shell-bin/build.n
 #
 # License: the CfT chromedriver zip carries LICENSE.chromedriver, the
 # Chromium BSD-3-Clause grant, with no proprietary terms (unlike the full
-# CfT `chrome` bundle, which ships Widevine). Re-checked at 155.0.8059.84.
+# CfT `chrome` bundle, which ships Widevine). Re-checked at 156.0.8078.47.
 #
 # The version is NOT pinned here: it is chromium-headless-shell-bin's
 # `upstream_version`, so the pair cannot drift. Bumping the browser changes
-# the URLs below, and this package's build then fails on the two sha256s
-# until they are updated in the same change. That failure is the point:
-# a silent mismatch would ship a driver that refuses the browser.
+# the URLs below, so the two sha256s must be updated in the same change.
+# A stale sha256 does NOT fail the fetch: sources are content-addressed, so
+# the old zip is served from the store under its hash and the OLD driver
+# gets built (pkgs#1003). The `matches_browser` test below is what catches
+# it; pkgmgr's chromium updater re-pins both hashes with the browser.
 let browser_version = chromium-headless-shell-bin.attrs.upstream_version in
 {
   name = "chromedriver-bin",
@@ -42,18 +44,18 @@ let browser_version = chromium-headless-shell-bin.attrs.upstream_version in
       { arch = 'Amd64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chromedriver-linux64.zip",
-          sha256 = "4fe2433044363e5233d642e70fa50278b471bda08032d922402c8bd7c6d743fd",
+          sha256 = "2a5024610c53f340a1aaa5d9a3e2a4fa448be7d71cca5238bd8c3c7f16181df4",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux-arm64/chromedriver-linux-arm64.zip",
-          sha256 = "738853f050812e78e249c2ba8b46e4b6dfee9521bbfdd86d04f882fbf4ef5f47",
+          sha256 = "5fe7ab694afa8258bb1b403facdf19c35de5ef30ec8a815aa01575f8c6d14ab6",
         } | Source,
     } target,
     base,
     unzip,
   ],
-  # DT_NEEDED of the 155.0.8059.84 binaries: libc/libdl/libpthread/libm,
+  # DT_NEEDED of the 156.0.8078.47 binaries: libc/libdl/libpthread/libm,
   # libgcc_s, glib, nspr, nss, libxcb, and libdbus-1 on amd64 only.
   runtime_deps =
     [
