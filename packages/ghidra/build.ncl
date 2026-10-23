@@ -9,7 +9,11 @@ let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "12.1.4" in
+let version = "12.2" in
+# Upstream's release asset name embeds its BUILD date, which is not derivable from
+# the version (12.1.4 was ..._PUBLIC_20260921.zip, 12.2 is ..._PUBLIC_20261016.zip).
+# It must move with every version bump; take it from the release's asset list.
+let build_date = "20261016" in
 {
   name = "ghidra",
   build_deps = [
@@ -21,7 +25,7 @@ let version = "12.1.4" in
     # artifacts with no source (AXMLPrinter2.jar from the dead Google Code
     # archive, per-platform Z3 zips, yajsw from SourceForge), a full
     # postgresql tarball and PyPI wheels — and only then does Maven Central
-    # resolution start. It also requires JDK 25 to BUILD; we ship 21.
+    # resolution start. It also requires JDK 25 to BUILD (and, since 12.2, to RUN).
     #
     # The release zip is the same tradeoff the `jdk` package already accepts,
     # and it ships NO bundled JRE (`jre/` and `bin/java` are both absent), so
@@ -39,8 +43,8 @@ let version = "12.1.4" in
     # SHA-256 is the one published in the release body, not one we computed:
     # https://github.com/NationalSecurityAgency/ghidra/releases/tag/Ghidra_%{version}_build
     {
-      url = "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_%{version}_build/ghidra_%{version}_PUBLIC_20260921.zip",
-      sha256 = "ddac49f903da9d5bac833e5cc79395098b9c33cfd3279be5f31bd00387d2d4db",
+      url = "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_%{version}_build/ghidra_%{version}_PUBLIC_%{build_date}.zip",
+      sha256 = "2c2cd776db3c1f6a097ba418922378ac3649cadd5e844a6f5f088ae628a7be67",
     } | Source,
     # The aarch64 7-Zip JNI native. Upstream's `-all-platforms` roll-up
     # deliberately excludes ARM ("WARNING: Not a part of -AllPlatform or
@@ -66,7 +70,7 @@ let version = "12.1.4" in
   ],
   runtime_deps = [
     bash, # every launcher is a POSIX shell script
-    jdk, # Ghidra 12.x requires JDK 21+; ours is 21.0.10
+    jdk, # Ghidra 12.2 requires JDK 25+ (application.java.min=25); `jdk` is Temurin 25
     # For the natives. These were previously invisible: while they sat inside
     # the `install` OutputData glob the missing-runtime_deps checker skipped
     # them outright (it ELF-parses Binary/Library outputs only), so a native
