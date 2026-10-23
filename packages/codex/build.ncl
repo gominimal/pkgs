@@ -74,7 +74,8 @@ let version = "0.155.0" in
         owner = "openai",
         repo = "codex",
       },
-      build_cost_multiple = 3,
+      # codegen-units=1 roughly doubled the build (~22 → ~46 min).
+      build_cost_multiple = 6,
       env_dir_mappings = [{ read_only = false, path = "~/.codex", class = 'State }],
     } | Attrs,
 

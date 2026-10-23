@@ -340,6 +340,17 @@ source_provenance = {
 },
 ```
 
+If it came from a GitLab instance (`host` names the instance, e.g. `gitlab.com`; see `packages/psmisc`,
+`packages/tree`):
+
+```ncl
+source_provenance = {
+  category = 'Gitlab,
+  host = "gitlab.com",
+  owner = "<gitlab group or user>",
+  repo = "<gitlab project>",
+},
+```
 
 If its a gnu project:
 
@@ -351,6 +362,27 @@ source_provenance = {
 ```
 
 Omit it if its not one of these variants.
+
+**One exception: official upstream mirrors.** Some upstreams develop on a self-hosted forge but publish an
+official GitHub mirror themselves. GNOME, for example, develops on gitlab.gnome.org and mirrors to
+`github.com/GNOME`. Such a package may declare `'GithubRepo` pointing at the mirror when all of the following
+hold:
+
+- the mirror lives in a GitHub org or account that the upstream project itself controls (a mirror that the
+  upstream's docs merely link to, run by someone else, does not qualify);
+- the mirror carries the same release tags at the same commit SHAs as the canonical forge (spot-check the tag
+  you package);
+- the package needs it for advisory coverage. Today the scanner's GitHub path keeps a package's curated CPE
+  identity, but its GitLab path consults the curated identity only when the GitLab identity holds no
+  advisories at all, so a self-hosted GitLab provenance can drop NVD-CPE coverage.
+
+This covers `source_provenance` only. Where the build fetches its `Source` from is a separate choice: libxml2
+and libxslt fetch the mirror's tag archives, glib a staging copy of GNOME's release tarball.
+
+Say so in a comment beside the provenance block. The packages using this exception are `glib`, `libxml2` and
+`libxslt`; adding a fourth means adding it to this list in the same PR. The exception ends when
+minimal-supply-chain's GitLab path also consults the curated CPE identity (gominimal/pkgmgr-rs#1029): then
+move all three to `'Gitlab` with `host = "gitlab.gnome.org"`.
 
 
 ### Other fields
@@ -454,6 +486,17 @@ Getting this wrong means future version bumps chase a dead repo and `source_prov
 - The toolchain is already there — there's no meaningful cost saving from shipping the prebuilt.
 
 Only fall back to a prebuilt binary if the required toolchain genuinely isn't packaged yet, and call that out explicitly in the package.
+
+**JVM tools are such a case for now.** `maven` and `gradle` are themselves upstream binary distributions, and nothing stages Maven Central dependencies for an offline build the way `cargo vendor`, goproxy and `pnpm fetch` do. Until both exist (#969), a tool that is JVM bytecode only may ship its upstream release jar if:
+
+- its sha256 matches the one upstream publishes;
+- `binary_from` records it;
+- it runs on the packaged `jdk` and does not download a JDK of its own;
+- the tool's own code is complete in that checksummed artifact: every jar it loads to run is bundled (or shaded in), so it starts and runs offline, and it never downloads or executes code of its own outside that sha256.
+
+Fetching on the user's behalf is the tool's job, not part of its own code: Maven and mvnd resolving a project's dependencies and plugins, jbang fetching a script's deps, or a search tool querying Maven Central for metadata. Declare that through `needs`, the same way `cargo`, `uv` and `curl` do. What the rule excludes is a launcher that bootstraps its own implementation from the network (a wrapper that downloads the real tool, a plugin manager that fetches the tool's own components on first run).
+
+This exception does not cover native code shipped alongside the jars (for example a GraalVM native image or bundled `.so` files); justify that separately. When #969 lands, these packages convert to source builds together.
 
 #### Example: C library (autotools)
 
