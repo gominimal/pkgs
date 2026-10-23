@@ -18,8 +18,11 @@ let version = "0.18.0" in
     # CVE-2026-111943 (eMudhra intermediate key compromise): pins rustls-webpki
     # 0.103.16 (RUSTSEC-2026-0382, distrusts the 8 intermediates) and
     # webpki-roots / webpki-root-certs 1.0.10 (RUSTSEC-2026-0383, drops emSign ECC
-    # Root CA - G3) in upstream's Cargo.lock. Lock-only: version + checksum lines
-    # (plus whatever cargo had to move with them). Drop on the first upstream
+    # Root CA - G3) in upstream's Cargo.lock, and moves the standalone
+    # webpki-roots 0.26.2 (its own pre-distrust root list, via hyper-rustls) to
+    # the 0.26.11 shim over webpki-roots 1.x. Lock-only: version + checksum lines
+    # and the two dependency references. Regenerated for 0.18.0 (pkgs#997).
+    # Drop on the first upstream
     # release whose Cargo.lock already has those versions; a version bump that
     # keeps it fails at `patch` rather than silently shipping the old lock.
     { file = "cve-2026-111943-webpki-lock.patch" } | Local,
