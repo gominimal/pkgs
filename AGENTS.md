@@ -755,6 +755,13 @@ done
 
 `pkgmgr import npm <name>` generates this layout (using a committed lockfile and `npm ci`); see `packages/vlt`.
 
+#### Ruby pattern
+
+`ruby`, `ruby-3.3` and `ruby-3.4` install the same paths (`usr/bin/ruby`, `usr/lib/ruby/**`, `libruby.so`, `usr/etc/gemrc`), so two of them in one closure blend into one broken interpreter. `.github/workflows/ruby-flavor-guard.yml` enforces two rules:
+
+- **Use `ruby`, not a versioned line**, in `build_deps` and `runtime_deps`. `ruby-3.3` and `ruby-3.4` are there for users to opt into, like `node` (Current); packages don't use them. An exception goes in `VERSIONED_ALLOWED` in `.github/scripts/ruby_flavor_guard.py`, with the reason.
+- **No closure may hold two Ruby lines**, runtime or build, and that includes stacks: a stack naming `ruby-3.4` next to `ruby-lsp` fails. A user's own loadout isn't in the catalog, so the guard can't see `ruby-3.4` + `ruby-lsp` chosen there.
+
 
 ### Reproducibility (required)
 
