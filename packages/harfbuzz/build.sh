@@ -43,3 +43,12 @@ shader_hh=$(ninja -t targets all | grep -oE '^src/hb-gpu-[a-z0-9-]+\.hh' | sort 
 ninja
 
 DESTDIR="$OUTPUT_DIR" ninja install
+
+# GHSA-r62p-jr5f-3mjm regression check (see build.ncl), against the library
+# just installed: a truncated cvXX substitute must be rejected at sanitize
+# time. On an affected harfbuzz this exits non-zero and fails the build.
+# The check binary stays in the build tree; it is not part of any output.
+cd ..
+gcc -O1 -o ghsa-r62p-check ghsa-r62p-check.c \
+  -I"$OUTPUT_DIR/usr/include/harfbuzz" -L"$OUTPUT_DIR/usr/lib" -lharfbuzz
+LD_LIBRARY_PATH="$OUTPUT_DIR/usr/lib" ./ghsa-r62p-check
