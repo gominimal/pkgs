@@ -291,6 +291,33 @@ in
       "ca-certificates-bundle-20261020-r0"
       "d0a573c27d337c369ad3abe3f39f09ffe67b95af23861577a8d134738375176a"
       "bb008f6d214b6af7576324659856fb63dc8dcb4373f8345ff706388696f1254d",
+
+    # musl itself, same override pattern. alpine-minirootfs-3.24.1 ships musl
+    # and musl-utils 1.2.6-r2, and every musl through 1.2.6 has the regcomp
+    # integer overflows of CVE-2026-107891 (undersized heap allocations, then
+    # out-of-bounds heap writes, from a large or complex pattern;
+    # https://www.openwall.com/lists/oss-security/2026/10/21/18). Upstream's
+    # fix ships in 1.2.7; Alpine carries the patch in 1.2.6-r3 (aports
+    # 3.24-stable main/musl secfixes). Reaching it needs a regex from an
+    # untrusted source compiled by a guest tool (busybox grep/sed/awk, bash
+    # `=~`, git); matching untrusted text with a trusted pattern is not enough.
+    #
+    # musl owns lib/ld-musl-<arch>.so.1 (the loader and libc in one) and its
+    # lib/libc.musl-<arch>.so.1 symlink; musl-utils owns ldconfig, getconf,
+    # getent, iconv and ldd. Neither has an install script, so the overlay
+    # replaces the base layer's files outright and the apk-db reconcile moves
+    # both recorded versions to 1.2.6-r3.
+    #
+    # DROP THESE once `alpine_release` reaches a minirootfs carrying
+    # >= 1.2.6-r3.
+    apk
+      "musl-1.2.6-r3"
+      "2e17864102278d9049c3a56f1bceed9e8cf287065617e579325123443daed8a5"
+      "e142255d0fa397f14318996bc10378093dcc069dc3dd1b6818c8f28a789c21da",
+    apk
+      "musl-utils-1.2.6-r3"
+      "bb460bdc009e88989bd5adca8a7c8298c339cba99da11c6196c818e042fbaf49"
+      "47263d05842c5e12d01e0369e5b5bea51733323501c00ca21968a5102de137ca",
   ],
 
   cmd = "./build.sh",
