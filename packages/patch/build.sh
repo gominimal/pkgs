@@ -1,8 +1,8 @@
 #!/bin/sh
 set -ex
 
-tar -xof patch-2.8.tar.xz
-cd patch-2.8
+tar -xof patch-2.8.1.1.tar.xz
+cd patch-2.8.1
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
