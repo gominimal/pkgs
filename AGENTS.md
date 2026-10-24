@@ -789,6 +789,19 @@ Two things specific to this repo, which the public page does not carry:
   `SH_NOW=` to omit the build time) rather than re-exporting `SOURCE_DATE_EPOCH`.
 
 
+#### Preloading detbuild
+
+`packages/detbuild` ships `libdetbuild.so`, an `LD_PRELOAD` shim for builds that leak process entropy or the host kernel version into what they ship (rustc and proc-macro `HashMap` order, LuaJIT's string hash, perl's `Config`). It replaces getrandom, getentropy, the raw getrandom syscall, arc4random and `/dev/urandom` reads with a fixed-seed stream, and pins `uname`'s release to `6.1.0-minimal`. `packages/detbuild/detbuild.c` lists what it does not cover (AT_RANDOM, static and Go binaries, glibc-internal entropy).
+
+Every byte it hands out is predictable, including the keys behind a TLS handshake made under it. So:
+
+- **Preload one command:** `LD_PRELOAD=/usr/lib/minimal/libdetbuild.so cargo build --frozen --release`, the way `packages/nushell/build.sh` scopes its shim. Never `export LD_PRELOAD`, and never set it through a `.ncl` `env` or `vars`.
+- **Never on a command that uses the network.** In a `needs.internet` package, fetch first without the preload (`cargo fetch --locked`, and any prebuilt download such as rusty_v8), then preload only the offline step (`cargo build --frozen`).
+- **Never a sandbox default** (gominimal/minimal#2227 proposed one).
+- **The kernel version is fake.** It is deliberately lower than any build host, so a version-keyed feature check can only turn a feature off. A build that needs a newer kernel feature should probe for the feature, not the version.
+
+`.github/scripts/detbuild_preload_guard.py` enforces the first two rules on sources. gominimal/minimal#2489 tracks rejecting `libdetbuild` strings captured into built outputs (libtool wrappers, configure caches).
+
 ### Step 4: Validate
 
 Run the config check against your package. This validates that the Nickel spec parses correctly
