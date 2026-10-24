@@ -1,0 +1,12 @@
+--- a/ghc/utils/prof/cgprof/cgprof.c	2026-09-26 07:13:51
++++ b/ghc/utils/prof/cgprof/cgprof.c	2026-09-26 07:13:51
+@@ -1183,8 +1183,7 @@
+   } /* end of new for loop */
+ 
+   *nonodes = symbol_table_next;
+-  fprintf(log,"%s: read %d lines from profile.Graph contains %i nodes. 
+-          \n",Pgm,nolines,symbol_table_next);
++  fprintf(log,"%s: read %d lines from profile.Graph contains %i nodes. \n",Pgm,nolines,symbol_table_next);
+ 
+   free_cc_matrix(cc_m); /* be nice and clean up the cost centre matrix */
+ }
