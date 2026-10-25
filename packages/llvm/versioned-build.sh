@@ -49,7 +49,11 @@ ninja
 DESTDIR=$OUTPUT_DIR ninja 'install/strip'
 
 # Fail closed: nothing may land outside the prefix (that is the whole point of these packages).
-stray=$(cd "$OUTPUT_DIR" && find . \( -type f -o -type l \) ! -path ".$PREFIX/*" | head -20)
+# The one exception is a bare usr/lib64 symlink, which the build-bot output dir carries
+# (merged-usr scaffold, not installed by LLVM; no output glob ships it). A file written
+# THROUGH it would still show up below as a file outside the prefix.
+if [ -L "$OUTPUT_DIR/usr/lib64" ]; then ls -ld "$OUTPUT_DIR/usr/lib64"; fi
+stray=$(cd "$OUTPUT_DIR" && find . \( -type f -o -type l \) ! -path ".$PREFIX/*" ! \( -type l -path ./usr/lib64 \) | head -20)
 if [ -n "$stray" ]; then
   echo "ERROR: files installed outside $PREFIX:" >&2
   echo "$stray" >&2
