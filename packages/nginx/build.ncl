@@ -13,14 +13,14 @@ let zlib = import "../zlib/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let pcre2 = import "../pcre2/build.ncl" in
 
-let version = "1.31.6" in
+let version = "1.31.8" in
 {
   name = "nginx",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://nginx.org/download/nginx-%{version}.tar.gz",
-      sha256 = "974ed5298a5e398e008704ed5db284e655fc270c596493dbccada452448fc9f1",
+      sha256 = "0652b760b3b772d2ec17b47c2fc15d9a95e6fe35cd5b877eadc1a62d9bc75af1",
       extract = true,
       strip_prefix = "nginx-%{version}",
     } | Source,
