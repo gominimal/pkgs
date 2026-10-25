@@ -27,7 +27,7 @@ let zlib = import "../zlib/build.ncl" in
 # A drop-in alternative to `ruby` at the same paths (like node-lts vs node):
 # put exactly one Ruby package in a loadout. Stays on the 3.4 series; bump only
 # within it.
-let version = "3.4.11" in
+let version = "3.4.12" in
 {
   name = "ruby-3.4",
   build_deps = [
@@ -35,7 +35,7 @@ let version = "3.4.11" in
     { file = "rubygems-bindir-mkdir-p.patch" } | Local,
     {
       url = "https://cache.ruby-lang.org/pub/ruby/3.4/ruby-%{version}.tar.gz",
-      sha256 = "5c22be44524312b3d433d68739bcc530633b1da5ef8ba0afa0a37680da17d3de",
+      sha256 = "5e5d85ad93b0adcccbad47733680f4892bd0078e3342437f7babce01c1872479",
     } | Source,
     base,
     make,
