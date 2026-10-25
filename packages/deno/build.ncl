@@ -7,7 +7,7 @@ let gcc = import "../gcc/build.ncl" in
 let python = import "../python/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 
-let version = "2.9.7" in
+let version = "2.9.8" in
 {
   name = "deno",
   build_deps = [
@@ -16,12 +16,12 @@ let version = "2.9.7" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://github.com/denoland/deno/releases/download/v%{version}/deno-x86_64-unknown-linux-gnu.zip",
-          sha256 = "c6527f24f4b16031d3ae4fa9f658d5f11534c8d84ce7dc8502420280919c3490",
+          sha256 = "e890975bc2549807bbcc0b584ffafda72cc7c93349dd99c80483dd784f6c4609",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://github.com/denoland/deno/releases/download/v%{version}/deno-aarch64-unknown-linux-gnu.zip",
-          sha256 = "c832298b1ad4422481334855f6003e0f54145762c5a134f20a489511d2f65bbf",
+          sha256 = "d49596c20b9788cf8f5d8ddf644103d4bde56ed239753f0bdb92ba9361d51905",
         } | Source,
     } target,
     base,

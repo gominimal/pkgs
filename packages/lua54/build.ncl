@@ -10,7 +10,7 @@ let glibc = import "../glibc/build.ncl" in
 # series rather than a single `lua`. 5.1, 5.2 and 5.3 are closed and the
 # versions here are their final releases; only 5.4 still receives them. A bump
 # must stay inside the series: 5.5 is a different library, not an upgrade.
-let version = "5.4.8" in
+let version = "5.4.9" in
 let abi = "5.4" in
 {
   name = "lua54",
@@ -19,7 +19,7 @@ let abi = "5.4" in
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/lua-%{version}.tar.gz",
-      sha256 = "4f18ddae154e793e46eeab727c59ef1c0c0c2b744e7b94219710d76f530629ae",
+      sha256 = "2335b6c582a52654f94612bf10d2f4672805d05329aa6568b1d8cd9e5c6fb8e6",
       extract = true,
       strip_prefix = "lua-%{version}",
     } | Source,
