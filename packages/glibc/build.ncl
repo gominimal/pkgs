@@ -108,20 +108,18 @@ let version = "2.44" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # gen-3 of gominimal/bootstrap (generations/gen-3/manifest.json): built from the hex0 seed
+              # gen-4 of gominimal/bootstrap (generations/gen-4/manifest.json): built from the hex0 seed
               # and reproduced byte for byte on two independent machines before publishing.
-              url = "gs://minimal-bootstrap/gen-3/sha256/231f7f3752eb1ecdf413aae53c1b6102f04e7cbf6e553e9e350cb99e0db61d9f/glibc-bedrock-2.42-2.42-x86_64.tar.zst",
+              url = "gs://minimal-bootstrap/gen-4/sha256/231f7f3752eb1ecdf413aae53c1b6102f04e7cbf6e553e9e350cb99e0db61d9f/glibc-bedrock-2.42-2.42-x86_64.tar.zst",
               sha256 = "231f7f3752eb1ecdf413aae53c1b6102f04e7cbf6e553e9e350cb99e0db61d9f",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
-              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
-              # gominimal/minimermetic#16. Applied by minimermetic's
-              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/a1d40cb10e77670c3c1b00bf2ce28f45775146dfe0397d4c4c5468e955bb1cdc/stage0-glibc-2.42-aarch64.tar.zst",
-              sha256 = "a1d40cb10e77670c3c1b00bf2ce28f45775146dfe0397d4c4c5468e955bb1cdc",
+              # gen-4 of gominimal/bootstrap (generations/gen-4/manifest.json): built from the hex0 seed
+              # and reproduced byte for byte on two independent machines before publishing.
+              url = "gs://minimal-bootstrap/gen-4/sha256/3bca5e39988d3527a07d7aa6cff3b86eb8ef2eee3c1a90270e5bd24edf7290ad/glibc-bedrock-2.42-aarch64.tar.zst",
+              sha256 = "3bca5e39988d3527a07d7aa6cff3b86eb8ef2eee3c1a90270e5bd24edf7290ad",
               extract = true,
             } | Source,
         } target,
