@@ -1,8 +1,9 @@
 #!/bin/sh
 set -ex
 
-tar -xof patch-2.8.1.1.tar.xz
-cd patch-2.8.1
+# $MINIMAL_ARG_VERSION is forwarded from build.ncl's `version` via build_args.
+tar -xof "patch-${MINIMAL_ARG_VERSION}.tar.xz"
+cd "patch-${MINIMAL_ARG_VERSION}"
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;

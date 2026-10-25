@@ -22,6 +22,11 @@ let version = "2.8.1" in
   ],
 
   cmd = "./build.sh",
+  # build.sh names the tarball from this, so a version bump can't leave a
+  # stale or mangled filename behind (pkgs#1023: 2.8 -> "2.8.1.1").
+  build_args = {
+    include version,
+  },
   outputs = {
     patch = { glob = "usr/bin/patch" } | OutputBin,
     mans = { glob = "usr/share/man/**" } | OutputData,
