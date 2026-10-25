@@ -16,6 +16,22 @@ export RUSTFLAGS="-C linker=gcc -C codegen-units=1 -C symbol-mangling-version=v0
 # Needed for crates that use bindgen / libclang
 export LIBCLANG_PATH="$(dirname $(find /usr/lib -name 'libclang*.so' | head -1))"
 
+# Upstream's release tags set the workspace version in Cargo.toml but leave the
+# workspace members at 0.0.0 in the committed Cargo.lock, so `--locked` refuses it
+# (rust-v0.164.0: 166 members). Let cargo sync ONLY the workspace members, then
+# fail closed if any registry crate's pinned version or source moved.
+registry_pins() {
+  awk '/^\[\[package\]\]/ { n = ""; v = "" } /^name = / { n = $3 } /^version = / { v = $3 }
+       /^source = / { print n, v, $3 }' Cargo.lock | sort
+}
+pins_before=$(registry_pins)
+cargo update --workspace
+if [ "$(registry_pins)" != "$pins_before" ]; then
+  echo "ERROR: cargo update --workspace moved a registry crate; only workspace members may change" >&2
+  diff <(printf '%s\n' "$pins_before") <(registry_pins) >&2 || true
+  exit 1
+fi
+
 # Security floor (CVE-2026-111943): upstream's own lock now carries rustls-webpki
 # 0.103.16 and webpki-roots / webpki-root-certs 1.0.10, so the lock patch is gone.
 # Keep failing closed if a pre-fix rustls-webpki 0.103.x or webpki-roots /
