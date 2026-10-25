@@ -1,6 +1,7 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
+let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -19,6 +20,8 @@ let version = "1.5.5" in
     } | Source,
     base,
     make,
+    # 1.5.5's configure requires pkg-config (PKG_PROG_PKG_CONFIG).
+    pkgconf,
     toolchain,
   ],
   runtime_deps = [
