@@ -62,9 +62,13 @@ let version = "4.99.7" in
           #     exit status, printed PASS, and ended with a cleanup command whose
           #     zero exit became the result (CodeRabbit, #721).
           # Both now fail loudly: `set -euo pipefail` plus `grep -q`.
-          ["/bin/bash", "-c", "set -euo pipefail\n/bin/lsof -h 2>&1 | grep -qi usage"],
-          ["/bin/bash", "-c", "set -euo pipefail\n/bin/lsof -v 2>&1 | grep -qF %{version}"],
-          ["/bin/bash", "-c", "set -euo pipefail\ntmpfile=$(mktemp /tmp/lsof-test-XXXXXX)\ntrap 'kill $bg_pid 2>/dev/null || true; rm -f \"$tmpfile\"' EXIT\necho data > \"$tmpfile\"\nsh -c \"exec 3<\\\"$tmpfile\\\"; sleep 60\" &\nbg_pid=$!\nsleep 1\n/bin/lsof -p \"$bg_pid\" 2>&1 | grep -qF \"$tmpfile\""],
+          # Output is captured BEFORE grep: `cmd | grep -q` under pipefail
+          # exits 141 when grep quits on its first match while lsof is still
+          # writing (SIGPIPE) - a timing race that failed unrelated PRs'
+          # minimal-check (pkgs#883, 2026-10-15).
+          ["/bin/bash", "-c", "set -euo pipefail\nout=$(/bin/lsof -h 2>&1)\ngrep -qi usage <<<\"$out\""],
+          ["/bin/bash", "-c", "set -euo pipefail\nout=$(/bin/lsof -v 2>&1)\ngrep -qF %{version} <<<\"$out\""],
+          ["/bin/bash", "-c", "set -euo pipefail\ntmpfile=$(mktemp /tmp/lsof-test-XXXXXX)\ntrap 'kill $bg_pid 2>/dev/null || true; rm -f \"$tmpfile\"' EXIT\necho data > \"$tmpfile\"\nsh -c \"exec 3<\\\"$tmpfile\\\"; sleep 60\" &\nbg_pid=$!\nsleep 1\nout=$(/bin/lsof -p \"$bg_pid\" 2>&1)\ngrep -qF \"$tmpfile\" <<<\"$out\""],
         ],
       } | Test,
   },

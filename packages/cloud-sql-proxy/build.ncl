@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.26.0" in
+let version = "2.26.3" in
 {
   name = "cloud-sql-proxy",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/GoogleCloudPlatform/cloud-sql-proxy/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "847959e97723aa25513b73812f6a323ada28c616c02677838bdfcb4842bfd67a",
+      sha256 = "7f9721d813ce628f311fec574484569e852a8f92c0220471fa49d335276f2979",
       extract = true,
       strip_prefix = "cloud-sql-proxy-%{version}",
     } | Source,

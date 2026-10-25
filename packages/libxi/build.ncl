@@ -12,17 +12,17 @@ let glibc = import "../glibc/build.ncl" in
 
 # X11 Input extension library (libXi.so.6). Pulled in as a runtime dep of
 # libxtst (and, transitively, chromium-bin — Chrome links libXi.so.6). Deps
-# taken straight from libXi-1.8.3's pkg-config: `Requires.private: x11 xext
+# taken straight from libXi-1.8.4's pkg-config: `Requires.private: x11 xext
 # xfixes` (so it links libXfixes too), plus xorgproto for the input/xproto
 # headers.
-let version = "1.8.3" in
+let version = "1.8.4" in
 {
   name = "libxi",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libXi-%{version}.tar.xz",
-      sha256 = "7ad60056f01af4f786cfe93b3a7707447711626fc8da2637bec71a90409babe5",
+      sha256 = "ddd6057b89a91903bc2f884d55c8467440906945e482c36547260dff28661afc",
       extract = true,
       strip_prefix = "libXi-%{version}",
     } | Source,

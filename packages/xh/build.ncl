@@ -7,14 +7,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let version = "0.26.2" in
+let version = "0.26.3" in
 {
   name = "xh",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/ducaale/xh/v%{version}.tar.gz",
-      sha256 = "61a88a5b3beac225b75a11d6ed32659af78db7ff29c825def0ab7f4a2906cbd7",
+      sha256 = "8c54c7e8e878600d1a322151e0158c4fa6e6793283a45e355d0c1f87ca6d5640",
       extract = true,
       strip_prefix = "xh-%{version}",
     } | Source,

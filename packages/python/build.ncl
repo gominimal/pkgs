@@ -17,36 +17,28 @@ let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let xz = import "../xz/build.ncl" in
 
-let version = "3.14.8" in
+let version = "3.14.9" in
 {
   name = "python",
   build_deps = [
     { file = "build.sh" } | Local,
-    # CVE-2026-87910 (PSF-2026-40, gh-157265): when a hard link falls back to
-    # extracting a copy of its target, tarfile called the filter with the
-    # link's name and threw the result away, so a custom filter that rejects
-    # a member by returning None (instead of raising) was ignored. The stock
-    # `data`/`tar` filters raise, so only None-returning custom filters are
-    # affected. Fixed on main (fb2f0bbc) and 3.13; the 3.14 backport
-    # (python/cpython#157307) is NOT in 3.14.8 -- its Misc/NEWS has no entry for
-    # gh-157265 and this patch still applies cleanly to the 3.14.8 tree. Drop
-    # it on the first 3.14.x whose changelog lists gh-157265.
+    # Dropped on the 3.14.9 bump, because 3.14.9 ships each fix (its own
+    # Misc/NEWS Security section lists all three): gh-157265 (tarfile,
+    # CVE-2026-87910), gh-157579 (tempfile, CVE-2026-12345) and gh-159894
+    # (ensurepip bundles pip 26.2.2, the CVE-2026-111943 certifi fix we used to
+    # swap in by hand). Earlier drops: gh-155999, gh-155694, gh-156002 and
+    # gh-155292 on the 3.14.8 bump. Their regression tests below stay as guards.
     #
-    # The 3.14.7 recipe also carried gh-155999 (tarfile, CVE-2026-19672),
-    # gh-155694 (urllib, CVE-2026-15806), gh-156002 (zipfile, CVE-2026-15310)
-    # and gh-155292 (stringprep, CVE-2026-17084). All four ship in 3.14.8 and
-    # were dropped; their regression tests below stay as guards.
-    { file = "0002-gh-157265-tarfile-honor-filter-none-link-fallback.patch" } | Local,
     # CVE-2025-15367 (gh-143923): poplib built each command from caller-supplied
     # text and sent it unchecked, so a CR/LF inside an argument injected extra
     # POP3 commands. Fixed on main (b234a2b6, 3.15.0a6) only: the 3.14 branch has
-    # no commit touching poplib.py since 2025-03-02 and 3.14.8's Misc/NEWS has no
-    # entry for gh-143923. A straight cherry-pick; drop it on the first 3.14.x
-    # whose changelog lists gh-143923.
+    # no commit touching poplib.py since 2025-03-02 and 3.14.9's Misc/NEWS has no
+    # entry for gh-143923. A straight cherry-pick (applies at fuzz 0 to 3.14.9);
+    # drop it on the first 3.14.x whose changelog lists gh-143923.
     { file = "0003-gh-143923-poplib-reject-control-characters.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/Python-%{version}.tar.xz",
-      sha256 = "c2215904f02b175596dc49351585104f4bc20341e1c47378b26a2c274360ce73"
+      sha256 = "e02d9ac21cebda6e46435369744a92c65cc7cd8669697694122cf97ffacd1e53"
     } | Source,
     base,
     make,
@@ -203,9 +195,9 @@ let version = "3.14.8" in
         ],
       } | Test,
 
-    # CVE-2026-87910 regression. FAILS on stock 3.14.7 AND 3.14.8 (checked
-    # against the unpatched Lib/tarfile.py) and passes only with the gh-157265
-    # patch, so it catches the patch going missing.
+    # CVE-2026-87910 regression. FAILS on stock 3.14.7 and 3.14.8 and passes on
+    # 3.14.9, which ships the gh-157265 fix (we carried it as a patch until the
+    # 3.14.9 bump). Kept as the guard that the fix is really in what we ship.
     #
     # `q` is a hard link to the symlink `a/b/s -> ../escape`. `a/b/s` itself
     # is fine (it resolves inside the destination), so linking fails over to
@@ -265,10 +257,69 @@ let version = "3.14.8" in
         ],
       } | Test,
 
-    # CVE-2025-15367 regression: FAILS on stock 3.14.8 (poplib sends a command
+    # CVE-2025-15367 regression: FAILS on stock 3.14.9 (poplib sends a command
     # containing CR/LF verbatim, so a username can smuggle in extra POP3
     # commands) and passes only with the gh-143923 patch. Exercises `_putcmd`
     # directly -- no network.
+    # CVE-2026-111943 regression: FAILS on stock 3.14.8, whose ensurepip
+    # installs pip 26.2.1 with a vendored certifi that still trusts emSign ECC
+    # Root CA - G3; passes on 3.14.9, which bundles pip 26.2.2 (we swapped the
+    # wheel in by hand until the 3.14.9 bump). Requires pip >= 26.2.2 rather than
+    # an exact version, so a later 3.14.x bundling a newer pip still passes. Checks the root by its SHA-256 fingerprint, in both the pip
+    # the interpreter ships in site-packages and the wheel ensurepip would
+    # install from. No network.
+    pip_certifi_distrusts_emsign_ecc_g3 =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              cat > poc.py <<'PYEOF'
+              import hashlib, re, ssl, sys, zipfile
+              import ensurepip, pip
+              from pip._vendor import certifi
+
+              G3 = '86a1ecba089c4a8d3bbe2734c612ba341d813e043cf9e8a862cd5c57a36bbe6b'
+
+              def fingerprints(pem):
+                  return {hashlib.sha256(ssl.PEM_cert_to_DER_cert(c)).hexdigest()
+                          for c in re.findall(r'-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----',
+                                              pem, re.S)}
+
+              def ver(v):
+                  return tuple(int(x) for x in re.match(r'\d+(?:\.\d+)*', v).group().split('.'))
+
+              failures = []
+              if ver(pip.__version__) < (26, 2, 2):
+                  failures.append('site-packages pip is %s, want >= 26.2.2' % pip.__version__)
+              if ver(ensurepip.version()) < (26, 2, 2):
+                  failures.append('ensurepip bundles pip %s, want >= 26.2.2' % ensurepip.version())
+
+              installed = fingerprints(open(certifi.where()).read())
+              if len(installed) < 100:
+                  failures.append('pip certifi bundle has only %d roots' % len(installed))
+              if G3 in installed:
+                  failures.append('site-packages pip certifi trusts emSign ECC Root CA - G3')
+
+              with ensurepip._get_pip_whl_path_ctx() as whl:
+                  with zipfile.ZipFile(whl) as z:
+                      bundled = fingerprints(z.read('pip/_vendor/certifi/cacert.pem').decode())
+              if G3 in bundled:
+                  failures.append('ensurepip wheel certifi trusts emSign ECC Root CA - G3')
+
+              for f in failures:
+                  print('FAIL: ' + f, file=sys.stderr)
+              sys.exit(1 if failures else 0)
+              PYEOF
+              python3 poc.py
+            "%
+          ],
+        ],
+      } | Test,
+
     poplib_rejects_control_characters =
       {
         class = 'Standalone,
@@ -300,6 +351,53 @@ let version = "3.14.8" in
                   except ValueError:
                       continue
                   failures.append('control characters were sent: %r' % (bad,))
+
+              for m in failures:
+                  print('FAIL: ' + m, file=sys.stderr)
+              sys.exit(1 if failures else 0)
+              PYEOF
+              python3 poc.py
+            "%
+          ],
+        ],
+      } | Test,
+
+    # CVE-2026-12345 regression (gh-157579). The race itself is not
+    # reproducible deterministically, so this guards the fix's presence and its
+    # normal behaviour: on Linux the fixed cleanup works relative to open
+    # directory fds (`tempfile._rmtree_use_dir_fd`) and rmtree passes the fd to
+    # its error hook (`_onexc_kwargs`). FAILS on stock 3.14.8 (neither exists);
+    # passes on 3.14.9, which ships the fix (carried as a patch until then).
+    # Then a tree with a read-only subdirectory, which forces the
+    # permission-reset path the fix rewrote, must still clean up completely.
+    tempfile_cleanup_race_fix =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              cat > poc.py <<'PYEOF'
+              import inspect, os, shutil, stat, sys, tempfile
+
+              failures = []
+              if getattr(tempfile, '_rmtree_use_dir_fd', None) is not True:
+                  failures.append('tempfile does not clean up via directory fds')
+              if '_onexc_kwargs' not in inspect.signature(shutil.rmtree).parameters:
+                  failures.append('shutil.rmtree lacks the gh-157579 onexc kwargs')
+
+              d = tempfile.TemporaryDirectory()
+              root = d.name
+              sub = os.path.join(root, 'ro')
+              os.mkdir(sub)
+              with open(os.path.join(sub, 'f'), 'w') as fh:
+                  fh.write('x')
+              os.chmod(sub, stat.S_IRUSR | stat.S_IXUSR)
+              d.cleanup()
+              if os.path.exists(root):
+                  failures.append('cleanup left %s behind' % root)
 
               for m in failures:
                   print('FAIL: ' + m, file=sys.stderr)

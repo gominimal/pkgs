@@ -5,14 +5,14 @@ let ninja = import "../ninja/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.11.3" in
+let version = "2.12.0" in
 {
   name = "utf8proc",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/juliastrings/utf8proc/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "abfed50b6d4da51345713661370290f4f4747263ee73dc90356299dfc7990c78",
+      sha256 = "f564011d38b2888d583d510b08e69ffa15aa117155db1b9b49ef1dfe1fa25111",
       extract = true,
       strip_prefix = "utf8proc-%{version}",
     } | Source,
