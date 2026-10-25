@@ -34,16 +34,17 @@ let version = "1.19.7" in
     # credit-request wakeup fix (push_credit_req must set signal_queue), which
     # the count ceiling makes reachable during bulk transfer.
     #
-    # Identical to the patch the macOS source build carries at
-    # vendor/libkrun/patches/ in gominimal/minimal (#926); drop it once the
-    # fix lands in an upstream release we can pin.
+    # The same change as the patch the macOS source build carries at
+    # vendor/libkrun/patches/ in gominimal/minimal (#926), rebased onto
+    # 1.19.7 (gominimal/pkgs#1018); drop it once the fix lands in an upstream
+    # release we can pin.
     # https://github.com/gominimal/minimal/issues/869
     { file = "0001-vsock-bound-outstanding-packets.patch" } | Local,
     # A guest-to-host vsock stream whose host unix socket cannot be created
     # (EMFILE, ENFILE, ENOBUFS) hit UnixProxy::new(...).unwrap() in
     # muxer.rs, and the panic aborted the whole VMM. The patch logs the error
     # and answers that one stream with OP_RST instead, so the guest's
-    # connect() fails and the VM keeps running. 1.19.6 does not fix this.
+    # connect() fails and the VM keeps running. 1.19.7 does not fix this.
     #
     # Identical to the patch gominimal/minimal carries at
     # vendor/libkrun/patches/ (#2105); drop it once upstream releases the fix.
