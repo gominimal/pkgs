@@ -1,34 +1,21 @@
 let { Attrs, BuildSpec, Local, Needs, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
-let patch = import "../patch/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let make = import "../make/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "0.13.4" in
+let version = "0.13.5" in
 {
   name = "uv",
   build_deps = [
     { file = "build.sh" } | Local,
-    # CVE-2026-111943 (eMudhra intermediate key compromise): pins rustls-webpki
-    # 0.103.16 (RUSTSEC-2026-0382, distrusts the 8 intermediates) and
-    # webpki-roots / webpki-root-certs 1.0.10 (RUSTSEC-2026-0383, drops emSign ECC
-    # Root CA - G3) in upstream's Cargo.lock. Lock-only: version + checksum lines
-    # (plus whatever cargo had to move with them). Drop on the first upstream
-    # release whose Cargo.lock already has those versions; a version bump that
-    # keeps it fails at `patch` rather than silently shipping the old lock.
-    # 0.13.4's own lock already has webpki-root-certs 1.0.10, so the patch now
-    # moves only rustls-webpki 0.103.14 -> 0.103.16 (aws-lc-rs 1.18.0 already
-    # satisfies its ^1.18).
-    { file = "cve-2026-111943-webpki-lock.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/uv-%{version}.tar.gz",
-      sha256 = "182d66815490dbb497b456a6fde93c7e66ae7f27a50a2065b3b5a06fbb3a20bd"
+      sha256 = "fbe5c69803f813d36661aaa18c0716317710b0069c9427ba8ef174c6de7c8b4b"
     } | Source,
     base,
-    patch,
     make,
     rust,
     toolchain,

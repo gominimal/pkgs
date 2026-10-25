@@ -20,23 +20,31 @@ export LEAN_CC=gcc
 export CC=gcc
 
 ROOT="$(pwd)"
-cd AeneasVerif-aeneas-505b6ca/backends/lean
+cd AeneasVerif-aeneas-fdebf20/backends/lean
 
-# 1. Our Lean 4.34 port, then the manifest that pins the deps we vendor.
-patch -p1 < "$ROOT/aeneas-lean-4.34.patch"
+# 1. The manifest that pins the deps we vendor (upstream's, verbatim). No port
+#    patch: upstream targets the Lean we ship. Refuse to build if it ever stops
+#    doing so, rather than compiling Mathlib against the wrong Lean.
 cp "$ROOT/lake-manifest.json" lake-manifest.json
+want="leanprover/lean4:v$(lean --version | sed -n 's/^Lean (version \([0-9.]*\).*/\1/p')"
+have="$(cat lean-toolchain)"
+if [ "$have" != "$want" ]; then
+  echo "ERROR: aeneas lean-toolchain is '$have' but the lean we ship is '$want'." >&2
+  echo "       Bump lean and aeneas-latest together (see build.ncl)." >&2
+  exit 1
+fi
 
 # 2. Vendored dependencies into place (name -> extracted top-dir).
 mkdir -p .lake/packages
-mv "$ROOT/leanprover-community-mathlib4-d13f23b" ".lake/packages/mathlib"
-mv "$ROOT/leanprover-community-plausible-118aa17" ".lake/packages/plausible"
-mv "$ROOT/leanprover-community-LeanSearchClient-ddf04cf" ".lake/packages/LeanSearchClient"
-mv "$ROOT/leanprover-community-import-graph-e928b72" ".lake/packages/importGraph"
-mv "$ROOT/leanprover-community-ProofWidgets4-106ff4f" ".lake/packages/proofwidgets"
-mv "$ROOT/leanprover-community-aesop-355695d" ".lake/packages/aesop"
-mv "$ROOT/leanprover-community-quote4-6a489d9" ".lake/packages/Qq"
-mv "$ROOT/leanprover-community-batteries-f2effa3" ".lake/packages/batteries"
-mv "$ROOT/leanprover-lean4-cli-e92c9f1" ".lake/packages/Cli"
+mv "$ROOT/leanprover-community-mathlib4-56a0058" ".lake/packages/mathlib"
+mv "$ROOT/leanprover-community-plausible-dfa4f38" ".lake/packages/plausible"
+mv "$ROOT/leanprover-community-LeanSearchClient-d6b4c7b" ".lake/packages/LeanSearchClient"
+mv "$ROOT/leanprover-community-import-graph-a41f0e9" ".lake/packages/importGraph"
+mv "$ROOT/leanprover-community-ProofWidgets4-df72b02" ".lake/packages/proofwidgets"
+mv "$ROOT/leanprover-community-aesop-4a174c4" ".lake/packages/aesop"
+mv "$ROOT/leanprover-community-quote4-dce0ad7" ".lake/packages/Qq"
+mv "$ROOT/leanprover-community-batteries-66e4691" ".lake/packages/batteries"
+mv "$ROOT/leanprover-lean4-cli-c24fe60" ".lake/packages/Cli"
 
 # 3. The on-disk overrides file: lake resolves every `require` to these dirs.
 {
@@ -51,9 +59,9 @@ mv "$ROOT/leanprover-lean4-cli-e92c9f1" ".lake/packages/Cli"
   printf ']}'
 } > .lake/package-overrides.json
 
-# 4. Mathlib's prebuilt oleans — ONLY the closure Aeneas imports (28 modules).
+# 4. Mathlib's prebuilt oleans — ONLY the closure Aeneas imports (31 modules).
 #    Content-addressed files: the same inputs fetch the same bytes.
-lake exe cache get Mathlib.Algebra.Algebra.ZMod Mathlib.Algebra.Group.Basic Mathlib.Algebra.Order.Ring.Canonical Mathlib.Algebra.Order.Sub.Basic Mathlib.Algebra.Order.Sub.Defs Mathlib.Control.Monad.Cont Mathlib.Data.BitVec Mathlib.Data.Fin.Basic Mathlib.Data.Int.Cast.Basic Mathlib.Data.Int.Init Mathlib.Data.List.GetD Mathlib.Data.Nat.Basic Mathlib.Data.Nat.Bitwise Mathlib.Data.Nat.Cast.Basic Mathlib.Data.Nat.Log Mathlib.Data.ZMod.Basic Mathlib.Order.Basic Mathlib.RingTheory.Int.Basic Mathlib.Tactic.Attr.Register Mathlib.Tactic.Basic Mathlib.Tactic.Core Mathlib.Tactic.DefEqTransformations Mathlib.Tactic.Linarith Mathlib.Tactic.OfNat Mathlib.Tactic.Ring Mathlib.Tactic.Ring.RingNF Mathlib.Tactic.Simproc.ExistsAndEq Mathlib.Tactic.Tauto
+lake exe cache get Mathlib.Algebra.Algebra.ZMod Mathlib.Algebra.Group.Basic Mathlib.Algebra.Order.Ring.Canonical Mathlib.Algebra.Order.Sub.Basic Mathlib.Algebra.Order.Sub.Defs Mathlib.Control.Monad.Cont Mathlib.Data.BitVec Mathlib.Data.Fin.Basic Mathlib.Data.Int.Cast.Basic Mathlib.Data.Int.GCD Mathlib.Data.Int.Init Mathlib.Data.List.GetD Mathlib.Data.List.Monad Mathlib.Data.Nat.Basic Mathlib.Data.Nat.Bitwise Mathlib.Data.Nat.Cast.Basic Mathlib.Data.Nat.Log Mathlib.Data.ZMod.Basic Mathlib.Order.Basic Mathlib.Order.FixedPoints Mathlib.RingTheory.Int.Basic Mathlib.Tactic.Attr.Register Mathlib.Tactic.Basic Mathlib.Tactic.Core Mathlib.Tactic.DefEqTransformations Mathlib.Tactic.Linarith Mathlib.Tactic.OfNat Mathlib.Tactic.Ring Mathlib.Tactic.Ring.RingNF Mathlib.Tactic.Simproc.ExistsAndEq Mathlib.Tactic.Tauto
 
 # 5. Build the library against them.
 # Bound memory: the sandbox container is SIGKILLed when six `lean` jobs each
@@ -78,7 +86,7 @@ done
 printf '%s\n' "$LEAN_PATH_OUT" > "$OUT/LEAN_PATH"
 
 mkdir -p "$OUTPUT_DIR/usr/share/aeneas-latest"
-cp "$ROOT/aeneas-lean-4.34.patch" "$ROOT/lake-manifest.json" "$OUTPUT_DIR/usr/share/aeneas-latest/"
+cp "$ROOT/lake-manifest.json" "$OUTPUT_DIR/usr/share/aeneas-latest/"
 # Build manifest: what was installed (the per-package olean counts), so a
 # consumer can tell a complete package from a truncated one at a glance.
 # Sizes are summed file bytes, not `du -sk`: disk usage depends on block
