@@ -5,16 +5,17 @@ tar -xof "Python-${MINIMAL_ARG_VERSION}.tar.xz"
 cd "Python-${MINIMAL_ARG_VERSION}"
 
 # CVE-2025-15367 (poplib command injection, gh-143923) -- cherry-picked from main;
-# upstream never backported it to 3.14, so 3.14.9 still lacks it. Applied before
+# upstream never backported it to 3.14, so 3.14.10 still lacks it. Applied before
 # configure so a failed hunk fails the build under `set -e` rather than quietly
-# producing an unpatched poplib. The patch lives one level up because we
-# extracted into a subdirectory above.
+# producing an unpatched poplib; -F0 refuses fuzzy hunks so a context drift on a
+# later bump fails too, instead of landing the check somewhere else. The patch
+# lives one level up because we extracted into a subdirectory above.
 #
 # Earlier backports ship upstream and were dropped on the bump that first carried
 # them: gh-155999, gh-155694, gh-156002, gh-155292 in 3.14.8; gh-157265 (tarfile),
 # gh-157579 (tempfile) and the CVE-2026-111943 ensurepip pip swap (gh-159894, pip
 # 26.2.2) in 3.14.9. Each is listed in that release's own Misc/NEWS.
-patch -Np1 -i "../0003-gh-143923-poplib-reject-control-characters.patch"
+patch -Np1 -F0 -i "../0003-gh-143923-poplib-reject-control-characters.patch"
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
