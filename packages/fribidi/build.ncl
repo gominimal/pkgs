@@ -7,14 +7,14 @@ let pkgconf = import "../pkgconf/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.0.16" in
+let version = "1.0.17" in
 {
   name = "fribidi",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/fribidi-%{version}.tar.xz",
-      sha256 = "1b1cde5b235d40479e91be2f0e88a309e3214c8ab470ec8a2744d82a5a9ea05c",
+      sha256 = "6949dcde27d41cebad1fd741fcafc36d55a1020d2d872d4a6eb3914caabbada2",
       extract = true,
       strip_prefix = "fribidi-%{version}",
     } | Source,
