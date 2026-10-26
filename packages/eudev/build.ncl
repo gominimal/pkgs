@@ -3,6 +3,7 @@ let base = import "../base/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gperf = import "../gperf/build.ncl" in
 let make = import "../make/build.ncl" in
+let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
 let version = "3.2.15" in
@@ -19,6 +20,9 @@ let version = "3.2.15" in
     base,
     gperf,
     make,
+    # 3.2.15's shipped configure (regenerated with a newer pkg.m4) aborts with
+    # "pkg-config not found" before any --disable-* option is honoured.
+    pkgconf,
     toolchain,
   ],
   runtime_deps = [
