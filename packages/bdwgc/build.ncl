@@ -34,7 +34,9 @@ let version = "8.2.12" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "MIT",
+      # README.QUICK / README.md "Copyright & Warranty": the Boehm-Demers-Weiser terms (keep the notices,
+      # mark modified copies), not MIT. gc_allocator.h (HP/SGI) installs only with --enable-cplusplus.
+      license_spdx = "Boehm-GC",
       repology_project = "boehm-gc",
       source_provenance = {
         category = 'GithubRepo,

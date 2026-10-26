@@ -71,7 +71,9 @@ let version = "3.0.11" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "LGPL-3.0-or-later",
+      # libguile and most modules are LGPL; guile-readline (readline.c, ice-9/readline.scm) and the elisp
+      # compiler (language/elisp/compile-tree-il.scm) are GPL-3.0-or-later, and both are installed.
+      license_spdx = "LGPL-3.0-or-later AND GPL-3.0-or-later",
       repology_project = "guile",
       build_cost_multiple = 2,
       source_provenance = {
