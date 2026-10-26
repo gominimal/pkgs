@@ -10,7 +10,6 @@ let fribidi = import "../fribidi/build.ncl" in
 let harfbuzz = import "../harfbuzz/build.ncl" in
 let libass = import "../libass/build.ncl" in
 let libaom = import "../libaom/build.ncl" in
-let libfdk-aac = import "../libfdk-aac/build.ncl" in
 let libopus = import "../libopus/build.ncl" in
 let libsvtav1 = import "../libsvtav1/build.ncl" in
 let libvmaf = import "../libvmaf/build.ncl" in
@@ -45,7 +44,6 @@ let version = "9.0.2" in
     harfbuzz,
     libass,
     libaom,
-    libfdk-aac,
     libopus,
     libsvtav1,
     libvmaf,
@@ -70,7 +68,14 @@ let version = "9.0.2" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "(GPL-2.0-only AND GPL-3.0-only AND LGPL-2.1-only)",
+      # What configure reports for these flags: `--enable-gpl --enable-version3`
+      # and nothing nonfree gives "GPL version 3 or later" (build.sh checks it).
+      # libfdk-aac is deliberately NOT linked: it is on FFmpeg's
+      # EXTERNAL_LIBRARY_NONFREE_LIST (the FDK AAC license is GPL-incompatible),
+      # and with it configure reports "nonfree and unredistributable", which is
+      # what this package shipped until #1110. AAC encoding uses FFmpeg's
+      # native `aac` encoder.
+      license_spdx = "GPL-3.0-or-later",
       repology_project = "ffmpeg",
       source_provenance = {
         category = 'GithubRepo,
@@ -78,14 +83,6 @@ let version = "9.0.2" in
         repo = "FFmpeg",
       },
       build_cost_multiple = 2,
-      # NOT redistributable. build.sh configures `--enable-gpl --enable-nonfree
-      # --enable-libfdk-aac`. FFmpeg's own configure (n8.1.1, line ~4777) then
-      # sets `license="nonfree and unredistributable"`: libfdk_aac is on
-      # EXTERNAL_LIBRARY_NONFREE_LIST because the Fraunhofer FDK AAC license is
-      # GPL-incompatible, and x264/x265 here are GPL. Dropping
-      # --enable-libfdk-aac and --enable-nonfree (the native `aac` encoder
-      # remains) would make the build GPL and redistributable again.
-      redistributable = false,
     } | Attrs,
 
   tests = {
