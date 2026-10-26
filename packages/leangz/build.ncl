@@ -5,7 +5,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.1.20" in
+let version = "0.1.21" in
 {
   name = "leangz",
   # `leantar` + `leangz`: the (de)compressor for Lean `.olean` build artifacts
@@ -18,7 +18,7 @@ let version = "0.1.20" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/digama0/leangz/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "46b1b7aea6905ace2f06083143bdc8e782643517c62d19751d8933620fd44816",
+      sha256 = "3362da6b4f88e24d30e397414b6400a7a265dec8cf6367cf2664897b3c96ed57",
       extract = true,
       strip_prefix = "leangz-%{version}",
     } | Source,
