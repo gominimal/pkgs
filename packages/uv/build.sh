@@ -15,7 +15,7 @@ echo "3fd592a70bd1c1a83efd3f9191945e57243f26b34a241fe8d4182b5c04258a1b  Cargo.lo
   echo "ERROR: upstream Cargo.lock changed; run: pkgmgr lock-patch uv" >&2
   exit 1
 }
-patch -Np1 -i ./security-floors-lock.patch
+patch -Np1 -i ../security-floors-lock.patch
 # Security floors (version-agnostic): no locked version below a fixed release.
 if grep -A1 '^name = "zstd"$' Cargo.lock | grep -qE '^version = "0[.]14[.](([0-2])([-+][^"]*)?|3-[^"]*)"$'; then
   echo "ERROR: zstd below its security floor 0.14.3 is in Cargo.lock (RUSTSEC-2026-0391)" >&2
