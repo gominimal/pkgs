@@ -15,7 +15,7 @@ export CXXFLAGS="${CFLAGS}"
 # time, and with no .git in the tarball the build number is 0, so it falls back to
 # the moving `latest` tag: a different UI got embedded as upstream published new
 # ones, which was the 2026-10 prod-pair diff (31% of libllama-server-impl.so,
-# identical symbols). Instead, the b10357 UI is a pinned Source, unpacked where the
+# identical symbols). Instead, the b11669 UI is a pinned Source, unpacked where the
 # script looks first (tools/ui/dist), and both fetch paths are off. The script
 # gzips each asset without -n, so the gzip header carries the file's mtime: pin
 # the mtimes too. Not to SOURCE_DATE_EPOCH: the sandbox's is 0, which gzip can't
