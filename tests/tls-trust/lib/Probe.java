@@ -7,7 +7,7 @@
 // pinned instant, revocation off. The builder applies lib/security/blocked.certs
 // (UntrustedCertificates) and jdk.certpath.disabledAlgorithms, the same checks
 // the TLS trust manager runs. It does not apply jdk.security.caDistrustPolicies,
-// which are TLS-only date cut-offs (none is used for this incident).
+// which are TLS-only date cut-offs (none is used for this response).
 // With ROOTS.pem the trust anchors are exactly that file, which isolates
 // blocked.certs (the java-blocklist row).
 import java.io.File;

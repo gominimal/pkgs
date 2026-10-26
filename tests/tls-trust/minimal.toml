@@ -3,7 +3,7 @@
 # This is its own project. [upstream] pins gominimal/pkgs, so the clients come
 # from that commit exactly as a user's project would get them, not from the
 # checkout this file sits in. `min update` re-pins to the tip of main.
-# README.md covers pointing it at a PR head instead, and the per-incident
+# README.md covers pointing it at a PR head instead, and the per-response
 # playbook.
 #
 #   min task run live    -C tests/tls-trust --no-input        # handshakes, the 12 + 2 hosts
@@ -22,7 +22,7 @@ branch = "main"
 locked_commit = "befeac7d8f90252327a3279399a8e210b5b59054"
 
 [tasks.live]
-args.profile = { type = "string", default = "incidents/cve-2026-111943", help = "profile directory" }
+args.profile = { type = "string", default = "responses/cve-2026-111943", help = "profile directory" }
 args.only = { type = "string", default = "", help = "regex over row names" }
 args.jobs = { type = "string", default = "8", help = "parallel probes" }
 args.timeout = { type = "string", default = "15", help = "per-probe timeout, seconds" }
@@ -35,7 +35,7 @@ packages = [
 bash = "bash ./run.sh --mode live --profile '%{profile}' --only '%{only}' --jobs '%{jobs}' --timeout '%{timeout}' --details '%{details}' --json -"
 
 [tasks.live-alt]
-args.profile = { type = "string", default = "incidents/cve-2026-111943", help = "profile directory" }
+args.profile = { type = "string", default = "responses/cve-2026-111943", help = "profile directory" }
 args.only = { type = "string", default = "", help = "regex over row names" }
 args.jobs = { type = "string", default = "8", help = "parallel probes" }
 args.timeout = { type = "string", default = "15", help = "per-probe timeout, seconds" }
@@ -47,7 +47,7 @@ packages = [
 bash = "bash ./run.sh --mode live --profile '%{profile}' --rows '^(node|node-sysca|node-blocklist|java|java-blocklist)$' --only '%{only}' --jobs '%{jobs}' --timeout '%{timeout}' --details '%{details}' --json -"
 
 [tasks.live-jdk27]
-args.profile = { type = "string", default = "incidents/cve-2026-111943", help = "profile directory" }
+args.profile = { type = "string", default = "responses/cve-2026-111943", help = "profile directory" }
 args.only = { type = "string", default = "", help = "regex over row names" }
 args.jobs = { type = "string", default = "8", help = "parallel probes" }
 args.timeout = { type = "string", default = "15", help = "per-probe timeout, seconds" }
@@ -59,7 +59,7 @@ packages = [
 bash = "bash ./run.sh --mode live --profile '%{profile}' --rows '^(java|java-blocklist)$' --only '%{only}' --jobs '%{jobs}' --timeout '%{timeout}' --details '%{details}' --json -"
 
 [tasks.offline]
-args.profile = { type = "string", default = "incidents/cve-2026-111943", help = "profile directory" }
+args.profile = { type = "string", default = "responses/cve-2026-111943", help = "profile directory" }
 args.only = { type = "string", default = "", help = "regex over row names" }
 args.jobs = { type = "string", default = "8", help = "parallel probes" }
 args.timeout = { type = "string", default = "15", help = "per-probe timeout, seconds" }
@@ -72,7 +72,7 @@ packages = [
 bash = "bash ./run.sh --mode offline --profile '%{profile}' --only '%{only}' --jobs '%{jobs}' --timeout '%{timeout}' --details '%{details}' --json -"
 
 [tasks.offline-alt]
-args.profile = { type = "string", default = "incidents/cve-2026-111943", help = "profile directory" }
+args.profile = { type = "string", default = "responses/cve-2026-111943", help = "profile directory" }
 args.only = { type = "string", default = "", help = "regex over row names" }
 args.jobs = { type = "string", default = "8", help = "parallel probes" }
 args.timeout = { type = "string", default = "15", help = "per-probe timeout, seconds" }
@@ -84,7 +84,7 @@ packages = [
 bash = "bash ./run.sh --mode offline --profile '%{profile}' --rows '^(node|node-sysca|node-blocklist|java|java-blocklist)$' --only '%{only}' --jobs '%{jobs}' --timeout '%{timeout}' --details '%{details}' --json -"
 
 [tasks.offline-jdk27]
-args.profile = { type = "string", default = "incidents/cve-2026-111943", help = "profile directory" }
+args.profile = { type = "string", default = "responses/cve-2026-111943", help = "profile directory" }
 args.only = { type = "string", default = "", help = "regex over row names" }
 args.jobs = { type = "string", default = "8", help = "parallel probes" }
 args.timeout = { type = "string", default = "15", help = "per-probe timeout, seconds" }

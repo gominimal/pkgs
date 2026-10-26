@@ -89,7 +89,7 @@ block. Each directory under `tests/`:
    pinned by checksum, and cites its source;
  * has no `profiles/` subdirectory, because min reserves `profiles/<name>/profile.ncl`.
 
-Current tests: `tls-trust` (every TLS client refuses a distrusted CA, per incident).
+Current tests: `tls-trust` (every TLS client refuses a distrusted CA, per distrust response).
 
 
 

@@ -141,7 +141,7 @@ for ((i = 0; i < ${#R_NAME[@]}; i++)); do
   n=${R_NAME[$i]}
   case $n in SELFTEST|NEGCONTROL) SEL+=("$i"); continue ;; esac
   # *-blocklist rows trust the anchors on purpose, so they only mean something
-  # for clients the incident says ship their own blocklist (expected.txt).
+  # for clients the response says ship their own blocklist (expected.txt).
   case $n in *-blocklist) [[ " $BLOCKLIST_ROWS " == *" $n "* ]] || continue ;; esac
   if [ -n "$ROWS" ] && ! grep -Eq -- "$ROWS" <<<"$n"; then continue; fi
   if [ -n "$ONLY" ] && ! grep -Eq -- "$ONLY" <<<"$n"; then continue; fi

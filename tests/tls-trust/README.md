@@ -1,6 +1,6 @@
 # tests/tls-trust
 
-Checks that every TLS client we ship refuses a distrusted CA. It runs once per incident,
+Checks that every TLS client we ship refuses a distrusted CA. It runs once per response,
 and again every week as a regression check.
 
 Each check runs in a min box, built from the packages users actually get. This directory
@@ -21,7 +21,7 @@ tests/tls-trust/
   lib/go.sh + probe.go       go
   lib/rust.sh                uv, uv with UV_SYSTEM_CERTS=1
   lib/controls.sh            SELFTEST and NEGCONTROL
-  incidents/<id>/            one directory per incident (the "profile")
+  responses/<id>/            one directory per response (the "profile")
     targets.txt              hosts that must be refused: <host> <group> <label>
     positives.txt            hosts that must connect
     expected.txt             verify_at (offline instant), blocklist_rows, expected failure class
@@ -31,7 +31,7 @@ tests/tls-trust/
     chains/SHA256SUMS        pins every PEM; chains/README.md cites the source
 ```
 
-The directory is `incidents/`, not `profiles/`, because min treats `profiles/<name>/` as
+The directory is `responses/`, not `profiles/`, because min treats `profiles/<name>/` as
 its own profile convention (`profile.ncl`). A `profiles/` here breaks session creation.
 
 ## Running it
@@ -133,7 +133,7 @@ At the pre-fix pin, the offline cells matched the live cells for every row that 
 in both target groups. That is the bar for adding an offline probe: if offline disagrees
 with live at the baseline, the probe is wrong, and the row is N/A until it is fixed.
 
-### Blocklist rows (opt-in per incident)
+### Blocklist rows (opt-in per response)
 
 `go-blocklist`, `node-blocklist`, `java-blocklist` and `uv-blocklist` run with the
 anchors **trusted**: `SSL_CERT_FILE` set to bundle+anchors for Go and uv,
@@ -141,15 +141,15 @@ anchors **trusted**: `SSL_CERT_FILE` set to bundle+anchors for Go and uv,
 With the anchors trusted, a FIXED can only come from the client's own blocklist. Those
 blocklists are Go's distrusted SPKIs, node's `kBlockedSPKIs`, the JDK's `blocked.certs`
 and rustls-webpki's list. A row runs only if `expected.txt` names it in `blocklist_rows`.
-A client with no blocklist for a given incident would otherwise read VULNERABLE forever.
+A client with no blocklist for a given response would otherwise read VULNERABLE forever.
 node's and uv's blocklists fire only inside a handshake, so those rows are live-only.
 Java's has no live row, because that would need a keystore built with keytool, and
 offline already runs the same PKIX code.
 
-## Incident playbook
+## Response playbook
 
-1. **Add an incident directory.** Copy `incidents/cve-2026-111943/` to
-   `incidents/<id>/` and fill it in:
+1. **Add a response directory.** Copy `responses/cve-2026-111943/` to
+   `responses/<id>/` and fill it in:
    - `targets.txt` lists the hosts that must be refused, one per line, as `<host> <group>
      <label>`. Each group becomes a table column.
    - `positives.txt` lists two or more hosts that must connect, on unrelated long-lived
@@ -166,7 +166,7 @@ offline already runs the same PKIX code.
 2. **Baseline at a pre-fix pin.** It must read VULNERABLE. Set `locked_commit` to a pkgs
    commit from before any fix, then run all six tasks. Expect VULNERABLE rows (exit 2),
    SELFTEST FIXED and NEGCONTROL VULNERABLE. A row that reads FIXED at the baseline is not
-   being tested by this incident. Find out why before trusting it later. Save the output.
+   being tested by this response. Find out why before trusting it later. Save the output.
 3. **Per PR.** Point `[upstream]` at the PR head and run the tasks it affects:
    ```toml
    [upstream]
@@ -183,19 +183,19 @@ offline already runs the same PKIX code.
 4. **After merge.** Run `min update` in the scratch copy to re-pin to main, then run all
    six tasks. Every row must read FIXED, or N/A with the reason above. Exit must be 0.
 5. **Weekly regression.** Run `min update`, then all six tasks, for every directory under
-   `incidents/`. Any non-zero exit needs a human. Exit 3 most often means a chain has
+   `responses/`. Any non-zero exit needs a human. Exit 3 most often means a chain has
    gone stale (NEGCONTROL BROKEN), and the fix is to re-capture it.
 
 ## Who runs it, and who owns a failure
 
 **Phase 1 (now): a manual playbook.** Nothing runs this on a schedule yet, and it is not
-a CI check. Whoever drives an incident runs it, following the playbook above: baseline,
+a CI check. Whoever drives a response runs it, following the playbook above: baseline,
 per PR, after merge. Run it too on any PR that changes a trust store or a TLS client
 (`ca-certificates`, a runtime that bundles its own roots, a Rust crate lock that pins
 webpki). That person owns the result and posts the table on the PR.
 
 **Phase 2: a weekly scheduled run.** `min update`, then all six tasks for every directory
-under `incidents/`, retrying once on exit 125. A non-zero exit posts to **#pkgmgr-mgr**
+under `responses/`, retrying once on exit 125. A non-zero exit posts to **#pkgmgr-mgr**
 (Slack channel `C0B1J3S34SV`). That is the channel the pkgmgr runner's failure backstop
 posts to, so the same pkgsec on-call that watches the nightly runs owns it. Tracked with
 the weekly `pkgmgr truststores` scan (gominimal/pkgmgr-rs#1021). Until it exists, there
@@ -220,7 +220,7 @@ is no alert, only the manual runs.
   warns from 60 days before (`EXPIRY_WARN_DAYS` overrides), and puts it in the JSON as
   `earliest_target_leaf_expiry`. Before it passes, re-capture `chains/bad/` from the
   targets (if the disclosure re-issued them) and move `verify_at`. Otherwise retire the
-  incident's live tasks and keep offline.
+  response's live tasks and keep offline.
 - **The targets are someone else's hosts.** `*.we-have-a-problem.com` are the
   disclosure's demonstration sites. If they go away, NEGCONTROL reads BROKEN in live
   mode, and offline keeps working from `chains/`. The positives (`letsencrypt.org`,
