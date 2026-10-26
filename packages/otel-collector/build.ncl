@@ -4,23 +4,24 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.159.0" in
+let version = "0.163.2" in
 # OBI (OpenTelemetry eBPF Instrumentation) is compiled into otelcol-contrib as
 # of 0.157.0 — the contrib manifest declares it as a component and replaces it
 # with a vendored source tree at `internal/obi-src`. Upstream fetches that at
 # build time (scripts/prepare-obi.sh); we pin it here instead so every input
 # stays checksummed. MUST match the manifest's
-# `- gomod: go.opentelemetry.io/obi <ver>` line — if a version bump changes it,
-# this and the sha256 below move together, or the build fails loudly on the
-# replace path rather than silently building against the wrong OBI.
-let obi_version = "v0.10.0" in
+# `- gomod: go.opentelemetry.io/obi/collector <ver>` line (the line upstream's
+# prepare-obi.sh reads; before 0.163 it was `go.opentelemetry.io/obi <ver>`).
+# It does NOT follow the package version — on a bump, this and the sha256 below
+# move together; build.sh fails loudly if they disagree with the manifest.
+let obi_version = "v0.15.2" in
 {
   name = "otel-collector",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/open-telemetry/opentelemetry-collector-releases/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "eeda1800c85f0652cd31b8f384b647a0c0ab514a54fea0d5054395a6bf8e8df4",
+      sha256 = "152095ff4503464c8cf1710aa1350781deafffb3bb91e777494dea68ee931ffa",
       extract = true,
       strip_prefix = "opentelemetry-collector-releases-%{version}",
     } | Source,
@@ -29,7 +30,7 @@ let obi_version = "v0.10.0" in
     # its tree into the source root and collide with the collector checkout.
     {
       url = "https://github.com/open-telemetry/opentelemetry-ebpf-instrumentation/releases/download/%{obi_version}/obi-%{obi_version}-source-generated.tar.gz",
-      sha256 = "151ef5d04bff9660743148ff20d5c833222b0b45ab15245a2968a3f7f4366dec",
+      sha256 = "d3cbec602e3ab7b357d2f4a57b29e502365f9098808418e8b4d96dec8fa9281f",
     } | Source,
     base,
     go,
