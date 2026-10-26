@@ -17,7 +17,7 @@ let libxrandr = import "../libxrandr/build.ncl" in
 let libxrender = import "../libxrender/build.ncl" in
 let xorgproto = import "../xorgproto/build.ncl" in
 
-let version = "6.0" in
+let version = "6.2" in
 {
   name = "raylib",
 
@@ -25,7 +25,7 @@ let version = "6.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/raysan5/raylib/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "2b3ee1e2120c7a0796b33062c7e9a694dd8a8caa56a96319ac8c8ecf54a90d0b",
+      sha256 = "df7a13129b1bec9e73a6962efff170beba310ee6eab8f94cd000b7316b4db5ee",
       extract = true,
       strip_prefix = "raylib-%{version}",
     } | Source,
