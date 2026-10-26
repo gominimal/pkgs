@@ -20,8 +20,8 @@ let version = "3.2.15" in
     base,
     gperf,
     make,
-    # 3.2.15's shipped configure (regenerated with a newer pkg.m4) aborts with
-    # "pkg-config not found" before any --disable-* option is honoured.
+    # 3.2.15's shipped configure aborts with "pkg-config not found" without
+    # it (pkgs#1093); 3.2.14's did not.
     pkgconf,
     toolchain,
   ],
