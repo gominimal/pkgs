@@ -78,6 +78,14 @@ let version = "9.0.2" in
         repo = "FFmpeg",
       },
       build_cost_multiple = 2,
+      # NOT redistributable. build.sh configures `--enable-gpl --enable-nonfree
+      # --enable-libfdk-aac`. FFmpeg's own configure (n8.1.1, line ~4777) then
+      # sets `license="nonfree and unredistributable"`: libfdk_aac is on
+      # EXTERNAL_LIBRARY_NONFREE_LIST because the Fraunhofer FDK AAC license is
+      # GPL-incompatible, and x264/x265 here are GPL. Dropping
+      # --enable-libfdk-aac and --enable-nonfree (the native `aac` encoder
+      # remains) would make the build GPL and redistributable again.
+      redistributable = false,
     } | Attrs,
 
   tests = {
