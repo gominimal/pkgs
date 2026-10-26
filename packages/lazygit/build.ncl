@@ -5,14 +5,14 @@ let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "0.64.1" in
+let version = "0.66.2" in
 {
   name = "lazygit",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/jesseduffield/lazygit/v%{version}.tar.gz",
-      sha256 = "b1df6ee72f17efc0ef95fc20a64821cd9eda3935b81cb98b1719c8266163bd07",
+      sha256 = "fcaad0909af765ef87bd873164a4de78435515ab4d8b04f58d6ad51e8ecd00e5",
       extract = true,
       strip_prefix = "lazygit-%{version}",
     } | Source,
