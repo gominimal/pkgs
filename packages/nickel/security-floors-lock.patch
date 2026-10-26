@@ -12,6 +12,7 @@
 # floor: quinn-proto 0.11.16 -> 0.11.18 (RUSTSEC-2026-0338, RUSTSEC-2026-0339, RUSTSEC-2026-0340, RUSTSEC-2026-0341, RUSTSEC-2026-0342)
 # floor: rustls 0.23.31 -> 0.23.46 (RUSTSEC-2026-0285, RUSTSEC-2026-0346, RUSTSEC-2026-0348, RUSTSEC-2026-0349)
 # floor: rustls-webpki 0.103.13 -> 0.103.16 (RUSTSEC-2026-0382)
+# floor: tokio 1.47.1 -> 1.51.6 (RUSTSEC-2026-0386)
 # floor: webpki-root-certs 1.0.7 -> 1.0.10 (RUSTSEC-2026-0383)
 # companion: autocfg 1.5.0 -> 1.5.1
 # companion: aws-lc-rs 1.17.0 -> 1.18.2
@@ -25,12 +26,16 @@
 # companion: defmt + 1.2.0
 # companion: defmt-macros + 1.2.0
 # companion: defmt-parser + 1.1.0
+# companion: io-uring - 0.7.10
+# companion: mio 1.0.4 -> 1.2.4
+# companion: signal-hook-mio 0.2.4 -> 0.2.5
+# companion: socket2 0.6.0 -> 0.6.5
 # companion: syn + 3.0.9
+# companion: tokio-macros 2.5.0 -> 2.7.2
 # unresolved: bitmaps 3.2.1 RUSTSEC-2025-0167 (no fixed release; needs [patch.crates-io] with a vendored fix (human))
 # unresolved: imbl-sized-chunks 0.1.3 RUSTSEC-2026-0292 (cargo refused the move (human): error: failed to select a version for the requirement `imbl-sized-chunks = "^0.1"` (required by nickel-lang-vector v0.2.0))
 # unresolved: quick-xml 0.26.0 RUSTSEC-2026-0194, RUSTSEC-2026-0195 (cargo refused the move (human): error: failed to select a version for the requirement `quick-xml = "^0.26"` (required by inferno v0.11.21))
 # unresolved: quick-xml 0.38.3 RUSTSEC-2026-0194, RUSTSEC-2026-0195 (cargo refused the move (human): error: failed to select a version for the requirement `quick-xml = "^0.38.0"` (required by plist v1.8.0))
-# unresolved: tokio 1.47.1 RUSTSEC-2026-0386 (cargo refused the move (human): error: failed to select a version for `mio`.)
 --- a/Cargo.lock
 +++ b/Cargo.lock
 @@ -142,12 +142,9 @@
@@ -259,7 +264,7 @@
  dependencies = [
   "libc",
 - "windows-sys 0.61.2",
-+ "windows-sys 0.59.0",
++ "windows-sys 0.52.0",
  ]
  
  [[package]]
@@ -290,7 +295,34 @@
  dependencies = [
   "atomic-waker",
   "bytes",
-@@ -3602,9 +3630,9 @@
+@@ -3048,17 +3076,6 @@
+ ]
+ 
+ [[package]]
+-name = "io-uring"
+-version = "0.7.10"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "046fa2d4d00aea763528b4950358d0ead425372445dc8ff86312b3c69ff7727b"
+-dependencies = [
+- "bitflags 2.13.0",
+- "cfg-if",
+- "libc",
+-]
+-
+-[[package]]
+ name = "ipnet"
+ version = "2.11.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -3072,7 +3089,7 @@
+ dependencies = [
+  "hermit-abi",
+  "libc",
+- "windows-sys 0.59.0",
++ "windows-sys 0.52.0",
+ ]
+ 
+ [[package]]
+@@ -3602,9 +3619,9 @@
  
  [[package]]
  name = "memmap2"
@@ -302,7 +334,25 @@
  dependencies = [
   "libc",
  ]
-@@ -3734,7 +3762,7 @@
+@@ -3696,14 +3713,14 @@
+ 
+ [[package]]
+ name = "mio"
+-version = "1.0.4"
++version = "1.2.4"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "78bed444cc8a2160f01cbcf811ef18cac863ad68ae8ca62092e8db51d51c761c"
++checksum = "1788edb87fdc09c7e26304471e2f5be8cdefb1b6930d6e3985fc02ff53bf86ee"
+ dependencies = [
+  "libc",
+  "log",
+  "wasi 0.11.1+wasi-snapshot-preview1",
+- "windows-sys 0.59.0",
++ "windows-sys 0.61.2",
+ ]
+ 
+ [[package]]
+@@ -3734,7 +3751,7 @@
  name = "nickel-lang"
  version = "2.2.0"
  dependencies = [
@@ -311,7 +361,7 @@
   "indexmap",
   "malachite",
   "nickel-lang-core",
-@@ -3779,7 +3807,7 @@
+@@ -3779,7 +3796,7 @@
   "bumpalo",
   "clap",
   "codespan",
@@ -320,7 +370,7 @@
   "colorchoice",
   "comrak",
   "criterion",
-@@ -3863,7 +3891,7 @@
+@@ -3863,7 +3880,7 @@
   "bincode 2.0.1",
   "clap",
   "codespan",
@@ -329,7 +379,7 @@
   "criterion",
   "crossbeam",
   "csv",
-@@ -3927,7 +3955,7 @@
+@@ -3927,7 +3944,7 @@
   "bumpalo",
   "clap",
   "codespan",
@@ -338,7 +388,7 @@
   "indexmap",
   "indoc",
   "insta",
-@@ -4526,7 +4554,7 @@
+@@ -4526,7 +4543,7 @@
  name = "py-nickel"
  version = "1.18.0"
  dependencies = [
@@ -347,7 +397,7 @@
   "nickel-lang-core",
   "pyo3",
   "pyo3-build-config 0.28.3",
-@@ -4653,9 +4681,9 @@
+@@ -4653,9 +4670,9 @@
  
  [[package]]
  name = "quinn-proto"
@@ -359,21 +409,21 @@
  dependencies = [
   "aws-lc-rs",
   "bytes",
-@@ -4685,7 +4713,7 @@
+@@ -4685,7 +4702,7 @@
   "once_cell",
   "socket2",
   "tracing",
 - "windows-sys 0.60.2",
-+ "windows-sys 0.59.0",
++ "windows-sys 0.52.0",
  ]
  
  [[package]]
-@@ -4992,14 +5020,14 @@
+@@ -4992,14 +5009,14 @@
   "errno",
   "libc",
   "linux-raw-sys",
 - "windows-sys 0.61.2",
-+ "windows-sys 0.59.0",
++ "windows-sys 0.52.0",
  ]
  
  [[package]]
@@ -386,16 +436,16 @@
  dependencies = [
   "aws-lc-rs",
   "once_cell",
-@@ -5049,7 +5077,7 @@
+@@ -5049,7 +5066,7 @@
   "security-framework",
   "security-framework-sys",
   "webpki-root-certs",
 - "windows-sys 0.61.2",
-+ "windows-sys 0.59.0",
++ "windows-sys 0.52.0",
  ]
  
  [[package]]
-@@ -5060,9 +5088,9 @@
+@@ -5060,9 +5077,9 @@
  
  [[package]]
  name = "rustls-webpki"
@@ -407,7 +457,35 @@
  dependencies = [
   "aws-lc-rs",
   "ring",
-@@ -5625,6 +5653,17 @@
+@@ -5393,9 +5410,9 @@
+ 
+ [[package]]
+ name = "signal-hook-mio"
+-version = "0.2.4"
++version = "0.2.5"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "34db1a06d485c9142248b7a054f034b349b212551f3dfd19c94d45a754a217cd"
++checksum = "b75a19a7a740b25bc7944bdee6172368f988763b744e3d4dfe753f6b4ece40cc"
+ dependencies = [
+  "libc",
+  "mio",
+@@ -5478,12 +5495,12 @@
+ 
+ [[package]]
+ name = "socket2"
+-version = "0.6.0"
++version = "0.6.5"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "233504af464074f9d066d7b5416c5f9b894a5862a6506e306f7b816cdd6f1807"
++checksum = "c3d1e2c7f27f8d4cb10542a02c49005dbd6e93095799d6f3be745fae9f8fedd4"
+ dependencies = [
+  "libc",
+- "windows-sys 0.59.0",
++ "windows-sys 0.60.2",
+ ]
+ 
+ [[package]]
+@@ -5625,6 +5642,17 @@
  ]
  
  [[package]]
@@ -425,7 +503,7 @@
  name = "sync_wrapper"
  version = "1.0.2"
  source = "registry+https://github.com/rust-lang/crates.io-index"
-@@ -5680,10 +5719,10 @@
+@@ -5680,10 +5708,10 @@
  checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
  dependencies = [
   "fastrand",
@@ -434,11 +512,11 @@
   "once_cell",
   "rustix",
 - "windows-sys 0.61.2",
-+ "windows-sys 0.59.0",
++ "windows-sys 0.52.0",
  ]
  
  [[package]]
-@@ -5692,7 +5731,7 @@
+@@ -5692,7 +5720,7 @@
  source = "registry+https://github.com/rust-lang/crates.io-index"
  checksum = "2111ef44dae28680ae9752bb89409e7310ca33a8c621ebe7b106cf5c928b3ac0"
  dependencies = [
@@ -447,7 +525,45 @@
  ]
  
  [[package]]
-@@ -6438,9 +6477,9 @@
+@@ -5866,31 +5894,28 @@
+ 
+ [[package]]
+ name = "tokio"
+-version = "1.47.1"
++version = "1.51.6"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "89e49afdadebb872d3145a5638b59eb0691ea23e46ca484037cfab3b76b95038"
++checksum = "a13e32eacd0222f9658be2ccbd83b718bfd9bfb0d54b5921913c184cb86124a5"
+ dependencies = [
+- "backtrace",
+  "bytes",
+- "io-uring",
+  "libc",
+  "mio",
+  "pin-project-lite",
+- "slab",
+  "socket2",
+  "tokio-macros",
+- "windows-sys 0.59.0",
++ "windows-sys 0.61.2",
+ ]
+ 
+ [[package]]
+ name = "tokio-macros"
+-version = "2.5.0"
++version = "2.7.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "6e06d43f1345a3bcd39f6a56dbb7dcab2ba47e68e8ac134855e7e2bdbaf8cab8"
++checksum = "78773a2a397f451582ce068015985c33193cf6dea8b74d2a639fe457b2f07b0e"
+ dependencies = [
+  "proc-macro2 1.0.106",
+  "quote 1.0.45",
+- "syn 2.0.117",
++ "syn 3.0.9",
+ ]
+ 
+ [[package]]
+@@ -6438,9 +6463,9 @@
  
  [[package]]
  name = "webpki-root-certs"
@@ -459,12 +575,12 @@
  dependencies = [
   "rustls-pki-types",
  ]
-@@ -6477,7 +6516,7 @@
+@@ -6477,7 +6502,7 @@
  source = "registry+https://github.com/rust-lang/crates.io-index"
  checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
  dependencies = [
 - "windows-sys 0.61.2",
-+ "windows-sys 0.59.0",
++ "windows-sys 0.52.0",
  ]
  
  [[package]]

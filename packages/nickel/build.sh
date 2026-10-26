@@ -50,6 +50,10 @@ if grep -A1 '^name = "rustls-webpki"$' Cargo.lock | grep -qE '^version = "0[.]10
   echo "ERROR: rustls-webpki below its security floor 0.103.16 is in Cargo.lock (RUSTSEC-2026-0382)" >&2
   exit 1
 fi
+if grep -A1 '^name = "tokio"$' Cargo.lock | grep -qE '^version = "(1[.]51[.](([0-5])([-+][^"]*)?|6-[^"]*)|1[.]47[.][0-9]+([-+][^"]*)?)"$'; then
+  echo "ERROR: tokio below its security floor 1.51.6 is in Cargo.lock (RUSTSEC-2026-0386)" >&2
+  exit 1
+fi
 if grep -A1 '^name = "webpki-root-certs"$' Cargo.lock | grep -qE '^version = "1[.]0[.](([0-9])([-+][^"]*)?|10-[^"]*)"$'; then
   echo "ERROR: webpki-root-certs below its security floor 1.0.10 is in Cargo.lock (RUSTSEC-2026-0383)" >&2
   exit 1
