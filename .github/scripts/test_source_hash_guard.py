@@ -96,6 +96,19 @@ class Rules(unittest.TestCase):
         self.assertEqual([lvl for lvl, _, _ in got], ["error"])
         self.assertEqual(got[0][1], A)
 
+    def test_reordered_version_digits_with_kept_sha_is_an_error(self):
+        # CodeRabbit on #1106: as bare digit sets, 1.2 and 2.1 are both {1, 2}
+        for old, new in (("1.2", "2.1"), ("1.1.2", "1.2.1"), ("1_86_0", "1_0_86")):
+            with self.subTest(old=old, new=new):
+                got = g.compare(pkg("x", (f"https://e.org/x-{old}.tar.gz", A)),
+                                pkg("x", (f"https://e.org/x-{new}.tar.gz", A)))
+                self.assertEqual([lvl for lvl, _, _ in got], ["error"])
+
+    def test_mirror_of_url_naming_the_version_twice_is_a_note(self):
+        got = g.compare(pkg("x", ("https://github.com/o/x/releases/download/v1.2.3/x-1.2.3.tar.gz", A)),
+                        pkg("x", ("gs://minimal-staging-archives/x-1.2.3.tar.gz", A)))
+        self.assertEqual([lvl for lvl, _, _ in got], ["note"])
+
     def test_commit_archive_moved_with_kept_sha_is_an_error(self):
         old = "https://github.com/o/r/archive/1f2e3d4c5b6a79881f2e3d4c5b6a79881f2e3d4c.tar.gz"
         new = "https://github.com/o/r/archive/9a8b7c6d5e4f30219a8b7c6d5e4f30219a8b7c6d.tar.gz"

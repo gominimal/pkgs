@@ -19,9 +19,9 @@ For each package present on both sides it pairs Sources by sha256 and by url:
 
   1. stale-sha256 (ERROR)  A Source's url changed and its sha256 did not, and
                            the url's version changed with it: the set of
-                           digit runs in the url differs (155.0.8059.84 ->
-                           156.0.8078.47, v1.2 -> v1.3, one commit hash ->
-                           another). That is the pkgs#1003 shape. A url whose
+                           version tokens in the url differs (155.0.8059.84
+                           -> 156.0.8078.47, v1.2 -> v2.1, one commit hash
+                           -> another). That is the pkgs#1003 shape. A url whose
                            digits are all unchanged is a RELOCATION (a mirror
                            move to gs://minimal-staging-archives, a renamed
                            GitHub org) of the same bytes: reported as a note
@@ -83,7 +83,10 @@ import re
 import sys
 
 MARKER = re.compile(r"source-hash-guard:\s*allow\s+([0-9a-f]{64})\s+(\S.*)")
-DIGITS = re.compile(r"\d+")
+# A version-like token: a digit run, with any dots/underscores joining runs
+# (155.0.8059.84, 1_86_0). Whole tokens, so 1.2 -> 2.1 is a change; a set, so
+# a version that appears twice in one url and once in its mirror is not.
+VERSION_TOKEN = re.compile(r"\d+(?:[._]\d+)*")
 VERSIONISH = re.compile(r"\d+\.\d+|[0-9a-f]{7,}")
 
 
@@ -115,7 +118,7 @@ def upstream_version(pkg: dict) -> str | None:
 
 
 def version_moved(old: str, new: str) -> bool:
-    return set(DIGITS.findall(old)) != set(DIGITS.findall(new))
+    return set(VERSION_TOKEN.findall(old)) != set(VERSION_TOKEN.findall(new))
 
 
 def is_versioned(url: str, version: str | None) -> bool:
@@ -156,7 +159,7 @@ def compare(base: dict, head: dict) -> list[tuple[str, str, str]]:
                 found.append(("error", sha, f"stale-sha256: url changed {was[0]} -> {url} but sha256 stayed {sha}; "
                               "the store will serve the OLD bytes under that hash"))
             else:
-                found.append(("note", sha, f"relocated: {was[0]} -> {url} keeps sha256 {sha} (url digits unchanged)"))
+                found.append(("note", sha, f"relocated: {was[0]} -> {url} keeps sha256 {sha} (url version tokens unchanged)"))
         elif url in shas_by_url:
             was = shas_by_url[url][0]
             old_v, new_v = upstream_version(base), upstream_version(head)
