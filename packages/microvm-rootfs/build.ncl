@@ -125,9 +125,9 @@ in
     # transitive set needed for them to load — nothing here is a direct guest
     # tool. It must be re-resolved as a unit on an Alpine bump.
     apk
-      "brotli-libs-1.2.0-r1"
-      "e0e7a7892f28326a9f18e09607b1aea72baedda470bc4e3d2b11262b9ae5dda3"
-      "f0823de7c6d45859aeb6a7facfc5cfbf2dadb83ad4f27c794cb6ecc74e578cee",
+      "brotli-libs-1.2.1-r0"
+      "f802b9d5a329c216f02e73607cb8f662c434767e41686367ac0afcf6d0d45d64"
+      "62a7e37e43bbfc1f8525a00ad2125fd5897135dc93b849733884cb78ffd8e26c",
     apk
       "c-ares-1.34.8-r0"
       "689603d300dc56f0b99e313506e4d7b3a3ffb87cec536324f8a306bc218afe67"
@@ -157,9 +157,9 @@ in
       "a75b5955ff57046e33fc2842cfe466dc77d8e68305d5c86c6646b38a069490a2"
       "4723d0fb8e286dc6adb54dd3cdaedcd8db54260f75ee778a5acb4c16922c0f52",
     apk
-      "libcurl-8.22.0-r0"
-      "cbec830a63888be570c06d20d87c85649aff1db38c3b4dcc17884b14471e39e3"
-      "40b2a8e15a8d24bc95a5f42aaeb018313a1ff457cee71d8e15aaf1328da765e8",
+      "libcurl-8.23.0-r0"
+      "64ae89f6e5d318ed5209778232191806ce49644ce9e09540b7d7830a5330d127"
+      "1f70ca404818805a6465b615bbfe84ef861488a963d7e630108ebd7fbaa51665",
     apk
       "libeconf-0.8.3-r0"
       "cf0899d49ded0a6891e3cdf1b37887f2ecd77293afe1d8f3cb8937763c83f183"
