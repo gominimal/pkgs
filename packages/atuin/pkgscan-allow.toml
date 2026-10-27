@@ -1,0 +1,22 @@
+# pkgscan triage for atuin (see pkgmgr-rs src/pkgscan/repo_allowlist.rs).
+# Each entry is pinned to the whole file's sha256: any change to the file makes
+# the finding gate again. A match regrades (Critical -> Medium), never hides.
+
+# atuin 18.24.2 added a managed daemon service with launchd/systemd/subprocess
+# backends (atuinsh/atuin#4488, maintainer-authored). These are its own
+# service-management calls: `launchctl kickstart -k` / `bootout` on atuin's own
+# launchd job, and the restart hint shown to the user. macOS-only code: on
+# Linux the `unsupported.rs` backend is compiled instead.
+[[allow]]
+file = "crates/atuin-daemon/src/service/run_mode.rs"
+category = "FileSystemAccess"
+pattern = "launchctl"
+sha256 = "9372ecfe11895106d06381edfb183b95ae583a24618e91e3d84e0c2c82c27943"
+reason = "atuin's own daemon restart hint (`launchctl kickstart -k gui/$(id -u)/<its label>`), added with the managed daemon service in https://github.com/atuinsh/atuin/pull/4488; text shown to the user, not an exec. Verified against the v18.24.2 tag."
+
+[[allow]]
+file = "crates/atuin-daemon/src/service/backend/launchd/macos.rs"
+category = "FileSystemAccess"
+pattern = "launchctl"
+sha256 = "b4d51b454cdc756e41ea2614196f093ee763be1ff6e107ffa91fb17fb421606e"
+reason = "atuin's launchd backend restarting/booting out ITS OWN launchd job and removing its own plist (https://github.com/atuinsh/atuin/pull/4488). macOS-only module; Linux builds compile launchd/unsupported.rs. Verified against the v18.24.2 tag."
