@@ -36,8 +36,8 @@ let python = import "../python/build.ncl" in
     # v1.85.0; the sha256 is the one grpc's own CMakeLists.txt records for this
     # archive. build.sh unpacks it into place. Re-check the pin on every bump.
     {
-      url = "https://github.com/grpc/grpc-proto/archive/ec30f589e2519d595688b9a42f88a91bdd6b733f.tar.gz",
-      sha256 = "5e9b520b22afbd53a662cc29017064be253c1dfa6df8958738594e7fec6ade33",
+      url = "https://github.com/grpc/grpc-proto/archive/dd549fc4ed04b60b0fdd3866b82ef0a7c87c6e4f.tar.gz",
+      sha256 = "6aaa807572edfe307eaddc15161ce684d02d054e3fca36b38993efc85575ddfa",
       extract = false,
     } | Source,
     base,
