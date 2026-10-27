@@ -44,3 +44,57 @@ if grep -q 'djAQBgcqhkjOPQIBBgUrgQQAIgNiAAQjpQy4LRL1KPOxst3iAhKAnjlfSU2fySU0' "$
   echo "httpie: certifi still trusts emSign ECC Root CA - G3 (CVE-2026-111943)" >&2
   exit 1
 fi
+
+# Trust the system CA store (/etc/ssl/certs, from ca-certificates) instead of
+# certifi's bundle, so a CA removed from ca-certificates (CVE-2026-111943,
+# eMudhra) stops being trusted without an httpie rebuild
+# (gominimal/pkgmgr-rs#1026). requests takes its default bundle from
+# certifi.where() (requests/certs.py at 2.34.2 says to change where() when
+# packaging for a distribution), so where() returns the system bundle whenever
+# it exists, as Debian's python-certifi does, and certifi's own cacert.pem
+# otherwise. The overrides are appended after certifi's definitions, and
+# certifi/__init__.py re-exports them (`from .core import contents, where`).
+# A caller still wins with requests' REQUESTS_CA_BUNDLE / CURL_CA_BUNDLE
+# (Session.merge_environment_settings, which httpie 3.2.4 calls) or httpie's
+# --verify=<path>; pointing either at certifi's cacert.pem restores it.
+CORE="$SITE/certifi/core.py"
+grep -q '^from \.core import contents, where$' "$SITE/certifi/__init__.py" &&
+grep -q '^    def where() -> str:$' "$CORE" || {
+  echo "httpie: certifi's layout changed upstream; revisit the system CA default" >&2
+  exit 1
+}
+cat >> "$CORE" <<'PYEOF'
+
+
+# minimal: prefer the system CA store (see httpie's build.sh).
+import os as _minimal_os
+
+_MINIMAL_SYSTEM_CA = "/etc/ssl/certs/ca-certificates.crt"
+_minimal_certifi_where = where
+_minimal_certifi_contents = contents
+
+
+def where() -> str:
+    try:
+        if _minimal_os.path.getsize(_MINIMAL_SYSTEM_CA) > 0:
+            return _MINIMAL_SYSTEM_CA
+    except OSError:
+        pass
+    return _minimal_certifi_where()
+
+
+def contents() -> str:
+    path = where()
+    if path == _MINIMAL_SYSTEM_CA:
+        with open(path, encoding="utf-8") as f:
+            return f.read()
+    return _minimal_certifi_contents()
+PYEOF
+# Replace pip's now-stale bytecode with a deterministic (checked-hash) one.
+python3 -m compileall -q --invalidation-mode checked-hash "$CORE"
+PYTHONPATH="$SITE" python3 - <<'PYEOF'
+import certifi, certifi.core
+certifi.core._MINIMAL_SYSTEM_CA = "/nonexistent/ca-certificates.crt"
+assert certifi.where().endswith("/certifi/cacert.pem"), certifi.where()
+assert "BEGIN CERTIFICATE" in certifi.contents()
+PYEOF
