@@ -97,6 +97,106 @@ case "$control" in
   *) echo "ERROR: emSign root check did not flag the stock bootstrap bun (got: $control); the check is broken" >&2; exit 1 ;;
 esac
 
+# Trust the system CA store (/etc/ssl/certs, from ca-certificates) instead of
+# the roots compiled into bun, so a CA removed from ca-certificates
+# (CVE-2026-111943, eMudhra) stops being trusted without a bun rebuild
+# (gominimal/pkgmgr-rs#1026). bun 1.3.14 has no switch for this:
+# --use-system-ca / NODE_USE_SYSTEM_CA=1 only ADD the system roots to the
+# compiled-in ones, and --use-openssl-ca is parsed but ignored (fixed upstream
+# only on the 1.4 line, oven-sh/bun#46542). See the patch header for the exact
+# semantics. Opt out with NODE_USE_SYSTEM_CA=0 (any command) or
+# --use-bundled-ca (run/test commands). With no system store at all bun keeps
+# its compiled-in roots. Applied by name; the greps make an upstream rewrite of
+# either file fail the build instead of silently dropping the default.
+patch -Np1 -i system-ca-store-default.patch
+grep -q 'pub export var Bun__Node__CAStore: BunCAStore = .system; // minimal: system CA store by default' src/cli/Arguments.zig || { echo "ERROR: bun CA store default patch did not apply to src/cli/Arguments.zig" >&2; exit 1; }
+grep -q 'for (size_t i = 0; minimal_bundled && i < root_certs_size; i++) {' packages/bun-usockets/src/crypto/root_certs.cpp || { echo "ERROR: bun CA store default patch did not apply to root_certs.cpp" >&2; exit 1; }
+[ "$(grep -c 'Bun__Node__CAStore' packages/bun-usockets/src/crypto/root_certs.cpp)" -ge 4 ] || { echo "ERROR: root_certs.cpp does not read Bun__Node__CAStore after the patch" >&2; exit 1; }
+
+# Handshake check run against a bun binary, offline. A local server answers a
+# ClientHello with TLS 1.2 ServerHello + Certificate + ServerHelloDone, which
+# needs no private key, so the certificate can be a real compiled-in root
+# (DigiCert Global Root G2). The caller points the system store at a different
+# root (SSL_CERT_FILE) and an empty SSL_CERT_DIR. A client that trusts G2 then
+# fails on something else (G2 is not for 127.0.0.1); one that does not fails
+# on the chain, DEPTH_ZERO_SELF_SIGNED_CERT. The server is the one in
+# oven-sh/bun test/js/node/tls/test-use-system-ca.test.ts (#46542).
+# Prints "<fetch error code> <tls.connect error code>".
+cat > ./minimal-check-system-ca.js <<'JS'
+const { rootCertificates } = require("node:tls");
+const { X509Certificate } = require("node:crypto");
+const fs = require("node:fs");
+const bySubject = cn => rootCertificates.find(p => new X509Certificate(p).subject.endsWith(cn));
+const served = bySubject("DigiCert Global Root G2");
+if (!served) { console.log("no DigiCert Global Root G2 among the compiled-in roots"); process.exit(2); }
+if (process.argv[2] === "prep") {
+  // dir/other.pem: a one-root "system store" that does not hold the served root.
+  const other = bySubject("ISRG Root X1");
+  if (!other) { console.log("no ISRG Root X1 among the compiled-in roots"); process.exit(2); }
+  fs.mkdirSync(process.argv[3] + "/empty", { recursive: true });
+  fs.writeFileSync(process.argv[3] + "/other.pem", other);
+  fs.writeFileSync(process.argv[3] + "/none.pem", "");
+  process.exit(0);
+}
+setTimeout(() => { console.log("timeout"); process.exit(3); }, 20000).unref();
+const uint = (size, value) => { const b = Buffer.alloc(size); b.writeUIntBE(value, 0, size); return b; };
+const message = (type, ...fields) => { const body = Buffer.concat(fields); return Buffer.concat([uint(1, type), uint(3, body.length), body]); };
+const der = new X509Certificate(served).raw;
+const messages = Buffer.concat([
+  // version 1.2, zero random, no session id, TLS_RSA_WITH_AES_128_GCM_SHA256, no compression
+  message(2, uint(2, 0x0303), Buffer.alloc(32), uint(1, 0), uint(2, 0x009c), uint(1, 0)),
+  message(11, uint(3, der.length + 3), uint(3, der.length), der),
+  message(14),
+]);
+const answer = Buffer.concat([uint(1, 22), uint(2, 0x0303), uint(2, messages.length), messages]);
+const server = Bun.listen({
+  hostname: "127.0.0.1",
+  port: 0,
+  socket: {
+    open(socket) { socket.data = { received: Buffer.alloc(0), answered: false }; },
+    data(socket, chunk) {
+      const st = socket.data;
+      if (st.answered) return;
+      st.received = Buffer.concat([st.received, chunk]);
+      if (st.received.length < 5 || st.received.length < 5 + st.received.readUInt16BE(3)) return;
+      st.answered = true;
+      socket.write(answer);
+    },
+  },
+});
+const viaFetch = () => fetch(`https://127.0.0.1:${server.port}/`).then(() => "ok", e => String(e.code));
+const viaTls = () => new Promise(resolve => {
+  require("node:tls").connect({ host: "127.0.0.1", port: server.port, maxVersion: "TLSv1.2", checkServerIdentity() {} })
+    .on("secureConnect", () => resolve("ok"))
+    .on("error", e => resolve(String(e.code)));
+});
+(async () => {
+  const f = await viaFetch();
+  const t = await viaTls();
+  console.log(`${f} ${t}`);
+  server.stop(true);
+  process.exit(0);
+})();
+JS
+SYSCA_DIR=$(pwd)/minimal-system-ca
+mkdir -p "$SYSCA_DIR"
+bun ./minimal-check-system-ca.js prep "$SYSCA_DIR"
+# run_sysca <bun> <bun flag or ""> [VAR=value...]: the check with a one-root
+# system store that does not hold the served root, no proxy, and no caller CA
+# settings; the VAR=value pairs come last, so they win.
+run_sysca() {
+  _bun=$1; _flag=$2; shift 2
+  env -u NODE_USE_SYSTEM_CA -u NODE_EXTRA_CA_CERTS -u HTTPS_PROXY -u https_proxy -u HTTP_PROXY -u http_proxy -u ALL_PROXY -u all_proxy \
+    SSL_CERT_FILE="$SYSCA_DIR/other.pem" SSL_CERT_DIR="$SYSCA_DIR/empty" "$@" "$_bun" $_flag ./minimal-check-system-ca.js || true
+}
+# Control: the stock bootstrap bun trusts its compiled-in G2 regardless of the
+# system store. That answer is what "trusted" looks like for each client, and
+# must not be the untrusted one, or the check could not tell the two apart.
+SYSCA_TRUSTED=$(run_sysca bun "")
+case "$SYSCA_TRUSTED" in
+  *DEPTH_ZERO_SELF_SIGNED_CERT*|*timeout*|*ok*|"") echo "ERROR: system-CA check control on the stock bootstrap bun got '$SYSCA_TRUSTED'; the check is broken" >&2; exit 1 ;;
+esac
+
 # Initialize a git repo so nested dep version generation works
 # (it runs "git rev-parse HEAD" to get version strings for bundled packages)
 git init -q
@@ -108,6 +208,19 @@ bun run build:release
 
 # CVE-2026-111943: the binary we ship must not bundle the removed roots.
 build/release/bun ./minimal-check-emsign-roots.js
+
+# The system store replaces the compiled-in roots: G2 is untrusted when the
+# system store does not hold it, for fetch and tls.connect alike...
+got=$(run_sysca build/release/bun "")
+[ "$got" = "DEPTH_ZERO_SELF_SIGNED_CERT DEPTH_ZERO_SELF_SIGNED_CERT" ] || { echo "ERROR: built bun still trusts its compiled-in roots over the system store (got: $got)" >&2; exit 1; }
+# ...and trusted again, exactly as stock bun, with each opt-out and with an
+# empty system store (the fallback).
+for how in "NODE_USE_SYSTEM_CA=0" "NODE_USE_SYSTEM_CA=false" "SSL_CERT_FILE=$SYSCA_DIR/none.pem"; do
+  got=$(run_sysca build/release/bun "" "$how")
+  [ "$got" = "$SYSCA_TRUSTED" ] || { echo "ERROR: built bun with $how got '$got', stock bun '$SYSCA_TRUSTED'" >&2; exit 1; }
+done
+got=$(run_sysca build/release/bun --use-bundled-ca)
+[ "$got" = "$SYSCA_TRUSTED" ] || { echo "ERROR: built bun with --use-bundled-ca got '$got', stock bun '$SYSCA_TRUSTED'" >&2; exit 1; }
 
 # Install. The real binary lives in libexec; /usr/bin carries wrappers so
 # `bun add -g` lands its bins in ~/.local/bin (on the session PATH) rather
