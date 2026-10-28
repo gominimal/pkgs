@@ -5,14 +5,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "78.3" in
+let version = "79.1" in
 {
   name = "icu",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/unicode-org/icu/releases/download/release-%{version}/icu4c-%{version}-sources.tgz",
-      sha256 = "3a2e7a47604ba702f345878308e6fefeca612ee895cf4a5f222e7955fabfe0c0",
+      sha256 = "06fa63ecb521048f8082f12ad988f6b678d90cbd88aafce24cbc94902b191d99",
     } | Source,
     base,
     make,
