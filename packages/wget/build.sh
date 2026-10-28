@@ -10,7 +10,7 @@ patch -Np1 -i "CVE-2026-58470.patch"   # http.c      parse_content_range integer
 patch -Np1 -i "CVE-2026-58471.patch"   # url.c       filename-conversion buffer size
 patch -Np1 -i "CVE-2026-58472.patch"   # convert.c   html_quote_string integer+buffer overflow
 patch -Np1 -i "CVE-2026-15146.patch"   # ftp-basic.c PASV/LPSV address not checked against peer (SSRF)
-patch -Np1 -i "openssl4-no-sslv3.patch" # openssl.c  SSLv3_client_method is gone in OpenSSL 4
+patch -Np1 -F0 -i "openssl4-no-sslv3.patch" # openssl.c  SSLv3_client_method is gone in OpenSSL 4
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;

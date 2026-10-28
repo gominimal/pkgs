@@ -34,7 +34,11 @@ let glibc = import "../glibc/build.ncl" in
 # OPENSSL_ROOT_DIR=/usr/lib/openssl-3.5 (CMake), or OPENSSL_DIR=/usr/lib/openssl-3.5
 # (openssl-sys).
 #
-# The name carries the series, so pkgmgr's name pin keeps it on 3.5.x.
+# The name carries the series, so pkgmgr's name pin keeps it on 3.5.x: the
+# `openssl-3.5` entry in pkgmgr-rs data/series_pins.toml (gominimal/pkgmgr-rs#1140,
+# merged 2026-10-28, deployed in the runner/service images since 95e00f8). It is
+# load-bearing: Repology's `openssl` project has a single newest (4.x) and marks
+# every 3.5.x as legacy/outdated, so without the pin 3.5.9 would read as behind.
 let version = "3.5.9" in
 {
   name = "openssl-3.5",

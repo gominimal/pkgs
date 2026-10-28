@@ -61,5 +61,34 @@ let version = "4.1.0" in
 
   tests = {
     smoketest = standaloneTest "/usr/bin/openssl version",
+
+    # Pins the 4.x behaviour at TEST time, not only in build.sh (msample on #1140):
+    # the .so.4 layout with no engines, the legacy provider (first shipped here)
+    # and MD4 through it, and TLS 1.2 + 1.3 loopback handshakes that verify a
+    # throwaway P-256 cert by IP SAN. Loopback needs no network.
+    openssl4_behaviour =
+      {
+        class = 'Standalone,
+        test_deps = [base-bootstrap, glibc],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              test -e /usr/lib/libssl.so.4 && test ! -e /usr/lib/engines-3
+              openssl list -providers -provider legacy -provider default | grep -q legacy
+              echo x | openssl dgst -md4 -provider legacy -provider default
+              openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -keyout k.pem -out c.pem -days 2 -subj /CN=localhost -addext subjectAltName=IP:127.0.0.1
+              openssl s_server -accept 44330 -cert c.pem -key k.pem -www &
+              srv=$!
+              trap 'kill $srv 2>/dev/null || true' EXIT
+              sleep 1
+              echo | openssl s_client -connect 127.0.0.1:44330 -tls1_2 -CAfile c.pem -verify_return_error | grep -q 'Verify return code: 0'
+              echo | openssl s_client -connect 127.0.0.1:44330 -tls1_3 -CAfile c.pem -verify_return_error | grep -q 'Verify return code: 0'
+            "%,
+          ],
+        ],
+      } | Test,
   },
 } | BuildSpec
