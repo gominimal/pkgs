@@ -78,11 +78,18 @@ for name in fdbrestore fdbdr dr_agent backup_agent; do
 done
 rm -rf "$OUTPUT_DIR/usr/lib/foundationdb" 2>/dev/null || true
 
-# Fail closed: the server and the client library must have linked OpenSSL 3 (libssl.so.3),
-# never 4.x (libssl.so.4).
+# Fail closed: built against openssl-3.5 (libssl.so.3), never 4.x (libssl.so.4):
 test -e "$OUTPUT_DIR/usr/bin/fdbserver"
-for f in "$OUTPUT_DIR/usr/bin/fdbserver" "$OUTPUT_DIR"/usr/lib/libfdb_c*.so*; do
+# Built against openssl-3.5: nothing we ship may NEED the 4.x libraries, and
+# fdbserver (which does TLS) must NEED libssl.so.3 as the positive control.
+# Not every library links OpenSSL: libfdb_c_shim.so dlopen()s libfdb_c at run
+# time and links no SSL itself, so "links .so.3" is required of fdbserver only.
+readelf -d "$OUTPUT_DIR/usr/bin/fdbserver" | grep -q 'NEEDED.*\[libssl\.so\.3\]' || {
+  echo "ERROR: fdbserver does not link libssl.so.3 (openssl-3.5)" >&2; exit 1; }
+for f in "$OUTPUT_DIR"/usr/bin/* "$OUTPUT_DIR"/usr/lib/*.so*; do
   [ -L "$f" ] && continue
-  readelf -d "$f" | grep -q 'NEEDED.*\[libssl\.so\.3\]' || { echo "ERROR: $f does not link libssl.so.3" >&2; exit 1; }
-  ! readelf -d "$f" | grep -q 'NEEDED.*libssl\.so\.4' || { echo "ERROR: $f links libssl.so.4" >&2; exit 1; }
+  [ -f "$f" ] || continue
+  readelf -h "$f" >/dev/null 2>&1 || continue
+  ! readelf -d "$f" | grep -qE 'NEEDED.*lib(ssl|crypto)\.so\.4' || {
+    echo "ERROR: $f links OpenSSL 4 (libssl/libcrypto .so.4)" >&2; exit 1; }
 done
