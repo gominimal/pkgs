@@ -8,6 +8,11 @@ case $(uname -m) in
 esac
 export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
 export LDFLAGS="-Wl,--build-id=none"
+# OpenSSL 3.5 LTS from packages/openssl-3.5, not the 4.x in /usr/include (see build.ncl).
+# The -I keeps every translation unit on the 3.5 headers, including ones that include
+# <openssl/...> without linking OpenSSL::SSL (boost.asio).
+OSSL3=/usr/lib/openssl-3.5
+export CFLAGS="$CFLAGS -I$OSSL3/include"
 export CXXFLAGS="${CFLAGS}"
 
 # Use shared OpenSSL (static libs not available in this environment)
@@ -40,7 +45,11 @@ cmake -B build -G Ninja \
   -DSSD_ROCKSDB_EXPERIMENTAL=OFF \
   -DBUILD_AWS_BACKUP=OFF \
   -DBUILD_TESTING=OFF \
-  -DUSE_JEMALLOC=OFF
+  -DUSE_JEMALLOC=OFF \
+  -DOPENSSL_ROOT_DIR="$OSSL3" \
+  -DOPENSSL_INCLUDE_DIR="$OSSL3/include" \
+  -DOPENSSL_SSL_LIBRARY="$OSSL3/lib/libssl.so" \
+  -DOPENSSL_CRYPTO_LIBRARY="$OSSL3/lib/libcrypto.so"
 
 # Create stub Python binding files so copy_binding_output_files target succeeds
 # (Python bindings are disabled but the binding tester still tries to copy them)
@@ -69,3 +78,11 @@ for name in fdbrestore fdbdr dr_agent backup_agent; do
 done
 rm -rf "$OUTPUT_DIR/usr/lib/foundationdb" 2>/dev/null || true
 
+# Fail closed: the server and the client library must have linked OpenSSL 3 (libssl.so.3),
+# never 4.x (libssl.so.4).
+test -e "$OUTPUT_DIR/usr/bin/fdbserver"
+for f in "$OUTPUT_DIR/usr/bin/fdbserver" "$OUTPUT_DIR"/usr/lib/libfdb_c*.so*; do
+  [ -L "$f" ] && continue
+  readelf -d "$f" | grep -q 'NEEDED.*\[libssl\.so\.3\]' || { echo "ERROR: $f does not link libssl.so.3" >&2; exit 1; }
+  ! readelf -d "$f" | grep -q 'NEEDED.*libssl\.so\.4' || { echo "ERROR: $f links libssl.so.4" >&2; exit 1; }
+done
