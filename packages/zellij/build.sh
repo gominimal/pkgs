@@ -30,10 +30,17 @@ grep -A1 '^name = "openssl-sys"$' Cargo.lock | grep -q '^version = "0.9.117"$' |
   exit 1
 }
 
-# OpenSSL 4: zellij's default features include `vendored_curl` (isahc/static-
-# curl), which compiles curl-sys's bundled curl 8.4.0; that curl reads OpenSSL's
-# now-opaque ASN1_INTEGER and fails on 4.x. Build the other two defaults only,
-# so curl-sys links the system libcurl, and fail closed if it did not.
+# OpenSSL 4: curl-sys's bundled curl 8.4.0 reads OpenSSL's now-opaque
+# ASN1_INTEGER and fails on 4.x, so zellij must link the system libcurl.
+# Two things forced the bundled copy: the default `vendored_curl` feature
+# (isahc/static-curl), dropped here, and isahc's `http2` feature, because
+# curl-sys only accepts a system curl that reports HTTP2 (ours has no nghttp2).
+# The patch removes `http2` (Cargo.toml + the matching Cargo.lock edit).
+patch -Np1 -i ./openssl-4-no-isahc-http2.patch
+grep -q 'features = \["text-decoding"\]' Cargo.toml || {
+  echo "ERROR: isahc http2 removal did not apply" >&2
+  exit 1
+}
 cargo build --locked --release --no-default-features --features plugins_from_target,web_server_capability
 readelf -d target/release/zellij | grep -q 'NEEDED.*libcurl\.so' || {
   echo "ERROR: zellij does not link the system libcurl (vendored curl crept back in?)" >&2

@@ -27,6 +27,12 @@ let version = "0.45.1" in
     # (4.x support starts at 0.9.114). Moves it to 0.9.117. Applied by name, so a
     # stale patch fails the build.
     { file = "openssl-4-openssl-sys-lock.patch" } | Local,
+    # OpenSSL 4: drop isahc's `http2` feature (Cargo.toml + the matching
+    # Cargo.lock edit cargo would make: libnghttp2-sys goes). With http2 on,
+    # curl-sys only links a system libcurl that reports HTTP2, and ours has no
+    # nghttp2 (adding it would cycle curl -> nghttp2 -> cmake -> curl), so it
+    # compiled its bundled curl 8.4.0, which does not build on OpenSSL 4.
+    { file = "openssl-4-no-isahc-http2.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/zellij-org/zellij/v%{version}.tar.gz",
       sha256 = "5cbe711437d2a61afd9287165f6aca0bcccb9ab1473633665a5b11ed55467852",
