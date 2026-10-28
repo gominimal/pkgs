@@ -2,6 +2,11 @@
 set -euo pipefail
 
 
+# The grpc-proto submodule (see build.ncl): the tag archive ships it empty.
+mkdir -p third_party/grpc-proto
+tar -xof dd549fc4ed04b60b0fdd3866b82ef0a7c87c6e4f.tar.gz -C third_party/grpc-proto --strip-components=1
+test -f third_party/grpc-proto/grpc/reflection/v1/reflection.proto
+
 export CFLAGS="-O3 -pipe -ffile-prefix-map=$(pwd)=/builddir -gno-record-gcc-switches"
 export CXXFLAGS="$CFLAGS"
 export LDFLAGS="-Wl,--build-id=none"

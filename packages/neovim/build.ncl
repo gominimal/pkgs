@@ -20,14 +20,14 @@ let tree-sitter-vimdoc = import "../tree-sitter-vimdoc/build.ncl" in
 let unibilium = import "../unibilium/build.ncl" in
 let utf8proc = import "../utf8proc/build.ncl" in
 
-let version = "0.12.5" in
+let version = "0.12.6" in
 {
   name = "neovim",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/neovim/neovim/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "a810c95332317bd0017e1ca07e376a8472c79075cbed00fa3737d190a8a0a45a",
+      sha256 = "8629fdc5eb951daf89a76f68cad12f2f1e03fab0d539150ba3fe6d177d254b7f",
       extract = true,
       strip_prefix = "neovim-%{version}",
     } | Source,

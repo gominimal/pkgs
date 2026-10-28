@@ -5,7 +5,7 @@ let make = import "../make/build.ncl" in
 let ruby = import "../ruby/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "0.26.10" in
+let version = "0.26.11" in
 {
   name = "ruby-lsp",
   # Shopify's Ruby language server, vendored into its own gem dir at
@@ -23,7 +23,7 @@ let version = "0.26.10" in
     { file = "build.sh" } | Local,
     {
       url = "https://rubygems.org/downloads/ruby-lsp-%{version}.gem",
-      sha256 = "e67284af94423531f6b9a583350596421b5a6a4dd93083f1c2ba03da7c23bbed",
+      sha256 = "4cc8f1587237ff8c9031680b5491df901a82559eeaa1ae96863ffe700b32583d",
     } | Source,
     {
       url = "https://rubygems.org/downloads/language_server-protocol-3.17.0.6.gem",

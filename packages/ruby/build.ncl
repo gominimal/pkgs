@@ -6,8 +6,14 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let rust = import "../rust/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let gdbm = import "../gdbm/build.ncl" in
+# Sessions set LANG=C.UTF-8, which the glibc locale-archive lacks. Without it
+# setlocale fails and Encoding.default_external falls back to US-ASCII, so a
+# Rails app's string handling would depend on whether postgres (the only
+# other carrier) is in the loadout. Until the glibc fold-in lands.
+let glibc-locale-c-utf8 = import "../glibc-locale-c-utf8/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let libyaml = import "../libyaml/build.ncl" in
@@ -16,14 +22,14 @@ let openssl = import "../openssl/build.ncl" in
 let readline = import "../readline/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "4.0.6" in
+let version = "4.0.9" in
 {
   name = "ruby",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://cache.ruby-lang.org/pub/ruby/4.0/ruby-%{version}.tar.gz",
-      sha256 = "837d299e8f7ddf2be31a229a7a7e019d354979825117989acb3b32b1a9be262a",
+      sha256 = "c35350682ff050b79702d57ade4516e7336063f510155d19fb2fb5b3f3909511",
     } | Source,
     base,
     make,
@@ -33,6 +39,9 @@ let version = "4.0.6" in
   ],
   runtime_deps = [
     glibc,
+    # Verifies TLS against /etc/ssl/certs at runtime; see AGENTS.md "Trust store".
+    ca-certificates,
+    glibc-locale-c-utf8,
     subsetOf gcc ["libgcc", "libstdcpp"],
     gdbm,
     gmp,
@@ -83,6 +92,48 @@ let version = "4.0.6" in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "ruby -e 'puts 1+1' | grep -q '^2$'"],
+        ],
+      } | Test,
+
+    # Under the session locale Ruby must read and write UTF-8, not US-ASCII.
+    utf8_default_external =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "LANG=C.UTF-8 LC_ALL=C.UTF-8 ruby -e 'exit(Encoding.default_external == Encoding::UTF_8 ? 0 : 1)'"],
+        ],
+      } | Test,
+
+    # OpenSSL's default paths (OPENSSLDIR=/etc/ssl) reach the store that the
+    # ca-certificates runtime dep installs: every live per-root file under
+    # /etc/ssl/certs must verify through `set_default_paths` alone. Offline;
+    # without the runtime dep the directory is empty and the test fails. The
+    # empty-store check is the control: no root verifies against no paths.
+    # The 100-root floor counts LIVE roots, so a wrong sandbox clock that
+    # filters every root out fails the test instead of verifying nothing.
+    trust_store =
+      {
+        class = 'Standalone,
+        cmds = [
+          [
+            "/usr/bin/ruby",
+            "-ropenssl",
+            "-e",
+            m%"
+              dir = "/etc/ssl/certs"
+              now = Time.now
+              files = Dir.glob("#{dir}/*.crt") - ["#{dir}/ca-certificates.crt"]
+              roots = files.map { |f| OpenSSL::X509::Certificate.new(File.read(f)) }
+              abort "control: an empty store verified a root" if roots.any? { |c| OpenSSL::X509::Store.new.verify(c) }
+              live = roots.select { |c| c.not_before <= now && now < c.not_after }
+              abort "only #{live.size} live roots (of #{roots.size}) under #{dir} at #{now}" if live.size < 100
+              store = OpenSSL::X509::Store.new
+              store.set_default_paths
+              bad = live.reject { |c| store.verify(c) }
+              abort "default paths reject #{bad.size} of #{live.size} live roots, e.g. #{bad.first.subject}" unless bad.empty?
+            "%
+          ],
         ],
       } | Test,
 

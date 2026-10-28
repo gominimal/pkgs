@@ -1,155 +1,76 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
-# openjdk-26: one rung of the JVM ladder (jikes-1.22 -> classpath-0.93 -> jamvm-1.5.1 ->
-# ant-bootstrap-1.8.4 -> ecj-bootstrap-3.2.2 -> classpath-0.99 -> classpath-devel -> jamvm-2.0.0
-# -> ecj4-bootstrap-4.2.1 -> icedtea-7 -> icedtea-8 -> openjdk-9 -> ... -> openjdk-25 -> openjdk-26).
-# OpenJDK 26.0.2.1 from the GitHub tag archive, built with ../openjdk-25 as the boot JDK. Installs
-# at /usr/lib/openjdk-26; nothing lands on /usr/bin.
-# Sources mirrored to gs://minimal-staging-archives/. No `needs`: nothing here touches the network.
-# amd64 only (see the match at the bottom).
-let openjdk-25 = import "../openjdk-25/build.ncl" in # the boot JDK
-let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
-# production binutils: the sealed binutils-2.46-glibc shares sonames (libsframe.so.3) with it in
-# /usr/lib, and a mixed pair crashes as
-let binutils = import "../binutils/build.ncl" in
-let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
-let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
+let glibc-bedrock-2-42-sysroot = import "../glibc-bedrock-2.42-sysroot/build.ncl" in # the sysroot only (see that package)
 let glibc = import "../glibc/build.ncl" in
-let automake = import "../automake/build.ncl" in
-let libtool = import "../libtool/build.ncl" in
-let is_arm = target.arch == 'Arm64 in
-let bash = import "../bash/build.ncl" in
-let make = import "../make/build.ncl" in
-let sed = import "../sed/build.ncl" in
-let grep = import "../grep/build.ncl" in
-let coreutils = import "../coreutils/build.ncl" in
-let findutils = import "../findutils/build.ncl" in
-let tar = import "../tar/build.ncl" in
-let python = import "../python/build.ncl" in # normalises the zip archives after install
-let gawk = import "../gawk/build.ncl" in # configure scripts and config.status
-let diffutils = import "../diffutils/build.ncl" in
-let gzip = import "../gzip/build.ncl" in
-let patch = import "../patch/build.ncl" in
-let zip = import "../zip/build.ncl" in
-let unzip = import "../unzip/build.ncl" in
-let cpio = import "../cpio/build.ncl" in
-let file = import "../file/build.ncl" in
-let which = import "../which/build.ncl" in
-let pkgconf = import "../pkgconf/build.ncl" in
-let autoconf = import "../autoconf/build.ncl" in # configure regenerates itself
-let m4 = import "../m4/build.ncl" in
+let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let freetype = import "../freetype/build.ncl" in
-let cups = import "../cups/build.ncl" in
-let alsa-lib = import "../alsa-lib/build.ncl" in
-let lcms2 = import "../lcms2/build.ncl" in
-let fontconfig = import "../fontconfig/build.ncl" in
 let libpng = import "../libpng/build.ncl" in
-let libjpeg-turbo = import "../libjpeg-turbo/build.ncl" in
 let giflib = import "../giflib/build.ncl" in
+let libjpeg-turbo = import "../libjpeg-turbo/build.ncl" in
+let lcms2 = import "../lcms2/build.ncl" in
+let alsa-lib = import "../alsa-lib/build.ncl" in
 let libx11 = import "../libx11/build.ncl" in
 let libxext = import "../libxext/build.ncl" in
+let libxi = import "../libxi/build.ncl" in
 let libxrender = import "../libxrender/build.ncl" in
 let libxtst = import "../libxtst/build.ncl" in
-let libxi = import "../libxi/build.ncl" in
-let libxinerama = import "../libxinerama/build.ncl" in
-let libxrandr = import "../libxrandr/build.ncl" in
-let libxcomposite = import "../libxcomposite/build.ncl" in
-let libxt = import "../libxt/build.ncl" in
-let xorgproto = import "../xorgproto/build.ncl" in
-# pkgmgr: bootstrap_rung = "jvm"
+# openjdk-26: the boot JDK for jdk-27, OpenJDK 26.0.2.1 from gen-5 of gominimal/bootstrap: the JVM ladder
+# jikes -> classpath -> jamvm -> ant/ecj -> icedtea-7/8 -> openjdk-9 ... 26, every rung built from
+# source on the hex0-rooted toolchain and reproduced byte for byte on two independent machines
+# before publishing (generations/gen-5/manifest.json). Installs at /usr/lib/openjdk-26; nothing lands on
+# /usr/bin.
+let is_arm = target.arch == 'Arm64 in
 let version = "26.0.2.1" in
-let amd64_spec = # both arches: the x86_64 inputs or aarch64's, picked by is_arm
-  {
-    name = "openjdk-26",
-    build_deps =
-      [
-        (if is_arm then { file = "build-aarch64.sh" } else { file = "build.sh" }) | Local,
+{
+  name = "openjdk-26",
+  prebuilt = true,
+  build_deps = [
+    match {
+      { arch = 'Amd64, .. } =>
         {
-          # https://github.com/openjdk/jdk26u/archive/refs/tags/jdk-26.0.2.1-ga.tar.gz
-          url = "gs://minimal-staging-archives/jdk-26.0.2.1-ga.tar.gz",
-          sha256 = "1e85191bcbdcaa174c45c2cd9aa954adb325c09cb0ea301e44b335698935718e",
-          extract = false, # build.sh untars with --no-same-owner
+          url = "gs://minimal-bootstrap/gen-5/sha256/1d30b582ba33fb56d4e3dbba37b39d7d39ed0aa72121d4a083c10653c2c2f7be/openjdk-26-26.0.2.1-x86_64.tar.zst",
+          sha256 = "1d30b582ba33fb56d4e3dbba37b39d7d39ed0aa72121d4a083c10653c2c2f7be",
+          extract = true,
         } | Source,
-        openjdk-25,
-      ]
-      @ (if is_arm then [toolchain, autoconf, automake, libtool, m4] else [gcc-bedrock, binutils, glibc-bedrock])
-      @ [
-        bash,
-        make,
-        sed,
-        grep,
-        coreutils,
-        findutils,
-        tar,
-        python,
-        gawk,
-        diffutils,
-        gzip,
-        patch,
-        zip,
-        unzip,
-        cpio,
-        file,
-        which,
-        pkgconf,
-        autoconf,
-        m4,
-        zlib,
-        freetype,
-        cups,
-        alsa-lib,
-        lcms2,
-        fontconfig,
-        libpng,
-        libjpeg-turbo,
-        giflib,
-        libx11,
-        libxext,
-        libxrender,
-        libxtst,
-        libxi,
-        libxinerama,
-        libxrandr,
-        libxcomposite,
-        libxt,
-        xorgproto,
-      ],
-    # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, lcms2, libpng, giflib and libjpeg
-    runtime_deps =
-      []
-      @ (if is_arm then [glibc, toolchain] else [glibc-bedrock])
-      @ [
-        zlib,
-        freetype,
-        libpng,
-        giflib,
-        libjpeg-turbo,
-        lcms2,
-        alsa-lib,
-        libx11,
-        libxext,
-        libxi,
-        libxrender,
-        libxtst,
-      ],
-    cmd = if is_arm then "./build-aarch64.sh" else "./build.sh",
-    outputs = {
-      # consumed by the next rung by absolute path
-      prefix = { glob = "usr/lib/openjdk-26/**", allow_executable = true } | OutputData,
-      buildinfo = { glob = "usr/share/openjdk-26/BUILDINFO" } | OutputData,
-    },
-    attrs =
-      {
-        upstream_version = version,
-        license_spdx = "GPL-2.0-only WITH Classpath-exception-2.0",
-        build_cost_multiple = 12,
-        source_provenance = {
-          category = 'GithubRepo,
-          owner = "openjdk",
-          repo = "jdk26u",
-        },
-      } | Attrs,
-  } | BuildSpec
-in
-amd64_spec
+      { arch = 'Arm64, .. } =>
+        {
+          url = "gs://minimal-bootstrap/gen-5/sha256/7c817908066a6076d7969e1a9f37ccb749be84213a64a6165dc2626196d051fb/openjdk-26-26.0.2.1-aarch64.tar.zst",
+          sha256 = "7c817908066a6076d7969e1a9f37ccb749be84213a64a6165dc2626196d051fb",
+          extract = true,
+        } | Source,
+    } target,
+  ],
+  # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, lcms2, libpng, giflib and libjpeg
+  runtime_deps =
+    []
+    @ (if is_arm then [glibc, toolchain] else [glibc-bedrock-2-42-sysroot])
+    @ [
+      zlib,
+      freetype,
+      libpng,
+      giflib,
+      libjpeg-turbo,
+      lcms2,
+      alsa-lib,
+      libx11,
+      libxext,
+      libxi,
+      libxrender,
+      libxtst,
+    ],
+  outputs = {
+    prefix = { glob = "usr/lib/openjdk-26/**", allow_executable = true } | OutputData,
+    buildinfo = { glob = "usr/share/openjdk-26/BUILDINFO" } | OutputData,
+  },
+  attrs =
+    {
+      upstream_version = version,
+      license_spdx = "GPL-2.0-only WITH Classpath-exception-2.0",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "openjdk",
+        repo = "jdk26u",
+      },
+    } | Attrs,
+} | BuildSpec

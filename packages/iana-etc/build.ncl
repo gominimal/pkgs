@@ -1,14 +1,14 @@
 let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 
-let version = "20261009" in
+let version = "20261022" in
 {
   name = "iana-etc",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/iana-etc-%{version}.tar.gz",
-      sha256 = "c07e8ecc39d4d9f26be3bf773fab1313b1a3ea58ebed9fbcec2413ee792b6e6f"
+      sha256 = "8ea9429c691634056ad8c292cf94df8e4cc5e828dceef658490bcbab132dee7c"
     } | Source,
     base,
   ],
