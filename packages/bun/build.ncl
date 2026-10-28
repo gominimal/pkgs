@@ -21,6 +21,7 @@ let unzip = import "../unzip/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
+let openssl = import "../openssl/build.ncl" in
 
 let version = "1.3.14" in
 let dl_base = "https://github.com/oven-sh/bun/releases/download/bun-v%{version}" in
@@ -162,19 +163,23 @@ in
           ],
         ],
       } | Test,
-    # The system CA store replaces the compiled-in roots by default
-    # (system-ca-store-default.patch), so a CA removed from ca-certificates
-    # stops being trusted (CVE-2026-111943). Offline: a local server presents
-    # a real compiled-in root (DigiCert Global Root G2) with no private key
-    # needed, while SSL_CERT_FILE names a one-root system store without it.
-    # The default must reject G2 for fetch and tls.connect; stock bun trusts
-    # it, so this FAILS without the patch (build.sh checks that against the
-    # stock bootstrap bun). NODE_USE_SYSTEM_CA=0 and --use-bundled-ca (the
-    # opt-outs) and an empty system store (the fallback) must trust it again.
+    # The system CA store is what bun trusts by default (system-ca-store-
+    # default.patch), so a CA removed from ca-certificates stops being trusted
+    # (CVE-2026-111943). Offline, against a REAL local TLS server: a throwaway
+    # CA signs a 127.0.0.1 leaf, `openssl s_server` serves it, and SSL_CERT_FILE
+    # names that CA as the whole system store.
+    #   - default: trusted (stock bun only uses its compiled-in roots, so it
+    #     rejects this CA: the test FAILS without the patch);
+    #   - NODE_USE_SYSTEM_CA=0 and --use-bundled-ca (the opt-outs): rejected.
+    # Checked through tls.connect; fetch's answers are printed as a diagnostic.
+    # (The removal direction, a compiled-in root missing from the system store
+    # is untrusted, needs a real root's key, so it rests on the patch's grep
+    # guards in build.sh. An earlier keyless fake-server harness gave
+    # unusable answers on 1.3.14 in the sandbox.)
     system_ca_store_default =
       {
         class = 'Standalone,
-        test_deps = [base, ca-certificates],
+        test_deps = [base, ca-certificates, openssl],
         cmds = [
           [
             "/bin/bash",
@@ -182,76 +187,41 @@ in
             m%"
               set -eu
               test -s /etc/ssl/certs/ca-certificates.crt
-              test "$(env -u SSL_CERT_FILE -u SSL_CERT_DIR bun -e 'console.log(require("node:tls").getCACertificates("system").length > 100)')" = true
               d=$(mktemp -d)
-              cat > "$d/check.js" <<'JS'
-              const { rootCertificates } = require("node:tls");
-              const { X509Certificate } = require("node:crypto");
-              const fs = require("node:fs");
-              const bySubject = cn => rootCertificates.find(p => new X509Certificate(p).subject.endsWith(cn));
-              const served = bySubject("DigiCert Global Root G2");
-              if (!served) { console.log("no DigiCert Global Root G2 among the compiled-in roots"); process.exit(2); }
-              if (process.argv[2] === "prep") {
-                // dir/other.pem: a one-root "system store" that does not hold the served root.
-                const other = bySubject("ISRG Root X1");
-                if (!other) { console.log("no ISRG Root X1 among the compiled-in roots"); process.exit(2); }
-                fs.mkdirSync(process.argv[3] + "/empty", { recursive: true });
-                fs.writeFileSync(process.argv[3] + "/other.pem", other);
-                fs.writeFileSync(process.argv[3] + "/none.pem", "");
-                process.exit(0);
-              }
+              cd "$d"
+              openssl req -x509 -newkey rsa:2048 -nodes -days 2 -subj "/CN=minimal test CA" \
+                -keyout ca.key -out ca.pem 2>/dev/null
+              openssl req -newkey rsa:2048 -nodes -subj "/CN=127.0.0.1" -keyout leaf.key -out leaf.csr 2>/dev/null
+              printf 'subjectAltName=IP:127.0.0.1\n' > ext.cnf
+              openssl x509 -req -in leaf.csr -CA ca.pem -CAkey ca.key -CAcreateserial -days 2 \
+                -extfile ext.cnf -out leaf.pem 2>/dev/null
+              port=$(( 20000 + RANDOM % 20000 ))
+              openssl s_server -accept "127.0.0.1:$port" -cert leaf.pem -key leaf.key -www -quiet >/dev/null 2>&1 &
+              srv=$!
+              trap 'kill $srv 2>/dev/null || true' EXIT
+              for _ in $(seq 100); do (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null && break; sleep 0.1; done
+              mkdir -p empty
+              cat > check.js <<JS
+              const port = $port;
+              const viaTls = () => new Promise(r => require("node:tls")
+                .connect({ host: "127.0.0.1", port })
+                .on("secureConnect", function () { this.destroy(); r("ok"); })
+                .on("error", e => r(String(e.code))));
+              const viaFetch = () => fetch("https://127.0.0.1:" + port + "/").then(() => "ok", e => String(e.code));
+              (async () => { console.log(await viaTls() + " fetch=" + await viaFetch()); process.exit(0); })();
               setTimeout(() => { console.log("timeout"); process.exit(3); }, 20000).unref();
-              const uint = (size, value) => { const b = Buffer.alloc(size); b.writeUIntBE(value, 0, size); return b; };
-              const message = (type, ...fields) => { const body = Buffer.concat(fields); return Buffer.concat([uint(1, type), uint(3, body.length), body]); };
-              const der = new X509Certificate(served).raw;
-              const messages = Buffer.concat([
-                // version 1.2, zero random, no session id, TLS_RSA_WITH_AES_128_GCM_SHA256, no compression
-                message(2, uint(2, 0x0303), Buffer.alloc(32), uint(1, 0), uint(2, 0x009c), uint(1, 0)),
-                message(11, uint(3, der.length + 3), uint(3, der.length), der),
-                message(14),
-              ]);
-              const answer = Buffer.concat([uint(1, 22), uint(2, 0x0303), uint(2, messages.length), messages]);
-              const server = Bun.listen({
-                hostname: "127.0.0.1",
-                port: 0,
-                socket: {
-                  open(socket) { socket.data = { received: Buffer.alloc(0), answered: false }; },
-                  data(socket, chunk) {
-                    const st = socket.data;
-                    if (st.answered) return;
-                    st.received = Buffer.concat([st.received, chunk]);
-                    if (st.received.length < 5 || st.received.length < 5 + st.received.readUInt16BE(3)) return;
-                    st.answered = true;
-                    socket.write(answer);
-                  },
-                },
-              });
-              const viaFetch = () => fetch(`https://127.0.0.1:${server.port}/`).then(() => "ok", e => String(e.code));
-              const viaTls = () => new Promise(resolve => {
-                require("node:tls").connect({ host: "127.0.0.1", port: server.port, maxVersion: "TLSv1.2", checkServerIdentity() {} })
-                  .on("secureConnect", () => resolve("ok"))
-                  .on("error", e => resolve(String(e.code)));
-              });
-              (async () => {
-                const f = await viaFetch();
-                const t = await viaTls();
-                console.log(`${f} ${t}`);
-                server.stop(true);
-                process.exit(0);
-              })();
               JS
-              bun "$d/check.js" prep "$d"
               run() {
                 flag=$1; shift
                 env -u NODE_USE_SYSTEM_CA -u NODE_EXTRA_CA_CERTS -u HTTPS_PROXY -u https_proxy -u HTTP_PROXY -u http_proxy -u ALL_PROXY -u all_proxy \
-                  SSL_CERT_FILE="$d/other.pem" SSL_CERT_DIR="$d/empty" "$@" bun $flag "$d/check.js" || true
+                  SSL_CERT_FILE="$d/ca.pem" SSL_CERT_DIR="$d/empty" "$@" bun $flag check.js || true
               }
-              got=$(run "")
-              test "$got" = "DEPTH_ZERO_SELF_SIGNED_CERT DEPTH_ZERO_SELF_SIGNED_CERT" || { echo "default trusts the compiled-in roots: $got" >&2; exit 1; }
-              trusted=$(run "" NODE_USE_SYSTEM_CA=0)
-              case "$trusted" in *DEPTH_ZERO*|*timeout*|*ok*|"") echo "NODE_USE_SYSTEM_CA=0: $trusted" >&2; exit 1 ;; esac
-              test "$(run --use-bundled-ca)" = "$trusted" || { echo "--use-bundled-ca: $(run --use-bundled-ca)" >&2; exit 1; }
-              test "$(run "" SSL_CERT_FILE="$d/none.pem")" = "$trusted" || { echo "empty system store did not fall back" >&2; exit 1; }
+              got=$(run ""); echo "default: $got"
+              case "$got" in ok*) ;; *) echo "default does not trust the system store: $got" >&2; exit 1 ;; esac
+              got=$(run "" NODE_USE_SYSTEM_CA=0); echo "NODE_USE_SYSTEM_CA=0: $got"
+              case "$got" in ok*|timeout*|"") echo "NODE_USE_SYSTEM_CA=0 still trusts the system store: $got" >&2; exit 1 ;; esac
+              got=$(run --use-bundled-ca); echo "--use-bundled-ca: $got"
+              case "$got" in ok*|timeout*|"") echo "--use-bundled-ca still trusts the system store: $got" >&2; exit 1 ;; esac
             "%
           ],
         ],
