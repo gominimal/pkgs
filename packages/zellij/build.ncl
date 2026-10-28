@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let rust = import "../rust/build.ncl" in
@@ -7,6 +7,8 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
+let curl = import "../curl/build.ncl" in
+let pkgconf = import "../pkgconf/build.ncl" in
 
 let version = "0.45.1" in
 {
@@ -36,12 +38,19 @@ let version = "0.45.1" in
     rust,
     toolchain,
     openssl,
+    # OpenSSL 4: build without zellij's default `vendored_curl` feature, so
+    # curl-sys links this system libcurl (found through pkgconf) instead of
+    # compiling its bundled curl 8.4.0, which reads OpenSSL's now-opaque
+    # ASN1_INTEGER and fails on 4.x (see build.sh).
+    pkgconf,
+    curl,
   ],
 
   runtime_deps = [
     glibc,
     gcc,
     openssl,
+    subsetOf curl ["libs"],
   ],
 
   cmd = "./build.sh",

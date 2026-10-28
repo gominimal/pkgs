@@ -30,7 +30,15 @@ grep -A1 '^name = "openssl-sys"$' Cargo.lock | grep -q '^version = "0.9.117"$' |
   exit 1
 }
 
-cargo build --locked --release
+# OpenSSL 4: zellij's default features include `vendored_curl` (isahc/static-
+# curl), which compiles curl-sys's bundled curl 8.4.0; that curl reads OpenSSL's
+# now-opaque ASN1_INTEGER and fails on 4.x. Build the other two defaults only,
+# so curl-sys links the system libcurl, and fail closed if it did not.
+cargo build --locked --release --no-default-features --features plugins_from_target,web_server_capability
+readelf -d target/release/zellij | grep -q 'NEEDED.*libcurl\.so' || {
+  echo "ERROR: zellij does not link the system libcurl (vendored curl crept back in?)" >&2
+  exit 1
+}
 
 mkdir -p $OUTPUT_DIR/usr/bin
 install -m 755 target/release/zellij $OUTPUT_DIR/usr/bin/zellij
