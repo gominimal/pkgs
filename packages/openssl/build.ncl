@@ -5,14 +5,15 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "3.6.5" in
+let version = "4.1.0" in
 {
   name = "openssl",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/openssl/openssl/openssl-%{version}.tar.gz",
-      sha256 = "a2157c2830efdec3788939b00c9b0638306d3f0bbb76dc4832ee503bb397df98",
+      # = openssl-4.1.0.tar.gz.sha256 on the GitHub release (release tarball, top dir openssl-4.1.0/).
+      sha256 = "50c17baf54cb008f6ce42d50deb4b28050a1aad711636cabd4b241c7e90cc2fd",
       extract = true,
       strip_prefix = "openssl-%{version}",
     } | Source,
@@ -28,13 +29,15 @@ let version = "3.6.5" in
   cmd = "./build.sh",
   outputs = {
     openssl = { glob = "usr/bin/openssl" } | OutputBin,
-    c_rehash = { glob = "usr/bin/c_rehash", allow_missing_interpreter = true } | OutputBin,
+    # 4.0 removed the c_rehash script (use `openssl rehash`), and ENGINE support with it:
+    # no engines-N directory is installed any more.
 
     libcrypto = { glob = "usr/lib/libcrypto.so*" } | OutputLib,
     libssl = { glob = "usr/lib/libssl.so*" } | OutputLib,
 
-    engines-3 = { glob = "usr/lib/engines-3/*.so*" } | OutputLib,
-    ossl-modules = { glob = "usr/lib/engines-3/*.so*" } | OutputLib,
+    # Providers (legacy.so). Through 3.6.5 this glob pointed at engines-3, so the legacy
+    # provider was never shipped.
+    ossl-modules = { glob = "usr/lib/ossl-modules/*.so" } | OutputLib,
 
     pkgconfigs = { glob = "usr/lib/pkgconfig/**" } | OutputData,
     cmake_data = { glob = "usr/lib/cmake/OpenSSL/*.cmake" } | OutputData,
