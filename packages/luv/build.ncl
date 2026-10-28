@@ -8,7 +8,7 @@ let libuv = import "../libuv/build.ncl" in
 let luajit = import "../luajit/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.52.1-0" in
+let version = "1.53.0-0" in
 # Header-only Lua compatibility shims vendored by luv as a git submodule,
 # which GitHub archive tarballs don't include — fetched separately.
 let compat53_version = "0.13" in
@@ -18,7 +18,7 @@ let compat53_version = "0.13" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/luvit/luv/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "e8b8774b31d24be4fcf2b021b90599ecccc8e476c61efcc59c3c10cab813a885",
+      sha256 = "bd393b5918f320c79a2c6405e3abebe01c024557c32b9fb9006bee20ce71e19e",
       extract = true,
       strip_prefix = "luv-%{version}",
     } | Source,

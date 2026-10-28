@@ -4,7 +4,7 @@ let ghc = import "../ghc/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let python = import "../python/build.ncl" in
 
-let version = "3.18.1.0" in
+let version = "3.18.2.0" in
 {
   name = "cabal",
   build_deps = [
@@ -12,7 +12,7 @@ let version = "3.18.1.0" in
     { file = "update_bootstrap_json.py" } | Local,
     {
       url = "https://github.com/haskell/cabal/archive/refs/tags/cabal-install-v%{version}.tar.gz",
-      sha256 = "ae794d9b803b31922a80338f4671a3abd8eba995424db549438ad211f4657193",
+      sha256 = "4af446dc7a0caca6c42497ffd50a80d8efbc9bc6de4751ed00fafb3e81696779",
       extract = true,
       strip_prefix = "cabal-cabal-install-v%{version}",
     } | Source,

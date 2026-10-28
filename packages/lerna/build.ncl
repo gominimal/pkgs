@@ -4,7 +4,7 @@ let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = im
 let base = import "../base/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let version = "10.0.1" in
+let version = "10.1.1" in
 {
   name = "lerna",
   build_deps = [

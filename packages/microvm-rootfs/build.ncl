@@ -125,9 +125,9 @@ in
     # transitive set needed for them to load — nothing here is a direct guest
     # tool. It must be re-resolved as a unit on an Alpine bump.
     apk
-      "brotli-libs-1.2.0-r1"
-      "e0e7a7892f28326a9f18e09607b1aea72baedda470bc4e3d2b11262b9ae5dda3"
-      "f0823de7c6d45859aeb6a7facfc5cfbf2dadb83ad4f27c794cb6ecc74e578cee",
+      "brotli-libs-1.2.1-r0"
+      "f802b9d5a329c216f02e73607cb8f662c434767e41686367ac0afcf6d0d45d64"
+      "62a7e37e43bbfc1f8525a00ad2125fd5897135dc93b849733884cb78ffd8e26c",
     apk
       "c-ares-1.34.8-r0"
       "689603d300dc56f0b99e313506e4d7b3a3ffb87cec536324f8a306bc218afe67"
@@ -157,9 +157,9 @@ in
       "a75b5955ff57046e33fc2842cfe466dc77d8e68305d5c86c6646b38a069490a2"
       "4723d0fb8e286dc6adb54dd3cdaedcd8db54260f75ee778a5acb4c16922c0f52",
     apk
-      "libcurl-8.22.0-r0"
-      "cbec830a63888be570c06d20d87c85649aff1db38c3b4dcc17884b14471e39e3"
-      "40b2a8e15a8d24bc95a5f42aaeb018313a1ff457cee71d8e15aaf1328da765e8",
+      "libcurl-8.23.0-r0"
+      "64ae89f6e5d318ed5209778232191806ce49644ce9e09540b7d7830a5330d127"
+      "1f70ca404818805a6465b615bbfe84ef861488a963d7e630108ebd7fbaa51665",
     apk
       "libeconf-0.8.3-r0"
       "cf0899d49ded0a6891e3cdf1b37887f2ecd77293afe1d8f3cb8937763c83f183"
@@ -291,6 +291,33 @@ in
       "ca-certificates-bundle-20261020-r0"
       "d0a573c27d337c369ad3abe3f39f09ffe67b95af23861577a8d134738375176a"
       "bb008f6d214b6af7576324659856fb63dc8dcb4373f8345ff706388696f1254d",
+
+    # musl itself, same override pattern. alpine-minirootfs-3.24.1 ships musl
+    # and musl-utils 1.2.6-r2, and every musl through 1.2.6 has the regcomp
+    # integer overflows of CVE-2026-107891 (undersized heap allocations, then
+    # out-of-bounds heap writes, from a large or complex pattern;
+    # https://www.openwall.com/lists/oss-security/2026/10/21/18). Upstream's
+    # fix ships in 1.2.7; Alpine carries the patch in 1.2.6-r3 (aports
+    # 3.24-stable main/musl secfixes). Reaching it needs a regex from an
+    # untrusted source compiled by a guest tool (busybox grep/sed/awk, bash
+    # `=~`, git); matching untrusted text with a trusted pattern is not enough.
+    #
+    # musl owns lib/ld-musl-<arch>.so.1 (the loader and libc in one) and its
+    # lib/libc.musl-<arch>.so.1 symlink; musl-utils owns ldconfig, getconf,
+    # getent, iconv and ldd. Neither has an install script, so the overlay
+    # replaces the base layer's files outright and the apk-db reconcile moves
+    # both recorded versions to 1.2.6-r3.
+    #
+    # DROP THESE once `alpine_release` reaches a minirootfs carrying
+    # >= 1.2.6-r3.
+    apk
+      "musl-1.2.6-r3"
+      "2e17864102278d9049c3a56f1bceed9e8cf287065617e579325123443daed8a5"
+      "e142255d0fa397f14318996bc10378093dcc069dc3dd1b6818c8f28a789c21da",
+    apk
+      "musl-utils-1.2.6-r3"
+      "bb460bdc009e88989bd5adca8a7c8298c339cba99da11c6196c818e042fbaf49"
+      "47263d05842c5e12d01e0369e5b5bea51733323501c00ca21968a5102de137ca",
   ],
 
   cmd = "./build.sh",

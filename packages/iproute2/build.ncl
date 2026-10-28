@@ -10,14 +10,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let libcap = import "../libcap/build.ncl" in
 
-let version = "7.1.0" in
+let version = "7.3.0" in
 {
   name = "iproute2",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/iproute2-%{version}.tar.xz",
-      sha256 = "fd9fa1b95809417157ca83dd72957e3261bdbce896353cb936f80af0b33a4b5c",
+      sha256 = "5c1789d290bba048a6135ed1ab81b0402dd0fb528d1f1421765c42b1fc3d6289",
       extract = true,
       strip_prefix = "iproute2-%{version}",
     } | Source,

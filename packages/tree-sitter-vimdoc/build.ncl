@@ -3,14 +3,14 @@ let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "4.1.0" in
+let version = "4.3.0" in
 {
   name = "tree-sitter-vimdoc",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/neovim/tree-sitter-vimdoc/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "020e8f117f648c8697fca967995c342e92dbd81dab137a115cc7555207fbc84f",
+      sha256 = "4c46119abf86fcb29bc66878eb9a37666a936589769bea2b76308cd2119dfaf5",
       extract = true,
       strip_prefix = "tree-sitter-vimdoc-%{version}",
     } | Source,
