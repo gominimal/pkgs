@@ -24,8 +24,10 @@ let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in # gcc's build regen
 # pkgmgr: bootstrap_rung = "hex0"
 let version = "15.2.0" in
 # Shared by the from-source spec and the sealed (switch-off) spec below.
+let zstd = import "../zstd/build.ncl" in
 let all_runtime_deps = [
   subsetOf glibc-bedrock ["sysroot_lib"],
+  zstd, # cc1, cc1plus and lto1 load libzstd.so.1
 ]
 in
 let all_outputs = {

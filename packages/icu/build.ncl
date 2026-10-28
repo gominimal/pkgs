@@ -11,7 +11,7 @@ let version = "78.3" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/unicode-org/icu/releases/download/release-%{version}/icu4c-%{version}-sources.tgz",
+      url = "gs://minimal-staging-archives/unicode-org/icu/icu4c-%{version}-sources.tgz",
       sha256 = "3a2e7a47604ba702f345878308e6fefeca612ee895cf4a5f222e7955fabfe0c0",
     } | Source,
     base,
