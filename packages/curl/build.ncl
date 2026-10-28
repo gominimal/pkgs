@@ -3,6 +3,7 @@ let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let libpsl = import "../libpsl/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
+let nghttp2 = import "../nghttp2/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -27,6 +28,11 @@ let version = "8.23.0" in
   ],
   runtime_deps = [
     libpsl,
+    # HTTP/2 (nghttp2), as Arch/Debian/Fedora ship curl. Also what lets
+    # curl-sys users (zellij, via isahc's http2 feature) link this libcurl:
+    # curl-sys checks `curl-config --features` for HTTP2 and otherwise compiles
+    # its bundled curl, whose 8.4.0 copy does not build on OpenSSL 4.
+    nghttp2,
     openssl,
     zlib,
   ],
