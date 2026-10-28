@@ -6,16 +6,16 @@ let glibc = import "../glibc/build.ncl" in
 # fx — vercel-labs/fx, an experimental AI coding-agent harness written in Zig
 # (Apache-2.0). Source build via our zig toolchain, mirroring the opencode
 # harness. build.zig.zon declares NO dependencies and `minimum_zig_version =
-# "0.16.0"` (exactly our zig), so `zig build` is fully hermetic — no network,
+# "0.17.0"` (fx moved to zig 0.17 in 0.0.14), so `zig build` is fully hermetic — no network,
 # and `readGitCommit` falls back to "unknown" without a .git dir.
-let version = "0.0.7" in
+let version = "0.0.15" in
 {
   name = "fx",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/vercel-labs/fx/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "bcbf3850b8e3ebcc1e8728104eec76242dd43399fe0c08b625887b2a6673427f",
+      sha256 = "1358cafff78bb6375fab5a5216235eafdde84057e84cc122d841a920af3d1361",
       extract = true,
       strip_prefix = "fx-%{version}",
     } | Source,
