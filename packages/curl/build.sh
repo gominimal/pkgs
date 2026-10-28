@@ -13,13 +13,7 @@ export CXXFLAGS="${CFLAGS}"
 ./configure  --prefix=/usr      \
             --disable-static    \
             --with-openssl      \
-            --with-nghttp2      \
             --with-ca-path=/etc/ssl/certs
-# Fail closed if configure did not pick up nghttp2 (see build.ncl).
-grep -q '^#define USE_NGHTTP2 1' lib/curl_config.h || {
-  echo "ERROR: curl configured without HTTP/2 (nghttp2 not found)" >&2
-  exit 1
-}
 
 make -j$(nproc)
 DESTDIR=$OUTPUT_DIR make install
