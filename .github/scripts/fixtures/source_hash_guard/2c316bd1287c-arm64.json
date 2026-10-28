@@ -1,0 +1,376 @@
+[
+ {
+  "attrs": {
+   "binary_from": {
+    "pos": [
+     8884,
+     9011
+    ],
+    "value": "https://storage.googleapis.com/chrome-for-testing-public/155.0.8059.84/linux-arm64/chrome-headless-shell-linux-arm64.zip"
+   },
+   "license_spdx": {
+    "pos": [
+     8514,
+     8528
+    ],
+    "value": "BSD-3-Clause"
+   },
+   "source_provenance": {
+    "type": "map",
+    "value": {
+     "category": {
+      "pos": null,
+      "value": "GithubRepo"
+     },
+     "owner": {
+      "pos": [
+       8606,
+       8617
+      ],
+      "value": "microsoft"
+     },
+     "repo": {
+      "pos": [
+       8634,
+       8646
+      ],
+      "value": "playwright"
+     }
+    }
+   },
+   "upstream_version": {
+    "pos": [
+     6684,
+     6699
+    ],
+    "value": "155.0.8059.84"
+   }
+  },
+  "build_args": {
+   "browser_version": "155.0.8059.84",
+   "revision": "1243"
+  },
+  "build_deps": [
+   {
+    "filename": "build.sh",
+    "hash": "3ddf6ab4ac789fc9d8cb2be71721f57cb76e30071073f35b39efe9f5c815113b",
+    "type": "local_file"
+   },
+   {
+    "extract": false,
+    "from": {
+     "sha256": "0c83c2520b513835c712590781adbdbcab4c14ca04d4809be5055ff2c8937a51",
+     "sha256_pos": {
+      "end_offset": 7610,
+      "start_offset": 7544
+     },
+     "type": "web",
+     "url": "https://storage.googleapis.com/chrome-for-testing-public/155.0.8059.84/linux-arm64/chrome-headless-shell-linux-arm64.zip",
+     "url_pos": {
+      "end_offset": 7523,
+      "start_offset": 7396
+     }
+    },
+    "strip_prefix": null,
+    "type": "source"
+   },
+   {
+    "name": "base",
+    "type": "package"
+   },
+   {
+    "name": "unzip",
+    "type": "package"
+   }
+  ],
+  "is_collection": false,
+  "is_prebuilt": false,
+  "name": "chromium-headless-shell-bin",
+  "needs": {},
+  "outputs": {
+   "bin": {
+    "type": "binary",
+    "value": {
+     "allow_missing_interpreter": false,
+     "glob": "usr/bin/chromium-headless-shell"
+    }
+   },
+   "data": {
+    "type": "data",
+    "value": {
+     "allow_executable": true,
+     "glob": "usr/share/playwright-browsers/chromium_headless_shell-*/**"
+    }
+   }
+  },
+  "runtime_deps": [
+   {
+    "name": "bash",
+    "type": "package"
+   },
+   {
+    "name": "glibc",
+    "type": "package"
+   },
+   {
+    "name": "gcc",
+    "type": "package"
+   },
+   {
+    "name": "alsa-lib",
+    "type": "package"
+   },
+   {
+    "name": "cairo",
+    "type": "package"
+   },
+   {
+    "name": "cups",
+    "type": "package"
+   },
+   {
+    "name": "dbus",
+    "type": "package"
+   },
+   {
+    "name": "expat",
+    "type": "package"
+   },
+   {
+    "name": "fontconfig",
+    "type": "package"
+   },
+   {
+    "name": "freetype",
+    "type": "package"
+   },
+   {
+    "name": "fribidi",
+    "type": "package"
+   },
+   {
+    "name": "glib",
+    "type": "package"
+   },
+   {
+    "name": "harfbuzz",
+    "type": "package"
+   },
+   {
+    "name": "libdrm",
+    "type": "package"
+   },
+   {
+    "name": "libx11",
+    "type": "package"
+   },
+   {
+    "name": "libxcb",
+    "type": "package"
+   },
+   {
+    "name": "libxcomposite",
+    "type": "package"
+   },
+   {
+    "name": "libxdamage",
+    "type": "package"
+   },
+   {
+    "name": "libxext",
+    "type": "package"
+   },
+   {
+    "name": "libxfixes",
+    "type": "package"
+   },
+   {
+    "name": "libxkbcommon",
+    "type": "package"
+   },
+   {
+    "name": "libxrandr",
+    "type": "package"
+   },
+   {
+    "name": "libxrender",
+    "type": "package"
+   },
+   {
+    "name": "libxshmfence",
+    "type": "package"
+   },
+   {
+    "name": "libxtst",
+    "type": "package"
+   },
+   {
+    "name": "mesa",
+    "type": "package"
+   },
+   {
+    "name": "nss",
+    "type": "package"
+   },
+   {
+    "name": "nspr",
+    "type": "package"
+   },
+   {
+    "name": "pango",
+    "type": "package"
+   },
+   {
+    "name": "atk",
+    "type": "package"
+   },
+   {
+    "name": "at-spi2-core",
+    "type": "package"
+   },
+   {
+    "name": "eudev",
+    "type": "package"
+   },
+   {
+    "name": "liberation-fonts",
+    "type": "package"
+   }
+  ],
+  "spec_hash": "b2bd1cf663e412986d0d3ac00d09d8d348d60e2a9a0df095bd9ab77458610c13",
+  "target": "arm64/linux"
+ },
+ {
+  "attrs": {
+   "binary_from": {
+    "pos": [
+     3667,
+     3785
+    ],
+    "value": "https://storage.googleapis.com/chrome-for-testing-public/155.0.8059.84/linux-arm64/chromedriver-linux-arm64.zip"
+   },
+   "license_spdx": {
+    "pos": [
+     3291,
+     3305
+    ],
+    "value": "BSD-3-Clause"
+   },
+   "source_provenance": {
+    "type": "map",
+    "value": {
+     "category": {
+      "pos": null,
+      "value": "GithubRepo"
+     },
+     "owner": {
+      "pos": [
+       3383,
+       3401
+      ],
+      "value": "GoogleChromeLabs"
+     },
+     "repo": {
+      "pos": [
+       3418,
+       3438
+      ],
+      "value": "chrome-for-testing"
+     }
+    }
+   },
+   "upstream_version": {
+    "pos": [
+     6684,
+     6699
+    ],
+    "value": "155.0.8059.84"
+   }
+  },
+  "build_args": null,
+  "build_deps": [
+   {
+    "filename": "build.sh",
+    "hash": "2e31618360b3f4d4a1c046015c4b7403f4b3a0b69936acb06706d3da46c4f3d0",
+    "type": "local_file"
+   },
+   {
+    "extract": false,
+    "from": {
+     "sha256": "738853f050812e78e249c2ba8b46e4b6dfee9521bbfdd86d04f882fbf4ef5f47",
+     "sha256_pos": {
+      "end_offset": 2601,
+      "start_offset": 2535
+     },
+     "type": "web",
+     "url": "https://storage.googleapis.com/chrome-for-testing-public/155.0.8059.84/linux-arm64/chromedriver-linux-arm64.zip",
+     "url_pos": {
+      "end_offset": 2514,
+      "start_offset": 2396
+     }
+    },
+    "strip_prefix": null,
+    "type": "source"
+   },
+   {
+    "name": "base",
+    "type": "package"
+   },
+   {
+    "name": "unzip",
+    "type": "package"
+   }
+  ],
+  "is_collection": false,
+  "is_prebuilt": false,
+  "name": "chromedriver-bin",
+  "needs": {},
+  "outputs": {
+   "chromedriver": {
+    "type": "binary",
+    "value": {
+     "allow_missing_interpreter": false,
+     "glob": "usr/bin/chromedriver"
+    }
+   },
+   "licenses": {
+    "type": "data",
+    "value": {
+     "allow_executable": false,
+     "glob": "usr/share/licenses/chromedriver/**"
+    }
+   }
+  },
+  "runtime_deps": [
+   {
+    "name": "glibc",
+    "type": "package"
+   },
+   {
+    "outputs": [
+     "libgcc"
+    ],
+    "package": "gcc",
+    "type": "subset_of"
+   },
+   {
+    "name": "nss",
+    "type": "package"
+   },
+   {
+    "name": "nspr",
+    "type": "package"
+   },
+   {
+    "name": "glib",
+    "type": "package"
+   },
+   {
+    "name": "libxcb",
+    "type": "package"
+   }
+  ],
+  "spec_hash": "98bb4997e2c64ad25e8d6bc1f2aa22793db707d152cb05ae4a15834555d5012d",
+  "target": "arm64/linux"
+ }
+]
