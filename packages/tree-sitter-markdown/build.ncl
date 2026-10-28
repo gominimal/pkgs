@@ -5,14 +5,14 @@ let glibc = import "../glibc/build.ncl" in
 
 # Ships two grammars from one repo: block-level (markdown.so) and
 # inline-level (markdown_inline.so). Neovim needs both.
-let version = "0.5.3" in
+let version = "0.5.4" in
 {
   name = "tree-sitter-markdown",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/tree-sitter-grammars/tree-sitter-markdown/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "df845b1ab7c7c163ec57d7fa17170c92b04be199bddab02523636efec5224ab6",
+      sha256 = "481ce2c1cce7b1130bc8455c186052bd0fa461f1ff488666994c6a3da7fca2ac",
       extract = true,
       strip_prefix = "tree-sitter-markdown-%{version}",
     } | Source,

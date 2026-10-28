@@ -8,7 +8,7 @@ let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 
-let version = "0.115.1" in
+let version = "0.116.1" in
 {
   name = "nushell",
   build_deps = [
@@ -23,7 +23,7 @@ let version = "0.115.1" in
     { file = "cve-2026-111943-webpki-lock.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/nushell/nushell/%{version}.tar.gz",
-      sha256 = "06df93281a0f858019d09ea6cf821b19a7cd9017cdfb9e898cfe8dd4bd8101c2",
+      sha256 = "0cca0c5bc9d9eb608dee00c75b6b511917df6e66c784b034468bab2ff0fbb9b4",
       extract = true,
       strip_prefix = "nushell-%{version}",
     } | Source,

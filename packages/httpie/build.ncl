@@ -3,6 +3,7 @@ let base = import "../base/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let uv = import "../uv/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 
 # HTTPie — the human-friendly HTTP client the agentbox image installs via dnf.
 #
@@ -51,6 +52,9 @@ let version = "3.2.4" in
 
   runtime_deps = [
     python,
+    # certifi.where() returns the system bundle when it exists (build.sh), so
+    # ship it rather than fall back to certifi's own.
+    ca-certificates,
   ],
 
   cmd = "./build.sh",
@@ -94,9 +98,10 @@ let version = "3.2.4" in
         ],
       } | Test,
 
-    # CVE-2026-111943 regression: the CA bundle requests verifies against must
-    # not trust emSign ECC Root CA - G3 (distrusted by Mozilla, bug 2083449).
-    # Checked by SHA-256 fingerprint, offline. FAILS with certifi <= 2026.07.22.
+    # CVE-2026-111943 regression: certifi's own bundle (requests' fallback when
+    # the system store is missing) must not trust emSign ECC Root CA - G3
+    # (distrusted by Mozilla, bug 2083449). Checked by SHA-256 fingerprint,
+    # offline. FAILS with certifi <= 2026.07.22.
     certifi_distrusts_emsign_ecc_g3 =
       {
         class = 'Standalone,
@@ -108,10 +113,10 @@ let version = "3.2.4" in
             m%"
               cat > poc.py <<'PYEOF'
               import hashlib, re, ssl, sys
-              import requests.certs
+              import certifi.core
 
               G3 = '86a1ecba089c4a8d3bbe2734c612ba341d813e043cf9e8a862cd5c57a36bbe6b'
-              pem = open(requests.certs.where()).read()
+              pem = open(certifi.core._minimal_certifi_where()).read()
               fps = {hashlib.sha256(ssl.PEM_cert_to_DER_cert(c)).hexdigest()
                      for c in re.findall(r'-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----',
                                          pem, re.S)}
@@ -125,6 +130,94 @@ let version = "3.2.4" in
               sys.exit(1 if failures else 0)
               PYEOF
               python3 poc.py
+            "%
+          ],
+        ],
+      } | Test,
+    # requests' default bundle is the system CA store (build.sh), so a CA
+    # removed from ca-certificates stops being trusted (CVE-2026-111943).
+    # FAILS on stock httpie, where where() is certifi's cacert.pem. Offline, a
+    # local HTTPS server with a leaf from a throwaway test CA (generated for
+    # this test only, in no store) must be rejected by default and accepted
+    # with REQUESTS_CA_BUNDLE or --verify naming that CA: the user override.
+    system_ca_default =
+      {
+        class = 'Standalone,
+        test_deps = [base, ca-certificates],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              test -s /etc/ssl/certs/ca-certificates.crt
+              python3 - <<'PYEOF'
+              import certifi, requests.certs, requests.utils
+              system = "/etc/ssl/certs/ca-certificates.crt"
+              for name, got in [("certifi.where()", certifi.where()),
+                                ("requests.certs.where()", requests.certs.where()),
+                                ("requests.utils.DEFAULT_CA_BUNDLE_PATH", requests.utils.DEFAULT_CA_BUNDLE_PATH)]:
+                  assert got == system, f"{name} = {got}, not the system bundle"
+              PYEOF
+              cd "$(mktemp -d)"
+              cat > ca.pem <<'PEM'
+              -----BEGIN CERTIFICATE-----
+              MIIBtDCCAVmgAwIBAgIUFhL1HE8QlzdX9rxLMqgjzZM06Q4wCgYIKoZIzj0EAwIw
+              JjEkMCIGA1UEAwwbbWluaW1hbCBzeXN0ZW0tY2EgdGVzdCByb290MCAXDTI2MTAy
+              NzIwNTMxOVoYDzIxMjYxMDAzMjA1MzE5WjAmMSQwIgYDVQQDDBttaW5pbWFsIHN5
+              c3RlbS1jYSB0ZXN0IHJvb3QwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATaAlwQ
+              KS9fPgBW5C+O7FH1/I6Zcqx9147goVmsjhQ5DYU75PkE42Yn88Upf0CjnhYDFNbc
+              geNBE7eA3WO4p32Eo2MwYTAdBgNVHQ4EFgQUcfhuKz7RSGYiEVkMro8j7QLdIBcw
+              HwYDVR0jBBgwFoAUcfhuKz7RSGYiEVkMro8j7QLdIBcwDwYDVR0TAQH/BAUwAwEB
+              /zAOBgNVHQ8BAf8EBAMCAQYwCgYIKoZIzj0EAwIDSQAwRgIhAKlPKRkQ+p8uMZEl
+              qVlK4XHDHRpJlYtilX6exV3Iy5wJAiEA80a+dVibtFHxU/nOxXYDeABFmB/o8j6f
+              jUouX6GGu+Y=
+              -----END CERTIFICATE-----
+              PEM
+              cat > leaf.pem <<'PEM'
+              -----BEGIN CERTIFICATE-----
+              MIIB0DCCAXegAwIBAgIUTKsxw15xmiIKgeXPoMw9gGDVMBAwCgYIKoZIzj0EAwIw
+              JjEkMCIGA1UEAwwbbWluaW1hbCBzeXN0ZW0tY2EgdGVzdCByb290MCAXDTI2MTAy
+              NzIwNTMxOVoYDzIxMjYxMDAzMjA1MzE5WjAUMRIwEAYDVQQDDAlsb2NhbGhvc3Qw
+              WTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASzn6+IiT2I2YKMGp/9kQx0iJ7s/8p/
+              QFngX3riZETdPo0NY3viGbRG3IWUVxK4L3AnHelOSqOh850EeAwJ2xYCo4GSMIGP
+              MBoGA1UdEQQTMBGCCWxvY2FsaG9zdIcEfwAAATAMBgNVHRMBAf8EAjAAMA4GA1Ud
+              DwEB/wQEAwIHgDATBgNVHSUEDDAKBggrBgEFBQcDATAdBgNVHQ4EFgQUsnsI/OSR
+              ienMi5hFb5GEQa3qXaYwHwYDVR0jBBgwFoAUcfhuKz7RSGYiEVkMro8j7QLdIBcw
+              CgYIKoZIzj0EAwIDRwAwRAIgLyftiw5mgD9+Si+BvKpTZQ+88O94b4/pHU+v8QSZ
+              aVgCIFjojsmqMEc18V1NptXaS8I1cAtLpfiqq1O8cu13ASoC
+              -----END CERTIFICATE-----
+              PEM
+              cat > leaf.key <<'PEM'
+              -----BEGIN PRIVATE KEY-----
+              MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg+h1vzS5mJhQDbYGJ
+              B7KaNlcSUN29ISnfKkZXpAXc5q6hRANCAASzn6+IiT2I2YKMGp/9kQx0iJ7s/8p/
+              QFngX3riZETdPo0NY3viGbRG3IWUVxK4L3AnHelOSqOh850EeAwJ2xYC
+              -----END PRIVATE KEY-----
+              PEM
+              cat > server.py <<'PYEOF'
+              import http.server, os, ssl
+              srv = http.server.HTTPServer(("127.0.0.1", 0), http.server.SimpleHTTPRequestHandler)
+              ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+              ctx.load_cert_chain("leaf.pem", "leaf.key")
+              srv.socket = ctx.wrap_socket(srv.socket, server_side=True)
+              with open("port.tmp", "w") as f:
+                  f.write(str(srv.server_address[1]))
+              os.rename("port.tmp", "port")
+              srv.serve_forever()
+              PYEOF
+              python3 server.py > /dev/null 2>&1 &
+              server=$!
+              trap 'kill "$server"' EXIT
+              for _ in $(seq 100); do [ -s port ] && break; sleep 0.1; done
+              url="https://localhost:$(cat port)/"
+              unset HTTPS_PROXY https_proxy HTTP_PROXY http_proxy ALL_PROXY all_proxy REQUESTS_CA_BUNDLE CURL_CA_BUNDLE
+              if http --ignore-stdin --check-status --timeout 10 GET "$url" > out 2>&1; then
+                echo "an unknown CA was trusted by default" >&2; exit 1
+              fi
+              grep -qi 'certificate verify failed' out || { cat out >&2; exit 1; }
+              REQUESTS_CA_BUNDLE="$PWD/ca.pem" http --ignore-stdin --check-status --timeout 10 GET "$url" > /dev/null
+              http --ignore-stdin --check-status --timeout 10 --verify="$PWD/ca.pem" GET "$url" > /dev/null
             "%
           ],
         ],

@@ -35,6 +35,10 @@ let version = "11076708" in
     {
       upstream_version = version,
       license_spdx = "LicenseRef-Android-SDK-Terms",
+      # Android SDK License Agreement §3.4: "you may not copy (except for
+      # backup purposes), modify, adapt, redistribute ... the SDK or any part
+      # of the SDK." (§3.5: bundled open-source parts keep their own licenses.)
+      redistributable = false,
       binary_from = "https://dl.google.com/android/repository/",
     } | Attrs,
 

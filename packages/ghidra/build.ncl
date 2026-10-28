@@ -9,7 +9,11 @@ let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "12.1.4" in
+let version = "12.2" in
+# Upstream's release asset name embeds its BUILD date, which is not derivable from
+# the version (12.1.4 was ..._PUBLIC_20260921.zip, 12.2 is ..._PUBLIC_20261016.zip).
+# It must move with every version bump; take it from the release's asset list.
+let build_date = "20261016" in
 {
   name = "ghidra",
   build_deps = [
@@ -21,7 +25,7 @@ let version = "12.1.4" in
     # artifacts with no source (AXMLPrinter2.jar from the dead Google Code
     # archive, per-platform Z3 zips, yajsw from SourceForge), a full
     # postgresql tarball and PyPI wheels — and only then does Maven Central
-    # resolution start. It also requires JDK 25 to BUILD; we ship 21.
+    # resolution start. It also requires JDK 25 to BUILD (and, since 12.2, to RUN).
     #
     # The release zip is the same tradeoff the `jdk` package already accepts,
     # and it ships NO bundled JRE (`jre/` and `bin/java` are both absent), so
@@ -39,22 +43,8 @@ let version = "12.1.4" in
     # SHA-256 is the one published in the release body, not one we computed:
     # https://github.com/NationalSecurityAgency/ghidra/releases/tag/Ghidra_%{version}_build
     {
-      url = "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_%{version}_build/ghidra_%{version}_PUBLIC_20260921.zip",
-      sha256 = "ddac49f903da9d5bac833e5cc79395098b9c33cfd3279be5f31bd00387d2d4db",
-    } | Source,
-    # The aarch64 7-Zip JNI native. Upstream's `-all-platforms` roll-up
-    # deliberately excludes ARM ("WARNING: Not a part of -AllPlatform or
-    # -AllLinux !!!"), but the per-platform artifact IS published at the exact
-    # version Ghidra vendors. Closes the only genuine arm64/amd64 capability
-    # gap in this package.
-    #
-    # Deliberately SECOND: pkgmgr's updater rewrites only the FIRST sha256, and
-    # this pin must NOT track the Ghidra version — upstream froze it in 2016.
-    # build.sh asserts the vendored version still matches and fails the build
-    # if a Ghidra bump ever revendors it.
-    {
-      url = "https://repo1.maven.org/maven2/net/sf/sevenzipjbinding/sevenzipjbinding-linux-arm64/16.02-2.01/sevenzipjbinding-linux-arm64-16.02-2.01.jar",
-      sha256 = "da89d64861ed45063dc9d655a0c745ca097bd341765d7f0bbedcca1c961d1771",
+      url = "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_%{version}_build/ghidra_%{version}_PUBLIC_%{build_date}.zip",
+      sha256 = "2c2cd776db3c1f6a097ba418922378ac3649cadd5e844a6f5f088ae628a7be67",
     } | Source,
     base,
     python, # `python3 -m zipfile` does the extraction
@@ -66,7 +56,7 @@ let version = "12.1.4" in
   ],
   runtime_deps = [
     bash, # every launcher is a POSIX shell script
-    jdk, # Ghidra 12.x requires JDK 21+; ours is 21.0.10
+    jdk, # Ghidra 12.2 requires JDK 25+ (application.java.min=25); `jdk` is Temurin 25
     # For the natives. These were previously invisible: while they sat inside
     # the `install` OutputData glob the missing-runtime_deps checker skipped
     # them outright (it ELF-parses Binary/Library outputs only), so a native
@@ -106,7 +96,7 @@ let version = "12.1.4" in
     fileformats_natives = { glob = "usr/share/ghidra/Ghidra/Features/FileFormats/os/linux_*/*" } | OutputBin,
 
     # `allow_executable` because the install tree legitimately contains the
-    # natives above plus a bundled JNI library (7-Zip's lib7-Zip-JBinding.so).
+    # natives above.
     # Same shape the jdk package uses for usr/lib/jvm/lib. The globs overlap
     # the three native outputs on purpose — each output is matched and checked
     # independently, so the natives get the strict treatment while the rest of
@@ -138,28 +128,17 @@ let version = "12.1.4" in
     # The C++ fixture is deliberately namespaced: `Foo::bar` in names.txt also
     # proves the GNU demangler natives ran, which nothing else here covers and
     # which shipped broken (mode 0644) for the life of this package.
-    # PROVE THE 7-ZIP PARITY FIX ACTUALLY WORKS, not merely that the .so is on
-    # disk with the right ELF arch — which is all the output-types checker and
-    # a `file` invocation can tell you.
-    #
-    # This is the one capability that was genuinely MISSING on arm64 (upstream
-    # excludes ARM from the -all-platforms roll-up by design), so "we injected
-    # a native" deserves more evidence than "a file exists". The failure it
-    # guards is silent twice over: SevenZipCustomInitializer catches Throwable
-    # and rewraps, initNativeLibraries() eats the result, and analyzeHeadless
-    # swallows the resulting IOException and exits 0 with an empty listing.
-    #
-    # Uses sevenzipjbinding's OWN documented entry point rather than Ghidra's
-    # wrapper, so it tests the jar + native pairing directly: if the platform
-    # list is not exactly one entry, getPlatformBestMatch() falls back to
-    # matching os.arch ("aarch64") against the artifact's "Linux-arm64" and can
-    # never succeed. That is precisely the mistake the build.sh comment warns
-    # about, and this catches it.
+    # 7z still opens, now in pure Java. Ghidra 12.2 removed sevenzipjbinding
+    # and its JNI natives (GP-7095); zip, 7z, bzip2 and xz go through Apache
+    # commons-compress instead, so the arm64 parity gap the old pinned
+    # aarch64 native closed no longer exists. This proves the shipped
+    # commons-compress really decompresses a 7z container on this host, and
+    # that no 7-Zip JNI library crept back into the tree.
     #
     # The fixture is a real 187-byte 7z archive, embedded base64 because the
     # sandbox ships GNU tar, which cannot WRITE 7z (bsdtar can; we do not
     # package it). Decoding it needs nothing but coreutils.
-    sevenzip_native =
+    sevenzip_java =
       {
         class = 'Standalone,
         test_deps = [base, jdk],
@@ -175,71 +154,42 @@ let version = "12.1.4" in
               head -c 6 /build/fixture.7z | grep -q '7z' ||
                 { echo "fixture is not a 7z archive" >&2; exit 1; }
 
-              cat > /build/SevenZipCheck.java <<'JAVA'
-              import java.io.RandomAccessFile;
-              import net.sf.sevenzipjbinding.*;
-              import net.sf.sevenzipjbinding.impl.RandomAccessFileInStream;
+              # No 7-Zip JNI anywhere: its return would be x86-only again.
+              if find /usr/share/ghidra \( -name 'sevenzipjbinding*.jar' -o -name 'lib7-Zip-JBinding.so' \) | grep -q .; then
+                echo "sevenzipjbinding is back in the tree; see build.sh" >&2; exit 1
+              fi
+              test "$(find /usr/share/ghidra -name 'commons-compress-*.jar' | wc -l)" -ge 1 ||
+                { echo "no commons-compress jar shipped" >&2; exit 1; }
 
-              public class SevenZipCheck {
+              cat > /build/SevenZCheck.java <<'JAVA'
+              import java.io.File;
+              import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
+              import org.apache.commons.compress.archivers.sevenz.SevenZFile;
+
+              public class SevenZCheck {
+                  @SuppressWarnings("deprecation")
                   public static void main(String[] args) throws Exception {
-                      SevenZip.initSevenZipFromPlatformJAR();
-                      System.out.println("PLATFORM=" + SevenZip.getUsedPlatform());
-                      try (RandomAccessFile f = new RandomAccessFile(args[0], "r");
-                           IInArchive a = SevenZip.openInArchive(null,
-                                   new RandomAccessFileInStream(f))) {
-                          for (int i = 0; i < a.getNumberOfItems(); i++) {
-                              System.out.println("ENTRY=" + a.getProperty(i, PropID.PATH));
+                      try (SevenZFile z = new SevenZFile(new File(args[0]))) {
+                          SevenZArchiveEntry e;
+                          while ((e = z.getNextEntry()) != null) {
+                              System.out.println("ENTRY=" + e.getName());
                           }
                       }
                   }
               }
               JAVA
 
-              CP=$(ls /usr/share/ghidra/Ghidra/Features/FileFormats/lib/sevenzipjbinding-*.jar | tr '\n' ':')
-              /usr/lib/jvm/bin/javac -cp "$CP" -d /build /build/SevenZipCheck.java
-              /usr/lib/jvm/bin/java -cp "$CP:/build" SevenZipCheck /build/fixture.7z \
+              # Every jar Ghidra ships, so commons-compress finds its own
+              # dependencies (commons-io, commons-lang3) as Ghidra's launcher would.
+              CP=$(find /usr/share/ghidra -path '*/lib/*.jar' | sort | tr '\n' ':')
+              /usr/lib/jvm/bin/javac -cp "$CP" -d /build /build/SevenZCheck.java
+              /usr/lib/jvm/bin/java -cp "$CP:/build" SevenZCheck /build/fixture.7z \
                   > /build/7z.out 2>&1 || { cat /build/7z.out >&2; exit 1; }
               cat /build/7z.out
             "%
           ],
-          # The native initialised at all — this is the UnsatisfiedLinkError /
-          # wrong-arch / missing-DT_NEEDED case.
-          ["/bin/bash", "-c", "grep -q '^PLATFORM=' /build/7z.out"],
-          # ...and resolved to the ARM platform specifically. If the swap ever
-          # regresses to shipping the all-platforms jar, the list stops being a
-          # single entry and this is what notices.
-          # ...and resolved to THIS HOST's platform. Deliberately derived from
-          # uname rather than hardcoded: the first version of this test
-          # asserted Linux-arm64 unconditionally and failed CI on amd64, where
-          # the correct answer is Linux-amd64 — the assertion encoded the
-          # architecture I happened to build on.
-          #
-          # Still catches the regression that matters. On arm64 the answer is
-          # Linux-arm64 ONLY because build.sh replaced the all-platforms jar
-          # with the per-platform one; if that swap regresses, the platform
-          # list stops being a single entry, getPlatformBestMatch() falls back
-          # to matching os.arch ("aarch64") against "Linux-arm64", and fails —
-          # so this reports Linux-amd64 or nothing on an arm64 host, and the
-          # test fails.
-          [
-            "/bin/bash",
-            "-c",
-            m%"
-              set -eu
-              case "$(uname -m)" in
-                aarch64 | arm64) want=Linux-arm64 ;;
-                x86_64) want=Linux-amd64 ;;
-                *) echo "unsupported arch $(uname -m)" >&2; exit 1 ;;
-              esac
-              grep -q "PLATFORM=$want" /build/7z.out || {
-                echo "expected PLATFORM=$want for $(uname -m); got:" >&2
-                cat /build/7z.out >&2
-                exit 1
-              }
-            "%
-          ],
-          # ...and genuinely decompressed the container: the inner filename can
-          # only appear if 7-Zip enumerated the archive.
+          # Genuinely decompressed the container: the inner filename can only
+          # appear if commons-compress enumerated the archive.
           ["/bin/bash", "-c", "grep -q 'ENTRY=SEVENZIP_PARITY_OK.txt' /build/7z.out"],
         ],
       } | Test,

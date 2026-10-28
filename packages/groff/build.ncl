@@ -12,14 +12,14 @@ let glibc = import "../glibc/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "1.24.1" in
+let version = "1.24.2" in
 {
   name = "groff",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/groff-%{version}.tar.gz",
-      sha256 = "74e2819795b6aff431aeac983d63a9c8968eeaba2a2eba7df8ba4c7b41e7cfd8"
+      sha256 = "f9c1efd5bebbe37fc6e1063db7473ce8df1e3e0be4ff0f43ce04fce57e9c5dd9"
     } | Source,
     base,
     toolchain,

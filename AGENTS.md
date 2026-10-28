@@ -340,6 +340,17 @@ source_provenance = {
 },
 ```
 
+If it came from a GitLab instance (`host` names the instance, e.g. `gitlab.com`; see `packages/psmisc`,
+`packages/tree`):
+
+```ncl
+source_provenance = {
+  category = 'Gitlab,
+  host = "gitlab.com",
+  owner = "<gitlab group or user>",
+  repo = "<gitlab project>",
+},
+```
 
 If its a gnu project:
 
@@ -351,6 +362,27 @@ source_provenance = {
 ```
 
 Omit it if its not one of these variants.
+
+**One exception: official upstream mirrors.** Some upstreams develop on a self-hosted forge but publish an
+official GitHub mirror themselves. GNOME, for example, develops on gitlab.gnome.org and mirrors to
+`github.com/GNOME`. Such a package may declare `'GithubRepo` pointing at the mirror when all of the following
+hold:
+
+- the mirror lives in a GitHub org or account that the upstream project itself controls (a mirror that the
+  upstream's docs merely link to, run by someone else, does not qualify);
+- the mirror carries the same release tags at the same commit SHAs as the canonical forge (spot-check the tag
+  you package);
+- the package needs it for advisory coverage. Today the scanner's GitHub path keeps a package's curated CPE
+  identity, but its GitLab path consults the curated identity only when the GitLab identity holds no
+  advisories at all, so a self-hosted GitLab provenance can drop NVD-CPE coverage.
+
+This covers `source_provenance` only. Where the build fetches its `Source` from is a separate choice: libxml2
+and libxslt fetch the mirror's tag archives, glib a staging copy of GNOME's release tarball.
+
+Say so in a comment beside the provenance block. The packages using this exception are `glib`, `libxml2` and
+`libxslt`; adding a fourth means adding it to this list in the same PR. The exception ends when
+minimal-supply-chain's GitLab path also consults the curated CPE identity (gominimal/pkgmgr-rs#1029): then
+move all three to `'Gitlab` with `host = "gitlab.gnome.org"`.
 
 
 ### Other fields
@@ -391,12 +423,12 @@ The planner also adds `needed_for_internet` packages to the top level of every b
 - **Not in the toolchain closure.** `python`, `perl` and `openssl` are build inputs of nearly every package. A `ca-certificates` edge on any one of them rehashes about 90% of the tree now, and again on every bundle update. `openssl` cannot take the edge at all, because `ca-certificates` build-depends on it. These three get the store only when something else in the environment brings it in. If you ship a Python or Perl program that talks TLS, add `ca-certificates` to that package.
 - **Do not use `needs.internet` to get the store.** It also gives network access to the package's own build and to the build of everything that has it in its closure.
 - **Do not embed a trust store.** A runtime reads `/etc/ssl/certs` through a build flag, a config default or a wrapper. It does not compile in its own roots or vendor a certifi-style bundle. Several upstreams default to a store of their own: node's bundled roots, bun, deno's webpki-roots, the JDK `cacerts` keystore, Chromium's root store, gcloud's vendored bundles, and Rust crates that pin `webpki-roots`. Switch them to the system store where upstream allows it. Where it does not, the package applies the denylist below, and its `build.ncl` says why it cannot use the system store.
-- **Denylists: two today, meant to be one.** Distrusted roots, intermediates and keys are listed as SHA-256 fingerprints in two files under `packages/ca-certificates/`, and an incident has to land in both until they converge (gominimal/pkgmgr-rs#1020):
-  - `distrust.txt` (`<cert|spki> <sha256>  <note>` lines, one block per incident citing its CVE and the Mozilla/NSS bugs). Read by the `ca-certificates` build gate (the build fails if any certificate it ships matches), by the Chromium policy checker (`.github/scripts/chromium_policy_distrust_check.py`, which requires every key in `packages/chromium-policies/ca-distrusted-certificates.json` to be an `spki` line here) and by `pkgmgr truststores`.
+- **Denylists: two today, meant to be one.** Distrusted roots, intermediates and keys are listed as SHA-256 fingerprints in two files under `packages/ca-certificates/`, and each distrust response has to land in both until they converge (gominimal/pkgmgr-rs#1020):
+  - `distrust.txt` (`<cert|spki> <sha256>  <note>` lines, one block per distrust response citing its CVE and the Mozilla/NSS bugs). Read by the `ca-certificates` build gate (the build fails if any certificate it ships matches), by the Chromium policy checker (`.github/scripts/chromium_policy_distrust_check.py`, which requires every key in `packages/chromium-policies/ca-distrusted-certificates.json` to be an `spki` line here) and by `pkgmgr truststores`.
   - `cve-2026-111943-blocked-sha256.txt`, exposed through `cve-2026-111943.ncl`. Read by the JDK patch (`packages/jdk/cve-2026-111943.sh`, used by jdk-21, jdk-25 and jdk-27), which needs all 48 certificate fingerprints, every malleable encoding of the compromised intermediates, because `blocked.certs` matches whole certificates, not keys.
 
-  Append a block for each incident and never delete one. Patched embedded stores read one of these files rather than keeping their own copy.
-- **When a CA is distrusted:** rebuild `ca-certificates` from a dated curl/Mozilla extract, append the incident's block to `distrust.txt` (and, while the JDK patch still reads its own file, give it the incident's full certificate fingerprints), then fix every embedded store listed above. A package that only reads `/etc/ssl/certs` needs no edit; it gets the new bundle through its closure.
+  Append a block for each distrust response and never delete one. Patched embedded stores read one of these files rather than keeping their own copy.
+- **When a CA is distrusted:** rebuild `ca-certificates` from a dated curl/Mozilla extract, append the response's block to `distrust.txt` (and, while the JDK patch still reads its own file, give it the response's full certificate fingerprints), then fix every embedded store listed above. A package that only reads `/etc/ssl/certs` needs no edit; it gets the new bundle through its closure.
 
 ## Creating packages workflow
 
@@ -454,6 +486,17 @@ Getting this wrong means future version bumps chase a dead repo and `source_prov
 - The toolchain is already there — there's no meaningful cost saving from shipping the prebuilt.
 
 Only fall back to a prebuilt binary if the required toolchain genuinely isn't packaged yet, and call that out explicitly in the package.
+
+**JVM tools are such a case for now.** `maven` and `gradle` are themselves upstream binary distributions, and nothing stages Maven Central dependencies for an offline build the way `cargo vendor`, goproxy and `pnpm fetch` do. Until both exist (#969), a tool that is JVM bytecode only may ship its upstream release jar if:
+
+- its sha256 matches the one upstream publishes;
+- `binary_from` records it;
+- it runs on the packaged `jdk` and does not download a JDK of its own;
+- the tool's own code is complete in that checksummed artifact: every jar it loads to run is bundled (or shaded in), so it starts and runs offline, and it never downloads or executes code of its own outside that sha256.
+
+Fetching on the user's behalf is the tool's job, not part of its own code: Maven and mvnd resolving a project's dependencies and plugins, jbang fetching a script's deps, or a search tool querying Maven Central for metadata. Declare that through `needs`, the same way `cargo`, `uv` and `curl` do. What the rule excludes is a launcher that bootstraps its own implementation from the network (a wrapper that downloads the real tool, a plugin manager that fetches the tool's own components on first run).
+
+This exception does not cover native code shipped alongside the jars (for example a GraalVM native image or bundled `.so` files); justify that separately. When #969 lands, these packages convert to source builds together.
 
 #### Example: C library (autotools)
 
@@ -711,6 +754,13 @@ done
 ```
 
 `pkgmgr import npm <name>` generates this layout (using a committed lockfile and `npm ci`); see `packages/vlt`.
+
+#### Ruby pattern
+
+`ruby`, `ruby-3.3` and `ruby-3.4` install the same paths (`usr/bin/ruby`, `usr/lib/ruby/**`, `libruby.so`, `usr/etc/gemrc`), so two of them in one closure blend into one broken interpreter. `.github/workflows/ruby-flavor-guard.yml` enforces two rules:
+
+- **Use `ruby`, not a versioned line**, in `build_deps` and `runtime_deps`. `ruby-3.3` and `ruby-3.4` are there for users to opt into, like `node` (Current); packages don't use them. An exception goes in `VERSIONED_ALLOWED` in `.github/scripts/ruby_flavor_guard.py`, with the reason.
+- **No closure may hold two Ruby lines**, runtime or build, and that includes stacks: a stack naming `ruby-3.4` next to `ruby-lsp` fails. A user's own loadout isn't in the catalog, so the guard can't see `ruby-3.4` + `ruby-lsp` chosen there.
 
 
 ### Reproducibility (required)

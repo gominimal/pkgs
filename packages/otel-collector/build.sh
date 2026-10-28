@@ -15,17 +15,33 @@ export GONOSUMDB=*
 # We declare that same tarball as a checksummed Source in build.ncl (repo
 # convention: every input pinned by sha256) and stage it here instead of
 # fetching at build time. Globbed so the version lives in ONE place (build.ncl).
-mkdir -p internal/obi-src
-tar -xof obi-*-source-generated.tar.gz -C internal/obi-src --strip-components=1
+MANIFEST=distributions/otelcol-contrib/manifest.yaml
 
-# Install the OpenTelemetry Collector Builder (ocb). This pin MUST track the
-# distribution version: a mismatched builder resolves otelcol/service at its own
-# version while the manifest pulls the rest at %{version}, which fails to build.
-# Keeping it byte-equal to the package version is also what lets pkgmgr's
-# build.sh version rewrite carry it forward on the next bump (the old
-# `v0.150.0` pin never matched the `0.150.1` package version, so it silently
-# stayed behind).
-go install -trimpath go.opentelemetry.io/collector/cmd/builder@v0.159.0
+# The staged OBI tarball must be the version the manifest asks for (the line
+# upstream's prepare-obi.sh reads). build.ncl pins it separately because it does
+# not follow the package version.
+OBI_WANT=$(awk '/- gomod: go\.opentelemetry\.io\/obi\/collector / {print $NF; exit}' "$MANIFEST")
+[ -n "$OBI_WANT" ] || { echo "ERROR: no go.opentelemetry.io/obi/collector line in $MANIFEST" >&2; exit 1; }
+[ -f "obi-${OBI_WANT}-source-generated.tar.gz" ] || {
+  echo "ERROR: manifest wants OBI ${OBI_WANT}; staged: $(ls obi-*-source-generated.tar.gz)." >&2
+  echo "       Move obi_version + its sha256 in build.ncl to ${OBI_WANT}." >&2
+  exit 1
+}
+mkdir -p internal/obi-src
+tar -xof "obi-${OBI_WANT}-source-generated.tar.gz" -C internal/obi-src --strip-components=1
+
+# Install the OpenTelemetry Collector Builder (ocb) at the CORE collector version
+# the manifest pins (its go.opentelemetry.io/collector/* v0.x modules), not the
+# package version: the releases repo can cut patch releases (0.163.2) on a core
+# that stays at 0.163.0, and cmd/builder is only tagged with core. A mismatched
+# builder resolves otelcol/service at its own version and fails to build, so
+# derive it and require exactly one v0 core version.
+BUILDER_VERSION=$(sed -n 's#^ *- gomod: go\.opentelemetry\.io/collector/[^ ]* \(v0\.[0-9][^ ]*\)$#\1#p' "$MANIFEST" | sort -u)
+[ "$(printf '%s\n' "$BUILDER_VERSION" | grep -c .)" = 1 ] || {
+  echo "ERROR: expected one v0 core collector version in $MANIFEST, got: $BUILDER_VERSION" >&2
+  exit 1
+}
+go install -trimpath "go.opentelemetry.io/collector/cmd/builder@${BUILDER_VERSION}"
 OCB=$(go env GOPATH)/bin/builder
 
 # Run ocb FROM the distribution directory. The manifest's `output_path: ./_build`

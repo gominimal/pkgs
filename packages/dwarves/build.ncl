@@ -11,7 +11,7 @@ let glibc = import "../glibc/build.ncl" in
 let libbpf = import "../libbpf/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "1.31" in
+let version = "1.32" in
 {
   name = "dwarves",
 
@@ -19,7 +19,7 @@ let version = "1.31" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/acmel/dwarves/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "2b6511691bda2b3ae328987092902d30fd073ef7c8754894f4a69271a66686f2",
+      sha256 = "34314c33a3c86524f2bc0c60b72b94bc4fac4a880648349813282afe6006002b",
       extract = true,
       strip_prefix = "dwarves-%{version}",
     } | Source,

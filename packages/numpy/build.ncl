@@ -7,14 +7,14 @@ let meson-python = import "../meson-python/build.ncl" in
 let python = import "../python/build.ncl" in
 let openblas = import "../openblas/build.ncl" in
 
-let version = "2.5.3" in
+let version = "2.5.4" in
 {
   name = "numpy",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://files.pythonhosted.org/packages/source/n/numpy/numpy-%{version}.tar.gz",
-      sha256 = "df2d5874ff183595a4ba404edd04f6bd9b5505c1d7708573f6a6c17489a67563",
+      sha256 = "9a94cf751c9ad8ebaa835bcd3d40dacf8534ad086b88c38029b65123c7999d2a",
       extract = true,
       strip_prefix = "numpy-%{version}",
     } | Source,

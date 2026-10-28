@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof diffoscope-329.tar.gz
-cd diffoscope-329
+tar -xof diffoscope-332.tar.gz
+cd diffoscope-332
 
 pip3 install --root $OUTPUT_DIR .
 

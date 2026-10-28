@@ -74,6 +74,12 @@ in
     {
       upstream_version = version,
       license_spdx = "LicenseRef-EdgeDelta-Proprietary",
+      # Edge Delta Terms of Service §2.3 (Agent Software): a "non-exclusive,
+      # non-transferable, non-assignable license", and the customer will not
+      # "distribute, sublicense, transfer, ... make publicly available,
+      # publish" it. Object code only; deriving source is prohibited (§2.3(e)).
+      redistributable = false,
+      closed_source = true,
       binary_from = "https://release.edgedelta.com/",
     } | Attrs,
 } | BuildSpec
