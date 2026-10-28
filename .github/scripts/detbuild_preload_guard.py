@@ -8,13 +8,15 @@ predictable: a TLS handshake made under it uses guessable ephemeral keys. So a
 preload must stay on the one command that needs it (AGENTS.md, "Preloading
 detbuild"):
 
-1. In a package's shell scripts, every non-comment line that mentions
+1. In a package's text files other than .ncl (shell scripts of any
+   extension, extensionless helpers, Python), every non-comment line that mentions
    libdetbuild must be a command prefix, `LD_PRELOAD=<path> <command>` (or
    `env LD_PRELOAD=<path> <command>`). `export LD_PRELOAD=...`, `declare -x`
    and a bare `LD_PRELOAD=...` assignment are rejected: they reach every later
    command, including the ones that fetch.
-2. No .ncl file outside packages/detbuild may name libdetbuild. An `env` or
-   `vars` entry would preload it into the whole build.
+2. No .ncl file outside packages/detbuild may name libdetbuild, under
+   packages/ or stacks/. An `env` or `vars` entry would preload it into the
+   whole build, and a stack would preload it into a user's session.
 3. If the package declares `needs.internet`, the preloaded command must be
    `cargo ... --frozen` or `cargo ... --offline`. Fetch first without the
    preload. No other command can be shown offline from its text, so any other
@@ -41,14 +43,39 @@ INTERNET = re.compile(r"\binternet\s*=\s*\{")
 CARGO_OFFLINE = re.compile(r"^cargo\s.*(?:--frozen|--offline)\b")
 
 
+def is_text(path):
+    """A file the guard reads: no NUL byte in its first 8 KiB."""
+    try:
+        with open(path, "rb") as fh:
+            return b"\0" not in fh.read(8192)
+    except OSError:
+        return False
+
+
 def strip_comment(line):
     s = line.strip()
     return "" if s.startswith("#") else line
 
 
+def check_stacks(root):
+    """Rule 2 for stacks/: any text file there naming libdetbuild is an error."""
+    errors = []
+    stacks = root / "stacks"
+    if not stacks.is_dir():
+        return errors
+    for f in sorted(stacks.rglob("*")):
+        if not f.is_file() or not is_text(f):
+            continue
+        rel = f.relative_to(root)
+        for n, raw in enumerate(f.read_text(errors="replace").splitlines(), 1):
+            if LIB in strip_comment(raw):
+                errors.append(f"{rel}:{n}: libdetbuild named in a stack; it may only be preloaded on one build command")
+    return errors
+
+
 def check(root):
     pkgs = root / "packages"
-    errors = []
+    errors = check_stacks(root)
     uses = 0
     for pkg in sorted(p for p in pkgs.iterdir() if p.is_dir()):
         if pkg.name == "detbuild":
@@ -56,7 +83,7 @@ def check(root):
         ncl = pkg / "build.ncl"
         networked = ncl.is_file() and bool(INTERNET.search(ncl.read_text(errors="replace")))
         for f in sorted(pkg.rglob("*")):
-            if not f.is_file() or f.suffix not in (".sh", ".ncl"):
+            if not f.is_file() or not is_text(f):
                 continue
             rel = f.relative_to(root)
             for n, raw in enumerate(f.read_text(errors="replace").splitlines(), 1):
