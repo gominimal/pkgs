@@ -22,6 +22,14 @@ if grep -A1 -E '^name = "(rustls-webpki|webpki-roots|webpki-root-certs)"$' Cargo
   exit 1
 fi
 
+# OpenSSL 4: openssl-sys 0.9.117 (see build.ncl). Fail closed if the bump
+# did not land.
+patch -Np1 -i ./openssl-4-openssl-sys-lock.patch
+grep -A1 '^name = "openssl-sys"$' Cargo.lock | grep -q '^version = "0.9.117"$' || {
+  echo "ERROR: openssl-sys 0.9.117 is not in Cargo.lock (OpenSSL 4)" >&2
+  exit 1
+}
+
 cargo build --locked --release
 
 mkdir -p $OUTPUT_DIR/usr/bin
