@@ -16,6 +16,14 @@ export RUSTFLAGS="-C linker=gcc -C codegen-units=1 -C symbol-mangling-version=v0
 # Needed for crates that use bindgen / libclang
 export LIBCLANG_PATH="$(dirname $(find /usr/lib -name 'libclang*.so' | head -1))"
 
+# OpenSSL 4: openssl-sys 0.9.117 and openssl 0.10.81 (see build.ncl), applied before
+# the workspace sync below so its registry-pin baseline already carries them.
+( cd .. && patch -Np1 -i ./openssl-4-openssl-sys-lock.patch )
+grep -A1 '^name = "openssl-sys"$' Cargo.lock | grep -q '^version = "0.9.117"$' || {
+  echo "ERROR: openssl-sys 0.9.117 is not in Cargo.lock (OpenSSL 4)" >&2
+  exit 1
+}
+
 # Upstream's release tags set the workspace version in Cargo.toml but leave the
 # workspace members at 0.0.0 in the committed Cargo.lock, so `--locked` refuses it
 # (rust-v0.164.0: 166 members). Let cargo sync ONLY the workspace members, then
