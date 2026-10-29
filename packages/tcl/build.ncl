@@ -5,14 +5,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "8.6.18" in
+let version = "9.1.0" in
 {
   name = "tcl",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/tcl%{version}-src.tar.gz",
-      sha256 = "14f9af32b1767ff718477a8f974ad03c34341097e6b43f4ce54644ee974e268e"
+      sha256 = "536c45543f64d6eb11832d97ba3494aacff046fbc5040273bd55258d0e448ff1"
     } | Source,
     base,
     make,
