@@ -1,5 +1,7 @@
 #!/bin/sh
 set -ex
+# The system_ca_store_default standalone test (build.ncl) runs only when bun
+# rebuilds: tests are not part of the spec hash (gominimal/pkgs#1149).
 
 # Extract and set up bootstrap bun binary
 case $(uname -m) in
