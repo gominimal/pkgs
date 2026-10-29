@@ -13,7 +13,8 @@ let version = "3.54.1" in
     { file = "build.sh" } | Local,
     {
       # ⚠ Nothing below derives from `version` above: the mirrored archive name
-      # carries the zero-padded release number (3.53.3 -> 3540100) and the
+      # carries the zero-padded release number (major, then two digits per
+      # component, then 00: 3.x.y -> 3xxyy00) and the
       # sha256 is its own copy. A bump must change all three together — this
       # line was left on 3500400 while version+sha256 moved to 3.53.3, so every
       # build failed HashMismatch until the 3.53.3 archive was mirrored.
