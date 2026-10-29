@@ -129,7 +129,31 @@ git -c user.email=build@local -c user.name=build commit -q -m "v${MINIMAL_ARG_VE
 
 # Build via bun's own build orchestration (handles bun install, codegen, cmake
 # deps, zig, linking, and strip). Outputs the stripped binary at build/release/bun.
-bun run build:release
+#
+# Bounded (gominimal/pkgs#1160): the arm64 build intermittently hangs with no
+# output, and an unbounded hang holds build-bot until someone cancels it. A cold
+# build takes 3-9 min on either arch, so 60 min is only ever a hang. Five
+# minutes before the limit the watchdog prints every live process, so a hang
+# names the step it stuck in (zig codegen, codegen scripts, cmake deps, bun
+# install) instead of ending as a bare timeout. timeout signals its whole
+# process group, so zig and the cmake children die with bun.
+(
+  sleep 3300
+  echo "bun build:release still running after 55 min; live processes:" >&2
+  for d in /proc/[0-9]*; do
+    [ -r "$d/cmdline" ] || continue
+    printf '  %s %s\n' "${d#/proc/}" "$(tr '\0' ' ' < "$d/cmdline" 2>/dev/null | cut -c1-300)" >&2
+  done
+) &
+BUN_WATCHDOG=$!
+rc=0
+timeout --kill-after=60 3600 bun run build:release || rc=$?
+kill "$BUN_WATCHDOG" 2>/dev/null || true
+if [ "$rc" -eq 124 ] || [ "$rc" -eq 137 ]; then
+  echo "ERROR: bun build:release hung for 60 min on $(uname -m) and was killed (gominimal/pkgs#1160)." >&2
+  exit 1
+fi
+[ "$rc" -eq 0 ] || exit "$rc"
 
 # CVE-2026-111943: the binary we ship must not bundle the removed roots.
 build/release/bun ./minimal-check-emsign-roots.js
