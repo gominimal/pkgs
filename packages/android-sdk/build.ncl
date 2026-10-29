@@ -3,14 +3,14 @@ let base = import "../base/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 let python = import "../python/build.ncl" in
 
-let version = "11076708" in
+let version = "16111833" in
 {
   name = "android-sdk",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://dl.google.com/android/repository/commandlinetools-linux-%{version}_latest.zip",
-      sha256 = "2d2d50857e4eb553af5a6dc3ad507a17adf43d115264b1afc116f95c92e5e258",
+      sha256 = "0877a1d048fe4a24efe2eff536ca4223f7adeb58648bb81909d33c446918cfa8",
     } | Source,
     base,
     jdk,
