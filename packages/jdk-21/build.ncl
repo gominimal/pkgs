@@ -48,16 +48,16 @@ let libxcomposite = import "../libxcomposite/build.ncl" in
 let libxt = import "../libxt/build.ncl" in
 let xorgproto = import "../xorgproto/build.ncl" in
 
-let version = "21.0.12.1" in
-let build_num = "1" in
+let version = "21.0.13" in
+let build_num = "9" in
 {
   name = "jdk-21",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://github.com/openjdk/jdk21u/archive/refs/tags/jdk-21.0.12.1-ga.tar.gz
+      # https://github.com/openjdk/jdk21u/archive/refs/tags/jdk-21.0.13-ga.tar.gz
       url = "gs://minimal-staging-archives/jdk-%{version}-ga.tar.gz",
-      sha256 = "0528337cceb2e51bd1eab544847f863eefa3fac31d99ac199e0fd005b39d668f",
+      sha256 = "a10eb756f12542b530db90e15aff44c72cd572ba02c47496affb5e3510814935",
       extract = false, # build.sh untars with --no-same-owner
     } | Source,
     openjdk-21,

@@ -7,13 +7,17 @@ let toolchain = import "../toolchain/build.ncl" in
 
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+
+let version = "0.19.2" in
 {
   name = "patchelf",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/NixOS/patchelf/archive/b49de1b3384e7928bf0df9a889fe5a4e7b3fbddf.tar.gz",
-      sha256 = "8ed5382f1ac423328b1d50b2c89d96dbab156de0285d003ff51940975db66572"
+      url = "https://github.com/NixOS/patchelf/archive/refs/tags/%{version}.tar.gz",
+      sha256 = "05e674fcc89ef3ffbd851266d063f45f13bd16facec9839a54d0095b930c6f07",
+      extract = true,
+      strip_prefix = "patchelf-%{version}",
     } | Source,
     base,
     cmake,
@@ -33,11 +37,7 @@ let glibc = import "../glibc/build.ncl" in
   },
   attrs =
     {
-      # patchelf pins a master snapshot ahead of the 0.18.0 tag, but had no
-      # upstream_version, so `pkgmgr check` couldn't compare against the
-      # GithubRepo provenance (update-dark). Stamp the release it's based on;
-      # check flags it once NixOS cuts the next release.
-      upstream_version = "0.19.1",
+      upstream_version = version,
       license_spdx = "GPL-3.0-or-later",
       source_provenance = {
         category = 'GithubRepo,

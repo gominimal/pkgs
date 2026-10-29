@@ -47,16 +47,16 @@ let libxcomposite = import "../libxcomposite/build.ncl" in
 let libxt = import "../libxt/build.ncl" in
 let xorgproto = import "../xorgproto/build.ncl" in
 
-let version = "25.0.4.1" in
-let build_num = "1" in
+let version = "25.0.5" in
+let build_num = "8" in
 {
   name = "jdk-25",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://github.com/openjdk/jdk25u/archive/refs/tags/jdk-25.0.4.1-ga.tar.gz
+      # https://github.com/openjdk/jdk25u/archive/refs/tags/jdk-25.0.5-ga.tar.gz
       url = "gs://minimal-staging-archives/jdk-%{version}-ga.tar.gz",
-      sha256 = "6552330e53548fdde364f23017d7de5356def59b37d1bc058a195822dbd9b75b",
+      sha256 = "9a850ceee8c2fb2a5cda99fde4bb74a1bc12fbbabbd995273a2febd9206070c4",
       extract = false, # build.sh untars with --no-same-owner
     } | Source,
     openjdk-25,

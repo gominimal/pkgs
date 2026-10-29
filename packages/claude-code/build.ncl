@@ -68,6 +68,8 @@ in
     {
       upstream_version = version,
       license_spdx = "LicenseRef-Anthropic-Proprietary",
+      # LICENSE.md: "© Anthropic PBC. All rights reserved. Use is subject to
+      # Anthropic's Commercial Terms of Service." No redistribution grant.
       redistributable = false,
       binary_from = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases",
       closed_source = true,
