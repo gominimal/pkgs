@@ -6,19 +6,19 @@ let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "3.54.0" in
+let version = "3.54.1" in
 {
   name = "sqlite",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       # ⚠ Nothing below derives from `version` above: the mirrored archive name
-      # carries the zero-padded release number (3.53.3 -> 3540000) and the
+      # carries the zero-padded release number (3.53.3 -> 3540100) and the
       # sha256 is its own copy. A bump must change all three together — this
       # line was left on 3500400 while version+sha256 moved to 3.53.3, so every
       # build failed HashMismatch until the 3.53.3 archive was mirrored.
-      url = "gs://minimal-staging-archives/sqlite-autoconf-3540000.tar.gz",
-      sha256 = "134ec0802dda5795816e25d25872d20b312cb3973438c49b30bc40b7705ea9ed"
+      url = "gs://minimal-staging-archives/sqlite-autoconf-3540100.tar.gz",
+      sha256 = "926ef8d3eab93fbf6e06011901273eec076b25594a4e1cdadd50c987f4f6d64e"
     } | Source,
     base-bootstrap,
     make,
