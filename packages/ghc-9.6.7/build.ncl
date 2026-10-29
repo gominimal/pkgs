@@ -1,106 +1,52 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
-# ghc-9.6.7: one rung of the GHC ladder (7.6.3 -> 7.8.4 -> 7.10.3 -> 8.2.2 -> 8.6.5 -> 8.10.7 -> 9.2.8 -> 9.6.7 -> ghc).
-# Builds GHC 9.6.7 with Hadrian from the pinned source tarball with ../ghc-9.2.8 as the boot compiler
-# and installs the whole compiler at /usr/lib/ghc-9.6.7 for the ghc recipe; nothing lands on /usr/bin.
-# Hadrian itself is built by the boot compiler from the offline bootstrap sources tarball (no
-# cabal-install, no network).
-# Sources from https://downloads.haskell.org/~ghc/9.6.7/ mirrored to gs://minimal-staging-archives/.
-# No `needs`: nothing here touches the network. Both arches: x86_64 builds with the bedrock gcc against the
-# glibc-bedrock-2.42 sysroot, aarch64 with the hex0-rooted toolchain (the `is_arm` matches below).
-let ghc-boot = import "../ghc-9.2.8/build.ncl" in # the previous rung
-let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh
-# production binutils: the sealed binutils-2.46-glibc shares sonames (libsframe.so.3) with it in
-# /usr/lib, and a mixed pair crashes as
-let binutils = import "../binutils/build.ncl" in
-let glibc-bedrock-sysroot = import "../glibc-bedrock-2.42-sysroot/build.ncl" in # sysroot only (see that package)
-let toolchain = import "../toolchain/build.ncl" in # aarch64: gcc, binutils and glibc, built from the hex0 seed
-let llvm = import "../llvm/build.ncl" in
-let gmp = import "../gmp/build.ncl" in # integer-gmp
-let ncurses = import "../ncurses/build.ncl" in # terminfo
-let bash = import "../bash/build.ncl" in
-let make = import "../make/build.ncl" in
-let perl = import "../perl/build.ncl" in
-let python = import "../python/build.ncl" in # hadrian/bootstrap/bootstrap.py
-let sed = import "../sed/build.ncl" in
-let grep = import "../grep/build.ncl" in
-let gawk = import "../gawk/build.ncl" in
-let coreutils = import "../coreutils/build.ncl" in
-let findutils = import "../findutils/build.ncl" in
-let diffutils = import "../diffutils/build.ncl" in
-let tar = import "../tar/build.ncl" in
-let xz = import "../xz/build.ncl" in
-let gzip = import "../gzip/build.ncl" in
-let patch = import "../patch/build.ncl" in # the build system patches the bundled libffi
-let autoconf = import "../autoconf/build.ncl" in # binary-dist-dir regenerates the bindist configure
-let automake = import "../automake/build.ncl" in
-let m4 = import "../m4/build.ncl" in
-# pkgmgr: bootstrap_rung = "ghc"
-let version = "9.6.7" in
+let glibc-bedrock-2-42-sysroot = import "../glibc-bedrock-2.42-sysroot/build.ncl" in # the sysroot only (see that package)
+let glibc = import "../glibc/build.ncl" in
+let gmp = import "../gmp/build.ncl" in
+let ncurses = import "../ncurses/build.ncl" in
+# ghc-9.6.7: the boot compiler for `ghc`, from gen-7 of gominimal/bootstrap: the top of the
+# source-only GHC ladder, microhs-0.16 (C, gcc) -> ghc-4.08.2 -> 5.04.3 -> 6.6.1 -> 6.10.4 -> 7.0.4
+# -> 7.6.3 -> 7.8.4 -> 7.10.3 -> 8.2.2 -> 8.6.5 -> 8.10.7 -> 9.2.8 -> 9.6.7, every rung built on the
+# hex0-rooted toolchain and this one reproduced byte for byte on two independent machines before
+# publishing (generations/gen-7/manifest.json). Installs the whole compiler at /usr/lib/ghc-9.6.7;
+# nothing lands on /usr/bin. Its `settings` name the shipped C compiler wrapper
+# /usr/lib/ghc-9.6.7/bin/ghc-cc, which runs the gcc on PATH (amd64: against the bedrock sysroot).
 let is_arm = target.arch == 'Arm64 in
-# x86_64 compiles with the bedrock gcc against its glibc sysroot; aarch64 with the toolchain, itself hex0-rooted
-# aarch64: llvm for ld.lld, which the ghc-9.2.8 boot's settings link with (-fuse-ld=lld)
-let cc_build = if is_arm then [toolchain, llvm] else [gcc-bedrock, binutils, glibc-bedrock-sysroot] in
-let spec =
-  {
-    name = "ghc-9.6.7",
-    build_deps =
-      [
-        { file = "build.sh" } | Local,
+let version = "9.6.7" in
+{
+  name = "ghc-9.6.7",
+  prebuilt = true,
+  build_deps = [
+    match {
+      { arch = 'Amd64, .. } =>
         {
-          url = "gs://minimal-staging-archives/ghc-%{version}-src.tar.xz",
-          sha256 = "d053bf6ce1d588a75cfe8c9316269486e9d8fb89dcdf6fd92836fa2e3df61305",
-          extract = false, # build.sh untars with --no-same-owner
+          url = "gs://minimal-bootstrap/gen-7/sha256/9622e9d3fb4526634851289545590cee0326f52a2f66b0b08733d971b6dbd27e/ghc-9.6.7-9.6.7-x86_64.tar.zst",
+          sha256 = "9622e9d3fb4526634851289545590cee0326f52a2f66b0b08733d971b6dbd27e",
+          extract = true,
         } | Source,
+      { arch = 'Arm64, .. } =>
         {
-          # Hackage sources of Hadrian's dependencies plus their build plan, as published for the
-          # 9.2.5 boot; build.sh rewrites the plan's bundled-package versions to the 9.2.8 boot's.
-          url = "gs://minimal-staging-archives/hadrian-bootstrap-sources-9.2.5.tar.gz",
-          sha256 = "a081cd21d2917855e5447ef2433a3b7a4d87ddc8229f6e98fde9f51a693bff5e",
-          extract = false,
+          url = "gs://minimal-bootstrap/gen-7/sha256/ebfdc8c7df002a8160cd7f7f6c0e6739497403ccba6411bba9f1a4b2e495e159/ghc-9.6.7-9.6.7-aarch64.tar.zst",
+          sha256 = "ebfdc8c7df002a8160cd7f7f6c0e6739497403ccba6411bba9f1a4b2e495e159",
+          extract = true,
         } | Source,
-        ghc-boot,
-        gmp,
-        ncurses,
-        bash,
-        make,
-        perl,
-        python,
-        sed,
-        grep,
-        gawk,
-        coreutils,
-        findutils,
-        diffutils,
-        tar,
-        xz,
-        gzip,
-        patch,
-        autoconf,
-        automake,
-        m4,
-      ]
-      @ cc_build
-      @ (if is_arm then [] else [{ file = "amd64-env.sh" } | Local]),
-    # x86_64 runs build.sh with the sysroot's iconv modules; aarch64 runs it directly
-    cmd = if is_arm then "./build.sh" else "./amd64-env.sh",
-    outputs = {
-      # The ghc recipe consumes the tree by absolute path: compiler, ghc-pkg, package db, libraries
-      # and the C compiler wrapper `settings` names.
-      ghc = { glob = "usr/lib/ghc-9.6.7/**", allow_executable = true } | OutputData,
-      buildinfo = { glob = "usr/share/ghc-9.6.7/BUILDINFO" } | OutputData,
-    },
-    attrs =
-      {
-        upstream_version = version,
-        license_spdx = "BSD-3-Clause",
-        build_cost_multiple = 4,
-        source_provenance = {
-          category = 'Website,
-          homepage = "https://www.haskell.org/ghc/",
-          downloads_page = "https://downloads.haskell.org/~ghc/9.6.7/",
-        },
-      } | Attrs,
-  } | BuildSpec
-in
-spec
+    } target,
+  ],
+  # the compiler links libgmp and libncursesw from /usr/lib (libffi is bundled); amd64 binaries
+  # run on the bedrock sysroot's loader and libc, arm64's on the toolchain glibc
+  runtime_deps = (if is_arm then [glibc] else [glibc-bedrock-2-42-sysroot]) @ [gmp, ncurses],
+  outputs = {
+    ghc = { glob = "usr/lib/ghc-9.6.7/**", allow_executable = true } | OutputData,
+    buildinfo = { glob = "usr/share/ghc-9.6.7/BUILDINFO" } | OutputData,
+  },
+  attrs =
+    {
+      upstream_version = version,
+      license_spdx = "BSD-3-Clause",
+      source_provenance = {
+        category = 'Website,
+        homepage = "https://www.haskell.org/ghc/",
+        downloads_page = "https://downloads.haskell.org/~ghc/9.6.7/",
+      },
+    } | Attrs,
+} | BuildSpec

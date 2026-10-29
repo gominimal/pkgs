@@ -62,17 +62,17 @@ chmod +x "$STUB_DIR/sphinx-build"
 # Ensure stubs and build-produced tools are in PATH
 export PATH="$STUB_DIR:$PWD/_build/bin:$PATH"
 
-# Boot compiler: the ghc-9.6.7 ladder rung, always. No fallback to a ghc on PATH: that would silently build
+# Boot compiler: ghc-9.6.7 (the gen-7 prebuilt), always. No fallback to a ghc on PATH: that would silently build
 # from whatever host GHC happened to be there and break the source-only chain.
 if [ -x /usr/lib/ghc-9.6.7/bin/ghc ]; then
   BOOT=/usr/lib/ghc-9.6.7/bin/ghc; BOOT_PKG=/usr/lib/ghc-9.6.7/bin/ghc-pkg
 else
-  echo "ERROR: boot compiler /usr/lib/ghc-9.6.7/bin/ghc is missing (the ghc-9.6.7 rung is a build dep)" >&2
+  echo "ERROR: boot compiler /usr/lib/ghc-9.6.7/bin/ghc is missing (ghc-9.6.7 is a build dep)" >&2
   exit 1
 fi
 echo "boot compiler: ${BOOT} ($("${BOOT}" --numeric-version))"
 
-# Bootstrap Hadrian from the offline sources tarball (9.6.4's plan, for the 9.6.7 rung boot).
+# Bootstrap Hadrian from the offline sources tarball (9.6.4's plan, for the 9.6.7 boot).
 # Its plan-bootstrap.json pins the versions of the packages bundled
 # with the boot it was generated for and bootstrap.py checks them against the boot's ghc-pkg
 # exactly, so rewrite them to what this boot ships and repack before passing --bootstrap-sources.

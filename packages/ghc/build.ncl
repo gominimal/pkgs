@@ -18,7 +18,7 @@ let m4 = import "../m4/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let make = import "../make/build.ncl" in
 let llvm = import "../llvm/build.ncl" in
-let ghc-9-6-7 = import "../ghc-9.6.7/build.ncl" in # the boot: the top of the source-only ladder
+let ghc-9-6-7 = import "../ghc-9.6.7/build.ncl" in # the boot: the top of the source-only ladder, from gominimal/bootstrap gen-7
 let glibc-bedrock-sysroot = import "../glibc-bedrock-2.42-sysroot/build.ncl" in # the amd64 boot's binaries and C wrapper use its sysroot (only)
 let happy = import "../happy/build.ncl" in
 
@@ -49,8 +49,8 @@ let version = "9.10.3" in
       automake,
       m4,
     ]
-    # The boot compiler and the offline sources Hadrian is built from: the ghc-9.6.7 rung, top of the
-    # source-only ladder (microhs -> 4.08.2 -> ... -> 9.2.8 -> 9.6.7) on both arches.
+    # The boot compiler and the offline sources Hadrian is built from: ghc-9.6.7, the top of the
+    # source-only ladder (microhs -> 4.08.2 -> ... -> 9.2.8 -> 9.6.7) built in gominimal/bootstrap.
     @ (
       match {
         { arch = 'Amd64, .. } =>
