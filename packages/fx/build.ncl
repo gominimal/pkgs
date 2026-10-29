@@ -55,7 +55,7 @@ let version = "0.0.15" in
           # src/main.zig at build time) is the release we packaged. Offline —
           # help needs no gateway / API key. fx has no `version` subcommand; the
           # banner rides the help output.
-          ["/bin/bash", "-c", "fx --help 2>&1 | grep -q 'v0.0.7'"],
+          ["/bin/bash", "-c", "fx --help 2>&1 | grep -qF 'v%{version}'"],
         ],
       } | Test,
   },
