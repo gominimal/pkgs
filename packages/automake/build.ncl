@@ -7,13 +7,13 @@ let toolchain = import "../toolchain/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 let perl = import "../perl/build.ncl" in
 
-let version = "1.18.1" in
+let version = "1.19" in
 {
   name = "automake",
   build_deps = [
     {
       url = "gs://minimal-staging-archives/automake-%{version}.tar.xz",
-      sha256 = "168aa363278351b89af56684448f525a5bce5079d0b6842bd910fdd3f1646887"
+      sha256 = "e3e2c2e3abf37898138db5b6c1d1dc35c9160c5978be7947d2c741705251d445"
     } | Source,
     { file = "build.sh" } | Local,
     autoconf,
