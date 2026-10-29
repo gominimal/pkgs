@@ -17,7 +17,10 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
-let zig = import "../zig/build.ncl" in
+# herdr's vendored libghostty-vt requires exactly zig 0.16.0; `zig` is on 0.17
+# (gominimal/pkgs#1148), so build against the prefixed zig-0.16 line. Move back
+# to `zig` once herdr re-vendors the 0.17 ghostty.
+let zig-0-16 = import "../zig-0.16/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -35,7 +38,7 @@ let version = "0.9.5" in
     } | Source,
     base,
     rust,
-    zig,
+    zig-0-16,
     toolchain,
     make,
   ],
