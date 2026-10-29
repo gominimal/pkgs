@@ -17,7 +17,7 @@ let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let xz = import "../xz/build.ncl" in
 
-let version = "3.14.9" in
+let version = "3.14.10" in
 {
   name = "python",
   build_deps = [
@@ -32,13 +32,14 @@ let version = "3.14.9" in
     # CVE-2025-15367 (gh-143923): poplib built each command from caller-supplied
     # text and sent it unchecked, so a CR/LF inside an argument injected extra
     # POP3 commands. Fixed on main (b234a2b6, 3.15.0a6) only: the 3.14 branch has
-    # no commit touching poplib.py since 2025-03-02 and 3.14.9's Misc/NEWS has no
-    # entry for gh-143923. A straight cherry-pick (applies at fuzz 0 to 3.14.9);
-    # drop it on the first 3.14.x whose changelog lists gh-143923.
+    # no commit touching poplib.py since 2025-03-02, and neither 3.14.9's nor
+    # 3.14.10's Misc/NEWS has an entry for gh-143923 (3.14.10's `_putcmd` still
+    # sends the line unchecked). A straight cherry-pick (applies at fuzz 0 to
+    # 3.14.10); drop it on the first 3.14.x whose changelog lists gh-143923.
     { file = "0003-gh-143923-poplib-reject-control-characters.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/Python-%{version}.tar.xz",
-      sha256 = "e02d9ac21cebda6e46435369744a92c65cc7cd8669697694122cf97ffacd1e53"
+      sha256 = "de414a57119abef52784d8993e341d53aed635fc2b05c2607d9f98a2c5b72032"
     } | Source,
     base,
     make,
@@ -257,10 +258,6 @@ let version = "3.14.9" in
         ],
       } | Test,
 
-    # CVE-2025-15367 regression: FAILS on stock 3.14.9 (poplib sends a command
-    # containing CR/LF verbatim, so a username can smuggle in extra POP3
-    # commands) and passes only with the gh-143923 patch. Exercises `_putcmd`
-    # directly -- no network.
     # CVE-2026-111943 regression: FAILS on stock 3.14.8, whose ensurepip
     # installs pip 26.2.1 with a vendored certifi that still trusts emSign ECC
     # Root CA - G3; passes on 3.14.9, which bundles pip 26.2.2 (we swapped the
@@ -320,6 +317,10 @@ let version = "3.14.9" in
         ],
       } | Test,
 
+    # CVE-2025-15367 regression: FAILS on stock 3.14.10 (poplib sends a command
+    # containing CR/LF verbatim, so a username can smuggle in extra POP3
+    # commands) and passes only with the gh-143923 patch. Exercises `_putcmd`
+    # directly -- no network.
     poplib_rejects_control_characters =
       {
         class = 'Standalone,
