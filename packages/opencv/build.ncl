@@ -13,15 +13,15 @@ let openjpeg = import "../openjpeg/build.ncl" in
 # See:
 #  - https://docs.opencv.org/4.x/db/d05/tutorial_config_reference.html
 #  - https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html
-let version = "4.13.0" in
+let version = "5.0.0" in
 {
   name = "opencv",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://github.com/opencv/opencv/archive/refs/tags/4.13.0.tar.gz
+      # https://github.com/opencv/opencv/archive/refs/tags/5.0.0.tar.gz
       url = "gs://minimal-staging-archives/opencv-%{version}.tar.gz",
-      sha256 = "1d40ca017ea51c533cf9fd5cbde5b5fe7ae248291ddf2af99d4c17cf8e13017d",
+      sha256 = "b0528f5a1d379d59d4701cb28c36e22214cc51cf64594e5b56f2d3e6c0233095",
       extract = true,
     } | Source,
     base,
