@@ -10,7 +10,7 @@ let happy = import "../happy/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "2.14.0.0" in
+let version = "2.15.0.0" in
 
 {
   name = "haskell-language-server",
@@ -19,7 +19,7 @@ let version = "2.14.0.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/haskell/haskell-language-server/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "02fdd2ea8048cddce0872f78fcc4ba15558f751333c97d24b9abadac8ee27dcb",
+      sha256 = "ca5e7637ea62cf8d1223fcba63f64b77924e85ccfb5b716075d030e272f1fbbe",
       extract = true,
       strip_prefix = "haskell-language-server-%{version}",
     } | Source,
@@ -52,6 +52,7 @@ let version = "2.14.0.0" in
   attrs =
     {
       upstream_version = version,
+      license_spdx = "Apache-2.0",
       source_provenance = {
         category = 'GithubRepo,
         owner = "haskell",
