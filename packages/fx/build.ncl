@@ -46,7 +46,9 @@ let version = "0.0.15" in
     } | Attrs,
 
   tests = {
-    version =
+    # Not named `version`: Nickel records are recursive, so a field called
+    # `version` would shadow the version binding the command interpolates.
+    reports_version =
       {
         class = 'Standalone,
         test_deps = [base],
