@@ -52,10 +52,10 @@ let version = "0.0.15" in
         test_deps = [base],
         cmds = [
           # Proves the binary runs and the embedded app_version (read from
-          # src/main.zig at build time) is the release we packaged. Offline —
-          # help needs no gateway / API key. fx has no `version` subcommand; the
-          # banner rides the help output.
-          ["/bin/bash", "-c", "fx --help 2>&1 | grep -qF 'v%{version}'"],
+          # src/main.zig at build time) is the release we packaged. Offline:
+          # `--version` (added by 0.0.15) needs no gateway or API key. The bare
+          # version is matched, so a `v` prefix either way passes.
+          ["/bin/bash", "-c", "fx --version 2>&1 | grep -qF '%{version}'"],
         ],
       } | Test,
   },
