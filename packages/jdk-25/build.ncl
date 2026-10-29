@@ -7,13 +7,13 @@ let zlib = import "../zlib/build.ncl" in
 # not the `jdk` meta-package: the inputs of build.sh's CVE-2026-111943 step
 let jdk = import "../jdk/cve-2026-111943.ncl" in
 
-let version = "25.0.4.1" in
-let build_num = "1" in
+let version = "25.0.5" in
+let build_num = "8" in
 let dl_base = "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-%{version}+%{build_num}" in
 
 let { amd64_sha256, arm64_sha256 } = {
-  amd64_sha256 = "dbb698396d478e7fa2b1e50f4103324b2a99b90569ee27c33f2261f9215cf41e",
-  arm64_sha256 = "69df11a02cfa3ef7d7ca645e03edce6778ec090e100f6ae2b42097865730ac52",
+  amd64_sha256 = "68982529869257d0ee6b824ec5aa270ff8b118bb438670da0b97ebdab178d7fb",
+  arm64_sha256 = "bb5b2ded252f21c6090cf780b0a408ad0d83bbb557e702955643557f13231880",
 }
 in
 

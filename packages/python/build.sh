@@ -17,6 +17,11 @@ cd "Python-${MINIMAL_ARG_VERSION}"
 # 26.2.2) in 3.14.9. Each is listed in that release's own Misc/NEWS.
 patch -Np1 -F0 -i "../0003-gh-143923-poplib-reject-control-characters.patch"
 
+# OpenSSL 4 support for _ssl (python/cpython#149783, Modules/ only; see build.ncl).
+# Same -F0 rule: a context drift fails the build instead of landing elsewhere.
+patch -Np1 -F0 -i "../0004-gh-148292-openssl-4-support.patch"
+grep -q '_ssl_data_40.h' Modules/_ssl.c
+
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
   aarch64) MARCH="-march=armv8-a" ;;

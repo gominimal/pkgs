@@ -423,12 +423,12 @@ The planner also adds `needed_for_internet` packages to the top level of every b
 - **Not in the toolchain closure.** `python`, `perl` and `openssl` are build inputs of nearly every package. A `ca-certificates` edge on any one of them rehashes about 90% of the tree now, and again on every bundle update. `openssl` cannot take the edge at all, because `ca-certificates` build-depends on it. These three get the store only when something else in the environment brings it in. If you ship a Python or Perl program that talks TLS, add `ca-certificates` to that package.
 - **Do not use `needs.internet` to get the store.** It also gives network access to the package's own build and to the build of everything that has it in its closure.
 - **Do not embed a trust store.** A runtime reads `/etc/ssl/certs` through a build flag, a config default or a wrapper. It does not compile in its own roots or vendor a certifi-style bundle. Several upstreams default to a store of their own: node's bundled roots, bun, deno's webpki-roots, the JDK `cacerts` keystore, Chromium's root store, gcloud's vendored bundles, and Rust crates that pin `webpki-roots`. Switch them to the system store where upstream allows it. Where it does not, the package applies the denylist below, and its `build.ncl` says why it cannot use the system store.
-- **Denylists: two today, meant to be one.** Distrusted roots, intermediates and keys are listed as SHA-256 fingerprints in two files under `packages/ca-certificates/`, and an incident has to land in both until they converge (gominimal/pkgmgr-rs#1020):
-  - `distrust.txt` (`<cert|spki> <sha256>  <note>` lines, one block per incident citing its CVE and the Mozilla/NSS bugs). Read by the `ca-certificates` build gate (the build fails if any certificate it ships matches), by the Chromium policy checker (`.github/scripts/chromium_policy_distrust_check.py`, which requires every key in `packages/chromium-policies/ca-distrusted-certificates.json` to be an `spki` line here) and by `pkgmgr truststores`.
+- **Denylists: two today, meant to be one.** Distrusted roots, intermediates and keys are listed as SHA-256 fingerprints in two files under `packages/ca-certificates/`, and each distrust response has to land in both until they converge (gominimal/pkgmgr-rs#1020):
+  - `distrust.txt` (`<cert|spki> <sha256>  <note>` lines, one block per distrust response citing its CVE and the Mozilla/NSS bugs). Read by the `ca-certificates` build gate (the build fails if any certificate it ships matches), by the Chromium policy checker (`.github/scripts/chromium_policy_distrust_check.py`, which requires every key in `packages/chromium-policies/ca-distrusted-certificates.json` to be an `spki` line here) and by `pkgmgr truststores`.
   - `cve-2026-111943-blocked-sha256.txt`, exposed through `cve-2026-111943.ncl`. Read by the JDK patch (`packages/jdk/cve-2026-111943.sh`, used by jdk-21, jdk-25 and jdk-27), which needs all 48 certificate fingerprints, every malleable encoding of the compromised intermediates, because `blocked.certs` matches whole certificates, not keys.
 
-  Append a block for each incident and never delete one. Patched embedded stores read one of these files rather than keeping their own copy.
-- **When a CA is distrusted:** rebuild `ca-certificates` from a dated curl/Mozilla extract, append the incident's block to `distrust.txt` (and, while the JDK patch still reads its own file, give it the incident's full certificate fingerprints), then fix every embedded store listed above. A package that only reads `/etc/ssl/certs` needs no edit; it gets the new bundle through its closure.
+  Append a block for each distrust response and never delete one. Patched embedded stores read one of these files rather than keeping their own copy.
+- **When a CA is distrusted:** rebuild `ca-certificates` from a dated curl/Mozilla extract, append the response's block to `distrust.txt` (and, while the JDK patch still reads its own file, give it the response's full certificate fingerprints), then fix every embedded store listed above. A package that only reads `/etc/ssl/certs` needs no edit; it gets the new bundle through its closure.
 
 ## Creating packages workflow
 
@@ -762,6 +762,16 @@ done
 - **Use `ruby`, not a versioned line**, in `build_deps` and `runtime_deps`. `ruby-3.3` and `ruby-3.4` are there for users to opt into, like `node` (Current); packages don't use them. An exception goes in `VERSIONED_ALLOWED` in `.github/scripts/ruby_flavor_guard.py`, with the reason.
 - **No closure may hold two Ruby lines**, runtime or build, and that includes stacks: a stack naming `ruby-3.4` next to `ruby-lsp` fails. A user's own loadout isn't in the catalog, so the guard can't see `ruby-3.4` + `ruby-lsp` chosen there.
 
+
+#### OpenSSL pattern
+
+`openssl` is the 4.x line: `libssl.so.4` / `libcrypto.so.4` in `/usr/lib`, providers in `/usr/lib/ossl-modules`, no engines. `openssl-3.5` is a compat package on the 3.5 LTS line for code that cannot build or run against 4.x. Its runtime libraries are `/usr/lib/libssl.so.3` and `/usr/lib/libcrypto.so.3`, and everything else (headers, `.so` dev links, pkg-config, CMake files) sits under `/usr/lib/openssl-3.5`, so its paths are disjoint from `openssl`'s and both can be in one closure. Their symbols are versioned (`OPENSSL_4.*` vs `OPENSSL_3.*`), so a process that loads both binds each reference to its own library.
+
+- **Port to 4.x first.** Most breakage is a removed API with a small upstream fix: python carries cpython#149783, socat a Debian ASN1 patch, wget drops `SSLv3_client_method`, and Rust crates move to `openssl-sys` 0.9.117+. Use `openssl-3.5` only when that isn't possible: a sealed or prebuilt binary that NEEDs `libssl.so.3` (the bedrock rustc's cargo, actions-runner's bundled .NET 8), or a codebase that doesn't build on 4.x yet (foundationdb 7.3).
+- **To build against it:** add `openssl-3-5` (`import "../openssl-3.5/build.ncl"`) to `build_deps` and point the build at the prefix: `PKG_CONFIG_PATH=/usr/lib/openssl-3.5/lib/pkgconfig`, `OPENSSL_ROOT_DIR=/usr/lib/openssl-3.5` (CMake) or `OPENSSL_DIR=/usr/lib/openssl-3.5` (openssl-sys).
+- **At runtime, depend on the libraries only:** `subsetOf openssl-3-5 ["libssl", "libcrypto"]`.
+- **Check the result in build.sh**, fail-closed: `readelf -d` should show the binary NEEDs `libssl.so.3` and never `lib(ssl|crypto).so.4` (see `packages/foundationdb/build.sh`).
+- **4.1 drops the CN fallback.** Hostname verification no longer falls back to the subject CN when a certificate has no SAN of the checked type (openssl/openssl#31982). A test certificate needs a `subjectAltName` (`-addext subjectAltName=DNS:localhost,IP:127.0.0.1`).
 
 ### Reproducibility (required)
 

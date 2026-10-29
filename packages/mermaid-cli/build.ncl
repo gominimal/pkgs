@@ -4,13 +4,18 @@ let curl = import "../curl/build.ncl" in
 let gh = import "../gh/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 
-# chromium-headless-shell-bin provides the headless-shell binary (which
-# Puppeteer drives in mermaid's "headless: shell" mode) and its full
-# system-lib closure (cairo, fontconfig, freetype, harfbuzz, the X11
-# stack, mesa, nss, etc.) transitively, so we declare it directly and
-# skip the previous per-system-lib runtime_dep list. We don't need the
-# full headed chromium browser.
-let chromium-headless-shell-bin = import "../chromium-headless-shell-bin/build.ncl" in
+# chromium-bin provides the browser Puppeteer drives (its full `chromium`,
+# run in new headless mode) and its system-lib closure (cairo, fontconfig,
+# freetype, harfbuzz, the X11 stack, mesa, nss, etc.) transitively, so we
+# declare it directly rather than a per-system-lib runtime_dep list.
+#
+# NOT chromium-headless-shell-bin, for CVE-2026-111943 (eMudhra intermediate
+# key compromise): chrome-headless-shell still trusts emSign ECC Root CA - G3
+# and cannot read the CADistrustedCertificates policy that chromium-bin gets
+# from chromium-policies (see chromium-headless-shell-bin's build.ncl and
+# gominimal/pkgmgr-rs#1028). mmdc renders local input, but a diagram can still
+# make the browser fetch https URLs (images in HTML labels, for example).
+let chromium-bin = import "../chromium-bin/build.ncl" in
 
 let version = "11.17.0" in
 {
@@ -28,7 +33,7 @@ let version = "11.17.0" in
   ],
   runtime_deps = [
     base,
-    chromium-headless-shell-bin,
+    chromium-bin,
     subsetOf node-lts ["node"],
   ],
   needs =
@@ -68,19 +73,22 @@ let version = "11.17.0" in
         cmds = [
           ["/bin/bash", "-c", "test -x /bin/mmdc"],
           ["/bin/bash", "-c", "test -f /usr/libexec/mermaid-cli/lib/node_modules/@mermaid-js/mermaid-cli/src/cli.js"],
-          ["/bin/bash", "-c", "test -x /bin/chromium-headless-shell"],
+          ["/bin/bash", "-c", "test -x /bin/chromium"],
+          # CVE-2026-111943: mmdc must point Puppeteer at the full browser,
+          # which reads the policy chromium-policies installs.
+          ["/bin/bash", "-c", "grep -qx 'export PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium' /bin/mmdc"],
+          ["/bin/bash", "-c", "grep -q CADistrustedCertificates /etc/chromium/policies/managed/ca-distrusted-certificates.json"],
           ["/bin/bash", "-c", "/bin/mmdc --help | grep -q 'mermaid'"],
         ],
       } | Test,
     # End-to-end mmdc render is a manual smoketest (PR test plan), not a
     # standalone test — `mmdc -i ... -o ...` fails inside `min check`'s
-    # test sandbox even though `agent-browser open` (same playwright →
-    # chromium path, different sandbox-internal behavior) passes there
+    # test sandbox even though `agent-browser open` (same chromium-bin
+    # browser, different sandbox-internal behavior) passes there
     # and mmdc itself works in a normal session env. The runner
     # swallows stdout/stderr on failing tests so the actual error is
-    # uninspectable. The chromium-headless-shell-bin launch_check
-    # already proves the headless engine renders end-to-end in that
-    # same sandbox, and install_check verifies mmdc's wrapper resolves
-    # to that working binary.
+    # uninspectable. chromium-bin's launch_check already proves the
+    # headless engine renders end-to-end in that same sandbox, and
+    # install_check verifies mmdc's wrapper resolves to that working binary.
   },
 } | BuildSpec
