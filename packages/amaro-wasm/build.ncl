@@ -9,7 +9,7 @@ let wasm-bindgen-cli = import "../wasm-bindgen-cli/build.ncl" in
 # vendors the swc tree its TypeScript stripper is built from (deps/swc, with Cargo.lock).
 let amaro = ["1.1.11"] in
 # the rust package's version; build.sh fails if rustc is not this version
-let rustc = "1.99.0" in
+let rustc = "1.99.1" in
 {
   name = "amaro-wasm",
   # amaro is node's built-in TypeScript type stripper (`node x.ts`): swc's
@@ -31,7 +31,7 @@ let rustc = "1.99.0" in
     {
       # the rust package's own source
       url = "gs://minimal-staging-archives/rustc-%{rustc}-src.tar.xz",
-      sha256 = "cc41916a8c84f5d9ec4f55561b44e39f43b647b133f8a6f51be9ea13c83f7036",
+      sha256 = "6451598a99e77f07571960f6b21d577399d3a30f33e80cbd2e3a4aae6535d265",
       extract = false,
     } | Source,
     base,
