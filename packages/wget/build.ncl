@@ -27,6 +27,10 @@ let version = "1.25.0" in
     # and a different file from the others, so they apply independently and in
     # any order. Cherry-picked from gitlab.com/gnuwget/wget; verified to apply
     # clean (`patch -Np1`) against the 1.25.0 tarball.
+    # OpenSSL 4 removed SSLv3_client_method without defining
+    # OPENSSL_NO_SSL3_METHOD, so 1.25.0's guard no longer guards: also require
+    # OpenSSL < 4 (as wget already does for SSLv2 on >= 1.1.0).
+    { file = "openssl4-no-sslv3.patch" } | Local,
     { file = "CVE-2026-58469.patch" } | Local,
     { file = "CVE-2026-58470.patch" } | Local,
     { file = "CVE-2026-58471.patch" } | Local,
