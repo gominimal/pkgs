@@ -52,6 +52,15 @@ class Guard(unittest.TestCase):
         )
         self.assertEqual(g.check(self.root), (1, []))
 
+    def test_a_continued_cargo_command_passes(self):
+        # Norrie on #884: the backslash-continued form AGENTS.md's example grows into.
+        self.pkg(
+            "d",
+            {"build.sh": "cargo fetch --locked\n" + f"LD_PRELOAD={LIB} \\\n  cargo " + "build --frozen --release\n"},
+            ncl=NETWORKED_NCL,
+        )
+        self.assertEqual(g.check(self.root), (1, []))
+
     def test_comments_and_binaries_are_ignored(self):
         self.pkg("c", {"build.sh": f"# export LD_PRELOAD={LIB}\n", "blob.bin": b"\0\0" + LIB.encode()})
         self.assertEqual(g.check(self.root), (0, []))
@@ -71,6 +80,23 @@ class Guard(unittest.TestCase):
 
     def test_bare_assignment_is_rejected(self):
         self.assert_rejected({"build.sh": f"LD_PRELOAD={LIB}\nmake\n"}, "not used as")
+
+    def test_trailing_comment_is_a_bare_assignment(self):
+        # Norrie on #884: this passed with "1 preload(s) checked, 0 violation(s)"
+        # and preloaded `make` and every later command.
+        self.assert_rejected(
+            {"build.sh": f"LD_PRELOAD={LIB}  # pin entropy for the build\nexport LD_PRELOAD\nmake\n"},
+            "not used as",
+        )
+
+    def test_export_without_the_path_is_rejected_in_a_preloading_file(self):
+        self.assert_rejected(
+            {"build.sh": f"LD_PRELOAD={LIB}  # pin entropy for the build\nexport LD_PRELOAD\nmake\n"},
+            "exported in a file that preloads",
+        )
+
+    def test_an_operator_after_the_path_is_rejected(self):
+        self.assert_rejected({"build.sh": f"LD_PRELOAD={LIB}; make\n"}, "not used as")
 
     def test_ncl_mention_is_rejected(self):
         self.assert_rejected({"extra.ncl": f'env = {{ LD_PRELOAD = "{LIB}" }}\n'}, "in a .ncl file")
