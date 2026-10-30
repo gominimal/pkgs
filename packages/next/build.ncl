@@ -17,6 +17,8 @@ let llhttp-wasm-rebuild = import "../llhttp-wasm-rebuild/build.ncl" in
 # undici whose llhttp C rebuilds the wasm next bundles into its edge runtime.
 # Forwarded to build.sh as MINIMAL_ARG_UNDICI.
 let undici = "6.28.0" in
+# The llhttp that undici release vendors (its build.sh pins the wasm to it).
+let undici_llhttp = "8.1.0" in
 
 let version = "16.4.1" in
 # The native SWC compiler Next loads at build/dev time. Upstream publishes it as a
@@ -86,6 +88,7 @@ let swc_arm64_sha256 = "ea6ca74538e44799986dbea7ae0b7142b37abf5d6b16fcf34566221c
   build_args = {
     include version,
     include undici,
+    include undici_llhttp,
   },
 
   outputs = {

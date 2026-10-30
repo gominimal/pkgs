@@ -30,6 +30,8 @@ let amaro-wasm = import "../amaro-wasm/build.ncl" in
 let undici = "7.30.1" in
 let undici_llhttp = "9.3.0" in
 let npm_undici = "6.28.0" in
+# The llhttp that the npm-vendored undici pins (forwarded so a bump is one edit).
+let npm_undici_llhttp = "8.1.0" in
 let amaro = "1.1.11" in
 let version = "24.22.1" in
 {
@@ -81,6 +83,7 @@ let version = "24.22.1" in
     include undici,
     include undici_llhttp,
     include npm_undici,
+    include npm_undici_llhttp,
     include amaro,
   },
 

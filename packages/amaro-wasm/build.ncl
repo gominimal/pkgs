@@ -5,9 +5,11 @@ let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let wasm-bindgen-cli = import "../wasm-bindgen-cli/build.ncl" in
 
-# The amaro versions node and node-lts bundle (both 1.1.11 since node 26.12.1 / 24.22.1). Each tag
-# vendors the swc tree its TypeScript stripper is built from (deps/swc, with Cargo.lock).
-let amaro = ["1.1.11"] in
+# The amaro version node and node-lts bundle (both 1.1.11 since node 26.12.1 / 24.22.1), used in
+# the Source URL, upstream_version and the test, so a bump is one edit here (plus node and
+# node-lts's own `amaro`). Its tag vendors the swc tree the TypeScript stripper is built from
+# (deps/swc, with Cargo.lock). build.sh still loops over amaro_versions, should two ever differ.
+let amaro = "1.1.11" in
 # the rust package's version; build.sh fails if rustc is not this version
 let rustc = "1.99.1" in
 {
@@ -24,7 +26,7 @@ let rustc = "1.99.1" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/nodejs/amaro/archive/refs/tags/v1.1.11.tar.gz",
+      url = "https://github.com/nodejs/amaro/archive/refs/tags/v%{amaro}.tar.gz",
       sha256 = "f65b4e8ae9ab519e8db1824377eb621d7fce66e21ae1020621d8f54b6ed774fa",
       extract = false,
     } | Source,
@@ -50,7 +52,7 @@ let rustc = "1.99.1" in
 
   cmd = "./build.sh",
   build_args = {
-    amaro_versions = std.string.join " " amaro,
+    amaro_versions = amaro,
     rust_version = rustc,
   },
 
@@ -60,7 +62,7 @@ let rustc = "1.99.1" in
 
   attrs =
     {
-      upstream_version = "1.1.11",
+      upstream_version = amaro,
       license_spdx = "MIT AND Apache-2.0",
       source_provenance = {
         category = 'GithubRepo,
@@ -75,7 +77,7 @@ let rustc = "1.99.1" in
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          ["/bin/bash", "-c", "for v in 1.1.11; do head -c4 /usr/share/amaro-wasm/$v/wasm_bg.wasm | od -An -c | grep -q 'a   s   m' || exit 1; done"],
+          ["/bin/bash", "-c", "for v in %{amaro}; do head -c4 /usr/share/amaro-wasm/$v/wasm_bg.wasm | od -An -c | grep -q 'a   s   m' || exit 1; done"],
         ],
       } | Test,
   },

@@ -29,7 +29,7 @@ NPM_LH=deps/npm/node_modules/undici/lib/llhttp
 $LH check-tree --undici "$UNDICI" --npm-undici "$NPM_UNDICI"
 $LH build deps/undici/src ../wasm --version "$UNDICI" --llhttp "$UNDICI_LLHTTP" --sysroot /usr/lib/wasi
 tar -xof "../undici-${NPM_UNDICI}.tar.gz" -C ..
-$LH build "../undici-${NPM_UNDICI}" ../wasm-npm --version "$NPM_UNDICI" --llhttp 8.1.0 --sysroot /usr/lib/wasi
+$LH build "../undici-${NPM_UNDICI}" ../wasm-npm --version "$NPM_UNDICI" --llhttp "${MINIMAL_ARG_NPM_UNDICI_LLHTTP:?build.ncl forwards npm_undici_llhttp}" --sysroot /usr/lib/wasi
 $LH splice deps/undici/undici.js ab4573a06c43574936dc98c3943b10a4ee32798e9797329e9f327e5f64115f54 ../wasm/llhttp.wasm
 $LH splice deps/undici/undici.js 18403ee56fab07f89a845028bad358bb3ebcda213f8e2ec0989a991e9c33da69 ../wasm/llhttp_simd.wasm
 $LH splice "$NPM_LH/llhttp-wasm.js" b96063c7ce14045f91f17489d8b30a2bf5129308bd801d7dde715579d16d0e21 ../wasm-npm/llhttp.wasm
