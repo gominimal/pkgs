@@ -5,8 +5,9 @@ setup_java() { timeout -k 5 300 javac -d "$W/java" "$LIB/Probe.java"; }
 live_java() { to java -cp "$W/java" Probe live "https://$1/" "$TIMEOUT" 2>&1 | tail -3; return 0; }
 off_java()  { to java -cp "$W/java" Probe offline "$1" "$VERIFY_AT_EPOCH" 2>&1 | tail -4; return 0; }
 
-# blocklist variant: the profile's anchors are the ONLY trust anchors, so only
-# blocked.certs can refuse the chain. Live would need a JKS/PKCS12 store built
+# blocklist variant: the trust anchors are the system bundle plus the profile's
+# anchors ($W/negctl.pem), so the anchors are TRUSTED and only blocked.certs can
+# refuse the chain (matching lib/go.sh). Live would need a JKS/PKCS12 store built
 # with keytool; offline already runs the same PKIX code, so live is N/A here.
 off_java_bl() { to java -cp "$W/java" Probe offline "$1" "$VERIFY_AT_EPOCH" "$W/negctl.pem" 2>&1 | tail -4; return 0; }
 

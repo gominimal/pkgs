@@ -10,6 +10,14 @@
 // which are TLS-only date cut-offs (none is used for this response).
 // With ROOTS.pem the trust anchors are exactly that file, which isolates
 // blocked.certs (the java-blocklist row).
+//
+// REJECTED is a TRUST refusal, never "the builder found no path". The builder
+// reduces every failed candidate path to "unable to find valid certification
+// path to requested target", whatever the reason, so on a builder failure the
+// captured chain is re-run through the PKIX CertPathValidator with the same
+// anchors and date, and only NO_TRUST_ANCHOR or blocked.certs' "Untrusted
+// certificate" mark REJECTED. Algorithm constraints, expiry and basic
+// constraints are ERR, as in the Go probe and lib/common.sh.
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -52,7 +60,7 @@ public class Probe {
       System.out.println("trust anchors: " + rootsFile + " (" + anchors.size() + ")");
       p = new PKIXBuilderParameters(anchors, target);
     } else {
-      p = new PKIXBuilderParameters(defaultTrustStore(), target);
+      p = new PKIXBuilderParameters(defaultTrustStore(true), target);
     }
     p.setRevocationEnabled(false);
     p.setDate(new Date(epoch * 1000));
@@ -61,15 +69,50 @@ public class Probe {
       PKIXCertPathBuilderResult r = (PKIXCertPathBuilderResult) CertPathBuilder.getInstance("PKIX").build(p);
       System.out.println("@@ACCEPTED@@ anchored at " + r.getTrustAnchor().getTrustedCert().getSubjectX500Principal());
     } catch (CertPathBuilderException e) {
-      String why = causes(e);
-      System.out.println(why);
-      // Expiry or a malformed chain is not a trust decision.
-      if (!why.matches("(?is).*(expired|not yet valid|validity|parsing).*")) System.out.println("@@REJECTED@@");
+      System.out.println(causes(e));
+      String verdict = validatorVerdict(chain, rootsFile, epoch);
+      System.out.println("validator: " + verdict);
+      if (verdict.startsWith("TRUST")) System.out.println("@@REJECTED@@");
+    }
+  }
+
+  // Why the chain fails, from the validator: "TRUST ..." for a trust refusal
+  // (no trust anchor, or a blocked.certs entry), "OTHER ..." for anything else.
+  static String validatorVerdict(List<X509Certificate> chain, String rootsFile, long epoch) {
+    try {
+      List<X509Certificate> path = new ArrayList<>(chain);
+      X509Certificate last = path.get(path.size() - 1);
+      // A CertPath excludes the trust anchor: drop a trailing self-signed root.
+      if (path.size() > 1 && last.getSubjectX500Principal().equals(last.getIssuerX500Principal())) {
+        path.remove(path.size() - 1);
+      }
+      PKIXParameters p;
+      if (rootsFile != null) {
+        Set<TrustAnchor> anchors = new HashSet<>();
+        for (X509Certificate r : load(rootsFile)) anchors.add(new TrustAnchor(r, null));
+        p = new PKIXParameters(anchors);
+      } else {
+        p = new PKIXParameters(defaultTrustStore(false));
+      }
+      p.setRevocationEnabled(false);
+      p.setDate(new Date(epoch * 1000));
+      CertPath cp = CertificateFactory.getInstance("X.509").generateCertPath(path);
+      CertPathValidator.getInstance("PKIX").validate(cp, p);
+      return "OTHER the builder failed but the captured chain validates";
+    } catch (CertPathValidatorException v) {
+      CertPathValidatorException.Reason r = v.getReason();
+      String msg = String.valueOf(v.getMessage());
+      if (r == PKIXReason.NO_TRUST_ANCHOR || msg.contains("Untrusted certificate")) {
+        return "TRUST " + r + ": " + msg;
+      }
+      return "OTHER " + r + ": " + msg;
+    } catch (Exception x) {
+      return "OTHER " + causes(x);
     }
   }
 
   // The JSSE default: javax.net.ssl.trustStore, else jssecacerts, else cacerts.
-  static KeyStore defaultTrustStore() throws Exception {
+  static KeyStore defaultTrustStore(boolean announce) throws Exception {
     String sep = File.separator, home = System.getProperty("java.home");
     String path = System.getProperty("javax.net.ssl.trustStore");
     if (path == null) {
@@ -77,7 +120,7 @@ public class Probe {
       path = jsse.exists() ? jsse.getPath() : home + sep + "lib" + sep + "security" + sep + "cacerts";
     }
     KeyStore ks = KeyStore.getInstance(new File(path), (char[]) null);
-    System.out.println("trust store: " + path + " (" + ks.size() + " entries)");
+    if (announce) System.out.println("trust store: " + path + " (" + ks.size() + " entries)");
     return ks;
   }
 
