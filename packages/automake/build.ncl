@@ -33,9 +33,9 @@ let version = "1.19" in
   },
 
   outputs = {
-    "automake-1.18" = { glob = "usr/bin/automake-1.18" } | OutputBin,
+    "automake-1.19" = { glob = "usr/bin/automake-1.19" } | OutputBin,
     aclocal = { glob = "usr/bin/aclocal" } | OutputBin,
-    "aclocal-1.18" = { glob = "usr/bin/aclocal-1.18" } | OutputBin,
+    "aclocal-1.19" = { glob = "usr/bin/aclocal-1.19" } | OutputBin,
     automake = { glob = "usr/bin/automake" } | OutputBin,
     share_data = { glob = "usr/share/{aclocal*,automake*}/**" } | OutputData,
 
