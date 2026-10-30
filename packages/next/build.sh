@@ -18,6 +18,8 @@ export CXX=g++
 export PNPM_CONFIG_STRICT_DEP_BUILDS=false
 export PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false
 
+SRC_ROOT=$PWD
+
 # Install all dependencies using the repo's pnpm-lock.yaml for reproducibility.
 # The lockfile pins exact versions of every transitive dependency used during the build.
 pnpm install --frozen-lockfile
@@ -72,6 +74,34 @@ done
 
 NEXT_DIR="$OUTPUT_DIR/usr/libexec/next/lib/node_modules/next"
 
+# llhttp wasm: the edge runtime bundles undici 6's llhttp pair base64 in four files.
+# Rebuilt from undici's C and spliced over the sha-pinned shipped blobs.
+LH="python3 /usr/share/llhttp-wasm-rebuild/rebuild-llhttp-wasm.py"
+UNDICI="${MINIMAL_ARG_UNDICI:?build.ncl forwards undici}"
+mkdir -p /tmp/llhttp
+tar -xof "$SRC_ROOT/undici-$UNDICI.tar.gz" -C /tmp/llhttp
+$LH build "/tmp/llhttp/undici-$UNDICI" /tmp/llhttp/wasm --version "$UNDICI" --llhttp 8.1.0 --sysroot /usr/lib/wasi
+LH_CARRIERS="dist/compiled/edge-runtime/index.js dist/compiled/@edge-runtime/primitives/fetch.js
+  dist/compiled/@edge-runtime/primitives/load.js dist/compiled/@vercel/blob/index.cjs"
+LH_EXPECT=
+for c in $LH_CARRIERS; do
+  $LH splice "$NEXT_DIR/$c" b96063c7ce14045f91f17489d8b30a2bf5129308bd801d7dde715579d16d0e21 /tmp/llhttp/wasm/llhttp.wasm
+  $LH splice "$NEXT_DIR/$c" 989f2025b23e92ae5093ceb357093df7bdf2e1e7f1f1bf383b0a4dc69a78151d /tmp/llhttp/wasm/llhttp_simd.wasm
+  LH_EXPECT="$LH_EXPECT --expect $c=2"
+done
+# Every other wasm in the tree is still upstream's, by exact path: a new carrier fails here.
+# Still upstream's: @mswjs llhttp (test mode only), og's resvg (Rust) and yoga (emscripten; also
+# base64 in index.node.js),
+# webpack's and loader-utils' xxhash64/md4 (AssemblyScript), source-map08 (Rust).
+$LH census -C "$NEXT_DIR" --wasm /tmp/llhttp/wasm/llhttp.wasm --wasm /tmp/llhttp/wasm/llhttp_simd.wasm $LH_EXPECT \
+  --allow-path 'dist/compiled/@mswjs/interceptors/ClientRequest/llhttp/llhttp.wasm' \
+  --allow-path 'dist/compiled/@vercel/og/resvg.wasm' --allow-path 'dist/compiled/@vercel/og/yoga.wasm' \
+  --allow-path 'dist/compiled/@vercel/og/index.node.js' \
+  --allow-path 'dist/compiled/loader-utils2/index.js' --allow-path 'dist/compiled/loader-utils3/index.js' \
+  --allow-path 'dist/compiled/webpack/bundle5.js' --allow-path 'dist/compiled/source-map08/mappings.wasm' \
+  .
+$LH smoke node /tmp/llhttp/wasm/llhttp.wasm /tmp/llhttp/wasm/llhttp_simd.wasm \
+  --require "$NEXT_DIR/dist/compiled/edge-runtime"
 # Ship the platform SWC compiler inside next's own node_modules, where next resolves
 # `@next/swc-linux-<arch>-gnu` first. The source build does not produce this native
 # addon; upstream publishes it as a per-platform npm package, fetched above as a
