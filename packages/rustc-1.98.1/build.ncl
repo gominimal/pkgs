@@ -27,7 +27,7 @@ let version = "1.98.1" in
         } | Source,
       { arch = 'Arm64, .. } =>
         {
-          url = "gs://minimal-bootstrap/gen-8/sha256/6891a4df23d740b057c8ff66a07e45e20f2d7108f36ac4fa2dbf899334f35cbb/rustc-1.98.1-1.98.1-aarch64.tar.zst",
+          url = "gs://minimal-bootstrap/gen-8/sha256/6891a4df23d740b057c8ff66a07e45e20f2d7108f36ac4fa2dbf899334f35cbb/rustc-1.98.1-aarch64.tar.zst",
           sha256 = "6891a4df23d740b057c8ff66a07e45e20f2d7108f36ac4fa2dbf899334f35cbb",
           extract = true,
         } | Source,
