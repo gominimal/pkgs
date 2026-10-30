@@ -17,14 +17,14 @@ let node-lts = import "../node-lts/build.ncl" in
 # make the browser fetch https URLs (images in HTML labels, for example).
 let chromium-bin = import "../chromium-bin/build.ncl" in
 
-let version = "11.17.0" in
+let version = "12.0.0" in
 {
   name = "mermaid-cli",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/mermaid-js/mermaid-cli/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "b5213dd373f09d0bfbc1ae839114246edecfe4e78248d50577f330af266d18ca",
+      sha256 = "5d2f4635cb7fae3fdca6e57a59d6fc860ca2e21d0ea3f5b22dcaf4c7ab8e173c",
     } | Source,
     base,
     curl,
