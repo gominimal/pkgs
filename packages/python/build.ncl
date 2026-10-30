@@ -37,6 +37,11 @@ let version = "3.14.10" in
     # sends the line unchecked). A straight cherry-pick (applies at fuzz 0 to
     # 3.14.10); drop it on the first 3.14.x whose changelog lists gh-143923.
     { file = "0003-gh-143923-poplib-reject-control-characters.patch" } | Local,
+    # OpenSSL 4: the Modules/ part of python/cpython#149783 (the unmerged 3.14 backport of
+    # gh-146207 / gh-148600 / gh-148292). Without it _ssl references TLSv1_method() and the
+    # other fixed-version methods 4.0 removed. No-op on OpenSSL 3. Drop it on the first
+    # 3.14.x whose Misc/NEWS lists gh-148292, or on 3.15.
+    { file = "0004-gh-148292-openssl-4-support.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/Python-%{version}.tar.xz",
       sha256 = "de414a57119abef52784d8993e341d53aed635fc2b05c2607d9f98a2c5b72032"

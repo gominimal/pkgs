@@ -1,6 +1,19 @@
 #!/bin/bash
 set -euo pipefail
 
+# Pinned, mirrored sources for the deps or-tools would otherwise git-clone
+# from gitlab.com at build time (see build.ncl, pkgs#1146). FetchContent's
+# SOURCE_DIR override skips both the download and or-tools' PATCH_COMMAND, so
+# apply or-tools' own patches here, exactly as its PATCH_COMMAND would.
+DEPS_SRC="$(pwd)/minimal-deps"
+mkdir -p "$DEPS_SRC"
+tar -xof eigen-3.4.0.tar.gz -C "$DEPS_SRC"
+tar -xof bzip2-66c46b8c9436613fd81bc5d03f63a61933a4dcc3.tar.gz -C "$DEPS_SRC"
+EIGEN3_SRC="$DEPS_SRC/eigen-3.4.0"
+BZIP2_SRC="$DEPS_SRC/bzip2-66c46b8c9436613fd81bc5d03f63a61933a4dcc3"
+(cd "$EIGEN3_SRC" && git apply --ignore-whitespace "$OLDPWD/patches/eigen3-3.4.0.patch")
+(cd "$BZIP2_SRC" && git apply --ignore-whitespace "$OLDPWD/patches/bzip2.patch")
+
 mkdir build
 cd build
 
@@ -34,6 +47,8 @@ cmake -G Ninja \
   -DCMAKE_SKIP_INSTALL_RPATH=ON \
   -DBUILD_SHARED_LIBS=ON \
   -DBUILD_DEPS=ON \
+  -DFETCHCONTENT_SOURCE_DIR_EIGEN3="$EIGEN3_SRC" \
+  -DFETCHCONTENT_SOURCE_DIR_BZIP2="$BZIP2_SRC" \
   -DBUILD_CXX=ON \
   -DBUILD_PYTHON=OFF \
   -DBUILD_JAVA=OFF \
@@ -50,6 +65,11 @@ cmake -G Ninja \
   -DUSE_XPRESS=OFF \
   -DCMAKE_EXE_LINKER_FLAGS="-Wl,--unresolved-symbols=ignore-in-shared-libs" \
   ..
+# Fail closed: the pinned sources were used, nothing was cloned from GitLab
+# (FetchContent creates _deps/<name>-src only when it downloads).
+for d in eigen3-src bzip2-src; do
+  [ ! -d "_deps/$d" ] || { echo "ERROR: FetchContent downloaded $d instead of the pinned source" >&2; exit 1; }
+done
 
 # protoc and other build-time tools need to find their shared libs
 export LD_LIBRARY_PATH="$(pwd)/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"

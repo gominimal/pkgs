@@ -26,25 +26,25 @@ let node-lts = import "../node-lts/build.ncl" in
 # emSign roots and blocks the 8 compromised keys (nodejs/node#66871, #66877).
 # Go back to the binary only once a release is built with Bun >= 1.4.4, and
 # check it with the harness.
-let version = "1.23.0" in
+let version = "1.24.0" in
 {
   name = "varlock",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://registry.npmjs.org/varlock/-/varlock-%{version}.tgz",
-      sha256 = "e7154cd23499cbcf74fee854333d9e68c5fefadeff4a4e3cb289dfedf4d57d89",
+      sha256 = "c90d73765bcb81e6d246b26ddc88d4d15f7a37db287a83eb493b02e2393a09da",
     } | Source,
     match {
       { arch = 'Amd64, .. } =>
         {
           url = "https://registry.npmjs.org/@varlock/native-helper-linux-x64/-/native-helper-linux-x64-%{version}.tgz",
-          sha256 = "e854247aa4fee015971607b5d1e19c53eb40aaa5b7d2ff368ce00175c88d13fe",
+          sha256 = "326635b64c2fd33b2ec893519a36b623f78c925dc3393d89a89a5d511e407187",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://registry.npmjs.org/@varlock/native-helper-linux-arm64/-/native-helper-linux-arm64-%{version}.tgz",
-          sha256 = "79eaf72ef3a12d5b7fa5eb2f3db33fbd92b240ef0acf622c685681548990042b",
+          sha256 = "fc02283e4d6816767653300134c35396f4615d858ecb03b352bb87ce53cf2ff3",
         } | Source,
     } target,
     base,

@@ -6,13 +6,14 @@ let glibc = import "../glibc/build.ncl" in
 let icu = import "../icu/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
+let openssl-3-5 = import "../openssl-3.5/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "2.336.0" in
+let version = "2.338.2" in
 
 let { amd64_sha256, arm64_sha256 } = {
-  amd64_sha256 = "04cf0be1aff4c3ec3554466c39124ca250e3effd8873bb7e8d68535aa9505d5d",
-  arm64_sha256 = "58b758e420b87093fbd4bfddd368074960053e2f1388f01848c82624b90f27d1",
+  amd64_sha256 = "baebf204307bac6193480852732f0aba2ae97b6c5597c244f4d5558390147c40",
+  arm64_sha256 = "670adb2f268fe21dcbb58b3db0e0aa9d5b3bddfe2c651481336e561ff86de945",
 }
 in
 
@@ -54,6 +55,10 @@ in
     glibc,
     icu,
     openssl,
+    # The bundled .NET 8 runtime (sdk 8.0.422 at 2.336.0) dlopens libssl.so.3 /
+    # libcrypto.so.3 and does not know OpenSSL 4's .so.4 names; only .NET 10 got that
+    # loader (dotnet/runtime#135534). Drop once the runner ships .NET 10.
+    openssl-3-5,
     zlib,
   ],
 

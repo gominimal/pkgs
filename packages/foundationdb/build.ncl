@@ -8,6 +8,7 @@ let glibc = import "../glibc/build.ncl" in
 let mono = import "../mono/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
+let openssl-3-5 = import "../openssl-3.5/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -32,6 +33,11 @@ let version = "7.3.79" in
     mono,
     ninja,
     openssl,
+    # FDB 7.3's C++ does not compile against OpenSSL 4 (X509_get_subject_name() and friends
+    # return const; MkCert.cpp edits the name in place). Upstream is moving to a pinned 3.5
+    # (apple/foundationdb#14348), so build against the 3.5 LTS compat tree; build.sh points
+    # CMake at it and checks the result links libssl.so.3.
+    openssl-3-5,
     pkgconf,
     python,
     toolchain,
@@ -39,7 +45,7 @@ let version = "7.3.79" in
 
   runtime_deps = [
     glibc,
-    openssl,
+    openssl-3-5,
     subsetOf gcc ["libgcc", "libstdcpp"],
     zlib,
   ],

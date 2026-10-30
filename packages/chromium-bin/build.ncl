@@ -105,7 +105,7 @@ let chromium-policies = import "../chromium-policies/build.ncl" in
 # further config. Any other playwright-core version: pass
 # `executablePath: '/bin/chromium'`. See packages/chromium-bin/README.md.
 let revision = "1243" in
-let browser_version = "156.0.8078.47" in
+let browser_version = "156.0.8078.73" in
 let ungoogled_revision = "1" in
 # The one release tarball for this arch: the Source in build_deps and
 # `binary_from` both use it, so the two cannot drift.
@@ -124,12 +124,12 @@ in
       { arch = 'Amd64, .. } =>
         {
           url = release_url,
-          sha256 = "3fd4ff6bc398a622f77c728ef80f00df41a10846fb60a647392a7983dc6ad28e",
+          sha256 = "a76beb1f486b0c7343f857730abc7f6cfc15a9b6e1878172d16e25398958f1f7",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = release_url,
-          sha256 = "1973127a5ae83b0227bdd74b0194983e2412fb478d6ba81cd338912eb87d7ab8",
+          sha256 = "746bca2a8355892948dc40072439304bf1bf2c21d662a5a86e7c39a226813b79",
         } | Source,
     } target,
     base,
