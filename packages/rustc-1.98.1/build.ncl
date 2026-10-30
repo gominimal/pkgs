@@ -1,139 +1,61 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
-# rustc-1.98.1: builds rustc 1.98.1 from the upstream -src tarball with the rustc-1.97.1 package as
-# x.py's stage0, strictly offline, installed to /usr/lib/rustc-1.98.1 (bin/ + lib/ only).
-# packages/rust consumes this rung as its stage0.
-# Same recipe as every rustc-1.9x rung: only version, stage0_version, the stage0 import and the
-# Source sha256 differ in this file; VERSION and STAGE0_VERSION differ in build.sh.  See README.md.
-let rustc-1-97-1 = import "../rustc-1.97.1/build.ncl" in # the stage0 (amd64)
-let base = import "../base/build.ncl" in
-let cmake = import "../cmake/build.ncl" in
-let curl = import "../curl/build.ncl" in
-let llvm = import "../llvm/build.ncl" in
-let openssl = import "../openssl/build.ncl" in
-let openssl-3-5 = import "../openssl-3.5/build.ncl" in
-let pkgconf = import "../pkgconf/build.ncl" in
-let python = import "../python/build.ncl" in
-let sqlite = import "../sqlite/build.ncl" in
+let gcc = import "../gcc/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let libssh2 = import "../libssh2/build.ncl" in
-let toolchain = import "../toolchain/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
-
-# pkgmgr: bootstrap_rung = "rust"
+let llvm = import "../llvm/build.ncl" in
+let openssl-3-5 = import "../openssl-3.5/build.ncl" in
+let sqlite = import "../sqlite/build.ncl" in
+let zlib = import "../zlib/build.ncl" in
+# rustc-1.98.1: the stage0 for `rust`, from gen-8 of gominimal/bootstrap: the top of the Rust ladder,
+# mrustc 0.12.0 (C++, built by the hex0-rooted gcc) -> mrustc-rustc-1.90.0 -> rustc-1.91.1 -> 1.92.0
+# -> 1.93.1 -> 1.94.1 -> 1.95.0 -> 1.96.0 -> 1.97.1 -> 1.98.1, every rung built on the hex0-rooted
+# toolchain and this one reproduced byte for byte on two independent machines per arch before
+# publishing (generations/gen-8/manifest.json). Installs the whole toolchain at /usr/lib/rustc-1.98.1
+# (bin/ + lib/); nothing lands on /usr/bin.
 let version = "1.98.1" in
-let stage0_version = "1.97.1" in
-# stage0 by arch.  amd64: the rustc-1.97.1 rung, or its sealed bedrock tarball while
-# hex0/amd64-ladder.ncl is off.  arm64: the rung chain is amd64-only, so take the
-# same sha-pinned rustc-1.97.1 bedrock tarball packages/rust 1.98.1 used; build.sh points at its
-# extracted ./rustc-1.97.1-aarch64.  This rung builds on BOTH arches so packages/rust 1.99 gets a
-# 1.98.1 stage0 from the builder on arm64 too, with no new hand-built prebuilt.
-let stage0 =
-  match {
-    { arch = 'Amd64, .. } =>
-      if (import "../hex0/amd64-ladder.ncl").enabled then
-        rustc-1-97-1
-      else
-        # BEDROCK (amd64, interim, see hex0/amd64-ladder.ncl): build-bot's own output of the
-        # rustc-1.97.1 rung (gominimal/pkgs 9d20a830 commit map), sha-pinned. Same layout as the
-        # rung (usr/lib/rustc-1.97.1), so build.sh is unchanged; same runtime deps as the rung.
-        #
-        # LLVM bumpers: unlike the arm64 tarball below, which bundles its own libLLVM.so.21.1,
-        # this one was built `host-llvm: external, link-shared`. It ships only
-        # librustc_driver-*.so and loads the LIVE `llvm` package's libLLVM at run time. With the
-        # chain on, an llvm soname bump rebuilt the rung; with it off, the bump breaks this stage0
-        # (and so rust on amd64) until the tarball is regenerated against the new llvm, or the
-        # switch is flipped back on.
-        (
-          {
-            name = "rustc-1.97.1 (bedrock)",
-            prebuilt = true,
-            build_deps = [
-              {
-                url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/6ec57e96b11bd62097d5f7480909f651ec2537a10ef15224f42be2e674d89d11/rustc-1.97.1-x86_64.tar.zst",
-                sha256 = "6ec57e96b11bd62097d5f7480909f651ec2537a10ef15224f42be2e674d89d11",
-                extract = true,
-              } | Source,
-            ],
-            # = the rung's runtime_deps (rustc-1.97.1/build.ncl amd64_spec), plus openssl-3-5:
-            # this tarball's cargo has DT_NEEDED libssl.so.3 + libcrypto.so.3, which packages/
-            # openssl (4.x, libssl.so.4) no longer provides.
-            runtime_deps = [libffi, llvm, openssl, openssl-3-5, sqlite, subsetOf gcc ["libgcc", "libstdcpp"]],
-            outputs = { usr = { glob = "usr/**/*", allow_executable = true } | OutputData },
-          } | BuildSpec
-        ),
-    { arch = 'Arm64, .. } =>
-      {
-        url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/de0724a4bf882c5f4641dc6edd6284ee0fa565a405d4ea264a4f305e3bfe5e6e/rustc-1.97.1-aarch64.tar.zst",
-        sha256 = "de0724a4bf882c5f4641dc6edd6284ee0fa565a405d4ea264a4f305e3bfe5e6e",
-        extract = true,
-      } | Source,
-  } target
-in
-let spec =
-  {
-    name = "rustc-%{version}",
-    build_deps = [
-      { file = "build.sh" } | Local,
-      { file = "rustc-1.98.1.answers" } | Local, # sha256 pins for the seal check in build.sh; unpinned today
-      # The -src tarball ships .cargo/config.toml (crates-io -> vendored-sources) and vendor/, so no
-      # cargo-vendor input is needed.  build.sh asserts src/version and the src/stage0 pairing.
-      {
-        url = "gs://minimal-staging-archives/rustc-%{version}-src.tar.xz",
-        sha256 = "be1816e7f6c40abb90245ad6e024bed2a7e88d7dda4561e4d5470207df616b9f",
-        extract = true,
-        strip_prefix = "rustc-%{version}-src",
-      } | Source,
-      # stage0: the previous rung's installed prefix, /usr/lib/rustc-<stage0_version>/bin/{rustc,cargo}
-      # + lib/rustlib/<triple>/lib.  build.sh pins bootstrap.toml [build] rustc/cargo at it.
-      stage0,
-      # libssl.so.3 + libcrypto.so.3 for the stage0's cargo: both sealed rustc-1.97.1 bedrock
-      # tarballs (amd64 and arm64) were linked against OpenSSL 3. The arm64 stage0 is a bare
-      # Source with no runtime_deps of its own, so this entry is what puts the libraries in its
-      # sandbox. This rung's own cargo links packages/openssl 4.x (its vendored openssl-sys is
-      # 0.9.117; 4.x is supported from 0.9.114). Drop this once the bedrock is resealed on 4.x.
-      openssl-3-5,
-      base, # userland; xz extracts the source
-      cmake, # some vendored -sys build scripts; also pulls in a real curl, shadowed by build.sh's stub
-      curl, # libcurl for curl-sys (pkg-config path or the marked vendored submodule)
-      libssh2, # LIBSSH2_SYS_USE_PKG_CONFIG=1 makes libssh2-sys use the system lib
-      pkgconf, # pkg-config for the -sys probes
-      python, # x.py
-      toolchain, # gcc/binutils/glibc/linux_headers: clang's sysroot
-    ],
-    runtime_deps = [
-      libffi,
-      llvm, # clang, clang++, llvm-config and libLLVM-21.so; also present at build time
-      openssl,
-      sqlite,
-      subsetOf gcc ["libgcc", "libstdcpp"],
-    ],
-    # no `needs` block: the rung must be strictly offline.
-
-    cmd = "./build.sh",
-    outputs = {
-      # One recursive OutputData glob over the private prefix: the toolchain is consumed as data by
-      # the next rung via absolute path and must not land on /usr/bin.  build.sh prunes the prefix
-      # to bin/ + lib/ + BUILDINFO so nothing is left uncaptured.
-      toolchain = { glob = "usr/lib/rustc-%{version}/**", allow_executable = true } | OutputData,
-    },
-
-    attrs =
-      {
-        upstream_version = version,
-        license_spdx = "MIT OR Apache-2.0",
-        source_provenance = {
-          category = 'GithubRepo,
-          owner = "rust-lang",
-          repo = "rust",
-        },
-        env_state_wiring = {
-          env_var = "CARGO_HOME",
-          prefix = "cargo",
-        },
-        # system LLVM + clang, comparable to packages/rust
-        build_cost_multiple = 4,
-      } | Attrs,
-  } | BuildSpec
-in
-spec
+{
+  name = "rustc-1.98.1",
+  prebuilt = true,
+  build_deps = [
+    match {
+      { arch = 'Amd64, .. } =>
+        {
+          url = "gs://minimal-bootstrap/gen-8/sha256/703e379bc5f86b94977e8c88f544a3e269c35d573c7daff555a6d43da29ea9f4/rustc-1.98.1-1.98.1-x86_64.tar.zst",
+          sha256 = "703e379bc5f86b94977e8c88f544a3e269c35d573c7daff555a6d43da29ea9f4",
+          extract = true,
+        } | Source,
+      { arch = 'Arm64, .. } =>
+        {
+          url = "gs://minimal-bootstrap/gen-8/sha256/6891a4df23d740b057c8ff66a07e45e20f2d7108f36ac4fa2dbf899334f35cbb/rustc-1.98.1-1.98.1-aarch64.tar.zst",
+          sha256 = "6891a4df23d740b057c8ff66a07e45e20f2d7108f36ac4fa2dbf899334f35cbb",
+          extract = true,
+        } | Source,
+    } target,
+  ],
+  # librustc_driver loads the live llvm's libLLVM.so.21.1 (built `host-llvm: external, link-shared`,
+  # so an llvm soname bump needs a new generation); cargo links libssh2, libssl.so.3 (openssl-3.5,
+  # the ladder's openssl line), libz and libsqlite3; the binaries run on the standard loader
+  runtime_deps = [
+    libffi,
+    libssh2,
+    llvm,
+    openssl-3-5,
+    sqlite,
+    zlib,
+    subsetOf gcc ["libgcc", "libstdcpp"],
+  ],
+  outputs = {
+    toolchain = { glob = "usr/lib/rustc-1.98.1/**", allow_executable = true } | OutputData,
+  },
+  attrs =
+    {
+      upstream_version = version,
+      license_spdx = "MIT OR Apache-2.0",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "rust-lang",
+        repo = "rust",
+      },
+    } | Attrs,
+} | BuildSpec
