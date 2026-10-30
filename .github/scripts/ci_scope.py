@@ -31,8 +31,10 @@ or would not be cheaper:
 
 A rename counts both its paths, so moving a file out of a package checks the
 package it left, and renaming stack.ncl to NOTES.md is not mistaken for prose.
-Only prose (*.md anywhere, legal/) and tests/<name>/ projects are set aside; a
-PR of nothing else checks nothing. A tests/<name>/ directory is a
+Only prose (*.md outside packages/ and stacks/, legal/) and tests/<name>/
+projects are set aside; a PR of nothing else checks nothing. A .md inside a
+recipe directory is NOT prose: a package can ship one (`{ file = "NOTES.md" }
+| Local`, or read it from build.sh), so editing it checks that package. A tests/<name>/ directory is a
 self-contained min project with its own [upstream] pin (AGENTS.md "Tests",
 gominimal/pkgs#976): mip never evaluates it as a package, so it cannot break
 one, and its own workflow (if any) runs it. A loose file directly under
@@ -50,7 +52,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from blast_radius_report import load_graph, transitive_dependents  # noqa: E402
 
 MAX_SCOPED = 50
-PROSE_RE = re.compile(r"(^|/)[^/]*\.md$|^legal/")
+PROSE_RE = re.compile(r"^(?!(packages|stacks)/)(.*/)?[^/]*\.md$|^legal/")
 TESTS_RE = re.compile(r"^tests/[^/]+/")
 SCOPED_RE = re.compile(r"^(packages|stacks)/([^/]+)/")
 

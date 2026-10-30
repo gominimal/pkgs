@@ -120,10 +120,17 @@ class Scope(unittest.TestCase):
         self.assertEqual(old_decide(records)[0], "none")
 
     def test_prose_only_checks_nothing(self):
-        (a,) = leaves(1)
-        records = [rec("README.md"), rec(f"packages/{a}/README.md"), rec("legal/x.txt")]
+        records = [rec("README.md"), rec("docs/guide.md"), rec("legal/x.txt")]
         self.assertEqual(self.check(records)[0], "none")
         self.assertEqual(old_decide(records)[0], "none")  # unchanged behaviour
+
+    def test_md_inside_a_recipe_checks_the_recipe(self):
+        # A package can ship a .md (`{ file = "NOTES.md" } | Local`); an edit to
+        # it alone must not scope to "none" (review on #936).
+        (a,) = leaves(1)
+        records = [rec(f"packages/{a}/NOTES.md")]
+        self.assertEqual(self.check(records)[:2], ("scoped", [a]))
+        self.assertEqual(old_decide(records)[0], "none")  # the gap this closes
 
     def test_tests_project_checks_nothing(self):
         # tests/<name>/ is a self-contained min project (pkgs#976), never a package.
