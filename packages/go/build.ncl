@@ -2,10 +2,8 @@ let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = impo
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-# amd64 bootstraps from the go-1.24.9 rung, the top of the go-1.4 -> ... -> 1.24.9 ladder, or,
-# while hex0/amd64-ladder.ncl is off, from a sealed tarball of that rung's output (below).
-# arm64 bootstraps from a sha-pinned go1.24.9 GOROOT tarball (the Source below): Go 1.5 was the
-# first release with an arm64 port, so the C-hosted go-1.4 root cannot produce one.
+# Both arches bootstrap from go-1.24.9, gen-6 of gominimal/bootstrap: the top of the Go ladder,
+# built from source on the hex0-rooted toolchain and reproduced on two machines (see that package).
 let go-1-24-9 = import "../go-1.24.9/build.ncl" in
 let git = import "../git/build.ncl" in
 
@@ -21,43 +19,7 @@ in
   name = "go",
   build_deps = [
     { file = "build.sh" } | Local,
-    match {
-      { arch = 'Amd64, .. } =>
-        if (import "../hex0/amd64-ladder.ncl").enabled then
-          go-1-24-9
-        else
-          # BEDROCK (amd64, interim): build-bot's own output of the go-1.24.9 rung
-          # (gominimal/pkgs 9d20a830 commit map), sha-pinned. Same layout as the rung
-          # (usr/lib/go-1.24.9), so build.sh is unchanged. See hex0/amd64-ladder.ncl.
-          (
-            {
-              name = "go-1.24.9 (bedrock)",
-              prebuilt = true,
-              build_deps = [
-                {
-                  url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/4c339316e715b94c3df09424058161a9f0b08dd97017fde88edf1150247131a7/go1.24.9-x86_64.tar.zst",
-                  sha256 = "4c339316e715b94c3df09424058161a9f0b08dd97017fde88edf1150247131a7",
-                  extract = true,
-                } | Source,
-              ],
-              outputs = { usr = { glob = "usr/**/*", allow_executable = true } | OutputData },
-            } | BuildSpec
-          ),
-      { arch = 'Arm64, .. } =>
-        {
-          # BEDROCK ROOT (arm64): this bootstrap Go is go1.24.9 from the hex0-rooted arm
-          # ladder (hex0 -> gccgo-15.2.0 -> go1.17.13 -> 1.20.14 -> 1.22.6 -> 1.24.9; gccgo is
-          # the Go frontend shipped inside the gcc source tarball, so no new trust root),
-          # replacing the go.dev linux-arm64 bindist. The three upper rungs reproduced
-          # byte-identically across two runs, and 1.17.13 reproduced under two independently
-          # built gccgo hosts. Seal transcripts and evidence: gominimal/minimermetic#16.
-          # `extract = true` unpacks it to ./go — build.sh MUST move it aside before untarring
-          # the go source tree into that same path.
-          url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/fb0df54229ff3bf08ecde83e6095b07fbdb7d0b77c586ed4d468b7f546a8be56/go1.24.9-aarch64.tar.zst",
-          sha256 = "fb0df54229ff3bf08ecde83e6095b07fbdb7d0b77c586ed4d468b7f546a8be56",
-          extract = true,
-        } | Source,
-    } target,
+    go-1-24-9,
     {
       url = variants.source_url,
       sha256 = variants.source_sha256,
