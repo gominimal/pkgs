@@ -15,6 +15,14 @@ if grep -A1 -E '^name = "(rustls-webpki|webpki-roots|webpki-root-certs)"$' Cargo
   exit 1
 fi
 
-cargo build --locked --release
+# TLS roots: build ONLY the rustls-with-native-roots backend, so tldr trusts
+# the system CA store (/etc/ssl/certs) instead of the webpki-roots list
+# compiled into the binary, and a fix to ca-certificates reaches it without a
+# rebuild (CVE-2026-111943, eMudhra). Upstream's default features compile both
+# rustls backends and its config default is the first compiled one, which is
+# webpki. Dropping the webpki backend is what makes native roots the default;
+# a config naming `rustls-with-webpki-roots` now fails with "Unsupported TLS
+# backend" rather than silently trusting the compiled-in list.
+cargo build --locked --release --no-default-features --features rustls-with-native-roots
 mkdir -p "$OUTPUT_DIR/usr/bin"
 cp "target/release/tldr" "$OUTPUT_DIR/usr/bin/"
