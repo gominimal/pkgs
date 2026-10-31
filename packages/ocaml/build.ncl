@@ -6,7 +6,6 @@ let glibc = import "../glibc/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let ocaml-5-5-2 = import "../ocaml-5.5.2/build.ncl" in # the boot compiler, from gominimal/bootstrap gen-9
-
 let version = "5.5.2" in
 {
   name = "ocaml",
