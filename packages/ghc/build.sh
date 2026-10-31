@@ -62,10 +62,35 @@ chmod +x "$STUB_DIR/sphinx-build"
 # Ensure stubs and build-produced tools are in PATH
 export PATH="$STUB_DIR:$PWD/_build/bin:$PATH"
 
-# Bootstrap Hadrian
-# We must explicitly pass the bootstrap GHC path and also pass --bootstrap-sources to force
-# the bootstrap.py script to use the local offline tarballs instead of downloading them.
-python3 hadrian/bootstrap/bootstrap.py -w "$(command -v ghc)" --bootstrap-sources ../hadrian-bootstrap-sources-9.8.1.tar.gz
+# Boot compiler: ghc-9.6.7 (the gen-7 prebuilt), always. No fallback to a ghc on PATH: that would silently build
+# from whatever host GHC happened to be there and break the source-only chain.
+if [ -x /usr/lib/ghc-9.6.7/bin/ghc ]; then
+  BOOT=/usr/lib/ghc-9.6.7/bin/ghc; BOOT_PKG=/usr/lib/ghc-9.6.7/bin/ghc-pkg
+else
+  echo "ERROR: boot compiler /usr/lib/ghc-9.6.7/bin/ghc is missing (ghc-9.6.7 is a build dep)" >&2
+  exit 1
+fi
+echo "boot compiler: ${BOOT} ($("${BOOT}" --numeric-version))"
+
+# Bootstrap Hadrian from the offline sources tarball (9.6.4's plan, for the 9.6.7 boot).
+# Its plan-bootstrap.json pins the versions of the packages bundled
+# with the boot it was generated for and bootstrap.py checks them against the boot's ghc-pkg
+# exactly, so rewrite them to what this boot ships and repack before passing --bootstrap-sources.
+HBS="$(ls ../hadrian-bootstrap-sources-*.tar.gz | head -1)"
+mkdir -p ../hbs && tar -xzf "${HBS}" -C ../hbs --no-same-owner
+python3 - ../hbs/plan-bootstrap.json "${BOOT_PKG}" <<'PY'
+import json, subprocess, sys
+plan, ghcpkg = sys.argv[1], sys.argv[2]
+d = json.load(open(plan)); n = 0
+for b in d.get('builtin', []):
+    v = subprocess.run([ghcpkg, '--simple-output', 'field', b['package'], 'version'], capture_output=True, text=True).stdout.split()
+    if v and v[-1] != b['version']:
+        b['version'] = v[-1]; n += 1
+json.dump(d, open(plan, 'w'), indent=1)
+print(n, 'builtin versions rewritten')
+PY
+tar -czf ../hbs-boot.tar.gz -C ../hbs .
+python3 hadrian/bootstrap/bootstrap.py -w "${BOOT}" --bootstrap-sources ../hbs-boot.tar.gz
 
 # Add pseudostore lib dirs to LD_LIBRARY_PATH so bootstrapped tools can find their dependencies
 PSEUDO_LIBS="$(find _build/pseudostore -name "*.so*" -exec dirname {} \; | sort -u | paste -sd : || true)"
@@ -77,10 +102,13 @@ if [ -n "$PSEUDO_LIBS" ]; then
   fi
 fi
 
-# Now we can configure GHC.
+# Now we can configure GHC. On aarch64 lld is in the build closure (the boot links with it) but not a
+# runtime dep, so the shipped settings must not pick it up. The environment form of --disable-ld-override
+# also reaches the bindist's own configure, which `hadrian install` runs without our flags.
+[ "$(uname -m)" = aarch64 ] && export enable_ld_override=no
 ./configure \
   --prefix=/usr \
-  GHC=ghc
+  GHC="${BOOT}"
 
 # Hadrian flags. These MUST be identical for the build and the install invocation:
 # hadrian does not encode the flavour in the _build tree paths, so an install run
@@ -97,6 +125,32 @@ _build/bin/hadrian "${HADRIAN_FLAGS[@]}"
 
 # And install!
 DESTDIR=$OUTPUT_DIR _build/bin/hadrian "${HADRIAN_FLAGS[@]}" install --prefix=/usr
+
+if [ "$(uname -m)" = aarch64 ]; then
+  S="$(find "$OUTPUT_DIR" -type f -name settings -path '*/lib/*' | head -1)"
+  if [ -n "$S" ] && grep -q 'lld' "$S"; then
+    echo "ERROR: the shipped settings link with lld, which is not a runtime dep: $S" >&2
+    exit 1
+  fi
+fi
+
+# amd64 twin of the lld check: the boot builds against the glibc-bedrock-2.42 sysroot, which is a build dep
+# only, so nothing shipped may name it: not the settings file (C compiler and linker flags), and no ELF
+# interpreter, RPATH or RUNPATH.
+if [ "$(uname -m)" = x86_64 ]; then
+  BR=/usr/lib/glibc-bedrock-2.42
+  bad=0
+  while IFS= read -r -d '' S; do
+    if grep -q "$BR" "$S"; then echo "ERROR: shipped settings name the bedrock sysroot: $S" >&2; bad=1; fi
+  done < <(find "$OUTPUT_DIR" -type f -name settings -path '*/lib/*' -print0)
+  while IFS= read -r -d '' f; do
+    if [ "$(head -c 4 "$f" | od -An -c | tr -d ' ')" = '177ELF' ] \
+       && readelf -d -l "$f" 2>/dev/null | grep -E 'RPATH|RUNPATH|interpreter' | grep -q "$BR"; then
+      echo "ERROR: shipped ELF references the bedrock sysroot: $f" >&2; bad=1
+    fi
+  done < <(find "$OUTPUT_DIR" -type f -print0)
+  [ "$bad" = 0 ] || exit 1
+fi
 
 # Refresh the package database cache so downstream builds don't see stale cache warnings
 GHC_PKG="$(find "$OUTPUT_DIR" -name ghc-pkg -type f | head -1)"
