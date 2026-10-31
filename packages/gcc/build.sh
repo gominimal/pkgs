@@ -76,5 +76,5 @@ make -j$(nproc)
 # TODO make -k check
 make DESTDIR=$OUTPUT_DIR install-strip
 
-# TODO
-# ln -sf $OUTPUT_DIR/usr/bin/gcc $OUTPUT_DIR/usr/bin/cc
+# gcc installs `c++` but not `cc`, the name build tools and rustc's default linker invoke
+ln -s gcc $OUTPUT_DIR/usr/bin/cc
