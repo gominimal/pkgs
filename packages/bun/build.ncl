@@ -20,6 +20,8 @@ let libtool = import "../libtool/build.ncl" in
 let unzip = import "../unzip/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
+let openssl = import "../openssl/build.ncl" in
 
 let version = "1.3.14" in
 let dl_base = "https://github.com/oven-sh/bun/releases/download/bun-v%{version}" in
@@ -36,6 +38,9 @@ in
     # bun's compiled-in root store. See the patch header; drop it on the first
     # bun release containing oven-sh/bun#46159.
     { file = "cve-2026-111943-remove-emsign-roots.patch" } | Local,
+    # Trust the system CA store instead of the compiled-in roots by default
+    # (gominimal/pkgmgr-rs#1026). See the patch header and build.sh.
+    { file = "system-ca-store-default.patch" } | Local,
     {
       url = "https://github.com/oven-sh/bun/archive/refs/tags/bun-v%{version}.tar.gz",
       sha256 = "112a5915992807f04b183854d360c2bf87ac7c1587fb5da3c560bdbb75b8c92e",
@@ -77,6 +82,9 @@ in
     glibc,
     git,
     bash, # the /usr/bin wrappers are #!/bin/sh scripts (bash provides bin/sh)
+    # bun trusts the system CA store by default (system-ca-store-default.patch).
+    # Without it bun falls back to its compiled-in roots, so declare it.
+    ca-certificates,
   ],
   needs =
     {
@@ -151,6 +159,69 @@ in
               if (fps.size < 100 || left.length) { console.log(`roots=${fps.size} still bundled: ${left}`); process.exit(1); }
               JS
               bun /tmp/emsign.js
+            "%
+          ],
+        ],
+      } | Test,
+    # The system CA store is what bun trusts by default (system-ca-store-
+    # default.patch), so a CA removed from ca-certificates stops being trusted
+    # (CVE-2026-111943). Offline, against a REAL local TLS server: a throwaway
+    # CA signs a 127.0.0.1 leaf, `openssl s_server` serves it, and SSL_CERT_FILE
+    # names that CA as the whole system store.
+    #   - default: trusted (stock bun only uses its compiled-in roots, so it
+    #     rejects this CA: the test FAILS without the patch);
+    #   - NODE_USE_SYSTEM_CA=0 and --use-bundled-ca (the opt-outs): rejected.
+    # Checked through tls.connect; fetch's answers are printed as a diagnostic.
+    # (The removal direction, a compiled-in root missing from the system store
+    # is untrusted, needs a real root's key, so it rests on the patch's grep
+    # guards in build.sh. An earlier keyless fake-server harness gave
+    # unusable answers on 1.3.14 in the sandbox.)
+    system_ca_store_default =
+      {
+        class = 'Standalone,
+        test_deps = [base, ca-certificates, openssl],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              test -s /etc/ssl/certs/ca-certificates.crt
+              d=$(mktemp -d)
+              cd "$d"
+              openssl req -x509 -newkey rsa:2048 -nodes -days 2 -subj "/CN=minimal test CA" \
+                -keyout ca.key -out ca.pem 2>/dev/null
+              openssl req -newkey rsa:2048 -nodes -subj "/CN=127.0.0.1" -keyout leaf.key -out leaf.csr 2>/dev/null
+              printf 'subjectAltName=IP:127.0.0.1\n' > ext.cnf
+              openssl x509 -req -in leaf.csr -CA ca.pem -CAkey ca.key -CAcreateserial -days 2 \
+                -extfile ext.cnf -out leaf.pem 2>/dev/null
+              port=$(( 20000 + RANDOM % 20000 ))
+              openssl s_server -accept "127.0.0.1:$port" -cert leaf.pem -key leaf.key -www -quiet >/dev/null 2>&1 &
+              srv=$!
+              trap 'kill $srv 2>/dev/null || true' EXIT
+              for _ in $(seq 100); do (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null && break; sleep 0.1; done
+              mkdir -p empty
+              cat > check.js <<JS
+              const port = $port;
+              const viaTls = () => new Promise(r => require("node:tls")
+                .connect({ host: "127.0.0.1", port })
+                .on("secureConnect", function () { this.destroy(); r("ok"); })
+                .on("error", e => r(String(e.code))));
+              const viaFetch = () => fetch("https://127.0.0.1:" + port + "/").then(() => "ok", e => String(e.code));
+              (async () => { console.log(await viaTls() + " fetch=" + await viaFetch()); process.exit(0); })();
+              setTimeout(() => { console.log("timeout"); process.exit(3); }, 20000).unref();
+              JS
+              run() {
+                flag=$1; shift
+                env -u NODE_USE_SYSTEM_CA -u NODE_EXTRA_CA_CERTS -u HTTPS_PROXY -u https_proxy -u HTTP_PROXY -u http_proxy -u ALL_PROXY -u all_proxy \
+                  SSL_CERT_FILE="$d/ca.pem" SSL_CERT_DIR="$d/empty" "$@" bun $flag check.js || true
+              }
+              got=$(run ""); echo "default: $got"
+              case "$got" in ok*) ;; *) echo "default does not trust the system store: $got" >&2; exit 1 ;; esac
+              got=$(run "" NODE_USE_SYSTEM_CA=0); echo "NODE_USE_SYSTEM_CA=0: $got"
+              case "$got" in ok*|timeout*|"") echo "NODE_USE_SYSTEM_CA=0 still trusts the system store: $got" >&2; exit 1 ;; esac
+              got=$(run --use-bundled-ca); echo "--use-bundled-ca: $got"
+              case "$got" in ok*|timeout*|"") echo "--use-bundled-ca still trusts the system store: $got" >&2; exit 1 ;; esac
             "%
           ],
         ],
