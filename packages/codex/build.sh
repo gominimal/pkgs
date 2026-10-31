@@ -26,7 +26,7 @@ grep -A1 '^name = "openssl-sys"$' Cargo.lock | grep -q '^version = "0.9.117"$' |
 
 # Upstream's release tags set the workspace version in Cargo.toml but leave the
 # workspace members at 0.0.0 in the committed Cargo.lock, so `--locked` refuses it
-# (rust-v0.165.0: 166 members). Let cargo sync ONLY the workspace members, then
+# (rust-v0.166.0: 166 members). Let cargo sync ONLY the workspace members, then
 # fail closed if any registry crate's pinned version or source moved.
 registry_pins() {
   awk '/^\[\[package\]\]/ { n = ""; v = "" } /^name = / { n = $3 } /^version = / { v = $3 }
