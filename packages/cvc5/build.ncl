@@ -8,6 +8,7 @@ let python = import "../python/build.ncl" in
 let py-pyparsing = import "../py-pyparsing/build.ncl" in
 let symfpu = import "../symfpu/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
+let libpoly = import "../libpoly/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
@@ -55,11 +56,15 @@ let cadical_commit = "a384d221a920d473b770df6a7221f35fc5d99e90" in
     # Header-only, compiled in; cvc5's FP theory bit-blasts through it.
     symfpu,
     gmp,
+    # Nonlinear real arithmetic: cylindrical algebraic coverings (`--nl-cov`),
+    # ICP and exact algebraic-number models. Linked as a shared library.
+    libpoly,
   ],
 
   runtime_deps = [
     glibc,
     gmp,
+    libpoly,
     subsetOf gcc ["libgcc", "libstdcpp"],
   ],
 
@@ -82,8 +87,11 @@ let cadical_commit = "a384d221a920d473b770df6a7221f35fc5d99e90" in
       # BSD-3-Clause for cvc5 itself (COPYING); the bundled MiniSat
       # (src/prop/minisat) and the statically linked CaDiCaL are MIT. Every
       # GPL-licensed optional library (CLN, GLPK, CoCoA, Normaliz) is OFF —
-      # see build.sh — so the binary is not GPL. GMP is linked dynamically
-      # (LGPL-3.0, per COPYING the combined work stays BSD).
+      # see build.sh — so the binary is not GPL. GMP and LibPoly are both
+      # LGPL-3.0-or-later and both linked dynamically; COPYING says the
+      # combined work stays BSD for GMP, and lists LibPoly among the
+      # libraries that do not affect cvc5's licence terms. Finite fields need
+      # CoCoALib (GPL-3.0-or-later), so they are NOT in this package.
       license_spdx = "BSD-3-Clause AND MIT",
       source_provenance = {
         category = 'GithubRepo,
@@ -102,6 +110,16 @@ let cadical_commit = "a384d221a920d473b770df6a7221f35fc5d99e90" in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "cvc5 --version | head -1 | grep -Fx 'cvc5 %{version}'"],
+          # The build configuration is what we meant: LibPoly in, every GPL
+          # library out (so the BSD claim in license_spdx holds).
+          ["/bin/bash", "-c", "c=$(cvc5 --show-config) && echo \"$c\" && echo \"$c\" | grep -Ex 'poly +: yes' && for l in cln glpk cocoa normaliz; do echo \"$c\" | grep -Ex \"$l +: no\"; done"],
+          # QF_NRA sat whose only models are irrational (x = sqrt 2): needs the
+          # coverings solver's algebraic numbers, i.e. LibPoly. Without it
+          # cvc5 answers `unknown`.
+          ["/bin/bash", "-c", "printf '(set-logic QF_NRA)\\n(declare-const x Real)\\n(assert (= (* x x) 2.0))\\n(assert (> x 0.0))\\n(check-sat)\\n' > /tmp/nra.smt2 && out=$(cvc5 /tmp/nra.smt2) && echo \"$out\" && test \"$out\" = sat"],
+          # QF_NRA unsat that linearization alone does not refute: x^2 = 2 and
+          # x rational-bounded to a gap containing no root.
+          ["/bin/bash", "-c", "printf '(set-logic QF_NRA)\\n(declare-const x Real)\\n(assert (= (* x x) 2.0))\\n(assert (> x 1.4143))\\n(assert (< x 1.5))\\n(check-sat)\\n' > /tmp/nra2.smt2 && out=$(cvc5 --nl-cov /tmp/nra2.smt2) && echo \"$out\" && test \"$out\" = unsat"],
           # QF_BV sat: 3 is odd, hence invertible mod 2^8, so x*3 = 15 has the
           # single solution x = 5.
           ["/bin/bash", "-c", "printf '(set-logic QF_BV)\\n(set-option :produce-models true)\\n(declare-const x (_ BitVec 8))\\n(assert (= (bvmul x #x03) #x0f))\\n(check-sat)\\n(get-value (x))\\n' > /tmp/sat.smt2 && out=$(cvc5 /tmp/sat.smt2) && echo \"$out\" && test \"$out\" = \"$(printf 'sat\\n((x #b00000101))')\""],
