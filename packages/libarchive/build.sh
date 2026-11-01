@@ -1,8 +1,8 @@
 #!/bin/sh
 set -ex
 
-tar -xof libarchive-3.8.10.tar.gz
-cd libarchive-3.8.10
+tar -xof libarchive-3.8.11.tar.gz
+cd libarchive-3.8.11
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
