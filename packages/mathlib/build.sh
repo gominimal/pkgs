@@ -116,3 +116,51 @@ cp lake-manifest.json "$SHARE/"
   echo "total files: $(find "$OUT" -type f | wc -l)"
 } > "$SHARE/MANIFEST"
 cat "$SHARE/MANIFEST"
+
+# 7. Licences. The cache redistributes this package, so every upstream
+#    licence travels with it (Apache-2.0 s4(a)/(d): a copy of the licence and
+#    any NOTICE file; MIT: the copyright and permission notice). One directory
+#    per source, named like the Lake package. None of the nine pinned sources
+#    ships a NOTICE file today; one that appears is copied too.
+LIC="$OUTPUT_DIR/usr/share/licenses/mathlib"
+install_lic() { # name srcdir
+  mkdir -p "$LIC/$1"
+  cp "$2/LICENSE" "$LIC/$1/LICENSE"
+  # `if`, not `[ … ] && cp`: with no NOTICE the && form returns 1 and
+  # `set -e` would abort the build.
+  for n in "$2"/NOTICE*; do
+    if [ -f "$n" ]; then cp "$n" "$LIC/$1/"; fi
+  done
+}
+install_lic mathlib .
+for n in plausible LeanSearchClient importGraph proofwidgets aesop Qq batteries Cli; do
+  install_lic "$n" ".lake/packages/$n"
+done
+# ProofWidgets' committed widget JS bundles npm code whose notices the
+# minified files do not carry. Ship the inventory (build.ncl Local), but only
+# if it was generated from THIS lockfile.
+inv="$ROOT/proofwidgets-js-third-party.txt"
+want_lock="$(sed -n 's/^package-lock.json sha256: //p' "$inv")"
+have_lock="$(sha256sum .lake/packages/proofwidgets/widget/package-lock.json | cut -d' ' -f1)"
+if [ -z "$want_lock" ] || [ "$want_lock" != "$have_lock" ]; then
+  echo "mathlib: proofwidgets-js-third-party.txt was generated from package-lock.json $want_lock," >&2
+  echo "         but the pinned ProofWidgets has $have_lock. Regenerate it." >&2
+  exit 1
+fi
+cp "$inv" "$LIC/proofwidgets/THIRD-PARTY-JS.txt"
+
+# Fail closed: every expected licence file is installed and non-empty, and
+# each says what build.ncl's license_spdx claims (Apache-2.0, except
+# lean4-cli's MIT).
+for n in mathlib plausible LeanSearchClient importGraph proofwidgets aesop Qq batteries Cli; do
+  f="$LIC/$n/LICENSE"
+  if [ ! -s "$f" ]; then
+    echo "mathlib: licence file $f missing or empty; refusing to package." >&2
+    exit 1
+  fi
+  case "$n" in
+    Cli) grep -q '^MIT License' "$f" ;;
+    *)   grep -q 'Apache License' "$f" && grep -q 'Version 2.0, January 2004' "$f" ;;
+  esac || { echo "mathlib: $f is not the licence build.ncl declares for $n." >&2; exit 1; }
+done
+test -s "$LIC/proofwidgets/THIRD-PARTY-JS.txt"

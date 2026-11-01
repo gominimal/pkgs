@@ -42,6 +42,9 @@ let version = "4.35.0" in
   # than fetching. Rebuilding that JS from TypeScript is a follow-up.
   build_deps = [
     { file = "build.sh" } | Local,
+    # Licence inventory of the npm code bundled in ProofWidgets' widget JS,
+    # generated from its pinned package-lock.json (build.sh checks the hash).
+    { file = "proofwidgets-js-third-party.txt" } | Local,
     {
       url = "gs://minimal-staging-archives/aeneas-latest/mathlib-56a0058.tar.gz",
       sha256 = "45567f6e07607b787026d287c8ec1828f6cabc8debe11a45a521750580e3a0d5",
@@ -127,6 +130,9 @@ let version = "4.35.0" in
     ir = { glob = "usr/lib/lean/pkgs/**/*.ir" } | OutputData,
     ir_sig = { glob = "usr/lib/lean/pkgs/**/*.ir.sig" } | OutputData,
     share = { glob = "usr/share/mathlib/*" } | OutputData,
+    # Every upstream LICENSE (+ any NOTICE), one dir per source, and the
+    # ProofWidgets JS third-party inventory. Required for redistribution.
+    licenses = { glob = "usr/share/licenses/mathlib/**" } | OutputData,
   },
 
   runtime_deps = [
@@ -136,11 +142,22 @@ let version = "4.35.0" in
   attrs =
     {
       upstream_version = version,
-      # Mathlib and the vendored Lake packages batteries, aesop, Qq,
-      # ProofWidgets4, import-graph, LeanSearchClient and plausible are
-      # Apache-2.0; lean4-cli is MIT, as is the npm code (React, d3, …)
-      # bundled into ProofWidgets' widget JS that its oleans embed.
-      license_spdx = "Apache-2.0 AND MIT",
+      # Verified against the LICENSE file in each pinned tarball (build.sh
+      # installs them and fails closed if one is missing or differs):
+      #   Apache-2.0: Mathlib, batteries, aesop, Qq, ProofWidgets4,
+      #               import-graph, LeanSearchClient, plausible
+      #   MIT:        lean4-cli
+      # No source ships a NOTICE file. ProofWidgets' oleans also embed its
+      # prebuilt widget JS, which bundles npm code; the licences its
+      # package-lock.json declares (a superset of what is bundled; see
+      # proofwidgets-js-third-party.txt) add ISC, BSD-3-Clause, CC-BY-4.0,
+      # CC0-1.0 and Unlicense. All permissive; nothing copyleft.
+      license_spdx = "Apache-2.0 AND MIT AND ISC AND BSD-3-Clause AND CC-BY-4.0 AND CC0-1.0 AND Unlicense",
+      # Every licence above permits binary redistribution with notices, which
+      # the `licenses` output carries, so the public cache may serve the
+      # prebuilt artifact (users skip the ~2 h build). Explicit rather than
+      # the stdlib default so the decision is visible and reviewable.
+      redistributable = true,
       source_provenance = {
         category = 'GithubRepo,
         owner = "leanprover-community",
