@@ -48,7 +48,12 @@ let version = "2026e" in
         test_deps = [bash-bootstrap, coreutils],
         cmds = [
           ["/bin/bash", "-c", "test -f /usr/share/zoneinfo/UTC"],
-          ["/bin/bash", "-c", "[[ $(TZ=America/Vancouver date +%Z) == P[SD]T ]]"],
+          # Pinned instants, not "now": British Columbia moved to permanent UTC-7 at
+          # 2026-11-01T09:00Z and tzdata calls it MST from then on, so asserting today's
+          # abbreviation broke every PR's checks that morning. These two still prove the
+          # zone and its DST rules resolve: 2025-01-15 is PST, 2025-07-15 is PDT.
+          ["/bin/bash", "-c", "test \"$(TZ=America/Vancouver date -d @1736899200 +%Z)\" = PST"],
+          ["/bin/bash", "-c", "test \"$(TZ=America/Vancouver date -d @1752537600 +%Z)\" = PDT"],
           ["/bin/bash", "-c", "test \"$(TZ=Europe/Paris date -d @0 +%H)\" = 01"],
         ],
       } | Test,
