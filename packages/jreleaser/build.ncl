@@ -8,7 +8,7 @@ let jdk = import "../jdk/build.ncl" in
 let sed = import "../sed/build.ncl" in
 let unzip = import "../unzip/build.ncl" in
 
-let version = "1.26.0" in
+let version = "1.27.0" in
 {
   name = "jreleaser",
   # JReleaser automates releases: changelogs, GitHub/GitLab/Gitea releases,
@@ -27,7 +27,7 @@ let version = "1.26.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/jreleaser/jreleaser/releases/download/v%{version}/jreleaser-%{version}.zip",
-      sha256 = "c821df22b1715a841024ba17c4b5233375c868e6c9dcc81612c38329c8dec628",
+      sha256 = "3e9b9131ad4e8445b007c234d219ea09482f59aaeb891b12bfec4e16c7cdfa44",
     } | Source,
     base,
     unzip,
