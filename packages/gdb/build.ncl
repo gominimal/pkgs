@@ -1,4 +1,4 @@
-let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -66,6 +66,10 @@ let version = "18.1" in
     gmp,
     mpfr,
     python,
+    # gdb 18 links libatomic.so.1 (DT_NEEDED); without it the binary cannot
+    # load ("error while loading shared libraries: libatomic.so.1") and gef,
+    # which runs through gdb, fails with it. Only the library, not all of gcc.
+    subsetOf gcc ["libatomic"],
   ],
 
   cmd = "./build.sh",
