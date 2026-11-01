@@ -135,6 +135,13 @@ let commit = "5a47802b5c391f59ecdd44117981f4ff8c0656ba" in
               if tlc -workers 1 -config Bad.cfg Counter.tla > bad.out 2>&1; then cat bad.out; exit 1; fi
               grep -q 'Invariant Small is violated.' bad.out
               grep -q 'x = 3' bad.out
+              # An explicit -workers is honoured...
+              grep -Eq 'with 1 worker on [0-9]+ cores?' good.out || { grep -E 'workers? on' good.out; exit 1; }
+              # ...and without it the wrapper uses every CPU (TLC alone uses one).
+              tlc -config Good.cfg Counter.tla > auto.out 2>&1 || { cat auto.out; exit 1; }
+              grep -q 'Model checking completed. No error has been found.' auto.out
+              n=$(nproc)
+              grep -Eq "with $n workers? on $n cores?" auto.out || { echo "expected $n workers"; grep -E 'workers? on' auto.out; exit 1; }
             "%,
           ],
         ],
