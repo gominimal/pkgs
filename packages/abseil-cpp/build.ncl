@@ -5,8 +5,6 @@ let make = import "../make/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 
-let patch = import "../patch/build.ncl" in
-
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
@@ -15,7 +13,6 @@ let version = "20260817.0" in
   name = "abseil-cpp",
   build_deps = [
     { file = "build.sh" } | Local,
-    { file = "abseil-cpp-gcc15-bmi2intrin.patch" } | Local,
     {
       url = "https://github.com/abseil/abseil-cpp/releases/download/%{version}/abseil-cpp-%{version}.tar.gz",
       sha256 = "f7e05179df39c45434cad433f5783840bb3788ef322976f9138bc6b72b3a107d",
@@ -26,7 +23,6 @@ let version = "20260817.0" in
     make,
     cmake,
     ninja,
-    patch,
     toolchain,
   ],
   runtime_deps = [
