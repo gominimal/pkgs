@@ -1,5 +1,9 @@
 #!/bin/sh
 set -ex
+# The system_ca_store_default standalone test (build.ncl) runs only when bun
+# rebuilds: tests are not part of the spec hash (gominimal/pkgs#1149). Touch
+# this comment when that test changes, so the next build runs it. Last test
+# change: removal direction + opt-out probes (pkgs#1134 review).
 
 # Extract and set up bootstrap bun binary
 case $(uname -m) in
@@ -97,6 +101,28 @@ case "$control" in
   *) echo "ERROR: emSign root check did not flag the stock bootstrap bun (got: $control); the check is broken" >&2; exit 1 ;;
 esac
 
+# Trust the system CA store (/etc/ssl/certs, from ca-certificates) instead of
+# the roots compiled into bun, so a CA removed from ca-certificates
+# (CVE-2026-111943, eMudhra) stops being trusted without a bun rebuild
+# (gominimal/pkgmgr-rs#1026). bun 1.3.14 has no switch for this:
+# --use-system-ca / NODE_USE_SYSTEM_CA=1 only ADD the system roots to the
+# compiled-in ones, and --use-openssl-ca is parsed but ignored (fixed upstream
+# only on the 1.4 line, oven-sh/bun#46542). See the patch header for the exact
+# semantics. Opt out with NODE_USE_SYSTEM_CA=0 (any command) or
+# --use-bundled-ca (run/test commands). With no system store at all bun keeps
+# its compiled-in roots. Applied by name; the greps make an upstream rewrite of
+# either file fail the build instead of silently dropping the default.
+patch -Np1 -i system-ca-store-default.patch
+grep -q 'pub export var Bun__Node__CAStore: BunCAStore = .system; // minimal: system CA store by default' src/cli/Arguments.zig || { echo "ERROR: bun CA store default patch did not apply to src/cli/Arguments.zig" >&2; exit 1; }
+grep -q 'for (size_t i = 0; minimal_bundled && i < root_certs_size; i++) {' packages/bun-usockets/src/crypto/root_certs.cpp || { echo "ERROR: bun CA store default patch did not apply to root_certs.cpp" >&2; exit 1; }
+[ "$(grep -c 'Bun__Node__CAStore' packages/bun-usockets/src/crypto/root_certs.cpp)" -ge 4 ] || { echo "ERROR: root_certs.cpp does not read Bun__Node__CAStore after the patch" >&2; exit 1; }
+
+# The system-CA behaviour (system store replaces the compiled-in roots; the
+# opt-outs restore them) is NOT checked here: it needs ca-certificates and the
+# openssl CLI, which are not build deps. The grep guards above prove the patch
+# applied; the standalone `system_ca_store_default` test (build.ncl) checks the
+# behaviour on the built bun.
+
 # Initialize a git repo so nested dep version generation works
 # (it runs "git rev-parse HEAD" to get version strings for bundled packages)
 git init -q
@@ -104,7 +130,31 @@ git -c user.email=build@local -c user.name=build commit -q -m "v${MINIMAL_ARG_VE
 
 # Build via bun's own build orchestration (handles bun install, codegen, cmake
 # deps, zig, linking, and strip). Outputs the stripped binary at build/release/bun.
-bun run build:release
+#
+# Bounded (gominimal/pkgs#1160): the arm64 build intermittently hangs with no
+# output, and an unbounded hang holds build-bot until someone cancels it. A cold
+# build takes 3-9 min on either arch, so 60 min is only ever a hang. Five
+# minutes before the limit the watchdog prints every live process, so a hang
+# names the step it stuck in (zig codegen, codegen scripts, cmake deps, bun
+# install) instead of ending as a bare timeout. timeout signals its whole
+# process group, so zig and the cmake children die with bun.
+(
+  sleep 3300
+  echo "bun build:release still running after 55 min; live processes:" >&2
+  for d in /proc/[0-9]*; do
+    [ -r "$d/cmdline" ] || continue
+    printf '  %s %s\n' "${d#/proc/}" "$(tr '\0' ' ' < "$d/cmdline" 2>/dev/null | cut -c1-300)" >&2
+  done
+) &
+BUN_WATCHDOG=$!
+rc=0
+timeout --kill-after=60 3600 bun run build:release || rc=$?
+kill "$BUN_WATCHDOG" 2>/dev/null || true
+if [ "$rc" -eq 124 ] || [ "$rc" -eq 137 ]; then
+  echo "ERROR: bun build:release hung for 60 min on $(uname -m) and was killed (gominimal/pkgs#1160)." >&2
+  exit 1
+fi
+[ "$rc" -eq 0 ] || exit "$rc"
 
 # CVE-2026-111943: the binary we ship must not bundle the removed roots.
 build/release/bun ./minimal-check-emsign-roots.js
