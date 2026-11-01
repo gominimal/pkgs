@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.14.9" in
+let version = "0.15.0" in
 {
   name = "bottom",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/ClementTsang/bottom/%{version}.tar.gz",
-      sha256 = "1dbb940c763fb583b7e1c7dfa165b73ed9a0ba712e72cc97311c5b1c098d5b72",
+      sha256 = "9b38fd551ef9e67bb8dc09a658e7c9594913fc5c43154f264d5b776416ad1c4d",
       extract = true,
       strip_prefix = "bottom-%{version}",
     } | Source,
