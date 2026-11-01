@@ -1,78 +1,47 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
-# go-1.24.9: one rung of the Go bootstrap ladder (go-1.4 -> 1.17.13 -> 1.20.14 -> 1.22.6 -> 1.24.9 -> go).
-# Builds Go 1.24.9 from the pinned source tarball with ../go-1.22.6 as GOROOT_BOOTSTRAP and ships the
-# whole GOROOT at /usr/lib/go-1.24.9 for the next rung.
-# Source: https://go.dev/dl/go1.24.9.src.tar.gz mirrored to gs://minimal-staging-archives/.
-# No `needs`: nothing here touches the network.  amd64 only (see the match at the bottom).
-let go-prev = import "../go-1.22.6/build.ncl" in # the previous rung (GOROOT_BOOTSTRAP)
-let gcc-bedrock = import "../gcc-15.2.0-glibc/build.ncl" in # asserted by build.sh; no cgo
-let binutils-bedrock = import "../binutils-2.46-glibc/build.ncl" in
-let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # sysroot
-let bash = import "../bash/build.ncl" in # make.bash + build.sh interpreter
-let make = import "../make/build.ncl" in
-let sed = import "../sed/build.ncl" in
-let grep = import "../grep/build.ncl" in
-let coreutils = import "../coreutils/build.ncl" in # sha256sum/cp/mkdir/uname/timeout/rm
-let tar = import "../tar/build.ncl" in
-# pkgmgr: bootstrap_rung = "go"
+let glibc-bedrock-2-42-sysroot = import "../glibc-bedrock-2.42-sysroot/build.ncl" in # the sysroot only (see that package)
+let glibc = import "../glibc/build.ncl" in
+# go-1.24.9: the bootstrap for `go`, from gen-11 of gominimal/bootstrap: the top of the Go ladder,
+# go-1.4 -> 1.17.13 -> 1.20.14 -> 1.22.6 -> 1.24.9 on amd64 and gccgo-15.2.0 -> go-1.17.13 -> ...
+# -> 1.24.9 on arm64 (Go 1.5 added arm64, so the C-hosted go-1.4 cannot start that chain), every
+# rung built on the hex0-rooted toolchain and reproduced byte for byte on two independent
+# machines before publishing (generations/gen-11/manifest.json). Ships the whole GOROOT at
+# /usr/lib/go-1.24.9; nothing lands on /usr/bin.
+let is_arm = target.arch == 'Arm64 in
 let version = "1.24.9" in
-let amd64_spec =
-  {
-    name = "go-1.24.9",
-    build_deps = [
-      { file = "build.sh" } | Local,
-      {
-        url = "gs://minimal-staging-archives/go%{version}.src.tar.gz",
-        sha256 = "c72f81ba54fe00efe7f3e7499d400979246881b13b775e9a9bb85541c11be695",
-        extract = false, # build.sh untars with --no-same-owner (the sandbox cannot chown)
-      } | Source,
-      go-prev,
-      gcc-bedrock,
-      binutils-bedrock,
-      glibc-bedrock,
-      bash,
-      make,
-      sed,
-      grep,
-      coreutils,
-      tar,
-    ],
-    build_args = {
-      include version,
-    },
-    cmd = "./build.sh",
-    outputs = {
-      # One recursive OutputData glob over the versioned prefix: the next rung consumes this tree
-      # as data by absolute path, so nothing lands on /usr/bin (that is packages/go's slot).
-      # The whole GOROOT ships (bin + pkg + src + lib) because Go compiles its own stdlib sources.
-      goroot = { glob = "usr/lib/go-1.24.9/**", allow_executable = true } | OutputData,
-      buildinfo = { glob = "usr/share/go-1.24.9/BUILDINFO" } | OutputData,
-    },
-    attrs =
-      {
-        upstream_version = version,
-        source_provenance = {
-          category = 'GithubRepo,
-          owner = "golang",
-          repo = "go",
-        },
-      } | Attrs,
-  } | BuildSpec
-in
-# amd64 only: this rung belongs to the amd64 bootstrap ladder.  On arm64 the shipped go recipe
-# consumes a sha-pinned prebuilt instead, so this spec collapses to an empty collection there.
-match {
-  { arch = 'Amd64, .. } =>
-    # While hex0/amd64-ladder.ncl is off, amd64 is an empty stub too: `go`/`rust` take sealed
-    # tarballs of the chain's last rungs instead (see that file).
-    if (import "../hex0/amd64-ladder.ncl").enabled then
-      amd64_spec
-    else
-      ({ name = "go-1.24.9", build_deps = [] } | BuildSpec),
-  { arch = 'Arm64, .. } =>
+{
+  name = "go-1.24.9",
+  prebuilt = true,
+  build_deps = [
+    match {
+      { arch = 'Amd64, .. } =>
+        {
+          url = "gs://minimal-bootstrap/gen-11/sha256/6ca7638ab8cde5ea64255f1adf2e7ddf0e166c0c6a3a7afccb86392f1650a572/go-1.24.9-1.24.9-x86_64.tar.zst",
+          sha256 = "6ca7638ab8cde5ea64255f1adf2e7ddf0e166c0c6a3a7afccb86392f1650a572",
+          extract = true,
+        } | Source,
+      { arch = 'Arm64, .. } =>
+        {
+          url = "gs://minimal-bootstrap/gen-11/sha256/1a4250067fadc06ef128c00aa5ad62e22d0834a0dbedfb849acc7b5bdbefdf1e/go-1.24.9-1.24.9-aarch64.tar.zst",
+          sha256 = "1a4250067fadc06ef128c00aa5ad62e22d0834a0dbedfb849acc7b5bdbefdf1e",
+          extract = true,
+        } | Source,
+    } target,
+  ],
+  runtime_deps = if is_arm then [glibc] else [glibc-bedrock-2-42-sysroot],
+  outputs = {
+    goroot = { glob = "usr/lib/go-1.24.9/**", allow_executable = true } | OutputData,
+    buildinfo = { glob = "usr/share/go-1.24.9/BUILDINFO" } | OutputData,
+  },
+  attrs =
     {
-      name = "go-1.24.9",
-      build_deps = [],
-    } | BuildSpec,
-} target
+      upstream_version = version,
+      license_spdx = "BSD-3-Clause",
+      source_provenance = {
+        category = 'GithubRepo,
+        owner = "golang",
+        repo = "go",
+      },
+    } | Attrs,
+} | BuildSpec

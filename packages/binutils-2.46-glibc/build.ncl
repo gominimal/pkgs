@@ -109,8 +109,9 @@ match {
           prebuilt = true,
           build_deps = [
             {
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/e796366aca5bb03f1e082598b4c3824ad3c95e0001b961a6d339da8c19f836bb/binutils-2.46-glibc-2.46.0.tar.zst",
-              sha256 = "e796366aca5bb03f1e082598b4c3824ad3c95e0001b961a6d339da8c19f836bb",
+              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
+              url = "gs://minimal-bootstrap/gen-11/sha256/7fe673db8a870d879aa91c24c0554f233872cc4505acb0929ebd522ecd666e5a/binutils-2.46-glibc-2.46.0-x86_64.tar.zst",
+              sha256 = "7fe673db8a870d879aa91c24c0554f233872cc4505acb0929ebd522ecd666e5a",
               extract = true,
             } | Source,
           ],

@@ -17,7 +17,7 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
-# stage0 = the rustc-1.98.1 rung on both arches (1.99.0's src/stage0 pins 1.98.0; x.py accepts any
+# stage0 = rustc-1.98.1 (the gen-11 prebuilt) on both arches (1.99.0's src/stage0 pins 1.98.0; x.py accepts any
 # 1.98.x), hydrated read-only at /usr/lib/rustc-1.98.1.  The stage0 is injected into bootstrap.toml
 # [build] rustc/cargo below; x.py never downloads one, and a missing stage0 fails the build.
 STAGE0_PREFIX=/usr/lib/rustc-1.98.1

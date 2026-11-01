@@ -18,8 +18,16 @@ export BUILD_PATH_PREFIX_MAP="/builddir=$(pwd)"
 # zstd (optional .cmi compression) to avoid the extra system dep.
 ./configure --prefix=/usr --without-zstd
 
-# world.opt = bytecode world + native (ocamlopt) compilers, bootstrapped from
-# the tarball's boot/ocamlc — no host OCaml, no network.
+# The boot compiler is ocaml-5.5.2's bytecode ocamlc/ocamllex (gen-11 of gominimal/bootstrap),
+# not the tarball's shipped boot/ocamlc, which is deleted here. Same release, so the stock
+# bootstrap applies unchanged.
+BOOT=/usr/lib/ocaml-5.5.2/bin
+[ -s "$BOOT/ocamlc.byte" ] && [ -s "$BOOT/ocamllex.byte" ] || { echo "ocaml: boot compiler missing at $BOOT" >&2; exit 1; }
+rm -f boot/ocamlc boot/ocamllex
+cp "$BOOT/ocamlc.byte" boot/ocamlc; cp "$BOOT/ocamllex.byte" boot/ocamllex; chmod 0755 boot/ocamlc boot/ocamllex
+tail -c 12 boot/ocamlc | grep -q 'Caml1999X' || { echo "ocaml: boot ocamlc is not bytecode" >&2; exit 1; }
+
+# world.opt = bytecode world + native (ocamlopt) compilers; no host OCaml, no network.
 make -j"$(nproc)" world.opt
 make install DESTDIR="$OUTPUT_DIR"
 

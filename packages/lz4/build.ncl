@@ -56,22 +56,16 @@ let version = "1.10.0" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
-              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
-              # gominimal/minimermetic#16. Applied by minimermetic's
-              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/1419ad928f9d9f9324f34f4b891093dd982faa2abef669ce1e3bed653fc5814d/stage0-lz4-amd-x86_64.tar.zst",
-              sha256 = "1419ad928f9d9f9324f34f4b891093dd982faa2abef669ce1e3bed653fc5814d",
+              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
+              url = "gs://minimal-bootstrap/gen-11/sha256/af6e9e6f6e68730c37025ef2753f6cecf5679e6f01d26e5e4d7a9f69cb3c00be/lz4-x86_64.tar.zst",
+              sha256 = "af6e9e6f6e68730c37025ef2753f6cecf5679e6f01d26e5e4d7a9f69cb3c00be",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
-              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
-              # gominimal/minimermetic#16. Applied by minimermetic's
-              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/1454e18e375516d6820bfe10f8dce56ba4fda859aadd7a38f78060d69e6e617e/stage0-lz4-arm-aarch64.tar.zst",
-              sha256 = "1454e18e375516d6820bfe10f8dce56ba4fda859aadd7a38f78060d69e6e617e",
+              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
+              url = "gs://minimal-bootstrap/gen-11/sha256/7a2bca4b6d4d263eaf3815b5c8660f83393ccc83c12ec34a2b8e7cdaec81cab1/lz4-aarch64.tar.zst",
+              sha256 = "7a2bca4b6d4d263eaf3815b5c8660f83393ccc83c12ec34a2b8e7cdaec81cab1",
               extract = true,
             } | Source,
         } target,
