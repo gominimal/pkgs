@@ -4,6 +4,17 @@ set -e
 tar -xof perl-5.44.0.tar.xz
 cd perl-5.44.0
 
+# Upstream make -j race: Getopt::Long (2.57+, perl5#21629) does `use base`,
+# but write_buildcustomize.pl only puts dist/base/lib on miniperl's bootstrap
+# @INC on MSWin32. Under make -j a non-XS ext's manifypods can run before
+# base.pm lands in lib/: "Can't locate base.pm in @INC ... Getopt/Long.pm"
+# (pkgs#1215 arm64). Add it to the all-platform toolchain list. The check
+# requires the new line directly after the anchor (the Win32 entry has the
+# same indentation, so a bare grep would pass even if the sed did nothing).
+# buildcustomize.pl is a build-time file only; it is not installed.
+sed -i 's|^    cpan/ExtUtils-PL2Bat/lib$|&\n    dist/base/lib|' write_buildcustomize.pl
+grep -A1 '^    cpan/ExtUtils-PL2Bat/lib$' write_buildcustomize.pl | grep -qx '    dist/base/lib'
+
 export BUILD_ZLIB=False
 export BUILD_BZIP2=0
 case $(uname -m) in
