@@ -8,7 +8,7 @@ let libglvnd = import "../libglvnd/build.ncl" in
 let libx11 = import "../libx11/build.ncl" in
 let raylib = import "../raylib/build.ncl" in
 
-let version = "4.0" in
+let version = "5.0" in
 {
   name = "raygui",
 
@@ -16,7 +16,7 @@ let version = "4.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/raysan5/raygui/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "299c8fcabda68309a60dc858741b76c32d7d0fc533cdc2539a55988cee236812",
+      sha256 = "0f194c4a5e837c0930aca0b6315db45d00f76fa0052d841eea94598d390c39d6",
       extract = true,
       strip_prefix = "raygui-%{version}",
     } | Source,

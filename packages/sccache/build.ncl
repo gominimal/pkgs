@@ -10,7 +10,7 @@ let openssl = import "../openssl/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let version = "0.18.0" in
+let version = "0.19.0" in
 {
   name = "sccache",
   build_deps = [
@@ -34,7 +34,7 @@ let version = "0.18.0" in
     { file = "openssl-4-openssl-sys-lock.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/mozilla/sccache/v%{version}.tar.gz",
-      sha256 = "14e37fc2cb4f21c188789d518e170181b7cd1ba523152880cdf8009269d79732",
+      sha256 = "2da079033cd19fd8e2a09f56f9a7d9d1a72d591ff3acdc47d95b920145cf2671",
       extract = true,
       strip_prefix = "sccache-%{version}",
     } | Source,
