@@ -1,4 +1,4 @@
-let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -17,14 +17,14 @@ let xz = import "../xz/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 
-let version = "17.2" in
+let version = "18.1" in
 {
   name = "gdb",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/gdb-%{version}.tar.xz",
-      sha256 = "1c036c0d72e4b3d1fb5c94c88632add6f9d76f4d7c4d2ea793c12a9f19a3228c",
+      sha256 = "cd9fc3fe2b47743840e42c1592d3d87f8302eb18639c0b8b4ba0898002e2348f",
     } | Source,
     base,
     toolchain,
@@ -66,6 +66,10 @@ let version = "17.2" in
     gmp,
     mpfr,
     python,
+    # gdb 18 links libatomic.so.1 (DT_NEEDED); without it the binary cannot
+    # load ("error while loading shared libraries: libatomic.so.1") and gef,
+    # which runs through gdb, fails with it. Only the library, not all of gcc.
+    subsetOf gcc ["libatomic"],
   ],
 
   cmd = "./build.sh",
