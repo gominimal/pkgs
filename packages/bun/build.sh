@@ -1,7 +1,9 @@
 #!/bin/sh
 set -ex
 # The system_ca_store_default standalone test (build.ncl) runs only when bun
-# rebuilds: tests are not part of the spec hash (gominimal/pkgs#1149).
+# rebuilds: tests are not part of the spec hash (gominimal/pkgs#1149). Touch
+# this comment when that test changes, so the next build runs it. Last test
+# change: removal direction + opt-out probes (pkgs#1134 review).
 
 # Extract and set up bootstrap bun binary
 case $(uname -m) in
@@ -116,11 +118,10 @@ grep -q 'for (size_t i = 0; minimal_bundled && i < root_certs_size; i++) {' pack
 [ "$(grep -c 'Bun__Node__CAStore' packages/bun-usockets/src/crypto/root_certs.cpp)" -ge 4 ] || { echo "ERROR: root_certs.cpp does not read Bun__Node__CAStore after the patch" >&2; exit 1; }
 
 # The system-CA behaviour (system store replaces the compiled-in roots; the
-# opt-outs restore them) is NOT checked here: a build-time handshake harness on
-# the 1.3.14 bootstrap bun gave unusable answers inside the build sandbox
-# (fetch ConnectionRefused, tls.connect "ok" against a keyless fake server).
-# The grep guards above prove the patch applied; the behaviour is verified by
-# the standalone `system_ca_store_default` test in a session before merge.
+# opt-outs restore them) is NOT checked here: it needs ca-certificates and the
+# openssl CLI, which are not build deps. The grep guards above prove the patch
+# applied; the standalone `system_ca_store_default` test (build.ncl) checks the
+# behaviour on the built bun.
 
 # Initialize a git repo so nested dep version generation works
 # (it runs "git rev-parse HEAD" to get version strings for bundled packages)
