@@ -11,7 +11,7 @@ let version = "6.0" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "http://http.debian.net/debian/pool/main/u/unzip/unzip_6.0.orig.tar.gz",
+      url = "gs://minimal-staging-archives/unzip_6.0.orig.tar.gz",
       sha256 = "036d96991646d0449ed0aa952e4fbe21b476ce994abc276e49d30e686708bd37",
       extract = true,
       strip_prefix = "unzip60",
