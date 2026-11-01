@@ -78,22 +78,16 @@ let version = "4.11.0" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
-              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
-              # gominimal/minimermetic#16. Applied by minimermetic's
-              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/f6f35466213d8c0432614a46b4c2827e1ddf531ea316ded0b44ec8f2a14ab6ce/stage0-findutils-amd-x86_64.tar.zst",
-              sha256 = "f6f35466213d8c0432614a46b4c2827e1ddf531ea316ded0b44ec8f2a14ab6ce",
+              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
+              url = "gs://minimal-bootstrap/gen-11/sha256/07aa039363106aaec01aa098024ae277cfed4ff24d87438f7e3f1be7d0f67b92/findutils-x86_64.tar.zst",
+              sha256 = "07aa039363106aaec01aa098024ae277cfed4ff24d87438f7e3f1be7d0f67b92",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
-              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
-              # gominimal/minimermetic#16. Applied by minimermetic's
-              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/0e5ca2adcedc9c949859438103cae0635ab7714363626fd6e4e06b58a59bc0d8/stage0-findutils-arm-aarch64.tar.zst",
-              sha256 = "0e5ca2adcedc9c949859438103cae0635ab7714363626fd6e4e06b58a59bc0d8",
+              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
+              url = "gs://minimal-bootstrap/gen-11/sha256/13259d278fe8f8352475ffff766aec21e63899694040f5636a04dc0fdc794df7/findutils-aarch64.tar.zst",
+              sha256 = "13259d278fe8f8352475ffff766aec21e63899694040f5636a04dc0fdc794df7",
               extract = true,
             } | Source,
         } target,

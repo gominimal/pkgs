@@ -130,18 +130,16 @@ let version = "15.2.0" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # gen-4 of gominimal/bootstrap (generations/gen-4/manifest.json): built from the hex0 seed
-              # and reproduced byte for byte on two independent machines before publishing.
-              url = "gs://minimal-bootstrap/gen-4/sha256/0880fa31188fc7a12379450f90fa50a2e6038bb4159d3c31df89bb8f3b8a50b2/gcc-15.2.0-glibc-15.2.0-x86_64.tar.zst",
+              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
+              url = "gs://minimal-bootstrap/gen-11/sha256/0880fa31188fc7a12379450f90fa50a2e6038bb4159d3c31df89bb8f3b8a50b2/gcc-15.2.0-glibc-15.2.0-x86_64.tar.zst",
               sha256 = "0880fa31188fc7a12379450f90fa50a2e6038bb4159d3c31df89bb8f3b8a50b2",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              # gen-4 of gominimal/bootstrap (generations/gen-4/manifest.json): built from the hex0 seed
-              # and reproduced byte for byte on two independent machines before publishing.
-              url = "gs://minimal-bootstrap/gen-4/sha256/7791a7f5fb967a5095e4bb673e233d67dd8ecba0957cbc22f445aad74bcbc2fb/gcc-15.2.0-glibc-aarch64.tar.zst",
-              sha256 = "7791a7f5fb967a5095e4bb673e233d67dd8ecba0957cbc22f445aad74bcbc2fb",
+              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
+              url = "gs://minimal-bootstrap/gen-11/sha256/4777e5fe9bd1476171abb46d6ec53f49f5e50f17a25b9ab612894d758eba5f1f/gcc-15.2.0-glibc-aarch64.tar.zst",
+              sha256 = "4777e5fe9bd1476171abb46d6ec53f49f5e50f17a25b9ab612894d758eba5f1f",
               extract = true,
             } | Source,
         } target,

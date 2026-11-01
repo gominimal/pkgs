@@ -6,7 +6,7 @@ set -e
 [ -n "$OUTPUT_DIR" ] && [ -d "$OUTPUT_DIR" ] && find "$OUTPUT_DIR" -mindepth 1 -delete
 mkdir -p "$OUTPUT_DIR"
 
-# Bootstrap Go: the go-1.24.9 build_dep (gen-6 of gominimal/bootstrap on both arches), hydrated
+# Bootstrap Go: the go-1.24.9 build_dep (gen-11 of gominimal/bootstrap on both arches), hydrated
 # read-only at /usr/lib/go-1.24.9. The ./go path below is the older arm64 route, a GOROOT tarball
 # the harness extracted there, kept so the script fails shut on anything but the rung.
 # The script reports which root it used.  A go.dev bindist fails shut on arm64 and is a loud

@@ -130,22 +130,16 @@ let version = "9.12" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
-              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
-              # gominimal/minimermetic#16. Applied by minimermetic's
-              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/210ec67122a89479fc67dbc6dc744287a0f42cfdee6b888f39a7f2a72e701de5/stage0-coreutils-amd-x86_64.tar.zst",
-              sha256 = "210ec67122a89479fc67dbc6dc744287a0f42cfdee6b888f39a7f2a72e701de5",
+              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
+              url = "gs://minimal-bootstrap/gen-11/sha256/fa08e81fa9c480f91eeb2eb60ff5735a674ce72673f798712b0624e92d53bb53/coreutils-x86_64.tar.zst",
+              sha256 = "fa08e81fa9c480f91eeb2eb60ff5735a674ce72673f798712b0624e92d53bb53",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
-              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
-              # gominimal/minimermetic#16. Applied by minimermetic's
-              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/ac7849c5b2a892c635580d543dd5cd7417d313e7ddbafde19d6e0c17d84467ba/stage0-coreutils-bedrock-aarch64.tar.zst",
-              sha256 = "ac7849c5b2a892c635580d543dd5cd7417d313e7ddbafde19d6e0c17d84467ba",
+              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
+              url = "gs://minimal-bootstrap/gen-11/sha256/8c07a2a07252e3bc18bbf06d9a70aedb6441303c513073c8d42c9e6580d5f70a/coreutils-aarch64.tar.zst",
+              sha256 = "8c07a2a07252e3bc18bbf06d9a70aedb6441303c513073c8d42c9e6580d5f70a",
               extract = true,
             } | Source,
         } target,

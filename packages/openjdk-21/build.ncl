@@ -16,10 +16,10 @@ let libxi = import "../libxi/build.ncl" in
 let libxrender = import "../libxrender/build.ncl" in
 let libxtst = import "../libxtst/build.ncl" in
 let libxcursor = import "../libxcursor/build.ncl" in
-# openjdk-21: the boot JDK for jdk-21, OpenJDK 21.0.2 from gen-5 of gominimal/bootstrap: the JVM ladder
+# openjdk-21: the boot JDK for jdk-21, OpenJDK 21.0.2 from gen-11 of gominimal/bootstrap: the JVM ladder
 # jikes -> classpath -> jamvm -> ant/ecj -> icedtea-7/8 -> openjdk-9 ... 21, every rung built from
 # source on the hex0-rooted toolchain and reproduced byte for byte on two independent machines
-# before publishing (generations/gen-5/manifest.json). Installs at /usr/lib/openjdk-21; nothing lands on
+# before publishing (generations/gen-11/manifest.json). Installs at /usr/lib/openjdk-21; nothing lands on
 # /usr/bin.
 let is_arm = target.arch == 'Arm64 in
 let version = "21.0.2" in
@@ -30,14 +30,14 @@ let version = "21.0.2" in
     match {
       { arch = 'Amd64, .. } =>
         {
-          url = "gs://minimal-bootstrap/gen-5/sha256/a3a6363f83e7721526ec869f8ca7d13db3f201716f450acce575b1dfa82a8394/openjdk-21-21.0.2-x86_64.tar.zst",
+          url = "gs://minimal-bootstrap/gen-11/sha256/a3a6363f83e7721526ec869f8ca7d13db3f201716f450acce575b1dfa82a8394/openjdk-21-21.0.2-x86_64.tar.zst",
           sha256 = "a3a6363f83e7721526ec869f8ca7d13db3f201716f450acce575b1dfa82a8394",
           extract = true,
         } | Source,
       { arch = 'Arm64, .. } =>
         {
-          url = "gs://minimal-bootstrap/gen-5/sha256/99bb530e34312eecd82fbb22ad6f2da710767ff62bf02006eeadeb0366cacfa0/openjdk-21-21.0.2-aarch64.tar.zst",
-          sha256 = "99bb530e34312eecd82fbb22ad6f2da710767ff62bf02006eeadeb0366cacfa0",
+          url = "gs://minimal-bootstrap/gen-11/sha256/cc3dd6bae0257a98e4e355077b2949526e9ba3eba0a9cc6e8726bb0aacd9308e/openjdk-21-21.0.2-aarch64.tar.zst",
+          sha256 = "cc3dd6bae0257a98e4e355077b2949526e9ba3eba0a9cc6e8726bb0aacd9308e",
           extract = true,
         } | Source,
     } target,

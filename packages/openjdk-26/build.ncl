@@ -15,10 +15,10 @@ let libxext = import "../libxext/build.ncl" in
 let libxi = import "../libxi/build.ncl" in
 let libxrender = import "../libxrender/build.ncl" in
 let libxtst = import "../libxtst/build.ncl" in
-# openjdk-26: the boot JDK for jdk-27, OpenJDK 26.0.2.1 from gen-5 of gominimal/bootstrap: the JVM ladder
+# openjdk-26: the boot JDK for jdk-27, OpenJDK 26.0.2.1 from gen-11 of gominimal/bootstrap: the JVM ladder
 # jikes -> classpath -> jamvm -> ant/ecj -> icedtea-7/8 -> openjdk-9 ... 26, every rung built from
 # source on the hex0-rooted toolchain and reproduced byte for byte on two independent machines
-# before publishing (generations/gen-5/manifest.json). Installs at /usr/lib/openjdk-26; nothing lands on
+# before publishing (generations/gen-11/manifest.json). Installs at /usr/lib/openjdk-26; nothing lands on
 # /usr/bin.
 let is_arm = target.arch == 'Arm64 in
 let version = "26.0.2.1" in
@@ -29,14 +29,14 @@ let version = "26.0.2.1" in
     match {
       { arch = 'Amd64, .. } =>
         {
-          url = "gs://minimal-bootstrap/gen-5/sha256/1d30b582ba33fb56d4e3dbba37b39d7d39ed0aa72121d4a083c10653c2c2f7be/openjdk-26-26.0.2.1-x86_64.tar.zst",
+          url = "gs://minimal-bootstrap/gen-11/sha256/1d30b582ba33fb56d4e3dbba37b39d7d39ed0aa72121d4a083c10653c2c2f7be/openjdk-26-26.0.2.1-x86_64.tar.zst",
           sha256 = "1d30b582ba33fb56d4e3dbba37b39d7d39ed0aa72121d4a083c10653c2c2f7be",
           extract = true,
         } | Source,
       { arch = 'Arm64, .. } =>
         {
-          url = "gs://minimal-bootstrap/gen-5/sha256/7c817908066a6076d7969e1a9f37ccb749be84213a64a6165dc2626196d051fb/openjdk-26-26.0.2.1-aarch64.tar.zst",
-          sha256 = "7c817908066a6076d7969e1a9f37ccb749be84213a64a6165dc2626196d051fb",
+          url = "gs://minimal-bootstrap/gen-11/sha256/816cf2dc78602b29677758a56ced97ddff5206fd876d2a1746dfa74964e77d0f/openjdk-26-26.0.2.1-aarch64.tar.zst",
+          sha256 = "816cf2dc78602b29677758a56ced97ddff5206fd876d2a1746dfa74964e77d0f",
           extract = true,
         } | Source,
     } target,

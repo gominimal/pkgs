@@ -37,7 +37,7 @@ let version = "1.99.1" in
     ]
     # stage0 = rustc-1.98.1 on BOTH arches (1.99.0's src/stage0 pins 1.98.0; x.py's
     # check_stage0_version accepts any 1.98.x): the top of the source-only ladder mrustc 0.12.0 ->
-    # rustc-1.90.0 -> ... -> 1.97.1 -> 1.98.1, built in gominimal/bootstrap (gen-8).  build.sh injects
+    # rustc-1.90.0 -> ... -> 1.97.1 -> 1.98.1, built in gominimal/bootstrap (gen-11).  build.sh injects
     # it into bootstrap.toml [build] rustc/cargo; x.py never downloads a stage0.
     @ [rustc-1-98-1],
   # The build itself is offline (build.sh stubs curl/wget/git and fails on any attempt). The flags stay

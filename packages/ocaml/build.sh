@@ -18,7 +18,7 @@ export BUILD_PATH_PREFIX_MAP="/builddir=$(pwd)"
 # zstd (optional .cmi compression) to avoid the extra system dep.
 ./configure --prefix=/usr --without-zstd
 
-# The boot compiler is ocaml-5.5.2's bytecode ocamlc/ocamllex (gen-9 of gominimal/bootstrap),
+# The boot compiler is ocaml-5.5.2's bytecode ocamlc/ocamllex (gen-11 of gominimal/bootstrap),
 # not the tarball's shipped boot/ocamlc, which is deleted here. Same release, so the stock
 # bootstrap applies unchanged.
 BOOT=/usr/lib/ocaml-5.5.2/bin

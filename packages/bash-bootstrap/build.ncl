@@ -64,22 +64,16 @@ let version = "5.3" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
-              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
-              # gominimal/minimermetic#16. Applied by minimermetic's
-              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/91773ea69595d55da81bea80031ab0c550475292cbb47fc929a515cb4e0cb1ce/stage0-bash-bootstrap-amd-x86_64.tar.zst",
-              sha256 = "91773ea69595d55da81bea80031ab0c550475292cbb47fc929a515cb4e0cb1ce",
+              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
+              url = "gs://minimal-bootstrap/gen-11/sha256/f7ef704978ba7d1842589b475775876098b90cec8720ff051c2915230555d9dd/bash-bootstrap-x86_64.tar.zst",
+              sha256 = "f7ef704978ba7d1842589b475775876098b90cec8720ff051c2915230555d9dd",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
-              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
-              # gominimal/minimermetic#16. Applied by minimermetic's
-              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/d4c7f29a230757b87cd3372437026d812aa8baf7b2d7c468e073656710578abd/stage0-bash-bedrock-aarch64.tar.zst",
-              sha256 = "d4c7f29a230757b87cd3372437026d812aa8baf7b2d7c468e073656710578abd",
+              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
+              url = "gs://minimal-bootstrap/gen-11/sha256/435006aae82a32cbe8ad3262dd1dcd1fd506fbae40bc0b5cdb71b042c5f007cb/bash-bootstrap-aarch64.tar.zst",
+              sha256 = "435006aae82a32cbe8ad3262dd1dcd1fd506fbae40bc0b5cdb71b042c5f007cb",
               extract = true,
             } | Source,
         } target,

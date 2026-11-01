@@ -62,7 +62,7 @@ chmod +x "$STUB_DIR/sphinx-build"
 # Ensure stubs and build-produced tools are in PATH
 export PATH="$STUB_DIR:$PWD/_build/bin:$PATH"
 
-# Boot compiler: ghc-9.6.7 (the gen-7 prebuilt), always. No fallback to a ghc on PATH: that would silently build
+# Boot compiler: ghc-9.6.7 (the gen-11 prebuilt), always. No fallback to a ghc on PATH: that would silently build
 # from whatever host GHC happened to be there and break the source-only chain.
 if [ -x /usr/lib/ghc-9.6.7/bin/ghc ]; then
   BOOT=/usr/lib/ghc-9.6.7/bin/ghc; BOOT_PKG=/usr/lib/ghc-9.6.7/bin/ghc-pkg

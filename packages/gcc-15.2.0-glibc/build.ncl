@@ -126,9 +126,8 @@ match {
           prebuilt = true,
           build_deps = [
             {
-              # gen-4 of gominimal/bootstrap (generations/gen-4/manifest.json): built from the hex0 seed
-              # and reproduced byte for byte on two independent machines before publishing.
-              url = "gs://minimal-bootstrap/gen-4/sha256/0880fa31188fc7a12379450f90fa50a2e6038bb4159d3c31df89bb8f3b8a50b2/gcc-15.2.0-glibc-15.2.0-x86_64.tar.zst",
+              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
+              url = "gs://minimal-bootstrap/gen-11/sha256/0880fa31188fc7a12379450f90fa50a2e6038bb4159d3c31df89bb8f3b8a50b2/gcc-15.2.0-glibc-15.2.0-x86_64.tar.zst",
               sha256 = "0880fa31188fc7a12379450f90fa50a2e6038bb4159d3c31df89bb8f3b8a50b2",
               extract = true,
             } | Source,

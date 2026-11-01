@@ -18,7 +18,7 @@ let m4 = import "../m4/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let make = import "../make/build.ncl" in
 let llvm = import "../llvm/build.ncl" in
-let ghc-9-6-7 = import "../ghc-9.6.7/build.ncl" in # the boot: the top of the source-only ladder, from gominimal/bootstrap gen-7
+let ghc-9-6-7 = import "../ghc-9.6.7/build.ncl" in # the boot: the top of the source-only ladder, from gominimal/bootstrap gen-11
 let glibc-bedrock-sysroot = import "../glibc-bedrock-2.42-sysroot/build.ncl" in # the amd64 boot's binaries and C wrapper use its sysroot (only)
 let happy = import "../happy/build.ncl" in
 

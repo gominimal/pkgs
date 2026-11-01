@@ -5,7 +5,7 @@ let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
-let ocaml-5-5-2 = import "../ocaml-5.5.2/build.ncl" in # the boot compiler, from gominimal/bootstrap gen-9
+let ocaml-5-5-2 = import "../ocaml-5.5.2/build.ncl" in # the boot compiler, from gominimal/bootstrap gen-11
 let version = "5.5.2" in
 {
   name = "ocaml",
@@ -24,7 +24,7 @@ let version = "5.5.2" in
     ocaml-5-5-2,
   ],
   # The tarball's own boot/ocamlc bytecode is deleted; build.sh boots from ocaml-5.5.2's
-  # bytecode compiler instead (gen-9 of gominimal/bootstrap, a source-only ladder from camlboot).
+  # bytecode compiler instead (gen-11 of gominimal/bootstrap, a source-only ladder from camlboot).
   # NO `needs { internet }`: the entire build is offline.
   #
   # runtime_deps: `ocamlopt` links every native binary by invoking the gcc

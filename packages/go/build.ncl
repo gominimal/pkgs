@@ -2,7 +2,7 @@ let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = impo
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-# Both arches bootstrap from go-1.24.9, gen-6 of gominimal/bootstrap: the top of the Go ladder,
+# Both arches bootstrap from go-1.24.9, gen-11 of gominimal/bootstrap: the top of the Go ladder,
 # built from source on the hex0-rooted toolchain and reproduced on two machines (see that package).
 let go-1-24-9 = import "../go-1.24.9/build.ncl" in
 let git = import "../git/build.ncl" in
