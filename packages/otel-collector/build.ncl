@@ -4,7 +4,7 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.163.2" in
+let version = "0.164.0" in
 # OBI (OpenTelemetry eBPF Instrumentation) is compiled into otelcol-contrib as
 # of 0.157.0 — the contrib manifest declares it as a component and replaces it
 # with a vendored source tree at `internal/obi-src`. Upstream fetches that at
@@ -21,7 +21,7 @@ let obi_version = "v0.15.2" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/open-telemetry/opentelemetry-collector-releases/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "152095ff4503464c8cf1710aa1350781deafffb3bb91e777494dea68ee931ffa",
+      sha256 = "15c971e28e30dcb54c832df92ae0df918fd19161e526b0022b17da7ac5d6c6fb",
       extract = true,
       strip_prefix = "opentelemetry-collector-releases-%{version}",
     } | Source,

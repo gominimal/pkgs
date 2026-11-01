@@ -11,6 +11,7 @@ let cmake = import "../cmake/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let llvm = import "../llvm/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
+let openssl-3-5 = import "../openssl-3.5/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let python = import "../python/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
@@ -54,8 +55,10 @@ let stage0 =
                 extract = true,
               } | Source,
             ],
-            # = the rung's runtime_deps (rustc-1.97.1/build.ncl amd64_spec).
-            runtime_deps = [libffi, llvm, openssl, sqlite, subsetOf gcc ["libgcc", "libstdcpp"]],
+            # = the rung's runtime_deps (rustc-1.97.1/build.ncl amd64_spec), plus openssl-3-5:
+            # this tarball's cargo has DT_NEEDED libssl.so.3 + libcrypto.so.3, which packages/
+            # openssl (4.x, libssl.so.4) no longer provides.
+            runtime_deps = [libffi, llvm, openssl, openssl-3-5, sqlite, subsetOf gcc ["libgcc", "libstdcpp"]],
             outputs = { usr = { glob = "usr/**/*", allow_executable = true } | OutputData },
           } | BuildSpec
         ),
@@ -84,6 +87,12 @@ let spec =
       # stage0: the previous rung's installed prefix, /usr/lib/rustc-<stage0_version>/bin/{rustc,cargo}
       # + lib/rustlib/<triple>/lib.  build.sh pins bootstrap.toml [build] rustc/cargo at it.
       stage0,
+      # libssl.so.3 + libcrypto.so.3 for the stage0's cargo: both sealed rustc-1.97.1 bedrock
+      # tarballs (amd64 and arm64) were linked against OpenSSL 3. The arm64 stage0 is a bare
+      # Source with no runtime_deps of its own, so this entry is what puts the libraries in its
+      # sandbox. This rung's own cargo links packages/openssl 4.x (its vendored openssl-sys is
+      # 0.9.117; 4.x is supported from 0.9.114). Drop this once the bedrock is resealed on 4.x.
+      openssl-3-5,
       base, # userland; xz extracts the source
       cmake, # some vendored -sys build scripts; also pulls in a real curl, shadowed by build.sh's stub
       curl, # libcurl for curl-sys (pkg-config path or the marked vendored submodule)
