@@ -8,14 +8,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.19.2" in
+let version = "0.19.3" in
 {
   name = "patchelf",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/NixOS/patchelf/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "05e674fcc89ef3ffbd851266d063f45f13bd16facec9839a54d0095b930c6f07",
+      sha256 = "c424c782c525ee0961006bec370cbdb19714fd4690c6552cc48ca21860ce4df3",
       extract = true,
       strip_prefix = "patchelf-%{version}",
     } | Source,
