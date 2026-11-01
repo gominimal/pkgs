@@ -4,14 +4,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.0.3" in
+let version = "3.0.0" in
 {
   name = "libfdk-aac",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://downloads.sourceforge.net/project/opencore-amr/fdk-aac/fdk-aac-%{version}.tar.gz",
-      sha256 = "829b6b89eef382409cda6857fd82af84fabb63417b08ede9ea7a553f811cb79e",
+      sha256 = "70b95857b958fb8f794489307a87845dde4cc1fcea060f3f29f40e4b2fe16c82",
       extract = true,
       strip_prefix = "fdk-aac-%{version}",
     } | Source,
