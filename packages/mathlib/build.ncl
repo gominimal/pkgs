@@ -45,6 +45,9 @@ let version = "4.35.0" in
     # Licence inventory of the npm code bundled in ProofWidgets' widget JS,
     # generated from its pinned package-lock.json (build.sh checks the hash).
     { file = "proofwidgets-js-third-party.txt" } | Local,
+    # Verbatim third-party licence texts for that JS, from the exact npm
+    # tarballs the lockfile resolves (gen-proofwidgets-notice.py).
+    { file = "proofwidgets-js-NOTICE.txt" } | Local,
     {
       url = "gs://minimal-staging-archives/aeneas-latest/mathlib-56a0058.tar.gz",
       sha256 = "45567f6e07607b787026d287c8ec1828f6cabc8debe11a45a521750580e3a0d5",
@@ -148,10 +151,11 @@ let version = "4.35.0" in
       #               import-graph, LeanSearchClient, plausible
       #   MIT:        lean4-cli
       # No source ships a NOTICE file. ProofWidgets' oleans also embed its
-      # prebuilt widget JS, which bundles npm code; the licences its
-      # package-lock.json declares (a superset of what is bundled; see
-      # proofwidgets-js-third-party.txt) add ISC, BSD-3-Clause, CC-BY-4.0,
-      # CC0-1.0 and Unlicense. All permissive; nothing copyleft.
+      # prebuilt widget JS, which bundles npm code; the licences of the 281
+      # npm tarballs its package-lock.json resolves (a superset of what is
+      # bundled; inventory in proofwidgets-js-third-party.txt, verbatim
+      # texts in proofwidgets-js-NOTICE.txt) add ISC, BSD-3-Clause,
+      # CC-BY-4.0, CC0-1.0 and Unlicense. All permissive; nothing copyleft.
       license_spdx = "Apache-2.0 AND MIT AND ISC AND BSD-3-Clause AND CC-BY-4.0 AND CC0-1.0 AND Unlicense",
       # Every licence above permits binary redistribution with notices, which
       # the `licenses` output carries, so the public cache may serve the

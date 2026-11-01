@@ -137,17 +137,22 @@ for n in plausible LeanSearchClient importGraph proofwidgets aesop Qq batteries 
   install_lic "$n" ".lake/packages/$n"
 done
 # ProofWidgets' committed widget JS bundles npm code whose notices the
-# minified files do not carry. Ship the inventory (build.ncl Local), but only
-# if it was generated from THIS lockfile.
-inv="$ROOT/proofwidgets-js-third-party.txt"
-want_lock="$(sed -n 's/^package-lock.json sha256: //p' "$inv")"
+# minified files do not carry. Ship (a) the package/licence inventory and
+# (b) the full third-party NOTICE (verbatim licence texts from the exact npm
+# tarballs; regenerate with gen-proofwidgets-notice.py), both build.ncl
+# Locals, and only if each was generated from THIS lockfile.
 have_lock="$(sha256sum .lake/packages/proofwidgets/widget/package-lock.json | cut -d' ' -f1)"
-if [ -z "$want_lock" ] || [ "$want_lock" != "$have_lock" ]; then
-  echo "mathlib: proofwidgets-js-third-party.txt was generated from package-lock.json $want_lock," >&2
-  echo "         but the pinned ProofWidgets has $have_lock. Regenerate it." >&2
-  exit 1
-fi
-cp "$inv" "$LIC/proofwidgets/THIRD-PARTY-JS.txt"
+install_pw_doc() { # local-file dest-name
+  want_lock="$(sed -n 's/^package-lock.json sha256: //p' "$ROOT/$1")"
+  if [ -z "$want_lock" ] || [ "$want_lock" != "$have_lock" ]; then
+    echo "mathlib: $1 was generated from package-lock.json '$want_lock'," >&2
+    echo "         but the pinned ProofWidgets has $have_lock. Regenerate it." >&2
+    exit 1
+  fi
+  cp "$ROOT/$1" "$LIC/proofwidgets/$2"
+}
+install_pw_doc proofwidgets-js-third-party.txt THIRD-PARTY-JS.txt
+install_pw_doc proofwidgets-js-NOTICE.txt THIRD-PARTY-NOTICES.txt
 
 # Fail closed: every expected licence file is installed and non-empty, and
 # each says what build.ncl's license_spdx claims (Apache-2.0, except
@@ -164,3 +169,4 @@ for n in mathlib plausible LeanSearchClient importGraph proofwidgets aesop Qq ba
   esac || { echo "mathlib: $f is not the licence build.ncl declares for $n." >&2; exit 1; }
 done
 test -s "$LIC/proofwidgets/THIRD-PARTY-JS.txt"
+test -s "$LIC/proofwidgets/THIRD-PARTY-NOTICES.txt"
