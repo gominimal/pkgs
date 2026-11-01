@@ -1,7 +1,8 @@
 #!/bin/sh
 set -eu
 
-cd "libpoly-$MINIMAL_ARG_VERSION"
+# The Source strips the libpoly-<version>/ top directory (strip_prefix), so
+# the tree is already the working directory.
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
