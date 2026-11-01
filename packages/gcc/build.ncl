@@ -130,22 +130,18 @@ let version = "15.2.0" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
-              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
-              # gominimal/minimermetic#16. Applied by minimermetic's
-              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/617e2057a63fc5d7840b752a8b1cdfdbef3ba193c36eed52ebb97396122cb148/gcc-15.2.0-glibc-15.2.0.tar.zst",
-              sha256 = "617e2057a63fc5d7840b752a8b1cdfdbef3ba193c36eed52ebb97396122cb148",
+              # gen-4 of gominimal/bootstrap (generations/gen-4/manifest.json): built from the hex0 seed
+              # and reproduced byte for byte on two independent machines before publishing.
+              url = "gs://minimal-bootstrap/gen-4/sha256/0880fa31188fc7a12379450f90fa50a2e6038bb4159d3c31df89bb8f3b8a50b2/gcc-15.2.0-glibc-15.2.0-x86_64.tar.zst",
+              sha256 = "0880fa31188fc7a12379450f90fa50a2e6038bb4159d3c31df89bb8f3b8a50b2",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
-              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
-              # gominimal/minimermetic#16. Applied by minimermetic's
-              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/6715136640b3e12d04231c34d4b17f0f39e7e034b94450a27769ca49e91ce5ad/stage0-gcc-15.2.0-glibc-aarch64.tar.zst",
-              sha256 = "6715136640b3e12d04231c34d4b17f0f39e7e034b94450a27769ca49e91ce5ad",
+              # gen-4 of gominimal/bootstrap (generations/gen-4/manifest.json): built from the hex0 seed
+              # and reproduced byte for byte on two independent machines before publishing.
+              url = "gs://minimal-bootstrap/gen-4/sha256/7791a7f5fb967a5095e4bb673e233d67dd8ecba0957cbc22f445aad74bcbc2fb/gcc-15.2.0-glibc-aarch64.tar.zst",
+              sha256 = "7791a7f5fb967a5095e4bb673e233d67dd8ecba0957cbc22f445aad74bcbc2fb",
               extract = true,
             } | Source,
         } target,
