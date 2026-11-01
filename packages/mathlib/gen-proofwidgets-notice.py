@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-"""Generate proofwidgets-js-NOTICE.txt: third-party notices for the npm code
-bundled into ProofWidgets' prebuilt widget JavaScript.
+"""Generate the two third-party files for the npm code bundled into
+ProofWidgets' prebuilt widget JavaScript:
+
+  proofwidgets-js-NOTICE.txt       (default mode) verbatim licence texts
+  proofwidgets-js-third-party.txt  (--inventory)  one line per package
 
 Why: ProofWidgets commits its infoview JS prebuilt (widget/js/*.js, rollup +
 terser), and its .olean files embed it via `include_str`, so the `mathlib`
@@ -10,16 +13,28 @@ script rebuilds those notices from the exact npm tarballs the pinned
 package-lock.json resolves.
 
 Run it on a maintainer host (NOT in the build) whenever ProofWidgets is
-bumped, then commit the output beside build.ncl:
+bumped, in both modes, then commit both outputs beside build.ncl:
 
+    # NOTICE: name@version, declared licence, verbatim LICENSE/COPYING/NOTICE
+    # text from each exact npm tarball.
     python3 -I gen-proofwidgets-notice.py \\
         <ProofWidgets4 checkout>/widget/package-lock.json \\
         <ProofWidgets commit sha> \\
         <fresh empty download dir> \\
         > proofwidgets-js-NOTICE.txt
 
-build.sh refuses to package if the lockfile sha256 recorded in the output
-differs from the pinned ProofWidgets lockfile, so a stale file cannot ship.
+    # Inventory: name, version, licence, one line each. Read from the
+    # lockfile; a package the lockfile gives no licence for is resolved from
+    # its (verified) tarball's LICENSE text, so it fetches only those.
+    python3 -I gen-proofwidgets-notice.py --inventory \\
+        <ProofWidgets4 checkout>/widget/package-lock.json \\
+        <ProofWidgets commit sha> \\
+        <download dir, may be the one above> \\
+        > proofwidgets-js-third-party.txt
+
+Both outputs record `package-lock.json sha256: <hex>`; build.sh refuses to
+package if either differs from the pinned ProofWidgets lockfile, so a stale
+file cannot ship. Output is deterministic (sorted by name, then version).
 
 Safety: the tarballs are untrusted DATA. Nothing from them is executed or
 written to disk except the tarball itself; licence files and package.json are
@@ -56,6 +71,12 @@ FAMILIES = [
     ("CC0", re.compile(r"CC0 1\.0 Universal|Creative Commons Legal Code\s+CC0", re.I), {"CC0-1.0"}),
     ("Unlicense", re.compile(r"This is free and unencumbered software", re.I), {"Unlicense"}),
 ]
+
+
+# The canonical SPDX id for a family recognised in a licence text, used only
+# by --inventory for a package the lockfile declares no licence for.
+FAMILY_SPDX = {"Apache": "Apache-2.0", "MIT": "MIT", "ISC": "ISC", "CC-BY": "CC-BY-4.0",
+               "CC0": "CC0-1.0", "Unlicense": "Unlicense"}
 
 
 def spdx_tokens(expr: str) -> set[str]:
@@ -115,7 +136,82 @@ def read_package(data: bytes) -> tuple[list[tuple[str, str]], str | None]:
     return files, pj_license
 
 
+def tarball_for(name: str, ver: str, v: dict, dl_dir: str) -> bytes:
+    url, integ = v.get("resolved"), v.get("integrity")
+    if not url or not integ:
+        raise SystemExit(f"{name}@{ver}: lockfile has no resolved/integrity")
+    dest = os.path.join(dl_dir, re.sub(r"[^A-Za-z0-9._-]", "_", f"{name}-{ver}.tgz"))
+    data = fetch(url, dest)
+    verify(data, integ, f"{name}@{ver}")
+    return data
+
+
+def inventory(lock_path: str, pw_commit: str, dl_dir: str) -> int:
+    with open(lock_path, "rb") as f:
+        lock_bytes = f.read()
+    h = hashlib.sha256(lock_bytes).hexdigest()
+    lock = json.loads(lock_bytes)
+    os.makedirs(dl_dir, exist_ok=True)
+    rows = []
+    undeclared = []  # (name, resolved licence) for the header note
+    for k, v in lock["packages"].items():
+        if not k or v.get("dev"):
+            continue
+        name, ver = k.split("node_modules/")[-1], v.get("version", "?")
+        lic = v.get("license")
+        if not lic:
+            files, pj_lic = read_package(tarball_for(name, ver, v, dl_dir))
+            fam = None
+            for _fname, text in files:
+                for fname_fam, rx, _ids in FAMILIES:
+                    if rx.search(text):
+                        fam = FAMILY_SPDX.get(fname_fam)
+                        break
+                if fam:
+                    break
+            if pj_lic:
+                lic = f"{pj_lic} (undeclared in package-lock.json; package.json in the npm tarball)"
+                undeclared.append((name, pj_lic, "package.json"))
+            elif fam:
+                lic = f"{fam} (undeclared in package-lock.json; LICENSE file in the npm tarball)"
+                undeclared.append((name, fam, "LICENSE"))
+            else:
+                lic = "UNKNOWN (not declared in package-lock.json or the npm tarball)"
+        rows.append((name, ver, lic))
+    rows.sort()
+    declared = sorted({r[2] for r in rows if "(undeclared" not in r[2] and not r[2].startswith("UNKNOWN")})
+    note = "".join(
+        f" ({n} declares none in the lockfile; its npm tarball's {src} is {l})" for n, l, src in sorted(undeclared)
+    )
+    out = sys.stdout
+    out.write(f"""Third-party npm packages in ProofWidgets4 {pw_commit[:7]}'s widget JavaScript
+=====================================================================
+
+ProofWidgets commits its infoview JavaScript prebuilt (widget/js/*.js,
+bundled by rollup from npm and minified by terser), and its .olean files
+embed those strings via `include_str`. The minified bundles carry almost
+no licence notices. This inventory is every non-dev package in the
+committed widget/package-lock.json, with the licence that lockfile
+declares. It is a SUPERSET of what the bundles contain: react, react-dom
+and @leanprover/infoview are rollup externals (supplied by the editor at
+runtime, not bundled), and other packages may be tree-shaken away.
+
+Licences declared: {", ".join(declared)}{note}
+
+package-lock.json sha256: {h}
+(build.sh refuses to package if the pinned ProofWidgets lockfile differs;
+regenerate this file from the new lockfile when ProofWidgets is bumped.)
+
+""")
+    w = max(len(r[0]) for r in rows)
+    for n, ver, l in rows:
+        out.write(f"{n.ljust(w)}  {ver:<12}  {l}\n")
+    return 0
+
+
 def main() -> int:
+    if sys.argv[1:2] == ["--inventory"]:
+        return inventory(*sys.argv[2:5])
     lock_path, pw_commit, dl_dir = sys.argv[1:4]
     with open(lock_path, "rb") as f:
         lock_bytes = f.read()
