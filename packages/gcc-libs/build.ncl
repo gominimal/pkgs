@@ -18,6 +18,11 @@ let gcc = import "../gcc/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let gmp = import "../gmp/build.ncl" in
+let mpc = import "../mpc/build.ncl" in
+let mpfr = import "../mpfr/build.ncl" in
+let zlib = import "../zlib/build.ncl" in
+let zstd = import "../zstd/build.ncl" in
 let all_outputs =
   {
     libs = { glob = "usr/lib/**/*.{a,o,so*}", allow_data = true } | OutputLib, # a few .so files are linker scripts/stubs
@@ -44,8 +49,20 @@ in
     coreutils,
     gcc,
   ],
+  # glibc, plus gcc's runtime_deps as they were before gcc gained the compiler's (binutils,
+  # linux_headers). libgcc_s/libstdc++ need only glibc, but every `subsetOf gcc` consumer had
+  # gmp/mpc/mpfr/zlib/zstd (and zstd's xz/lz4) in its runtime closure through that edge, and some
+  # link them without declaring them (gcc-arm-none-eabi's cc1 -> libmpc, rsync -> libzstd/liblz4).
+  # Keeping them makes the switch to gcc-libs closure-neutral for every consumer: it moves
+  # binutils/linux_headers off the libgcc path and changes nothing else. Trim a library from
+  # here only after the consumers that DT_NEED it declare it themselves.
   runtime_deps = [
     glibc,
+    gmp,
+    mpc,
+    mpfr,
+    zlib,
+    zstd,
   ],
   # build.sh refuses to run unless the gcc in the sandbox is this version.
   build_args = {
