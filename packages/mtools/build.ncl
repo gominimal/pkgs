@@ -5,14 +5,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "4.0.49" in
+let version = "4.0.50" in
 {
   name = "mtools",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://mirrors.kernel.org/gnu/mtools/mtools-%{version}.tar.gz",
-      sha256 = "10cd1111da87bf2400a380c1639a6cba8bfb937a24f9c51f5f88d393ae5f6f76"
+      sha256 = "7f078accae7551c6b3a316ccd8296357329f7bbbc09583dcd1a2bbaeb081a7a4"
     } | Source,
     base-bootstrap,
     make,
