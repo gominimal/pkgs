@@ -164,10 +164,16 @@ let version = "0.41.1" in
           # chromium-bin's /usr/bin/chromium headless (the wrapper's
           # AGENT_BROWSER_EXECUTABLE_PATH), navigates to a data: URL, and
           # prints the page title.
-          ["/bin/bash", "-c", "/bin/agent-browser open 'data:text/html,<title>agent-browser-open-ok</title>' | grep -q agent-browser-open-ok"],
+          # TEST-ONLY --no-sandbox: the build-bot's test sandbox has no
+          # unprivileged user namespaces, so Chromium aborts with "No usable
+          # sandbox!" (pkgs#1269 build-bot run, both arches). chromium-bin's own
+          # launch test does the same. The shipped wrapper keeps Chromium's
+          # sandbox; AGENT_BROWSER_ARGS (comma-separated launch args, cli
+          # flags.rs) is set only inside these test shells.
+          ["/bin/bash", "-c", "export AGENT_BROWSER_ARGS=--no-sandbox,--disable-dev-shm-usage; /bin/agent-browser open 'data:text/html,<title>agent-browser-open-ok</title>' | grep -q agent-browser-open-ok"],
           # A follow-up command reaches the same daemon and page. One shell:
           # the daemon does not outlive a test command.
-          ["/bin/bash", "-c", "set -o pipefail; /bin/agent-browser open 'data:text/html,<title>agent-browser-reuse-ok</title>' >/dev/null && /bin/agent-browser get title | grep -q agent-browser-reuse-ok; rc=$?; /bin/agent-browser close >/dev/null; exit $rc"],
+          ["/bin/bash", "-c", "set -o pipefail; export AGENT_BROWSER_ARGS=--no-sandbox,--disable-dev-shm-usage; /bin/agent-browser open 'data:text/html,<title>agent-browser-reuse-ok</title>' >/dev/null && /bin/agent-browser get title | grep -q agent-browser-reuse-ok; rc=$?; /bin/agent-browser close >/dev/null; exit $rc"],
         ],
       } | Test,
     # CVE-2026-111943: the daemon must launch chromium-bin's full browser,
