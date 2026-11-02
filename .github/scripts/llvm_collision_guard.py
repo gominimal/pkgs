@@ -25,8 +25,9 @@ Rules:
               usr/lib/llvm-<N>/. One that doesn't is unprefixed and counts as
               a provider for rule 2 as well.
   2. closure  A package's or collection's runtime closure (what a session
-              gets) or build closure (build deps plus their runtime closures,
-              what a build sandbox gets) holds more than one unprefixed
+              gets) or build closure (build deps and the package's own
+              runtime deps, each with its runtime closure: what a build
+              sandbox gets, AGENTS.md "Dependencies") holds more than one unprefixed
               provider. Providers are UNPREFIXED plus any package whose output
               globs name LLVM's /usr paths (LLVM_PATH_GLOB), so a copy under a
               new name is caught without editing this file.
@@ -133,8 +134,12 @@ def check(pkg: dict, by_name: dict[str, dict], memo: dict, providers: frozenset[
         problems.append(
             f"closure: runtime closure holds {len(found)} unprefixed LLVM providers: {', '.join(found)}"
         )
+    # A build sandbox mounts the build deps AND the package's own runtime
+    # deps, each with its runtime closure. Union the deps' closures rather
+    # than runtime_closure(name), which would put the package in its own
+    # build closure (and fail `llvm`, built by llvm-bootstrap).
     build: set[str] = set()
-    for dep in pkg.get("build_deps") or []:
+    for dep in (pkg.get("build_deps") or []) + (pkg.get("runtime_deps") or []):
         d = dep_name(dep)
         if d:
             build |= runtime_closure(d, by_name, memo)

@@ -79,6 +79,22 @@ class Guard(unittest.TestCase):
         got = problems(cat)
         self.assertTrue(any("build closure holds 2 unprefixed LLVM providers" in p for p in got["app"]))
 
+    def test_own_runtime_dep_counts_in_build_closure(self):
+        # The build sandbox mounts runtime_deps too: build_deps=[llvm-bootstrap]
+        # plus runtime_deps=[llvm] puts both unprefixed LLVMs in the build,
+        # though each closure computed from one side alone holds one.
+        cat = BASE + [pkg("app", runtime=["llvm"], build=["llvm-bootstrap"])]
+        got = problems(cat)
+        self.assertNotIn("runtime closure", " ".join(got.get("app", [])))
+        self.assertTrue(any(
+            "build closure holds 2 unprefixed LLVM providers: llvm, llvm-bootstrap" in p for p in got.get("app", [])
+        ))
+
+    def test_package_is_not_in_its_own_build_closure(self):
+        # `llvm` is built by llvm-bootstrap; counting llvm itself in its build
+        # closure would fail the real catalog.
+        self.assertNotIn("llvm", problems(BASE))
+
     def test_versioned_line_escaping_its_prefix_fails_prefix_and_counts_as_provider(self):
         bad = versioned(24, globs=["usr/lib/llvm-24/bin/*", "usr/bin/*"])
         cat = BASE + [bad, pkg("app", runtime=["llvm", "llvm-24"])]
