@@ -763,6 +763,16 @@ done
 - **No closure may hold two Ruby lines**, runtime or build, and that includes stacks: a stack naming `ruby-3.4` next to `ruby-lsp` fails. A user's own loadout isn't in the catalog, so the guard can't see `ruby-3.4` + `ruby-lsp` chosen there.
 
 
+#### OpenSSL pattern
+
+`openssl` is the 4.x line: `libssl.so.4` / `libcrypto.so.4` in `/usr/lib`, providers in `/usr/lib/ossl-modules`, no engines. `openssl-3.5` is a compat package on the 3.5 LTS line for code that cannot build or run against 4.x. Its runtime libraries are `/usr/lib/libssl.so.3` and `/usr/lib/libcrypto.so.3`, and everything else (headers, `.so` dev links, pkg-config, CMake files) sits under `/usr/lib/openssl-3.5`, so its paths are disjoint from `openssl`'s and both can be in one closure. Their symbols are versioned (`OPENSSL_4.*` vs `OPENSSL_3.*`), so a process that loads both binds each reference to its own library.
+
+- **Port to 4.x first.** Most breakage is a removed API with a small upstream fix: python carries cpython#149783, socat a Debian ASN1 patch, wget drops `SSLv3_client_method`, and Rust crates move to `openssl-sys` 0.9.117+. Use `openssl-3.5` only when that isn't possible: a sealed or prebuilt binary that NEEDs `libssl.so.3` (the bedrock rustc's cargo, actions-runner's bundled .NET 8), or a codebase that doesn't build on 4.x yet (foundationdb 7.3).
+- **To build against it:** add `openssl-3-5` (`import "../openssl-3.5/build.ncl"`) to `build_deps` and point the build at the prefix: `PKG_CONFIG_PATH=/usr/lib/openssl-3.5/lib/pkgconfig`, `OPENSSL_ROOT_DIR=/usr/lib/openssl-3.5` (CMake) or `OPENSSL_DIR=/usr/lib/openssl-3.5` (openssl-sys).
+- **At runtime, depend on the libraries only:** `subsetOf openssl-3-5 ["libssl", "libcrypto"]`.
+- **Check the result in build.sh**, fail-closed: `readelf -d` should show the binary NEEDs `libssl.so.3` and never `lib(ssl|crypto).so.4` (see `packages/foundationdb/build.sh`).
+- **4.1 drops the CN fallback.** Hostname verification no longer falls back to the subject CN when a certificate has no SAN of the checked type (openssl/openssl#31982). A test certificate needs a `subjectAltName` (`-addext subjectAltName=DNS:localhost,IP:127.0.0.1`).
+
 ### Reproducibility (required)
 
 **Every package in this repo must build byte-reproducibly.** The per-toolchain determinism

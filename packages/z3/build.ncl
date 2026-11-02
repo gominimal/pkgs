@@ -7,7 +7,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "5.3.2" in
+let version = "5.3.3" in
 {
   name = "z3",
 
@@ -15,7 +15,7 @@ let version = "5.3.2" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/Z3Prover/z3/archive/refs/tags/z3-%{version}.tar.gz",
-      sha256 = "df91b87822f5f8b6710af1f2419ba98758cd647dee3a8f0d070f128b47024dbe",
+      sha256 = "f8373e6a753da6e336f0955fca65c7a56346f3de68a56fd353acb4abf33d4823",
       extract = true,
       strip_prefix = "z3-z3-%{version}",
     } | Source,

@@ -3,14 +3,19 @@ let base = import "../base/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 let python = import "../python/build.ncl" in
 
-let version = "11076708" in
+# cmdline-tools 22.0 (build 15859902), the last line with the Java sdkmanager.
+# 23.0 (16111833) removed it: `sdkmanager` became a shim over a native
+# `android` CLI that Google ships for x86-64 only (one Linux zip, no arm64),
+# so on arm64 there is no SDK manager at all (gominimal/pkgs#1152). Decline
+# auto-updates to 23.0+ until that changes or we decide to ship the native CLI.
+let version = "15859902" in
 {
   name = "android-sdk",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://dl.google.com/android/repository/commandlinetools-linux-%{version}_latest.zip",
-      sha256 = "2d2d50857e4eb553af5a6dc3ad507a17adf43d115264b1afc116f95c92e5e258",
+      sha256 = "4e4c464f145a7512b57d088ac6c278c03c9eea610886b35a5e0804e74eedf583",
     } | Source,
     base,
     jdk,

@@ -5,15 +5,15 @@ let make = import "../make/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "3.1.4.1" in
+let version = "3.2.1" in
 {
   name = "libjpeg-turbo",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://downloads.sourceforge.net/libjpeg-turbo/libjpeg-turbo-3.1.4.1.tar.gz
+      # https://downloads.sourceforge.net/libjpeg-turbo/libjpeg-turbo-3.2.1.tar.gz
       url = "gs://minimal-staging-archives/libjpeg-turbo-%{version}.tar.gz",
-      sha256 = "ecae8008e2cc9ade2f2c1bb9d5e6d4fb73e7c433866a056bd82980741571a022",
+      sha256 = "c27ad72a68da151177929aa969ae773a2da5ac2af9ce946079314fdac8cece7f",
       extract = true,
       strip_prefix = "libjpeg-turbo-%{version}",
     } | Source,
