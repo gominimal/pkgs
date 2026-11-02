@@ -153,8 +153,9 @@ let version = "0.41.1" in
           # AGENT_BROWSER_EXECUTABLE_PATH), navigates to a data: URL, and
           # prints the page title.
           ["/bin/bash", "-c", "/bin/agent-browser open 'data:text/html,<title>agent-browser-open-ok</title>' | grep -q agent-browser-open-ok"],
-          ["/bin/bash", "-c", "/bin/agent-browser get title | grep -q agent-browser-open-ok"],
-          ["/bin/bash", "-c", "/bin/agent-browser close"],
+          # A follow-up command reaches the same daemon and page. One shell:
+          # the daemon does not outlive a test command.
+          ["/bin/bash", "-c", "set -o pipefail; /bin/agent-browser open 'data:text/html,<title>agent-browser-reuse-ok</title>' >/dev/null && /bin/agent-browser get title | grep -q agent-browser-reuse-ok; rc=$?; /bin/agent-browser close >/dev/null; exit $rc"],
         ],
       } | Test,
     # CVE-2026-111943: the daemon must launch chromium-bin's full browser,
