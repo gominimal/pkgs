@@ -8,21 +8,23 @@ let { stack, .. } = import "minimal.ncl" in
 #   gradle build                        # Gradle projects (Groovy or Kotlin DSL)
 #   jdtls                               # LSP for editors / agents (stdio)
 #   jdb -attach 5005                    # debug; jcmd / jfr profile (jdk)
+#   asprof -d 30 -f out.html <pid>      # flamegraph (async-profiler)
+#   google-java-format -i Foo.java      # format; checkstyle / pmd / spotbugs lint
+#   jbang Script.java                   # single-file scripts with //DEPS
 #
 # It is the union of the `maven` and `gradle` stacks' setup plus the language
 # server, pinned to Java 25 (`jdk-25`, the current LTS) like the `maven` and
 # `gradle` stacks, so a project's Java doesn't move when the `jdk` meta rolls
 # to the next LTS; use `jdk-21` / `jdk-27` in the project for another line. The JDK itself is most of the
 # toolbox: javac, jshell, jdb, jcmd, jfr, jdeps, jlink, jpackage, javadoc,
-# javap all ship in it — so unlike the `rust` / `go` stacks there is no
-# separate debugger, profiler or linker package to list.
+# javap all ship in it, and jdk-25 links every one into /usr/bin. The tools
+# below the JDK (formatter, linters, profiler, mvnd, kotlinc, jbang) all
+# depend on the `jdk` meta, which is jdk-25 today, so the closure holds one
+# JDK.
 #
 # Opt-in (no `matches_project_if_any`), like `aeneas` and `reveng`: a pom.xml
 # or build.gradle already selects the plain `maven` / `gradle` build stack,
 # and this one must not compete with them. You ask for it explicitly.
-#
-# Formatters, linters and the other everyday tools are NOT packaged yet; they
-# are deliberately absent rather than listed hopefully — see the bottom.
 stack {
   name = "java",
 
@@ -47,6 +49,16 @@ stack {
     # organize-imports and Eclipse-profile formatting over LSP. Its wrapper
     # already redirects -data / -configuration to a writable cache dir.
     "jdtls",
+
+    # Everyday tools around the build, each a package on main:
+    "google-java-format", # formatter
+    "checkstyle", # style linter
+    "pmd", # static analysis + CPD
+    "spotbugs", # bytecode bug finder
+    "async-profiler", # CPU/alloc/lock profiler (asprof, jfrconv)
+    "mvnd", # Maven daemon
+    "kotlin", # kotlinc, for Gradle Kotlin DSL / mixed projects
+    "jbang", # run .java scripts with //DEPS
   ],
 
   runtime_packages = ["jdk-25"],
@@ -66,24 +78,10 @@ stack {
   # A dev bench has no single canonical build command (Maven or Gradle?), so
   # exercise every anchor instead: a session that cannot compile, cannot run
   # either build tool, cannot start the language server, or has lost the
-  # debugger fails AT START rather than an hour in. jdb is called through
-  # JAVA_HOME because the jdk package links only java/javac/jar/jlink/jmod/
-  # jpackage/jshell/keytool into /usr/bin.
-  build_cmd = "java -version && javac -version && mvn -v && gradle --version && jdtls --help > /dev/null && $JAVA_HOME/bin/jdb -version",
+  # debugger fails AT START rather than an hour in. jdb is on PATH: jdk-25
+  # links every usr/lib/jvm/bin/* into /usr/bin.
+  build_cmd = "java -version && javac -version && mvn -v && gradle --version && jdtls --help > /dev/null && jdb -version",
 }
-#
-# NOT YET PACKAGED — add each here the day its package lands on main (most
-# useful first; the tracking checklist lives in the PR that added this file):
-#
-#   google-java-format   Apache-2.0  formatter; native linux binaries on GH
-#   checkstyle           LGPL-2.1+   style linter; single -all.jar on GH
-#   pmd                  BSD-style   static analysis; bin zip on GH (own
-#                                    licence text -> needs a LicenseRef)
-#   jbang                MIT         run .java scripts with deps; tar on GH
-#   kotlin (kotlinc)     Apache-2.0  compiler zip on GH
-#   async-profiler       Apache-2.0  per-arch tarballs on GH (native agent)
-#   spotbugs             LGPL-2.1    bytecode bug finder; tgz on GH
-#   maven-mvnd           Apache-2.0  Maven daemon; per-arch native client
 #
 # BUILD PLUGINS, NOT PACKAGES — they ride the project's own pom/build.gradle
 # and resolve from Maven Central, so a package would be dead weight:
