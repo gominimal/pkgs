@@ -1,5 +1,6 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let llvm-bootstrap = import "../llvm-bootstrap/build.ncl" in
@@ -8,7 +9,6 @@ let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let version = "21.1.8" in
 
@@ -60,7 +60,7 @@ let version = "21.1.8" in
     glibc,
     libffi,
     zlib,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    toolchain, # clang links through gcc's crt files/libgcc, ld from binutils, glibc and the kernel headers
   ],
 
   cmd = "./build.sh",
@@ -102,4 +102,35 @@ let version = "21.1.8" in
       },
       build_cost_multiple = 6,
     } | Attrs,
+
+  # A box that adds only `llvm` must be able to build and run a trivial program: test_deps are
+  # only the shell and coreutils, so the linker, crt files, libc, libstdc++ and kernel headers all
+  # have to come from llvm's own runtime closure (`toolchain`).
+  tests = {
+    clang_hello =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils],
+        cmds = [
+          ["/bin/bash", "-c", "printf '#include <linux/types.h>\\n#include <stdio.h>\\nint main(void) { __u32 x = 42; printf(\"%%u\\\\n\", x); return 0; }\\n' > h.c"],
+          ["/bin/clang", "h.c", "-o", "h"],
+          ["/bin/bash", "-c", "test \"$(./h)\" = 42"],
+          ["/bin/clang", "-fuse-ld=lld", "h.c", "-o", "h-lld"],
+          ["/bin/bash", "-c", "test \"$(./h-lld)\" = 42"],
+        ],
+      } | Test,
+
+    clangxx_hello =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils],
+        cmds = [
+          ["/bin/bash", "-c", "printf '#include <linux/types.h>\\n#include <iostream>\\nint main() { __u32 x = 42; std::cout << x << std::endl; return 0; }\\n' > h.cc"],
+          ["/bin/clang++", "h.cc", "-o", "hcc"],
+          ["/bin/bash", "-c", "test \"$(./hcc)\" = 42"],
+          ["/bin/clang++", "-fuse-ld=lld", "h.cc", "-o", "hcc-lld"],
+          ["/bin/bash", "-c", "test \"$(./hcc-lld)\" = 42"],
+        ],
+      } | Test,
+  },
 } | BuildSpec

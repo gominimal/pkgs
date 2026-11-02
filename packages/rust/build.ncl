@@ -1,7 +1,9 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let llvm = import "../llvm/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
@@ -11,7 +13,6 @@ let sqlite = import "../sqlite/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let libssh2 = import "../libssh2/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
 let rustc-1-98-1 = import "../rustc-1.98.1/build.ncl" in # the stage0
 let version = "1.99.1" in
 {
@@ -57,7 +58,9 @@ let version = "1.99.1" in
     llvm,
     openssl,
     sqlite,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    # rustc links every binary through `cc` (gcc, which then runs ld): toolchain brings gcc, binutils,
+    # glibc and the kernel headers, and gcc's libgcc_s/libstdc++
+    toolchain,
   ],
 
   cmd = "./build.sh",
@@ -88,4 +91,20 @@ let version = "1.99.1" in
       },
       build_cost_multiple = 3,
     } | Attrs,
+
+  # A box that adds only `rust` must be able to build and run a trivial program: test_deps are
+  # only the shell and coreutils, so the `cc` rustc links through has to come from rust's own
+  # runtime closure.
+  tests = {
+    rustc_hello =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils],
+        cmds = [
+          ["/bin/bash", "-c", "printf 'fn main() { println!(\"hi\"); }\\n' > h.rs"],
+          ["/bin/rustc", "h.rs", "-o", "h"],
+          ["/bin/bash", "-c", "test \"$(./h)\" = hi"],
+        ],
+      } | Test,
+  },
 } | BuildSpec
