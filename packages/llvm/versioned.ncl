@@ -15,7 +15,7 @@
 #
 # Upstream ships only the monorepo tarball for these releases (no per-project tarballs),
 # with a sigstore attestation (<tarball>.jsonl) and a GPG signature (<tarball>.sig).
-let { subsetOf, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
