@@ -4,14 +4,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let meson = import "../meson/build.ncl" in
 
-let version = "2025.1" in
+let version = "2026.1" in
 {
   name = "xorgproto",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/xorgproto-%{version}.tar.xz",
-      sha256 = "56898c716c0578df8a2d828c9c3e5c528277705c0484381a81960fe1a67668e8",
+      sha256 = "f9bfe4a9ed8c8ab9d2a3b0d49797f046052dadd06b7a8b45dbffaffb137e8290",
       extract = true,
       strip_prefix = "xorgproto-%{version}",
     } | Source,

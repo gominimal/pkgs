@@ -6,7 +6,7 @@ let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 # The release Lean 4.33 bundles as `bin/cadical` (lean4 CMake INSTALL_CADICAL).
-let version = "2.1.2" in
+let version = "2.1.3" in
 {
   name = "cadical",
   # CaDiCaL, the SAT solver behind Lean's `bv_decide`. Official Lean releases
@@ -17,7 +17,7 @@ let version = "2.1.2" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/arminbiere/cadical/archive/refs/tags/rel-%{version}.tar.gz",
-      sha256 = "292c2bb8d712d6d05fce3d3df63b922b8fa45e03974a79f7bae5bf68c284f131",
+      sha256 = "abfe890aa4ccda7b8449c7ad41acb113cfb8e7e8fbf5e49369075f9b00d70465",
       extract = true,
       strip_prefix = "cadical-rel-%{version}",
     } | Source,

@@ -8,7 +8,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.30.1" in
+let version = "1.31.1" in
 {
   name = "zizmor",
   build_deps = [
@@ -23,7 +23,7 @@ let version = "1.30.1" in
     { file = "cve-2026-111943-webpki-lock.patch" } | Local,
     {
       url = "https://github.com/zizmorcore/zizmor/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "3224fd5b49b77b2ec1a8a0809587824e3bc346a7583e8272d8ad66f95d0e8cc2",
+      sha256 = "9e976cc981bb9b0bcaae766a6ddee451738821c0a26c4a3c266dda1891ae20d5",
       extract = true,
       strip_prefix = "zizmor-%{version}",
     } | Source,

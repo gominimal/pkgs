@@ -10,7 +10,7 @@ let openssl = import "../openssl/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let version = "0.17.0" in
+let version = "0.19.0" in
 {
   name = "sccache",
   build_deps = [
@@ -18,14 +18,23 @@ let version = "0.17.0" in
     # CVE-2026-111943 (eMudhra intermediate key compromise): pins rustls-webpki
     # 0.103.16 (RUSTSEC-2026-0382, distrusts the 8 intermediates) and
     # webpki-roots / webpki-root-certs 1.0.10 (RUSTSEC-2026-0383, drops emSign ECC
-    # Root CA - G3) in upstream's Cargo.lock. Lock-only: version + checksum lines
-    # (plus whatever cargo had to move with them). Drop on the first upstream
+    # Root CA - G3) in upstream's Cargo.lock, and moves the standalone
+    # webpki-roots 0.26.2 (its own pre-distrust root list, via hyper-rustls) to
+    # the 0.26.11 shim over webpki-roots 1.x. rustls-webpki 0.103.16 needs
+    # aws-lc-rs ^1.18, so aws-lc-rs 1.18.2 / aws-lc-sys 0.46.0 / pkg-config
+    # 0.3.34 move with it (same as xh and zizmor). Lock-only:
+    # versions, checksums, dependency references. Regenerated for 0.18.0 (pkgs#997).
+    # Drop on the first upstream
     # release whose Cargo.lock already has those versions; a version bump that
     # keeps it fails at `patch` rather than silently shipping the old lock.
     { file = "cve-2026-111943-webpki-lock.patch" } | Local,
+    # OpenSSL 4: Cargo.lock's openssl-sys 0.9.111 panics in its build script on 4.x
+    # (4.x support starts at 0.9.114). Moves it to 0.9.117 and openssl to 0.10.81. Applied by name, so a
+    # stale patch fails the build.
+    { file = "openssl-4-openssl-sys-lock.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/mozilla/sccache/v%{version}.tar.gz",
-      sha256 = "49949ad1cf175c49da126dbb0c2e6a56bd9d1f626e8cc0be17b9668b914145c6",
+      sha256 = "2da079033cd19fd8e2a09f56f9a7d9d1a72d591ff3acdc47d95b920145cf2671",
       extract = true,
       strip_prefix = "sccache-%{version}",
     } | Source,

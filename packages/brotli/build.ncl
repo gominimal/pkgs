@@ -7,7 +7,7 @@ let ninja = import "../ninja/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "1.2.0" in
+let version = "1.2.1" in
 {
   name = "brotli",
   build_deps = [
@@ -20,7 +20,7 @@ let version = "1.2.0" in
     glibc,
     {
       url = "gs://minimal-staging-archives/google/brotli/v%{version}.tar.gz",
-      sha256 = "816c96e8e8f193b40151dad7e8ff37b1221d019dbcb9c35cd3fadbfe6477dfec",
+      sha256 = "98d35d11a78dc453aebb7d10c3748f3f73ff78c8267c0dc697b8631f67bf7e8f",
       extract = true,
       strip_prefix = "brotli-%{version}",
     } | Source,

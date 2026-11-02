@@ -9,7 +9,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.19.6" in
+let version = "1.19.7" in
 {
   name = "libkrun",
 
@@ -34,16 +34,17 @@ let version = "1.19.6" in
     # credit-request wakeup fix (push_credit_req must set signal_queue), which
     # the count ceiling makes reachable during bulk transfer.
     #
-    # Identical to the patch the macOS source build carries at
-    # vendor/libkrun/patches/ in gominimal/minimal (#926); drop it once the
-    # fix lands in an upstream release we can pin.
+    # The same change as the patch the macOS source build carries at
+    # vendor/libkrun/patches/ in gominimal/minimal (#926), rebased onto
+    # 1.19.7 (gominimal/pkgs#1018); drop it once the fix lands in an upstream
+    # release we can pin.
     # https://github.com/gominimal/minimal/issues/869
     { file = "0001-vsock-bound-outstanding-packets.patch" } | Local,
     # A guest-to-host vsock stream whose host unix socket cannot be created
     # (EMFILE, ENFILE, ENOBUFS) hit UnixProxy::new(...).unwrap() in
     # muxer.rs, and the panic aborted the whole VMM. The patch logs the error
     # and answers that one stream with OP_RST instead, so the guest's
-    # connect() fails and the VM keeps running. 1.19.6 does not fix this.
+    # connect() fails and the VM keeps running. 1.19.7 does not fix this.
     #
     # Identical to the patch gominimal/minimal carries at
     # vendor/libkrun/patches/ (#2105); drop it once upstream releases the fix.
@@ -51,7 +52,7 @@ let version = "1.19.6" in
     { file = "0002-vsock-refuse-stream-when-unix-proxy-creation-fails.patch" } | Local,
     {
       url = "https://github.com/libkrun/libkrun/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "7025d72208172dc06f791ad5af7ccaafeabdac9869f74ccb45fb6d4f6e5991cd",
+      sha256 = "d4541fcd959ad43fb073bff61bc91b645ea6413a10b8319e9b61664a6102d20c",
       extract = true,
       strip_prefix = "libkrun-%{version}",
     } | Source,

@@ -9,7 +9,6 @@ let coreutils = import "../coreutils/build.ncl" in
 let c-ares = import "../c-ares/build.ncl" in
 let icu = import "../icu/build.ncl" in
 let lief = import "../lief/build.ncl" in
-let patch = import "../patch/build.ncl" in
 let libuv = import "../libuv/build.ncl" in
 let nghttp2 = import "../nghttp2/build.ncl" in
 let nghttp3 = import "../nghttp3/build.ncl" in
@@ -20,30 +19,26 @@ let zstd = import "../zstd/build.ncl" in
 let gtest = import "../gtest/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 
-let version = "26.10.0" in
+let version = "26.12.1" in
 {
   name = "node",
   build_deps = [
     { file = "build.sh" } | Local,
+    # The release tarball nodejs.org publishes (same source as node-lts),
+    # verifiable against https://nodejs.org/dist/v<version>/SHASUMS256.txt.
+    # 26.12.1 carries upstream what this package used to patch in: the LIEF 1.x
+    # Section API (`#if LIEF_VERSION_MAJOR >= 1` in src/node_sea_bin.cc) and the
+    # CVE-2026-111943 fixes (nodejs/node#66871 SPKI blocklist, #66877 NSS 3.131.1
+    # roots), so no patches are carried.
     {
-      url = "gs://minimal-staging-archives/node-%{version}.tar.gz",
-      sha256 = "dadc307a5353706728704a90316800df6834cb4928d0a227451295166a3b3d27",
+      url = "https://nodejs.org/dist/v%{version}/node-v%{version}.tar.gz",
+      sha256 = "717244a8d757672ec86aae5077fca31e50f84b094441ec51bdf397aab12c304e",
     } | Source,
-    # Adapts the Mach-O SEA injection to the LIEF 1.x Section API — see
-    # the patch header. Build-time only: it rewrites the source tree.
-    { file = "lief-1.x-macho-section-ctor.patch" } | Local,
-    # CVE-2026-111943 (eMudhra key compromise): backports of nodejs/node#66871
-    # (SPKI blocklist in TLS chain verification) and nodejs/node#66877 (drop the
-    # emSign roots removed in NSS 3.131.1), both merged to main 2026-10-20 and
-    # unreleased. Build-time only; see the patch headers. Drop both on the first
-    # release whose changelog lists them.
-    { file = "cve-2026-111943-tls-spki-blocklist.patch" } | Local,
-    { file = "cve-2026-111943-drop-emsign-roots.patch" } | Local,
     base,
     make,
     pkgconf,
-    patch,
     python,
     toolchain,
   ],
@@ -63,6 +58,9 @@ let version = "26.10.0" in
     gtest,
     glibc,
     subsetOf gcc ["libgcc", "libstdcpp"],
+    # node trusts OpenSSL's default store, /etc/ssl (see build.sh), so the
+    # system bundle must be present or every TLS connection fails.
+    ca-certificates,
   ],
 
   cmd = "./build.sh",
@@ -129,7 +127,7 @@ let version = "26.10.0" in
     # CVE-2026-111943: the emSign roots NSS 3.131.1 removed must be gone from
     # the BUNDLED store (what `tls` trusts by default). FAILS on stock node
     # (checked against node 26.9.0: all three are present) and
-    # passes only with cve-2026-111943-drop-emsign-roots.patch.
+    # passes from 26.12.1 / 24.22.1 on (upstream nodejs/node#66877).
     emsign_roots_removed =
       {
         class = 'Standalone,
@@ -259,6 +257,90 @@ let version = "26.10.0" in
               })().catch((e) => { console.error(e); process.exit(2); });
               JSEOF
               node blocklist.js
+            "%
+          ],
+        ],
+      } | Test,
+    # The default store is OpenSSL's (configure --openssl-use-def-ca-store; see
+    # build.sh), so a CA removed from ca-certificates stops being trusted
+    # (CVE-2026-111943). Offline: a local server presents a leaf from a
+    # throwaway test CA (generated for this test only) that only SSL_CERT_FILE
+    # names. node must trust it by default; stock node never reads
+    # SSL_CERT_FILE, so this FAILS without the flag. `--use-bundled-ca`, on the
+    # command line or in NODE_OPTIONS, must restore the compiled-in store (the
+    # opt-out), and NODE_EXTRA_CA_CERTS must still add to either store.
+    system_ca_store_default =
+      {
+        class = 'Standalone,
+        test_deps = [base, ca-certificates],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              test -s /etc/ssl/cert.pem
+              cd "$(mktemp -d)"
+              cat > ca.pem <<'PEM'
+              -----BEGIN CERTIFICATE-----
+              MIIBtDCCAVmgAwIBAgIUFhL1HE8QlzdX9rxLMqgjzZM06Q4wCgYIKoZIzj0EAwIw
+              JjEkMCIGA1UEAwwbbWluaW1hbCBzeXN0ZW0tY2EgdGVzdCByb290MCAXDTI2MTAy
+              NzIwNTMxOVoYDzIxMjYxMDAzMjA1MzE5WjAmMSQwIgYDVQQDDBttaW5pbWFsIHN5
+              c3RlbS1jYSB0ZXN0IHJvb3QwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATaAlwQ
+              KS9fPgBW5C+O7FH1/I6Zcqx9147goVmsjhQ5DYU75PkE42Yn88Upf0CjnhYDFNbc
+              geNBE7eA3WO4p32Eo2MwYTAdBgNVHQ4EFgQUcfhuKz7RSGYiEVkMro8j7QLdIBcw
+              HwYDVR0jBBgwFoAUcfhuKz7RSGYiEVkMro8j7QLdIBcwDwYDVR0TAQH/BAUwAwEB
+              /zAOBgNVHQ8BAf8EBAMCAQYwCgYIKoZIzj0EAwIDSQAwRgIhAKlPKRkQ+p8uMZEl
+              qVlK4XHDHRpJlYtilX6exV3Iy5wJAiEA80a+dVibtFHxU/nOxXYDeABFmB/o8j6f
+              jUouX6GGu+Y=
+              -----END CERTIFICATE-----
+              PEM
+              cat > leaf.pem <<'PEM'
+              -----BEGIN CERTIFICATE-----
+              MIIB0DCCAXegAwIBAgIUTKsxw15xmiIKgeXPoMw9gGDVMBAwCgYIKoZIzj0EAwIw
+              JjEkMCIGA1UEAwwbbWluaW1hbCBzeXN0ZW0tY2EgdGVzdCByb290MCAXDTI2MTAy
+              NzIwNTMxOVoYDzIxMjYxMDAzMjA1MzE5WjAUMRIwEAYDVQQDDAlsb2NhbGhvc3Qw
+              WTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASzn6+IiT2I2YKMGp/9kQx0iJ7s/8p/
+              QFngX3riZETdPo0NY3viGbRG3IWUVxK4L3AnHelOSqOh850EeAwJ2xYCo4GSMIGP
+              MBoGA1UdEQQTMBGCCWxvY2FsaG9zdIcEfwAAATAMBgNVHRMBAf8EAjAAMA4GA1Ud
+              DwEB/wQEAwIHgDATBgNVHSUEDDAKBggrBgEFBQcDATAdBgNVHQ4EFgQUsnsI/OSR
+              ienMi5hFb5GEQa3qXaYwHwYDVR0jBBgwFoAUcfhuKz7RSGYiEVkMro8j7QLdIBcw
+              CgYIKoZIzj0EAwIDRwAwRAIgLyftiw5mgD9+Si+BvKpTZQ+88O94b4/pHU+v8QSZ
+              aVgCIFjojsmqMEc18V1NptXaS8I1cAtLpfiqq1O8cu13ASoC
+              -----END CERTIFICATE-----
+              PEM
+              cat > leaf.key <<'PEM'
+              -----BEGIN PRIVATE KEY-----
+              MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg+h1vzS5mJhQDbYGJ
+              B7KaNlcSUN29ISnfKkZXpAXc5q6hRANCAASzn6+IiT2I2YKMGp/9kQx0iJ7s/8p/
+              QFngX3riZETdPo0NY3viGbRG3IWUVxK4L3AnHelOSqOh850EeAwJ2xYC
+              -----END PRIVATE KEY-----
+              PEM
+              cat > probe.js <<'JSEOF'
+              'use strict';
+              const fs = require('fs');
+              const tls = require('tls');
+              const server = tls.createServer({ key: fs.readFileSync('leaf.key'), cert: fs.readFileSync('leaf.pem') },
+                                              (s) => s.end());
+              server.listen(0, '127.0.0.1', () => {
+                const c = tls.connect({ port: server.address().port, host: '127.0.0.1', servername: 'localhost',
+                                        rejectUnauthorized: false }, () => {
+                  console.log(c.authorized ? 'authorized' : String(c.authorizationError));
+                  c.destroy();
+                  server.close();
+                });
+                c.on('error', (e) => { console.log('error ' + e.code); server.close(); });
+              });
+              JSEOF
+              probe() { env -u NODE_OPTIONS -u NODE_EXTRA_CA_CERTS -u SSL_CERT_DIR SSL_CERT_FILE="$PWD/ca.pem" "$@"; }
+              out=$(probe node probe.js)
+              test "$out" = authorized || { echo "default store did not use SSL_CERT_FILE: $out" >&2; exit 1; }
+              out=$(probe node --use-bundled-ca probe.js)
+              case "$out" in UNABLE_TO_*) ;; *) echo "--use-bundled-ca: $out" >&2; exit 1 ;; esac
+              out=$(probe env NODE_OPTIONS=--use-bundled-ca node probe.js)
+              case "$out" in UNABLE_TO_*) ;; *) echo "NODE_OPTIONS=--use-bundled-ca: $out" >&2; exit 1 ;; esac
+              out=$(probe env NODE_EXTRA_CA_CERTS="$PWD/ca.pem" node --use-bundled-ca probe.js)
+              test "$out" = authorized || { echo "NODE_EXTRA_CA_CERTS with --use-bundled-ca: $out" >&2; exit 1; }
             "%
           ],
         ],
