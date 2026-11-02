@@ -15,9 +15,15 @@ detbuild"):
    command, not a `# comment` or a shell operator (`LD_PRELOAD=... # note` is a
    bare assignment). `export LD_PRELOAD=...`, `declare -x` and a bare
    `LD_PRELOAD=...` assignment are rejected: they reach every later command,
-   including the ones that fetch. A file that names libdetbuild may not export
-   LD_PRELOAD on ANY line, so a bare assignment plus a later
-   `export LD_PRELOAD` (no path on that line) is rejected too.
+   including the ones that fetch. "A command" means a command word: further
+   assignments are skipped (`LD_PRELOAD=... FOO=1` is still bare), a
+   redirection alone is not one, and neither is a POSIX special builtin
+   (`:`, `.`, `eval`, `export`, `set`, ...), because under sh or
+   `bash --posix` an assignment before one persists and is exported
+   (`LD_PRELOAD=... :` preloads everything after it). In a file that names
+   libdetbuild, LD_PRELOAD may appear ONLY as that one checked prefix (or in
+   `unset LD_PRELOAD`), so a later `export LD_PRELOAD`, wherever it sits on
+   its line (`true && export LD_PRELOAD`), is rejected too.
    Backslash-continued lines are joined first, so a preloaded command may span
    lines.
 2. No .ncl file outside packages/detbuild may name libdetbuild, under
@@ -50,7 +56,15 @@ PREFIX = re.compile(
 EXPORTED = re.compile(r"^\s*(?:export|declare\s+-\w*x\w*|typeset\s+-\w*x\w*)\b.*LD_PRELOAD")
 # What follows `LD_PRELOAD=<path>` when it is not a command: a comment, or a
 # shell operator that ends the simple command (the assignment then persists).
-NOT_A_COMMAND = re.compile(r"^(?:#|;|&|\||\)|\(|\{|\})")
+NOT_A_COMMAND = re.compile(r"^(?:#|;|&|\||\)|\(|\{|\}|<|>|[0-9]+[<>])")
+# Leading `NAME=value` words after the preload: more assignments, not a command.
+ASSIGNMENTS = re.compile(r"""^(?:[A-Za-z_][A-Za-z0-9_]*\+?=(?:"[^"]*"|'[^']*'|[^\s"'])*\s*)*""")
+# POSIX special builtins: an assignment before one outlives it under sh.
+SPECIAL_BUILTINS = {
+    ":", ".", "source", "break", "continue", "eval", "exec", "exit", "export",
+    "readonly", "return", "set", "shift", "times", "trap", "unset",
+}
+UNSET = re.compile(r"^\s*unset\s+(?:-v\s+)?LD_PRELOAD\s*(?:[;&|#].*)?$")
 INTERNET = re.compile(r"\binternet\s*=\s*\{")
 CARGO_OFFLINE = re.compile(r"^cargo\s.*(?:--frozen|--offline)\b")
 
@@ -119,12 +133,15 @@ def check(root):
             rel = f.relative_to(root)
             lines = [(n, strip_comment(raw)) for n, raw in logical_lines(f.read_text(errors="replace"))]
             if f.suffix != ".ncl" and any(LIB in line for _, line in lines):
-                # Once a file preloads the library, LD_PRELOAD must never be
-                # exported in it, whatever that line names: `LD_PRELOAD=<lib>`
-                # then `export LD_PRELOAD` preloads every later command.
+                # Once a file preloads the library, LD_PRELOAD may appear only
+                # in the checked prefix: `export LD_PRELOAD`, `true && export
+                # LD_PRELOAD`, `eval ...` would each carry an assignment to
+                # every later command.
                 for n, line in lines:
-                    if LIB not in line and EXPORTED.search(line):
-                        errors.append(f"{rel}:{n}: LD_PRELOAD is exported in a file that preloads libdetbuild")
+                    if LIB in line or "LD_PRELOAD" not in line or UNSET.match(line):
+                        continue
+                    kind = "exported" if EXPORTED.search(line) or "export" in line else "used outside the one prefix"
+                    errors.append(f"{rel}:{n}: LD_PRELOAD is {kind} in a file that preloads libdetbuild")
             for n, line in lines:
                 if LIB not in line:
                     continue
@@ -136,11 +153,13 @@ def check(root):
                     errors.append(f"{where}: LD_PRELOAD of libdetbuild is exported; use `LD_PRELOAD=... <command>` on the one command")
                     continue
                 m = PREFIX.search(line)
-                if not m or NOT_A_COMMAND.match(m.group("cmd")):
+                cmd = ASSIGNMENTS.sub("", m.group("cmd")) if m else ""
+                word = cmd.split(None, 1)[0] if cmd else ""
+                if not m or not cmd or NOT_A_COMMAND.match(cmd) or word in SPECIAL_BUILTINS or line.count("LD_PRELOAD") != 1:
                     errors.append(f"{where}: libdetbuild is not used as a `LD_PRELOAD=... <command>` prefix")
                     continue
                 uses += 1
-                if networked and not CARGO_OFFLINE.match(m.group("cmd")):
+                if networked and not CARGO_OFFLINE.match(cmd):
                     errors.append(
                         f"{where}: {pkg.name} declares needs.internet, so the preloaded command must run offline "
                         f"(`cargo build --frozen`, after an unpreloaded `cargo fetch --locked`)"

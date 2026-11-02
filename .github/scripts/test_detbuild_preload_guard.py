@@ -98,6 +98,56 @@ class Guard(unittest.TestCase):
     def test_an_operator_after_the_path_is_rejected(self):
         self.assert_rejected({"build.sh": f"LD_PRELOAD={LIB}; make\n"}, "not used as")
 
+    # Each of these passed 6b09baf0 with "1 preload(s) checked, 0 violation(s)",
+    # and a later child process saw LD_PRELOAD (checked by running the script).
+
+    def test_an_assignment_is_not_a_command(self):
+        self.assert_rejected(
+            {"build.sh": f"LD_PRELOAD={LIB} FOO=1\ntrue; export LD_PRELOAD\nmake\n"}, "not used as"
+        )
+
+    def test_a_quoted_assignment_is_not_a_command(self):
+        self.assert_rejected({"build.sh": f"LD_PRELOAD={LIB} CFLAGS=\"-O2 -g\"\nmake\n"}, "not used as")
+
+    def test_an_export_after_an_operator_is_rejected(self):
+        self.assert_rejected(
+            {"build.sh": f"LD_PRELOAD={LIB} make\ntrue && export LD_PRELOAD\n"},
+            "exported in a file that preloads",
+        )
+
+    def test_any_other_ld_preload_mention_is_rejected(self):
+        self.assert_rejected(
+            {"build.sh": f"LD_PRELOAD={LIB} make\neval \"LD_PRELOAD=$P; export LD_PRELOAD\"\n"},
+            "in a file that preloads",
+        )
+
+    def test_a_second_mention_on_the_prefix_line_is_rejected(self):
+        self.assert_rejected({"build.sh": f"LD_PRELOAD={LIB} make; export LD_PRELOAD\n"}, "not used as")
+
+    def test_a_special_builtin_is_not_a_command(self):
+        # Under sh (dash) or bash --posix the assignment outlives `:` and is exported.
+        for cmd in (":", ". ./env.sh", "eval true", "exec >log", "set -e"):
+            with self.subTest(cmd=cmd):
+                self.tearDown()
+                self.setUp()
+                self.assert_rejected({"build.sh": f"#!/bin/sh\nLD_PRELOAD={LIB} {cmd}\nmake\n"}, "not used as")
+
+    def test_a_redirection_alone_is_not_a_command(self):
+        self.assert_rejected({"build.sh": f"LD_PRELOAD={LIB} >build.log\nmake\n"}, "not used as")
+
+    def test_assignments_then_a_command_pass(self):
+        # Negative control for the assignment rule: still one scoped command.
+        self.pkg("e", {"build.sh": f"LD_PRELOAD={LIB} CFLAGS=\"-O2 -g\" FOO=1 make -j4\nunset LD_PRELOAD\n"})
+        self.assertEqual(g.check(self.root), (1, []))
+
+    def test_assignments_before_offline_cargo_pass(self):
+        self.pkg(
+            "f",
+            {"build.sh": "cargo fetch --locked\n" + f"LD_PRELOAD={LIB} RUSTFLAGS=-Cx cargo " + "build --frozen\n"},
+            ncl=NETWORKED_NCL,
+        )
+        self.assertEqual(g.check(self.root), (1, []))
+
     def test_ncl_mention_is_rejected(self):
         self.assert_rejected({"extra.ncl": f'env = {{ LD_PRELOAD = "{LIB}" }}\n'}, "in a .ncl file")
 
