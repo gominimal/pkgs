@@ -81,15 +81,15 @@ let version = "4.4.1" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
-              url = "gs://minimal-bootstrap/gen-11/sha256/66dab6ff517881a8b657e7d33fcb9254fc33494c8cd3e788caf99e271678da04/make-x86_64.tar.zst",
+              # gominimal/bootstrap gen-12 object (generations/gen-12/manifest.json)
+              url = "gs://minimal-bootstrap/gen-12/sha256/66dab6ff517881a8b657e7d33fcb9254fc33494c8cd3e788caf99e271678da04/make-x86_64.tar.zst",
               sha256 = "66dab6ff517881a8b657e7d33fcb9254fc33494c8cd3e788caf99e271678da04",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
-              url = "gs://minimal-bootstrap/gen-11/sha256/9c4f5a550372822602aaf6ce29ef62ae9c57da3ccef6d1d230133f25b766f764/make-aarch64.tar.zst",
+              # gominimal/bootstrap gen-12 object (generations/gen-12/manifest.json)
+              url = "gs://minimal-bootstrap/gen-12/sha256/9c4f5a550372822602aaf6ce29ef62ae9c57da3ccef6d1d230133f25b766f764/make-aarch64.tar.zst",
               sha256 = "9c4f5a550372822602aaf6ce29ef62ae9c57da3ccef6d1d230133f25b766f764",
               extract = true,
             } | Source,

@@ -84,15 +84,15 @@ let version = "10.49" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
-              url = "gs://minimal-bootstrap/gen-11/sha256/581e0837bec6d847d46f805c04ff0d895ada1105e0ec4754df880800b3e988e8/pcre2-x86_64.tar.zst",
+              # gominimal/bootstrap gen-12 object (generations/gen-12/manifest.json)
+              url = "gs://minimal-bootstrap/gen-12/sha256/581e0837bec6d847d46f805c04ff0d895ada1105e0ec4754df880800b3e988e8/pcre2-x86_64.tar.zst",
               sha256 = "581e0837bec6d847d46f805c04ff0d895ada1105e0ec4754df880800b3e988e8",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
-              url = "gs://minimal-bootstrap/gen-11/sha256/d58d0f95a98c62db2ddd9dbebee64d1d6dc67ca7cb3c56e72488a7484210480a/pcre2-aarch64.tar.zst",
+              # gominimal/bootstrap gen-12 object (generations/gen-12/manifest.json)
+              url = "gs://minimal-bootstrap/gen-12/sha256/d58d0f95a98c62db2ddd9dbebee64d1d6dc67ca7cb3c56e72488a7484210480a/pcre2-aarch64.tar.zst",
               sha256 = "d58d0f95a98c62db2ddd9dbebee64d1d6dc67ca7cb3c56e72488a7484210480a",
               extract = true,
             } | Source,

@@ -7,11 +7,11 @@ let llvm = import "../llvm/build.ncl" in
 let openssl-3-5 = import "../openssl-3.5/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
-# rustc-1.98.1: the stage0 for `rust`, from gen-11 of gominimal/bootstrap: the top of the Rust ladder,
+# rustc-1.98.1: the stage0 for `rust`, from gen-12 of gominimal/bootstrap: the top of the Rust ladder,
 # mrustc 0.12.0 (C++, built by the hex0-rooted gcc) -> mrustc-rustc-1.90.0 -> rustc-1.91.1 -> 1.92.0
 # -> 1.93.1 -> 1.94.1 -> 1.95.0 -> 1.96.0 -> 1.97.1 -> 1.98.1, every rung built on the hex0-rooted
 # toolchain and this one reproduced byte for byte on two independent machines per arch before
-# publishing (generations/gen-11/manifest.json). Installs the whole toolchain at /usr/lib/rustc-1.98.1
+# publishing (generations/gen-12/manifest.json). Installs the whole toolchain at /usr/lib/rustc-1.98.1
 # (bin/ + lib/); nothing lands on /usr/bin.
 let version = "1.98.1" in
 {
@@ -21,13 +21,13 @@ let version = "1.98.1" in
     match {
       { arch = 'Amd64, .. } =>
         {
-          url = "gs://minimal-bootstrap/gen-11/sha256/703e379bc5f86b94977e8c88f544a3e269c35d573c7daff555a6d43da29ea9f4/rustc-1.98.1-1.98.1-x86_64.tar.zst",
+          url = "gs://minimal-bootstrap/gen-12/sha256/703e379bc5f86b94977e8c88f544a3e269c35d573c7daff555a6d43da29ea9f4/rustc-1.98.1-1.98.1-x86_64.tar.zst",
           sha256 = "703e379bc5f86b94977e8c88f544a3e269c35d573c7daff555a6d43da29ea9f4",
           extract = true,
         } | Source,
       { arch = 'Arm64, .. } =>
         {
-          url = "gs://minimal-bootstrap/gen-11/sha256/edaa5fd0b164cf9ceb20d8315fe9dac59ea0b4e7f324ebf2eab6746e06c29c9a/rustc-1.98.1-aarch64.tar.zst",
+          url = "gs://minimal-bootstrap/gen-12/sha256/edaa5fd0b164cf9ceb20d8315fe9dac59ea0b4e7f324ebf2eab6746e06c29c9a/rustc-1.98.1-aarch64.tar.zst",
           sha256 = "edaa5fd0b164cf9ceb20d8315fe9dac59ea0b4e7f324ebf2eab6746e06c29c9a",
           extract = true,
         } | Source,

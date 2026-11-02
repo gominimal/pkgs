@@ -149,8 +149,8 @@ match {
           prebuilt = true,
           build_deps = [
             {
-              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
-              url = "gs://minimal-bootstrap/gen-11/sha256/231f7f3752eb1ecdf413aae53c1b6102f04e7cbf6e553e9e350cb99e0db61d9f/glibc-bedrock-2.42-2.42-x86_64.tar.zst",
+              # gominimal/bootstrap gen-12 object (generations/gen-12/manifest.json)
+              url = "gs://minimal-bootstrap/gen-12/sha256/231f7f3752eb1ecdf413aae53c1b6102f04e7cbf6e553e9e350cb99e0db61d9f/glibc-bedrock-2.42-2.42-x86_64.tar.zst",
               sha256 = "231f7f3752eb1ecdf413aae53c1b6102f04e7cbf6e553e9e350cb99e0db61d9f",
               extract = true,
             } | Source,

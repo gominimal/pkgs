@@ -57,15 +57,15 @@ let version = "5.4.1" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
-              url = "gs://minimal-bootstrap/gen-11/sha256/add1c9fe82395d4449943dfa0fa771e0934d99663eed8168e2ed92b383161c2f/gawk-bootstrap-x86_64.tar.zst",
+              # gominimal/bootstrap gen-12 object (generations/gen-12/manifest.json)
+              url = "gs://minimal-bootstrap/gen-12/sha256/add1c9fe82395d4449943dfa0fa771e0934d99663eed8168e2ed92b383161c2f/gawk-bootstrap-x86_64.tar.zst",
               sha256 = "add1c9fe82395d4449943dfa0fa771e0934d99663eed8168e2ed92b383161c2f",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
-              url = "gs://minimal-bootstrap/gen-11/sha256/525651d53e43df1c89ebaf0cc2785bcadbcf514d28499bbc4ad7107ece1602b5/gawk-bootstrap-aarch64.tar.zst",
+              # gominimal/bootstrap gen-12 object (generations/gen-12/manifest.json)
+              url = "gs://minimal-bootstrap/gen-12/sha256/525651d53e43df1c89ebaf0cc2785bcadbcf514d28499bbc4ad7107ece1602b5/gawk-bootstrap-aarch64.tar.zst",
               sha256 = "525651d53e43df1c89ebaf0cc2785bcadbcf514d28499bbc4ad7107ece1602b5",
               extract = true,
             } | Source,

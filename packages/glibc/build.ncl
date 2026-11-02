@@ -108,15 +108,15 @@ let version = "2.44" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
-              url = "gs://minimal-bootstrap/gen-11/sha256/231f7f3752eb1ecdf413aae53c1b6102f04e7cbf6e553e9e350cb99e0db61d9f/glibc-bedrock-2.42-2.42-x86_64.tar.zst",
+              # gominimal/bootstrap gen-12 object (generations/gen-12/manifest.json)
+              url = "gs://minimal-bootstrap/gen-12/sha256/231f7f3752eb1ecdf413aae53c1b6102f04e7cbf6e553e9e350cb99e0db61d9f/glibc-bedrock-2.42-2.42-x86_64.tar.zst",
               sha256 = "231f7f3752eb1ecdf413aae53c1b6102f04e7cbf6e553e9e350cb99e0db61d9f",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
-              url = "gs://minimal-bootstrap/gen-11/sha256/3bca5e39988d3527a07d7aa6cff3b86eb8ef2eee3c1a90270e5bd24edf7290ad/glibc-bedrock-2.42-aarch64.tar.zst",
+              # gominimal/bootstrap gen-12 object (generations/gen-12/manifest.json)
+              url = "gs://minimal-bootstrap/gen-12/sha256/3bca5e39988d3527a07d7aa6cff3b86eb8ef2eee3c1a90270e5bd24edf7290ad/glibc-bedrock-2.42-aarch64.tar.zst",
               sha256 = "3bca5e39988d3527a07d7aa6cff3b86eb8ef2eee3c1a90270e5bd24edf7290ad",
               extract = true,
             } | Source,

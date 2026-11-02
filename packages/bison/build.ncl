@@ -52,15 +52,15 @@ let version = "3.8.2" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
-              url = "gs://minimal-bootstrap/gen-11/sha256/248a8df2ab3cc5a1fdce79b40b210b59c5591ab43df6d2111eeed879af9f3bb5/bison-x86_64.tar.zst",
+              # gominimal/bootstrap gen-12 object (generations/gen-12/manifest.json)
+              url = "gs://minimal-bootstrap/gen-12/sha256/248a8df2ab3cc5a1fdce79b40b210b59c5591ab43df6d2111eeed879af9f3bb5/bison-x86_64.tar.zst",
               sha256 = "248a8df2ab3cc5a1fdce79b40b210b59c5591ab43df6d2111eeed879af9f3bb5",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              # gominimal/bootstrap gen-11 object (generations/gen-11/manifest.json)
-              url = "gs://minimal-bootstrap/gen-11/sha256/c0fca9123ed7c5abd41decb959ed3ca2552d0ab4e75f015c9b3dd630f63b3b11/bison-aarch64.tar.zst",
+              # gominimal/bootstrap gen-12 object (generations/gen-12/manifest.json)
+              url = "gs://minimal-bootstrap/gen-12/sha256/c0fca9123ed7c5abd41decb959ed3ca2552d0ab4e75f015c9b3dd630f63b3b11/bison-aarch64.tar.zst",
               sha256 = "c0fca9123ed7c5abd41decb959ed3ca2552d0ab4e75f015c9b3dd630f63b3b11",
               extract = true,
             } | Source,
