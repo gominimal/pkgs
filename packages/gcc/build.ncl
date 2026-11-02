@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
@@ -144,12 +144,16 @@ let version = "15.2.0" in
             } | Source,
         } target,
       ],
+      # the seed's binaries are linked against the bedrock sysroot: their interpreter and RUNPATH
+      # name /usr/lib/glibc-bedrock-2.42/lib, which only glibc's seed carries. A sandbox that pairs
+      # this seed with a from-source glibc (nginx's cycle pass) has no loader for it otherwise.
       runtime_deps = [
         gmp,
         mpc,
         mpfr,
         zlib,
         zstd,
+        subsetOf glibc ["bedrock_sysroot_lib"],
       ],
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,
