@@ -158,6 +158,23 @@ install_pw_doc() { # local-file dest-name
 install_pw_doc proofwidgets-js-third-party.txt THIRD-PARTY-JS.txt
 install_pw_doc proofwidgets-js-NOTICE.txt THIRD-PARTY-NOTICES.txt
 
+# Two of those bundles also embed a WebAssembly build of Graphviz (EPL-2.0,
+# CPL-1.0 vpsc) plus expat and the Emscripten runtime, compiled into
+# @hpcc-js/wasm's `wasmBinary`. The npm-derived NOTICE cannot see inside it,
+# so proofwidgets-wasm-NOTICE.txt carries those licences and the EPL/CPL
+# source offer. It was checked against these exact bundles; refuse to package
+# if either changed (a ProofWidgets bump must re-check the Graphviz version).
+for js in graphvizDisplay.js index.js; do
+  want="$(sed -n "s/^$js sha256: //p" "$ROOT/proofwidgets-wasm-NOTICE.txt")"
+  have="$(sha256sum ".lake/packages/proofwidgets/widget/js/$js" | cut -d' ' -f1)"
+  if [ -z "$want" ] || [ "$want" != "$have" ]; then
+    echo "mathlib: proofwidgets-wasm-NOTICE.txt was checked against $js '$want'," >&2
+    echo "         but the pinned ProofWidgets has $have. Re-check its Graphviz WASM." >&2
+    exit 1
+  fi
+done
+cp "$ROOT/proofwidgets-wasm-NOTICE.txt" "$LIC/proofwidgets/THIRD-PARTY-WASM-NOTICES.txt"
+
 # Fail closed: every expected licence file is installed and non-empty, and
 # each says what build.ncl's license_spdx claims (Apache-2.0, except
 # lean4-cli's MIT).
@@ -174,3 +191,4 @@ for n in mathlib plausible LeanSearchClient importGraph proofwidgets aesop Qq ba
 done
 test -s "$LIC/proofwidgets/THIRD-PARTY-JS.txt"
 test -s "$LIC/proofwidgets/THIRD-PARTY-NOTICES.txt"
+test -s "$LIC/proofwidgets/THIRD-PARTY-WASM-NOTICES.txt"

@@ -47,6 +47,10 @@ let version = "4.35.0" in
     # Verbatim third-party licence texts for that JS, from the exact npm
     # tarballs the lockfile resolves (gen-proofwidgets-notice.py).
     { file = "proofwidgets-js-NOTICE.txt" } | Local,
+    # Licences + EPL/CPL source offer for the Graphviz WebAssembly that two of
+    # those bundles embed (@hpcc-js/wasm); hand-assembled, hash-pinned to the
+    # bundles by build.sh.
+    { file = "proofwidgets-wasm-NOTICE.txt" } | Local,
     {
       url = "gs://minimal-staging-archives/aeneas-latest/mathlib-56a0058.tar.gz",
       sha256 = "45567f6e07607b787026d287c8ec1828f6cabc8debe11a45a521750580e3a0d5",
@@ -152,10 +156,16 @@ let version = "4.35.0" in
       # npm tarballs its package-lock.json resolves (a superset of what is
       # bundled; inventory in proofwidgets-js-third-party.txt, verbatim
       # texts in proofwidgets-js-NOTICE.txt) add ISC, BSD-3-Clause,
-      # CC-BY-4.0, CC0-1.0 and Unlicense. All permissive; nothing copyleft.
-      license_spdx = "Apache-2.0 AND MIT AND ISC AND BSD-3-Clause AND CC-BY-4.0 AND CC0-1.0 AND Unlicense",
-      # Every licence above permits binary redistribution with notices, which
-      # the `licenses` output carries, so the public cache may serve the
+      # CC-BY-4.0, CC0-1.0 and Unlicense. Two of those bundles also embed a
+      # WebAssembly build of Graphviz 15.0.0 (via @hpcc-js/wasm): EPL-2.0,
+      # with its lib/vpsc under CPL-1.0, plus expat and Emscripten (MIT).
+      # EPL/CPL are weak (file-level) copyleft: redistributing the unmodified
+      # object code needs the licence texts and a source offer, both in
+      # proofwidgets-wasm-NOTICE.txt (pkgmgr-rs#1181).
+      license_spdx = "Apache-2.0 AND MIT AND ISC AND BSD-3-Clause AND CC-BY-4.0 AND CC0-1.0 AND Unlicense AND EPL-2.0 AND CPL-1.0",
+      # Every licence above permits binary redistribution with notices (and,
+      # for EPL-2.0/CPL-1.0, a source offer), which the `licenses` output
+      # carries, so the public cache may serve the
       # prebuilt artifact (users skip the ~30 min build). Explicit rather than
       # the stdlib default so the decision is visible and reviewable.
       redistributable = true,
