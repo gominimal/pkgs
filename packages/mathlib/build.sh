@@ -84,13 +84,17 @@ if [ "$missing" -ne 0 ]; then
 fi
 
 # 6. Install: one directory per Lake package, plus the LEAN_PATH a consumer
-#    needs (Mathlib first, then its dependencies).
-OUT="$OUTPUT_DIR/usr/lib/lean/pkgs"
+#    needs (Mathlib first, then its dependencies). The root is
+#    usr/lib/lean/mathlib, NOT aeneas-latest's usr/lib/lean/pkgs: both ship
+#    mathlib/batteries/aesop/..., and a closure holding both resolves a
+#    conflict per file, which could pair one build's .olean with the other's
+#    .olean.server/.olean.private/.ir. Disjoint roots keep each tree whole.
+OUT="$OUTPUT_DIR/usr/lib/lean/mathlib"
 LEAN_PATH_OUT=""
 install_pkg() { # name srcdir
   mkdir -p "$OUT/$1/lib"
   cp -a "$2/.lake/build/lib/lean/." "$OUT/$1/lib/"
-  LEAN_PATH_OUT="${LEAN_PATH_OUT:+$LEAN_PATH_OUT:}/usr/lib/lean/pkgs/$1/lib"
+  LEAN_PATH_OUT="${LEAN_PATH_OUT:+$LEAN_PATH_OUT:}/usr/lib/lean/mathlib/$1/lib"
 }
 install_pkg mathlib .
 for d in .lake/packages/*/; do

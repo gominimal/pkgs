@@ -1,6 +1,5 @@
 let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
-let coreutils = import "../coreutils/build.ncl" in
 let lean = import "../lean/build.ncl" in
 
 # Mathlib's release tag for the lean we ship (leanprover-community/mathlib4
@@ -102,7 +101,6 @@ let version = "4.35.0" in
       extract = true,
     } | Source,
     base,
-    coreutils,
     lean,
   ],
 
@@ -111,27 +109,26 @@ let version = "4.35.0" in
     include version,
   },
 
-  # Same layout as aeneas-latest: oleans per Lake package, dot-free so the
-  # globs see them, `usr/lib/lean/pkgs/<name>/lib/…`. A consumer runs plain
-  # `lean` with
+  # Oleans per Lake package, dot-free so the globs see them,
+  # `usr/lib/lean/mathlib/<name>/lib/…`. A consumer runs plain `lean` with
   #   LEAN_PATH=$(cat /usr/share/mathlib/LEAN_PATH)
-  # The LEAN_PATH file is under usr/share/mathlib, NOT usr/lib/lean/pkgs/,
-  # because aeneas-latest owns usr/lib/lean/pkgs/LEAN_PATH.
   #
-  # Path overlap with aeneas-latest: both ship usr/lib/lean/pkgs/{mathlib,
-  # batteries,aesop,…}/lib. The overlapping files are the same modules of the
-  # same commits for the same lean, so in a closure holding both, the union
-  # is a complete Mathlib whichever package wins a given path. See the PR
-  # for the plan to have aeneas-latest consume this package instead.
+  # Deliberately NOT aeneas-latest's root (usr/lib/lean/pkgs): both packages
+  # build mathlib, batteries, aesop, …, and the sandbox resolves a path
+  # conflict per file, so a closure holding both could load a module's .olean
+  # from one build and its .olean.server/.olean.private/.ir from the other
+  # (aeneas-latest's Mathlib slice is Azure output, this is a local build).
+  # Disjoint roots keep each package's tree whole. Revisit when aeneas-latest
+  # consumes this package (follow-up).
   outputs = {
-    oleans = { glob = "usr/lib/lean/pkgs/**/*.olean*" } | OutputData,
+    oleans = { glob = "usr/lib/lean/mathlib/**/*.olean*" } | OutputData,
     # Language-server index; makes `lean --server` (go-to-definition into
     # Mathlib) work. Separate output so a batch consumer can subset it away.
-    ileans = { glob = "usr/lib/lean/pkgs/**/*.ilean" } | OutputData,
+    ileans = { glob = "usr/lib/lean/mathlib/**/*.ilean" } | OutputData,
     # Compiled IR per module: without it lean cannot run an imported module's
     # `initialize` code (pkgs#693 / aeneas-latest).
-    ir = { glob = "usr/lib/lean/pkgs/**/*.ir" } | OutputData,
-    ir_sig = { glob = "usr/lib/lean/pkgs/**/*.ir.sig" } | OutputData,
+    ir = { glob = "usr/lib/lean/mathlib/**/*.ir" } | OutputData,
+    ir_sig = { glob = "usr/lib/lean/mathlib/**/*.ir.sig" } | OutputData,
     share = { glob = "usr/share/mathlib/*" } | OutputData,
     # Every upstream LICENSE (+ any NOTICE), one dir per source, and the
     # ProofWidgets JS third-party inventory. Required for redistribution.
@@ -159,7 +156,7 @@ let version = "4.35.0" in
       license_spdx = "Apache-2.0 AND MIT AND ISC AND BSD-3-Clause AND CC-BY-4.0 AND CC0-1.0 AND Unlicense",
       # Every licence above permits binary redistribution with notices, which
       # the `licenses` output carries, so the public cache may serve the
-      # prebuilt artifact (users skip the ~2 h build). Explicit rather than
+      # prebuilt artifact (users skip the ~30 min build). Explicit rather than
       # the stdlib default so the decision is visible and reviewable.
       redistributable = true,
       source_provenance = {
@@ -167,7 +164,10 @@ let version = "4.35.0" in
         owner = "leanprover-community",
         repo = "mathlib4",
       },
-      # build.sh runs 8 lean jobs (LEAN_NUM_THREADS=8) for 1-2 hours.
+      # A concurrency weight, not a duration: the orchestrator acquires this
+      # many build slots, and build.sh runs 8 lean jobs (LEAN_NUM_THREADS=8).
+      # Measured on build-bot (pkgs#1244 at 5f1857d): 28.5 min on
+      # c4-standard-96 (amd64), 33.0 min on c4a-standard-48 (arm64).
       build_cost_multiple = 8,
     } | Attrs,
 
