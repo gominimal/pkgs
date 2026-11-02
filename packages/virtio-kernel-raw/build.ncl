@@ -3,7 +3,7 @@ let base = import "../base/build.ncl" in
 let virtio-linux = import "../virtio-linux/build.ncl" in
 
 # Tracks the virtio-linux kernel version; this package only decompresses it.
-let version = "6.12.114" in
+let version = "6.12.115" in
 {
   name = "virtio-kernel-raw",
 

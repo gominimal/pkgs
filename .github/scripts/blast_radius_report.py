@@ -16,9 +16,11 @@ For each changed package, answers: if this update is wrong, what breaks?
 Dependency edges come from two places, both computed from the checkout with
 no network and no `minimal dump`:
 
-1. Recipe imports: `import "../<pkg>/build.ncl"` in packages/*/build.ncl —
-   the real dependency graph as recipes express it (build and runtime deps
-   are both declared this way).
+1. Recipe imports: `import "../<pkg>/build.ncl"`, or any other path into
+   another package's directory (a shared helper such as
+   `../hex0/amd64-ladder.ncl`), in any .ncl under packages/<pkg>/ — the real
+   dependency graph as recipes express it (build and runtime deps are both
+   declared this way).
 2. Name references: any quoted string in a non-package .ncl (stacks/,
    profiles/, ...) matching a package name. Stacks reference packages by
    name (`build_packages = ["go", ...]`), not by import, so an import-only
@@ -40,7 +42,13 @@ import re
 import sys
 from pathlib import Path
 
-IMPORT_RE = re.compile(r'import "\.\./([a-z0-9_.+-]+)/build\.ncl"')
+# Any path into another package's directory: `import "../gcc/build.ncl"`, a
+# shared helper (`import "../hex0/amd64-ladder.ncl"`), or a file a helper
+# names. Matching every `"../<pkg>/` string rather than only build.ncl imports
+# makes the edge coarse (importing hex0's ladder helper counts as depending on
+# hex0) but never misses one, which is the direction both this report and the
+# CI scoping in ci_scope.py need.
+IMPORT_RE = re.compile(r'"\.\./([a-z0-9_.+-]+)/')
 STRING_RE = re.compile(r'"([a-z0-9_.+-]+)"')
 
 
@@ -49,10 +57,15 @@ def load_graph(root: Path):
     pkgs = {p.name for p in pkg_dir.iterdir() if (p / "build.ncl").is_file()}
     importers = {p: set() for p in pkgs}
     for p in sorted(pkgs):
-        src = (pkg_dir / p / "build.ncl").read_text(encoding="utf-8", errors="replace")
-        for dep in set(IMPORT_RE.findall(src)):
-            if dep in pkgs and dep != p:
-                importers[dep].add(p)
+        # Every .ncl in the directory, not just build.ncl: a helper's own
+        # imports (jdk/cve-2026-111943.ncl imports ca-certificates') are
+        # dependencies of every package that imports the helper, and the
+        # coarse edge to the helper's package carries them there.
+        for f in sorted((pkg_dir / p).rglob("*.ncl")):
+            src = f.read_text(encoding="utf-8", errors="replace")
+            for dep in set(IMPORT_RE.findall(src)):
+                if dep in pkgs and dep != p:
+                    importers[dep].add(p)
 
     name_refs = {}  # pkg -> sorted list of non-package .ncl files naming it
     for f in sorted(root.rglob("*.ncl")):

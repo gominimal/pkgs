@@ -44,12 +44,12 @@ let browser_version = chromium-headless-shell-bin.attrs.upstream_version in
       { arch = 'Amd64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chromedriver-linux64.zip",
-          sha256 = "2a5024610c53f340a1aaa5d9a3e2a4fa448be7d71cca5238bd8c3c7f16181df4",
+          sha256 = "7b168a60f0e27f74dd13cc51a66f4f48c5046d1108280e3d77bb5af873c0c8a6",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux-arm64/chromedriver-linux-arm64.zip",
-          sha256 = "5fe7ab694afa8258bb1b403facdf19c35de5ef30ec8a815aa01575f8c6d14ab6",
+          sha256 = "42f0990fc7b3884d9338f8b11962d0e1de6a1ca7c135ec51bdea7b44b3e976c3",
         } | Source,
     } target,
     base,
