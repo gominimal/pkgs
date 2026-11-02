@@ -88,15 +88,22 @@ let version = "0.41.1" in
   attrs =
     {
       upstream_version = version,
-      # The binary compiles in more than agent-browser's own Apache-2.0 code:
-      #   MPL-2.0       axe-core 4.12.1 (cli/src/native/a11y/axe.min.js, include_str!)
-      #   MIT, ISC      axe-core's bundled third-party code (LICENSE-axe-core-THIRD-PARTY.txt)
-      #   MIT           React DevTools installHook.js (cli/src/native/react)
-      #   BSD-3-Clause  Chrome DevTools Protocol JSON (cli/cdp-protocol, codegen in build.rs)
-      #   OFL-1.1       Geist font, self-hosted into the embedded dashboard by next/font
-      #   dashboard JS  next, react, radix-ui, ai, streamdown, … (MIT / ISC / Apache-2.0)
-      #   Rust crates   from cli/Cargo.lock (see the PR that bumped to 0.41.1 for the list)
-      license_spdx = "Apache-2.0 AND MPL-2.0 AND MIT AND ISC AND BSD-3-Clause AND OFL-1.1",
+      # The binary compiles in more than agent-browser's own Apache-2.0 code
+      # (checked for 0.41.1; dual-licensed parts counted at MIT/Apache-2.0):
+      #   MPL-2.0       axe-core 4.12.1 (cli/src/native/a11y/axe.min.js, include_str!),
+      #                 and the option-ext crate (via dirs)
+      #   MIT, ISC      axe-core's bundled third-party code (LICENSE-axe-core-THIRD-PARTY.txt);
+      #                 React DevTools installHook.js (cli/src/native/react)
+      #   BSD-3-Clause  Chrome DevTools Protocol JSON (cli/cdp-protocol, codegen in build.rs);
+      #                 subtle, exr, ravif crates
+      #   OFL-1.1       Geist, which next/font self-hosts into the embedded dashboard
+      #   dashboard JS  next, react, radix-ui, ai, streamdown, d3, ... (MIT, ISC, Apache-2.0,
+      #                 BSD-3-Clause)
+      #   Rust crates   (cli/Cargo.lock) mostly MIT OR Apache-2.0, plus ISC (ring,
+      #                 rustls-webpki, untrusted), Unicode-3.0 (icu_*, zerovec, ...),
+      #                 BSD-2-Clause (rav1e), Zlib (zlib-rs, foldhash) and
+      #                 CDLA-Permissive-2.0 (webpki-roots' root list)
+      license_spdx = "Apache-2.0 AND MPL-2.0 AND MIT AND ISC AND BSD-2-Clause AND BSD-3-Clause AND Unicode-3.0 AND Zlib AND CDLA-Permissive-2.0 AND OFL-1.1",
       source_provenance = {
         category = 'GithubRepo,
         owner = "vercel-labs",
