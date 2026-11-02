@@ -106,7 +106,7 @@ let version = "0.41.1" in
     } | Attrs,
 
   tests = {
-    version =
+    version_check =
       {
         class = 'Standalone,
         test_deps = [base],
