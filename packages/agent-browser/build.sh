@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-# agent-browser >= 0.16 is a native Rust CLI. The npm package's
+# agent-browser >= 0.20 is a native Rust CLI (upstream #754). The npm package's
 # bin/agent-browser.js is only a launcher that picks the per-platform binary
 # (and scripts/postinstall.js downloads one), so we build the binary from
 # source and ship it on its own: no node, no node_modules at runtime.
