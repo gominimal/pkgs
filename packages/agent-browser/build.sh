@@ -44,9 +44,11 @@ esac
 mkdir -p bin
 cp cli/target/release/agent-browser bin/agent-browser-${PLATFORM}
 
-# Chromium is provided by the chromium-headless-shell-bin pkg as a runtime
-# dep. We pass its binary to the daemon via --executable-path; no need to
-# ship our own copy or run `npx playwright install`.
+# Chromium is provided by the chromium-bin pkg as a runtime dep. We pass its
+# binary to the daemon via --executable-path; no need to ship our own copy or
+# run `npx playwright install`. It must be chromium-bin's `chromium`, not
+# chromium-headless-shell: only the full browser reads the
+# CADistrustedCertificates policy (CVE-2026-111943; see build.ncl).
 #
 # Upstream's own default is to fetch Chrome for Testing's `chrome` bundle,
 # which we may not redistribute (inbox#284). Passing an explicit
@@ -67,6 +69,6 @@ cp -R dist bin node_modules package.json $OUTPUT_DIR/usr/libexec/agent-browser/
 cat > $OUTPUT_DIR/usr/bin/agent-browser << EOF
 #!/bin/bash
 exec /usr/libexec/agent-browser/bin/agent-browser-${PLATFORM} \\
-  --executable-path /usr/bin/chromium-headless-shell "\$@"
+  --executable-path /usr/bin/chromium "\$@"
 EOF
 chmod +x $OUTPUT_DIR/usr/bin/agent-browser

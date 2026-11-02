@@ -10,7 +10,7 @@ let jdk = import "../jdk/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "4.5" in
+let version = "4.6" in
 {
   name = "async-profiler",
   build_deps = [
@@ -18,7 +18,7 @@ let version = "4.5" in
     { file = "DeterministicJar.java" } | Local,
     {
       url = "https://github.com/async-profiler/async-profiler/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "807b83aefc86fcb067395d526684f3ea127919d611fe3bde1647938af7522869",
+      sha256 = "f1c8d0a1afac4330d1b4d1bc911874516bc06109d1f5c87d2ff699d9ef4b39cb",
       extract = true,
       strip_prefix = "async-profiler-%{version}",
     } | Source,

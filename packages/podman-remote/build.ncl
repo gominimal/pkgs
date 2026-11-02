@@ -5,14 +5,14 @@ let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "6.1.3" in
+let version = "6.1.4" in
 {
   name = "podman-remote",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/podman-container-tools/podman/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "6253aee14e573f747ca77e5a83a0df4ef9c2f609604f56715070ed06b6f9ddd8",
+      sha256 = "200fd9b4b6d820cae24fc99d8e290ec945512365cf3cda8283b3905c0c284ea8",
       extract = true,
       strip_prefix = "podman-%{version}",
     } | Source,

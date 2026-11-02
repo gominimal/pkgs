@@ -5,6 +5,7 @@ let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let make = import "../make/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let readline = import "../readline/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
@@ -13,6 +14,10 @@ let version = "1.8.1.3" in
   name = "socat",
   build_deps = [
     { file = "build.sh" } | Local,
+    # OpenSSL 4 made ASN1_STRING opaque; xio-openssl.c read iPAddress->data / ->length
+    # directly. Debian's 1.8.1.3-2 patch (Fedora carries the identical change); a no-op on 3.x.
+    # Drop it when upstream switches to ASN1_STRING_get0_data() / ASN1_STRING_length().
+    { file = "0001-openssl-4-asn1-string-accessors.patch" } | Local,
     {
       # Mirrored from http://www.dest-unreach.org/socat/download/socat-%{version}.tar.gz
       # (upstream is HTTP-only; we mirror to gominimal GCS so the
@@ -25,6 +30,7 @@ let version = "1.8.1.3" in
     } | Source,
     base,
     make,
+    patch,
     toolchain,
   ],
   runtime_deps = [

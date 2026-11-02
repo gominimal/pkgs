@@ -3,14 +3,14 @@ let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "2.73.3" in
+let version = "2.74.0" in
 {
   name = "chezmoi",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/twpayne/chezmoi/v%{version}.tar.gz",
-      sha256 = "5bee6b243331b9c02a7f25ca1696bbde30cb3909c8bccb91108f2718931e4fc7",
+      sha256 = "58ecb38aae54e1852f918adae1260a84bb4d750181e093439e621c921acbee49",
       extract = true,
       strip_prefix = "chezmoi-%{version}",
     } | Source,

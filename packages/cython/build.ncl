@@ -5,14 +5,14 @@ let setuptools = import "../setuptools/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "3.2.9" in
+let version = "3.3.0" in
 {
   name = "cython",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/cython/cython/releases/download/%{version}/cython-%{version}.tar.gz",
-      sha256 = "d249c9022ab13286b17bd66f30609e800c5f95efeecb06168990c7a66cecde6c",
+      sha256 = "eed0d93fbca7087f143b42c34b05a825849bdf17f101572c2105acfa49aa88b8",
       extract = true,
       strip_prefix = "cython-%{version}",
     } | Source,

@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+# Where the Sources land; the script cds around later (packages/next, a sharp staging dir).
+BUILD_ROOT="$PWD"
+
 # Sandbox doesn't have a cc symlink; point to gcc for native addon compilation
 export CC=gcc
 export CXX=g++
@@ -68,6 +71,22 @@ for _tool in next; do
 done
 
 NEXT_DIR="$OUTPUT_DIR/usr/libexec/next/lib/node_modules/next"
+
+# Ship the platform SWC compiler inside next's own node_modules, where next resolves
+# `@next/swc-linux-<arch>-gnu` first. The source build does not produce this native
+# addon; upstream publishes it as a per-platform npm package, fetched above as a
+# sha256-pinned Source. Without it every `next build`/`next dev` attempts a download
+# into next's tree, which is read-only when installed as a package.
+case "$(uname -m)" in
+  x86_64) _swc_arch=x64 ;;
+  aarch64|arm64) _swc_arch=arm64 ;;
+  *) echo "next: no SWC binary for $(uname -m)" >&2; exit 1 ;;
+esac
+_swc_dir="$NEXT_DIR/node_modules/@next/swc-linux-$_swc_arch-gnu"
+mkdir -p "$_swc_dir"
+tar -xzf "$BUILD_ROOT/swc-linux-$_swc_arch-gnu-$MINIMAL_ARG_VERSION.tgz" -C "$_swc_dir" --strip-components=1
+test -f "$_swc_dir/next-swc.linux-$_swc_arch-gnu.node" || { echo "next: SWC binary missing after extract" >&2; exit 1; }
+chmod 0755 "$_swc_dir/next-swc.linux-$_swc_arch-gnu.node"
 
 # Build sharp from source against our system libvips
 SHARP_STAGING=$(mktemp -d)

@@ -10,45 +10,32 @@ let pnpm = import "../pnpm/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-# chromium-headless-shell-bin, NOT chromium-bin. agent-browser runs headless
-# by default (`--headed` is opt-in), and headless-shell is the only Chromium
-# we can ship on arm64 at all:
+# chromium-bin (its `chromium`, run headless), NOT chromium-headless-shell-bin.
 #
-#   * chromium-bin's arm64 leg came from Playwright's CDN, and Playwright
-#     STOPPED building linux-arm64 — r1243 was the last one ever (re-verified
-#     2026-09-18: r1243 -> 200, r1245/1250/1260/1270 -> 400). It is a dead
-#     source, not a stale pin.
-#   * Google publishes no open-source Chromium binary for linux-arm64 at all;
-#     the chromium-browser-snapshots bucket is x64 ONLY (Linux_ARM64 -> 404),
-#     which is why chromium-bin needed a third-party build in the first place.
-#   * Chrome for Testing DOES build arm64, but the `chrome` bundle is branded
-#     Google Chrome and ships libwidevinecdm.so — gominimal/inbox#284 ruled
-#     that non-redistributable, and our cache redistributes.
+# SECURITY, CVE-2026-111943 (eMudhra intermediate key compromise). agent-browser
+# drives the browser against arbitrary, untrusted sites, so the browser's trust
+# store is this package's trust store. chrome-headless-shell cannot be fixed
+# from our side: its compiled-in Chrome Root Store still holds emSign ECC Root
+# CA - G3, its blocklist lacks the 8 compromised keys, it gets no component
+# updates, and it has no platform policy loader, so it cannot read the
+# `CADistrustedCertificates` policy (see chromium-headless-shell-bin's build.ncl
+# and gominimal/pkgmgr-rs#1028). No Chrome for Testing Stable carries the
+# upstream fix yet (Stable 156.0.8078.47 is branch position 1706539; the fixes
+# are main@{#1723080} and main@{#1723181}).
 #
-#   chrome-headless-shell is the exception that clears all three: CfT builds
-#   it for arm64, and it was PROVEN redistributable for pkgs#718 — zero
-#   WidevineCdm entries on either arch and a LICENSE.headless_shell carrying
-#   the Chromium BSD-3-Clause grant.
+# chromium-bin's full browser does read the policy: it depends on
+# chromium-policies, which installs /etc/chromium/policies/managed/
+# ca-distrusted-certificates.json. Checked with the TLS trust harness
+# (gominimal/pkgs#976): through headless-shell, `agent-browser open` loads every
+# eMudhra test host; through chromium-bin it refuses them with
+# net::ERR_CERT_AUTHORITY_INVALID and still loads letsencrypt.org.
 #
-# WHAT THIS GIVES UP, deliberately. chrome-headless-shell is the separate,
-# reduced headless binary, not the full browser running headless, so these
-# agent-browser features do NOT work against it:
-#
-#   --extensions        (no extension support in headless-shell)
-#   --headed            (there is no headed mode in this binary)
-#   WebGPU screenshots  (upstream documents these as requiring headed)
-#
-# Accepted because agent-browser is driven by agents, not humans: nothing
-# runs it expecting a visible UI, and no consumer uses extensions. If that
-# changes, the path back is Debian's chromium (DFSG-free, Widevine-free, both
-# arches at 153.0.8010.52-1) at the cost of a 47-library runtime closure —
-# libpulse, libopenh264, libdav1d, libFLAC, libopus, libminizip and friends,
-# which Debian links dynamically where Google's build bundles them.
-#
-# It still brings the chromium system-lib closure (alsa-lib, cairo, cups,
-# nss, mesa, the X11 stack, eudev, liberation-fonts) transitively, so we
-# declare only the pkg.
-let chromium-headless-shell-bin = import "../chromium-headless-shell-bin/build.ncl" in
+# Both arches: chromium-bin is ungoogled-chromium-portablelinux (x86_64 and
+# arm64, Stable, no Widevine). Running the full browser headless also brings
+# back what headless-shell lacked (--extensions, --headed with a display).
+# Return to headless-shell only once its pinned CfT Stable carries both
+# upstream changes (the pkgmgr-rs#1028 trigger), if the smaller closure matters.
+let chromium-bin = import "../chromium-bin/build.ncl" in
 
 let version = "0.15.1" in
 {
@@ -73,7 +60,7 @@ let version = "0.15.1" in
     bash,
     subsetOf node-lts ["node"],
     glibc,
-    chromium-headless-shell-bin,
+    chromium-bin,
   ],
 
   cmd = "./build.sh",
@@ -107,6 +94,18 @@ let version = "0.15.1" in
           # spawns chromium via /bin/chromium, navigates, returns
           # title.
           ["/bin/bash", "-c", "/bin/agent-browser open 'data:text/html,<title>agent-browser-open-ok</title>' | grep -q agent-browser-open-ok"],
+        ],
+      } | Test,
+    # CVE-2026-111943: the daemon must launch chromium-bin's full browser,
+    # which reads the CADistrustedCertificates policy. headless-shell cannot
+    # (see the comment at the chromium-bin import).
+    distrust_policy_wired =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "grep -qF -- '--executable-path /usr/bin/chromium \"' /usr/bin/agent-browser"],
+          ["/bin/bash", "-c", "grep -q CADistrustedCertificates /etc/chromium/policies/managed/ca-distrusted-certificates.json"],
         ],
       } | Test,
   },
