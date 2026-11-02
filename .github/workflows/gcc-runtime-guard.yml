@@ -1,0 +1,55 @@
+name: gcc-runtime-guard
+
+# BLOCKING. Nothing may take gcc at runtime, whole or as a slice, except the
+# packages in GCC_RUNTIME_ALLOWED: they take `subsetOf gcc-libs [...]`
+# instead. A slice of gcc carries gcc's whole runtime closure (binutils,
+# linux_headers, ...) into the consumer, which is how gominimal/pkgs#805 put a
+# modern `as` into the stage0 ladder. Also rejects any ladder host tool whose
+# runtime closure reaches gcc, binutils or linux_headers. Rationale and
+# allowlist live in .github/scripts/gcc_runtime_guard.py; the shape mirrors
+# ruby-flavor-guard.yml.
+#
+# A dump failure fails too (exit 2 = UNVERIFIED): a guard that cannot see the
+# catalog must not go green.
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "packages/**"
+      - "stacks/**"
+      - ".github/scripts/gcc_runtime_guard.py"
+      - ".github/scripts/test_gcc_runtime_guard.py"
+      - ".github/workflows/gcc-runtime-guard.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gcc-runtime-guard-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Guard unit tests
+        run: python3 -m unittest discover -s .github/scripts -p 'test_gcc_runtime_guard.py' -v
+
+      # The runner's pinned, sha256-verified evaluator, as node-runtime-guard uses.
+      - uses: ./.github/actions/setup-mip
+
+      - name: Dump catalog (amd64 + arm64)
+        run: |
+          set -euo pipefail
+          mip --version || true
+          for arch in amd64 arm64; do
+            mip dump -p --format json --arch "$arch" > "dump-$arch.json"
+            echo "dumped $(jq 'length' "dump-$arch.json") packages ($arch)"
+          done
+
+      - name: gcc-runtime guard
+        run: python3 .github/scripts/gcc_runtime_guard.py dump-amd64.json dump-arm64.json
