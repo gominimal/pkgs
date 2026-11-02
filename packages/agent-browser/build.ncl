@@ -133,6 +133,18 @@ let version = "0.41.1" in
           ["/bin/bash", "-c", "/bin/agent-browser skills get core | grep -q agent-browser"],
         ],
       } | Test,
+    # No Node runtime or node_modules ships any more; the embedded code's
+    # licence texts do.
+    layout =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "test ! -e /usr/libexec/agent-browser/node_modules && test ! -e /usr/bin/node"],
+          ["/bin/bash", "-c", "grep -q 'Mozilla Public License' /usr/share/licenses/agent-browser/LICENSE-axe-core.txt"],
+          ["/bin/bash", "-c", "test -s /usr/share/licenses/agent-browser/LICENSE-axe-core-THIRD-PARTY.txt"],
+        ],
+      } | Test,
     # The real dashboard export is embedded, not cli/build.rs's placeholder.
     dashboard_embedded =
       {
