@@ -20,6 +20,17 @@ if [ ! -d "$RUNNER_HOME/bin" ]; then
     echo "Setting up writable runner directory at $RUNNER_HOME..." >&2
     cp -a /usr/lib/actions-runner/. "$RUNNER_HOME/"
 fi
+# CVE-2026-111943: the bundled externals/node{20,24} trust their compiled-in
+# root store, which still holds emSign ECC Root CA - G3. --use-openssl-ca
+# makes them trust OpenSSL's default store instead, i.e. our ca-certificates
+# (/etc/ssl/cert.pem). The runner's processes inherit this environment, so
+# JavaScript actions and node in `run:` steps get it too. A workflow that sets
+# its own NODE_OPTIONS replaces it for its steps; one that already chose a
+# store keeps its choice.
+case " ${NODE_OPTIONS:-} " in
+    *" --use-openssl-ca "*|*" --use-bundled-ca "*) ;;
+    *) export NODE_OPTIONS="--use-openssl-ca${NODE_OPTIONS:+ $NODE_OPTIONS}" ;;
+esac
 cd "$RUNNER_HOME"
 exec ./run.sh "$@"
 EOF
@@ -32,6 +43,11 @@ if [ ! -d "$RUNNER_HOME/bin" ]; then
     echo "Setting up writable runner directory at $RUNNER_HOME..." >&2
     cp -a /usr/lib/actions-runner/. "$RUNNER_HOME/"
 fi
+# CVE-2026-111943: same as actions-runner (bundled node -> our ca-certificates).
+case " ${NODE_OPTIONS:-} " in
+    *" --use-openssl-ca "*|*" --use-bundled-ca "*) ;;
+    *) export NODE_OPTIONS="--use-openssl-ca${NODE_OPTIONS:+ $NODE_OPTIONS}" ;;
+esac
 cd "$RUNNER_HOME"
 exec ./config.sh "$@"
 EOF

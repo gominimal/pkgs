@@ -25,7 +25,7 @@ let zlib = import "../zlib/build.ncl" in
 # Source is MariaDB's official release tarball from archive.mariadb.org,
 # mirrored to gs:// like every other non-github source here. 12.3 is the
 # current Stable LTS series.
-let version = "12.3.3" in
+let version = "13.2.0" in
 
 {
   name = "mariadb",
@@ -33,7 +33,7 @@ let version = "12.3.3" in
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/mariadb-%{version}.tar.gz",
-      sha256 = "e99d739fd4a55f9a11dea7bd2287a262673e287550af3071c8469dd2bec0c163",
+      sha256 = "5b6a588e86f1169fef44760846b6e9e96b08d7a7e52fb4b887c5feb06ca39f3a",
       extract = true,
       strip_prefix = "mariadb-%{version}",
     } | Source,

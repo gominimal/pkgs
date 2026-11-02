@@ -18,10 +18,20 @@ grep -A1 '^name = "rustls-webpki"$' Cargo.lock | grep -q '^version = "0.103.16"$
   exit 1
 }
 if grep -A1 -E '^name = "(rustls-webpki|webpki-roots|webpki-root-certs)"$' Cargo.lock |
-  grep -qE '^version = "(0[.]103[.]([0-9]|1[0-5])|1[.]0[.][0-9])"$'; then
+  grep -qE '^version = "(0[.]103[.]([0-9]|1[0-5])|1[.]0[.][0-9]|0[.]26[.]([0-9]|10))"$'; then
+  # 0.26.0-0.26.10 webpki-roots carry their own (pre-distrust) root list;
+  # 0.26.11 is the shim that re-exports webpki-roots 1.x.
   echo "ERROR: a pre-CVE-2026-111943 rustls-webpki / webpki-roots is still in Cargo.lock" >&2
   exit 1
 fi
+
+# OpenSSL 4: openssl-sys 0.9.117 and openssl 0.10.81 (see build.ncl). Fail closed if the bump
+# did not land.
+patch -Np1 -i ./openssl-4-openssl-sys-lock.patch
+grep -A1 '^name = "openssl-sys"$' Cargo.lock | grep -q '^version = "0.9.117"$' || {
+  echo "ERROR: openssl-sys 0.9.117 is not in Cargo.lock (OpenSSL 4)" >&2
+  exit 1
+}
 
 cargo build --locked --release
 mkdir -p "$OUTPUT_DIR/usr/bin"

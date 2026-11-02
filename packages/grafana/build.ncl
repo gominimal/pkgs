@@ -3,10 +3,10 @@ let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "13.1.2" in
+let version = "13.3.0" in
 
-let amd64_sha256 = "2215a38a59b573f114128e05f3836cb8708ac9b04b9283021ad28fdb88d71290" in
-let arm64_sha256 = "660cc31dbd159d98a3804ac5104b0aca0e0d95ee4e88a164ff63ddd72f9fda2e" in
+let amd64_sha256 = "cec8f98cc59bc1a1945833b652371a073be678c5c159a9b1695ad63c04fae5a7" in
+let arm64_sha256 = "07015a0c34a8cfad8b3548984a86a7afe689e1929f5f77d9ae8f7636429e67fe" in
 
 {
   name = "grafana",

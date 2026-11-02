@@ -4,7 +4,7 @@ let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 
-let version = "0.142.0" in
+let version = "0.143.0" in
 {
   name = "jbang",
   # JBang runs single-file Java programs (`jbang hello.java`), resolving any
@@ -18,7 +18,7 @@ let version = "0.142.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/jbangdev/jbang/releases/download/v%{version}/jbang-%{version}.tar",
-      sha256 = "43aaeb9bc30d9331ed57952a872b80dab3dafe8e927f0f7a90a3c8e67d08eaac",
+      sha256 = "1388fcc2258e2bdcd277c68a5aad5a9d7c1dc8b57ef06165a45da02c2ed9775b",
     } | Source,
     base,
   ],

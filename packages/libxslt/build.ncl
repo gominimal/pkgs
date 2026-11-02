@@ -48,6 +48,8 @@ let version = "1.1.45" in
       upstream_version = version,
       license_spdx = "MIT",
       repology_project = "libxslt",
+      # Official GNOME GitHub mirror (canonical forge: gitlab.gnome.org); allowed by
+      # AGENTS.md "Official upstream mirrors" for CPE/advisory coverage.
       source_provenance = {
         category = 'GithubRepo,
         owner = "GNOME",
