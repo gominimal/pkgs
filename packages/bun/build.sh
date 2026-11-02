@@ -138,8 +138,15 @@ git -c user.email=build@local -c user.name=build commit -q -m "v${MINIMAL_ARG_VE
 # names the step it stuck in (zig codegen, codegen scripts, cmake deps, bun
 # install) instead of ending as a bare timeout. timeout signals its whole
 # process group, so zig and the cmake children die with bun.
+# The watchdog's sleep runs as its own child with every fd on /dev/null, so it
+# never holds the build's stdout/stderr open, and the TERM trap kills it when
+# the build finishes; otherwise `kill $BUN_WATCHDOG` left the sleep running
+# with the build's stderr inherited (a runner waiting for EOF would block).
 (
-  sleep 3300
+  trap 'kill "$s" 2>/dev/null; exit 0' TERM
+  sleep 3300 </dev/null >/dev/null 2>&1 &
+  s=$!
+  wait "$s"
   echo "bun build:release still running after 55 min; live processes:" >&2
   for d in /proc/[0-9]*; do
     [ -r "$d/cmdline" ] || continue
