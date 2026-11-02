@@ -64,7 +64,9 @@ let cadical_commit = "a384d221a920d473b770df6a7221f35fc5d99e90" in
   runtime_deps = [
     glibc,
     gmp,
-    libpoly,
+    # Shared libraries only: cvc5's public headers and cvc5Config.cmake never
+    # reference LibPoly, so consumers don't need its headers.
+    subsetOf libpoly ["libs"],
     subsetOf gcc ["libgcc", "libstdcpp"],
   ],
 
