@@ -76,5 +76,6 @@ make -j$(nproc)
 # TODO make -k check
 make DESTDIR=$OUTPUT_DIR install-strip
 
-# TODO
-# ln -sf $OUTPUT_DIR/usr/bin/gcc $OUTPUT_DIR/usr/bin/cc
+# gcc installs `c++` but not `cc`, the name make's implicit rules, cc-rs and rustc's default linker
+# invoke. Relative target: an absolute $OUTPUT_DIR path would dangle once the output is extracted.
+ln -s gcc "$OUTPUT_DIR/usr/bin/cc"

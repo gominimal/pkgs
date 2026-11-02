@@ -29,6 +29,9 @@ let linux_headers = import "../linux_headers/build.ncl" in
           ["/bin/bash", "-c", "printf '#include <stdio.h>\\nint main(void) { puts(\"hi\"); return 0; }\\n' > h.c"],
           ["/bin/gcc", "h.c", "-o", "h"],
           ["/bin/bash", "-c", "test \"$(./h)\" = hi"],
+          # `cc` is the name make's implicit rules, cc-rs and rustc's default linker invoke
+          ["/bin/cc", "h.c", "-o", "h-cc"],
+          ["/bin/bash", "-c", "test \"$(./h-cc)\" = hi"],
         ],
       } | Test,
 

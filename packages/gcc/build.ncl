@@ -63,7 +63,15 @@ let version = "15.2.0" in
     zlib,
     zstd,
   ],
+  # What a compiler needs to turn a .c into a running program: gcc drives `as` and `ld`
+  # (binutils), links glibc's crt files and libc, and C programs routinely include kernel headers.
+  # Safe ONLY because nothing that wants gcc's runtime libraries takes a slice of gcc any more:
+  # they take `subsetOf gcc-libs [...]` (see ../gcc-libs/build.ncl). A slice of gcc would carry
+  # all of this into its consumer's closure (gominimal/pkgs#805).
   runtime_deps = [
+    binutils,
+    glibc,
+    linux_headers,
     gmp,
     mpc,
     mpfr,
@@ -169,7 +177,7 @@ let version = "15.2.0" in
     compile_exec_code =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, binutils, coreutils], # TODO: Some of these need to be runtime_deps
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           ["/bin/bash", "-c", "echo 'int main() { return 0; }' > hello.c"],
           ["/bin/gcc", "hello.c", "-o", "hello"],
@@ -181,7 +189,7 @@ let version = "15.2.0" in
     compile_exec_output =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, binutils, coreutils, grep], # TODO: Some of these need to be runtime_deps
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "cat > print.c << 'EOF'\n#include <stdio.h>\nint main() {\n    printf(\"Hello World\");\n    return 0;\n}\nEOF"],
           ["/bin/gcc", "print.c", "-o", "print"],
@@ -193,7 +201,7 @@ let version = "15.2.0" in
     compile_exec_math =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, binutils, coreutils, grep], # TODO: Some of these need to be runtime_deps
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "cat > math.c << 'EOF'\n#include <stdio.h>\nint main() {\n    int result = 2 + 2;\n    printf(\"%d\", result);\n    return 0;\n}\nEOF"],
           ["/bin/gcc", "math.c", "-o", "math"],
@@ -204,7 +212,7 @@ let version = "15.2.0" in
     compile_exec_linking =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, binutils, coreutils, grep], # TODO: Some of these need to be runtime_deps
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "cat > func.c << 'EOF'\nint multiply(int a, int b) {\n    return a * b;\n}\nEOF"],
           ["/bin/bash", "-c", "cat > main.c << 'EOF'\n#include <stdio.h>\nint multiply(int a, int b);\nint main() {\n    printf(\"%d\", multiply(6, 7));\n    return 0;\n}\nEOF"],
@@ -212,6 +220,21 @@ let version = "15.2.0" in
           ["/bin/gcc", "-c", "main.c", "-o", "main.o"],
           ["/bin/gcc", "main.o", "func.o", "-o", "multi"],
           ["/bin/bash", "-c", "./multi | grep -q '^42$'"],
+        ],
+      } | Test,
+
+    # Only gcc's own runtime closure may supply `cc`, as, ld, libc and the kernel headers here.
+    compile_exec_cc_cxx_kernel_headers =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils],
+        cmds = [
+          ["/bin/bash", "-c", "printf '#include <stdio.h>\\nint main(void) { puts(\"hi\"); return 0; }\\n' > hello.c"],
+          ["/bin/cc", "hello.c", "-o", "hello"],
+          ["/bin/bash", "-c", "test \"$(./hello)\" = hi"],
+          ["/bin/bash", "-c", "printf '#include <linux/types.h>\\n#include <iostream>\\nint main() { __u32 x = 42; std::cout << x << std::endl; return 0; }\\n' > hello.cc"],
+          ["/bin/g++", "hello.cc", "-o", "hellocc"],
+          ["/bin/bash", "-c", "test \"$(./hellocc)\" = 42"],
         ],
       } | Test,
   },
