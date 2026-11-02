@@ -7,6 +7,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let cbmc = import "../cbmc/build.ncl" in
 let kissat = import "../kissat/build.ncl" in
@@ -97,7 +98,7 @@ in
     base, # /bin/sh for the kani / cargo-kani wrappers
     glibc,
     zlib,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
     # Kani runs CBMC and kissat by name (bundle bin/ links to them).
     cbmc,
     kissat,

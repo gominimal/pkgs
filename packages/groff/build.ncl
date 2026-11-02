@@ -10,7 +10,7 @@ let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let perl = import "../perl/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 
 let version = "1.24.2" in
 {
@@ -33,7 +33,7 @@ let version = "1.24.2" in
     coreutils,
     glibc,
     perl,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

@@ -7,6 +7,7 @@ let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
@@ -35,7 +36,7 @@ let version = "8.10.3" in
 
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libstdcpp"],
+    subsetOf gcc-libs ["libstdcpp"],
   ],
 
   cmd = "./build.sh",

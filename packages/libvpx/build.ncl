@@ -4,7 +4,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let nasm = import "../nasm/build.ncl" in
 let perl = import "../perl/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 let version = "1.17.0" in
@@ -26,7 +26,7 @@ let version = "1.17.0" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-libs ["libgcc"],
   ],
 
   cmd = "./build.sh",

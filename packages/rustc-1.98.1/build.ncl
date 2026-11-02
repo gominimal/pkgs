@@ -18,7 +18,7 @@ let sqlite = import "../sqlite/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let libssh2 = import "../libssh2/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 
 # pkgmgr: bootstrap_rung = "rust"
 let version = "1.98.1" in
@@ -58,7 +58,7 @@ let stage0 =
             # = the rung's runtime_deps (rustc-1.97.1/build.ncl amd64_spec), plus openssl-3-5:
             # this tarball's cargo has DT_NEEDED libssl.so.3 + libcrypto.so.3, which packages/
             # openssl (4.x, libssl.so.4) no longer provides.
-            runtime_deps = [libffi, llvm, openssl, openssl-3-5, sqlite, subsetOf gcc ["libgcc", "libstdcpp"]],
+            runtime_deps = [libffi, llvm, openssl, openssl-3-5, sqlite, subsetOf gcc-libs ["libgcc", "libstdcpp"]],
             outputs = { usr = { glob = "usr/**/*", allow_executable = true } | OutputData },
           } | BuildSpec
         ),
@@ -106,7 +106,7 @@ let spec =
       llvm, # clang, clang++, llvm-config and libLLVM-21.so; also present at build time
       openssl,
       sqlite,
-      subsetOf gcc ["libgcc", "libstdcpp"],
+      subsetOf gcc-libs ["libgcc", "libstdcpp"],
     ],
     # no `needs` block: the rung must be strictly offline.
 

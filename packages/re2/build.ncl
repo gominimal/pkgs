@@ -10,6 +10,7 @@ let glibc = import "../glibc/build.ncl" in
 let abseil-cpp = import "../abseil-cpp/build.ncl" in
 let icu = import "../icu/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 # re2 is date-versioned; upstream git tags are dash-form (2025-11-05). Use the
 # dash form so supply-chain's version comparator (splits on `.`) treats a later
 # same-year release as newer, and so url/strip_prefix stay coupled to `version`.
@@ -41,7 +42,7 @@ let version = "2025-11-05" in
     pkgconfig = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
     cmake_data = { glob = "usr/lib/cmake/**" } | OutputData,
   },
-  runtime_deps = [glibc, subsetOf gcc ["libgcc", "libstdcpp"], abseil-cpp, icu],
+  runtime_deps = [glibc, subsetOf gcc-libs ["libgcc", "libstdcpp"], abseil-cpp, icu],
   attrs =
     {
       upstream_version = version,

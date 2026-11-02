@@ -4,7 +4,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let make = import "../make/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let openjpeg = import "../openjpeg/build.ncl" in
@@ -34,7 +34,7 @@ let version = "4.13.0" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
     zlib,
     # opencv's imgcodecs dynamically links libopenjp2.so at runtime.
     openjpeg,

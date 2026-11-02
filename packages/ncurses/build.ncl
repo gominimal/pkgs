@@ -4,7 +4,7 @@ let attr = import "../attr/build.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 
 let version = "6.6" in
 {
@@ -21,7 +21,7 @@ let version = "6.6" in
   ],
   runtime_deps = [
     attr,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

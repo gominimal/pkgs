@@ -1,7 +1,7 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
@@ -27,7 +27,7 @@ let version = "1.92.0" in
   ],
   runtime_deps = [
     subsetOf
-      gcc
+      gcc-libs
       (
         ["libgcc", "libstdcpp"]
         @ match {

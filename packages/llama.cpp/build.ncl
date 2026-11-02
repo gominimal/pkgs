@@ -8,7 +8,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let hwdata = import "../hwdata/build.ncl" in
 let pciutils = import "../pciutils/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 
 let version = "b11960" in
 {
@@ -41,7 +41,7 @@ let version = "b11960" in
     curl,
     hwdata,
     pciutils,
-    subsetOf gcc ["libgcc", "libstdcpp", "libgomp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp", "libgomp"],
   ],
   cmd = "./build.sh",
   build_args = {

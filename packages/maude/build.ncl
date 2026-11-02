@@ -22,7 +22,7 @@ let libtecla = import "../libtecla/build.ncl" in
 let buddy = import "../buddy/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let version = "3.5.1" in
 {
   name = "maude",
@@ -56,7 +56,7 @@ let version = "3.5.1" in
     libtecla,
     buddy,
     ncurses,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
   ],
   cmd = "./build.sh",
   build_args = {

@@ -5,7 +5,7 @@ let version = "1.85.1" in
 let base = import "../base/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -54,7 +54,7 @@ let python = import "../python/build.ncl" in
 
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
     abseil-cpp,
     c-ares,
     openssl,

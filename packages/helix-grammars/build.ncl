@@ -1,7 +1,7 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 # The tree-sitter grammars for helix, as the `<runtime>/grammars/<id>.so` files it
@@ -297,7 +297,7 @@ let version = "25.07.1" in
   runtime_deps = [
     glibc,
     # The cmake, lean and yaml scanners are C++; those three .so files link libstdc++.
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

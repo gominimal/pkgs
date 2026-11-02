@@ -3,7 +3,7 @@ let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let tar = import "../tar/build.ncl" in
 
@@ -39,7 +39,7 @@ let version = "12.17.0" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-libs ["libgcc"],
     # `pn`/`pnpx`/`pnx` are upstream's `#!/bin/sh` alias scripts (they resolve
     # their symlink with `command -p readlink`), and pnpm runs lifecycle scripts
     # through `sh`.

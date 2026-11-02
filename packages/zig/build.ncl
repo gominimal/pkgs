@@ -2,7 +2,7 @@ let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, 
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 # zig 0.17 links exactly LLVM 22 (its CMake rejects any other major), and the
 # default `llvm` stays on 21 for the Rust ladder: build against the prefixed
 # llvm-22 line (/usr/lib/llvm-22). gominimal/pkgs#996, inbox#1170.
@@ -27,7 +27,7 @@ let version = "0.17.0" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
     subsetOf llvm-22 ["libs"],
   ],
 

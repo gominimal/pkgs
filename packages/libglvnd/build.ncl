@@ -10,7 +10,7 @@ let libx11 = import "../libx11/build.ncl" in
 let libxext = import "../libxext/build.ncl" in
 let xorgproto = import "../xorgproto/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 
 let version = "1.7.0" in
 {
@@ -35,7 +35,7 @@ let version = "1.7.0" in
     libx11,
     libxext,
     glibc,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-libs ["libgcc"],
   ],
 
   cmd = "./build.sh",

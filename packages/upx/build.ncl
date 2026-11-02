@@ -4,7 +4,7 @@ let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let version = "5.3.0" in
 {
   name = "upx",
@@ -44,7 +44,7 @@ let version = "5.3.0" in
   #   error while loading shared libraries: libstdc++.so.6
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
   ],
   attrs =
     {

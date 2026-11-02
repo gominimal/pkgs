@@ -2,7 +2,7 @@ let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, 
 let autoconf = import "../autoconf/build.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let gnutls = import "../gnutls/build.ncl" in
@@ -42,7 +42,7 @@ let version = "31.1" in
     jansson,
     libxml2,
     ncurses,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-libs ["libgcc"],
     tree-sitter,
     zlib,
   ],

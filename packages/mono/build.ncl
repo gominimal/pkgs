@@ -3,7 +3,7 @@ let autoconf = import "../autoconf/build.ncl" in
 let automake = import "../automake/build.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
 let m4 = import "../m4/build.ncl" in
@@ -44,7 +44,7 @@ let version = "6.12.0.206" in
   runtime_deps = [
     glibc,
     zlib,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

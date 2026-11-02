@@ -8,6 +8,7 @@ let git = import "../git/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let z3-4-16-0 = import "../z3-4.16.0/build.ncl" in
 
@@ -90,7 +91,7 @@ in
     base, # /bin/sh for the verus / cargo-verus wrappers
     glibc,
     zlib,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
     z3-4-16-0,
     # `verus --compile` and `cargo verus` link through the toolchain; the
     # wrappers point the linker at gcc.

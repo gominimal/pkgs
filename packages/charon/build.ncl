@@ -12,6 +12,7 @@ let base = import "../base/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let rust-nightly-charon = import "../rust-nightly-charon/build.ncl" in
@@ -46,7 +47,7 @@ let version = "0.1.281" in
     rust-nightly-charon,
     glibc,
     zlib,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
   ],
   cmd = "./build.sh",
   outputs = {

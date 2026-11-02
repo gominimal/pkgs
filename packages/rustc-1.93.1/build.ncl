@@ -16,7 +16,7 @@ let sqlite = import "../sqlite/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let libssh2 = import "../libssh2/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 
 # pkgmgr: bootstrap_rung = "rust"
 let version = "1.93.1" in
@@ -51,7 +51,7 @@ let amd64_spec =
       llvm, # clang, clang++, llvm-config and libLLVM-21.so; also present at build time
       openssl,
       sqlite,
-      subsetOf gcc ["libgcc", "libstdcpp"],
+      subsetOf gcc-libs ["libgcc", "libstdcpp"],
     ],
     # no `needs` block: the rung must be strictly offline.
 

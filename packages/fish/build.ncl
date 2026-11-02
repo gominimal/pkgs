@@ -8,7 +8,7 @@ let git = import "../git/build.ncl" in
 let pcre2 = import "../pcre2/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 
 let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
@@ -40,7 +40,7 @@ let version = "4.9.3" in
 
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-libs ["libgcc"],
     pcre2,
   ],
 

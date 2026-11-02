@@ -3,7 +3,7 @@ let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let unzip = import "../unzip/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let nss = import "../nss/build.ncl" in
 let nspr = import "../nspr/build.ncl" in
 let glib = import "../glib/build.ncl" in
@@ -60,7 +60,7 @@ let browser_version = chromium-headless-shell-bin.attrs.upstream_version in
   runtime_deps =
     [
       glibc,
-      subsetOf gcc ["libgcc"],
+      subsetOf gcc-libs ["libgcc"],
       nss,
       nspr,
       glib,

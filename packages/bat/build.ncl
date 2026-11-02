@@ -4,7 +4,7 @@ let rust = import "../rust/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let oniguruma = import "../oniguruma/build.ncl" in
@@ -29,7 +29,7 @@ let version = "0.26.1" in
   runtime_deps = [
     glibc,
     zlib,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-libs ["libgcc"],
     oniguruma,
   ],
 

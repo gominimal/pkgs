@@ -4,7 +4,7 @@ let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let llvm = import "../llvm/build.ncl" in
 
 # bindgen — generates Rust FFI bindings from C/C++ headers by driving
@@ -34,7 +34,7 @@ let version = "0.73.2" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-libs ["libgcc"],
     subsetOf llvm ["libclang", "libs_clang"],
   ],
 

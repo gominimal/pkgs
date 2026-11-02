@@ -1,7 +1,7 @@
 let { subsetOf, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -63,7 +63,7 @@ let build_date = "20261016" in
     # that resolved no libstdc++ would have passed every checker and then
     # failed at exec. Declaring them as OutputBin below turns that check on.
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"], # decompile/sleigh are C++
+    subsetOf gcc-libs ["libgcc", "libstdcpp"], # decompile/sleigh are C++
     zlib, # `sleigh` links libz.so.1
   ],
 

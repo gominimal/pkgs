@@ -11,6 +11,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let version = "5.4.0" in
 {
   name = "jemalloc",
@@ -49,7 +50,7 @@ let version = "5.4.0" in
     # shipped: it would need a perl runtime_dep to be a working tool.
     config = { glob = "usr/bin/jemalloc-config", allow_missing_interpreter = true } | OutputBin,
   },
-  runtime_deps = [glibc, subsetOf gcc ["libgcc", "libstdcpp"]],
+  runtime_deps = [glibc, subsetOf gcc-libs ["libgcc", "libstdcpp"]],
   attrs =
     {
       upstream_version = version,

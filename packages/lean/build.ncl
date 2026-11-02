@@ -9,7 +9,7 @@ let openssl = import "../openssl/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let git = import "../git/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let cadical = import "../cadical/build.ncl" in
 
 let version = "4.35.0" in
@@ -32,7 +32,7 @@ let version = "4.35.0" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
     gmp,
     libuv,
     # `bv_decide` shells out to the `cadical` SAT solver by name on PATH. An

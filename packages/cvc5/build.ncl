@@ -9,7 +9,7 @@ let py-pyparsing = import "../py-pyparsing/build.ncl" in
 let symfpu = import "../symfpu/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 
 # cvc5, the SMT solver. Latest stable release. Downstream pins, for reference
 # when bumping: Verus pins cvc5 1.1.2, Creusot pins 1.3.1 — both older than
@@ -60,7 +60,7 @@ let cadical_commit = "a384d221a920d473b770df6a7221f35fc5d99e90" in
   runtime_deps = [
     glibc,
     gmp,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

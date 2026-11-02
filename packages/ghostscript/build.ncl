@@ -10,7 +10,7 @@ let libpng = import "../libpng/build.ncl" in
 let libjpeg-turbo = import "../libjpeg-turbo/build.ncl" in
 let openjpeg = import "../openjpeg/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 
 let version = "10.08.0" in
 {
@@ -35,7 +35,7 @@ let version = "10.08.0" in
     libjpeg-turbo,
     openjpeg,
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

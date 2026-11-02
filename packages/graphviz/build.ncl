@@ -11,7 +11,7 @@ let toolchain = import "../toolchain/build.ncl" in
 
 let cairo = import "../cairo/build.ncl" in
 let fontconfig = import "../fontconfig/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let liberation-fonts = import "../liberation-fonts/build.ncl" in
 let libgd = import "../libgd/build.ncl" in
@@ -64,7 +64,7 @@ let version = "16.1.0" in
     libwebp,
     pango,
     zlib,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

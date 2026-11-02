@@ -6,7 +6,7 @@ let git = import "../git/build.ncl" in
 let make = import "../make/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
@@ -50,7 +50,7 @@ let version = "9.15" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
     zlib,
   ],
 

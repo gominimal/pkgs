@@ -3,7 +3,7 @@ let { target, .. } = import "config.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
@@ -23,7 +23,7 @@ let version = "2.47" in
   runtime_deps = [
     glibc,
     zlib,
-    subsetOf gcc ["libstdcpp", "libgcc"],
+    subsetOf gcc-libs ["libstdcpp", "libgcc"],
   ],
 
   cmd = "./build.sh",

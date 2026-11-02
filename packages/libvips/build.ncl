@@ -13,7 +13,7 @@ let libwebp = import "../libwebp/build.ncl" in
 let lcms2 = import "../lcms2/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 
 let version = "8.18.7" in
 {
@@ -41,7 +41,7 @@ let version = "8.18.7" in
     lcms2,
     zlib,
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

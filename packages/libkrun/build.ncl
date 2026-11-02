@@ -1,6 +1,6 @@
 let { subsetOf, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let libkrunfw = import "../libkrunfw/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -68,7 +68,7 @@ let version = "1.19.7" in
   runtime_deps = [
     glibc,
     libkrunfw,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-libs ["libgcc"],
   ],
 
   cmd = "./build.sh",

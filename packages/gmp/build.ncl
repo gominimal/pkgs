@@ -18,6 +18,7 @@ let xz = import "../xz/build.ncl" in
 # toolchain
 let binutils = import "../binutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 # other
@@ -55,7 +56,7 @@ let version = "6.3.0" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libstdcpp", "libgcc"],
+    subsetOf gcc-libs ["libstdcpp", "libgcc"],
   ],
 
   cmd = "./build.sh",

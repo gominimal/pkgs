@@ -18,7 +18,7 @@ let zlib = import "../zlib/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 let gtest = import "../gtest/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let version = "26.12.1" in
@@ -57,7 +57,7 @@ let version = "26.12.1" in
     zstd,
     gtest,
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
     # node trusts OpenSSL's default store, /etc/ssl (see build.sh), so the
     # system bundle must be present or every TLS connection fails.
     ca-certificates,

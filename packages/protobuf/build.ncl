@@ -7,7 +7,7 @@ let ninja = import "../ninja/build.ncl" in
 
 let abseil-cpp = import "../abseil-cpp/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
 let version = "36.2" in
@@ -30,7 +30,7 @@ let version = "36.2" in
   runtime_deps = [
     glibc,
     abseil-cpp,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
     zlib,
   ],
 

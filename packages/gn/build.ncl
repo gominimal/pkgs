@@ -5,7 +5,7 @@ let ninja = import "../ninja/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 
 # gn — Google's meta-build system generator (generates ninja files).
 # Packaged as a chromium-from-source build prerequisite (pkgmgr-rs#681):
@@ -52,7 +52,7 @@ let version = "0.%{position}" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libstdcpp"],
+    subsetOf gcc-libs ["libstdcpp"],
   ],
 
   cmd = "./build.sh",

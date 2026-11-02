@@ -8,6 +8,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 let version = "1.9.8" in
 {
   name = "jsoncpp",
@@ -34,7 +35,7 @@ let version = "1.9.8" in
     pkgconfig = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
     cmake_data = { glob = "usr/lib/cmake/**" } | OutputData,
   },
-  runtime_deps = [glibc, subsetOf gcc ["libgcc", "libstdcpp"]],
+  runtime_deps = [glibc, subsetOf gcc-libs ["libgcc", "libstdcpp"]],
   attrs =
     {
       upstream_version = version,

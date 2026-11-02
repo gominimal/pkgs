@@ -11,7 +11,7 @@ let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let xz = import "../xz/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-libs = import "../gcc-libs/build.ncl" in
 
 let version = "0.197" in
 {
@@ -35,7 +35,7 @@ let version = "0.197" in
     zlib,
     xz,
     zstd,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-libs ["libgcc", "libstdcpp"],
   ],
   cmd = "./build.sh",
   build_args = {
