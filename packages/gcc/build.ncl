@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
@@ -19,6 +19,7 @@ let xz = import "../xz/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let glibc-bedrock-2-42-sysroot = import "../glibc-bedrock-2.42-sysroot/build.ncl" in # the seed's loader tree (amd64)
 let linux_headers = import "../linux_headers/build.ncl" in
 # other
 let gmp = import "../gmp/build.ncl" in
@@ -145,15 +146,16 @@ let version = "15.2.0" in
         } target,
       ],
       # the seed's binaries are linked against the bedrock sysroot: their interpreter and RUNPATH
-      # name /usr/lib/glibc-bedrock-2.42/lib, which only glibc's seed carries. A sandbox that pairs
-      # this seed with a from-source glibc (nginx's cycle pass) has no loader for it otherwise.
+      # name /usr/lib/glibc-bedrock-2.42/lib. The standalone sysroot package carries that tree on
+      # amd64 (and nothing on arm64, whose seed uses the plain loader), so a sandbox that pairs
+      # this seed with a from-source glibc (nginx's cycle pass) still has its loader.
       runtime_deps = [
         gmp,
         mpc,
         mpfr,
         zlib,
         zstd,
-        subsetOf glibc ["bedrock_sysroot_lib"],
+        glibc-bedrock-2-42-sysroot,
       ],
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,
