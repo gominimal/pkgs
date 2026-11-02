@@ -99,7 +99,12 @@ class Scope(unittest.TestCase):
         # jdk-21 imports jdk/cve-2026-111943.ncl, which imports
         # ca-certificates/cve-2026-111943.ncl.
         records = [rec("packages/ca-certificates/cve-2026-111943.ncl")]
-        mode, pkgs, _, _ = self.check(records)
+        # Reachability is checked with the cap lifted, as
+        # test_shared_helper_reaches_its_importers does: how many packages
+        # depend on ca-certificates changes as pkgs grows (it passed 50 when
+        # node and node-lts gained it), so the default cap's verdict here is
+        # not a property of the helper chain.
+        mode, pkgs, _, _ = self.check(records, max_scoped=UNLIMITED)
         self.assertEqual(mode, "scoped")
         self.assertIn("jdk-21", pkgs)
         self.assertNotIn("jdk-21", old_decide(records)[1])
