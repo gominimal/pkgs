@@ -35,6 +35,18 @@ let version = "0.1.304" in
       sha256 = "a41e218c07104d90b12f8e2e3c71fa95a2cde26bc1a1a2d95d1155f6c43da346",
       extract = false,
     } | Source,
+    {
+      # crates/minirust: a git submodule (Nadrieril/minirust, a fork of
+      # minirust/minirust, branch bump-toolchain; Apache-2.0 OR MIT) that GitHub's
+      # archive omits. Since charon 75b7a1c ("Use miniutil", after 0.1.281) the default
+      # `minirust` feature builds crates/miniutil, whose lib is the submodule's tooling/miniutil/src.
+      # Pinned to the gitlink at this charon commit (c0b555e5b15accc6c1366b1d911a1bfd49c3d9d0);
+      # re-check `git ls-tree <charon commit> crates/minirust` on every bump.
+      # Extracted by build.sh into crates/minirust.
+      url = "gs://minimal-staging-archives/charon-minirust-c0b555e.tar.gz",
+      sha256 = "4380fe1dbde99cd50b6a452e07021f4474e8a7d290ffff7776f274cb78f952a4",
+      extract = false,
+    } | Source,
     base,
     rust-nightly-charon,
     gcc,
