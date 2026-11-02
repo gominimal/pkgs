@@ -2,14 +2,14 @@ let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" i
 let base = import "../base/build.ncl" in
 let python = import "../python/build.ncl" in
 
-let version = "4.1.0" in
+let version = "4.2.0" in
 {
   name = "flit-core",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://pypi.org/packages/source/f/flit-core/flit_core-%{version}.tar.gz",
-      sha256 = "62e12b63ead8335b37f59fabb977c7167fe476dafb5e41785dfa8c9aff843bc6",
+      sha256 = "84e4e4d8fdd45ba2613800a3ebc6834de26d47ec9746efc3719f94181137b460",
       extract = true,
       strip_prefix = "flit_core-%{version}",
     } | Source,

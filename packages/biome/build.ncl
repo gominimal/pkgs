@@ -8,7 +8,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.6.3" in
+let version = "2.6.4" in
 {
   name = "biome",
 
@@ -23,7 +23,7 @@ let version = "2.6.3" in
     { file = "cve-2026-111943-webpki-lock.patch" } | Local,
     {
       url = "https://github.com/biomejs/biome/archive/refs/tags/@biomejs/biome@%{version}.tar.gz",
-      sha256 = "e7f07c07e59abf76a50c2d56b883ad566e2b5f4a6cf2a1a32fe8c6f0e1baa7ac",
+      sha256 = "7d9f013cf8f8f15d38a0a545241bf81b188af8caef78c6d8982cfe8a7b132065",
       extract = true,
       strip_prefix = "biome--biomejs-biome-%{version}",
     } | Source,

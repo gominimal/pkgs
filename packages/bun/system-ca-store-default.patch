@@ -1,0 +1,120 @@
+Trust the system CA store (/etc/ssl/certs, from ca-certificates) INSTEAD of the
+roots compiled into bun, so a CA removed from ca-certificates (CVE-2026-111943,
+eMudhra) stops being trusted without a bun rebuild. gominimal/pkgmgr-rs#1026.
+
+At bun-v1.3.14 there is no upstream switch that does this:
+  - us_get_default_ca_store() (packages/bun-usockets/src/crypto/root_certs.cpp)
+    ALWAYS adds the compiled-in roots. --use-system-ca / NODE_USE_SYSTEM_CA=1
+    only add the system roots to them (a union), so a distrust never applies.
+  - --use-openssl-ca is parsed (src/cli/Arguments.zig sets Bun__Node__CAStore)
+    and then ignored: nothing outside Arguments.zig reads Bun__Node__CAStore.
+  - Upstream fixed --use-openssl-ca in oven-sh/bun#46542 (b70684d7, merged
+    2026-10-23) on the 1.4 line only, after the Rust rewrite; it does not apply
+    here and series_pins holds bun on 1.3.
+
+This patch:
+  - Arguments.zig: Bun__Node__CAStore defaults to .system instead of .bundled,
+    so it reads .bundled only after an explicit --use-bundled-ca. The CLI block
+    that sets it runs only for run/test/auto commands; every other command (and
+    a `bun build --compile` executable) keeps the default.
+  - root_certs.cpp: the default store gets the system roots and OpenSSL's
+    default paths, and the compiled-in roots only when (a) --use-bundled-ca, or
+    (b) NODE_USE_SYSTEM_CA is 0/false/no/off (the opt-out), or (c) the system
+    store is empty (no ca-certificates), so bun keeps working rather than trust
+    nothing. (a) and (b) are upstream's store exactly, where
+    NODE_USE_SYSTEM_CA=1 still adds the system roots. --use-openssl-ca leaves
+    the compiled-in roots and the system loader out, as #46542 does.
+
+Not changed: tls.rootCertificates and tls.getCACertificates('bundled') still
+list the compiled-in roots; tls.getCACertificates('default') (src/js/node/tls.ts)
+is computed in JS and still lists them too. Connections use the native store.
+NODE_EXTRA_CA_CERTS is still added. NODE_USE_SYSTEM_CA=0 wins over
+--use-system-ca. Drop this patch once bun's own default replaces the bundled
+store, or move to --use-openssl-ca on a release that carries #46542.
+
+--- a/packages/bun-usockets/src/crypto/root_certs.cpp
++++ b/packages/bun-usockets/src/crypto/root_certs.cpp
+@@ -2,7 +2,9 @@
+ #include "./root_certs_header.h"
+ #include "./internal/internal.h"
+ #include <mutex>
++#include <stdint.h>
+ #include <string.h>
++#include <strings.h>
+ #include "./default_ciphers.h"
+ 
+ // System-specific includes for certificate loading
+@@ -23,18 +25,34 @@
+ // Forward declarations for platform-specific functions
+ // (Actual implementations are in platform-specific files)
+ 
+-// External variable from Zig CLI arguments
+-extern "C" bool Bun__Node__UseSystemCA;
++// minimal: the system CA store replaces the compiled-in roots by default.
++// Bun__Node__CAStore is Arguments.zig's BunCAStore, enum(u8) { bundled,
++// openssl, system }. This patch changes its default from .bundled to .system,
++// so it reads .bundled only after an explicit --use-bundled-ca.
++extern "C" uint8_t Bun__Node__CAStore;
++enum { MINIMAL_CA_BUNDLED = 0, MINIMAL_CA_OPENSSL = 1, MINIMAL_CA_SYSTEM = 2 };
+ 
++// minimal: NODE_USE_SYSTEM_CA=0 (or false/no/off, which Bun's own env parser
++// also reads as false) opts out of the system-store default.
++static bool minimal_system_ca_opted_out() {
++  const char *v = getenv("NODE_USE_SYSTEM_CA");
++  return v && (strcmp(v, "0") == 0 || strcasecmp(v, "false") == 0 ||
++               strcasecmp(v, "no") == 0 || strcasecmp(v, "off") == 0);
++}
++
++// minimal: upstream's store (compiled-in roots plus OpenSSL's default paths),
++// asked for with --use-bundled-ca or the NODE_USE_SYSTEM_CA opt-out.
++static bool minimal_upstream_ca_store() {
++  return Bun__Node__CAStore == MINIMAL_CA_BUNDLED || minimal_system_ca_opted_out();
++}
++
+ // Helper function to check if system CA should be used
+-// Checks both CLI flag (--use-system-ca) and environment variable (NODE_USE_SYSTEM_CA=1)
+ static bool us_should_use_system_ca() {
+-  // Check CLI flag first
+-  if (Bun__Node__UseSystemCA) {
+-    return true;
++  // minimal: on by default; --use-openssl-ca leaves it out.
++  if (!minimal_upstream_ca_store()) {
++    return Bun__Node__CAStore == MINIMAL_CA_SYSTEM;
+   }
+-  
+-  // Check environment variable
++  // Upstream's store: NODE_USE_SYSTEM_CA=1 still adds the system roots to it.
+   const char *use_system_ca = getenv("NODE_USE_SYSTEM_CA");
+   return use_system_ca && strcmp(use_system_ca, "1") == 0;
+ }
+@@ -222,8 +240,18 @@
+   X509** root_cert_instances = default_ca_certificates->root_cert_instances;
+   STACK_OF(X509) *root_extra_cert_instances = default_ca_certificates->root_extra_cert_instances;
+ 
++  // minimal: the compiled-in roots only go in for upstream's store, or when
++  // the system store is empty (no ca-certificates installed), so bun keeps
++  // working rather than trust nothing. --use-openssl-ca leaves them out
++  // either way, as upstream does from oven-sh/bun#46542.
++  bool minimal_bundled = minimal_upstream_ca_store();
++  if (!minimal_bundled && Bun__Node__CAStore == MINIMAL_CA_SYSTEM) {
++    STACK_OF(X509) *minimal_system = us_get_root_system_cert_instances();
++    minimal_bundled = minimal_system == NULL || sk_X509_num(minimal_system) <= 0;
++  }
++
+   // load all root_cert_instances on the default ca store
+-  for (size_t i = 0; i < root_certs_size; i++) {
++  for (size_t i = 0; minimal_bundled && i < root_certs_size; i++) {
+     X509 *cert = root_cert_instances[i];
+     if (cert == NULL)
+       continue;
+--- a/src/cli/Arguments.zig
++++ b/src/cli/Arguments.zig
+@@ -1711,7 +1711,7 @@
+ export var Bun__Node__ProcessThrowDeprecation = false;
+ 
+ pub const BunCAStore = enum(u8) { bundled, openssl, system };
+-pub export var Bun__Node__CAStore: BunCAStore = .bundled;
++pub export var Bun__Node__CAStore: BunCAStore = .system; // minimal: system CA store by default
+ pub export var Bun__Node__UseSystemCA = false;
+ 
+ const string = []const u8;

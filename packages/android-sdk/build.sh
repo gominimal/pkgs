@@ -9,6 +9,11 @@ mkdir -p "$SDK_ROOT/cmdline-tools/latest"
 
 # Move tools into the expected directory structure
 cp -r cmdline-extract/cmdline-tools/* "$SDK_ROOT/cmdline-tools/latest/"
+# 22.0 also ships `bin/android`, Google's new native CLI: a prebuilt x86-64
+# ELF (no arm64 build), not needed by the Java tools we wrap. Drop it so the
+# package stays the same Java toolset on both arches, and so no native binary
+# sits in the `sdk` data output.
+rm -f "$SDK_ROOT/cmdline-tools/latest/bin/android"
 chmod +x "$SDK_ROOT/cmdline-tools/latest/bin/"*
 
 # Pre-accept licenses

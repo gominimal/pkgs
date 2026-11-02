@@ -12,16 +12,16 @@ let zlib = import "../zlib/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 
-let version = "3.8.10" in
+let version = "3.8.11" in
 {
   name = "libarchive",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # Upstream: https://github.com/libarchive/libarchive/releases/download/v3.8.10/libarchive-3.8.10.tar.gz
-      # STAGING: gcloud storage cp libarchive-3.8.10.tar.gz gs://minimal-staging-archives/
+      # Upstream: https://github.com/libarchive/libarchive/releases/download/v3.8.11/libarchive-3.8.11.tar.gz
+      # STAGING: gcloud storage cp libarchive-3.8.11.tar.gz gs://minimal-staging-archives/
       url = "gs://minimal-staging-archives/libarchive-%{version}.tar.gz",
-      sha256 = "a1bffbe5152cfe869751179e7b16648c87c461cb8c46eee75062efbe164cc57c"
+      sha256 = "900fe9fc7237c2b04f090f3c3648de8fe597525771f5035016537ce2d667d12b"
     } | Source,
     bash-bootstrap,
     make,
