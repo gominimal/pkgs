@@ -10,14 +10,14 @@ let hwdata = import "../hwdata/build.ncl" in
 let pciutils = import "../pciutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "b10357" in
+let version = "b11960" in
 {
   name = "llama.cpp",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/ggml-org/llama.cpp/%{version}.tar.gz",
-      sha256 = "1638f7a448104651e9487874c22d00a75593b0c943185c4b7fd9fb8922404a46",
+      sha256 = "2b37ffa871595f90b94164f6c510ad9a34bd7f94da21557cc9878587e163af37",
       extract = true,
       strip_prefix = "llama.cpp-%{version}",
     } | Source,
@@ -28,7 +28,7 @@ let version = "b10357" in
       # tools/ui/dist so the build doesn't fetch the moving `latest` UI.
       # Bump with `version`.
       url = "gs://minimal-staging-archives/ggml-org/llama-ui/%{version}-dist.tar.gz",
-      sha256 = "68f883c9592b049e696a0837359a46f59ac3236188510bf92b477917a76f6dbc",
+      sha256 = "edc6b05ff2621f5f08cee4e79cf8beb02805f21888776354dd1ddcf9fc2609e8",
       extract = false,
     } | Source,
     base,

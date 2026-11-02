@@ -1,0 +1,272 @@
+[
+ {
+  "attrs": {
+   "license_spdx": {
+    "pos": [
+     3729,
+     3741
+    ],
+    "value": "Apache-2.0"
+   },
+   "source_provenance": {
+    "type": "map",
+    "value": {
+     "category": {
+      "pos": [
+       3786,
+       3797
+      ],
+      "value": "GithubRepo"
+     },
+     "owner": {
+      "pos": [
+       3813,
+       3825
+      ],
+      "value": "containers"
+     },
+     "repo": {
+      "pos": [
+       3840,
+       3849
+      ],
+      "value": "libkrun"
+     }
+    }
+   },
+   "upstream_version": {
+    "pos": [
+     508,
+     516
+    ],
+    "value": "1.19.6"
+   }
+  },
+  "build_args": {
+   "version": "1.19.6"
+  },
+  "build_deps": [
+   {
+    "filename": "build.sh",
+    "hash": "2ab9f9dafe1fbe49fcdc6293d3b876cf6eae7a8710e098740675b12a7b71a20a",
+    "type": "local_file"
+   },
+   {
+    "filename": "0001-vsock-bound-outstanding-packets.patch",
+    "hash": "aa485e47dc67364715c77dfdbadbd1274a9b4b7405c636f6890468ad6e6704ab",
+    "type": "local_file"
+   },
+   {
+    "filename": "0002-vsock-refuse-stream-when-unix-proxy-creation-fails.patch",
+    "hash": "0e91c155ba89c38b5e953140d16b91f6ed636a98446625817eebf777d2719f70",
+    "type": "local_file"
+   },
+   {
+    "extract": true,
+    "from": {
+     "sha256": "7025d72208172dc06f791ad5af7ccaafeabdac9869f74ccb45fb6d4f6e5991cd",
+     "sha256_pos": {
+      "end_offset": 2962,
+      "start_offset": 2896
+     },
+     "type": "web",
+     "url": "https://github.com/containers/libkrun/archive/refs/tags/v1.19.6.tar.gz",
+     "url_pos": {
+      "end_offset": 2879,
+      "start_offset": 2803
+     }
+    },
+    "strip_prefix": "libkrun-1.19.6",
+    "type": "source"
+   },
+   {
+    "name": "base",
+    "type": "package"
+   },
+   {
+    "name": "toolchain",
+    "type": "package"
+   },
+   {
+    "name": "make",
+    "type": "package"
+   },
+   {
+    "name": "patch",
+    "type": "package"
+   },
+   {
+    "name": "rust",
+    "type": "package"
+   },
+   {
+    "name": "pkgconf",
+    "type": "package"
+   }
+  ],
+  "is_collection": false,
+  "is_prebuilt": false,
+  "name": "libkrun",
+  "needs": {
+   "dns": {
+    "type": "map",
+    "value": {}
+   },
+   "internet": {
+    "type": "map",
+    "value": {}
+   }
+  },
+  "outputs": {
+   "headers": {
+    "type": "data",
+    "value": {
+     "allow_executable": false,
+     "glob": "usr/include/libkrun*.h"
+    }
+   },
+   "libs": {
+    "type": "library",
+    "value": {
+     "allow_data": false,
+     "glob": "usr/lib/libkrun.so*"
+    }
+   },
+   "pkgconfig": {
+    "type": "data",
+    "value": {
+     "allow_executable": false,
+     "glob": "usr/lib/pkgconfig/libkrun.pc"
+    }
+   }
+  },
+  "runtime_deps": [
+   {
+    "name": "glibc",
+    "type": "package"
+   },
+   {
+    "name": "libkrunfw",
+    "type": "package"
+   },
+   {
+    "outputs": [
+     "libgcc"
+    ],
+    "package": "gcc",
+    "type": "subset_of"
+   }
+  ],
+  "spec_hash": "f8e2d8213d78b62c1c5151d69a254a2a59fb20cad32e4a0bc3b0fac97f284df3",
+  "target": "arm64/linux"
+ },
+ {
+  "attrs": {
+   "license_spdx": {
+    "pos": [
+     1183,
+     1195
+    ],
+    "value": "Apache-2.0"
+   },
+   "source_provenance": {
+    "type": "map",
+    "value": {
+     "category": {
+      "pos": null,
+      "value": "GithubRepo"
+     },
+     "owner": {
+      "pos": [
+       1129,
+       1141
+      ],
+      "value": "containers"
+     },
+     "repo": {
+      "pos": [
+       1150,
+       1158
+      ],
+      "value": "podman"
+     }
+    }
+   },
+   "upstream_version": {
+    "pos": [
+     439,
+     446
+    ],
+    "value": "6.1.3"
+   }
+  },
+  "build_args": null,
+  "build_deps": [
+   {
+    "filename": "build.sh",
+    "hash": "ef8a7b8ab3f517f7c86134ee406695060ed418159f4138d21739eca044365df2",
+    "type": "local_file"
+   },
+   {
+    "extract": true,
+    "from": {
+     "sha256": "6253aee14e573f747ca77e5a83a0df4ef9c2f609604f56715070ed06b6f9ddd8",
+     "sha256_pos": {
+      "end_offset": 706,
+      "start_offset": 640
+     },
+     "type": "web",
+     "url": "https://github.com/containers/podman/archive/refs/tags/v6.1.3.tar.gz",
+     "url_pos": {
+      "end_offset": 623,
+      "start_offset": 548
+     }
+    },
+    "strip_prefix": "podman-6.1.3",
+    "type": "source"
+   },
+   {
+    "name": "base",
+    "type": "package"
+   },
+   {
+    "name": "go",
+    "type": "package"
+   },
+   {
+    "name": "toolchain",
+    "type": "package"
+   }
+  ],
+  "is_collection": false,
+  "is_prebuilt": false,
+  "name": "podman-remote",
+  "needs": {
+   "dns": {
+    "type": "map",
+    "value": {}
+   },
+   "internet": {
+    "type": "map",
+    "value": {}
+   }
+  },
+  "outputs": {
+   "bin": {
+    "type": "binary",
+    "value": {
+     "allow_missing_interpreter": false,
+     "glob": "usr/bin/podman-remote"
+    }
+   }
+  },
+  "runtime_deps": [
+   {
+    "name": "glibc",
+    "type": "package"
+   }
+  ],
+  "spec_hash": "345505e65dde6506ca866e2f720392c29088c323da9575f28c689e6807e9aa49",
+  "target": "arm64/linux"
+ }
+]

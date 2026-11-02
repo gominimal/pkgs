@@ -5,14 +5,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let version = "14.0.0" in
+let version = "15.0.0" in
 {
   name = "tokei",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/XAMPPRocky/tokei/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "4e561dbb83ef1b46359714fc623fd45eddfb14821ece63a219470500fdd1cd26",
+      sha256 = "966da7b9a81ac6cb777b9f159f4c02e5b83a8b8bd30ebf5991007839926b600c",
       extract = true,
       strip_prefix = "tokei-%{version}",
     } | Source,

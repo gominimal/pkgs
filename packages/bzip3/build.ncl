@@ -1,24 +1,27 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
+let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.5.4" in
+let version = "1.5.5" in
 {
   name = "bzip3",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/iczelia/bzip3/releases/download/%{version}/bzip3-%{version}.tar.xz",
-      sha256 = "fac65d7f39ae73c1c9221a97075eebeb27696299b02ad1e01ec039ab0eca9fca",
+      sha256 = "dc4e30d4581e5b2c46ed32f4320f03ba21474afc1e89e24dda3879307a61b010",
       extract = true,
       strip_prefix = "bzip3-%{version}",
     } | Source,
     base,
     make,
+    # 1.5.5's configure requires pkg-config (PKG_PROG_PKG_CONFIG).
+    pkgconf,
     toolchain,
   ],
   runtime_deps = [
