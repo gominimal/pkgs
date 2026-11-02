@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -10,6 +10,8 @@ let zlib = import "../zlib/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 
 let bash = import "../bash/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 let binutils-arm-none-eabi = import "../binutils-arm-none-eabi/build.ncl" in
 
 let gcc_version = "14.2.0" in
@@ -35,10 +37,33 @@ let newlib_version = "4.4.0.20231231" in
     zlib,
     zstd,
   ],
+  # cc1/cc1plus/lto1 link libgmp, libmpfr, libmpc and libz/libzstd dynamically (build.sh passes
+  # --with-gmp/--with-mpfr/--with-mpc=/usr --with-system-zlib; mpc ships only libmpc.so*). They
+  # used to arrive undeclared through bash -> ncurses -> subsetOf gcc -> gcc's runtime_deps.
   runtime_deps = [
     bash,
     binutils-arm-none-eabi,
+    gmp,
+    mpc,
+    mpfr,
+    zlib,
+    zstd,
   ],
+
+  # A box with only this package (plus the shell and coreutils the commands need) must be able to
+  # run cc1 and as: compile and assemble a trivial file for a Cortex-M target.
+  tests = {
+    compile_object =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils],
+        cmds = [
+          ["/bin/bash", "-c", "printf 'int add(int a, int b) { return a + b; }\\n' > t.c"],
+          ["/bin/arm-none-eabi-gcc", "-mcpu=cortex-m4", "-mthumb", "-O2", "-c", "t.c", "-o", "t.o"],
+          ["/bin/bash", "-c", "test -s t.o"],
+        ],
+      } | Test,
+  },
 
   cmd = "./build.sh",
   build_args = {
