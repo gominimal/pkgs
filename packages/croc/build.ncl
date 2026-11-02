@@ -5,14 +5,14 @@ let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "11.6.0" in
+let version = "11.6.2" in
 {
   name = "croc",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/schollz/croc/v%{version}.tar.gz",
-      sha256 = "dfb0101c1ca656b3ddc4d0fce922f5feb0b9395b301515d771f496f3e8e514fb",
+      sha256 = "374efef9a597c8f9fb95f83bbef7f8a031217f3a6106036eedeb1790509160da",
       extract = true,
       strip_prefix = "croc-%{version}",
     } | Source,
