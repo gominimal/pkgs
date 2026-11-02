@@ -11,7 +11,7 @@ export LD=gcc
 BUILDROOT="$(pwd)"
 export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$BUILDROOT=/builddir"
 export CARGO_HOME="$BUILDROOT/.cargo-home"
-VENDOR_TARBALL="$BUILDROOT/charon-vendor-0.1.281.tar.gz"
+VENDOR_TARBALL="$BUILDROOT/charon-vendor-0.1.304.tar.gz"
 
 # The Rust workspace is the repo's charon/ subdir.
 cd charon
