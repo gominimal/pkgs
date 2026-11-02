@@ -27,6 +27,9 @@ let version = "0.5.7" in
   runtime_deps = [
     glibc,
     subsetOf gcc ["libgcc"],
+    # The patched default reads /etc/ssl/certs/ca-certificates.crt; without the
+    # store in the closure it silently falls back to the compiled-in roots.
+    ca-certificates,
   ],
 
   cmd = "./build.sh",
@@ -51,11 +54,13 @@ let version = "0.5.7" in
     # which roots it chose. A local hook asking for a deno that cannot exist
     # makes prek fetch deno's version list; with no network the fetch fails,
     # but the client, and its log line, come first. PREK_NATIVE_TLS=0 must
-    # still select the compiled-in roots.
+    # still select the compiled-in roots. ca-certificates is deliberately NOT a
+    # test dep (nor brought by base/git): the store must arrive through prek's
+    # own runtime_deps, which the `test -s` line below checks.
     system_ca_default =
       {
         class = 'Standalone,
-        test_deps = [base, git, ca-certificates],
+        test_deps = [base, git],
         cmds = [
           [
             "/bin/bash",
