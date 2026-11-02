@@ -50,13 +50,35 @@ let version = "0.5.7" in
     } | Attrs,
 
   tests = {
+    # The store must come from prek's own runtime_deps edge. A test closure
+    # without any needs.internet package proves that: [base] plus prek's runtime
+    # closure has none, so ca-certificates can only arrive through that edge
+    # (AGENTS.md "Trust store", item 2). This one fails if the edge is dropped.
+    store_from_runtime_deps =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              test -s /etc/ssl/certs/ca-certificates.crt
+              prek --version
+            "%
+          ],
+        ],
+      } | Test,
     # prek builds its HTTP client on first use (a toolchain download) and logs
     # which roots it chose. A local hook asking for a deno that cannot exist
-    # makes prek fetch deno's version list; with no network the fetch fails,
-    # but the client, and its log line, come first. PREK_NATIVE_TLS=0 must
-    # still select the compiled-in roots. ca-certificates is deliberately NOT a
-    # test dep (nor brought by base/git): the store must arrive through prek's
-    # own runtime_deps, which the `test -s` line below checks.
+    # makes prek fetch deno's version list; the client, and its log line, come
+    # before the fetch, so the check holds whether or not the fetch succeeds.
+    # PREK_NATIVE_TLS=0 must still select the compiled-in roots. prek shells
+    # out to git, so git is a test dep; git brings curl, which declares
+    # needs.internet, so this closure gets ca-certificates (and host network)
+    # injected regardless of prek's edge. It does not test the store; the test
+    # above does.
     system_ca_default =
       {
         class = 'Standalone,
@@ -68,7 +90,6 @@ let version = "0.5.7" in
             m%"
               set -eu
               unset PREK_NATIVE_TLS
-              test -s /etc/ssl/certs/ca-certificates.crt
               export PREK_HOME="$(mktemp -d)"
               cd "$(mktemp -d)"
               git init -q .
