@@ -119,7 +119,7 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # (trigger: the first CfT Stable carrying both commits; Chrome expects its
 # root-store update in Stable 2026-10-27).
 let revision = "1243" in
-let browser_version = "156.0.8078.73" in
+let browser_version = "156.0.8078.80" in
 {
   name = "chromium-headless-shell-bin",
   build_deps = [
@@ -132,12 +132,12 @@ let browser_version = "156.0.8078.73" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chrome-headless-shell-linux64.zip",
-          sha256 = "77eb8d52798efc7a857ab61abcc62a456d8ea9635b02341d06dffee2761768c8",
+          sha256 = "547dcd374e02961bf998f6046a267644f8502225c36bb78ca307dab32a0b3eb4",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux-arm64/chrome-headless-shell-linux-arm64.zip",
-          sha256 = "98c084708f0f1fa4ed589ad601cc79b437f0cebe60ffc9794af78a085c01a2a7",
+          sha256 = "5bb6a00a4285c13303d3f72c5afdb70f144ea7a93eed462365a52b69631c9607",
         } | Source,
     } target,
     base,
