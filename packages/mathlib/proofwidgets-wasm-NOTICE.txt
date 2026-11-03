@@ -43,6 +43,21 @@ files under CPL-1.0). Its complete corresponding source is available from:
   expat 2.8.1:      https://github.com/libexpat/libexpat/releases/tag/R_2_8_1
   Emscripten 6.0.0: https://github.com/emscripten-core/emscripten/tree/6.0.0
 
+Minimal also keeps copies of the Graphviz source and the build recipe on its
+public source mirror, so the offer does not depend on upstream hosting:
+
+  https://storage.googleapis.com/minimal-staging-archives/graphviz-15.0.0.tar.xz
+    sha256 937fe4757687260e46a1c9a171cc677e3d4c89abd1efc8885ccb66467c3616ff
+    (Graphviz's 15.0.0 release tarball; matches the .sha256 Graphviz
+    publishes beside it in its GitLab graphviz-releases package registry)
+  https://storage.googleapis.com/minimal-staging-archives/graphviz-15.0.0.tar.gz
+    sha256 dfa5be5c311f760aa9c88273c8f8101bb11f50b0de8b29bbd54acff3adc2d563
+    (the GitLab tag archive above; its embedded commit id is
+    8080495d6e6b56597ab24ed042daaf243fd0854f, the 15.0.0 tag)
+  https://storage.googleapis.com/minimal-staging-archives/hpcc-systems/hpcc-js-wasm/hpcc-js-wasm-8b86e2f.tar.gz
+    sha256 de9e168b8dcf2067baad696ca6dd50c09a09465bab9bc1242fb3a8f6efe03796
+    (hpcc-js-wasm at wasm-v2.34.2, commit 8b86e2f83cc7344aca44fb3d8aa29a227358c5c4)
+
 Neither Minimal nor ProofWidgets modified Graphviz.
 
 These bundles are what this file was checked against. build.sh refuses to

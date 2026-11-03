@@ -163,7 +163,12 @@ let version = "4.35.0" in
       # with its lib/vpsc under CPL-1.0, plus expat and Emscripten (MIT).
       # EPL/CPL are weak (file-level) copyleft: redistributing the unmodified
       # object code needs the licence texts and a source offer, both in
-      # proofwidgets-wasm-NOTICE.txt (pkgmgr-rs#1181).
+      # proofwidgets-wasm-NOTICE.txt (pkgmgr-rs#1181). The offer names
+      # upstream and our own mirror copies of the Graphviz 15.0.0 source and
+      # the hpcc-js-wasm wasm-v2.34.2 recipe (gs://minimal-staging-archives,
+      # sha256s in the notice). The corresponding-source CI check probes only
+      # the Source URLs below, which are all mirrored; it cannot see source
+      # compiled into a bundled blob, so those copies are what it would miss.
       license_spdx = "Apache-2.0 AND MIT AND ISC AND BSD-3-Clause AND CC-BY-4.0 AND CC0-1.0 AND Unlicense AND EPL-2.0 AND CPL-1.0",
       # Every licence above permits binary redistribution with notices (and,
       # for EPL-2.0/CPL-1.0, a source offer), which the `licenses` output
