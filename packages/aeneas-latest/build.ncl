@@ -9,9 +9,9 @@ let toolchain = import "../toolchain/build.ncl" in
 let leangz = import "../leangz/build.ncl" in
 let cadical = import "../cadical/build.ncl" in
 
-# The date of the AeneasVerif/aeneas main commit this tracks (fdebf20d).
-let version = "20261022" in
-let aeneas_sha = "fdebf20d78e8007bb92fc17068f17fc2e6cfbbbf" in
+# The date of the AeneasVerif/aeneas main commit this tracks (ab34bd28).
+let version = "20261030" in
+let aeneas_sha = "ab34bd28458a08c150b7cbf1873e59af74588138" in
 {
   name = "aeneas-latest",
   # The Lean side of aeneas — the `Aeneas` Lean library that every model
@@ -45,8 +45,8 @@ let aeneas_sha = "fdebf20d78e8007bb92fc17068f17fc2e6cfbbbf" in
     { file = "build.sh" } | Local,
     { file = "lake-manifest.json" } | Local,
     {
-      url = "gs://minimal-staging-archives/aeneas-latest/aeneas-fdebf20.tar.gz",
-      sha256 = "476496fbe2c47e8cf0be818d92b0ba38d7f36cde67b245f78f755440af6decda",
+      url = "gs://minimal-staging-archives/aeneas-latest/aeneas-ab34bd2.tar.gz",
+      sha256 = "cbdf6ca6efc17a994172de6f2c284b3c86807601996da417a345a7791742061b",
       extract = true,
     } | Source,
     # leanprover-community/mathlib4 @ 56a005855ea17e0b0958f73ec801ae140b0a1679 (lake-manifest.json)

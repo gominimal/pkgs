@@ -11,7 +11,14 @@ export LD=gcc
 BUILDROOT="$(pwd)"
 export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$BUILDROOT=/builddir"
 export CARGO_HOME="$BUILDROOT/.cargo-home"
-VENDOR_TARBALL="$BUILDROOT/charon-vendor-0.1.281.tar.gz"
+VENDOR_TARBALL="$BUILDROOT/charon-vendor-0.1.304.tar.gz"
+MINIRUST_TARBALL="$BUILDROOT/charon-minirust-c0b555e.tar.gz"
+
+# crates/minirust is a git submodule the GitHub archive leaves empty; the default
+# `minirust` feature compiles crates/miniutil from its tooling/miniutil/src.
+mkdir -p crates/minirust
+tar -xof "$MINIRUST_TARBALL" --strip-components=1 -C crates/minirust
+test -f crates/minirust/tooling/miniutil/src/lib.rs
 
 # The Rust workspace is the repo's charon/ subdir.
 cd charon
