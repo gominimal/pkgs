@@ -45,7 +45,9 @@ let version = "4.35.0" in
     # generated from its pinned package-lock.json (build.sh checks the hash).
     { file = "proofwidgets-js-third-party.txt" } | Local,
     # Verbatim third-party licence texts for that JS, from the exact npm
-    # tarballs the lockfile resolves (gen-proofwidgets-notice.py).
+    # tarballs the lockfile resolves (gen-proofwidgets-notice.py); where a
+    # tarball ships no licence file, a curated upstream text from
+    # proofwidgets-js-licences/ (the generator fails without one).
     { file = "proofwidgets-js-NOTICE.txt" } | Local,
     # Licences + EPL/CPL source offer for the Graphviz WebAssembly that two of
     # those bundles embed (@hpcc-js/wasm); hand-assembled, hash-pinned to the

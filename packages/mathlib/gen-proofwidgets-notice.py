@@ -41,11 +41,21 @@ written to disk except the tarball itself; licence files and package.json are
 read out of the archive in memory. Each tarball is verified against the
 lockfile's `integrity` (sha512) before it is read. Only registry.npmjs.org
 URLs are fetched. Python stdlib only.
+
+Packages with no licence file in their npm tarball: the default mode FAILS
+(exit 1, nothing written) for each one that has no entry in CURATED below,
+and for each CURATED entry that no longer matches a lockfile package without
+a licence file. An entry either names a curated text committed under
+proofwidgets-js-licences/ (byte-pinned by sha256, with the upstream URLs it
+was taken from) or marks the package a rollup external that is not bundled.
+So a ProofWidgets bump that pulls in a new licence-less package cannot ship
+its code with only an SPDX id (pkgs#1244 review).
 """
 
 from __future__ import annotations
 
 import base64
+import fnmatch
 import hashlib
 import io
 import json
@@ -58,6 +68,145 @@ import urllib.request
 USER_AGENT = "gominimal-pkgmgr-agent (+https://github.com/gominimal)"
 REGISTRY = "https://registry.npmjs.org/"
 LICENSE_FILE = re.compile(r"^(LICEN[CS]E|COPYING|NOTICE)([._-].*)?$", re.I)
+CURATED_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "proofwidgets-js-licences")
+
+# Curated licence texts for lockfile packages whose npm tarball ships no
+# licence file at its root. Keyed by (name, version): a ProofWidgets bump
+# that moves one of these to a new version must re-check upstream.
+#
+#   text:    file under proofwidgets-js-licences/, copied verbatim (sha256 is
+#            of that file and is checked on every run)
+#   sources: where the text came from, at the commit/tag matching the npm
+#            version (two sources where the version has no exact tag)
+#   tarball: extra licence files read from the package's own verified npm
+#            tarball (fnmatch patterns on member names)
+#   note:    printed in the NOTICE entry
+#   external: the package is a rollup external, so no code of it is bundled
+#
+# Where upstream publishes no licence text at all (no file in the repo at the
+# release, none in the tarball), the entry carries the SPDX License List's
+# standard text for the declared licence and quotes upstream's own licence
+# statement verbatim. That is all that exists to reproduce; it says so.
+SPDX_SRC = "https://github.com/spdx/license-list-data/blob/31ba1a50e5397e00a304dbadc76531740e89ee48/text/{} (SPDX License List v3.29.0)"
+CURATED: dict[tuple[str, str], dict] = {
+    ("@bkrem/react-transition-group", "1.3.5"): dict(
+        text="bkrem-react-transition-group-1.3.5.LICENSE",
+        sha256="8e51db30748ee93e902fdfe36779f5aa935d55c77e7a21c20a27310ebafe10f6",
+        sources=[
+            "https://github.com/bkrem/react-transition-group/blob/2ee5bf857f4a556d631a556a99058c36496386db/LICENSE (tag v1.3.5, the version npm publishes)",
+            "https://github.com/reactjs/react-transition-group/blob/f5ae18965760e509aeca7115a3acf97c85d06d0a/LICENSE (tag v1.2.1 of the v1 line it forks; byte-identical)",
+        ],
+        note="Fork of reactjs/react-transition-group v1 (itself forked from React's addons); rbTree.js bundles its TransitionGroup/CSSTransitionGroup.",
+    ),
+    ("@leanprover/infoview", "0.11.0"): dict(
+        external="rollup external in widget/rollup.config.js (supplied by the editor's infoview at runtime)",
+    ),
+    ("@leanprover/infoview-api", "0.11.0"): dict(
+        external="dependency of @leanprover/infoview only, which is a rollup external",
+    ),
+    ("@lit-labs/ssr-dom-shim", "1.5.1"): dict(
+        text="lit.LICENSE",
+        sha256="45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1",
+        sources=[
+            "https://github.com/lit/lit/blob/43c6168acc4a30d70091ee30c307f692a02387d5/LICENSE (tag @lit-labs/ssr-dom-shim@1.4.0)",
+            "https://github.com/lit/lit/blob/20afabd3c5bfd49fdcdf1b8518e05c7f99a46db6/LICENSE (tag @lit-labs/ssr-dom-shim@1.6.0; byte-identical)",
+        ],
+        note="No @lit-labs/ssr-dom-shim@1.5.1 tag exists; the package directory has no LICENSE of its own, so the lit monorepo root's applies (bracketing tags agree).",
+    ),
+    ("@mediapipe/tasks-vision", "0.10.17"): dict(
+        text="mediapipe.LICENSE",
+        sha256="8707eef0533987efc5b155d64761eeb6e20793f50b9bd1a68dad1cf4719d0ed8",
+        sources=[
+            "https://github.com/google-ai-edge/mediapipe/blob/e252e5667e2be398dcc4c5d49ca134248e2111c8/LICENSE (tag v0.10.15)",
+            "https://github.com/google-ai-edge/mediapipe/blob/76e52c759f87e6e71f531dd785cd892ba163a454/LICENSE (tag v0.10.18; byte-identical)",
+        ],
+        note="No v0.10.17 tag exists; the bracketing tags' LICENSE files agree.",
+    ),
+    ("@penrose/core", "3.2.0"): dict(
+        text="penrose-3.2.0.LICENSE",
+        sha256="afb11426e09da40a1ae4f8fa17ddcc6b6a52d14df04c29bc5bcd06eb8730624d",
+        sources=["https://github.com/penrose/penrose/blob/fd4aae0b95ad6f7b35863de87b16e796e2c3bfda/LICENSE (tag v3.2.0)"],
+        note="Upstream's copyright line names no holder; reproduced as published.",
+    ),
+    ("@penrose/optimizer", "3.2.0"): dict(
+        text="penrose-3.2.0.LICENSE",
+        sha256="afb11426e09da40a1ae4f8fa17ddcc6b6a52d14df04c29bc5bcd06eb8730624d",
+        sources=["https://github.com/penrose/penrose/blob/fd4aae0b95ad6f7b35863de87b16e796e2c3bfda/LICENSE (tag v3.2.0)"],
+        note="Same monorepo as @penrose/core. Upstream's copyright line names no holder; reproduced as published.",
+    ),
+    ("@react-three/fiber", "8.18.0"): dict(
+        text="react-three-fiber-8.18.0.LICENSE",
+        sha256="ebd6a29bec64bdfcf8795388f2eceaf1479c14d343c0846de347ab8609d66139",
+        sources=["https://github.com/pmndrs/react-three-fiber/blob/f81bfe8cb29373d2687433c6130e0ce1daf7222c/LICENSE (tag v8.18.0)"],
+    ),
+    ("consola", "2.15.3"): dict(
+        text="SPDX-MIT.txt",
+        sha256="b05785f9f18e6716bab63424b11454513b9943a222595b70411009202fc592b5",
+        sources=[SPDX_SRC.format("MIT.txt")],
+        note="Upstream publishes no licence file (none in the repo at tag v2.15.3, "
+             "unjs/consola@c99ff6c4a54a6a7eccea26aa37603b9b36535d48, nor in the npm tarball). "
+             "Its README's licence statement, verbatim: \"MIT - Made with 💖 By Nuxt.js team!\". "
+             "Standard MIT text follows; upstream names no copyright holder.",
+    ),
+    ("draco3d", "1.5.7"): dict(
+        text="draco-1.5.7.LICENSE",
+        sha256="d3709b0fb4b8a94bbb1d02b8a2e484f258b0d9c5c5a01f940391f3fe662cd1a4",
+        sources=["https://github.com/google/draco/blob/8786740086a9f4d83f44aa83badfbea4dce7a1b5/LICENSE (tag 1.5.7)"],
+    ),
+    ("maath", "0.10.8"): dict(
+        text="SPDX-MIT.txt",
+        sha256="b05785f9f18e6716bab63424b11454513b9943a222595b70411009202fc592b5",
+        sources=[SPDX_SRC.format("MIT.txt")],
+        note="Upstream publishes no licence file (none anywhere in the repo at tag maath@0.10.8, "
+             "pmndrs/maath@626d198fbae28ba82f2f1b184db7fcafd4d23846, nor in the npm tarball); "
+             "its package.json declares \"license\": \"MIT\". (A LICENSE added 2026-08-03, commit "
+             "a03a7a4194, \"project boilerplate\", post-dates this 2024 release and is not used.) "
+             "Standard MIT text follows; upstream names no copyright holder for this release.",
+    ),
+    ("mj-context-menu", "0.6.1"): dict(
+        text="SPDX-Apache-2.0.txt",
+        sha256="074e6e32c86a4c0ef8b3ed25b721ca23aca83df277cd88106ef7177c354615ff",
+        sources=[SPDX_SRC.format("Apache-2.0.txt")],
+        note="Upstream publishes no licence file (none in the repo at tag v0.6.1, "
+             "zorkow/context-menu@e44c1eaa3fe202af467557c01eee68b86410dcce, nor in the npm tarball) "
+             "and no NOTICE; its package.json declares \"license\": \"Apache-2.0\". "
+             "Apache-2.0 s4(a) asks for a copy of the licence, which follows.",
+    ),
+    ("railroad-diagrams", "1.0.0"): dict(
+        text="SPDX-CC0-1.0.txt",
+        sha256="a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499",
+        sources=[SPDX_SRC.format("CC0-1.0.txt")],
+        note="The 1.0.0 npm tarball has no licence file; its README.md says, verbatim: "
+             "\"This document and all associated files in the github project are licensed under "
+             "[CC0](http://creativecommons.org/publicdomain/zero/1.0/)\". (The repo's later "
+             "MIT LICENSE was added 2022-01-18, commit 3e08ad2b7b, after this 2015 release.) "
+             "CC0 text follows.",
+    ),
+    ("seedrandom", "3.0.5"): dict(
+        text="seedrandom-3.0.5.README-excerpt",
+        sha256="7500bc57d010cde21006d88014d7191f36be1750894bfc4a01ce3844f1f9af2e",
+        sources=["https://github.com/davidbau/seedrandom/blob/4460ad325a0a15273a211e509f03ae0beb99511a/README.md#L299-L321 (tag 3.0.5)"],
+        note="Upstream has no licence file; the MIT notice is README.md's LICENSE section "
+             "(lines 299-321 at tag 3.0.5, the same text that heads seedrandom.js), excerpted verbatim.",
+    ),
+    ("stats-gl", "2.4.2"): dict(
+        text="SPDX-MIT.txt",
+        sha256="b05785f9f18e6716bab63424b11454513b9943a222595b70411009202fc592b5",
+        sources=[SPDX_SRC.format("MIT.txt")],
+        note="Upstream publishes no licence file (GitHub reports no commit ever touching LICENSE; "
+             "main is RenaudRohlinger/stats-gl@dae82f5a4a14d19a3ec21bc47b28a491a668a036; there is no 2.4.2 tag; "
+             "none in the npm tarball). Its README says, verbatim: \"This project is licensed under the "
+             "MIT License.\"; package.json author: Renaud ROHLINGER. Standard MIT text follows.",
+    ),
+    ("victory-vendor", "36.9.2"): dict(
+        text="victory-36.9.2.LICENSE.txt",
+        sha256="34dee5fd5e5cc756efb5ad4d64652bce719bdf5e900ca5d7538253e737930bc4",
+        sources=["https://github.com/FormidableLabs/victory/blob/dd86278d205f3f306e2ab38c317a6f9c56f0a6f8/LICENSE.txt (tag v36.9.2)"],
+        tarball=["package/lib-vendor/*/LICENSE"],
+        note="victory-vendor re-publishes d3 modules; their own licences are read from the "
+             "verified npm tarball's lib-vendor/*/LICENSE.",
+    ),
+}
 
 # Licence family as recognised from the text of a licence file, mapped to the
 # SPDX ids that family is consistent with. Used only to FLAG disagreements
@@ -134,6 +283,43 @@ def read_package(data: bytes) -> tuple[list[tuple[str, str]], str | None]:
                 files.append((base, text.replace("\r\n", "\n").rstrip() + "\n"))
     files.sort()
     return files, pj_license
+
+
+def read_tarball_files(data: bytes, patterns: list[str]) -> list[tuple[str, str]]:
+    """Licence files matching fnmatch `patterns` anywhere in a verified tarball."""
+    found: list[tuple[str, str]] = []
+    with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tf:
+        for m in tf.getmembers():
+            if m.isfile() and any(fnmatch.fnmatchcase(m.name, pat) for pat in patterns):
+                text = tf.extractfile(m).read().decode("utf-8", "replace")
+                found.append((m.name.split("/", 1)[-1], text.replace("\r\n", "\n").rstrip() + "\n"))
+    return sorted(found)
+
+
+def curated_texts(name: str, ver: str, data: bytes) -> tuple[list[tuple[str, str]], list[str]]:
+    """(licence texts, notes) for a CURATED package; SystemExit on any mismatch."""
+    c = CURATED[(name, ver)]
+    if "external" in c:
+        return [], [f"not bundled: {c['external']}"]
+    path = os.path.join(CURATED_DIR, c["text"])
+    with open(path, "rb") as f:
+        raw = f.read()
+    have = hashlib.sha256(raw).hexdigest()
+    if have != c["sha256"]:
+        raise SystemExit(f"{name}@{ver}: curated {c['text']} sha256 {have}, table pins {c['sha256']}")
+    text = raw.decode("utf-8").replace("\r\n", "\n").rstrip() + "\n"
+    notes = ["npm tarball ships no licence file; licence text curated (sources below)"]
+    if c.get("note"):
+        notes.append(c["note"])
+    notes += [f"Source: {src}" for src in c["sources"]]
+    notes.append(f"Curated text: proofwidgets-js-licences/{c['text']} (sha256 {c['sha256']})")
+    texts = [(f"{c['text']} (curated)", text)]
+    if c.get("tarball"):
+        extra = read_tarball_files(data, c["tarball"])
+        if not extra:
+            raise SystemExit(f"{name}@{ver}: curated tarball patterns {c['tarball']} matched nothing")
+        texts += extra
+    return texts, notes
 
 
 def tarball_for(name: str, ver: str, v: dict, dl_dir: str) -> bytes:
@@ -230,6 +416,8 @@ def main() -> int:
 
     entries = []
     flags = []
+    missing = []  # licence-less packages with no CURATED entry
+    used = set()
     for (name, ver) in sorted(pkgs):
         v = pkgs[(name, ver)]
         url, integ = v.get("resolved"), v.get("integrity")
@@ -252,11 +440,29 @@ def main() -> int:
                 if rx.search(text) and not (ids & toks):
                     notes.append(f"{fname} reads as {fam} but the declared licence is {declared!r}")
                     break
+        how = None
         if not files:
-            notes.append("no licence file shipped upstream in the npm tarball")
+            if (name, ver) in CURATED:
+                used.add((name, ver))
+                files, cnotes = curated_texts(name, ver, data)
+                notes += cnotes
+                how = "not bundled (rollup external)" if not files else "curated upstream text"
+            else:
+                missing.append(f"{name}@{ver} (declared {declared})")
         if any("reads as" in n or "but package.json" in n for n in notes):
             flags.append(f"{name}@{ver}: " + "; ".join(notes))
-        entries.append((name, ver, declared, files, notes))
+        entries.append((name, ver, declared, files, notes, how))
+
+    stale = sorted(f"{n}@{v}" for (n, v) in CURATED if (n, v) not in used)
+    if missing or stale:
+        for m in missing:
+            print(f"ERROR {m}: npm tarball ships no licence file and CURATED has no entry. "
+                  "Find the upstream licence text at the matching tag and add it.", file=sys.stderr)
+        for m in stale:
+            print(f"ERROR {m}: CURATED entry matches no licence-less package in this lockfile; "
+                  "drop or update it.", file=sys.stderr)
+        raise SystemExit(f"{len(missing)} package(s) without licence text, {len(stale)} stale CURATED entr(ies); "
+                         "nothing written")
 
     out = sys.stdout
     out.write("Third-party notices: npm code in ProofWidgets4's prebuilt widget JavaScript\n")
@@ -272,21 +478,23 @@ def main() -> int:
         "superset of what the bundles contain (react, react-dom and\n"
         "@leanprover/infoview are rollup externals; others may be tree-shaken).\n"
         "Licence texts are verbatim from each tarball's root LICENSE / LICENCE /\n"
-        "COPYING / NOTICE files.\n\n"
+        "COPYING / NOTICE files. Where a tarball ships none, the text is curated\n"
+        "from upstream at the matching release (sources and sha256 in the entry;\n"
+        "the generator refuses to run while any such package lacks one).\n\n"
     )
     out.write(f"ProofWidgets4 commit: {pw_commit}\n")
     out.write(f"package-lock.json sha256: {lock_sha}\n")
     out.write(f"packages: {len(entries)}\n")
-    nofile = [f"{n}@{v}" for n, v, _, files, _ in entries if not files]
+    nofile = [(f"{n}@{v}", how) for n, v, _, _, _, how in entries if how]
     out.write(f"packages whose npm tarball ships no licence file: {len(nofile)}"
-              " (upstream publishes no licence text for these; their declared SPDX licence is recorded)\n")
-    for x in nofile:
-        out.write(f"  - {x}\n")
+              " (each resolved below, from curated upstream text or as not bundled)\n")
+    for x, how in nofile:
+        out.write(f"  - {x}: {how}\n")
     out.write(f"packages flagged for review: {len(flags)}\n")
     for fl in flags:
         out.write(f"  - {fl}\n")
     out.write("\n")
-    for name, ver, declared, files, notes in entries:
+    for name, ver, declared, files, notes, _how in entries:
         out.write("-" * 76 + "\n")
         out.write(f"{name}@{ver}\nLicense: {declared}\n")
         for n in notes:
