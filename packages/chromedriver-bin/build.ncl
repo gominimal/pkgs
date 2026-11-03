@@ -26,7 +26,7 @@ let chromium-headless-shell-bin = import "../chromium-headless-shell-bin/build.n
 #
 # License: the CfT chromedriver zip carries LICENSE.chromedriver, the
 # Chromium BSD-3-Clause grant, with no proprietary terms (unlike the full
-# CfT `chrome` bundle, which ships Widevine). Re-checked at 156.0.8078.47.
+# CfT `chrome` bundle, which ships Widevine). Re-checked at 156.0.8078.80 (both arches: LICENSE.chromedriver only, no Widevine, no proprietary terms).
 #
 # The version is NOT pinned here: it is chromium-headless-shell-bin's
 # `upstream_version`, so the pair cannot drift. Bumping the browser changes
@@ -55,7 +55,7 @@ let browser_version = chromium-headless-shell-bin.attrs.upstream_version in
     base,
     unzip,
   ],
-  # DT_NEEDED of the 156.0.8078.47 binaries: libc/libdl/libpthread/libm,
+  # DT_NEEDED of the 156.0.8078.80 binaries (re-read from both zips): libc/libdl/libpthread/libm,
   # libgcc_s, glib, nspr, nss, libxcb, and libdbus-1 on amd64 only.
   runtime_deps =
     [
