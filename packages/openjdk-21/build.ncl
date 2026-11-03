@@ -16,10 +16,10 @@ let libxi = import "../libxi/build.ncl" in
 let libxrender = import "../libxrender/build.ncl" in
 let libxtst = import "../libxtst/build.ncl" in
 let libxcursor = import "../libxcursor/build.ncl" in
-# openjdk-21: the boot JDK for jdk-21, OpenJDK 21.0.2 from gen-12 of gominimal/bootstrap: the JVM ladder
+# openjdk-21: the boot JDK for jdk-21, OpenJDK 21.0.2 from gen-13 of gominimal/bootstrap: the JVM ladder
 # jikes -> classpath -> jamvm -> ant/ecj -> icedtea-7/8 -> openjdk-9 ... 21, every rung built from
 # source on the hex0-rooted toolchain and reproduced byte for byte on two independent machines
-# before publishing (generations/gen-12/manifest.json). Installs at /usr/lib/openjdk-21; nothing lands on
+# before publishing (generations/gen-13/manifest.json). Installs at /usr/lib/openjdk-21; nothing lands on
 # /usr/bin.
 let is_arm = target.arch == 'Arm64 in
 let version = "21.0.2" in
@@ -30,14 +30,14 @@ let version = "21.0.2" in
     match {
       { arch = 'Amd64, .. } =>
         {
-          url = "gs://minimal-bootstrap/gen-12/sha256/a3a6363f83e7721526ec869f8ca7d13db3f201716f450acce575b1dfa82a8394/openjdk-21-21.0.2-x86_64.tar.zst",
+          url = "gs://minimal-bootstrap/gen-13/sha256/a3a6363f83e7721526ec869f8ca7d13db3f201716f450acce575b1dfa82a8394/openjdk-21-21.0.2-x86_64.tar.zst",
           sha256 = "a3a6363f83e7721526ec869f8ca7d13db3f201716f450acce575b1dfa82a8394",
           extract = true,
         } | Source,
       { arch = 'Arm64, .. } =>
         {
-          url = "gs://minimal-bootstrap/gen-12/sha256/cc3dd6bae0257a98e4e355077b2949526e9ba3eba0a9cc6e8726bb0aacd9308e/openjdk-21-21.0.2-aarch64.tar.zst",
-          sha256 = "cc3dd6bae0257a98e4e355077b2949526e9ba3eba0a9cc6e8726bb0aacd9308e",
+          url = "gs://minimal-bootstrap/gen-13/sha256/8c397907dd69cd4c7991e9843d812353955bf72568f2f96abdd903e65559fe25/openjdk-21-21.0.2-aarch64.tar.zst",
+          sha256 = "8c397907dd69cd4c7991e9843d812353955bf72568f2f96abdd903e65559fe25",
           extract = true,
         } | Source,
     } target,
@@ -45,6 +45,7 @@ let version = "21.0.2" in
   # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, lcms2, libpng, giflib and libjpeg
   runtime_deps =
     []
+    # amd64 binaries name the bedrock sysroot's loader and RUNPATH; arm64's use the toolchain glibc
     @ (if is_arm then [glibc, toolchain] else [glibc-bedrock-2-42-sysroot])
     @ [
       zlib,

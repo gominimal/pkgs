@@ -56,15 +56,15 @@ let version = "1.10.0" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # gominimal/bootstrap gen-12 object (generations/gen-12/manifest.json)
-              url = "gs://minimal-bootstrap/gen-12/sha256/af6e9e6f6e68730c37025ef2753f6cecf5679e6f01d26e5e4d7a9f69cb3c00be/lz4-x86_64.tar.zst",
+              # gominimal/bootstrap gen-13 object (generations/gen-13/manifest.json)
+              url = "gs://minimal-bootstrap/gen-13/sha256/af6e9e6f6e68730c37025ef2753f6cecf5679e6f01d26e5e4d7a9f69cb3c00be/lz4-x86_64.tar.zst",
               sha256 = "af6e9e6f6e68730c37025ef2753f6cecf5679e6f01d26e5e4d7a9f69cb3c00be",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              # gominimal/bootstrap gen-12 object (generations/gen-12/manifest.json)
-              url = "gs://minimal-bootstrap/gen-12/sha256/7a2bca4b6d4d263eaf3815b5c8660f83393ccc83c12ec34a2b8e7cdaec81cab1/lz4-aarch64.tar.zst",
+              # gominimal/bootstrap gen-13 object (generations/gen-13/manifest.json)
+              url = "gs://minimal-bootstrap/gen-13/sha256/7a2bca4b6d4d263eaf3815b5c8660f83393ccc83c12ec34a2b8e7cdaec81cab1/lz4-aarch64.tar.zst",
               sha256 = "7a2bca4b6d4d263eaf3815b5c8660f83393ccc83c12ec34a2b8e7cdaec81cab1",
               extract = true,
             } | Source,

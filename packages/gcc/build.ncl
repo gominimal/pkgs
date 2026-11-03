@@ -19,7 +19,6 @@ let xz = import "../xz/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let glibc-bedrock-2-42-sysroot = import "../glibc-bedrock-2.42-sysroot/build.ncl" in # the seed's loader tree (amd64)
 let linux_headers = import "../linux_headers/build.ncl" in
 # other
 let gmp = import "../gmp/build.ncl" in
@@ -131,31 +130,26 @@ let version = "15.2.0" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # gominimal/bootstrap gen-12 object (generations/gen-12/manifest.json)
-              url = "gs://minimal-bootstrap/gen-12/sha256/0880fa31188fc7a12379450f90fa50a2e6038bb4159d3c31df89bb8f3b8a50b2/gcc-15.2.0-glibc-15.2.0-x86_64.tar.zst",
-              sha256 = "0880fa31188fc7a12379450f90fa50a2e6038bb4159d3c31df89bb8f3b8a50b2",
+              # gominimal/bootstrap gen-13 object (generations/gen-13/manifest.json)
+              url = "gs://minimal-bootstrap/gen-13/sha256/931b342257874bbd946a55443ba75f1930433bf4dc12d6924fec674e75f4c007/gcc-15.2.0-glibc-15.2.0-x86_64.tar.zst",
+              sha256 = "931b342257874bbd946a55443ba75f1930433bf4dc12d6924fec674e75f4c007",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              # gominimal/bootstrap gen-12 object (generations/gen-12/manifest.json)
-              url = "gs://minimal-bootstrap/gen-12/sha256/4777e5fe9bd1476171abb46d6ec53f49f5e50f17a25b9ab612894d758eba5f1f/gcc-15.2.0-glibc-aarch64.tar.zst",
+              # gominimal/bootstrap gen-13 object (generations/gen-13/manifest.json)
+              url = "gs://minimal-bootstrap/gen-13/sha256/4777e5fe9bd1476171abb46d6ec53f49f5e50f17a25b9ab612894d758eba5f1f/gcc-15.2.0-glibc-aarch64.tar.zst",
               sha256 = "4777e5fe9bd1476171abb46d6ec53f49f5e50f17a25b9ab612894d758eba5f1f",
               extract = true,
             } | Source,
         } target,
       ],
-      # the seed's binaries are linked against the bedrock sysroot: their interpreter and RUNPATH
-      # name /usr/lib/glibc-bedrock-2.42/lib. The standalone sysroot package carries that tree on
-      # amd64 (and nothing on arm64, whose seed uses the plain loader), so a sandbox that pairs
-      # this seed with a from-source glibc (nginx's cycle pass) still has its loader.
       runtime_deps = [
         gmp,
         mpc,
         mpfr,
         zlib,
         zstd,
-        glibc-bedrock-2-42-sysroot,
       ],
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,
