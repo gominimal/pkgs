@@ -194,10 +194,18 @@ let browser_version = "156.0.8078.73" in
     {
       upstream_version = browser_version,
       license_spdx = "BSD-3-Clause",
+      # Chrome for Testing, the same home chromedriver-bin names. Chrome's
+      # CVEs do NOT come through this repo: supply-chain's
+      # package_cpe_identity.toml maps the package NAME
+      # `chromium-headless-shell-bin` to google:chrome (pkgmgr-rs#1029), and
+      # that identity takes precedence over this provenance. It is keyed by
+      # name because chromedriver-bin shares this repo and is not the
+      # browser. Renaming the package without moving that entry makes it scan
+      # 0/0/0. pkgmgr's chromium resolver checks and updates it by name.
       source_provenance = {
         category = 'GithubRepo,
-        owner = "microsoft",
-        repo = "playwright",
+        owner = "GoogleChromeLabs",
+        repo = "chrome-for-testing",
       },
       binary_from =
         match {
