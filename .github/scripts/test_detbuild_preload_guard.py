@@ -193,6 +193,43 @@ class Guard(unittest.TestCase):
         )
         self.assertEqual(g.check(self.root), (1, []))
 
+    # CodeRabbit on f03325ea (2026-11-03): both passed with "1 preload(s)
+    # checked, 0 violation(s)".
+
+    def test_an_unset_followed_by_a_reexport_is_rejected(self):
+        self.assert_rejected(
+            {
+                "build.sh": "cargo fetch --locked\n"
+                + f"LD_PRELOAD={LIB} cargo " + f"build --frozen; P={LIB}\n"
+                + "unset LD_PRELOAD; LD_PRELOAD=$P; export LD_PRELOAD\ncurl https://example.invalid\n"
+            },
+            "exported in a file that preloads",
+            ncl=NETWORKED_NCL,
+        )
+
+    def test_an_offline_flag_in_a_comment_does_not_count(self):
+        self.assert_rejected(
+            {"build.sh": f"LD_PRELOAD={LIB} cargo " + "build # --frozen\n"}, "needs.internet", ncl=NETWORKED_NCL
+        )
+
+    def test_an_offline_flag_on_another_command_does_not_count(self):
+        self.assert_rejected(
+            {"build.sh": f"LD_PRELOAD={LIB} cargo " + "build; true --frozen\n"}, "needs.internet", ncl=NETWORKED_NCL
+        )
+
+    def test_a_standalone_unset_and_a_commented_offline_cargo_pass(self):
+        # Negative control for the two rules above.
+        self.pkg(
+            "g",
+            {
+                "build.sh": "cargo fetch --locked\n"
+                + f"LD_PRELOAD={LIB} cargo " + "build --frozen --release  # pinned entropy\n"
+                + "unset LD_PRELOAD  # done with the preload\n"
+            },
+            ncl=NETWORKED_NCL,
+        )
+        self.assertEqual(g.check(self.root), (1, []))
+
     def test_ncl_mention_is_rejected(self):
         self.assert_rejected({"extra.ncl": f'env = {{ LD_PRELOAD = "{LIB}" }}\n'}, "in a .ncl file")
 

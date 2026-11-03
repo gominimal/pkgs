@@ -22,7 +22,7 @@ detbuild"):
    `bash --posix` an assignment before one persists and is exported
    (`LD_PRELOAD=... :` preloads everything after it). In a file that names
    libdetbuild, LD_PRELOAD may appear ONLY as that one checked prefix (or in
-   `unset LD_PRELOAD`), so a later `export LD_PRELOAD`, wherever it sits on
+   an `unset LD_PRELOAD` alone on its line), so a later `export LD_PRELOAD`, wherever it sits on
    its line (`true && export LD_PRELOAD`), is rejected too. The prefix
    itself must sit where a command starts (line start, after `;` `&&` `||`
    `|` `(` `{` `!`, or `if`/`then`/`do`/...): `cd x && export
@@ -34,7 +34,8 @@ detbuild"):
    packages/ or stacks/. An `env` or `vars` entry would preload it into the
    whole build, and a stack would preload it into a user's session.
 3. If the package declares `needs.internet`, the preloaded command must be
-   `cargo ... --frozen` or `cargo ... --offline`. Fetch first without the
+   `cargo ... --frozen` or `cargo ... --offline`, with the flag among
+   cargo's own words (not after a `#` or a `;`). Fetch first without the
    preload. This is a necessary condition, not a proof the step is offline:
    `--frozen` stops cargo fetching crates, but a `build.rs` can still download
    (rusty_v8, ort-sys and similar do), and would do that TLS under the
@@ -82,9 +83,17 @@ SPECIAL_BUILTINS = {
     ":", ".", "source", "break", "continue", "eval", "exec", "exit", "export",
     "readonly", "return", "set", "shift", "times", "trap", "unset",
 }
-UNSET = re.compile(r"^\s*unset\s+(?:-v\s+)?LD_PRELOAD\s*(?:[;&|#].*)?$")
+# `unset LD_PRELOAD` alone on its line (a trailing comment is fine). Nothing
+# may follow it: `unset LD_PRELOAD; LD_PRELOAD=$P; export LD_PRELOAD` would
+# otherwise be skipped as an unset and re-export the preload (CR on #884).
+UNSET = re.compile(r"^\s*unset\s+(?:-v\s+)?LD_PRELOAD\s*(?:#.*)?$")
 INTERNET = re.compile(r"\binternet\s*=\s*\{")
-CARGO_OFFLINE = re.compile(r"^cargo\s.*(?:--frozen|--offline)\b")
+# The preloaded command's own words: everything before the first `#` or shell
+# operator. `cargo build # --frozen` hands cargo no flag (the shell drops the
+# comment), and `cargo build; x --frozen` gives the flag to another command.
+# Cutting at any `#` is stricter than the shell, never looser.
+COMMAND_WORDS = re.compile(r"^[^#;&|]*")
+CARGO_OFFLINE = re.compile(r"^cargo\s(?:.*\s)?--(?:frozen|offline)(?:\s|$)")
 
 
 def is_text(path):
@@ -177,7 +186,7 @@ def check(root):
                     errors.append(f"{where}: libdetbuild is not used as a `LD_PRELOAD=... <command>` prefix")
                     continue
                 uses += 1
-                if networked and not CARGO_OFFLINE.match(cmd):
+                if networked and not CARGO_OFFLINE.match(COMMAND_WORDS.match(cmd).group(0).rstrip()):
                     errors.append(
                         f"{where}: {pkg.name} declares needs.internet, so the preloaded command must run offline "
                         f"(`cargo build --frozen`, after an unpreloaded `cargo fetch --locked`)"
