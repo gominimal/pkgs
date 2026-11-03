@@ -1,0 +1,25 @@
+# pkgscan triage for difftastic (see pkgmgr-rs src/pkgscan/repo_allowlist.rs).
+# Each entry is pinned to the whole file's sha256: any change to the file makes
+# the finding gate again. A match regrades (High -> Info), never hides.
+
+# difftastic 0.72.0 added two flat JSON sample inputs for its diff-heuristics
+# work: Forgejo's Spanish locale file at two revisions (key -> translated UI
+# string, ~700-900 entries, the `_comment` key names the Forgejo commit they
+# came from). Line 401 of both is the npm package-registry help string, which
+# mentions the filename `.npmrc` as text. Nothing reads these files at runtime
+# or build time: they are inputs for difftastic's own sample/regression diffs,
+# outside Cargo.toml's `include` list, and build.sh only runs
+# `cargo build --release` and installs target/release/difft.
+[[allow]]
+file = "sample_files/flat_1.json"
+category = "CredentialAccess"
+pattern = ".npmrc"
+sha256 = "a7097adf94709ff9ce75e9d4ea859973de4c1d158d38685426dd7815ef3000fd"
+reason = "Sample diff input, not code: Forgejo es-ES locale JSON whose line 401 is the UI string 'Configura este registro en tu proyecto <code>.npmrc</code> archivo:'. Added by the maintainer in https://github.com/Wilfred/difftastic/commit/a2d6628cc7395d10326266ff70eb6af32120a99e (Improve unchanged heuristics for flat sequences). Not read by the build or the shipped difft binary. Verified against the 0.72.0 tag."
+
+[[allow]]
+file = "sample_files/flat_2.json"
+category = "CredentialAccess"
+pattern = ".npmrc"
+sha256 = "b21ce6e66eafa7ff1b742443a1c1b26e4a678842d445928d1aa5185365e7b59f"
+reason = "Sample diff input, not code: the later revision of the same Forgejo es-ES locale JSON as flat_1.json; line 401 is the same '.npmrc' registry help string. Added by the maintainer in https://github.com/Wilfred/difftastic/commit/a2d6628cc7395d10326266ff70eb6af32120a99e. Not read by the build or the shipped difft binary. Verified against the 0.72.0 tag."

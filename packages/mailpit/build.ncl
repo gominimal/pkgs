@@ -8,14 +8,14 @@ let node-lts = import "../node-lts/build.ncl" in
 # UI on :8025). Single static binary with the UI embedded; the UI is built
 # with npm from the locked package-lock.json before `go build`, as upstream's
 # release build does.
-let version = "1.32.0" in
+let version = "1.33.0" in
 {
   name = "mailpit",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/axllent/mailpit/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "239e28527f83a7e76765de1a23b4b0c5e49a782f4009ec9788af6703d25397fe",
+      sha256 = "4c43bef67f3aabd8eb1e571829ddafad42da33061a911ae9cea19ad209ba3c64",
       extract = true,
       strip_prefix = "mailpit-%{version}",
     } | Source,

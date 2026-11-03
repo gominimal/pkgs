@@ -1,0 +1,16 @@
+# pkgscan triage for opencode (see pkgmgr-rs src/pkgscan/repo_allowlist.rs).
+# Each entry is pinned to the whole file's sha256: any change to the file makes
+# the finding gate again. A match regrades (Critical -> Medium), never hides.
+
+# opencode 2.x added the Desktop GUI browser plugin
+# (https://github.com/anomalyco/opencode/pull/55246). policy.test.ts is its unit
+# test: lines 35-37 assert that fileURLWithin() REFUSES `~/.aws/credentials`,
+# including via `../` and `%2e%2e` traversal, i.e. the strings are the negative
+# cases of a sandbox test, not a read. Test-only (bun:test), not in the CLI
+# binary. Verified against the v2.2.5 tag.
+[[allow]]
+file = "packages/gui-plugins/src/browser/policy.test.ts"
+category = "CredentialAccess"
+pattern = ".aws/credentials"
+sha256 = "03b90443b656342a6fe80b0c73667eca5cb6de944362089832e3247c46384691"
+reason = "Negative cases of the browser plugin's file-root sandbox test: fileURLWithin() must refuse ~/.aws/credentials, also via ../ and %2e%2e traversal. bun:test file, not shipped. Added in https://github.com/anomalyco/opencode/pull/55246; verified against the v2.2.5 tag."

@@ -10,7 +10,7 @@ let version = "2.19.1" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://github.com/mm2/Little-CMS/releases/download/lcms2.17/lcms2-2.19.1.tar.gz
+      # https://github.com/mm2/Little-CMS/releases/download/lcms2.19.1/lcms2-2.19.1.tar.gz
       url = "gs://minimal-staging-archives/lcms2-%{version}.tar.gz",
       sha256 = "bfc54f7bab59fbc921012014a8032e4cba4abd46db47d46b76416a8c0b2815c8",
       extract = true,

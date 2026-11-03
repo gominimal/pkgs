@@ -13,7 +13,7 @@ let glibc = import "../glibc/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let git = import "../git/build.ncl" in
 
-let version = "0.165.0" in
+let version = "0.166.0" in
 {
   name = "codex",
   build_deps = [
@@ -24,7 +24,7 @@ let version = "0.165.0" in
     { file = "openssl-4-openssl-sys-lock.patch" } | Local,
     {
       url = "https://github.com/openai/codex/archive/refs/tags/rust-v%{version}.tar.gz",
-      sha256 = "4e066a7dbd1234efa7458c2b137161bb7ddde1dde6be4ed4c8f38e6c45f862ab",
+      sha256 = "718c86dcd7104919f2820aa79db0fa0083b5f240aa16da704f43e4acf7b544e5",
       extract = true,
       strip_prefix = "codex-rust-v%{version}",
     } | Source,

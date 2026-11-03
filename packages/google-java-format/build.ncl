@@ -3,7 +3,7 @@ let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 
-let version = "1.37.0" in
+let version = "2.0.0" in
 {
   name = "google-java-format",
   # The upstream all-deps jar, run on our jdk. Upstream also publishes GraalVM
@@ -19,7 +19,7 @@ let version = "1.37.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/google/google-java-format/releases/download/v%{version}/google-java-format-%{version}-all-deps.jar",
-      sha256 = "834b2a0c38cb774953322a84b5ca3f2f40dd3156650b3cd44d3b744345962f7a",
+      sha256 = "c78feb48c549fa7114b7ea11db3b456808f7b371ffe84e6643a44dd2f9588639",
     } | Source,
     base,
   ],
