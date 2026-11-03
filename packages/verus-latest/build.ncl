@@ -11,8 +11,8 @@ let gcc = import "../gcc/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let z3-4-16-0 = import "../z3-4.16.0/build.ncl" in
 
-let version = "0.2026.10.26.d17fbd0" in
-let sha = "d17fbd0c58abf0d5e86825ea64b96aba72b1b31f" in
+let version = "0.2026.11.02.8bf68ee" in
+let sha = "8bf68ee741df833ea5d0fe6a2255126fdea87e47" in
 # Verus's rust-toolchain.toml channel, with rustc-dev (rust_verify links
 # rustc_private). The `rust` package ships no rustc-dev, so the toolchain is
 # vendored privately even when the versions agree.
@@ -55,7 +55,7 @@ in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/verus-lang/verus/archive/refs/tags/release/%{version}.tar.gz",
-      sha256 = "f0b0985dc8b7b1daa150acfe86034ef76a3ad31ae6afaf500fe2bcf7478c473e",
+      sha256 = "0f77e6de9934239e72364f004d9c1ca49790010c8864b591ac170b0f59ac3e34",
       extract = true,
       strip_prefix = "verus-release-%{version}",
     } | Source,
