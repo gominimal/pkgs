@@ -8,14 +8,14 @@ let glibc = import "../glibc/build.ncl" in
 let git = import "../git/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 
-let version = "0.5.7" in
+let version = "0.5.9" in
 {
   name = "prek",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/j178/prek/v%{version}.tar.gz",
-      sha256 = "c14bfbb5121c24421aea5fbb91a9c835e3e3372e53bdaeb3dedd87cc8eda56b5",
+      sha256 = "684be4a4f1229a147d3c62455072b7b8893263891a3a1fe18f06217e3ebd6fef",
       extract = true,
       strip_prefix = "prek-%{version}",
     } | Source,
