@@ -121,6 +121,7 @@ OUT="$OUTPUT_DIR/usr/lib/lean/pkgs"
 mkdir -p "$OUT/aeneas/lib"
 cp -a build/lib/. "$OUT/aeneas/lib/"
 printf '/usr/lib/lean/pkgs/aeneas/lib:%s\n' "$(cat "$MATHLIB_SHARE/LEAN_PATH")" > "$OUT/LEAN_PATH"
+echo "LEAN_PATH: $(cat "$OUT/LEAN_PATH")"
 
 mkdir -p "$OUTPUT_DIR/usr/share/aeneas-latest"
 cp "$ROOT/lake-manifest.json" "$OUTPUT_DIR/usr/share/aeneas-latest/"
