@@ -62,6 +62,7 @@ in
     # `cargo vendor --locked --versioned-dirs` of source/ (372 crates incl. the
     # utaal/getopts git fork). Packed deterministically: sorted, mtime 0,
     # root:root, gzip -n.
+    # source-hash-guard: allow 5e3f794a840e95f3fce62bdb36eb1d355e22bd53eb818f220aa6ecbb957356ba 0.2026.11.02's vendor tarball is byte-identical to 0.2026.10.26's (same sha256/md5/size; Cargo.lock changed no registry crate between the tags), checked against the new object at this url
     {
       url = "gs://minimal-staging-archives/verus-vendor-%{version}.tar.gz",
       sha256 = "5e3f794a840e95f3fce62bdb36eb1d355e22bd53eb818f220aa6ecbb957356ba",
