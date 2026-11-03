@@ -23,7 +23,11 @@ detbuild"):
    (`LD_PRELOAD=... :` preloads everything after it). In a file that names
    libdetbuild, LD_PRELOAD may appear ONLY as that one checked prefix (or in
    `unset LD_PRELOAD`), so a later `export LD_PRELOAD`, wherever it sits on
-   its line (`true && export LD_PRELOAD`), is rejected too.
+   its line (`true && export LD_PRELOAD`), is rejected too. The prefix
+   itself must sit where a command starts (line start, after `;` `&&` `||`
+   `|` `(` `{` `!`, or `if`/`then`/`do`/...): `cd x && export
+   LD_PRELOAD=<path> make`, `local -x LD_PRELOAD=<path> cargo` and `make
+   LD_PRELOAD=<path> cc` name the path but are not prefixes.
    Backslash-continued lines are joined first, so a preloaded command may span
    lines.
 2. No .ncl file outside packages/detbuild may name libdetbuild, under
@@ -50,10 +54,24 @@ import re
 import sys
 
 LIB = "libdetbuild"
+# Where a simple command starts: the line start, or after an operator that
+# ends the previous one (`;` `&` `&&` `|` `||`), a subshell/group/negation/
+# command-substitution opener, then optionally a reserved word that itself
+# sits at a command start (`if`, `then`, `do`, ...). Only there is
+# `LD_PRELOAD=<path>` a prefix scoped to the command after it. Anywhere else
+# it is an argument to some other word: `export`/`local -x`/`declare -g -x`/
+# `command export`/`builtin export` (which set it for every later command,
+# pkgs#884 review 2026-11-03), or `make LD_PRELOAD=...` (make exports
+# command-line variables into every recipe).
+COMMAND_START = r"(?:^|[;&|({!`])\s*(?:(?:if|then|else|elif|do|while|until|time)\s+)*"
 PREFIX = re.compile(
-    r"(?:^|[\s;&|(])(?:env\s+)?LD_PRELOAD=(?P<q>[\"']?)\S*libdetbuild\.so(?P=q)\s+(?P<cmd>\S.*)$"
+    COMMAND_START + r"(?:env\s+)?LD_PRELOAD=(?P<q>[\"']?)\S*libdetbuild\.so(?P=q)\s+(?P<cmd>\S.*)$"
 )
-EXPORTED = re.compile(r"^\s*(?:export|declare\s+-\w*x\w*|typeset\s+-\w*x\w*)\b.*LD_PRELOAD")
+# A declaration builtin with LD_PRELOAD among its arguments, wherever it sits
+# on the line and whatever its flags (`cd x && export ...`, `declare -g -x`,
+# `local -x`, `command export`). Rejected with the clearer message; PREFIX
+# would reject these too, since none puts LD_PRELOAD= at a command start.
+EXPORTED = re.compile(r"(?:^|[\s;&|({`])(?:export|local|readonly|declare|typeset)\b[^;&|]*\bLD_PRELOAD")
 # What follows `LD_PRELOAD=<path>` when it is not a command: a comment, or a
 # shell operator that ends the simple command (the assignment then persists).
 NOT_A_COMMAND = re.compile(r"^(?:#|;|&|\||\)|\(|\{|\}|<|>|[0-9]+[<>])")

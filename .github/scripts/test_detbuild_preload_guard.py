@@ -122,7 +122,9 @@ class Guard(unittest.TestCase):
         )
 
     def test_a_second_mention_on_the_prefix_line_is_rejected(self):
-        self.assert_rejected({"build.sh": f"LD_PRELOAD={LIB} make; export LD_PRELOAD\n"}, "not used as")
+        # Reported as an export since the 2026-11-03 widening of EXPORTED
+        # (it was "not used as" when only line-start exports matched).
+        self.assert_rejected({"build.sh": f"LD_PRELOAD={LIB} make; export LD_PRELOAD\n"}, "exported")
 
     def test_a_special_builtin_is_not_a_command(self):
         # Under sh (dash) or bash --posix the assignment outlives `:` and is exported.
@@ -139,6 +141,49 @@ class Guard(unittest.TestCase):
         # Negative control for the assignment rule: still one scoped command.
         self.pkg("e", {"build.sh": f"LD_PRELOAD={LIB} CFLAGS=\"-O2 -g\" FOO=1 make -j4\nunset LD_PRELOAD\n"})
         self.assertEqual(g.check(self.root), (1, []))
+
+    # Norrie's re-review of e064ffc (2026-11-03): each passed with
+    # "1 preload(s) checked, 0 violation(s)" and left LD_PRELOAD set for
+    # later commands in bash and dash.
+    NOT_AT_COMMAND_START = (
+        f"cd build && export LD_PRELOAD={LIB} make",
+        f"if true; then export LD_PRELOAD={LIB} PATH; fi",
+        f"command export LD_PRELOAD={LIB} make",
+        f"builtin export LD_PRELOAD={LIB} make",
+        f"declare -g -x LD_PRELOAD={LIB} make",
+        f"f() {{ local -x LD_PRELOAD={LIB} cargo build; }}",
+        f"readonly LD_PRELOAD={LIB} make",
+    )
+
+    def test_a_declaration_anywhere_on_the_line_is_rejected(self):
+        for line in self.NOT_AT_COMMAND_START:
+            with self.subTest(line=line):
+                self.tearDown()
+                self.setUp()
+                self.pkg("bad", {"build.sh": f"#!/bin/sh\n{line}\nmake\n"})
+                uses, errors = g.check(self.root)
+                self.assertEqual(uses, 0, errors)
+                self.assertTrue(any("exported" in e for e in errors), errors)
+
+    def test_the_path_as_an_argument_is_not_a_prefix(self):
+        # make exports command-line variables into every recipe it runs.
+        self.assert_rejected({"build.sh": f"make LD_PRELOAD={LIB} cc\n"}, "not used as")
+
+    def test_a_prefix_after_an_operator_or_keyword_passes(self):
+        # Negative control for the command-start rule: each is still one
+        # scoped command.
+        for line in (
+            f"cd build && LD_PRELOAD={LIB} make -j4",
+            f"if true; then LD_PRELOAD={LIB} make; fi",
+            f"( cd build; LD_PRELOAD={LIB} make )",
+            f"true || env LD_PRELOAD={LIB} make",
+            f"for d in a b; do LD_PRELOAD={LIB} make -C \"$d\"; done",
+        ):
+            with self.subTest(line=line):
+                self.tearDown()
+                self.setUp()
+                self.pkg("ok", {"build.sh": f"#!/bin/sh\n{line}\n"})
+                self.assertEqual(g.check(self.root), (1, []))
 
     def test_assignments_before_offline_cargo_pass(self):
         self.pkg(
