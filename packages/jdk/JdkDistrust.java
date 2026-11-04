@@ -1,6 +1,7 @@
 // CVE-2026-111943 (eMudhra intermediate key compromise): build-time helper for the JDK
 // packages, run by cve-2026-111943.sh with the JDK being packaged (single-file source
-// launch, JDK 17+). Upstream OpenJDK and Temurin have not shipped a fix yet.
+// launch, JDK 17+). Temurin 27.0.1 (October 2026 CPU) ships the fix: its stock blocked.certs
+// already lists all 48 fingerprints. The older lines still need it done here.
 //
 //   remove-anchors <cacerts> <sha256>...  delete every trusted entry whose certificate has one
 //                                         of these SHA-256 fingerprints (selected by
@@ -11,10 +12,16 @@
 //   check pre|post <fixtures.pem> <state> validate each compromised-intermediate fixture
 //                                         against its issuer with PKIX. `pre` runs on the stock
 //                                         blocked.certs and requires the encodings a verifier
-//                                         accepts to VALIDATE, so the harness is known to work;
+//                                         accepts to VALIDATE, so the harness is known to work.
+//                                         A JDK that already ships the fix (Temurin 27.0.1,
+//                                         October 2026 CPU) rejects them as "Untrusted
+//                                         certificate"; that counts as UPSTREAM_BLOCKED only when
+//                                         the fingerprint is in the stock blocked.certs, so any
+//                                         other rejection still means a broken fixture or harness;
 //                                         `post` runs after the append and requires every one
-//                                         to be rejected, and the ones that validated in `pre`
-//                                         to be rejected as "Untrusted certificate" (that is,
+//                                         to be rejected, and the ones that validated (or were
+//                                         UPSTREAM_BLOCKED) in `pre` to be rejected as
+//                                         "Untrusted certificate" (that is,
 //                                         by lib/security/blocked.certs and nothing else).
 //                                         Both phases also validate an unrelated control chain,
 //                                         and `post` checks the default trust manager no
@@ -175,6 +182,17 @@ public class JdkDistrust {
         }
     }
 
+    // Fingerprints in this JDK's own lib/security/blocked.certs (the file `pre` runs on).
+    static Set<String> stockBlocked() throws Exception {
+        Path p = Path.of(System.getProperty("java.home"), "lib", "security", "blocked.certs");
+        Set<String> s = new java.util.HashSet<>();
+        for (String l : Files.readAllLines(p, StandardCharsets.UTF_8)) {
+            l = l.trim();
+            if (l.matches("[0-9A-F]{64}")) s.add(l);
+        }
+        return s;
+    }
+
     static void check(String phase, Path fixtures, Path state) throws Exception {
         Map<String, X509Certificate> fx = readPem(fixtures);
         X509Certificate aaa = need(fx, AAA_ROOT), g3 = need(fx, ECC_G3), cross = need(fx, CROSS);
@@ -182,6 +200,7 @@ public class JdkDistrust {
         if (ctl != null) die(phase + ": control chain (emSign Root TLS CA - G3 cross <- emSign ECC Root CA - G3) did not validate: " + ctl);
         System.out.println("JdkDistrust: " + phase + " control -> VALID");
 
+        Set<String> stock = phase.equals("pre") ? stockBlocked() : Set.of();
         Properties before = new Properties();
         if (phase.equals("post")) try (InputStream in = Files.newInputStream(state)) { before.load(in); }
         Properties now = new Properties();
@@ -193,13 +212,18 @@ public class JdkDistrust {
             now.setProperty(c[0], r == null ? "VALID" : "REJECTED");
             if (phase.equals("pre")) {
                 if (MUST_VALIDATE_BEFORE.contains(c[0]) && r != null) {
-                    die("pre: " + c[2] + " must validate on the stock JDK (fixture or harness broken): " + r);
+                    if (r.contains("Untrusted certificate") && stock.contains(c[0])) {
+                        System.out.println("JdkDistrust: pre " + c[2] + " already blocked by the stock blocked.certs (upstream fix)");
+                        now.setProperty(c[0], "UPSTREAM_BLOCKED");
+                    } else {
+                        die("pre: " + c[2] + " must validate on the stock JDK (fixture or harness broken): " + r);
+                    }
                 }
             } else {
                 if (r == null) die("post: " + c[2] + " still validates");
                 String was = before.getProperty(c[0]);
                 if (was == null) die("post: no pre-phase result for " + c[2]);
-                if (was.equals("VALID") && !r.contains("Untrusted certificate")) {
+                if ((was.equals("VALID") || was.equals("UPSTREAM_BLOCKED")) && !r.contains("Untrusted certificate")) {
                     die("post: " + c[2] + " rejected, but not by blocked.certs: " + r);
                 }
             }
