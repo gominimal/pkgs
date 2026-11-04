@@ -47,14 +47,17 @@ let toolchain = import "../toolchain/build.ncl" in
           ["/bin/bash", "-c", "test \"$(uname -r)\" != 6.1.0-minimal"],
         ],
       } | Test,
-    # Every intercepted entropy entry point, called directly: two getrandom()
-    # calls, the raw syscall, a read of /dev/urandom, arc4random_buf and
-    # getentropy. Under the preload two runs must print the same six draws,
-    # and no draw may repeat inside a run (a constant pattern, which the first
-    # version of this shim returned on every call, fails here). Without the
-    # preload two runs must differ, which shows the comparison can fail. Also:
-    # 8 threads x 1000 draws never repeat, coreutils `head` reading
-    # /dev/urandom repeats run to run, and a real file reads back unchanged.
+    # Every intercepted entry point, called directly: getrandom() twice, the
+    # raw getrandom syscall, read() of /dev/urandom and of /dev/random,
+    # __read_chk() of /dev/urandom, arc4random_buf, arc4random,
+    # arc4random_uniform (with a bound that makes its rejection loop run, each
+    # result checked against the bound), getentropy, and uname() and
+    # syscall(SYS_uname). Under the preload two runs must print the same ten
+    # draws and both pinned releases, and no draw may repeat inside a run (a
+    # shim that returns a constant pattern fails here). Without the preload
+    # two runs must differ, which shows the comparison can fail. Also: 8
+    # threads x 1000 draws never repeat, coreutils `head` reading /dev/urandom
+    # repeats run to run, and a real file reads back unchanged.
     entropy_stream =
       {
         class = 'Standalone,
@@ -70,6 +73,7 @@ let toolchain = import "../toolchain/build.ncl" in
 #define _GNU_SOURCE
 #include <errno.h>
 #include <fcntl.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/random.h>
@@ -84,15 +88,35 @@ static void draw(const char *tag, const unsigned char *b, size_t n) {
     putchar('\n');
 }
 
+/* glibc's fortified read(); called directly so the probe does not depend on
+   whether -D_FORTIFY_SOURCE routes a particular read through it. */
+extern ssize_t __read_chk(int fd, void *buf, size_t n, size_t buflen);
+
+static int read_dev(const char *path, unsigned char *buf, size_t n, int chk) {
+    int fd = open(path, O_RDONLY);
+    if (fd < 0) return -1;
+    ssize_t r = chk ? __read_chk(fd, buf, n, n) : read(fd, buf, n);
+    close(fd);
+    return r == (ssize_t)n ? 0 : -1;
+}
+
 int main(void) {
-    unsigned char a[16], b[16], c[16], d[16], e[16], f[16], big[300];
+    unsigned char a[16], b[16], c[16], d[16], g[16], h[16], e[16], f[16], big[300];
+    uint32_t w[2], v[4];
+    /* Not a power of two, so about half of all draws fall in the rejected
+       bucket and arc4random_uniform's loop runs more than once. */
+    const uint32_t upper = 0x80000001u;
     if (getrandom(a, sizeof a, 0) != (ssize_t)sizeof a) return 2;
     if (getrandom(b, sizeof b, 0) != (ssize_t)sizeof b) return 3;
     if (syscall(SYS_getrandom, c, sizeof c, 0) != (long)sizeof c) return 4;
-    int fd = open("/dev/urandom", O_RDONLY);
-    if (fd < 0 || read(fd, d, sizeof d) != (ssize_t)sizeof d) return 5;
-    close(fd);
+    if (read_dev("/dev/urandom", d, sizeof d, 0) != 0) return 5;
+    if (read_dev("/dev/random", g, sizeof g, 0) != 0) return 9;
+    if (read_dev("/dev/urandom", h, sizeof h, 1) != 0) return 10;
     arc4random_buf(e, sizeof e);
+    w[0] = arc4random();
+    w[1] = arc4random();
+    for (int i = 0; i < 4; i++)
+        if ((v[i] = arc4random_uniform(upper)) >= upper) return 11;
     if (getentropy(f, sizeof f) != 0) return 6;
     errno = 0;
     if (getentropy(big, sizeof big) != -1 || errno != EIO) return 7;
@@ -100,11 +124,17 @@ int main(void) {
     draw("getrandom2", b, sizeof b);
     draw("syscall", c, sizeof c);
     draw("urandom", d, sizeof d);
-    draw("arc4random", e, sizeof e);
+    draw("random", g, sizeof g);
+    draw("read_chk", h, sizeof h);
+    draw("arc4random_buf", e, sizeof e);
+    draw("arc4random", (const unsigned char *)w, sizeof w);
+    draw("arc4random_uniform", (const unsigned char *)v, sizeof v);
     draw("getentropy", f, sizeof f);
-    struct utsname u;
+    struct utsname u, s;
     if (uname(&u) != 0) return 8;
+    if (syscall(SYS_uname, &s) != 0) return 12;
     printf("release %s\n", u.release);
+    printf("syscall_release %s\n", s.release);
     return 0;
 }
 EOF
@@ -114,10 +144,11 @@ EOF
           r2=$(LD_PRELOAD=$L ./t)
           printf '%s\n' "$r1"
           [ "$r1" = "$r2" ] || { echo "FAIL: two preloaded runs differ:"; printf '%s\n' "$r2"; exit 1; }
-          [ "$(printf '%s\n' "$r1" | grep -c '^draw ')" = 6 ] || { echo "FAIL: expected 6 draws"; exit 1; }
+          [ "$(printf '%s\n' "$r1" | grep -c '^draw ')" = 10 ] || { echo "FAIL: expected 10 draws"; exit 1; }
           rep=$(printf '%s\n' "$r1" | awk '/^draw /{print $3}' | sort | uniq -d)
           [ -z "$rep" ] || { echo "FAIL: a draw repeats inside one run: $rep"; exit 1; }
           printf '%s\n' "$r1" | grep -qx 'release 6.1.0-minimal' || { echo "FAIL: uname not pinned"; exit 1; }
+          printf '%s\n' "$r1" | grep -qx 'syscall_release 6.1.0-minimal' || { echo "FAIL: syscall(SYS_uname) not pinned"; exit 1; }
           cat > th.c << 'EOF'
 #include <pthread.h>
 #include <stdint.h>

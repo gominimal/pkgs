@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Unit tests for detbuild_preload_guard.py. Run: python3 -m unittest test_detbuild_preload_guard"""
 
+import contextlib
+import io
+import json
 import os
 import pathlib
 import sys
@@ -22,14 +25,34 @@ class Guard(unittest.TestCase):
         (self.root / "packages" / "detbuild").mkdir(parents=True)
         # detbuild itself names the library freely and is never scanned.
         (self.root / "packages" / "detbuild" / "build.ncl").write_text(f'env = {{ LD_PRELOAD = "{LIB}" }}\n')
+        # The catalog as `mip dump -p` gives it, one {name: entry} per arch.
+        self.arches = [{}]
+        self.dep("detbuild", runtime=["glibc"])
+        self.dep("glibc")
 
     def tearDown(self):
         self.tmp.cleanup()
 
-    def pkg(self, name, files, ncl=OFFLINE_NCL):
+    def dep(self, name, build=(), runtime=(), internet=False, arch=None):
+        """A catalog entry with no files of its own."""
+        entry = {
+            "name": name,
+            "build_deps": [{"type": "package", "name": n} for n in build],
+            "runtime_deps": [{"type": "package", "name": n} for n in runtime],
+            "needs": {"internet": {"type": "map", "value": {}}} if internet else {},
+        }
+        for i, pkgs in enumerate(self.arches):
+            if arch is None or arch == i:
+                pkgs[name] = entry
+
+    def check(self):
+        return g.check(self.root, g.Catalog([list(pkgs.values()) for pkgs in self.arches]))
+
+    def pkg(self, name, files, ncl=OFFLINE_NCL, build=("detbuild",), runtime=("glibc",)):
         d = self.root / "packages" / name
         d.mkdir(parents=True, exist_ok=True)
         (d / "build.ncl").write_text(ncl)
+        self.dep(name, build=build, runtime=runtime, internet=ncl is NETWORKED_NCL)
         for rel, text in files.items():
             p = d / rel
             p.parent.mkdir(parents=True, exist_ok=True)
@@ -42,7 +65,7 @@ class Guard(unittest.TestCase):
 
     def test_prefix_on_one_command_passes_and_is_counted(self):
         self.pkg("a", {"build.sh": f"#!/bin/sh\nLD_PRELOAD={LIB} make -j4\n"})
-        self.assertEqual(g.check(self.root), (1, []))
+        self.assertEqual(self.check(), (1, []))
 
     def test_networked_package_with_offline_cargo_passes(self):
         self.pkg(
@@ -50,26 +73,26 @@ class Guard(unittest.TestCase):
             {"build.sh": "cargo fetch --locked\n" + f"LD_PRELOAD={LIB} cargo " + "build --frozen --release\n"},
             ncl=NETWORKED_NCL,
         )
-        self.assertEqual(g.check(self.root), (1, []))
+        self.assertEqual(self.check(), (1, []))
 
     def test_a_continued_cargo_command_passes(self):
-        # Norrie on #884: the backslash-continued form AGENTS.md's example grows into.
+        # The backslash-continued form AGENTS.md's example grows into.
         self.pkg(
             "d",
             {"build.sh": "cargo fetch --locked\n" + f"LD_PRELOAD={LIB} \\\n  cargo " + "build --frozen --release\n"},
             ncl=NETWORKED_NCL,
         )
-        self.assertEqual(g.check(self.root), (1, []))
+        self.assertEqual(self.check(), (1, []))
 
     def test_comments_and_binaries_are_ignored(self):
         self.pkg("c", {"build.sh": f"# export LD_PRELOAD={LIB}\n", "blob.bin": b"\0\0" + LIB.encode()})
-        self.assertEqual(g.check(self.root), (0, []))
+        self.assertEqual(self.check(), (0, []))
 
-    # ── rejected shapes (msample/mitodrummer's list on #884) ────────
+    # ── rejected shapes ─────────────────────────────────────────────
 
     def assert_rejected(self, files, needle, ncl=OFFLINE_NCL):
         self.pkg("bad", files, ncl=ncl)
-        _, errors = g.check(self.root)
+        _, errors = self.check()
         self.assertTrue(any(needle in e for e in errors), errors)
 
     def test_export_is_rejected(self):
@@ -82,8 +105,8 @@ class Guard(unittest.TestCase):
         self.assert_rejected({"build.sh": f"LD_PRELOAD={LIB}\nmake\n"}, "not used as")
 
     def test_trailing_comment_is_a_bare_assignment(self):
-        # Norrie on #884: this passed with "1 preload(s) checked, 0 violation(s)"
-        # and preloaded `make` and every later command.
+        # A comment after the path leaves a bare assignment, which the
+        # export carries into `make` and every later command.
         self.assert_rejected(
             {"build.sh": f"LD_PRELOAD={LIB}  # pin entropy for the build\nexport LD_PRELOAD\nmake\n"},
             "not used as",
@@ -98,8 +121,7 @@ class Guard(unittest.TestCase):
     def test_an_operator_after_the_path_is_rejected(self):
         self.assert_rejected({"build.sh": f"LD_PRELOAD={LIB}; make\n"}, "not used as")
 
-    # Each of these passed 6b09baf0 with "1 preload(s) checked, 0 violation(s)",
-    # and a later child process saw LD_PRELOAD (checked by running the script).
+    # Each of these leaves LD_PRELOAD set for a later child process.
 
     def test_an_assignment_is_not_a_command(self):
         self.assert_rejected(
@@ -122,8 +144,6 @@ class Guard(unittest.TestCase):
         )
 
     def test_a_second_mention_on_the_prefix_line_is_rejected(self):
-        # Reported as an export since the 2026-11-03 widening of EXPORTED
-        # (it was "not used as" when only line-start exports matched).
         self.assert_rejected({"build.sh": f"LD_PRELOAD={LIB} make; export LD_PRELOAD\n"}, "exported")
 
     def test_a_special_builtin_is_not_a_command(self):
@@ -140,11 +160,10 @@ class Guard(unittest.TestCase):
     def test_assignments_then_a_command_pass(self):
         # Negative control for the assignment rule: still one scoped command.
         self.pkg("e", {"build.sh": f"LD_PRELOAD={LIB} CFLAGS=\"-O2 -g\" FOO=1 make -j4\nunset LD_PRELOAD\n"})
-        self.assertEqual(g.check(self.root), (1, []))
+        self.assertEqual(self.check(), (1, []))
 
-    # Norrie's re-review of e064ffc (2026-11-03): each passed with
-    # "1 preload(s) checked, 0 violation(s)" and left LD_PRELOAD set for
-    # later commands in bash and dash.
+    # Each names the path somewhere other than a command start, and leaves
+    # LD_PRELOAD set for later commands in bash and dash.
     NOT_AT_COMMAND_START = (
         f"cd build && export LD_PRELOAD={LIB} make",
         f"if true; then export LD_PRELOAD={LIB} PATH; fi",
@@ -161,7 +180,7 @@ class Guard(unittest.TestCase):
                 self.tearDown()
                 self.setUp()
                 self.pkg("bad", {"build.sh": f"#!/bin/sh\n{line}\nmake\n"})
-                uses, errors = g.check(self.root)
+                uses, errors = self.check()
                 self.assertEqual(uses, 0, errors)
                 self.assertTrue(any("exported" in e for e in errors), errors)
 
@@ -183,7 +202,7 @@ class Guard(unittest.TestCase):
                 self.tearDown()
                 self.setUp()
                 self.pkg("ok", {"build.sh": f"#!/bin/sh\n{line}\n"})
-                self.assertEqual(g.check(self.root), (1, []))
+                self.assertEqual(self.check(), (1, []))
 
     def test_assignments_before_offline_cargo_pass(self):
         self.pkg(
@@ -191,10 +210,7 @@ class Guard(unittest.TestCase):
             {"build.sh": "cargo fetch --locked\n" + f"LD_PRELOAD={LIB} RUSTFLAGS=-Cx cargo " + "build --frozen\n"},
             ncl=NETWORKED_NCL,
         )
-        self.assertEqual(g.check(self.root), (1, []))
-
-    # CodeRabbit on f03325ea (2026-11-03): both passed with "1 preload(s)
-    # checked, 0 violation(s)".
+        self.assertEqual(self.check(), (1, []))
 
     def test_an_unset_followed_by_a_reexport_is_rejected(self):
         self.assert_rejected(
@@ -209,12 +225,12 @@ class Guard(unittest.TestCase):
 
     def test_an_offline_flag_in_a_comment_does_not_count(self):
         self.assert_rejected(
-            {"build.sh": f"LD_PRELOAD={LIB} cargo " + "build # --frozen\n"}, "needs.internet", ncl=NETWORKED_NCL
+            {"build.sh": f"LD_PRELOAD={LIB} cargo " + "build # --frozen\n"}, "must run offline", ncl=NETWORKED_NCL
         )
 
     def test_an_offline_flag_on_another_command_does_not_count(self):
         self.assert_rejected(
-            {"build.sh": f"LD_PRELOAD={LIB} cargo " + "build; true --frozen\n"}, "needs.internet", ncl=NETWORKED_NCL
+            {"build.sh": f"LD_PRELOAD={LIB} cargo " + "build; true --frozen\n"}, "must run offline", ncl=NETWORKED_NCL
         )
 
     def test_a_standalone_unset_and_a_commented_offline_cargo_pass(self):
@@ -228,7 +244,7 @@ class Guard(unittest.TestCase):
             },
             ncl=NETWORKED_NCL,
         )
-        self.assertEqual(g.check(self.root), (1, []))
+        self.assertEqual(self.check(), (1, []))
 
     def test_ncl_mention_is_rejected(self):
         self.assert_rejected({"extra.ncl": f'env = {{ LD_PRELOAD = "{LIB}" }}\n'}, "in a .ncl file")
@@ -249,18 +265,180 @@ class Guard(unittest.TestCase):
         d = self.root / "stacks" / "dev"
         d.mkdir(parents=True)
         (d / "stack.ncl").write_text(f'env = {{ LD_PRELOAD = "{LIB}" }}\n')
-        _, errors = g.check(self.root)
+        _, errors = self.check()
         self.assertTrue(any("in a stack" in e for e in errors), errors)
+
+    def write_dump(self):
+        path = self.root / "dump.json"
+        path.write_text(json.dumps(list(self.arches[0].values())))
+        return str(path)
 
     def test_main_fails_on_a_violation(self):
         self.pkg("a", {"build.sh": f"LD_PRELOAD={LIB} make\n"})
         self.pkg("z", {"build.sh": f"export LD_PRELOAD={LIB}\n"})
-        argv = sys.argv
-        try:
-            sys.argv = ["detbuild_preload_guard.py", str(self.root)]
-            self.assertEqual(g.main(), 1)
-        finally:
-            sys.argv = argv
+        self.assertEqual(g.main(["--dump", self.write_dump(), str(self.root)]), 1)
+
+    def test_main_passes_a_clean_tree(self):
+        # Negative control for the main() failures.
+        self.pkg("a", {"build.sh": f"LD_PRELOAD={LIB} make\n"})
+        self.assertEqual(g.main(["--dump", self.write_dump(), str(self.root)]), 0)
+
+    def test_main_requires_a_catalog_dump(self):
+        self.pkg("a", {"build.sh": f"LD_PRELOAD={LIB} make\n"})
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+            g.main([str(self.root)])
+
+    def test_main_rejects_a_dump_of_another_tree(self):
+        self.pkg("a", {"build.sh": f"LD_PRELOAD={LIB} make\n"})
+        del self.arches[0]["detbuild"]
+        with contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(g.main(["--dump", self.write_dump(), str(self.root)]), 1)
+
+    # ── shell operators glued to a word ─────────────────────────────
+    # Whitespace splitting read `:;` as one word, which is not `:`, so each
+    # of these counted as a good preload. Each is a bare assignment followed
+    # by more commands, and under sh or bash --posix the assignment before a
+    # special builtin persists into all of them.
+
+    GLUED = (
+        f"LD_PRELOAD={LIB} :; make",
+        f"LD_PRELOAD={LIB} set -e; make",
+        f"LD_PRELOAD={LIB} eval; make",
+        f"LD_PRELOAD={LIB} :&& make",
+        f"LD_PRELOAD={LIB} :|| make",
+        f"LD_PRELOAD={LIB} :& make",
+        f"LD_PRELOAD={LIB} :|cat",
+        f"LD_PRELOAD={LIB} FOO=1; make",
+        f"LD_PRELOAD={LIB} FOO=1&& make",
+        f"LD_PRELOAD={LIB} CFLAGS=\"-O2 -g\"; make",
+        f"LD_PRELOAD={LIB} 2>log; make",
+        f"LD_PRELOAD={LIB} >log; make",
+    )
+
+    def test_an_operator_glued_to_a_word_ends_the_command(self):
+        for line in self.GLUED:
+            with self.subTest(line=line):
+                self.tearDown()
+                self.setUp()
+                self.pkg("bad", {"build.sh": f"#!/bin/sh\n{line}\n"})
+                uses, errors = self.check()
+                self.assertEqual(uses, 0, errors)
+                self.assertTrue(any("not used as" in e for e in errors), errors)
+
+    def test_a_glued_operator_after_a_real_command_passes(self):
+        # Negative control: the preload is on `make` and ends at the operator.
+        for line in (
+            f"LD_PRELOAD={LIB} make; echo done",
+            f"LD_PRELOAD={LIB} make&& echo done",
+            f"LD_PRELOAD={LIB} make>build.log",
+            f"LD_PRELOAD={LIB} 2>&1 make|tee build.log",
+            f"LD_PRELOAD={LIB} FOO=1 make -j$(nproc)",
+        ):
+            with self.subTest(line=line):
+                self.tearDown()
+                self.setUp()
+                self.pkg("ok", {"build.sh": f"#!/bin/sh\n{line}\n"})
+                self.assertEqual(self.check(), (1, []))
+
+    def test_an_offline_flag_after_a_glued_operator_does_not_count(self):
+        self.assert_rejected(
+            {"build.sh": f"LD_PRELOAD={LIB} cargo " + "build;true --frozen\n"}, "must run offline", ncl=NETWORKED_NCL
+        )
+
+    def test_a_command_named_by_expansion_is_rejected(self):
+        self.assert_rejected({"build.sh": f"LD_PRELOAD={LIB} $BUILD\n"}, "not used as")
+
+    def test_unbalanced_quotes_are_rejected(self):
+        self.assert_rejected({"build.sh": f"LD_PRELOAD={LIB} make \"oops\n"}, "not used as")
+
+    # ── the network comes from the build closure ────────────────────
+    # The builder grants the network when the package or any package in its
+    # sandbox closure declares needs.internet: its build_deps and
+    # runtime_deps, plus their runtime_deps transitively.
+
+    def test_a_build_dep_that_declares_internet_networks_the_build(self):
+        # nushell's shape: no needs block of its own, `rust` in build_deps.
+        self.dep("rust", runtime=["llvm"], internet=True)
+        self.dep("llvm")
+        self.pkg("nu", {"build.sh": f"LD_PRELOAD={LIB} make\n"}, build=("detbuild", "rust"))
+        _, errors = self.check()
+        self.assertTrue(any("through its build closure" in e for e in errors), errors)
+
+    def test_offline_cargo_under_a_networked_build_dep_passes(self):
+        # Negative control for the closure rule.
+        self.dep("rust", internet=True)
+        self.pkg(
+            "nu",
+            {"build.sh": "cargo fetch --locked\n" + f"LD_PRELOAD={LIB} cargo " + "build --frozen --release\n"},
+            build=("detbuild", "rust"),
+        )
+        self.assertEqual(self.check(), (1, []))
+
+    def test_a_runtime_dep_of_a_dep_networks_the_build(self):
+        self.dep("git", runtime=["curl"])
+        self.dep("curl", internet=True)
+        self.pkg("p", {"build.sh": f"LD_PRELOAD={LIB} make\n"}, build=("detbuild", "git"))
+        _, errors = self.check()
+        self.assertTrue(any("through its build closure" in e for e in errors), errors)
+
+    def test_a_own_runtime_dep_networks_the_build(self):
+        self.dep("curl", internet=True)
+        self.pkg("p", {"build.sh": f"LD_PRELOAD={LIB} make\n"}, runtime=("glibc", "curl"))
+        _, errors = self.check()
+        self.assertTrue(any("through its build closure" in e for e in errors), errors)
+
+    def test_a_build_dep_of_a_dep_does_not_network_the_build(self):
+        # Negative control: a dependency's own build_deps are not mounted, so
+        # their needs do not reach this build (Transitives recurses with
+        # include_build_deps = false).
+        self.dep("curl", internet=True)
+        self.dep("libfoo", build=["curl"])
+        self.pkg("p", {"build.sh": f"LD_PRELOAD={LIB} make\n"}, build=("detbuild", "libfoo"))
+        self.assertEqual(self.check(), (1, []))
+
+    def test_networked_on_one_arch_is_networked(self):
+        self.arches.append({k: v for k, v in self.arches[0].items()})
+        self.dep("curl", arch=0)
+        self.dep("curl", internet=True, arch=1)
+        self.pkg("p", {"build.sh": f"LD_PRELOAD={LIB} make\n"}, build=("detbuild", "curl"))
+        _, errors = self.check()
+        self.assertTrue(any("through its build closure" in e for e in errors), errors)
+
+    def test_a_package_on_one_arch_is_judged_on_that_arch(self):
+        # Negative control for the two rules below: absent from an arch is
+        # not unresolved there.
+        self.arches.append({k: v for k, v in self.arches[0].items()})
+        self.pkg("p", {"build.sh": f"LD_PRELOAD={LIB} make\n"})
+        del self.arches[1]["p"]
+        self.assertEqual(self.check(), (1, []))
+
+    def test_an_unresolved_closure_counts_as_networked(self):
+        self.pkg("p", {"build.sh": f"LD_PRELOAD={LIB} make\n"}, build=("detbuild", "missing"))
+        _, errors = self.check()
+        self.assertTrue(any("does not resolve" in e for e in errors), errors)
+
+    def test_a_package_missing_from_the_catalog_counts_as_networked(self):
+        self.pkg("p", {"build.sh": f"LD_PRELOAD={LIB} make\n"})
+        del self.arches[0]["p"]
+        _, errors = self.check()
+        self.assertTrue(any("does not resolve" in e for e in errors), errors)
+
+    def test_a_preloaded_cargo_must_be_offline_even_without_the_network(self):
+        self.assert_rejected({"build.sh": f"LD_PRELOAD={LIB} cargo " + "build --locked --release\n"}, "must run offline")
+
+    # ── the library must be in the build sandbox ────────────────────
+
+    def test_a_preload_without_detbuild_in_build_deps_is_rejected(self):
+        self.pkg("p", {"build.sh": f"LD_PRELOAD={LIB} make\n"}, build=())
+        _, errors = self.check()
+        self.assertTrue(any("does not list `detbuild`" in e for e in errors), errors)
+
+    def test_detbuild_missing_on_one_arch_is_rejected(self):
+        self.pkg("p", {"build.sh": f"LD_PRELOAD={LIB} make\n"})
+        self.arches.append({k: v for k, v in self.arches[0].items()})
+        self.dep("p", runtime=["glibc"], arch=1)
+        _, errors = self.check()
+        self.assertTrue(any("does not list `detbuild`" in e for e in errors), errors)
 
 
 if __name__ == "__main__":
