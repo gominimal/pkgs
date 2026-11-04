@@ -14,7 +14,7 @@ let acl = import "../acl/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let mpfr = import "../mpfr/build.ncl" in
 let xz = import "../xz/build.ncl" in
-let version = "0.22.01" in
+let version = "0.22.02" in
 {
   name = "stress-ng",
   build_deps = [
@@ -34,7 +34,7 @@ let version = "0.22.01" in
     xz,
     {
       url = "gs://minimal-staging-archives/ColinIanKing/stress-ng/V%{version}.tar.gz",
-      sha256 = "67e75894da3f634b85992069b0a888893221a77a3db5e3293cdddd0b1c0d4705",
+      sha256 = "860004ce7484311b3296fc52796fbbc34dfb7f644a769bbd4e03935b7a1b0ccb",
       extract = true,
       strip_prefix = "stress-ng-%{version}",
     } | Source,
