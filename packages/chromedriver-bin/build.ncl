@@ -8,7 +8,6 @@ let nss = import "../nss/build.ncl" in
 let nspr = import "../nspr/build.ncl" in
 let glib = import "../glib/build.ncl" in
 let libxcb = import "../libxcb/build.ncl" in
-let dbus = import "../dbus/build.ncl" in
 let chromium-headless-shell-bin = import "../chromium-headless-shell-bin/build.ncl" in
 
 # ChromeDriver from Chrome for Testing, at the SAME version as
@@ -26,7 +25,7 @@ let chromium-headless-shell-bin = import "../chromium-headless-shell-bin/build.n
 #
 # License: the CfT chromedriver zip carries LICENSE.chromedriver, the
 # Chromium BSD-3-Clause grant, with no proprietary terms (unlike the full
-# CfT `chrome` bundle, which ships Widevine). Re-checked at 156.0.8078.80 (both arches: LICENSE.chromedriver only, no Widevine, no proprietary terms).
+# CfT `chrome` bundle, which ships Widevine). Re-checked at 157.0.8103.38 (both arches: LICENSE.chromedriver only, no Widevine, no proprietary terms).
 #
 # The version is NOT pinned here: it is chromium-headless-shell-bin's
 # `upstream_version`, so the pair cannot drift. Bumping the browser changes
@@ -44,19 +43,20 @@ let browser_version = chromium-headless-shell-bin.attrs.upstream_version in
       { arch = 'Amd64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chromedriver-linux64.zip",
-          sha256 = "cae58bbd262ba5c8a0ce2540f44254b6e789efc4fe9b18bbb4a00487a9f5859e",
+          sha256 = "329525fa0bf02be19794de1e9475772ef64695e0456f142888bd70df3147dc1e",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux-arm64/chromedriver-linux-arm64.zip",
-          sha256 = "3dc81fed737ae61328f5cf7dfc527c8a5e9baf0819b3ac715250c323c4ca01f6",
+          sha256 = "8166fad77893cb095a45678f29ebec7ea14a8ac89364d28d52176a6fd4b30262",
         } | Source,
     } target,
     base,
     unzip,
   ],
-  # DT_NEEDED of the 156.0.8078.80 binaries (re-read from both zips): libc/libdl/libpthread/libm,
-  # libgcc_s, glib, nspr, nss, libxcb, and libdbus-1 on amd64 only.
+  # DT_NEEDED of the 157.0.8103.38 binaries (re-read from both zips): libc/libdl/libpthread/libm,
+  # libgcc_s, glib, nspr, nss and libxcb, the same on both arches. Through 156 the amd64
+  # binary also needed libdbus-1; 157 dropped it, so dbus is no longer a runtime dep.
   runtime_deps =
     [
       glibc,
@@ -65,11 +65,7 @@ let browser_version = chromium-headless-shell-bin.attrs.upstream_version in
       nspr,
       glib,
       libxcb,
-    ]
-    @ match {
-      { arch = 'Amd64, .. } => [dbus],
-      { arch = 'Arm64, .. } => [],
-    } target,
+    ],
   cmd = "./build.sh",
   outputs = {
     chromedriver = { glob = "usr/bin/chromedriver" } | OutputBin,
