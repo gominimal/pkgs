@@ -1,6 +1,5 @@
 let { Attrs, BuildSpec, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
-let glibc-bedrock-2-42-sysroot = import "../glibc-bedrock-2.42-sysroot/build.ncl" in # the sysroot only (see that package)
 let glibc = import "../glibc/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
@@ -15,10 +14,10 @@ let libxext = import "../libxext/build.ncl" in
 let libxi = import "../libxi/build.ncl" in
 let libxrender = import "../libxrender/build.ncl" in
 let libxtst = import "../libxtst/build.ncl" in
-# openjdk-26: OpenJDK 26.0.2.1 from gen-13 of gominimal/bootstrap: the JVM ladder
+# openjdk-26: the boot JDK for jdk-27, OpenJDK 26.0.2.1 from gen-15 of gominimal/bootstrap: the JVM ladder
 # jikes -> classpath -> jamvm -> ant/ecj -> icedtea-7/8 -> openjdk-9 ... 26, every rung built from
 # source on the hex0-rooted toolchain and reproduced byte for byte on two independent machines
-# before publishing (generations/gen-13/manifest.json). Installs at /usr/lib/openjdk-26; nothing lands on
+# before publishing (generations/gen-15/manifest.json). Installs at /usr/lib/openjdk-26; nothing lands on
 # /usr/bin.
 let is_arm = target.arch == 'Arm64 in
 let version = "26.0.2.1" in
@@ -29,13 +28,13 @@ let version = "26.0.2.1" in
     match {
       { arch = 'Amd64, .. } =>
         {
-          url = "gs://minimal-bootstrap/gen-13/sha256/1d30b582ba33fb56d4e3dbba37b39d7d39ed0aa72121d4a083c10653c2c2f7be/openjdk-26-26.0.2.1-x86_64.tar.zst",
-          sha256 = "1d30b582ba33fb56d4e3dbba37b39d7d39ed0aa72121d4a083c10653c2c2f7be",
+          url = "gs://minimal-bootstrap/gen-15/sha256/78b82b4c4386e118b4126dd5b589ecdeeb9661701f97a756669f1c61ad112a5f/openjdk-26-26.0.2.1-x86_64.tar.zst",
+          sha256 = "78b82b4c4386e118b4126dd5b589ecdeeb9661701f97a756669f1c61ad112a5f",
           extract = true,
         } | Source,
       { arch = 'Arm64, .. } =>
         {
-          url = "gs://minimal-bootstrap/gen-13/sha256/b5c1c8ea6d5b5309e8a07e101ea22ac019c5ce3504f4197a8300264694043925/openjdk-26-26.0.2.1-aarch64.tar.zst",
+          url = "gs://minimal-bootstrap/gen-15/sha256/b5c1c8ea6d5b5309e8a07e101ea22ac019c5ce3504f4197a8300264694043925/openjdk-26-26.0.2.1-aarch64.tar.zst",
           sha256 = "b5c1c8ea6d5b5309e8a07e101ea22ac019c5ce3504f4197a8300264694043925",
           extract = true,
         } | Source,
@@ -44,8 +43,9 @@ let version = "26.0.2.1" in
   # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, lcms2, libpng, giflib and libjpeg
   runtime_deps =
     []
-    # amd64 binaries name the bedrock sysroot's loader and RUNPATH; arm64's use the toolchain glibc
-    @ (if is_arm then [glibc, toolchain] else [glibc-bedrock-2-42-sysroot])
+    # amd64 binaries load through glibc's /usr/lib/ld-linux-x86-64.so.2 with no RUNPATH beyond their own
+    # $ORIGIN entries; arm64's use the toolchain glibc
+    @ (if is_arm then [glibc, toolchain] else [glibc])
     @ [
       zlib,
       freetype,
