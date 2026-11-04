@@ -1,8 +1,8 @@
 #!/bin/sh
 # mathlib-oleans: compile ALL of Mathlib from source, offline, for the lean we
-# ship. Only the compile: licences, notices, LEAN_PATH and MANIFEST are the
-# thin `mathlib` package's (see build.ncl), so editing them does not rebuild
-# this.
+# ship, and install the licences and notices for that code. LEAN_PATH and
+# MANIFEST are the thin `mathlib` package's (see build.ncl), so editing them
+# does not rebuild this.
 #
 # Offline-lake mechanism adapted from nixpkgs `pkgs/build-support/lake`
 # (MIT License, Copyright (c) 2003-2026 Eelco Dolstra and the Nixpkgs/NixOS
@@ -61,7 +61,7 @@ mv "$ROOT/leanprover-lean4-cli-c24fe60" ".lake/packages/Cli"
 #    on the lake process's thread pool, so LEAN_NUM_THREADS bounds how many
 #    `lean` children run at once (and each child inherits it as its own
 #    thread cap). It is the `lean_num_threads` build arg, set per arch in
-#    build.ncl (32 amd64, 24 arm64) and sized by memory there. It changes
+#    build.ncl (32 amd64, 16 arm64) and sized by memory there. It changes
 #    the wall time, not the bytes.
 case "${MINIMAL_ARG_LEAN_NUM_THREADS:-}" in
   ''|*[!0-9]*|0*) echo "mathlib-oleans: lean_num_threads must be a positive integer, got '${MINIMAL_ARG_LEAN_NUM_THREADS:-}'." >&2; exit 1 ;;
@@ -115,3 +115,15 @@ printf 'mathlib-oleans %s\n' "$MINIMAL_ARG_VERSION" > "$INFO/VERSION"
 cp lean-toolchain lake-manifest.json "$INFO/"
 ( cd .lake/packages/proofwidgets/widget &&
   LC_ALL=C sha256sum package-lock.json $(LC_ALL=C ls js/*.js) ) > "$INFO/proofwidgets-widget.sha256"
+
+# 8. Licences and third-party notices for the code installed above. The
+#    ProofWidgets oleans embed its widget JS (npm code and two WebAssembly
+#    modules, one EPL-2.0/CPL-1.0), so this package carries the same texts and
+#    source offer as `mathlib`, installed by the same script from the same
+#    files (packages/mathlib/notices.ncl). It checks each notice against the
+#    bundles compiled in above and fails closed.
+P=.lake/packages
+sh "$ROOT/install-licences.sh" "$ROOT" "$OUTPUT_DIR/usr/share/licenses/mathlib-oleans" \
+  mathlib=. plausible=$P/plausible LeanSearchClient=$P/LeanSearchClient \
+  importGraph=$P/importGraph proofwidgets=$P/proofwidgets aesop=$P/aesop \
+  Qq=$P/Qq batteries=$P/batteries Cli=$P/Cli

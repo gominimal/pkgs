@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let lean = import "../lean/build.ncl" in
 let { target, .. } = import "config.ncl" in
@@ -17,8 +17,13 @@ let version = "4.35.0" in
 # with build_cost_multiple). Peak RSS of one `lean` measured at 2.8 GiB
 # (AlgebraicGeometry/ProjectiveSpectrum/Functor), median ~0.9 GiB. Even if
 # every job peaked at once: 32 x 2.8 = ~90 GiB of the amd64 builder's
-# 360 GiB (c4-standard-96), 24 x 2.8 = ~67 GiB of the arm64 builder's
+# 360 GiB (c4-standard-96), 16 x 2.8 = ~45 GiB of the arm64 builder's
 # 192 GiB (c4a-standard-48), both under half of the shared machine.
+#
+# arm64 is 16, not more, because build_cost_multiple is the same number and
+# the arm64 res-server's per-request pool is 23 slots: 24 (capped to 23) would
+# reserve the whole pool and hold every other arm64 build until this one
+# finishes.
 #
 # Wall time has a floor of its own: the longest import chain through Mathlib
 # is ~5.4 min of compile time (local per-module timings), so past ~32 jobs
@@ -26,23 +31,32 @@ let version = "4.35.0" in
 let threads =
   match {
     { arch = 'Amd64, .. } => 32,
-    { arch = 'Arm64, .. } => 24,
+    { arch = 'Arm64, .. } => 16,
   } target
 in
 {
   name = "mathlib-oleans",
   # The COMPILE half of `mathlib`: all of Mathlib v4.35.0 (8,625 modules,
   # Mathlib.lean + Mathlib/**) and the Lake packages it requires, compiled
-  # from source, offline, for the lean we ship. Nothing else. Licences,
-  # third-party notices, LEAN_PATH and MANIFEST live in the thin `mathlib`
-  # package, which depends on this one: a notice or recipe edit there rebuilds
-  # `mathlib` in seconds instead of this ~35 min compile (pkgs#1244). Use
-  # `mathlib`, not this package: only `mathlib` carries the notices the
-  # redistributed oleans need (ProofWidgets' oleans embed its widget JS).
+  # from source, offline, for the lean we ship, plus the licences and
+  # third-party notices for that code. LEAN_PATH and MANIFEST live in the
+  # thin `mathlib` package, which depends on this one: a recipe edit there
+  # rebuilds `mathlib` in seconds instead of this ~35 min compile
+  # (pkgs#1244). Install `mathlib` for LEAN_PATH; this package alone is
+  # complete for redistribution.
   #
-  # The inputs are exactly the nine sha256-pinned Sources in sources.ncl,
-  # `lean`, and `base`; the build arg is the thread count. `mathlib` imports
-  # the same sources.ncl, so the two cannot drift.
+  # Licences: ProofWidgets' oleans embed its widget JS (npm code, a Graphviz
+  # WebAssembly under EPL-2.0/CPL-1.0, a Rust WebAssembly), so this package
+  # ships the same licence texts, notices and EPL/CPL source offer as
+  # `mathlib`, from the same files: packages/mathlib/notices.ncl lists them
+  # and its install-licences.sh installs them in both. A notice edit
+  # therefore rebuilds this package too; notices change only on a
+  # ProofWidgets bump or a correction, and a bump recompiles this anyway.
+  #
+  # The inputs are the nine sha256-pinned Sources in sources.ncl, the
+  # notices from packages/mathlib/notices.ncl, `lean`, and `base`; the build
+  # arg is the thread count. `mathlib` imports the same two files, so the
+  # two packages cannot drift.
   #
   # FROM SOURCE, OFFLINE. No `lake exe cache get`: Mathlib's Azure cache is an
   # unverified prebuilt (its files are keyed by a hash of their INPUTS, nothing
@@ -71,6 +85,8 @@ in
     [
       { file = "build.sh" } | Local,
     ]
+    # The licence installer and third-party notices (shared with `mathlib`).
+    @ (import "../mathlib/notices.ncl")
     # The nine pinned sources (sources.ncl; `mathlib` imports the same file).
     @ (import "sources.ncl")
     @ [
@@ -107,6 +123,10 @@ in
     # lean-toolchain, the sha256 of every ProofWidgets widget bundle the
     # oleans embed). `mathlib` checks its own sources against these.
     build_info = { glob = "usr/share/mathlib-oleans/*" } | OutputData,
+    # Every upstream LICENSE, the ProofWidgets JS/WebAssembly third-party
+    # notices and the EPL/CPL source offer (the same files `mathlib` ships).
+    # Required for redistribution.
+    licenses = { glob = "usr/share/licenses/mathlib-oleans/**" } | OutputData,
   },
 
   runtime_deps = [
@@ -120,13 +140,12 @@ in
       # Apache-2.0 (Mathlib, batteries, aesop, Qq, ProofWidgets4,
       # import-graph, LeanSearchClient, plausible) and MIT (lean4-cli), and
       # ProofWidgets' oleans embed its widget JS, whose npm and WebAssembly
-      # contents add the rest. See `mathlib`'s build.ncl for the breakdown;
-      # its `licenses` output carries the texts and the EPL/CPL source offer.
-      license_spdx = "Apache-2.0 AND MIT AND ISC AND BSD-3-Clause AND CC-BY-4.0 AND CC0-1.0 AND Unlicense AND EPL-2.0 AND CPL-1.0",
+      # contents add the rest. See `mathlib`'s build.ncl for the breakdown.
+      # The `licenses` output carries the texts and the EPL/CPL source offer.
+      license_spdx = "Apache-2.0 AND MIT AND ISC AND BSD-3-Clause AND CC-BY-4.0 AND CC0-1.0 AND Unlicense AND EPL-2.0 AND CPL-1.0 AND Apache-2.0 WITH LLVM-exception",
       # The cache serves this artifact so `mathlib` users skip the compile.
-      # Its notices travel in `mathlib`, which is what users install (this
-      # package is its runtime dep); installed on its own, this package
-      # carries no licence texts.
+      # It carries its own licences and notices (`licenses` above), so it is
+      # complete when installed without `mathlib`.
       redistributable = true,
       source_provenance = {
         category = 'GithubRepo,

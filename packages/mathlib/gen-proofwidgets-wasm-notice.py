@@ -488,6 +488,11 @@ def main() -> int:
     roots = name_roots(names)
     # Identifiers that are not crates: generic parameters / Self in paths.
     roots -= {"Self", "T", "A", "D", "R", "S", "F", "K", "V", "I", "E"}
+    # Zero roots means ROOT matched nothing (e.g. a rebuild with mangled
+    # `_ZN...` names), not that every crate is covered.
+    if not roots:
+        raise SystemExit("the wasm's name section yields no demangled `crate::` paths, so the witness "
+                         "cannot check coverage; extend name_roots to read this name section")
     uncovered = sorted(r for r in roots if r not in covered)
     if uncovered:
         raise SystemExit(f"the wasm's name section has code under {uncovered}, which no notice entry covers; "
