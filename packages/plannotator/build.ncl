@@ -21,7 +21,9 @@ let toolchain = import "../toolchain/build.ncl" in
 # The build steps mirror upstream's own release.yml exactly (install with the
 # frozen lockfile, build the review + hook UI, then `bun build --compile` the
 # hook server entrypoint). Deviating from that is how you ship something that
-# is not the tool people expect.
+# is not the tool people expect. The deliberate deviations (compile target,
+# --ignore-scripts, the fallback guides.show viewer pin instead of a rebuilt
+# one, no release telemetry mark) are each explained in build.sh.
 #
 # `needs` is set because `bun install` fetches from the npm registry.
 let version = "0.28.48" in
