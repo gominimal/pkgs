@@ -1,18 +1,34 @@
 let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let lean = import "../lean/build.ncl" in
+let { target, .. } = import "config.ncl" in
 
 # Mathlib's release tag for the lean we ship (leanprover-community/mathlib4
 # tag v4.35.0 = 56a005855ea17e0b0958f73ec801ae140b0a1679). `mathlib` carries
 # the same version and its build.sh refuses a mismatch.
 let version = "4.35.0" in
 # How many `lean` processes lake runs at once (each also gets this as its own
-# thread cap). A memory decision, not a CPU one; see build.sh step 4. Also the
-# build_cost_multiple below, so the orchestrator reserves what we use. It is
-# in the spec hash but not in the bytes: 4, 6 and 8 gave identical output
-# trees (pkgs#1244). Peak RSS of one `lean` measured at 2.8 GiB
-# (AlgebraicGeometry/ProjectiveSpectrum/Functor), median ~0.9 GiB.
-let threads = 8 in
+# thread cap), per builder arch. It is also build_cost_multiple below, so
+# the orchestrator reserves what we use. It is in the spec hash but not in
+# the bytes: 4, 6 and 8 gave identical output trees (pkgs#1244).
+#
+# Sized by memory, the only resource it could exhaust: the res-server
+# sandbox sets no memory.max and no CPU quota (only a cpu.weight that grows
+# with build_cost_multiple). Peak RSS of one `lean` measured at 2.8 GiB
+# (AlgebraicGeometry/ProjectiveSpectrum/Functor), median ~0.9 GiB. Even if
+# every job peaked at once: 32 x 2.8 = ~90 GiB of the amd64 builder's
+# 360 GiB (c4-standard-96), 24 x 2.8 = ~67 GiB of the arm64 builder's
+# 192 GiB (c4a-standard-48), both under half of the shared machine.
+#
+# Wall time has a floor of its own: the longest import chain through Mathlib
+# is ~5.4 min of compile time (local per-module timings), so past ~32 jobs
+# extra threads buy little.
+let threads =
+  match {
+    { arch = 'Amd64, .. } => 32,
+    { arch = 'Arm64, .. } => 24,
+  } target
+in
 {
   name = "mathlib-oleans",
   # The COMPILE half of `mathlib`: all of Mathlib v4.35.0 (8,625 modules,
@@ -118,10 +134,11 @@ let threads = 8 in
         repo = "mathlib4",
       },
       # A concurrency weight, not a duration: the orchestrator acquires this
-      # many build slots, and build.sh runs lean_num_threads lean jobs.
-      # Measured on build-bot (pkgs#1244 at 5f1857d, 8 threads): 28.5 min on
-      # c4-standard-96 (amd64), 33.0 min on c4a-standard-48 (arm64). In a
-      # 6-vCPU arm64 min box: 47.6 min at 4 threads, 44.8 min at 6.
+      # many build slots (capped at the res-server's per-request pool: 23 on
+      # c4a-standard-48, 39 on c4-standard-96), and build.sh runs
+      # lean_num_threads lean jobs. Measured at 8 threads on build-bot:
+      # 31.3 min amd64, 33.8 min arm64; in a 6-vCPU arm64 min box, 47.6 min
+      # at 4 threads and 44.8 at 6.
       build_cost_multiple = threads,
     } | Attrs,
 

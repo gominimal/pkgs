@@ -60,11 +60,9 @@ mv "$ROOT/leanprover-lean4-cli-c24fe60" ".lake/packages/Cli"
 #    Parallelism: Lake 4.35 has no jobs flag. Its build jobs are Lean tasks
 #    on the lake process's thread pool, so LEAN_NUM_THREADS bounds how many
 #    `lean` children run at once (and each child inherits it as its own
-#    thread cap). It is the `lean_num_threads` build arg (build.ncl), a
-#    memory decision, not a CPU one: the builders are 48 (arm64) and 96
-#    (amd64) vCPU, but the box shares them with other builds, and Mathlib's
-#    upstream CI reaches only ~15x parallelism on a full build anyway (10.6 h
-#    of per-module time in 43 min wall, v4.35.0 bump PR).
+#    thread cap). It is the `lean_num_threads` build arg, set per arch in
+#    build.ncl (32 amd64, 24 arm64) and sized by memory there. It changes
+#    the wall time, not the bytes.
 case "${MINIMAL_ARG_LEAN_NUM_THREADS:-}" in
   ''|*[!0-9]*|0*) echo "mathlib-oleans: lean_num_threads must be a positive integer, got '${MINIMAL_ARG_LEAN_NUM_THREADS:-}'." >&2; exit 1 ;;
 esac
