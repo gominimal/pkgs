@@ -57,15 +57,14 @@ let browser_version = chromium-headless-shell-bin.attrs.upstream_version in
   # DT_NEEDED of the 157.0.8103.38 binaries (re-read from both zips): libc/libdl/libpthread/libm,
   # libgcc_s, glib, nspr, nss and libxcb, the same on both arches. Through 156 the amd64
   # binary also needed libdbus-1; 157 dropped it, so dbus is no longer a runtime dep.
-  runtime_deps =
-    [
-      glibc,
-      subsetOf gcc ["libgcc"],
-      nss,
-      nspr,
-      glib,
-      libxcb,
-    ],
+  runtime_deps = [
+    glibc,
+    subsetOf gcc ["libgcc"],
+    nss,
+    nspr,
+    glib,
+    libxcb,
+  ],
   cmd = "./build.sh",
   outputs = {
     chromedriver = { glob = "usr/bin/chromedriver" } | OutputBin,
