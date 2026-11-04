@@ -63,15 +63,49 @@ CFG
 sed -i "s|^rustflags = \[|rustflags = [ \"--remap-path-prefix=$SRCROOT=/builddir\",|" .cargo/config.toml
 grep -q "remap-path-prefix=$SRCROOT" .cargo/config.toml
 
-# 3. Verus's build scripts read version info from git unconditionally
+# 3. cargo-verus's toolchain manifest for THIS release. `cargo verus new` and
+#    `cargo verus verify` look `verus --version` up in a table that
+#    cargo-verus/build.rs compiles in from cargo-verus/toolchain-manifests/*.toml.
+#    A release tag only carries the manifests of EARLIER releases: upstream's
+#    release workflow (.github/workflows/build.yml) runs `create-manifest` just
+#    before building the release binaries, and commits the file to main only
+#    afterwards. Without this step a source build fails `cargo verus new` with
+#    "no known toolchain manifest for Verus version ...".
+#    create-manifest reads the version from git, which here is the throwaway
+#    repo below, so write the same file from the same sources it reads:
+#    vstd/Cargo.toml's version (the crates.io vstd published for this release)
+#    and the solver pins in cargo-verus-toolchains/src/external_deps.rs.
+manifest="cargo-verus/toolchain-manifests/$version.toml"
+vstd_version=$(sed -n 's/^version = "\(.*\)"$/\1/p' vstd/Cargo.toml | head -n 1)
+ext_dep() {
+  sed -n "s/^pub const $1: &str = \"\(.*\)\";\$/\1/p" cargo-verus-toolchains/src/external_deps.rs
+}
+z3_pin=$(ext_dep Z3_VERSION)
+cvc5_pin=$(ext_dep CVC5_VERSION)
+singular_pin=$(ext_dep SINGULAR_VERSION)
+for v in "$vstd_version" "$z3_pin" "$cvc5_pin" "$singular_pin"; do
+  [ -n "$v" ] || { echo "toolchain manifest: a field did not parse" >&2; exit 1; }
+done
+[ "$z3_pin" = "$MINIMAL_ARG_Z3" ] || { echo "verus pins z3 $z3_pin, build.ncl says $MINIMAL_ARG_Z3" >&2; exit 1; }
+if [ -e "$manifest" ]; then
+  # A later upstream tag may already carry it; then it must agree.
+  grep -qx "vstd = \"$vstd_version\"" "$manifest"
+else
+  printf 'verus = "%s"\nvstd = "%s"\nz3 = "%s"\ncvc5 = "%s"\nsingular = "%s"\n' \
+    "$version" "$vstd_version" "$z3_pin" "$cvc5_pin" "$singular_pin" > "$manifest"
+fi
+
+# 4. Verus's build scripts read version info from git unconditionally
 #    (cargo-verus-toolchains/src/versions.rs). Give them a throwaway repo with
 #    fixed dates; the real version, sha and toolchain are pinned through
 #    Verus's own VARGO_BUILD_* / VARGO_TOOLCHAIN overrides.
+# The release date, from the version (0.YYYY.MM.DD.<sha>).
+release_date=$(echo "$version" | cut -d. -f2-4 | tr . -)
 git init -q .
 git add -A
 GIT_AUTHOR_NAME=minimal GIT_AUTHOR_EMAIL=build@minimal.dev \
 GIT_COMMITTER_NAME=minimal GIT_COMMITTER_EMAIL=build@minimal.dev \
-GIT_AUTHOR_DATE="2026-10-04T00:00:00Z" GIT_COMMITTER_DATE="2026-10-04T00:00:00Z" \
+GIT_AUTHOR_DATE="${release_date}T00:00:00Z" GIT_COMMITTER_DATE="${release_date}T00:00:00Z" \
   git commit -q -m "verus $version"
 export VARGO_BUILD_VERSION="$version"
 export VARGO_BUILD_SHA="$sha"
@@ -109,7 +143,7 @@ export LD_LIBRARY_PATH="$TC/lib"
 # vstd is VERIFIED during the build, with z3 at source/z3 (.cargo/config.toml).
 ln -s "$(command -v "z3-$MINIMAL_ARG_Z3")" z3
 
-# 4. Upstream's "Build with Cargo" steps (BUILD.md).
+# 5. Upstream's "Build with Cargo" steps (BUILD.md).
 # tools/bump_crate_versions is a maintainers' crate-publishing tool and the only
 # member that pulls in openssl-sys; nothing installed depends on it.
 # Deterministic build-time entropy, the shim zola and nushell already use: interposes
@@ -138,7 +172,7 @@ cp -R target-verus/release/. "$VDIR/"
 rm -r -f "$VDIR/.fingerprint" "$VDIR/incremental" "$VDIR/build"
 find "$VDIR" -maxdepth 2 -name '*.d' -type f -delete
 
-# 5. PATH wrappers.
+# 6. PATH wrappers.
 mkdir -p "$OUTPUT_DIR/usr/bin"
 for b in verus cargo-verus; do
   cat > "$OUTPUT_DIR/usr/bin/$b" <<WRAP
@@ -147,6 +181,9 @@ export VERUS_USE_RUSTUP=0
 export VERUS_Z3_PATH="\${VERUS_Z3_PATH:-/usr/bin/z3-$MINIMAL_ARG_Z3}"
 export LD_LIBRARY_PATH="/usr/lib/verus/toolchain/lib\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
 export PATH="/usr/lib/verus/toolchain/bin:\$PATH"
+# cargo-verus runs \$CARGO when set, and an outer \`cargo verus\` sets it to
+# whichever cargo is first on the user's PATH; use the one matching rust_verify.
+export CARGO=/usr/lib/verus/toolchain/bin/cargo
 export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER="\${CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER:-gcc}"
 export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER="\${CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER:-gcc}"
 exec /usr/lib/verus/$b "\$@"

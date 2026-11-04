@@ -20,7 +20,7 @@ export LEAN_CC=gcc
 export CC=gcc
 
 ROOT="$(pwd)"
-cd AeneasVerif-aeneas-fdebf20/backends/lean
+cd AeneasVerif-aeneas-ab34bd2/backends/lean
 
 # 1. The manifest that pins the deps we vendor (upstream's, verbatim). No port
 #    patch: upstream targets the Lean we ship. Refuse to build if it ever stops

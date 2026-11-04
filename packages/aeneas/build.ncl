@@ -1,7 +1,7 @@
 # AeneasVerif/aeneas — translates Rust (via a charon .llbc) to pure functional
 # models for F*/Coq/Lean/HOL4. Pinned to commit
-# d119a474f852781f8ae88a85424f2f8ba8407b82 (2026-10-08), whose `charon-pin`
-# (7980165, charon 0.1.281) matches our charon and charon-ml exactly. Sourced from github tarball, mirrored to
+# ab34bd28458a08c150b7cbf1873e59af74588138 (2026-10-30), whose `charon-pin`
+# (7b462d9, charon 0.1.304) matches our charon and charon-ml exactly. Sourced from github tarball, mirrored to
 # gs://.
 #
 # build.sh patches out three opam deps that aren't packaged for minimal, none of
@@ -30,16 +30,16 @@ let visitors = import "../visitors/build.ncl" in
 let ppxlib = import "../ppxlib/build.ncl" in
 let menhir = import "../menhir/build.ncl" in
 let zarith = import "../zarith/build.ncl" in
-let version = "20261008" in
+let version = "20261030" in
 {
   name = "aeneas",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/aeneas-%{version}.tar.gz",
-      sha256 = "029208b5750d911c17e133a12cf7e410d4e67659ddcaf568b258f4b1da6497af",
+      sha256 = "cbdf6ca6efc17a994172de6f2c284b3c86807601996da417a345a7791742061b",
       extract = true,
-      strip_prefix = "AeneasVerif-aeneas-d119a47", # github sha-suffixed top-dir
+      strip_prefix = "AeneasVerif-aeneas-ab34bd2", # github sha-suffixed top-dir
     } | Source,
     base,
     ocaml,

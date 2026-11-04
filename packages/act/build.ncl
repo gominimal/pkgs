@@ -5,14 +5,14 @@ let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "0.2.92" in
+let version = "0.2.95" in
 {
   name = "act",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/nektos/act/v%{version}.tar.gz",
-      sha256 = "8b3ffbbb803007dfca19d5ea8e071876733d1390cfe358fe164ad67c6d7e549b",
+      sha256 = "e30d650c4fcd13c5e1c2e634461858e22587ef81786c6c1c8fae7bd8a673767f",
       extract = true,
       strip_prefix = "act-%{version}",
     } | Source,
