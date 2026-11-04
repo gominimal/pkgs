@@ -122,7 +122,10 @@ in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "MIT",
+      # Verus is MIT. The bundled toolchain is MIT OR Apache-2.0 and ships libLLVM; the
+      # rustc tarball's COPYRIGHT.html gives src/llvm-project as
+      # "Apache-2.0 WITH LLVM-exception AND NCSA".
+      license_spdx = "MIT AND (MIT OR Apache-2.0) AND Apache-2.0 WITH LLVM-exception AND NCSA",
       source_provenance = {
         category = 'GithubRepo,
         owner = "verus-lang",
