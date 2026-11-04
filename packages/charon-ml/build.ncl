@@ -1,5 +1,5 @@
-# AeneasVerif/charon — the OCaml bindings (charon-ml/), pinned to charon 0.1.281
-# (commit 798016509139eb51f0d764645f76d068d34ba5f6, 2026-10-03). Builds the
+# AeneasVerif/charon — the OCaml bindings (charon-ml/), pinned to charon 0.1.304
+# (commit 7b462d9159db2ed3015162352183906a30bfafc6, 2026-10-30). Builds the
 # `charon` findlib lib (LLBC/ULLBC deserialization) + `name_matcher_parser`
 # (ocamllex+menhir grammar). This is the OCaml half only — the `charon` Rust
 # binary that emits .llbc is a separate package (a later Rust PR); aeneas links
@@ -24,16 +24,16 @@ let visitors = import "../visitors/build.ncl" in
 let menhir = import "../menhir/build.ncl" in
 let ppx_deriving = import "../ppx_deriving/build.ncl" in
 let ppxlib = import "../ppxlib/build.ncl" in
-let version = "0.1.281" in
+let version = "0.1.304" in
 {
   name = "charon-ml",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/charon-ml-%{version}.tar.gz",
-      sha256 = "62b7e812977136a0a36c197c43a89c90e43ab53932439cc6a1db2f5f8f42e71a",
+      sha256 = "445c1e303ccafc5ab5bbf14f2cddde48baaf2a281ba4093ee4e0b2a3dc4ab125",
       extract = true,
-      strip_prefix = "AeneasVerif-charon-7980165", # github sha-suffixed top-dir
+      strip_prefix = "AeneasVerif-charon-7b462d9", # github sha-suffixed top-dir
     } | Source,
     base,
     ocaml,

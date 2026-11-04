@@ -3,7 +3,7 @@ let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 
-let version = "14.3.0" in
+let version = "14.4.0" in
 {
   name = "checkstyle",
   # The upstream `-all.jar` (checkstyle plus its dependencies, Main-Class set),
@@ -16,7 +16,7 @@ let version = "14.3.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/checkstyle/checkstyle/releases/download/checkstyle-%{version}/checkstyle-%{version}-all.jar",
-      sha256 = "754e218ab1fcabb1e1c5f8530e9d3aa37636806c22987bb279dd907a6ee749b2",
+      sha256 = "c0a521e54eabd1ece4ff7bd84cf231b012615745ed3aa4fb27ab0ca73097250c",
     } | Source,
     base,
   ],
