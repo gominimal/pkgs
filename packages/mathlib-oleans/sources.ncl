@@ -4,9 +4,9 @@
 # licences and checks the ProofWidgets widget bundles its notices cover), so
 # the two cannot drift.
 #
-# The dependency pins are Mathlib v4.35.0's own lake-manifest.json, and they
-# are identical to the ones aeneas-latest vendors, so the sources are the
-# same mirrored tarballs (same sha256) under aeneas-latest/ in staging.
+# The dependency pins are Mathlib v4.35.0's own lake-manifest.json. The
+# tarballs sit under aeneas-latest/ in staging only because that package
+# mirrored the same pins first (Aeneas requires this Mathlib tag).
 let { Source, .. } = import "minimal.ncl" in
 [
   {

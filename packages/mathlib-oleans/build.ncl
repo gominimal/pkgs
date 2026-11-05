@@ -8,9 +8,15 @@ let { target, .. } = import "config.ncl" in
 # the same version and its build.sh refuses a mismatch.
 let version = "4.35.0" in
 # How many `lean` processes lake runs at once (each also gets this as its own
-# thread cap), per builder arch. It is also build_cost_multiple below, so
-# the orchestrator reserves what we use. It is in the spec hash but not in
-# the bytes: 4, 6 and 8 gave identical output trees (pkgs#1244).
+# thread cap), per builder arch: the target for the build-bot machines. It is
+# also build_cost_multiple below, so the orchestrator reserves what we use.
+# It is in the spec hash but not in the bytes: 4, 6 and 8 gave identical
+# output trees, as did the build-bot's 32/16 (pkgs#1244).
+#
+# A smaller box (a local `min package build` on a laptop) cannot lower this
+# without a new spec hash, so build.sh lowers the count it actually runs to
+# fit the box: min(this, CPUs, free memory / 1.5 GiB). A 16 GiB laptop gets
+# ~8 jobs instead of 16. Same bytes, same spec hash.
 #
 # Sized by memory, the only resource it could exhaust: the res-server
 # sandbox sets no memory.max and no CPU quota (only a cpu.weight that grows
@@ -62,7 +68,7 @@ in
   # unverified prebuilt (its files are keyed by a hash of their INPUTS, nothing
   # checks the bytes that come back). This package has no `needs`.
   #
-  # Offline-lake mechanism as in aeneas-latest, adopted from nixpkgs
+  # Offline-lake mechanism adopted from nixpkgs
   # `pkgs/build-support/lake` (MIT, © Eelco Dolstra and the Nixpkgs/NixOS
   # contributors): each Lake dependency is a pinned source placed under
   # `.lake/packages/<name>`, `.lake/package-overrides.json` points lake at
@@ -91,7 +97,7 @@ in
     @ (import "sources.ncl")
     @ [
       base,
-      lean,
+      # lean is a runtime dep (below), so it is in this build too.
     ],
 
   cmd = "./build.sh",
@@ -105,11 +111,11 @@ in
   #   LEAN_PATH=$(cat /usr/share/mathlib/LEAN_PATH)
   # (that file is the `mathlib` package's).
   #
-  # Deliberately NOT aeneas-latest's root (usr/lib/lean/pkgs): both packages
-  # build mathlib, batteries, aesop, …, and the sandbox resolves a path
-  # conflict per file, so a closure holding both could load a module's .olean
+  # Its own root, not usr/lib/lean/pkgs (aeneas-latest's): the sandbox
+  # resolves a path conflict per file, so if two packages ever installed the
+  # same module under one root, a closure holding both could load its .olean
   # from one build and its .olean.server/.olean.private/.ir from the other.
-  # Disjoint roots keep each package's tree whole.
+  # A root of its own keeps this tree whole.
   outputs = {
     oleans = { glob = "usr/lib/lean/mathlib/**/*.olean*" } | OutputData,
     # Language-server index; makes `lean --server` (go-to-definition into

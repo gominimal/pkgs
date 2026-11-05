@@ -18,8 +18,9 @@ let { Local, .. } = import "minimal.ncl" in
   # proofwidgets-js-licences/ (the generator fails without one).
   { file = "proofwidgets-js-NOTICE.txt" } | Local,
   # Licences + EPL/CPL source offer for the Graphviz WebAssembly that two of
-  # those bundles embed (@hpcc-js/wasm), and the Emscripten runtime compiled
-  # into it; hand-assembled, hash-pinned to the bundles.
+  # those bundles embed (@hpcc-js/wasm), the Emscripten runtime compiled
+  # into it, and the JS decoders hpcc inlines around it (fzstd, the basE91
+  # loader); hand-assembled, hash-pinned to the bundles.
   { file = "proofwidgets-wasm-NOTICE.txt" } | Local,
   # Licence texts of every Rust crate (and the Rust std) compiled into the
   # Penrose optimizer WebAssembly that two other bundles embed

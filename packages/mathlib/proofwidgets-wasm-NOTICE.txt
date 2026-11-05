@@ -49,6 +49,31 @@ the build pins of hpcc-js-wasm tag wasm-v2.34.2
                            domain      hpcc recipe sets no -sMALLOC);
                            (CC0)       no notice required
 
+  JavaScript that decodes the `wasmBinary` (in both bundles, outside the
+  wasm itself):
+
+  fzstd 0.1.1              MIT         the zstd decompressor. @hpcc-js/wasm's
+                                       build inlines it (a devDependency of
+                                       hpcc-js-wasm, so ProofWidgets'
+                                       package-lock.json and the npm-derived
+                                       notice do not list it); both bundles
+                                       carry its error table ("invalid zstd
+                                       data", "FSE accuracy too high", ...)
+  @hpcc-js/esbuild-plugins Apache-2.0  its sfx-wrapper template emits the
+    1.9.3 (sfx-wrapper)                basE91 decoder and loader around the
+                                       blob (the `D` table and `decode`):
+                                       HPCC Systems' own implementation of
+                                       the basE91 encoding, not basE91's C
+                                       code
+
+  These come from @hpcc-js/wasm 2.34.2's dist/graphviz.js.map, whose
+  sources are exactly fzstd's esm/index.mjs, Emscripten's generated
+  graphvizlib.js glue (the Emscripten row), the sfx-wrapper module around
+  graphvizlib.wasm, and hpcc's graphviz.ts (Apache-2.0, @hpcc-js/wasm's own
+  LICENSE in THIRD-PARTY-NOTICES.txt). Versions are hpcc-js-wasm's
+  package-lock.json at the commit above; the npm tarballs' sha512 matches
+  its `integrity`. Their licence texts are at the end of this file.
+
   The runtime rows come from decoding the `wasmBinary` in graphvizDisplay.js
   (base91, then zstd) at the sha256 below. The wasm has no name or
   producers section, so the evidence is the strings and sections listed.
@@ -90,8 +115,8 @@ public source mirror, so the offer does not depend on upstream hosting:
 
 Neither Minimal nor ProofWidgets modified Graphviz.
 
-These bundles are what this file was checked against. build.sh refuses to
-package if either hash differs, so a ProofWidgets bump forces a re-check:
+These bundles are what this file was checked against. The package build
+fails if either hash differs, so a ProofWidgets bump forces a re-check:
 
 graphvizDisplay.js sha256: 4adfb30d02728407aab3351e7da319fba411e10c35a42d17ab56a35485f6ae96
 index.js sha256: e3538582e3078ac0e3de1d52201d07b963ddd223b04cbbf4bfb159ecae5d8f55
@@ -1370,3 +1395,80 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
+=============================================================================
+fzstd 0.1.1: LICENSE, verbatim
+  (https://registry.npmjs.org/fzstd/-/fzstd-0.1.1.tgz, sha512-dkuVSOKKwh3eas5VkJy1AW1vFpet8TA/fGmVA5krThl8YcOVE/8ZIoEA1+U1vEn5ckxxhLirSdY837azmbaNHA==)
+=============================================================================
+
+MIT License
+
+Copyright (c) 2020 Arjun Barrett
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+=============================================================================
+@hpcc-js/esbuild-plugins 1.9.3: LICENSE, verbatim
+  (https://registry.npmjs.org/@hpcc-js/esbuild-plugins/-/esbuild-plugins-1.9.3.tgz, sha512-IyAauT7xCg10tBS8jGlAkdBvcp9Pmm8XmBXePerumUKzAKErdqMs1+74MVwpQrg4djYjSoNywYDLQyvDDmKaQA==)
+  The full Apache License 2.0 text is in libc++'s LICENSE.TXT above.
+=============================================================================
+
+HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+
+Intersection Algorithms Provided by Kevin Lindsey
+Copyright (c) 2000-2011, Kevin Lindsey
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+    - Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+    - Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+
+    - Neither the name of this software nor the names of its contributors
+      may be used to endorse or promote products derived from this software
+      without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
