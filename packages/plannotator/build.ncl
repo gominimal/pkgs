@@ -68,7 +68,10 @@ let version = "0.28.49" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "Apache-2.0",
+      # Upstream README: "Dual-licensed under Apache 2.0 or MIT at your option"
+      # (LICENSE-APACHE + LICENSE-MIT). GitHub's repo metadata shows only
+      # Apache-2.0 because it reads one file.
+      license_spdx = "MIT OR Apache-2.0",
       source_provenance = {
         category = 'GithubRepo,
         owner = "backnotprop",
