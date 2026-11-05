@@ -38,7 +38,11 @@ let version = "4.35.0" in
     # `bv_decide` shells out to the `cadical` SAT solver by name on PATH. An
     # official Lean release bundles it in `bin/`; built from source we don't
     # get one, and `bv_decide` fails with "could not execute external process
-    # 'cadical'" (found building aeneas-latest). Same release Lean pins.
+    # 'cadical'" (found building aeneas-latest). Our cadical is the latest
+    # release, not the older one Lean's CMake bundles: `bv_decide` verifies
+    # the solver's LRAT certificate, so a newer solver cannot make lean accept
+    # a false goal, and the `bv_decide` test below proves the two still work
+    # together.
     cadical,
     # `lean` and `libleanshared.so` link libssl.so.3 / libcrypto.so.3 (lake's
     # HTTP client). Without this the binary does not START in a closure that
@@ -113,6 +117,23 @@ let version = "4.35.0" in
           # `lake` must be able to configure and build a project: this is what
           # the missing `.ir` files broke while `lean` itself still worked.
           ["/bin/bash", "-c", "mkdir -p /tmp/lk && cd /tmp/lk && printf 'import Lake\\nopen Lake DSL\\npackage t\\n@[default_target] lean_lib T\\n' > lakefile.lean && mkdir -p T && printf 'def hello := 42\\n' > T.lean && LAKE_NO_CACHE=1 HOME=/tmp/lk lake build"],
+        ],
+      } | Test,
+    # `bv_decide` end to end, against the `cadical` runtime dep. Lean bit-blasts
+    # each goal to CNF, runs cadical (`--lrat --binary=true --quiet ...`), and
+    # replays the LRAT certificate in its own checker, so this proves both that
+    # cadical is found and that lean accepts the proofs this cadical writes.
+    # Each goal reaches the SAT solver (none is closed by bv_decide's
+    # preprocessing): with a fake `cadical` that prints garbage, every one of
+    # them fails. The second command takes the SAT path: a false goal must be
+    # refuted with a counterexample, not proved and not errored.
+    bv_decide =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "cd /tmp && printf '%s\\n' 'import Std.Tactic.BVDecide' 'theorem mul3 (x : BitVec 32) : x * 3 = x + x + x := by bv_decide' 'theorem andor (x y : BitVec 32) : (x &&& y) + (x ||| y) = x + y := by bv_decide' 'theorem mulcomm (x y : BitVec 8) : x * y = y * x := by bv_decide (config := { solverMode := .proof })' > bv.lean && lean bv.lean"],
+          ["/bin/bash", "-c", "cd /tmp && printf '%s\\n' 'import Std.Tactic.BVDecide' 'theorem bad (x : BitVec 8) : x < x + 1 := by bv_decide' > cex.lean; out=\"$(lean cex.lean 2>&1)\"; echo \"$out\"; echo \"$out\" | grep -q 'The prover found a counterexample'"],
         ],
       } | Test,
   },

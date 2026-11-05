@@ -5,8 +5,13 @@ let make = import "../make/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-# The release Lean 4.33 bundles as `bin/cadical` (lean4 CMake INSTALL_CADICAL).
-let version = "2.1.3" in
+# The latest upstream release, deliberately NOT the one Lean bundles (lean4
+# 4.35's CMakeLists.txt pins rel-2.1.2): we run current versions and fix what
+# breaks. A newer solver cannot make Lean accept a false goal, because
+# `bv_decide` checks the solver's LRAT certificate in Lean's own verified
+# checker; a solver change can only make a proof fail, which lean's
+# `bv_decide` standalone test catches.
+let version = "3.0.1" in
 {
   name = "cadical",
   # CaDiCaL, the SAT solver behind Lean's `bv_decide`. Official Lean releases
@@ -17,7 +22,7 @@ let version = "2.1.3" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/arminbiere/cadical/archive/refs/tags/rel-%{version}.tar.gz",
-      sha256 = "abfe890aa4ccda7b8449c7ad41acb113cfb8e7e8fbf5e49369075f9b00d70465",
+      sha256 = "0a8ea563b5a25f5aa064634814edab45cc0e45111ea0f5d412a565f806fd7e11",
       extract = true,
       strip_prefix = "cadical-rel-%{version}",
     } | Source,
