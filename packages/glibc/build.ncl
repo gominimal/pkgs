@@ -128,6 +128,21 @@ let version = "2.44" in
             } | Source,
         } target,
       ],
-      outputs = all_outputs,
+      # The bedrock roots also carry a prefixed sysroot under
+      # usr/lib/glibc-bedrock-2.42/lib, and amd64's prebuilt gcc seed
+      # (`gcc (prebuilt)`) is linked against it: its PT_INTERP is
+      # /usr/lib/glibc-bedrock-2.42/lib/ld-linux-x86-64.so.2. all_outputs'
+      # single-level usr/lib globs never matched that nested tree, so gcc's
+      # seed sandbox had no loader for its own compiler ("gcc: cannot execute:
+      # required file not found" -> configure "C compiler cannot create
+      # executables", pkgs#1162 amd64, 2026-10-30). It only worked while
+      # something undeclared left that tree on the res-server. arm64's seed
+      # gcc uses the plain /usr/lib/ld-linux-aarch64.so.1, which all_outputs
+      # captures, so only amd64 failed. Prefixed, so it shadows nothing.
+      outputs =
+        all_outputs
+        & {
+          bedrock_sysroot_lib = { glob = "usr/lib/glibc-bedrock-2.42/lib/**", allow_data = true } | OutputLib,
+        },
     } | BuildSpec,
 } | BuildSpec

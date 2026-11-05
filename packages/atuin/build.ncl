@@ -14,14 +14,14 @@ let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 
-let version = "18.24.1" in
+let version = "18.24.5" in
 {
   name = "atuin",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/atuinsh/atuin/v%{version}.tar.gz",
-      sha256 = "26fc480aa6bbf4b626daf06a1382c28a3ccb31323b4e303bc6ba2bfb79afedde",
+      sha256 = "5c6176d6afc1c37dbb24bc594bbec4a50ef9a38eb02d4d4d4dea124d5f59aab6",
       extract = true,
       strip_prefix = "atuin-%{version}",
     } | Source,

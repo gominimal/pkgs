@@ -13,7 +13,7 @@ let libssh2 = import "../libssh2/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let rustc-1-98-1 = import "../rustc-1.98.1/build.ncl" in # the stage0
-let version = "1.99.0" in
+let version = "1.99.1" in
 {
   name = "rust",
   build_deps =
@@ -22,7 +22,7 @@ let version = "1.99.0" in
       { file = "build.sh" } | Local,
       {
         url = "gs://minimal-staging-archives/rustc-%{version}-src.tar.xz",
-        sha256 = "cc41916a8c84f5d9ec4f55561b44e39f43b647b133f8a6f51be9ea13c83f7036",
+        sha256 = "6451598a99e77f07571960f6b21d577399d3a30f33e80cbd2e3a4aae6535d265",
         extract = true,
         strip_prefix = "rustc-%{version}-src",
       } | Source,

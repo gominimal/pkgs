@@ -105,7 +105,7 @@ let chromium-policies = import "../chromium-policies/build.ncl" in
 # further config. Any other playwright-core version: pass
 # `executablePath: '/bin/chromium'`. See packages/chromium-bin/README.md.
 let revision = "1243" in
-let browser_version = "155.0.8059.84" in
+let browser_version = "156.0.8078.79" in
 let ungoogled_revision = "1" in
 # The one release tarball for this arch: the Source in build_deps and
 # `binary_from` both use it, so the two cannot drift.
@@ -124,12 +124,12 @@ in
       { arch = 'Amd64, .. } =>
         {
           url = release_url,
-          sha256 = "7e376c47b2650f846984f32e4962b33703e5abe09681009cf4f3f336e1125f13",
+          sha256 = "d35a9064068274af1a2efa8bcb9b42306e590f9b5c929789f2e0e51a35880499",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = release_url,
-          sha256 = "5b4de24d19d7a5e5240233a4efd2f1f62be50f82793ee1b90673479148474ade",
+          sha256 = "f759d37ae119dd984ecc9398c4445ef8766476602e78c95628fe5cdc91b5a26e",
         } | Source,
     } target,
     base,
@@ -191,20 +191,20 @@ in
     {
       upstream_version = browser_version,
       license_spdx = "BSD-3-Clause",
-      # NOT the origin of these bytes (`binary_from` says where they come
-      # from), but LOAD-BEARING for vulnerability scanning: supply-chain's
-      # cpe_remap maps pkg:github/microsoft/playwright -> google:chrome,
-      # which is how BOTH chromium packages see Chrome's CVEs at all.
-      # ungoogled-chromium <v>-N is Chromium <v> plus patches, so Chrome's
-      # CVE ranges apply to `upstream_version` as-is. Removing or changing
-      # this without a matching cpe_remap/cpe_identity entry makes the
-      # package scan 0/0/0 — a silent false negative. Re-identifying the
-      # pair is a separate, coordinated change, tracked in
-      # gominimal/pkgmgr-rs#1029 (needs a supply-chain cpe_remap first).
+      # The origin of these bytes. Chrome's CVEs do NOT come through this
+      # repo: supply-chain's package_cpe_identity.toml maps the package
+      # NAME `chromium-bin` to google:chrome (pkgmgr-rs#1029), and that
+      # identity takes precedence over this provenance in the scan and on the
+      # lifecycle page. ungoogled-chromium <v>-N is Chromium <v> plus patches,
+      # so Chrome's CVE ranges apply to `upstream_version` (the bare <v>)
+      # as-is. Renaming the package without moving that identity entry makes
+      # it scan 0/0/0, a silent false negative. Version checks and updates
+      # don't read this field either: pkgmgr's chromium resolver handles this
+      # package by name.
       source_provenance = {
         category = 'GithubRepo,
-        owner = "microsoft",
-        repo = "playwright",
+        owner = "ungoogled-software",
+        repo = "ungoogled-chromium-portablelinux",
       },
       binary_from = release_url,
     } | Attrs,

@@ -72,6 +72,25 @@ stacks should use `stack` and live at `stacks/<name>/stack.ncl`.
 
 Current stacks cover: aeneas, bun, cabal, cmake, deno, go, gradle, make, maven, meson, npm, ocaml, odin, pip, pnpm, pulumi-go, pulumi-nodejs, rust, shell, stack, uv, zig.
 
+### Tests
+
+`tests/<name>/` holds checks that exercise packages the way users get them, across
+several packages at once. A single package's checks stay in that package's `tests`
+block. Each directory under `tests/`:
+
+ * is a self-contained min project: its own `minimal.toml`, with `[upstream]` pinning
+   `gominimal/pkgs` (`locked_commit`) and `[tasks]` to run. It is not a package or a
+   stack, nothing imports it, and the package checks never evaluate it;
+ * tests the commit its pin names, never the checkout it sits in. `min update` re-pins
+   it to main, or `[upstream]` can point at a PR head;
+ * has a README saying how to run it, what each result means, and who acts on a
+   failure;
+ * holds no secrets or private keys. Captured data (certificates, fixtures) is public,
+   pinned by checksum, and cites its source;
+ * has no `profiles/` subdirectory, because min reserves `profiles/<name>/profile.ncl`.
+
+Current tests: `tls-trust` (every TLS client refuses a distrusted CA, per distrust response).
+
 
 
 ## Package declarations
@@ -423,12 +442,12 @@ The planner also adds `needed_for_internet` packages to the top level of every b
 - **Not in the toolchain closure.** `python`, `perl` and `openssl` are build inputs of nearly every package. A `ca-certificates` edge on any one of them rehashes about 90% of the tree now, and again on every bundle update. `openssl` cannot take the edge at all, because `ca-certificates` build-depends on it. These three get the store only when something else in the environment brings it in. If you ship a Python or Perl program that talks TLS, add `ca-certificates` to that package.
 - **Do not use `needs.internet` to get the store.** It also gives network access to the package's own build and to the build of everything that has it in its closure.
 - **Do not embed a trust store.** A runtime reads `/etc/ssl/certs` through a build flag, a config default or a wrapper. It does not compile in its own roots or vendor a certifi-style bundle. Several upstreams default to a store of their own: node's bundled roots, bun, deno's webpki-roots, the JDK `cacerts` keystore, Chromium's root store, gcloud's vendored bundles, and Rust crates that pin `webpki-roots`. Switch them to the system store where upstream allows it. Where it does not, the package applies the denylist below, and its `build.ncl` says why it cannot use the system store.
-- **Denylists: two today, meant to be one.** Distrusted roots, intermediates and keys are listed as SHA-256 fingerprints in two files under `packages/ca-certificates/`, and an incident has to land in both until they converge (gominimal/pkgmgr-rs#1020):
-  - `distrust.txt` (`<cert|spki> <sha256>  <note>` lines, one block per incident citing its CVE and the Mozilla/NSS bugs). Read by the `ca-certificates` build gate (the build fails if any certificate it ships matches), by the Chromium policy checker (`.github/scripts/chromium_policy_distrust_check.py`, which requires every key in `packages/chromium-policies/ca-distrusted-certificates.json` to be an `spki` line here) and by `pkgmgr truststores`.
+- **Denylists: two today, meant to be one.** Distrusted roots, intermediates and keys are listed as SHA-256 fingerprints in two files under `packages/ca-certificates/`, and each distrust response has to land in both until they converge (gominimal/pkgmgr-rs#1020):
+  - `distrust.txt` (`<cert|spki> <sha256>  <note>` lines, one block per distrust response citing its CVE and the Mozilla/NSS bugs). Read by the `ca-certificates` build gate (the build fails if any certificate it ships matches), by the Chromium policy checker (`.github/scripts/chromium_policy_distrust_check.py`, which requires every key in `packages/chromium-policies/ca-distrusted-certificates.json` to be an `spki` line here) and by `pkgmgr truststores`.
   - `cve-2026-111943-blocked-sha256.txt`, exposed through `cve-2026-111943.ncl`. Read by the JDK patch (`packages/jdk/cve-2026-111943.sh`, used by jdk-21, jdk-25 and jdk-27), which needs all 48 certificate fingerprints, every malleable encoding of the compromised intermediates, because `blocked.certs` matches whole certificates, not keys.
 
-  Append a block for each incident and never delete one. Patched embedded stores read one of these files rather than keeping their own copy.
-- **When a CA is distrusted:** rebuild `ca-certificates` from a dated curl/Mozilla extract, append the incident's block to `distrust.txt` (and, while the JDK patch still reads its own file, give it the incident's full certificate fingerprints), then fix every embedded store listed above. A package that only reads `/etc/ssl/certs` needs no edit; it gets the new bundle through its closure.
+  Append a block for each distrust response and never delete one. Patched embedded stores read one of these files rather than keeping their own copy.
+- **When a CA is distrusted:** rebuild `ca-certificates` from a dated curl/Mozilla extract, append the response's block to `distrust.txt` (and, while the JDK patch still reads its own file, give it the response's full certificate fingerprints), then fix every embedded store listed above. A package that only reads `/etc/ssl/certs` needs no edit; it gets the new bundle through its closure.
 
 ## Creating packages workflow
 
@@ -755,6 +774,23 @@ done
 
 `pkgmgr import npm <name>` generates this layout (using a committed lockfile and `npm ci`); see `packages/vlt`.
 
+#### Ruby pattern
+
+`ruby`, `ruby-3.3` and `ruby-3.4` install the same paths (`usr/bin/ruby`, `usr/lib/ruby/**`, `libruby.so`, `usr/etc/gemrc`), so two of them in one closure blend into one broken interpreter. `.github/workflows/ruby-flavor-guard.yml` enforces two rules:
+
+- **Use `ruby`, not a versioned line**, in `build_deps` and `runtime_deps`. `ruby-3.3` and `ruby-3.4` are there for users to opt into, like `node` (Current); packages don't use them. An exception goes in `VERSIONED_ALLOWED` in `.github/scripts/ruby_flavor_guard.py`, with the reason.
+- **No closure may hold two Ruby lines**, runtime or build, and that includes stacks: a stack naming `ruby-3.4` next to `ruby-lsp` fails. A user's own loadout isn't in the catalog, so the guard can't see `ruby-3.4` + `ruby-lsp` chosen there.
+
+
+#### OpenSSL pattern
+
+`openssl` is the 4.x line: `libssl.so.4` / `libcrypto.so.4` in `/usr/lib`, providers in `/usr/lib/ossl-modules`, no engines. `openssl-3.5` is a compat package on the 3.5 LTS line for code that cannot build or run against 4.x. Its runtime libraries are `/usr/lib/libssl.so.3` and `/usr/lib/libcrypto.so.3`, and everything else (headers, `.so` dev links, pkg-config, CMake files) sits under `/usr/lib/openssl-3.5`, so its paths are disjoint from `openssl`'s and both can be in one closure. Their symbols are versioned (`OPENSSL_4.*` vs `OPENSSL_3.*`), so a process that loads both binds each reference to its own library.
+
+- **Port to 4.x first.** Most breakage is a removed API with a small upstream fix: python carries cpython#149783, socat a Debian ASN1 patch, wget drops `SSLv3_client_method`, and Rust crates move to `openssl-sys` 0.9.117+. Use `openssl-3.5` only when that isn't possible: a sealed or prebuilt binary that NEEDs `libssl.so.3` (the bedrock rustc's cargo, actions-runner's bundled .NET 8), or a codebase that doesn't build on 4.x yet (foundationdb 7.3).
+- **To build against it:** add `openssl-3-5` (`import "../openssl-3.5/build.ncl"`) to `build_deps` and point the build at the prefix: `PKG_CONFIG_PATH=/usr/lib/openssl-3.5/lib/pkgconfig`, `OPENSSL_ROOT_DIR=/usr/lib/openssl-3.5` (CMake) or `OPENSSL_DIR=/usr/lib/openssl-3.5` (openssl-sys).
+- **At runtime, depend on the libraries only:** `subsetOf openssl-3-5 ["libssl", "libcrypto"]`.
+- **Check the result in build.sh**, fail-closed: `readelf -d` should show the binary NEEDs `libssl.so.3` and never `lib(ssl|crypto).so.4` (see `packages/foundationdb/build.sh`).
+- **4.1 drops the CN fallback.** Hostname verification no longer falls back to the subject CN when a certificate has no SAN of the checked type (openssl/openssl#31982). A test certificate needs a `subjectAltName` (`-addext subjectAltName=DNS:localhost,IP:127.0.0.1`).
 
 ### Reproducibility (required)
 
@@ -781,6 +817,20 @@ Two things specific to this repo, which the public page does not carry:
   make variables its version header is generated from (`SH_DATE` from `$SOURCE_DATE_EPOCH`,
   `SH_NOW=` to omit the build time) rather than re-exporting `SOURCE_DATE_EPOCH`.
 
+
+#### Preloading detbuild
+
+`packages/detbuild` ships `libdetbuild.so`, an `LD_PRELOAD` shim for builds that leak process entropy or the host kernel version into what they ship (rustc and proc-macro `HashMap` order, LuaJIT's string hash, perl's `Config`). It replaces getrandom, getentropy, the raw getrandom syscall, arc4random and reads of `/dev/urandom` and `/dev/random` with a fixed-seed stream, and pins `uname`'s release to `6.1.0-minimal`. `packages/detbuild/detbuild.c` lists what it does not cover (AT_RANDOM, static and Go binaries, glibc-internal entropy).
+
+Every byte it hands out is predictable, including the keys behind a TLS handshake made under it. So:
+
+- **Add `detbuild` to `build_deps`.** A build sandbox mounts only the dependency closure. Without the dependency, `ld.so` reports that the object cannot be preloaded and ignores it, so the command runs unpinned and the build still succeeds.
+- **Preload one command:** `LD_PRELOAD=/usr/lib/minimal/libdetbuild.so cargo build --frozen --release`. Never `export LD_PRELOAD`, and never set it through a `.ncl` `env` or `vars`.
+- **Never on a command that uses the network.** A build has the network when the package declares `needs.internet` or when any package in its build closure does (its `build_deps` and `runtime_deps`, and their runtime closures). Every package that build-depends on `rust` has the network this way, with no `needs` of its own. In such a build, fetch first without the preload (`cargo fetch --locked`, and any prebuilt download such as rusty_v8), then preload only the offline step (`cargo build --frozen`). A preloaded `cargo` always takes `--frozen` or `--offline`.
+- **Never a sandbox default** (gominimal/minimal#2227 proposed one).
+- **The kernel version is fake.** It is deliberately lower than any build host, so a version-keyed feature check can only turn a feature off. A build that needs a newer kernel feature should probe for the feature, not the version.
+
+`.github/scripts/detbuild_preload_guard.py` enforces the first three rules on sources, and reads each build's closure from the evaluator's catalog dump. gominimal/minimal#2489 tracks rejecting `libdetbuild` strings captured into built outputs (libtool wrappers, configure caches).
 
 ### Step 4: Validate
 

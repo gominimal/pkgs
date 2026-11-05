@@ -1,0 +1,16 @@
+# pkgscan triage for async-profiler (see pkgmgr-rs src/pkgscan/repo_allowlist.rs).
+# Each entry is pinned to the whole file's sha256: any change to the file makes
+# the finding gate again. A match regrades (High -> Info), never hides.
+
+# Upstream commits prebuilt helper classes next to their sources
+# (src/helper/one/profiler/*.class, embedded into the agent with .incbin).
+# Our build.sh DELETES every one of them and recompiles it from the .java beside
+# it (`rm -f "${src%.java}.class"; javac -source 8 -target 8 -g:none`), exactly
+# as upstream's `%.class: %.java` rule does, so the shipped agent never contains
+# upstream's bytes. The finding describes the source tarball, not our output.
+[[allow]]
+file = "src/helper/one/profiler/JfrSync.class"
+category = "LargeEncodedBlob"
+pattern = "Java class file in source"
+sha256 = "5aeef9266abb02de707f6f163c66751faef540752dce94ff71ac70ff1eb1b91f"
+reason = "Upstream's committed JfrSync.class (v4.6, changed with JfrSync.java in https://github.com/async-profiler/async-profiler/pull/1796). packages/async-profiler/build.sh removes it and recompiles it from JfrSync.java before the native build, so these bytes are never shipped. Verified against the v4.6 tag (cafebabe, class version 52)."

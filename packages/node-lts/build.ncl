@@ -18,7 +18,22 @@ let zstd = import "../zstd/build.ncl" in
 let gtest = import "../gtest/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let llvm = import "../llvm/build.ncl" in
+let wasi-libc = import "../wasi-libc/build.ncl" in
+let llhttp-wasm-rebuild = import "../llhttp-wasm-rebuild/build.ncl" in
+let amaro-wasm = import "../amaro-wasm/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 
+# What this node tree bundles, verified by build.sh (check-tree / build fail on a mismatch),
+# so a node bump re-derives each one here: undici under deps/undici (its llhttp C rebuilds
+# the wasm js2c'd into node), the undici npm vendors under deps/npm (rebuilt from the
+# mirrored release tarball below), and amaro (its swc wasm comes from packages/amaro-wasm).
+let undici = "7.30.1" in
+let undici_llhttp = "9.3.0" in
+let npm_undici = "6.28.0" in
+# The llhttp that the npm-vendored undici pins (forwarded so a bump is one edit).
+let npm_undici_llhttp = "8.1.0" in
+let amaro = "1.1.11" in
 let version = "24.22.1" in
 {
   name = "node-lts",
@@ -28,9 +43,17 @@ let version = "24.22.1" in
       url = "https://nodejs.org/dist/v%{version}/node-v%{version}.tar.gz",
       sha256 = "001773d9bd53fbd27a25efd42aa6a9693ebfe500998ca9bec635e9b6ee79bc91",
     } | Source,
+    {
+      url = "gs://minimal-staging-archives/undici-%{npm_undici}.tar.gz",
+      sha256 = "555a14624f66628d8aa7fcd0691ab2371f3e4512c40358bb7320bfabbb6763ec",
+    } | Source,
     # 24.22.1 carries the CVE-2026-111943 fixes upstream (nodejs/node#66871 SPKI
     # blocklist, #66877 NSS 3.131.1 roots), so the backports are no longer carried.
     base,
+    llvm, # clang + wasm-ld for the llhttp wasm
+    wasi-libc,
+    llhttp-wasm-rebuild, # rebuilds and splices undici's llhttp wasm blobs
+    amaro-wasm, # amaro's TypeScript-stripper wasm, rebuilt from swc
     make,
     pkgconf,
     python,
@@ -53,11 +76,19 @@ let version = "24.22.1" in
     gtest,
     glibc,
     subsetOf gcc ["libgcc", "libstdcpp"],
+    # node trusts OpenSSL's default store, /etc/ssl (see build.sh), so the
+    # system bundle must be present or every TLS connection fails.
+    ca-certificates,
   ],
 
   cmd = "./build.sh",
   build_args = {
     include version,
+    include undici,
+    include undici_llhttp,
+    include npm_undici,
+    include npm_undici_llhttp,
+    include amaro,
   },
 
   outputs = {
@@ -86,6 +117,15 @@ let version = "24.22.1" in
     } | Attrs,
 
   tests = {
+    type_strip =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "printf 'interface P { n: number }\\nconst p: P = { n: 6 };\\nconsole.log(p.n * 7);\\n' > t.ts"],
+          ["/bin/bash", "-c", "node t.ts | grep -qx 42"],
+        ],
+      } | Test,
     eval =
       {
         class = 'Standalone,
@@ -249,6 +289,90 @@ let version = "24.22.1" in
               })().catch((e) => { console.error(e); process.exit(2); });
               JSEOF
               node blocklist.js
+            "%
+          ],
+        ],
+      } | Test,
+    # The default store is OpenSSL's (configure --openssl-use-def-ca-store; see
+    # build.sh), so a CA removed from ca-certificates stops being trusted
+    # (CVE-2026-111943). Offline: a local server presents a leaf from a
+    # throwaway test CA (generated for this test only) that only SSL_CERT_FILE
+    # names. node must trust it by default; stock node never reads
+    # SSL_CERT_FILE, so this FAILS without the flag. `--use-bundled-ca`, on the
+    # command line or in NODE_OPTIONS, must restore the compiled-in store (the
+    # opt-out), and NODE_EXTRA_CA_CERTS must still add to either store.
+    system_ca_store_default =
+      {
+        class = 'Standalone,
+        test_deps = [base, ca-certificates],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              test -s /etc/ssl/cert.pem
+              cd "$(mktemp -d)"
+              cat > ca.pem <<'PEM'
+              -----BEGIN CERTIFICATE-----
+              MIIBtDCCAVmgAwIBAgIUFhL1HE8QlzdX9rxLMqgjzZM06Q4wCgYIKoZIzj0EAwIw
+              JjEkMCIGA1UEAwwbbWluaW1hbCBzeXN0ZW0tY2EgdGVzdCByb290MCAXDTI2MTAy
+              NzIwNTMxOVoYDzIxMjYxMDAzMjA1MzE5WjAmMSQwIgYDVQQDDBttaW5pbWFsIHN5
+              c3RlbS1jYSB0ZXN0IHJvb3QwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATaAlwQ
+              KS9fPgBW5C+O7FH1/I6Zcqx9147goVmsjhQ5DYU75PkE42Yn88Upf0CjnhYDFNbc
+              geNBE7eA3WO4p32Eo2MwYTAdBgNVHQ4EFgQUcfhuKz7RSGYiEVkMro8j7QLdIBcw
+              HwYDVR0jBBgwFoAUcfhuKz7RSGYiEVkMro8j7QLdIBcwDwYDVR0TAQH/BAUwAwEB
+              /zAOBgNVHQ8BAf8EBAMCAQYwCgYIKoZIzj0EAwIDSQAwRgIhAKlPKRkQ+p8uMZEl
+              qVlK4XHDHRpJlYtilX6exV3Iy5wJAiEA80a+dVibtFHxU/nOxXYDeABFmB/o8j6f
+              jUouX6GGu+Y=
+              -----END CERTIFICATE-----
+              PEM
+              cat > leaf.pem <<'PEM'
+              -----BEGIN CERTIFICATE-----
+              MIIB0DCCAXegAwIBAgIUTKsxw15xmiIKgeXPoMw9gGDVMBAwCgYIKoZIzj0EAwIw
+              JjEkMCIGA1UEAwwbbWluaW1hbCBzeXN0ZW0tY2EgdGVzdCByb290MCAXDTI2MTAy
+              NzIwNTMxOVoYDzIxMjYxMDAzMjA1MzE5WjAUMRIwEAYDVQQDDAlsb2NhbGhvc3Qw
+              WTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASzn6+IiT2I2YKMGp/9kQx0iJ7s/8p/
+              QFngX3riZETdPo0NY3viGbRG3IWUVxK4L3AnHelOSqOh850EeAwJ2xYCo4GSMIGP
+              MBoGA1UdEQQTMBGCCWxvY2FsaG9zdIcEfwAAATAMBgNVHRMBAf8EAjAAMA4GA1Ud
+              DwEB/wQEAwIHgDATBgNVHSUEDDAKBggrBgEFBQcDATAdBgNVHQ4EFgQUsnsI/OSR
+              ienMi5hFb5GEQa3qXaYwHwYDVR0jBBgwFoAUcfhuKz7RSGYiEVkMro8j7QLdIBcw
+              CgYIKoZIzj0EAwIDRwAwRAIgLyftiw5mgD9+Si+BvKpTZQ+88O94b4/pHU+v8QSZ
+              aVgCIFjojsmqMEc18V1NptXaS8I1cAtLpfiqq1O8cu13ASoC
+              -----END CERTIFICATE-----
+              PEM
+              cat > leaf.key <<'PEM'
+              -----BEGIN PRIVATE KEY-----
+              MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg+h1vzS5mJhQDbYGJ
+              B7KaNlcSUN29ISnfKkZXpAXc5q6hRANCAASzn6+IiT2I2YKMGp/9kQx0iJ7s/8p/
+              QFngX3riZETdPo0NY3viGbRG3IWUVxK4L3AnHelOSqOh850EeAwJ2xYC
+              -----END PRIVATE KEY-----
+              PEM
+              cat > probe.js <<'JSEOF'
+              'use strict';
+              const fs = require('fs');
+              const tls = require('tls');
+              const server = tls.createServer({ key: fs.readFileSync('leaf.key'), cert: fs.readFileSync('leaf.pem') },
+                                              (s) => s.end());
+              server.listen(0, '127.0.0.1', () => {
+                const c = tls.connect({ port: server.address().port, host: '127.0.0.1', servername: 'localhost',
+                                        rejectUnauthorized: false }, () => {
+                  console.log(c.authorized ? 'authorized' : String(c.authorizationError));
+                  c.destroy();
+                  server.close();
+                });
+                c.on('error', (e) => { console.log('error ' + e.code); server.close(); });
+              });
+              JSEOF
+              probe() { env -u NODE_OPTIONS -u NODE_EXTRA_CA_CERTS -u SSL_CERT_DIR SSL_CERT_FILE="$PWD/ca.pem" "$@"; }
+              out=$(probe node probe.js)
+              test "$out" = authorized || { echo "default store did not use SSL_CERT_FILE: $out" >&2; exit 1; }
+              out=$(probe node --use-bundled-ca probe.js)
+              case "$out" in UNABLE_TO_*) ;; *) echo "--use-bundled-ca: $out" >&2; exit 1 ;; esac
+              out=$(probe env NODE_OPTIONS=--use-bundled-ca node probe.js)
+              case "$out" in UNABLE_TO_*) ;; *) echo "NODE_OPTIONS=--use-bundled-ca: $out" >&2; exit 1 ;; esac
+              out=$(probe env NODE_EXTRA_CA_CERTS="$PWD/ca.pem" node --use-bundled-ca probe.js)
+              test "$out" = authorized || { echo "NODE_EXTRA_CA_CERTS with --use-bundled-ca: $out" >&2; exit 1; }
             "%
           ],
         ],

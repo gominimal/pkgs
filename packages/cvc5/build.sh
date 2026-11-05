@@ -38,8 +38,10 @@ cp "$CADICAL/src/cadical.hpp" "$CADICAL/src/tracer.hpp" "$DEPS/include/cadical/"
 # configure error instead of a download. GMP, SymFPU and pyparsing come from
 # the fleet; CaDiCaL from $DEPS above.
 # BSD-only: ENABLE_GPL=OFF and every GPL optional library (CLN, GLPK, CoCoA,
-# Normaliz) OFF. LibPoly (LGPL, CAD for nonlinear real arithmetic), Kissat,
-# CryptoMiniSat, Editline and MPFR are optional and not packaged here: OFF.
+# Normaliz) OFF. CoCoA is what finite fields need, so `(set-logic QF_FF)`
+# stays unsupported here (see build.ncl). LibPoly (LGPL-3.0-or-later, shared,
+# from the fleet's `libpoly`) is ON: nonlinear real arithmetic.
+# Kissat, CryptoMiniSat, Editline and MPFR are optional and not packaged: OFF.
 # USE_DEFAULT_LINKER=ON: don't let cvc5 pick mold/lld/gold by probing.
 cmake -S "$SRC" -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=Production \
@@ -53,7 +55,7 @@ cmake -S "$SRC" -B build -G Ninja \
   -DUSE_GLPK=OFF \
   -DUSE_COCOA=OFF \
   -DUSE_NORMALIZ=OFF \
-  -DUSE_POLY=OFF \
+  -DUSE_POLY=ON \
   -DUSE_KISSAT=OFF \
   -DUSE_CRYPTOMINISAT=OFF \
   -DUSE_EDITLINE=OFF \
@@ -67,9 +69,11 @@ cmake -S "$SRC" -B build -G Ninja \
 cat configure.log
 
 # auto-download OFF already makes a missing dep fatal; also require that the
-# pinned CaDiCaL and the fleet SymFPU are the ones configure picked up.
+# pinned CaDiCaL, the fleet SymFPU and the fleet LibPoly are the ones
+# configure picked up ("Found", not "Building": no ExternalProject).
 grep -F -- '-- Found CaDiCaL' configure.log
 grep -F -- '-- Found SymFPU' configure.log
+grep -F -- '-- Found Poly 0.2.1' configure.log
 
 ninja -C build -j"$(nproc)"
 DESTDIR="$OUTPUT_DIR" ninja -C build install

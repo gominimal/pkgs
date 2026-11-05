@@ -5,7 +5,7 @@ let patch = import "../patch/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 
-let version = "1.4.7" in
+let version = "1.4.8" in
 {
   name = "btop",
   build_deps = [
@@ -13,7 +13,7 @@ let version = "1.4.7" in
     { file = "gcc12-seed.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/aristocratos/btop/v%{version}.tar.gz",
-      sha256 = "933de2e4d1b2211a638be463eb6e8616891bfba73aef5d38060bd8319baeefc6",
+      sha256 = "67e07c21b770a6d884c5e50ba1d2cfc90732ea57459367d8732ec7ecbeb3be5f",
       extract = true,
     } | Source,
     base,

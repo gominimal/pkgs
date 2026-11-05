@@ -29,14 +29,21 @@ sed -i '/enable_adaptive_quantization/d' libavcodec/libsvtav1.c
             --enable-libopus        \
             --enable-libvmaf        \
             --enable-libvpx         \
-            --enable-libfdk-aac     \
             --enable-libsvtav1      \
             --enable-libx264        \
             --enable-libx265        \
-            --enable-nonfree        \
             --disable-doc           \
             --disable-debug         \
             --disable-x86asm
+
+# Fail closed if the build would not be redistributable. configure writes the
+# license it derived from the flags into config.h; "nonfree and
+# unredistributable" (libfdk-aac) must never ship again (pkgs#1110).
+echo "ffmpeg license: $(sed -n 's/^#define FFMPEG_LICENSE "\(.*\)"$/\1/p' config.h)"
+grep -q '^#define FFMPEG_LICENSE "GPL version 3 or later"$' config.h || {
+  echo "ffmpeg: configure did not report GPL version 3 or later; refusing to build" >&2
+  exit 1
+}
 
 make -j$(nproc)
 make DESTDIR=$OUTPUT_DIR install

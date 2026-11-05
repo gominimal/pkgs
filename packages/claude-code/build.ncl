@@ -12,9 +12,9 @@ let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let { version, amd64_sha256, arm64_sha256, gcs_bucket } = {
   gcs_bucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases",
-  version = "2.1.292",
-  amd64_sha256 = "a967e7b1d8b4e47ee421d5433027880347952b0c0857abf880e2c942a4ec93b3",
-  arm64_sha256 = "24caa9e6ff13bf227049a2626f1c816fc895023050f0ec3b12dbf14d897367e0",
+  version = "2.1.318",
+  amd64_sha256 = "708c77b204db30086ff6f1ed34577bda03e1be74ced80557cbf7b54249ebf0bd",
+  arm64_sha256 = "53a0d7e219d7b0804ecba5dbc002745e89f786cc946d2de85a6470d5b2d1fb06",
 }
 in
 
@@ -68,6 +68,9 @@ in
     {
       upstream_version = version,
       license_spdx = "LicenseRef-Anthropic-Proprietary",
+      # LICENSE.md: "© Anthropic PBC. All rights reserved. Use is subject to
+      # Anthropic's Commercial Terms of Service." No redistribution grant.
+      redistributable = false,
       binary_from = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases",
       closed_source = true,
 

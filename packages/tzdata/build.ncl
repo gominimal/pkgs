@@ -3,7 +3,7 @@ let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2026e" in
+let version = "2026f" in
 {
   name = "tzdata",
   # No `base` here: `base` carries tzdata at runtime, so building tzdata against it would be a cycle.
@@ -11,7 +11,7 @@ let version = "2026e" in
     { file = "build.sh" } | Local,
     {
       url = "https://data.iana.org/time-zones/releases/tzdata%{version}.tar.gz",
-      sha256 = "b26882805f26aac59d5b222978e6580484b834ccdc98be89df2f05a6dc53a652",
+      sha256 = "01b4a91cec5167ed48c11e8ab78f2048cead78ce94b0cafcad0ae8c5a3044d3d",
       extract = true,
     } | Source,
     bash-bootstrap,
@@ -48,7 +48,12 @@ let version = "2026e" in
         test_deps = [bash-bootstrap, coreutils],
         cmds = [
           ["/bin/bash", "-c", "test -f /usr/share/zoneinfo/UTC"],
-          ["/bin/bash", "-c", "[[ $(TZ=America/Vancouver date +%Z) == P[SD]T ]]"],
+          # Pinned instants, not "now": British Columbia moved to permanent UTC-7 at
+          # 2026-11-01T09:00Z and tzdata calls it MST from then on, so asserting today's
+          # abbreviation broke every PR's checks that morning. These two still prove the
+          # zone and its DST rules resolve: 2025-01-15 is PST, 2025-07-15 is PDT.
+          ["/bin/bash", "-c", "test \"$(TZ=America/Vancouver date -d @1736899200 +%Z)\" = PST"],
+          ["/bin/bash", "-c", "test \"$(TZ=America/Vancouver date -d @1752537600 +%Z)\" = PDT"],
           ["/bin/bash", "-c", "test \"$(TZ=Europe/Paris date -d @0 +%H)\" = 01"],
         ],
       } | Test,

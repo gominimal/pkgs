@@ -119,7 +119,7 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # (trigger: the first CfT Stable carrying both commits; Chrome expects its
 # root-store update in Stable 2026-10-27).
 let revision = "1243" in
-let browser_version = "156.0.8078.47" in
+let browser_version = "157.0.8103.38" in
 {
   name = "chromium-headless-shell-bin",
   build_deps = [
@@ -132,12 +132,12 @@ let browser_version = "156.0.8078.47" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chrome-headless-shell-linux64.zip",
-          sha256 = "0d5acc62c3e213f8c87d3c298d66ffcf9a236d12ea4b9f85318bf85dbc279daa",
+          sha256 = "deafffa74660b34853a4119c361fd427ac8c9fcb62db51ddb8a797cd83a4ba2d",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux-arm64/chrome-headless-shell-linux-arm64.zip",
-          sha256 = "955059fa7020d7be85eb503e21339fd4d718f51f5996d3b60633fbf908bda132",
+          sha256 = "b9b910a57b2a15eb3e55000a2339f93a973934a413ebfc6e585a50ec6c42fd6c",
         } | Source,
     } target,
     base,
@@ -194,10 +194,18 @@ let browser_version = "156.0.8078.47" in
     {
       upstream_version = browser_version,
       license_spdx = "BSD-3-Clause",
+      # Chrome for Testing, the same home chromedriver-bin names. Chrome's
+      # CVEs do NOT come through this repo: supply-chain's
+      # package_cpe_identity.toml maps the package NAME
+      # `chromium-headless-shell-bin` to google:chrome (pkgmgr-rs#1029), and
+      # that identity takes precedence over this provenance. It is keyed by
+      # name because chromedriver-bin shares this repo and is not the
+      # browser. Renaming the package without moving that entry makes it scan
+      # 0/0/0. pkgmgr's chromium resolver checks and updates it by name.
       source_provenance = {
         category = 'GithubRepo,
-        owner = "microsoft",
-        repo = "playwright",
+        owner = "GoogleChromeLabs",
+        repo = "chrome-for-testing",
       },
       binary_from =
         match {

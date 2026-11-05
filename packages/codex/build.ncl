@@ -1,45 +1,41 @@
 let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
-let patch = import "../patch/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let llvm = import "../llvm/build.ncl" in
 let libcap = import "../libcap/build.ncl" in
+let patch = import "../patch/build.ncl" in
 
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let git = import "../git/build.ncl" in
 
-let version = "0.155.0" in
+let version = "0.166.0" in
 {
   name = "codex",
   build_deps = [
     { file = "build.sh" } | Local,
-    # CVE-2026-111943 (eMudhra intermediate key compromise): pins rustls-webpki
-    # 0.103.16 (RUSTSEC-2026-0382, distrusts the 8 intermediates) and
-    # webpki-roots / webpki-root-certs 1.0.10 (RUSTSEC-2026-0383, drops emSign ECC
-    # Root CA - G3) in upstream's Cargo.lock. Lock-only: version + checksum lines
-    # (plus whatever cargo had to move with them). Drop on the first upstream
-    # release whose Cargo.lock already has those versions; a version bump that
-    # keeps it fails at `patch` rather than silently shipping the old lock.
-    { file = "cve-2026-111943-webpki-lock.patch" } | Local,
+    # OpenSSL 4: Cargo.lock's openssl-sys 0.9.111 panics in its build script on 4.x
+    # (4.x support starts at 0.9.114). Moves it to 0.9.117 and openssl to 0.10.81. Applied by name, so a
+    # stale patch fails the build.
+    { file = "openssl-4-openssl-sys-lock.patch" } | Local,
     {
       url = "https://github.com/openai/codex/archive/refs/tags/rust-v%{version}.tar.gz",
-      sha256 = "8bb3b5a5693492926b53c51ee2e68822b057d712b2ca1a0ae67878557fd6a2ea",
+      sha256 = "718c86dcd7104919f2820aa79db0fa0083b5f240aa16da704f43e4acf7b544e5",
       extract = true,
       strip_prefix = "codex-rust-v%{version}",
     } | Source,
     base,
-    patch,
     rust,
     toolchain,
     pkgconf,
     cmake,
     llvm,
     openssl,
+    patch,
   ],
 
   runtime_deps = [
