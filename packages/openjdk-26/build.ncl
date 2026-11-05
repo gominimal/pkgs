@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let glibc-bedrock-2-42-sysroot = import "../glibc-bedrock-2.42-sysroot/build.ncl" in # the sysroot only (see that package)
 let glibc = import "../glibc/build.ncl" in
@@ -15,7 +15,7 @@ let libxext = import "../libxext/build.ncl" in
 let libxi = import "../libxi/build.ncl" in
 let libxrender = import "../libxrender/build.ncl" in
 let libxtst = import "../libxtst/build.ncl" in
-# openjdk-26: the boot JDK for jdk-27, OpenJDK 26.0.2.1 from gen-13 of gominimal/bootstrap: the JVM ladder
+# openjdk-26: OpenJDK 26.0.2.1 from gen-13 of gominimal/bootstrap: the JVM ladder
 # jikes -> classpath -> jamvm -> ant/ecj -> icedtea-7/8 -> openjdk-9 ... 26, every rung built from
 # source on the hex0-rooted toolchain and reproduced byte for byte on two independent machines
 # before publishing (generations/gen-13/manifest.json). Installs at /usr/lib/openjdk-26; nothing lands on
@@ -60,6 +60,14 @@ let version = "26.0.2.1" in
       libxrender,
       libxtst,
     ],
+  # the binary runs from its own runtime closure, outside any build sandbox
+  tests = {
+    java_version =
+      {
+        class = 'Standalone,
+        cmds = [["/usr/lib/openjdk-26/bin/java", "-version"]],
+      } | Test,
+  },
   outputs = {
     prefix = { glob = "usr/lib/openjdk-26/**", allow_executable = true } | OutputData,
     buildinfo = { glob = "usr/share/openjdk-26/BUILDINFO" } | OutputData,

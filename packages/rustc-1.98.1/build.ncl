@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, OutputData, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
@@ -45,6 +45,14 @@ let version = "1.98.1" in
     zlib,
     subsetOf gcc ["libgcc", "libstdcpp"],
   ],
+  # the binary runs from its own runtime closure, outside any build sandbox
+  tests = {
+    rustc_version =
+      {
+        class = 'Standalone,
+        cmds = [["/usr/lib/rustc-1.98.1/bin/rustc", "-vV"]],
+      } | Test,
+  },
   outputs = {
     toolchain = { glob = "usr/lib/rustc-1.98.1/**", allow_executable = true } | OutputData,
   },

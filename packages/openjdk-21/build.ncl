@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let glibc-bedrock-2-42-sysroot = import "../glibc-bedrock-2.42-sysroot/build.ncl" in # the sysroot only (see that package)
 let glibc = import "../glibc/build.ncl" in
@@ -16,7 +16,7 @@ let libxi = import "../libxi/build.ncl" in
 let libxrender = import "../libxrender/build.ncl" in
 let libxtst = import "../libxtst/build.ncl" in
 let libxcursor = import "../libxcursor/build.ncl" in
-# openjdk-21: the boot JDK for jdk-21, OpenJDK 21.0.2 from gen-13 of gominimal/bootstrap: the JVM ladder
+# openjdk-21: OpenJDK 21.0.2 from gen-13 of gominimal/bootstrap: the JVM ladder
 # jikes -> classpath -> jamvm -> ant/ecj -> icedtea-7/8 -> openjdk-9 ... 21, every rung built from
 # source on the hex0-rooted toolchain and reproduced byte for byte on two independent machines
 # before publishing (generations/gen-13/manifest.json). Installs at /usr/lib/openjdk-21; nothing lands on
@@ -62,6 +62,14 @@ let version = "21.0.2" in
       libxtst,
       libxcursor,
     ],
+  # the binary runs from its own runtime closure, outside any build sandbox
+  tests = {
+    java_version =
+      {
+        class = 'Standalone,
+        cmds = [["/usr/lib/openjdk-21/bin/java", "-version"]],
+      } | Test,
+  },
   outputs = {
     prefix = { glob = "usr/lib/openjdk-21/**", allow_executable = true } | OutputData,
     buildinfo = { glob = "usr/share/openjdk-21/BUILDINFO" } | OutputData,

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -31,6 +31,14 @@ let version = "5.5.2" in
     } target,
   ],
   runtime_deps = [glibc, toolchain], # ocamlopt links through the gcc driver
+  # the binary runs from its own runtime closure, outside any build sandbox
+  tests = {
+    ocamlc_version =
+      {
+        class = 'Standalone,
+        cmds = [["/usr/lib/ocaml-5.5.2/bin/ocamlc.byte", "-version"]],
+      } | Test,
+  },
   outputs = {
     prefix = { glob = "usr/lib/ocaml-5.5.2/**", allow_executable = true } | OutputData,
     buildinfo = { glob = "usr/share/ocaml-5.5.2/BUILDINFO" } | OutputData,
