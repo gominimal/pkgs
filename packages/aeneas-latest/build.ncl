@@ -18,10 +18,12 @@ let aeneas_sha = "ab34bd28458a08c150b7cbf1873e59af74588138" in
   # (lean-toolchain = leanprover/lean4:v4.35.0, Mathlib v4.35.0), so it
   # builds unpatched.
   #
-  # `lean`, `mathlib` and this package move TOGETHER: a Mathlib tag supports
-  # exactly one Lean, and Aeneas pins one Mathlib tag. build.sh refuses a
-  # lean-toolchain mismatch, and refuses a `mathlib` package whose tag or
-  # Lake dependency revisions differ from Aeneas's lake-manifest.json. Bump
+  # `lean`, `mathlib-oleans`, `mathlib` and this package move TOGETHER: a
+  # Mathlib tag supports exactly one Lean, and Aeneas pins one Mathlib tag.
+  # build.sh refuses a lean-toolchain mismatch, and refuses a `mathlib`
+  # package whose tag or Lake dependency revisions differ from Aeneas's
+  # lake-manifest.json (`mathlib` itself refuses oleans not compiled from
+  # its sources). Bump
   # lean only with an aeneas commit whose backends/lean/lean-toolchain names
   # it (pkgs#999).
   #
@@ -52,7 +54,11 @@ let aeneas_sha = "ab34bd28458a08c150b7cbf1873e59af74588138" in
     coreutils,
     lean,
     # Every Mathlib module (and batteries, aesop, Qq, ProofWidgets, ...),
-    # built from source; read through /usr/share/mathlib/LEAN_PATH.
+    # built from source. `mathlib` is the thin layer (LEAN_PATH, MANIFEST,
+    # lake-manifest.json under /usr/share/mathlib, plus the licences); the
+    # oleans are `mathlib-oleans`', which `mathlib` brings in as a runtime
+    # dep, under /usr/lib/lean/mathlib/<lake package>/lib. Read through
+    # /usr/share/mathlib/LEAN_PATH.
     mathlib,
     # build.sh orders the module builds with make and reads lean's
     # `--deps-json` header parse and the lake manifests with jq.
@@ -70,8 +76,9 @@ let aeneas_sha = "ab34bd28458a08c150b7cbf1873e59af74588138" in
   },
 
   # Aeneas's oleans only, dot-free so the globs see them:
-  # `usr/lib/lean/pkgs/aeneas/lib/…`. Mathlib and its dependencies are the
-  # `mathlib` package's, under usr/lib/lean/mathlib/<name>/lib. A consumer runs
+  # `usr/lib/lean/pkgs/aeneas/lib/…`. Mathlib and its dependencies are
+  # `mathlib-oleans`' (via `mathlib`), under usr/lib/lean/mathlib/<name>/lib.
+  # A consumer runs
   #   LEAN_PATH=$(cat /usr/lib/lean/pkgs/LEAN_PATH) lean …
   # (Aeneas first, then the mathlib package's entries); no lake downstream.
   outputs = {
@@ -90,7 +97,8 @@ let aeneas_sha = "ab34bd28458a08c150b7cbf1873e59af74588138" in
 
   runtime_deps = [
     lean,
-    # The Mathlib oleans Aeneas imports; the LEAN_PATH file names their paths.
+    # All of Mathlib for consumers: `mathlib` carries LEAN_PATH and pulls in
+    # `mathlib-oleans` (the oleans); our LEAN_PATH file names their paths.
     mathlib,
   ],
 

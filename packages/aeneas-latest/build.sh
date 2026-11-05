@@ -3,9 +3,11 @@
 # the `mathlib` package's installed oleans.
 #
 # No lake, no network. Mathlib (and batteries, aesop, Qq, ...) come prebuilt
-# from the `mathlib` build dep, which compiled them from sha256-pinned
-# sources. Lake cannot reuse those oleans: it decides "up to date" from the
-# per-module `.trace` files, which `mathlib` deliberately does not install,
+# from the `mathlib` build dep: its runtime dep `mathlib-oleans` compiled them
+# from sha256-pinned sources (under /usr/lib/lean/mathlib), and `mathlib`
+# itself ships /usr/share/mathlib/{LEAN_PATH,MANIFEST,lake-manifest.json}.
+# Lake cannot reuse those oleans: it decides "up to date" from the
+# per-module `.trace` files, which `mathlib-oleans` deliberately does not install,
 # and with no trace it rebuilds the whole dependency (~30 min, and into a
 # read-only tree). Dropping `require mathlib` does not help either: Lake 4.35
 # runs every `lean` with LEAN_PATH set to the empty string and resolves
