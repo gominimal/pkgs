@@ -41,7 +41,7 @@ let version = "20240715" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "GPL-2.0-only AND LGPL-2.0-only",
+      license_spdx = "GPL-2.0-only AND LGPL-2.0-only WITH OCaml-LGPL-linking-exception",
     } | Attrs,
   tests = {
     findlib_resolve =
