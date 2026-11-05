@@ -19,3 +19,8 @@ esac
 # ReleaseSmall is upstream's documented release build.
 zig build -Doptimize=ReleaseSmall -Dtarget="$ZTARGET" \
   -Dversion="$MINIMAL_ARG_VERSION" --prefix "$OUTPUT_DIR/usr"
+
+# The binary is static, so the licences of everything compiled into it ship with it:
+# tmd's own LICENSE and upstream's THIRD_PARTY_NOTICES.md (ghostty-vt, uucode, Unicode
+# data, NanoSVG, stb, the Zig standard library, musl).
+install -Dm644 -t "$OUTPUT_DIR/usr/share/licenses/tmd" LICENSE THIRD_PARTY_NOTICES.md

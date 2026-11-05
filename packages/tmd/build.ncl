@@ -1,4 +1,4 @@
-let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 
 let base = import "../base/build.ncl" in
 let curl = import "../curl/build.ncl" in
@@ -41,6 +41,10 @@ let version = "0.1.0" in
 
   outputs = {
     tmd = { glob = "usr/bin/tmd" } | OutputBin,
+    # LICENSE (tmd, Apache-2.0) and upstream's THIRD_PARTY_NOTICES.md: the static binary
+    # carries ghostty-vt, uucode, Unicode data, NanoSVG, stb, the Zig standard library
+    # and musl, whose MIT / Zlib / Unicode-3.0 terms require the notices to travel with it.
+    licenses = { glob = "usr/share/licenses/tmd/*" } | OutputData,
   },
 
   tests = {
@@ -53,12 +57,25 @@ let version = "0.1.0" in
           ["/bin/bash", "-c", "printf '# Title\\n\\n**bold** text\\n' | tmd -p | grep -q 'bold text'"],
         ],
       } | Test,
+    notices =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "grep -q 'Apache License' /usr/share/licenses/tmd/LICENSE"],
+          ["/bin/bash", "-c", "grep -q '^## musl' /usr/share/licenses/tmd/THIRD_PARTY_NOTICES.md && grep -q '^## Ghostty' /usr/share/licenses/tmd/THIRD_PARTY_NOTICES.md"],
+        ],
+      } | Test,
   },
 
   attrs =
     {
       upstream_version = version,
-      license_spdx = "Apache-2.0",
+      # tmd is Apache-2.0; the static binary also compiles in ghostty-vt, uucode, the Zig
+      # standard library and musl (MIT), NanoSVG (Zlib), Unicode data (Unicode-3.0) and
+      # stb_image / stb_truetype (MIT or public domain, Unlicense). Upstream's
+      # THIRD_PARTY_NOTICES.md lists each; it is installed under usr/share/licenses/tmd.
+      license_spdx = "Apache-2.0 AND MIT AND Zlib AND Unicode-3.0 AND (MIT OR Unlicense)",
       source_provenance = {
         category = 'GithubRepo,
         owner = "jtnk",
