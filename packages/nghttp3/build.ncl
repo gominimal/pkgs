@@ -4,15 +4,16 @@ let cmake = import "../cmake/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let pkgconf = import "../pkgconf/build.ncl" in
 
-let version = "1.18.0" in
+let version = "1.19.0" in
 {
   name = "nghttp3",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/ngtcp2/nghttp3/releases/download/v%{version}/nghttp3-%{version}.tar.gz",
-      sha256 = "2812e9c06583fa24c8dc46bdb5291310a69196352ceaca8fbe98106ff36ae7d8",
+      sha256 = "0dc9a55d38ca04c282524bfecdc5e31d393a4bb430200263dd06a87801a150af",
       extract = true,
       strip_prefix = "nghttp3-%{version}",
     } | Source,
@@ -20,6 +21,7 @@ let version = "1.18.0" in
     cmake,
     make,
     toolchain,
+    pkgconf,
   ],
   runtime_deps = [
     glibc,

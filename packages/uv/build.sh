@@ -11,7 +11,7 @@ export RUSTFLAGS="-C linker=gcc"
 # >>> pkgmgr lock-patch (generated; regenerate with `pkgmgr lock-patch uv`, never edit)
 # security-floors-lock.patch is a cargo-resolved delta against upstream's Cargo.lock; it is
 # only valid for the exact lock it was generated from.
-echo "968afc762afac196109a89b7546ef2346ecca377208a70686d37a61fecc08d0a  Cargo.lock" | sha256sum -c --status - || {
+echo "888a278b0bf71d66142fe520431d53b0a8b5f2f5864846acc9a1a4f2270952e9  Cargo.lock" | sha256sum -c --status - || {
   echo "ERROR: upstream Cargo.lock changed; run: pkgmgr lock-patch uv" >&2
   exit 1
 }
@@ -29,16 +29,20 @@ if grep -A1 '^name = "memmap2"$' Cargo.lock | grep -qE '^version = "0[.]9[.](([0
   echo "ERROR: memmap2 below its security floor 0.9.11 is in Cargo.lock (RUSTSEC-2026-0186)" >&2
   exit 1
 fi
-if grep -A1 '^name = "rustls"$' Cargo.lock | grep -qE '^version = "0[.]23[.](([0-9]|[1-3][0-9]|4[0-5])([-+][^"]*)?|46-[^"]*)"$'; then
-  echo "ERROR: rustls below its security floor 0.23.46 is in Cargo.lock (RUSTSEC-2026-0346, RUSTSEC-2026-0347, RUSTSEC-2026-0348, RUSTSEC-2026-0349)" >&2
-  exit 1
-fi
 if grep -A1 '^name = "tokio"$' Cargo.lock | grep -qE '^version = "1[.]53[.](([0-2])([-+][^"]*)?|3-[^"]*)"$'; then
   echo "ERROR: tokio below its security floor 1.53.3 is in Cargo.lock (RUSTSEC-2026-0386)" >&2
   exit 1
 fi
+if grep -A1 '^name = "zstd"$' Cargo.lock | grep -qE '^version = "0[.]13[.](([0-3])([-+][^"]*)?|4-[^"]*)"$'; then
+  echo "ERROR: zstd below its security floor 0.13.4 is in Cargo.lock (RUSTSEC-2026-0391)" >&2
+  exit 1
+fi
 if grep -A1 '^name = "zstd"$' Cargo.lock | grep -qE '^version = "0[.]14[.](([0-2])([-+][^"]*)?|3-[^"]*)"$'; then
   echo "ERROR: zstd below its security floor 0.14.3 is in Cargo.lock (RUSTSEC-2026-0391)" >&2
+  exit 1
+fi
+if grep -A1 '^name = "zstd-safe"$' Cargo.lock | grep -qE '^version = "(7[.]4[.]0-[^"]*|7[.]2[.][0-9]+([-+][^"]*)?)"$'; then
+  echo "ERROR: zstd-safe below its security floor 7.4.0 is in Cargo.lock (RUSTSEC-2026-0395, RUSTSEC-2026-0396, RUSTSEC-2026-0397, RUSTSEC-2026-0398, RUSTSEC-2026-0399, RUSTSEC-2026-0400, RUSTSEC-2026-0401, RUSTSEC-2026-0402, RUSTSEC-2026-0403, RUSTSEC-2026-0404, RUSTSEC-2026-0405, RUSTSEC-2026-0406)" >&2
   exit 1
 fi
 if grep -A1 '^name = "zstd-safe"$' Cargo.lock | grep -qE '^version = "(8[.]2[.]0-[^"]*|8[.]0[.][0-9]+([-+][^"]*)?)"$'; then

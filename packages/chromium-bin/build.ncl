@@ -191,20 +191,20 @@ in
     {
       upstream_version = browser_version,
       license_spdx = "BSD-3-Clause",
-      # NOT the origin of these bytes (`binary_from` says where they come
-      # from), but LOAD-BEARING for vulnerability scanning: supply-chain's
-      # cpe_remap maps pkg:github/microsoft/playwright -> google:chrome,
-      # which is how BOTH chromium packages see Chrome's CVEs at all.
-      # ungoogled-chromium <v>-N is Chromium <v> plus patches, so Chrome's
-      # CVE ranges apply to `upstream_version` as-is. Removing or changing
-      # this without a matching cpe_remap/cpe_identity entry makes the
-      # package scan 0/0/0 — a silent false negative. Re-identifying the
-      # pair is a separate, coordinated change, tracked in
-      # gominimal/pkgmgr-rs#1029 (needs a supply-chain cpe_remap first).
+      # The origin of these bytes. Chrome's CVEs do NOT come through this
+      # repo: supply-chain's package_cpe_identity.toml maps the package
+      # NAME `chromium-bin` to google:chrome (pkgmgr-rs#1029), and that
+      # identity takes precedence over this provenance in the scan and on the
+      # lifecycle page. ungoogled-chromium <v>-N is Chromium <v> plus patches,
+      # so Chrome's CVE ranges apply to `upstream_version` (the bare <v>)
+      # as-is. Renaming the package without moving that identity entry makes
+      # it scan 0/0/0, a silent false negative. Version checks and updates
+      # don't read this field either: pkgmgr's chromium resolver handles this
+      # package by name.
       source_provenance = {
         category = 'GithubRepo,
-        owner = "microsoft",
-        repo = "playwright",
+        owner = "ungoogled-software",
+        repo = "ungoogled-chromium-portablelinux",
       },
       binary_from = release_url,
     } | Attrs,
