@@ -9,7 +9,7 @@ let glibc-bedrock = import "../glibc-bedrock-2.42/build.ncl" in # the stage0 bin
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let curl = import "../curl/build.ncl" in
-let llvm = import "../llvm/build.ncl" in
+let llvm-21 = import "../llvm-21/build.ncl" in # LLVM 21, prefixed under /usr/lib/llvm-21
 let openssl = import "../openssl/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let python = import "../python/build.ncl" in
@@ -55,7 +55,7 @@ let amd64_spec =
       # beside the toolchain's glibc.  Listed here because `subsetOf` in build_deps is not supported.
       subsetOf glibc-bedrock ["sysroot_lib"],
       libffi,
-      llvm, # clang, clang++, llvm-config and libLLVM-21.so; also present at build time
+      llvm-21, # clang, clang++, llvm-config and libLLVM.so.21.1 under /usr/lib/llvm-21; also present at build time
       openssl,
       sqlite,
       subsetOf gcc ["libgcc", "libstdcpp"],

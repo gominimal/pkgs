@@ -8,7 +8,7 @@ let rustc-1-94-1 = import "../rustc-1.94.1/build.ncl" in # the stage0
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let curl = import "../curl/build.ncl" in
-let llvm = import "../llvm/build.ncl" in
+let llvm-21 = import "../llvm-21/build.ncl" in # LLVM 21, prefixed under /usr/lib/llvm-21
 let openssl = import "../openssl/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let python = import "../python/build.ncl" in
@@ -48,7 +48,7 @@ let amd64_spec =
     ],
     runtime_deps = [
       libffi,
-      llvm, # clang, clang++, llvm-config and libLLVM-21.so; also present at build time
+      llvm-21, # clang, clang++, llvm-config and libLLVM.so.21.1 under /usr/lib/llvm-21; also present at build time
       openssl,
       sqlite,
       subsetOf gcc ["libgcc", "libstdcpp"],

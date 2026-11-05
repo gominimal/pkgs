@@ -23,10 +23,11 @@ rm -rf "$NPM_STUB"
 
 # Emscripten looks for a config beside its own root before falling back to
 # $HOME, so the packaged config lives inside the install tree and needs no
-# environment set up by the caller. LLVM_ROOT is a directory of binaries;
+# environment set up by the caller. LLVM_ROOT is a directory of binaries:
+# LLVM 21's, from the prefixed llvm-21 package (nothing of it is in /usr/bin).
 # BINARYEN_ROOT is a prefix with bin/ underneath it.
 cat > "$EM_ROOT/.emscripten" <<'EOF'
-LLVM_ROOT = '/usr/bin'
+LLVM_ROOT = '/usr/lib/llvm-21/bin'
 BINARYEN_ROOT = '/usr'
 NODE_JS = '/usr/bin/node'
 EOF

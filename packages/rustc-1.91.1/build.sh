@@ -50,6 +50,27 @@ export LDFLAGS="-Wl,--build-id=none"
 export LIBSQLITE3_SYS_USE_PKG_CONFIG=1
 export LIBSSH2_SYS_USE_PKG_CONFIG=1
 
+# --- LLVM 21: the prefixed llvm-21 package, not the default llvm ---
+# Every rung targets LLVM 21 and stays on it when the default `llvm` moves on (LLVM plan step 7),
+# so it builds against the frozen llvm-21 under /usr/lib/llvm-21. Nothing of it is in /usr/bin or
+# /usr/lib: its bin/ goes first on PATH (clang, clang++, llvm-config), and LD_LIBRARY_PATH carries
+# its lib/ for the build, for the two compilers that run here without a RUNPATH to it: the amd64
+# bedrock stage0 (link-shared against libLLVM.so.21.1) and x.py's intermediate stage1. A bundled,
+# rust-suffixed libLLVM (the arm64 bedrock stage0) has a different soname, so this cannot shadow it.
+# The installed toolchain gets its own RUNPATH to the prefix from the RUSTFLAGS_* link-arg, P3
+# checks it with readelf, and P5 runs the gates with LD_LIBRARY_PATH unset to prove it.
+LLVM_PREFIX=/usr/lib/llvm-21
+PATH="${LLVM_PREFIX}/bin:${PATH}"; export PATH
+LD_LIBRARY_PATH="${LLVM_PREFIX}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"; export LD_LIBRARY_PATH
+# bootstrap appends RUSTFLAGS_BOOTSTRAP to what the stage0 compiler builds and
+# RUSTFLAGS_NOT_BOOTSTRAP to everything later, so the installed compiler gets it either way.
+export RUSTFLAGS_BOOTSTRAP="-Clink-arg=-Wl,-rpath,${LLVM_PREFIX}/lib"
+export RUSTFLAGS_NOT_BOOTSTRAP="-Clink-arg=-Wl,-rpath,${LLVM_PREFIX}/lib"
+[ "$(command -v llvm-config)" = "${LLVM_PREFIX}/bin/llvm-config" ] || {
+  echo "rustc: FATAL llvm-config resolves to '$(command -v llvm-config)', expected ${LLVM_PREFIX}/bin/llvm-config (packages/llvm-21)" >&2; exit 1; }
+[ "$(command -v clang)" = "${LLVM_PREFIX}/bin/clang" ] || {
+  echo "rustc: FATAL clang resolves to '$(command -v clang)', expected ${LLVM_PREFIX}/bin/clang (packages/llvm-21)" >&2; exit 1; }
+
 # --- P0 preconditions: tools, LLVM major, the stage0 itself, the extracted source ---
 for t in clang clang++ llvm-config ar ranlib python3 pkg-config cmake \
          find sed grep tar xz sha256sum readelf; do
@@ -236,7 +257,7 @@ llvm-bitcode-linker = false
 cc = "clang"
 cxx = "clang++"
 linker = "clang"
-llvm-config = "/usr/bin/llvm-config"
+llvm-config = "${LLVM_PREFIX}/bin/llvm-config"
 
 [install]
 prefix = "${PREFIX}"
@@ -269,6 +290,15 @@ DESTDIR="${OUTPUT_DIR}" ./x.py install
 [ -x "${DST}/bin/cargo" ] || { echo "rustc: FATAL install produced no ${DST}/bin/cargo (extended=true should install it)" >&2; exit 1; }
 [ -d "${DST}/lib/rustlib/${TRIPLE}/lib" ] || { echo "rustc: FATAL installed std sysroot missing at ${DST}/lib/rustlib/${TRIPLE}/lib" >&2; exit 1; }
 ls "${DST}"/lib/librustc_driver*.so >/dev/null 2>&1 || { echo "rustc: FATAL librustc_driver*.so missing from ${DST}/lib" >&2; exit 1; }
+# librustc_driver links libLLVM.so.21.1 from the llvm-21 prefix, which is on no default search
+# path: it must carry a RUNPATH to it (the next rung and packages/rust load it as their stage0).
+for drv in "${DST}"/lib/librustc_driver*.so; do
+  readelf -d "${drv}" | grep -q 'NEEDED.*libLLVM\.so\.21' || {
+    echo "rustc: FATAL ${drv} does not link libLLVM.so.21:" >&2; readelf -d "${drv}" | grep -E 'NEEDED|R(UN)?PATH' >&2; exit 1; }
+  readelf -d "${drv}" | grep -E 'R(UN)?PATH' | grep -qF "${LLVM_PREFIX}/lib" || {
+    echo "rustc: FATAL ${drv} has no RUNPATH to ${LLVM_PREFIX}/lib:" >&2; readelf -d "${drv}" | grep -E 'NEEDED|R(UN)?PATH' >&2; exit 1; }
+done
+echo "rustc INSTALL: librustc_driver links libLLVM.so.21 with RUNPATH ${LLVM_PREFIX}/lib" >&2
 
 # rust-gdbgui is a shell script with a re-rooted path; packages/rust drops it too.
 rm -f "${DST}/bin/rust-gdbgui"
@@ -282,8 +312,8 @@ ls -la "${DST}" >&2 || true
 cat > "${DST}/BUILDINFO" <<EOF
 rustc-version: ${VERSION}
 built-by-stage0: rustc ${STAGE0_VERSION} (${S0V}) from ${STAGE0_PREFIX}
-host-cc: clang (packages/llvm ${LLVMVER})
-host-llvm: external /usr/bin/llvm-config (${LLVMVER}), link-shared
+host-cc: clang (packages/llvm-21 ${LLVMVER}, ${LLVM_PREFIX}/bin)
+host-llvm: external ${LLVM_PREFIX}/bin/llvm-config (${LLVMVER}), link-shared, RUNPATH ${LLVM_PREFIX}/lib
 target: ${TRIPLE}
 offline: in-tree .cargo vendor redirect; stage0 pin skips src/stage0 download; external llvm-config; vendored -sys submodule markers
 seal-status: see rustc-${VERSION}.answers
@@ -309,6 +339,10 @@ if [ -n "${hits_o}" ]; then
 else
   echo "rustc SWEEP: clean of staging paths (relocatable)" >&2
 fi
+
+# The gates run without the build's LD_LIBRARY_PATH, so they also prove the installed toolchain
+# finds libLLVM through its own RUNPATH, as its consumers will.
+unset LD_LIBRARY_PATH
 
 # --- P5 gates: run the installed binaries from ${OUTPUT_DIR}, after install ---
 # GATE-3 runs ten std constructs whose exit code is their computed sum (42), never a literal.

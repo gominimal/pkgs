@@ -17,8 +17,10 @@
 # an EMPTY stub on amd64 while this is off, and git cannot see that: give a new
 # consumer of one a sealed tarball the same way, or flip this back first.
 #
-# The amd64 rustc tarball loads the LIVE llvm's libLLVM (see rustc-1.98.1):
-# an llvm soname bump needs the tarball regenerated while this is off.
+# The amd64 rustc tarball loads libLLVM.so.21.1 at run time (see rustc-1.98.1).
+# It takes it from the frozen, prefixed llvm-21, so the default llvm can move
+# on; moving that stage0 off LLVM 21 needs the tarball regenerated while this
+# is off.
 #
 # true: build the chain from hex0 again. The longer-term fix is to seal the
 # chain's build tools so it stops depending on the tree, then flip this back.
