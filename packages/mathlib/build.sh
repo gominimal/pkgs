@@ -23,7 +23,8 @@ same() { # what have-file want-file
   if [ "$(sha256sum < "$2")" != "$(sha256sum < "$3")" ]; then
     echo "mathlib: $1 differs from what mathlib-oleans was compiled from ($3); refusing to package." >&2
     echo "  The mathlib-oleans in this build is not the one these sources describe (e.g. a stale or" >&2
-    echo "  patched artifact). Rebuild it from this tree: min package build --rebuild mathlib-oleans." >&2
+    echo "  patched artifact). Rebuild it from this tree: min package build --rebuild mathlib-oleans" >&2
+    echo "  (~35 min on build-bot, longer locally; its build.sh sizes the job count to the box's memory)." >&2
     exit 1
   fi
 }
@@ -38,23 +39,29 @@ PW="$ROOT/leanprover-community-ProofWidgets4-df72b02"
   LC_ALL=C sha256sum package-lock.json $(LC_ALL=C ls js/*.js) ) > "$ROOT/widget.sha256"
 same "ProofWidgets widget/ (package-lock.json, js/*.js)" "$ROOT/widget.sha256" "$INFO/proofwidgets-widget.sha256"
 
-# 2. Every Mathlib module has an .olean in the installed tree (mathlib-oleans
-#    checked its sidecars at compile time; this catches a truncated subset).
+# 2. Every Mathlib module has an .olean and an .ir in the installed tree
+#    (mathlib-oleans checked each module's files at compile time; this
+#    catches a truncated subset).
 n_src=$(find Mathlib.lean Mathlib -name '*.lean' | wc -l)
-n_olean=$(find -L "$LIBROOT/mathlib/lib/Mathlib.olean" "$LIBROOT/mathlib/lib/Mathlib" -name '*.olean' 2>/dev/null | wc -l)
-if [ "$n_olean" -ne "$n_src" ]; then
-  echo "mathlib: $n_src Mathlib modules but $n_olean oleans under $LIBROOT/mathlib; refusing to package." >&2
-  echo "  mathlib-oleans' artifact is incomplete. Rebuild it: min package build --rebuild mathlib-oleans." >&2
-  exit 1
-fi
+for ext in olean ir; do
+  n=$(find -L "$LIBROOT/mathlib/lib/Mathlib.$ext" "$LIBROOT/mathlib/lib/Mathlib" -name "*.$ext" 2>/dev/null | wc -l)
+  if [ "$n" -ne "$n_src" ]; then
+    echo "mathlib: $n_src Mathlib modules but $n .$ext files under $LIBROOT/mathlib; refusing to package." >&2
+    echo "  mathlib-oleans' artifact is incomplete. Rebuild it: min package build --rebuild mathlib-oleans" >&2
+    echo "  (~35 min on build-bot, longer locally; its build.sh sizes the job count to the box's memory)." >&2
+    exit 1
+  fi
+done
 
-# 3. LEAN_PATH (Mathlib first, then its dependencies), lake-manifest.json,
-#    and a MANIFEST of what is installed, so a consumer can tell a complete
-#    package from a truncated one. Sizes are summed file bytes, not `du`
-#    (block allocation is not reproducible; see aeneas-latest).
+# 3. LEAN_PATH (Mathlib first, then its dependencies in byte order),
+#    lake-manifest.json, and a MANIFEST of what is installed, so a consumer
+#    can tell a complete package from a truncated one. The order is
+#    LC_ALL=C, not the sandbox locale's collation: the fv-lab loadout copies
+#    this exact string. Sizes are summed file bytes, not `du` (block
+#    allocation is not reproducible).
+PKGS="$(cd "$LIBROOT" && for n in $(LC_ALL=C ls); do if [ -d "$n" ]; then echo "$n"; fi; done)"
 LEAN_PATH_OUT="$LIBROOT/mathlib/lib"
-for d in "$LIBROOT"/*/; do
-  n="$(basename "$d")"
+for n in $PKGS; do
   [ "$n" = mathlib ] || LEAN_PATH_OUT="$LEAN_PATH_OUT:$LIBROOT/$n/lib"
 done
 SHARE="$OUTPUT_DIR/usr/share/mathlib"
@@ -63,8 +70,8 @@ printf '%s\n' "$LEAN_PATH_OUT" > "$SHARE/LEAN_PATH"
 cp lake-manifest.json "$SHARE/"
 {
   echo "mathlib $MINIMAL_ARG_VERSION"
-  for d in "$LIBROOT"/*/; do
-    n="$(basename "$d")"
+  for n in $PKGS; do
+    d="$LIBROOT/$n"
     echo "$n $(find -L "$d" -name '*.olean' | wc -l) oleans $(find -L "$d" -name '*.ir' | wc -l) ir $(find -L "$d" -type f -printf '%s\n' | awk '{s+=$1} END {printf "%d", s/1024}') KB"
   done
   echo "total files: $(find -L "$LIBROOT" -type f | wc -l)"

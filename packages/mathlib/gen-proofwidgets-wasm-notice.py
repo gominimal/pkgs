@@ -52,8 +52,8 @@ What it checks, and refuses to write anything on any failure:
      or a CURATED entry that matches nothing, fails the run.
 
 The output records the sha256 of each bundle it was checked against;
-build.sh refuses to package if a pinned ProofWidgets bundle differs, so a
-bump cannot ship a stale notice.
+install-licences.sh (run by both packages' build.sh) refuses to package if a
+pinned ProofWidgets bundle differs, so a bump cannot ship a stale notice.
 
 Safety: the downloads are untrusted DATA. Nothing from them is executed or
 extracted to disk; licence files and Cargo.toml are read out of the
@@ -563,8 +563,8 @@ def main() -> int:
     w(f"  wasm sha256: {sha256(wasm)}\n")
     w(f"penrose source: https://github.com/penrose/penrose/tree/{pen_commit} (Cargo.lock sha256 {sha256(cargo_lock_raw)})\n")
     w(f"rustc: {rustc} (rust-lang/rust@{std['commit']})\n\n")
-    w("These bundles are what this file was checked against. build.sh refuses to\n"
-      "package if either hash differs, so a ProofWidgets bump forces a re-run:\n\n")
+    w("These bundles are what this file was checked against. The package build\n"
+      "fails if either hash differs, so a ProofWidgets bump forces a re-run:\n\n")
     for fn, h in bundles:
         w(f"{fn} sha256: {h}\n")
     w("\n")

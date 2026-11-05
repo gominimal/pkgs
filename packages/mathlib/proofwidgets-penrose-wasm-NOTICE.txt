@@ -32,8 +32,8 @@ all of the texts it ships are reproduced.
 penrose source: https://github.com/penrose/penrose/tree/fd4aae0b95ad6f7b35863de87b16e796e2c3bfda (Cargo.lock sha256 37ab4de2c96f7d7b3c9f1b6b9ce58081365a3c68b6073a4d5a5a4f9bf92d10c9)
 rustc: 1.71.1 (eb26296b5 2023-08-03) (rust-lang/rust@eb26296b556cef10fb713a38f3d16b9886080f26)
 
-These bundles are what this file was checked against. build.sh refuses to
-package if either hash differs, so a ProofWidgets bump forces a re-run:
+These bundles are what this file was checked against. The package build
+fails if either hash differs, so a ProofWidgets bump forces a re-run:
 
 penroseCanvas.js sha256: 746775ae85eb641819b6bc53955581c9cf8103848eb0602fba23e4c3e195ba02
 penroseDisplay.js sha256: 9364a664c95a5ab19e8f92920b0a43fe4e1904053e9f38a64085f4a0124d66f6

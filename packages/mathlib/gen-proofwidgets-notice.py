@@ -32,9 +32,9 @@ bumped, in both modes, then commit both outputs beside build.ncl:
         <download dir, may be the one above> \\
         > proofwidgets-js-third-party.txt
 
-Both outputs record `package-lock.json sha256: <hex>`; build.sh refuses to
-package if either differs from the pinned ProofWidgets lockfile, so a stale
-file cannot ship. Output is deterministic (sorted by name, then version).
+Both outputs record `package-lock.json sha256: <hex>`; install-licences.sh
+(run by both packages' build.sh) refuses to package if either differs from
+the pinned ProofWidgets lockfile, so a stale file cannot ship. Output is deterministic (sorted by name, then version).
 
 Safety: the tarballs are untrusted DATA. Nothing from them is executed or
 written to disk except the tarball itself; licence files and package.json are
@@ -397,7 +397,7 @@ runtime, not bundled), and other packages may be tree-shaken away.
 Licences declared: {", ".join(declared)}{note}
 
 package-lock.json sha256: {h}
-(build.sh refuses to package if the pinned ProofWidgets lockfile differs;
+(the package build fails if the pinned ProofWidgets lockfile differs;
 regenerate this file from the new lockfile when ProofWidgets is bumped.)
 
 """)

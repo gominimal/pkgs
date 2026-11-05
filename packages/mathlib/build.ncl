@@ -41,8 +41,8 @@ let version = "4.35.0" in
     [
       { file = "build.sh" } | Local,
       base,
-      lean,
-      # mathlib-oleans is a runtime dep (below), so it is in this build too.
+      # lean and mathlib-oleans are runtime deps (below), so they are in
+      # this build too.
     ]
     # The licence installer and the four third-party notices (shared with
     # mathlib-oleans).
@@ -75,8 +75,9 @@ let version = "4.35.0" in
   attrs =
     {
       upstream_version = version,
-      # Verified against the LICENSE file in each pinned tarball (build.sh
-      # installs them and fails closed if one is missing or differs):
+      # Verified against the LICENSE file in each pinned tarball
+      # (install-licences.sh installs them and fails closed if one is
+      # missing or differs):
       #   Apache-2.0: Mathlib, batteries, aesop, Qq, ProofWidgets4,
       #               import-graph, LeanSearchClient, plausible
       #   MIT:        lean4-cli
@@ -89,7 +90,8 @@ let version = "4.35.0" in
       # WebAssembly build of Graphviz 15.0.0 (via @hpcc-js/wasm): EPL-2.0,
       # with its lib/vpsc under CPL-1.0, plus expat, Emscripten and its musl
       # libc (MIT), and LLVM's libc++, libc++abi, libunwind and compiler-rt
-      # (Apache-2.0 WITH LLVM-exception).
+      # (Apache-2.0 WITH LLVM-exception); the JS that decodes it inlines
+      # fzstd (MIT) and @hpcc-js/esbuild-plugins' basE91 loader (Apache-2.0).
       # EPL/CPL are weak (file-level) copyleft: redistributing the unmodified
       # object code needs the licence texts and a source offer, both in
       # proofwidgets-wasm-NOTICE.txt (pkgmgr-rs#1181). The offer names

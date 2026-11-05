@@ -13,7 +13,7 @@ runtime, not bundled), and other packages may be tree-shaken away.
 Licences declared: Apache-2.0, BSD-3-Clause, CC-BY-4.0, CC0-1.0, ISC, MIT, MIT AND ISC, Unlicense (webgl-constants declares none in the lockfile; its npm tarball's LICENSE is MIT)
 
 package-lock.json sha256: 3850e21b0823d6200db6da336ce1bd17a463db97ce314585ae47ed81a7327a7d
-(build.sh refuses to package if the pinned ProofWidgets lockfile differs;
+(the package build fails if the pinned ProofWidgets lockfile differs;
 regenerate this file from the new lockfile when ProofWidgets is bumped.)
 
 @babel/runtime                   7.28.6        MIT
