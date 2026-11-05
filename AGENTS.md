@@ -818,6 +818,20 @@ Two things specific to this repo, which the public page does not carry:
   `SH_NOW=` to omit the build time) rather than re-exporting `SOURCE_DATE_EPOCH`.
 
 
+#### Preloading detbuild
+
+`packages/detbuild` ships `libdetbuild.so`, an `LD_PRELOAD` shim for builds that leak process entropy or the host kernel version into what they ship (rustc and proc-macro `HashMap` order, LuaJIT's string hash, perl's `Config`). It replaces getrandom, getentropy, the raw getrandom syscall, arc4random and reads of `/dev/urandom` and `/dev/random` with a fixed-seed stream, and pins `uname`'s release to `6.1.0-minimal`. `packages/detbuild/detbuild.c` lists what it does not cover (AT_RANDOM, static and Go binaries, glibc-internal entropy).
+
+Every byte it hands out is predictable, including the keys behind a TLS handshake made under it. So:
+
+- **Add `detbuild` to `build_deps`.** A build sandbox mounts only the dependency closure. Without the dependency, `ld.so` reports that the object cannot be preloaded and ignores it, so the command runs unpinned and the build still succeeds.
+- **Preload one command:** `LD_PRELOAD=/usr/lib/minimal/libdetbuild.so cargo build --frozen --release`. Never `export LD_PRELOAD`, and never set it through a `.ncl` `env` or `vars`.
+- **Never on a command that uses the network.** A build has the network when the package declares `needs.internet` or when any package in its build closure does (its `build_deps` and `runtime_deps`, and their runtime closures). Every package that build-depends on `rust` has the network this way, with no `needs` of its own. In such a build, fetch first without the preload (`cargo fetch --locked`, and any prebuilt download such as rusty_v8), then preload only the offline step (`cargo build --frozen`). A preloaded `cargo` always takes `--frozen` or `--offline`.
+- **Never a sandbox default** (gominimal/minimal#2227 proposed one).
+- **The kernel version is fake.** It is deliberately lower than any build host, so a version-keyed feature check can only turn a feature off. A build that needs a newer kernel feature should probe for the feature, not the version.
+
+`.github/scripts/detbuild_preload_guard.py` enforces the first three rules on sources, and reads each build's closure from the evaluator's catalog dump. gominimal/minimal#2489 tracks rejecting `libdetbuild` strings captured into built outputs (libtool wrappers, configure caches).
+
 ### Step 4: Validate
 
 Run the config check against your package. This validates that the Nickel spec parses correctly

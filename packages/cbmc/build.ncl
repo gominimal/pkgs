@@ -68,7 +68,8 @@ let version = "6.11.0" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "BSD-4-Clause",
+      # cbmc's LICENSE is BSD-4-Clause; minisat2 and cadical, compiled in, are MIT.
+      license_spdx = "BSD-4-Clause AND MIT",
       source_provenance = {
         category = 'GithubRepo,
         owner = "diffblue",

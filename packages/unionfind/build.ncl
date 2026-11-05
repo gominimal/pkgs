@@ -39,7 +39,8 @@ let version = "20220122" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "LGPL-2.0-only",
+      # LICENSE: LGPL 2 plus INRIA's static-linking exception (unionFind.opam agrees).
+      license_spdx = "LGPL-2.0-only WITH OCaml-LGPL-linking-exception",
     } | Attrs,
   tests = {
     findlib_resolve =

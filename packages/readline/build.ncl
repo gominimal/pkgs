@@ -33,7 +33,8 @@ let version = "8.3" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "GPL-3.0-only",
+      # COPYING is GPLv3; every source header says "version 3 ... or (at your option) any later version".
+      license_spdx = "GPL-3.0-or-later",
       source_provenance = {
         category = 'GnuProject,
         name = "readline",

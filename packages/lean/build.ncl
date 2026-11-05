@@ -40,7 +40,7 @@ let version = "4.35.0" in
     # get one, and `bv_decide` fails with "could not execute external process
     # 'cadical'" (found building aeneas-latest). Same release Lean pins.
     cadical,
-    # `lean` and `libleanshared.so` link libssl.so.3 / libcrypto.so.3 (lake's
+    # `lean` and `libleanshared.so` link libssl.so.4 / libcrypto.so.4 (lake's
     # HTTP client). Without this the binary does not START in a closure that
     # lacks openssl — `lean --version` exits 127 from the loader — which the
     # standalone test below now catches. Every session that had run lean so

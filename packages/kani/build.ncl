@@ -122,7 +122,9 @@ in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "Apache-2.0 OR MIT",
+      # The bundled toolchain ships libLLVM; the rustc tarball's COPYRIGHT.html
+      # gives src/llvm-project as "Apache-2.0 WITH LLVM-exception AND NCSA".
+      license_spdx = "(Apache-2.0 OR MIT) AND Apache-2.0 WITH LLVM-exception AND NCSA",
       source_provenance = {
         category = 'GithubRepo,
         owner = "model-checking",
