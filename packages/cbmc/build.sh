@@ -1,6 +1,12 @@
 #!/bin/sh
 set -ex
 
+# gcc 16 turns new warnings (-Wsfinae-incomplete, -Wunused-but-set-variable,
+# -Warray-bounds false positives) into errors under upstream's -Werror.
+# Backport of diffblue/cbmc#9024, merged after 6.11.0 (Kani pins 6.11.0).
+# A rejected hunk fails the build (set -e). Drop with the next cbmc release.
+patch -Np1 -i gcc16-warnings.patch
+
 # CBMC's CMake fetches its SAT solvers at configure time (download_project).
 # The sandbox has no network, so point those URLs at the tarballs this
 # package already declares (extract = false; they land in the build cwd).

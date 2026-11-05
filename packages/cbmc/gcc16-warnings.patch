@@ -1,0 +1,210 @@
+Backport of diffblue/cbmc#9024 "Fix GCC 16 warning-as-error build failures"
+(merge commit 4b26409ce19d4311eb928586f8f363990b5ea495, merged 2026-10-02,
+after cbmc-6.11.0). Fixes #9004. Drop when cbmc > 6.11.0 is packaged.
+
+diff --git a/src/analyses/variable-sensitivity/variable_sensitivity_domain.h b/src/analyses/variable-sensitivity/variable_sensitivity_domain.h
+index 707de1550780..b89ce29483bc 100644
+--- a/src/analyses/variable-sensitivity/variable_sensitivity_domain.h
++++ b/src/analyses/variable-sensitivity/variable_sensitivity_domain.h
+@@ -266,7 +266,7 @@ class variable_sensitivity_domain_factoryt
+   {
+     auto d = std::make_unique<variable_sensitivity_domaint>(
+       object_factory, configuration);
+-    CHECK_RETURN(d->is_bottom());
++    CHECK_RETURN(d->variable_sensitivity_domaint::is_bottom());
+     return std::unique_ptr<statet>(d.release());
+   }
+ 
+diff --git a/src/solvers/smt2/smt2_conv.cpp b/src/solvers/smt2/smt2_conv.cpp
+index 8dada3f3e246..8f48de19c69f 100644
+--- a/src/solvers/smt2/smt2_conv.cpp
++++ b/src/solvers/smt2/smt2_conv.cpp
+@@ -5378,11 +5378,9 @@ void smt2_convt::unflatten(
+ 
+         std::size_t offset=0;
+ 
+-        std::size_t i=0;
+-        for(struct_typet::componentst::const_iterator
+-            it=components.begin();
+-            it!=components.end();
+-            it++, i++)
++        for(struct_typet::componentst::const_iterator it = components.begin();
++            it != components.end();
++            it++)
+         {
+           if(is_zero_width(it->type(), ns))
+             continue;
+diff --git a/src/solvers/smt2_incremental/encoding/struct_encoding.cpp b/src/solvers/smt2_incremental/encoding/struct_encoding.cpp
+index baf18f3187d7..2444fc10f116 100644
+--- a/src/solvers/smt2_incremental/encoding/struct_encoding.cpp
++++ b/src/solvers/smt2_incremental/encoding/struct_encoding.cpp
+@@ -176,8 +176,7 @@ exprt struct_encodingt::encode_member(const member_exprt &member_expr) const
+     }
+     const auto &struct_type =
+       compound_type.id() == ID_struct_tag
+-        ? ns.get().follow_tag(
+-            type_checked_cast<struct_tag_typet>(compound_type))
++        ? ns.follow_tag(type_checked_cast<struct_tag_typet>(compound_type))
+         : type_checked_cast<struct_typet>(compound_type);
+     return count_trailing_bit_width(
+       struct_type, member_expr.get_component_name(), *boolbv_width);
+@@ -243,7 +242,7 @@ exprt struct_encodingt::decode(
+   INVARIANT(
+     can_cast_type<bv_typet>(encoded.type()),
+     "Structs are expected to be encoded into bit vectors.");
+-  const struct_typet definition = ns.get().follow_tag(original_type);
++  const struct_typet definition = ns.follow_tag(original_type);
+   exprt::operandst encoded_fields;
+   for(const auto &component : definition.components())
+   {
+@@ -261,7 +260,7 @@ exprt struct_encodingt::decode(
+   INVARIANT(
+     can_cast_type<bv_typet>(encoded.type()),
+     "Unions are expected to be encoded into bit vectors.");
+-  const union_typet definition = ns.get().follow_tag(original_type);
++  const union_typet definition = ns.follow_tag(original_type);
+   const auto &components = definition.components();
+   if(components.empty())
+     return empty_union_exprt{original_type};
+diff --git a/src/solvers/smt2_incremental/encoding/struct_encoding.h b/src/solvers/smt2_incremental/encoding/struct_encoding.h
+index bb19a0110c4d..0c499f791068 100644
+--- a/src/solvers/smt2_incremental/encoding/struct_encoding.h
++++ b/src/solvers/smt2_incremental/encoding/struct_encoding.h
+@@ -33,7 +33,7 @@ class struct_encodingt final
+ 
+ private:
+   std::unique_ptr<boolbv_widtht> boolbv_width;
+-  std::reference_wrapper<const namespacet> ns;
++  const namespacet &ns;
+ 
+   exprt encode_member(const member_exprt &member_expr) const;
+ };
+diff --git a/src/util/json_irep.cpp b/src/util/json_irep.cpp
+index 2fc56264a7b9..8600e1d99ff8 100644
+--- a/src/util/json_irep.cpp
++++ b/src/util/json_irep.cpp
+@@ -185,11 +185,10 @@ json_objectt json(const source_locationt &location)
+   const auto &pragmas = location.get_pragmas();
+   if(!pragmas.empty())
+   {
+-    auto json_pragma_range = make_range(pragmas.begin(), pragmas.end())
+-                               .map([](const std::pair<irep_idt, irept> &entry)
+-                                    { return json_stringt{entry.first}; });
+-    result["pragma"] =
+-      json_arrayt{json_pragma_range.begin(), json_pragma_range.end()};
++    json_arrayt json_pragmas;
++    for(const auto &pragma : pragmas)
++      json_pragmas.push_back(json_stringt{pragma.first});
++    result["pragma"] = std::move(json_pragmas);
+   }
+ 
+   return result;
+diff --git a/unit/analyses/variable-sensitivity/eval-member-access.cpp b/unit/analyses/variable-sensitivity/eval-member-access.cpp
+index dceb954181bc..3471f0f1cbc8 100644
+--- a/unit/analyses/variable-sensitivity/eval-member-access.cpp
++++ b/unit/analyses/variable-sensitivity/eval-member-access.cpp
+@@ -161,7 +161,6 @@ exprt integer_expression(int i)
+ 
+ exprt top_expression()
+ {
+-  auto top_value =
+-    std::make_shared<abstract_objectt>(integer_typet(), true, false);
+-  return top_value->to_constant();
++  abstract_objectt top_value(integer_typet(), true, false);
++  return top_value.abstract_objectt::to_constant();
+ }
+diff --git a/unit/util/json_array.cpp b/unit/util/json_array.cpp
+index 1c233ee25d25..193e10f54f22 100644
+--- a/unit/util/json_array.cpp
++++ b/unit/util/json_array.cpp
+@@ -6,12 +6,11 @@ Author: Diffblue Ltd.
+ 
+ \*******************************************************************/
+ 
+-#include <testing-utils/use_catch.h>
+-#include <util/constructor_of.h>
+ #include <util/json.h>
+ #include <util/range.h>
+ 
+-#include <string>
++#include <testing-utils/use_catch.h>
++
+ #include <vector>
+ 
+ SCENARIO(
+@@ -43,16 +42,13 @@ SCENARIO(
+   "Test that json_arrayt can be constructed using `ranget`",
+   "[core][util][json]")
+ {
+-  GIVEN("A vector of strings.")
++  GIVEN("A vector of json strings.")
+   {
+-    const std::vector<std::string> input{"foo", "bar"};
+-    THEN(
+-      "A json_arrayt can be constructed from the vector of strings using range "
+-      "and map.")
++    const std::vector<json_stringt> input{
++      json_stringt{"foo"}, json_stringt{"bar"}};
++    THEN("A json_arrayt can be constructed from the vector using range.")
+     {
+-      const json_arrayt array = make_range(input)
+-                                  .map(constructor_of<json_stringt>())
+-                                  .collect<json_arrayt>();
++      const json_arrayt array = make_range(input).collect<json_arrayt>();
+       auto it = array.begin();
+       REQUIRE(it->kind == jsont::kindt::J_STRING);
+       REQUIRE(it->value == "foo");
+diff --git a/unit/util/json_object.cpp b/unit/util/json_object.cpp
+index 74d70147fb34..2771c3f2975d 100644
+--- a/unit/util/json_object.cpp
++++ b/unit/util/json_object.cpp
+@@ -6,11 +6,13 @@ Author: Diffblue Ltd.
+ 
+ \*******************************************************************/
+ 
+-#include <testing-utils/use_catch.h>
+-
+ #include <util/json.h>
++#include <util/json_irep.h>
+ #include <util/optional_utils.h>
+ #include <util/range.h>
++#include <util/source_location.h>
++
++#include <testing-utils/use_catch.h>
+ 
+ #include <algorithm>
+ #include <iterator>
+@@ -104,3 +106,33 @@ SCENARIO(
+     };
+   }
+ }
++
++SCENARIO(
++  "Test that source location pragmas are converted to JSON arrays.",
++  "[core][util][json]")
++{
++  GIVEN("A source location with pragmas.")
++  {
++    source_locationt location;
++    location.add_pragma("disable:pointer-check");
++    location.add_pragma("disable:bounds-check");
++
++    THEN("The pragmas are emitted as strings.")
++    {
++      const json_objectt output = json(location);
++      const json_arrayt &pragmas = to_json_array(output["pragma"]);
++
++      std::vector<std::string> pragma_values;
++      for(const auto &pragma : pragmas)
++      {
++        REQUIRE(pragma.kind == jsont::kindt::J_STRING);
++        pragma_values.push_back(pragma.value);
++      }
++
++      std::sort(pragma_values.begin(), pragma_values.end());
++      REQUIRE(
++        pragma_values == std::vector<std::string>{
++                           "disable:bounds-check", "disable:pointer-check"});
++    }
++  }
++}
