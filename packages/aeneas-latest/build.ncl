@@ -21,21 +21,17 @@ let aeneas_sha = "ab34bd28458a08c150b7cbf1873e59af74588138" in
   # `lean`, `mathlib-oleans`, `mathlib` and this package move TOGETHER: a
   # Mathlib tag supports exactly one Lean, and Aeneas pins one Mathlib tag.
   # build.sh refuses a lean-toolchain mismatch, and refuses a `mathlib`
-  # package whose tag or Lake dependency revisions differ from Aeneas's
-  # lake-manifest.json (`mathlib` itself refuses oleans not compiled from
-  # its sources). Bump
-  # lean only with an aeneas commit whose backends/lean/lean-toolchain names
-  # it (pkgs#999).
+  # package whose tag or Lake dependency revisions differ from the pinned
+  # Aeneas source's lake-manifest.json (`mathlib` itself refuses oleans not
+  # compiled from its sources). Bump lean only with an aeneas commit whose
+  # backends/lean/lean-toolchain names it (pkgs#999).
   #
-  # OFFLINE, no prebuilt. This package used to fetch the olean closure of the
-  # Mathlib modules Aeneas imports from Mathlib's Azure cache (`lake exe
-  # cache get`, an unverified prebuilt: files keyed by a hash of their
-  # inputs, nothing checks the bytes that come back). Now Mathlib comes from
-  # the `mathlib` package, compiled from sha256-pinned sources, and this
-  # package compiles only Aeneas's own ~270 modules with plain `lean` (see
-  # build.sh for why not lake). It installs only those, and its LEAN_PATH
-  # file chains the `mathlib` package's entries, so all of Mathlib (not only
-  # Aeneas's closure) is importable next to Aeneas.
+  # OFFLINE, no prebuilt. Mathlib comes from the `mathlib` package, compiled
+  # from sha256-pinned sources (mathlib-oleans/build.ncl says why not
+  # Mathlib's cache), and this package compiles only Aeneas's own ~270
+  # modules with plain `lean` (see build.sh for why not lake). It installs
+  # only those, and its LEAN_PATH file chains the `mathlib` package's
+  # entries, so all of Mathlib is importable next to Aeneas.
   #
   # The translator (`aeneas` package) is NOT bumped here. Upstream's library is
   # now a Lean `module`; the translator's default non-module output (`import
@@ -44,6 +40,10 @@ let aeneas_sha = "ab34bd28458a08c150b7cbf1873e59af74588138" in
   # translator is the charon/rust-nightly cascade (`pkgmgr bundle-bump aeneas`).
   build_deps = [
     { file = "build.sh" } | Local,
+    # Verbatim copy of the pinned source's backends/lean/lake-manifest.json.
+    # pkgmgr reads it for Aeneas's Lean version when it checks a lean bump
+    # (data/toolchain_constraints.toml); build.sh refuses a copy that
+    # differs from the tarball's.
     { file = "lake-manifest.json" } | Local,
     {
       url = "gs://minimal-staging-archives/aeneas-latest/aeneas-ab34bd2.tar.gz",
@@ -52,14 +52,8 @@ let aeneas_sha = "ab34bd28458a08c150b7cbf1873e59af74588138" in
     } | Source,
     base,
     coreutils,
-    lean,
-    # Every Mathlib module (and batteries, aesop, Qq, ProofWidgets, ...),
-    # built from source. `mathlib` is the thin layer (LEAN_PATH, MANIFEST,
-    # lake-manifest.json under /usr/share/mathlib, plus the licences); the
-    # oleans are `mathlib-oleans`', which `mathlib` brings in as a runtime
-    # dep, under /usr/lib/lean/mathlib/<lake package>/lib. Read through
-    # /usr/share/mathlib/LEAN_PATH.
-    mathlib,
+    # lean and mathlib are runtime deps (below), so they are in this build
+    # too.
     # build.sh orders the module builds with make and reads lean's
     # `--deps-json` header parse and the lake manifests with jq.
     make,
@@ -97,8 +91,13 @@ let aeneas_sha = "ab34bd28458a08c150b7cbf1873e59af74588138" in
 
   runtime_deps = [
     lean,
-    # All of Mathlib for consumers: `mathlib` carries LEAN_PATH and pulls in
-    # `mathlib-oleans` (the oleans); our LEAN_PATH file names their paths.
+    # Every Mathlib module (and batteries, aesop, Qq, ProofWidgets, ...),
+    # built from source, for this build and for consumers. `mathlib` is the
+    # thin layer (LEAN_PATH, MANIFEST, lake-manifest.json under
+    # /usr/share/mathlib, plus the licences); the oleans are
+    # `mathlib-oleans`', which `mathlib` brings in as a runtime dep, under
+    # /usr/lib/lean/mathlib/<lake package>/lib. build.sh reads
+    # /usr/share/mathlib/LEAN_PATH, and our LEAN_PATH file chains it.
     mathlib,
   ],
 
@@ -126,10 +125,9 @@ let aeneas_sha = "ab34bd28458a08c150b7cbf1873e59af74588138" in
         ],
       } | Test,
     # All of Mathlib is reachable through the same LEAN_PATH, not only the
-    # closure Aeneas imports (the old cache-get slice stopped there):
-    # Real.rpow lives in Mathlib.Analysis.SpecialFunctions.Pow.Real, which no
-    # Aeneas module imports. Importing it next to Aeneas also checks the two
-    # trees agree on every shared module.
+    # closure Aeneas imports: Real.rpow lives in
+    # Mathlib.Analysis.SpecialFunctions.Pow.Real, which no Aeneas module
+    # imports.
     imports_full_mathlib =
       {
         class = 'Standalone,

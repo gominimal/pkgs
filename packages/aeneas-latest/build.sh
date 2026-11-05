@@ -3,7 +3,8 @@
 # the `mathlib` package's installed oleans.
 #
 # No lake, no network. Mathlib (and batteries, aesop, Qq, ...) come prebuilt
-# from the `mathlib` build dep: its runtime dep `mathlib-oleans` compiled them
+# from the `mathlib` runtime dep (runtime deps are in the build too): its
+# runtime dep `mathlib-oleans` compiled them
 # from sha256-pinned sources (under /usr/lib/lean/mathlib), and `mathlib`
 # itself ships /usr/share/mathlib/{LEAN_PATH,MANIFEST,lake-manifest.json}.
 # Lake cannot reuse those oleans: it decides "up to date" from the
@@ -28,19 +29,31 @@ want="leanprover/lean4:v$(lean --version | sed -n 's/^Lean (version \([0-9.]*\).
 have="$(cat lean-toolchain)"
 if [ "$have" != "$want" ]; then
   echo "ERROR: aeneas lean-toolchain is '$have' but the lean we ship is '$want'." >&2
-  echo "       Bump lean, mathlib and aeneas-latest together (see build.ncl)." >&2
+  echo "       Bump lean, mathlib-oleans, mathlib and aeneas-latest together (see build.ncl)." >&2
   exit 1
 fi
 
 # 2. The `mathlib` package must be the Mathlib this Aeneas commit pins:
 #    Mathlib at the tag Aeneas requires, and every other Lake dependency at
-#    the revision Aeneas's manifest (verbatim upstream, a build.ncl Local)
-#    records. Mathlib's own manifest is the one `mathlib` installs.
-cp "$ROOT/lake-manifest.json" lake-manifest.json
+#    the revision recorded in the pinned Aeneas source's own
+#    lake-manifest.json (read from the tarball, not the build.ncl Local).
+#    Mathlib's manifest is the one `mathlib` installs.
+#
+#    The Local copy is what pkgmgr reads for Aeneas's Lean version when it
+#    checks a lean bump (data/toolchain_constraints.toml), so it must stay
+#    verbatim upstream: refuse a tarball bump that left it behind.
+if ! cmp -s lake-manifest.json "$ROOT/lake-manifest.json"; then
+  echo "ERROR: packages/aeneas-latest/lake-manifest.json differs from the pinned aeneas source's" >&2
+  echo "       backends/lean/lake-manifest.json. Copy that file from the aeneas commit in build.ncl" >&2
+  echo "       into packages/aeneas-latest/ (pkgmgr reads it for Aeneas's Lean version)." >&2
+  exit 1
+fi
 mathlib_tag="v$(sed -n '1s/^mathlib //p' "$MATHLIB_SHARE/MANIFEST")"
 aeneas_tag="$(jq -r '.packages[] | select(.name == "mathlib") | .inputRev' lake-manifest.json)"
 if [ "$aeneas_tag" != "$mathlib_tag" ]; then
   echo "ERROR: aeneas requires mathlib '$aeneas_tag' but the mathlib package is '$mathlib_tag'." >&2
+  echo "       Move the aeneas pin in build.ncl to a commit that requires $mathlib_tag, or bump" >&2
+  echo "       mathlib-oleans and mathlib to $aeneas_tag (with lean; see build.ncl)." >&2
   exit 1
 fi
 pins() { jq -r '.packages[] | select(.name != "mathlib") | "\(.name) \(.rev)"' "$1" | LC_ALL=C sort; }
@@ -49,6 +62,8 @@ pins "$MATHLIB_SHARE/lake-manifest.json" > mathlib.pins
 if ! cmp -s aeneas.pins mathlib.pins; then
   echo "ERROR: aeneas and the mathlib package pin different Lake dependencies:" >&2
   diff aeneas.pins mathlib.pins >&2 || true
+  echo "       Move the aeneas pin in build.ncl to a commit whose lake-manifest.json matches" >&2
+  echo "       Mathlib $mathlib_tag's, or re-pin mathlib-oleans/sources.ncl to Aeneas's revisions." >&2
   exit 1
 fi
 
@@ -86,10 +101,25 @@ fi
 } > Makefile
 # Upstream's lakefile (lean_lib «Aeneas» {}, package leanOptions
 # weak.linter.dupNamespace=false) is what LEANFLAGS mirrors; fail if it
-# grows build options this recipe does not reproduce.
+# changes the option LEANFLAGS copies or grows build options this recipe
+# does not reproduce. A lakefile.toml would be a new format: fail on that too.
+if [ ! -f lakefile.lean ] || [ -e lakefile.toml ]; then
+  echo "ERROR: upstream backends/lean no longer has exactly a lakefile.lean; re-derive LEANFLAGS" >&2
+  echo "       in build.sh from its new lakefile, then update this check." >&2
+  exit 1
+fi
+want_opts='  leanOptions := #[⟨`weak.linter.dupNamespace, false⟩]'
+have_opts="$(grep 'leanOptions' lakefile.lean || true)"
+if [ "$have_opts" != "$want_opts" ]; then
+  echo "ERROR: upstream lakefile.lean's leanOptions is now:" >&2
+  echo "$have_opts" >&2
+  echo "       Mirror it in the Makefile's LEANFLAGS above (-D<option>=<value> each), then update want_opts." >&2
+  exit 1
+fi
 for opt in moreLeanArgs moreServerOptions buildType platformIndependent; do
   if grep -q "$opt" lakefile.lean; then
-    echo "ERROR: upstream lakefile.lean now sets '$opt'; mirror it in build.sh." >&2
+    echo "ERROR: upstream lakefile.lean now sets '$opt'; mirror it in the Makefile's LEANFLAGS above, then drop" >&2
+    echo "       '$opt' from this list." >&2
     exit 1
   fi
 done
@@ -126,7 +156,7 @@ printf '/usr/lib/lean/pkgs/aeneas/lib:%s\n' "$(cat "$MATHLIB_SHARE/LEAN_PATH")" 
 echo "LEAN_PATH: $(cat "$OUT/LEAN_PATH")"
 
 mkdir -p "$OUTPUT_DIR/usr/share/aeneas-latest"
-cp "$ROOT/lake-manifest.json" "$OUTPUT_DIR/usr/share/aeneas-latest/"
+cp lake-manifest.json "$OUTPUT_DIR/usr/share/aeneas-latest/"
 # Build manifest: what was installed, so a consumer can tell a complete
 # package from a truncated one at a glance. Sizes are summed file bytes, not
 # `du -sk`: disk usage depends on block allocation and differed by 8 KB
