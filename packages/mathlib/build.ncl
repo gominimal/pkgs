@@ -1,140 +1,66 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let lean = import "../lean/build.ncl" in
+let mathlib-oleans = import "../mathlib-oleans/build.ncl" in
 
 # Mathlib's release tag for the lean we ship (leanprover-community/mathlib4
-# tag v4.35.0 = 56a005855ea17e0b0958f73ec801ae140b0a1679).
+# tag v4.35.0 = 56a005855ea17e0b0958f73ec801ae140b0a1679). Must equal
+# mathlib-oleans' version; build.sh refuses a mismatch.
 let version = "4.35.0" in
 {
   name = "mathlib",
   # ALL of Mathlib, compiled from source for the lean we ship: 8,625 modules
   # (Mathlib.lean + Mathlib/**), plus the Lake packages it requires. This is
   # what `import Mathlib`, Mathematics in Lean and anything touching
-  # Real/Analysis/Topology need; `aeneas-latest` ships only the ~1,200-module
-  # closure Aeneas imports.
+  # Real/Analysis/Topology need.
   #
-  # FROM SOURCE, OFFLINE. No `lake exe cache get`: Mathlib's Azure cache is an
-  # unverified prebuilt (its files are keyed by a hash of their INPUTS, nothing
-  # checks the bytes that come back). This package has no `needs`; every input
-  # is a sha256-pinned Source below.
+  # TWO PACKAGES. The compile is `mathlib-oleans` (nine sha256-pinned Sources
+  # + lean, ~35 min on build-bot). This package is the thin layer on top
+  # that builds in seconds: the upstream licences, the third-party notices
+  # for ProofWidgets' widget JS/WebAssembly, LEAN_PATH, MANIFEST and Mathlib's
+  # lake-manifest.json. An edit to this package's build.sh changes only its
+  # spec hash, not mathlib-oleans' (pkgs#1244). Install THIS one:
+  # mathlib-oleans is its runtime dep, so the oleans come with it, under
+  # usr/lib/lean/mathlib/<lake package>/lib.
   #
-  # Offline-lake mechanism as in aeneas-latest, adopted from nixpkgs
-  # `pkgs/build-support/lake` (MIT, © Eelco Dolstra and the Nixpkgs/NixOS
-  # contributors): each Lake dependency is a pinned source placed under
-  # `.lake/packages/<name>`, `.lake/package-overrides.json` points lake at
-  # those directories, `LAKE_NO_CACHE=1` + an empty `RESERVOIR_API_URL` keep
-  # it from reaching out.
+  # The notices are checked against the exact ProofWidgets bundles the oleans
+  # embed. This package takes the same nine Sources (one sources.ncl, so they
+  # cannot drift), checks the bundle sha256 pins in the notice files against
+  # them, and refuses to package if they differ from the hashes mathlib-oleans
+  # recorded at compile time (usr/share/mathlib-oleans/), so a changed
+  # bundle fails packaging.
   #
-  # The dependency pins are Mathlib v4.35.0's own lake-manifest.json, and they
-  # are identical to the ones aeneas-latest vendors, so the sources are the
-  # same mirrored tarballs (same sha256) under aeneas-latest/ in staging.
+  # The licences and notices (notices.ncl, install-licences.sh) are shipped
+  # by mathlib-oleans too, under usr/share/licenses/mathlib-oleans, so that
+  # package is complete on its own; editing them therefore rebuilds both.
   #
-  # `lean`, `mathlib` and `aeneas-latest` move TOGETHER: a Mathlib tag
-  # supports exactly one Lean (`fixedToolchain := true` in its lakefile);
-  # build.sh refuses a mismatch. Bump this with lean.
-  #
-  # One prebuilt remains inside the pinned sources: ProofWidgets commits its
-  # compiled infoview JavaScript (widget/js/*.js, bundled from npm) at each
-  # release, and its oleans embed those strings via `include_str`. Mathlib
-  # requires ProofWidgets with `errorOnBuild`, and there is no node/npm here,
-  # so if lake ever decided the JS needed rebuilding the build fails rather
-  # than fetching. Rebuilding that JS from TypeScript is a follow-up.
-  build_deps = [
-    { file = "build.sh" } | Local,
-    # Licence inventory of the npm code bundled in ProofWidgets' widget JS,
-    # generated from its pinned package-lock.json (build.sh checks the hash).
-    { file = "proofwidgets-js-third-party.txt" } | Local,
-    # Verbatim third-party licence texts for that JS, from the exact npm
-    # tarballs the lockfile resolves (gen-proofwidgets-notice.py); where a
-    # tarball ships no licence file, a curated upstream text from
-    # proofwidgets-js-licences/ (the generator fails without one).
-    { file = "proofwidgets-js-NOTICE.txt" } | Local,
-    # Licences + EPL/CPL source offer for the Graphviz WebAssembly that two of
-    # those bundles embed (@hpcc-js/wasm); hand-assembled, hash-pinned to the
-    # bundles by build.sh.
-    { file = "proofwidgets-wasm-NOTICE.txt" } | Local,
-    {
-      url = "gs://minimal-staging-archives/aeneas-latest/mathlib-56a0058.tar.gz",
-      sha256 = "45567f6e07607b787026d287c8ec1828f6cabc8debe11a45a521750580e3a0d5",
-      extract = true,
-    } | Source,
-    # leanprover-community/plausible @ dfa4f38190d07c37e315953e08b90fe2d95b3c24 (Mathlib lake-manifest.json)
-    {
-      url = "gs://minimal-staging-archives/aeneas-latest/plausible-dfa4f38.tar.gz",
-      sha256 = "3f157cbc2450a6d14f32f18c7a1efd12ee8209a335b3c8ea05248eece9beb342",
-      extract = true,
-    } | Source,
-    # leanprover-community/LeanSearchClient @ d6b4c7be5be75ec4917c873ac50c756dc1436372
-    {
-      url = "gs://minimal-staging-archives/aeneas-latest/LeanSearchClient-d6b4c7b.tar.gz",
-      sha256 = "bdd04cafc4385c3a236568127692ec197a06b97de413436623cba3e7811e010c",
-      extract = true,
-    } | Source,
-    # leanprover-community/import-graph @ a41f0e9a4dea23188ea9cc1c41ac9f8bbafe0b93
-    {
-      url = "gs://minimal-staging-archives/aeneas-latest/importGraph-a41f0e9.tar.gz",
-      sha256 = "578c04f8b0df045c0e4091cf3633336c4785927269ef77bb47a6080e5d3b2ca5",
-      extract = true,
-    } | Source,
-    # leanprover-community/ProofWidgets4 @ df72b022e558978a1c50264cfc4d7fec86fa8e04
-    {
-      url = "gs://minimal-staging-archives/aeneas-latest/proofwidgets-df72b02.tar.gz",
-      sha256 = "1eaae7c4f21d9f0d7595ff7dd8b527b8ac6c59c932c162f5bdd9116f40407dec",
-      extract = true,
-    } | Source,
-    # leanprover-community/aesop @ 4a174c490d8707121c4a9290800489f105d85e07
-    {
-      url = "gs://minimal-staging-archives/aeneas-latest/aesop-4a174c4.tar.gz",
-      sha256 = "51146a125539b3eab0390c94bf90440cbfd4a4af1ab3fc3a1cc65fa49d248d98",
-      extract = true,
-    } | Source,
-    # leanprover-community/quote4 @ dce0ad79c486cb1fb504af04f953c3466b0c6db8
-    {
-      url = "gs://minimal-staging-archives/aeneas-latest/Qq-dce0ad7.tar.gz",
-      sha256 = "ea7f24d48b20dc748c419a57926280de9611769f21d9db1dbb0ef7a5e536335f",
-      extract = true,
-    } | Source,
-    # leanprover-community/batteries @ 66e469188fe07963e5cf666c7d4433f45b8131c5
-    {
-      url = "gs://minimal-staging-archives/aeneas-latest/batteries-66e4691.tar.gz",
-      sha256 = "e186aeb771cc7abaa64a738f0cee2743e89ca34e09e7efcb48520af847e2e92d",
-      extract = true,
-    } | Source,
-    # leanprover/lean4-cli @ c24fe6078c630e89b489bffe59b3e20ac30d12c8
-    {
-      url = "gs://minimal-staging-archives/aeneas-latest/Cli-c24fe60.tar.gz",
-      sha256 = "d9647a8d34708a3ecc8eb075c5c2910be9310017ecfb46c77510b2480f55285e",
-      extract = true,
-    } | Source,
-    base,
-    lean,
-  ],
+  # `lean`, `mathlib-oleans`, `mathlib` and `aeneas-latest` move TOGETHER: a
+  # Mathlib tag supports exactly one Lean; build.sh refuses a mismatch. Bump
+  # this with lean.
+  build_deps =
+    [
+      { file = "build.sh" } | Local,
+      base,
+      lean,
+      # mathlib-oleans is a runtime dep (below), so it is in this build too.
+    ]
+    # The licence installer and the four third-party notices (shared with
+    # mathlib-oleans).
+    @ (import "notices.ncl")
+    # The nine pinned sources (for their LICENSE files, lake-manifest.json and
+    # ProofWidgets' widget bundles): the same file mathlib-oleans compiles.
+    @ (import "../mathlib-oleans/sources.ncl"),
 
   cmd = "./build.sh",
   build_args = {
     include version,
   },
 
-  # Oleans per Lake package, dot-free so the globs see them,
-  # `usr/lib/lean/mathlib/<name>/lib/…`. A consumer runs plain `lean` with
+  # The oleans are mathlib-oleans' (usr/lib/lean/mathlib/<name>/lib/…),
+  # brought in as a runtime dep. A consumer runs plain `lean` with
   #   LEAN_PATH=$(cat /usr/share/mathlib/LEAN_PATH)
-  #
-  # Deliberately NOT aeneas-latest's root (usr/lib/lean/pkgs): both packages
-  # build mathlib, batteries, aesop, …, and the sandbox resolves a path
-  # conflict per file, so a closure holding both could load a module's .olean
-  # from one build and its .olean.server/.olean.private/.ir from the other
-  # (aeneas-latest's Mathlib slice is Azure output, this is a local build).
-  # Disjoint roots keep each package's tree whole. Revisit when aeneas-latest
-  # consumes this package (follow-up).
   outputs = {
-    oleans = { glob = "usr/lib/lean/mathlib/**/*.olean*" } | OutputData,
-    # Language-server index; makes `lean --server` (go-to-definition into
-    # Mathlib) work. Separate output so a batch consumer can subset it away.
-    ileans = { glob = "usr/lib/lean/mathlib/**/*.ilean" } | OutputData,
-    # Compiled IR per module: without it lean cannot run an imported module's
-    # `initialize` code (pkgs#693 / aeneas-latest).
-    ir = { glob = "usr/lib/lean/mathlib/**/*.ir" } | OutputData,
-    ir_sig = { glob = "usr/lib/lean/mathlib/**/*.ir.sig" } | OutputData,
+    # LEAN_PATH, MANIFEST, lake-manifest.json.
     share = { glob = "usr/share/mathlib/*" } | OutputData,
     # Every upstream LICENSE (+ any NOTICE), one dir per source, and the
     # ProofWidgets JS third-party inventory. Required for redistribution.
@@ -143,6 +69,7 @@ let version = "4.35.0" in
 
   runtime_deps = [
     lean,
+    mathlib-oleans,
   ],
 
   attrs =
@@ -160,32 +87,36 @@ let version = "4.35.0" in
       # texts in proofwidgets-js-NOTICE.txt) add ISC, BSD-3-Clause,
       # CC-BY-4.0, CC0-1.0 and Unlicense. Two of those bundles also embed a
       # WebAssembly build of Graphviz 15.0.0 (via @hpcc-js/wasm): EPL-2.0,
-      # with its lib/vpsc under CPL-1.0, plus expat and Emscripten (MIT).
+      # with its lib/vpsc under CPL-1.0, plus expat, Emscripten and its musl
+      # libc (MIT), and LLVM's libc++, libc++abi, libunwind and compiler-rt
+      # (Apache-2.0 WITH LLVM-exception).
       # EPL/CPL are weak (file-level) copyleft: redistributing the unmodified
       # object code needs the licence texts and a source offer, both in
       # proofwidgets-wasm-NOTICE.txt (pkgmgr-rs#1181). The offer names
       # upstream and our own mirror copies of the Graphviz 15.0.0 source and
       # the hpcc-js-wasm wasm-v2.34.2 recipe (gs://minimal-staging-archives,
       # sha256s in the notice). The corresponding-source CI check probes only
-      # the Source URLs below, which are all mirrored; it cannot see source
+      # the Source URLs (mathlib-oleans/sources.ncl, used by both
+      # packages), which are all mirrored; it cannot see source
       # compiled into a bundled blob, so those copies are what it would miss.
-      license_spdx = "Apache-2.0 AND MIT AND ISC AND BSD-3-Clause AND CC-BY-4.0 AND CC0-1.0 AND Unlicense AND EPL-2.0 AND CPL-1.0",
+      # penroseCanvas.js / penroseDisplay.js embed @penrose/optimizer 3.2.0,
+      # Rust compiled to WebAssembly: 24 crates plus the Rust 1.71.1 std and
+      # its registry crates, all MIT / Apache-2.0 (nalgebra 0.31.1 ships an
+      # Apache-2.0 LICENSE but declares BSD-3-Clause; both texts are
+      # reproduced; some crates also offer Zlib or NCSA, which we do not
+      # elect). Their notices are in proofwidgets-penrose-wasm-NOTICE.txt.
+      license_spdx = "Apache-2.0 AND MIT AND ISC AND BSD-3-Clause AND CC-BY-4.0 AND CC0-1.0 AND Unlicense AND EPL-2.0 AND CPL-1.0 AND Apache-2.0 WITH LLVM-exception",
       # Every licence above permits binary redistribution with notices (and,
       # for EPL-2.0/CPL-1.0, a source offer), which the `licenses` output
-      # carries, so the public cache may serve the
-      # prebuilt artifact (users skip the ~30 min build). Explicit rather than
-      # the stdlib default so the decision is visible and reviewable.
+      # carries, so the public cache may serve the prebuilt artifacts (users
+      # skip the ~35 min compile, which is mathlib-oleans'). Explicit rather
+      # than the stdlib default so the decision is visible and reviewable.
       redistributable = true,
       source_provenance = {
         category = 'GithubRepo,
         owner = "leanprover-community",
         repo = "mathlib4",
       },
-      # A concurrency weight, not a duration: the orchestrator acquires this
-      # many build slots, and build.sh runs 8 lean jobs (LEAN_NUM_THREADS=8).
-      # Measured on build-bot (pkgs#1244 at 5f1857d): 28.5 min on
-      # c4-standard-96 (amd64), 33.0 min on c4a-standard-48 (arm64).
-      build_cost_multiple = 8,
     } | Attrs,
 
   tests = {

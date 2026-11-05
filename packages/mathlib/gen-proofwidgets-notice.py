@@ -49,7 +49,9 @@ a licence file. An entry either names a curated text committed under
 proofwidgets-js-licences/ (byte-pinned by sha256, with the upstream URLs it
 was taken from) or marks the package a rollup external that is not bundled.
 So a ProofWidgets bump that pulls in a new licence-less package cannot ship
-its code with only an SPDX id (pkgs#1244 review).
+its code with only an SPDX id. --inventory likewise FAILS (exit 1, nothing
+written) on a package whose licence it cannot resolve from the lockfile,
+package.json or a recognised LICENSE text.
 """
 
 from __future__ import annotations
@@ -223,7 +225,9 @@ FAMILIES = [
 
 
 # The canonical SPDX id for a family recognised in a licence text, used only
-# by --inventory for a package the lockfile declares no licence for.
+# by --inventory for a package the lockfile declares no licence for. BSD has
+# no entry: the text alone does not say 2- or 3-clause, so --inventory fails
+# on such a package rather than guess.
 FAMILY_SPDX = {"Apache": "Apache-2.0", "MIT": "MIT", "ISC": "ISC", "CC-BY": "CC-BY-4.0",
                "CC0": "CC0-1.0", "Unlicense": "Unlicense"}
 
@@ -340,6 +344,7 @@ def inventory(lock_path: str, pw_commit: str, dl_dir: str) -> int:
     os.makedirs(dl_dir, exist_ok=True)
     rows = []
     undeclared = []  # (name, resolved licence) for the header note
+    unknown = []  # no licence from the lockfile, package.json or a LICENSE family
     for k, v in lock["packages"].items():
         if not k or v.get("dev"):
             continue
@@ -362,10 +367,17 @@ def inventory(lock_path: str, pw_commit: str, dl_dir: str) -> int:
                 lic = f"{fam} (undeclared in package-lock.json; LICENSE file in the npm tarball)"
                 undeclared.append((name, fam, "LICENSE"))
             else:
-                lic = "UNKNOWN (not declared in package-lock.json or the npm tarball)"
+                unknown.append(f"{name}@{ver}")
+                continue
         rows.append((name, ver, lic))
+    if unknown:
+        for u in unknown:
+            print(f"ERROR {u}: no licence in package-lock.json or package.json, and its npm tarball's "
+                  "licence files match no family in FAMILY_SPDX. Read the tarball and declare it.",
+                  file=sys.stderr)
+        raise SystemExit(f"{len(unknown)} package(s) with no resolvable licence; nothing written")
     rows.sort()
-    declared = sorted({r[2] for r in rows if "(undeclared" not in r[2] and not r[2].startswith("UNKNOWN")})
+    declared = sorted({r[2] for r in rows if "(undeclared" not in r[2]})
     note = "".join(
         f" ({n} declares none in the lockfile; its npm tarball's {src} is {l})" for n, l, src in sorted(undeclared)
     )
@@ -420,12 +432,7 @@ def main() -> int:
     used = set()
     for (name, ver) in sorted(pkgs):
         v = pkgs[(name, ver)]
-        url, integ = v.get("resolved"), v.get("integrity")
-        if not url or not integ:
-            raise SystemExit(f"{name}@{ver}: lockfile has no resolved/integrity")
-        dest = os.path.join(dl_dir, re.sub(r"[^A-Za-z0-9._-]", "_", f"{name}-{ver}.tgz"))
-        data = fetch(url, dest)
-        verify(data, integ, f"{name}@{ver}")
+        data = tarball_for(name, ver, v, dl_dir)
         files, pj_lic = read_package(data)
         lock_lic = v.get("license")
         declared = lock_lic or pj_lic or "NOASSERTION"
