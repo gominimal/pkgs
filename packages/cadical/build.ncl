@@ -9,8 +9,18 @@ let glibc = import "../glibc/build.ncl" in
 # 4.35's CMakeLists.txt pins rel-2.1.2): we run current versions and fix what
 # breaks. A newer solver cannot make Lean accept a false goal, because
 # `bv_decide` checks the solver's LRAT certificate in Lean's own verified
-# checker; a solver change can only make a proof fail, which lean's
-# `bv_decide` standalone test catches.
+# checker. A solver change can only make a proof fail: a rejected
+# certificate, a timeout, or a changed message. Two places would show that:
+#   - lean's `bv_decide` standalone test is a smoke test. It checks that
+#     cadical is found and that lean accepts the certificates it writes for
+#     four goals. Three goals are small and one is Aeneas's ML-KEM
+#     conditional-subtraction goal, restated on plain `BitVec 32`. It also
+#     checks that a false goal is refuted with a counterexample.
+#   - aeneas-latest's library build covers real goals. `lake build Aeneas`
+#     runs 60 solver call sites: 9 `bv_decide` (Bvify) and 51 `bv_tac`, which
+#     ends in `bv_decide` (BvTac's examples, its Tests and 30 simp lemmas).
+#     The goals are 8- to 128-bit scalar goals. Any failure fails that build,
+#     and a cadical change re-keys it, so the build-bot rebuilds it.
 let version = "3.0.1" in
 {
   name = "cadical",
