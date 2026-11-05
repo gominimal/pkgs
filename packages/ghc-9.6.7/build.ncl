@@ -43,7 +43,7 @@ let version = "9.6.7" in
       {
         class = 'Standalone,
         test_deps = [bash],
-        cmds = [["/bin/sh", "-c", "/usr/lib/ghc-9.6.7/bin/ghc --numeric-version | grep -qx 9.6.7"]],
+        cmds = [["/bin/sh", "-c", "v=$(/usr/lib/ghc-9.6.7/bin/ghc --numeric-version) && [ \"$v\" = 9.6.7 ]"]],
       } | Test,
   },
   outputs = {
