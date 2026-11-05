@@ -4,7 +4,7 @@ let cmake = import "../cmake/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let libglvnd = import "../libglvnd/build.ncl" in
 let libx11 = import "../libx11/build.ncl" in
-let llvm = import "../llvm/build.ncl" in
+let llvm-22 = import "../llvm-22/build.ncl" in
 let lua51 = import "../lua51/build.ncl" in
 let lua52 = import "../lua52/build.ncl" in
 let lua53 = import "../lua53/build.ncl" in
@@ -43,7 +43,11 @@ let box2d_version = "3.1.1" in
     } | Source,
     base,
     cmake, # box2d
-    llvm,
+    # odin supports LLVM 17-22 (build_odin.sh SUPPORTED_LLVM_VERSIONS, unchanged through
+    # dev-2026-11a and master; LLVM 23 support is odin-lang/Odin#7491, open). The default
+    # llvm is 23, so odin builds on the prefixed llvm-22 and build.sh points every LLVM
+    # tool it uses, at build time and at run time, at /usr/lib/llvm-22.
+    llvm-22,
     make, # vendor/{stb,cgltf}/src ship Makefiles we build the bindings' C libs with
     patch,
     # vendor/raylib carries bindings and checked-in binaries but no C source at
@@ -59,9 +63,13 @@ let box2d_version = "3.1.1" in
     # clang in turn needs binutils' `ld` plus gcc's crt objects and libgcc — so
     # the whole C toolchain is needed wherever odin runs, not just to build it.
     toolchain,
-    # libllvm: the compiler itself links against the shared libLLVM.
-    # bins/libs_clang: the `clang` driver above, and `ld.lld` for `-linker:lld`.
-    subsetOf llvm ["bins", "libllvm", "libs_clang", "liblld", "libclang"],
+    # libs: the compiler itself links against llvm-22's shared libLLVM (RUNPATH
+    # /usr/lib/llvm-22/lib), plus clang's resource dir.
+    # bins: the `clang` driver above, `ld.lld` for `-linker:lld` and `wasm-ld` for
+    # wasm targets. build.sh patches odin to run them as /usr/lib/llvm-22/bin/...,
+    # since llvm-22 puts nothing on PATH and a bare `clang` would be the default
+    # llvm's (23) wherever that is also installed.
+    subsetOf llvm-22 ["bins", "libs"],
     # vendor:lua links the bundled library only on Linux/amd64; every other
     # target falls back to `system:lua<ver>`, which needs liblua5.N.so present
     # wherever odin runs. Runtime rather than build deps so that fallback
@@ -123,6 +131,22 @@ let box2d_version = "3.1.1" in
         cmds = [
           ["/bin/bash", "-c", "printf 'package main\\nimport \"core:fmt\"\\nmain :: proc() { fmt.println(\"ok\") }\\n' > hellope.odin"],
           ["/bin/odin", "run", "hellope.odin", "-file"],
+        ],
+      } | Test,
+
+    # The linker driver is llvm-22's clang by absolute path: with no clang on PATH
+    # (nothing in this closure puts one there), `odin build` still links, the
+    # compiler reports LLVM 22, and a wasm target links through llvm-22's wasm-ld.
+    llvm22_toolchain =
+      {
+        class = 'Standalone,
+        test_deps = [base, glibc],
+        cmds = [
+          ["/bin/bash", "-c", "if command -v clang || command -v wasm-ld; then exit 1; fi"],
+          ["/bin/bash", "-c", "set -eu; /bin/odin report | tee report.txt; grep -E 'LLVM:? *22\\.' report.txt"],
+          ["/bin/bash", "-c", "printf 'package main\\nimport \"core:fmt\"\\nmain :: proc() { fmt.println(\"hellope llvm-22\") }\\n' > h.odin"],
+          ["/bin/bash", "-c", "set -eu; unset ODIN_CLANG_PATH; /bin/odin build h.odin -file -out:h; ./h | grep -qx 'hellope llvm-22'"],
+          ["/bin/bash", "-c", "set -eu; /bin/odin build h.odin -file -target:js_wasm32 -out:h.wasm; test -s h.wasm"],
         ],
       } | Test,
 

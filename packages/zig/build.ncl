@@ -4,8 +4,8 @@ let cmake = import "../cmake/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 # zig 0.17 links exactly LLVM 22 (its CMake rejects any other major), and the
-# default `llvm` stays on 21 for the Rust ladder: build against the prefixed
-# llvm-22 line (/usr/lib/llvm-22). gominimal/pkgs#996, inbox#1170.
+# default `llvm` is 23: build against the prefixed llvm-22 line
+# (/usr/lib/llvm-22). gominimal/pkgs#996, inbox#1170.
 let llvm-22 = import "../llvm-22/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in

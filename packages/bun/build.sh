@@ -15,7 +15,16 @@ chmod +x "bun-linux-${BUN_ARCH}/bun"
 export PATH="$(pwd)/bun-linux-${BUN_ARCH}:$PATH"
 bun --version
 
-# Set compilers to use LLVM/Clang
+# Set compilers to use LLVM/Clang: LLVM 21 from the prefixed llvm-21. bun 1.3.x's
+# configure rejects any clang / ld.lld outside 21.1.x (scripts/build/tools.ts), and the
+# default llvm (also in this closure, via rust) is 23. Put the prefix first so the bare
+# `clang` used for CC / the cargo linker is the same LLVM 21 configure resolves.
+export PATH="/usr/lib/llvm-21/bin:$PATH"
+case "$(clang --version)" in
+  *"clang version 21.1."*) ;;
+  *) echo "ERROR: bun 1.3.x needs clang 21.1.x first on PATH (llvm-21); got: $(clang --version | head -1)" >&2; exit 1 ;;
+esac
+grep -qF 'const LLVM_MAJOR = "21";' scripts/build/tools.ts || { echo "ERROR: bun's LLVM_MAJOR is no longer 21; move bun to the matching llvm line" >&2; exit 1; }
 export CC=clang
 export CXX=clang++
 
