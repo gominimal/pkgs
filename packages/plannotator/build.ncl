@@ -26,7 +26,7 @@ let toolchain = import "../toolchain/build.ncl" in
 # one, no release telemetry mark) are each explained in build.sh.
 #
 # `needs` is set because `bun install` fetches from the npm registry.
-let version = "0.28.48" in
+let version = "0.28.49" in
 
 {
   name = "plannotator",
@@ -34,7 +34,7 @@ let version = "0.28.48" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/backnotprop/plannotator/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "e62b51d0be0595fac638719c2bac556e35b5a56a8751c42da1a791f82d6d7c3b",
+      sha256 = "3f1fdf42d80ce40bd2fa129bb280d34c6e36e12f5dd227737125e2cc350f6034",
       extract = true,
       strip_prefix = "plannotator-%{version}",
     } | Source,
@@ -68,7 +68,10 @@ let version = "0.28.48" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "Apache-2.0",
+      # Upstream README: "Dual-licensed under Apache 2.0 or MIT at your option"
+      # (LICENSE-APACHE + LICENSE-MIT). GitHub's repo metadata shows only
+      # Apache-2.0 because it reads one file.
+      license_spdx = "MIT OR Apache-2.0",
       source_provenance = {
         category = 'GithubRepo,
         owner = "backnotprop",
