@@ -38,14 +38,14 @@ let glibc = import "../glibc/build.ncl" in
 # upstream changes (the pkgmgr-rs#1028 trigger), if the smaller closure matters.
 let chromium-bin = import "../chromium-bin/build.ncl" in
 
-let version = "0.41.1" in
+let version = "0.41.2" in
 {
   name = "agent-browser",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/vercel-labs/agent-browser/v%{version}.tar.gz",
-      sha256 = "b3d9d60b8a38f05e0f9b4d84d9e0b6995c21df2eb963eefb703008682a69f3bb",
+      sha256 = "5deccde57db7ed416d46a57e3c2767fba74f96e750d1d8fabe79bfa1f4bd228b",
       extract = true,
       strip_prefix = "agent-browser-%{version}",
     } | Source,
