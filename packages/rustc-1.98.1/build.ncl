@@ -64,6 +64,11 @@ let stage0 =
           } | BuildSpec
         ),
     { arch = 'Arm64, .. } =>
+      # Bundles its own libLLVM.so.21.1 (Rust's LLVM fork, which builds targets such as Xtensa
+      # that llvm-21 does not) and finds it through $ORIGIN/../lib. llvm-21's library has the same
+      # soname, so build.sh must not put /usr/lib/llvm-21/lib on LD_LIBRARY_PATH for this stage0
+      # (it would win over the RUNPATH: pkgs#1339's arm64 failure); its stage0-libLLVM block reads
+      # the mode from the driver and fails early if the wrong copy would load.
       {
         url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/de0724a4bf882c5f4641dc6edd6284ee0fa565a405d4ea264a4f305e3bfe5e6e/rustc-1.97.1-aarch64.tar.zst",
         sha256 = "de0724a4bf882c5f4641dc6edd6284ee0fa565a405d4ea264a4f305e3bfe5e6e",
