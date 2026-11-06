@@ -1,6 +1,6 @@
 # Auto-bootstrapped from https://github.com/pressly/goose by `pkgmgr import github` (go build).
 # TODO: REVIEWER — verify outputs/runtime_deps + the build.sh.
-let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -37,4 +37,8 @@ let version = "3.29.0" in
       license_spdx = "MIT",
       source_provenance = { category = 'GithubRepo, owner = "pressly", repo = "goose" },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/goose --version",
+  },
 } | BuildSpec

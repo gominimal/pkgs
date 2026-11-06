@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -68,4 +68,8 @@ let newlib_version = "4.4.0.20231231" in
       },
       build_cost_multiple = 2,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/arm-none-eabi-gcc --version",
+  },
 } | BuildSpec

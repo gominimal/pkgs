@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -134,4 +134,8 @@ in
       },
       build_cost_multiple = 2,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/go version",
+  },
 } | BuildSpec

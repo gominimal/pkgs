@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -64,4 +64,8 @@ let version = "1.32" in
         repo = "dwarves",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/pahole --version",
+  },
 } | BuildSpec

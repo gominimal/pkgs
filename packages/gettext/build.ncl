@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let acl = import "../acl/build.ncl" in
 let base = import "../base/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
@@ -61,4 +61,8 @@ let version = "1.0" in
         name = "gettext",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/gettext --version",
+  },
 } | BuildSpec
