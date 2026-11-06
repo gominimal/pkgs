@@ -7,14 +7,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let version = "0.17.3" in
+let version = "0.17.4" in
 {
   name = "ruff",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/astral-sh/ruff/%{version}.tar.gz",
-      sha256 = "7281befde89b669bd92231064ceb3d3211d9094e20e6983bb3b92e641b305860",
+      sha256 = "a466d837b406c888f4f76e4be808658f36846288aa87f81ac89afcf078ad386a",
       extract = true,
       strip_prefix = "ruff-%{version}",
     } | Source,
