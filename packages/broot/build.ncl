@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -53,4 +53,8 @@ let version = "1.62.0" in
       },
       build_cost_multiple = 3,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/broot --version",
+  },
 } | BuildSpec
