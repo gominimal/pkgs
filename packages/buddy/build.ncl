@@ -1,8 +1,9 @@
 # BuDDy — a Binary Decision Diagram (BDD) library (C++). A Maude build
 # prerequisite; see pkgmgr-rs#528.
-let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } =
+let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } =
   import "minimal.ncl"
 in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -51,4 +52,26 @@ let version = "2.4" in
         repo = "buddy",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t -lbdd <<'EOF'
+              #include <bdd.h>
+              int main(void) { bdd_init(1000, 100); bdd_setvarnum(1); bdd a = bdd_ithvar(0); int ok = bdd_satcount(a) > 0; bdd_done(); return ok ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec
