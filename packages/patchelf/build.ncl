@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let meson = import "../meson/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
@@ -45,4 +45,8 @@ let version = "0.19.3" in
         repo = "patchelf",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/patchelf --version",
+  },
 } | BuildSpec

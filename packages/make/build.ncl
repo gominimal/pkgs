@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
@@ -105,4 +105,8 @@ let version = "4.4.1" in
         make = { glob = "usr/bin/make" } | OutputBin,
       },
     } | BuildSpec,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/make --version",
+  },
 } | BuildSpec

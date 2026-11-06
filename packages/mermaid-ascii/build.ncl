@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -37,4 +37,8 @@ let version = "1.6.1" in
         repo = "mermaid-ascii",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/mermaid-ascii --help",
+  },
 } | BuildSpec

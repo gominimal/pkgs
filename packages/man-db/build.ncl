@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -47,5 +47,9 @@ let version = "2.13.1" in
   attrs = {
     upstream_version = version,
     license_spdx = "(GPL-2.0-only AND GPL-3.0-only AND LGPL-2.1-only)",
+  },
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/man --version",
   },
 } | BuildSpec
