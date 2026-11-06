@@ -113,9 +113,10 @@ let aeneas_sha = "ab34bd28458a08c150b7cbf1873e59af74588138" in
     # bundles it; our from-source lean does not).
     toolchain,
     leangz,
-    # `bv_decide` (exercised by Bvify's own `#guard_msgs` examples during the
-    # library build) shells out to `cadical`; lean releases bundle it, ours
-    # doesn't.
+    # `bv_decide` shells out to `cadical`; lean releases bundle it, ours
+    # doesn't. The library build runs 60 solver call sites (Bvify's
+    # `bv_decide` examples, and BvTac's `bv_tac` examples, Tests and simp
+    # lemmas), so this build is the real-goal test of a cadical bump.
     cadical,
     curl,
     git,
