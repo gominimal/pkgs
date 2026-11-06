@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -50,4 +50,8 @@ let version = "1.2.0" in
       },
       build_cost_multiple = 2,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/lsd --version",
+  },
 } | BuildSpec

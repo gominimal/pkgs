@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
 
 let base = import "../base/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
@@ -55,4 +55,8 @@ let build_stamp = "202610191322" in
         repo = "eclipse.jdt.ls",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/jdtls --help",
+  },
 } | BuildSpec

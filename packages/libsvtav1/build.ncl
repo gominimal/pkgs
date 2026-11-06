@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
@@ -48,4 +48,8 @@ let version = "4.3.0" in
         repo = "SVT-AV1",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/SvtAv1EncApp --version",
+  },
 } | BuildSpec
