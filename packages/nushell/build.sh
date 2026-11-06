@@ -44,6 +44,13 @@ if grep -A1 -E '^name = "(rustls-webpki|webpki-roots|webpki-root-certs)"$' Cargo
   exit 1
 fi
 
+# All network access happens here, with real entropy: crates are fetched (and
+# checked against Cargo.lock) before the shim below is loaded, so no TLS session
+# runs on the shim's fixed bytes. This build has the network through `rust`,
+# which declares needs.internet. No build script in the dependency graph
+# downloads anything (checked for 0.116.1), so the build below needs no network.
+cargo fetch --locked
+
 cat > /tmp/detrand.c <<'CEOF'
 #include <stddef.h>
 #include <sys/types.h>
@@ -59,8 +66,9 @@ int getentropy(void *buf, size_t len) {
 CEOF
 gcc -shared -fPIC -O2 -o /tmp/libdetrand.so /tmp/detrand.c
 
-# Scope the shim to the cargo build only — no global export/unset window.
-LD_PRELOAD=/tmp/libdetrand.so cargo build --locked --release
+# Scope the shim to the cargo build only — no global export/unset window — and
+# keep that build offline: `--frozen` refuses any network access.
+LD_PRELOAD=/tmp/libdetrand.so cargo build --frozen --release
 
 mkdir -p $OUTPUT_DIR/usr/bin
 install -m 755 target/release/nu $OUTPUT_DIR/usr/bin/nu

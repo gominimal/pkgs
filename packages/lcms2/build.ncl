@@ -4,15 +4,15 @@ let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.19.1" in
+let version = "2.20" in
 {
   name = "lcms2",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://github.com/mm2/Little-CMS/releases/download/lcms2.19.1/lcms2-2.19.1.tar.gz
+      # https://github.com/mm2/Little-CMS/releases/download/lcms2.20/lcms2-2.20.tar.gz
       url = "gs://minimal-staging-archives/lcms2-%{version}.tar.gz",
-      sha256 = "bfc54f7bab59fbc921012014a8032e4cba4abd46db47d46b76416a8c0b2815c8",
+      sha256 = "18ff5504fa9cc8a2b1f3591180d90ead16c8a2ea78e530523b46eab70e1ca6b9",
       extract = true,
       strip_prefix = "lcms2-%{version}",
     } | Source,

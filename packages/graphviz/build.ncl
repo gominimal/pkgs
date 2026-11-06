@@ -91,7 +91,11 @@ let version = "16.1.0" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "EPL-1.0",
+      # COPYING / LICENSE at 16.1.0 are EPL-2.0; lib/vpsc, three lib/neatogen files and
+      # cmd/tools/gv2gml.c still carry Common Public License headers (cpl1.0.txt).
+      # lib/neatogen/randomkit.c (linked into the neato layout plugin) also carries
+      # BSD-3-Clause (Mersenne Twister) and MIT notices that binaries must reproduce.
+      license_spdx = "EPL-2.0 AND CPL-1.0",
       repology_project = "graphviz",
     } | Attrs,
 
