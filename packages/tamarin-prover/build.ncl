@@ -4,7 +4,7 @@
 # upper version bounds, so we drive it with `cabal` + the system GHC and let the
 # solver pick 9.10-compatible Hackage versions. Pioneering — upstream hasn't
 # published a 9.10 build (pkgmgr-rs#528).
-let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let ghc = import "../ghc/build.ncl" in
 let cabal = import "../cabal/build.ncl" in
@@ -80,4 +80,8 @@ let version = "1.12.0" in
       # Huge Haskell build (~120 Hackage deps compiled from source).
       build_cost_multiple = 10,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/tamarin-prover --version",
+  },
 } | BuildSpec

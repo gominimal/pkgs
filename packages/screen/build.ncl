@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let sed = import "../sed/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -51,4 +51,8 @@ let version = "5.0.2" in
         name = "screen",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/screen -v",
+  },
 } | BuildSpec

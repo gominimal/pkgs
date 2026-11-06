@@ -1,7 +1,7 @@
 # Imported from npm `yarn` by `pkgmgr import npm` (node build).
 # TODO: REVIEWER — installs `yarn` from npm; add any peer packages the
 # tool needs (cf. typescript-language-server pulling `typescript`).
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -35,4 +35,8 @@ let version = "1.22.22" in
       upstream_version = version,
       license_spdx = "BSD-2-Clause",
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/yarn --version",
+  },
 } | BuildSpec

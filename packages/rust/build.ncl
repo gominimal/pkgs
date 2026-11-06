@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
@@ -88,4 +88,8 @@ let version = "1.99.1" in
       },
       build_cost_multiple = 3,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/rustc --version",
+  },
 } | BuildSpec

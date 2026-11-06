@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 
@@ -62,4 +62,8 @@ let target_suffix = match { { arch = 'Amd64, .. } => "x86_64", { arch = 'Arm64, 
         repo = "zvelte-check",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/zvelte-check --help",
+  },
 } | BuildSpec
