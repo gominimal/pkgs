@@ -1,8 +1,9 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let bash = import "../bash/build.ncl" in
+let expect = import "../expect/build.ncl" in
 let version = "1.6.3" in
 {
   name = "dejagnu",
@@ -18,6 +19,7 @@ let version = "1.6.3" in
   ],
   runtime_deps = [
     bash,
+    expect,
   ],
 
   cmd = "./build.sh",
@@ -37,4 +39,8 @@ let version = "1.6.3" in
         name = "dejagnu",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/runtest --version",
+  },
 } | BuildSpec

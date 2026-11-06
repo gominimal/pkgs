@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 
 let version = "3.5.2" in
 
@@ -11,6 +11,8 @@ let xxhash = import "../xxhash/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let acl = import "../acl/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
+let lz4 = import "../lz4/build.ncl" in
+let zstd = import "../zstd/build.ncl" in
 
 {
   name = "rsync",
@@ -35,7 +37,10 @@ let coreutils = import "../coreutils/build.ncl" in
     glibc,
     acl,
     openssl,
-    coreutils
+    coreutils,
+    lz4,
+    xxhash,
+    zstd,
   ],
 
   cmd = "./build.sh",
@@ -57,5 +62,9 @@ let coreutils = import "../coreutils/build.ncl" in
       owner = "RsyncProject",
       repo = "rsync",
     },
+  },
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/rsync --version",
   },
 } | BuildSpec

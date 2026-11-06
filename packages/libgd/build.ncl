@@ -1,4 +1,5 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -7,6 +8,7 @@ let toolchain = import "../toolchain/build.ncl" in
 
 let fontconfig = import "../fontconfig/build.ncl" in
 let freetype = import "../freetype/build.ncl" in
+let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let libjpeg-turbo = import "../libjpeg-turbo/build.ncl" in
 let libpng = import "../libpng/build.ncl" in
@@ -36,6 +38,7 @@ let version = "2.3.3" in
     libjpeg-turbo,
     libpng,
     zlib,
+    subsetOf gcc ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",
@@ -55,5 +58,14 @@ let version = "2.3.3" in
       owner = "libgd",
       repo = "libgd",
     },
+  },
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap],
+        cmds = [["/usr/bin/bash", "-c", "/usr/bin/gdtopng; rc=$?; [ $rc -lt 126 ]"]],
+      } | Test,
   },
 } | BuildSpec

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
@@ -46,6 +46,7 @@ let version = "1.5.7" in
     glibc,
     lz4,
     xz,
+    zlib,
   ],
 
   cmd = "./build.sh",
@@ -117,4 +118,8 @@ let version = "1.5.7" in
         repo = "zstd",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/zstd --version",
+  },
 } | BuildSpec

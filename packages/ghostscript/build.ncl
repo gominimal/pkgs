@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -11,6 +11,7 @@ let libjpeg-turbo = import "../libjpeg-turbo/build.ncl" in
 let openjpeg = import "../openjpeg/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let bzip2 = import "../bzip2/build.ncl" in
 
 let version = "10.08.0" in
 {
@@ -36,6 +37,7 @@ let version = "10.08.0" in
     openjpeg,
     glibc,
     subsetOf gcc ["libgcc", "libstdcpp"],
+    bzip2,
   ],
 
   cmd = "./build.sh",
@@ -59,4 +61,8 @@ let version = "10.08.0" in
         repo = "ghostpdl-downloads",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/gs --version",
+  },
 } | BuildSpec
