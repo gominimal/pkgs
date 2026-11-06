@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 
 let base = import "../base/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -37,4 +38,26 @@ let version = "0.12.2" in
       repology_project = "libbsd",
       license_spdx = "BSD-2-Clause AND BSD-3-Clause AND ISC AND MIT AND Beerware AND LicenseRef-Public-Domain",
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t -lbsd <<'EOF'
+              #include <bsd/string.h>
+              int main(void) { char b[4]; return strlcpy(b, "hello", sizeof b) == 5 && b[3] == 0 ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec
