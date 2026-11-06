@@ -92,11 +92,43 @@ fi
 # rather than left implicit -- an implicit flavour is what broke this before.
 HADRIAN_FLAGS=(-j"$(nproc)" --flavour=default --docs=none)
 
-# Now we can run the build!
-_build/bin/hadrian "${HADRIAN_FLAGS[@]}"
+# Parallel hadrian intermittently dies on a stamp file it is itself writing:
+#   _build/stage1/libraries/os-string/build/stamp-os-string-2.0.7-inplace_dyn:
+#   withFile: resource busy (file is locked)
+# (seen on amd64 in the pkgs#1351 world build; upstream GHC #24365, still open,
+# no fix in any release). There is no compile or link error behind it, so we
+# retry ONCE, and only for that exact message. Shake is incremental: the rerun
+# loads .shake.database, skips every rule that completed and redoes only the
+# ones that did not, so the outputs of completed rules are the same bytes and
+# the redone rules run the same commands with the same flags. A real failure
+# (any other message, or the lock error twice) still fails the build. The output
+# is tee'd to a log next to _build so the check reads hadrian's own words.
+run_hadrian() {
+  local phase="$1"
+  shift
+  local attempt rc log
+  for attempt in 1 2; do
+    log="$PWD/hadrian-$phase.attempt$attempt.log"
+    rc=0
+    _build/bin/hadrian "${HADRIAN_FLAGS[@]}" "$@" 2>&1 | tee "$log" || rc=$?
+    if [ "$rc" -eq 0 ]; then
+      return 0
+    fi
+    if [ "$attempt" -eq 1 ] && grep -qF 'resource busy (file is locked)' "$log"; then
+      echo "hadrian ($phase): transient stamp-file lock race; retrying once (Shake resumes)" >&2
+      continue
+    fi
+    echo "hadrian ($phase): failed with exit $rc on attempt $attempt; not retrying" >&2
+    return "$rc"
+  done
+}
 
-# And install!
-DESTDIR=$OUTPUT_DIR _build/bin/hadrian "${HADRIAN_FLAGS[@]}" install --prefix=/usr
+# Now we can run the build!
+run_hadrian build
+
+# And install! The install target re-checks the whole build graph under the same
+# -j before copying, so it can hit the same race; it goes through the same retry.
+DESTDIR=$OUTPUT_DIR run_hadrian install install --prefix=/usr
 
 # Refresh the package database cache so downstream builds don't see stale cache warnings
 GHC_PKG="$(find "$OUTPUT_DIR" -name ghc-pkg -type f | head -1)"
