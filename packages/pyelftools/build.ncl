@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 
 let python = import "../python/build.ncl" in
@@ -40,4 +40,15 @@ let version = "0.33" in
         repo = "pyelftools",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [python],
+        cmds = [
+          ["/usr/bin/python3", "-c", "import os, sys; from elftools.elf.elffile import ELFFile; f = ELFFile(open(os.path.realpath(sys.executable), 'rb')); assert f.num_sections() > 0; print(f.get_machine_arch())"],
+        ],
+      } | Test,
+  },
 } | BuildSpec
