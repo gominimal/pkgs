@@ -129,9 +129,9 @@ in
       "f802b9d5a329c216f02e73607cb8f662c434767e41686367ac0afcf6d0d45d64"
       "62a7e37e43bbfc1f8525a00ad2125fd5897135dc93b849733884cb78ffd8e26c",
     apk
-      "c-ares-1.34.9-r0"
-      "1bda7f36597a3f6d616b0c8bd25cd611299bf353ec5ee2ae102e97694885c2f1"
-      "3539a3e11c1ef1516117d8179a546ac882086e94e0d78ad51d687b3fa2b3b5f2",
+      "c-ares-1.34.8-r0"
+      "689603d300dc56f0b99e313506e4d7b3a3ffb87cec536324f8a306bc218afe67"
+      "123fdeadc5ec884b897787f98d865492bf70402697b251cd1f3591a00b8c9d73",
     apk
       "e2fsprogs-libs-1.47.4-r0"
       "52124971ae397d599aadd79263fcd68fc9e271922ccf8185b124f35fe24c60c8"
@@ -318,6 +318,26 @@ in
       "musl-utils-1.2.6-r3"
       "bb460bdc009e88989bd5adca8a7c8298c339cba99da11c6196c818e042fbaf49"
       "47263d05842c5e12d01e0369e5b5bea51733323501c00ca21968a5102de137ca",
+
+    # zlib, same override pattern. alpine-minirootfs-3.24.1 ships zlib
+    # 1.3.2-r0 (`lib/apk/db/installed`), which is missing CVE-2026-85091
+    # (fixed in 1.3.2-r1) and CVE-2026-4738 (fixed in 1.4-r0) per the v3.24
+    # secdb. git and libcurl in the closure both link so:libz.so.1, so the
+    # guest loads it. zlib-1.4-r0 depends only on so:libc.musl and provides
+    # so:libz.so.1=1.4, so nothing else moves.
+    #
+    # Unlike the overrides above, the real file is renamed: the base layer has
+    # usr/lib/libz.so.1.3.2 with usr/lib/libz.so.1 pointing at it, and 1.4-r0
+    # ships usr/lib/libz.so.1.4 with libz.so.1 pointing at THAT. The overlay
+    # replaces the libz.so.1 symlink, so the loader (which resolves the
+    # DT_NEEDED soname libz.so.1) gets 1.4; the old libz.so.1.3.2 file stays on
+    # disk, unreferenced, because the overlay only adds and replaces paths.
+    #
+    # DROP THIS once `alpine_release` reaches a minirootfs carrying >= 1.4-r0.
+    apk
+      "zlib-1.4-r0"
+      "d3e30d012a3445222b0b4a28f1d4d97ce67387f8b48561921111696da174f0de"
+      "7b05bc778b8b25cd880835b40114182bd4d1581717504d0129c810c0a14291cb",
   ],
 
   cmd = "./build.sh",
