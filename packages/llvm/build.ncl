@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
@@ -102,4 +102,8 @@ let version = "21.1.8" in
       },
       build_cost_multiple = 6,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/clang --version",
+  },
 } | BuildSpec
