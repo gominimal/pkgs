@@ -365,6 +365,15 @@ def wasm_info(b):
 
 WBG_CLOSURE = re.compile(r"__wbindgen_closure_wrapper[0-9]+")
 
+# wasm-ld >= 22 (llvm-project e925e528) also exports the linker-synthesized __stack_pointer under
+# --export-dynamic whenever the link uses mutable-globals, and clang 23 marks mutable-globals as
+# used on every object that touches the shadow stack, even at -mcpu=mvp (wasi-libc's
+# crt1-reactor.o does). wasm-ld 21 never exported it, so the shipped blobs lack it. It is the
+# module's own stack pointer, handed to the embedder that instantiated it (undici's JS reads only
+# memory and the llhttp/wasm_on_* functions), so exactly this one extra export is tolerated on a
+# non-wasm-bindgen gate. Anything else extra, or anything missing, still fails.
+LINKER_EXTRA_EXPORTS = {("__stack_pointer", "global", "")}
+
 
 def gate(shipped, rebuilt, label, wbg=False):
     """Rebuilt blob must present the shipped blob's tables and no extra wasm features.
@@ -374,9 +383,12 @@ def gate(shipped, rebuilt, label, wbg=False):
     signature; it is returned as (shipped name, rebuilt name) for the carrier's glue to follow.
     Features may be any the shipped blob already uses."""
     a, r = wasm_info(shipped), wasm_info(rebuilt)
-    errs, renames = [], []
+    errs, renames, tolerated = [], [], []
     for k in ("imports", "exports"):
         miss, extra = a[k] - r[k], r[k] - a[k]
+        if k == "exports" and not wbg:
+            tolerated = sorted(extra & LINKER_EXTRA_EXPORTS)
+            extra = extra - LINKER_EXTRA_EXPORTS
         if wbg and k == "imports":
             m = [x for x in miss if WBG_CLOSURE.fullmatch(x[1])]
             e = [x for x in extra if WBG_CLOSURE.fullmatch(x[1])]
@@ -396,9 +408,10 @@ def gate(shipped, rebuilt, label, wbg=False):
         errs.append("sections not in shipped blob: %s" % sorted(r["ids"] - a["ids"]))
     if errs:
         raise Fail("%s: gate failed\n  " % label + "\n  ".join(errs))
-    log("@@GATE ok %s imports=%d exports=%d feats=%s%s" % (
+    log("@@GATE ok %s imports=%d exports=%d feats=%s%s%s" % (
         label, len(r["imports"]), len(r["exports"]), dict(r["feats"]) or "{}",
-        "".join(" rename=%s->%s" % rn for rn in renames)))
+        "".join(" rename=%s->%s" % rn for rn in renames),
+        "".join(" linker-export=%s" % t[0] for t in tolerated)))
     return renames
 
 
@@ -712,21 +725,26 @@ def _vec(items):
     return _leb(len(items)) + b"".join(items)
 
 
-def mkwasm(imports=("wasm_on_url",), exports=("malloc", "llhttp_execute"), body=b"\x41\x00\x0b", simd=False, module="env"):
-    """Tiny module: imports <module>.<name> (i32,i32,i32)->i32, exports memory + funcs sharing one body."""
+def mkwasm(imports=("wasm_on_url",), exports=("malloc", "llhttp_execute"), body=b"\x41\x00\x0b", simd=False, module="env",
+           nglobals=0, globals=()):
+    """Tiny module: imports <module>.<name> (i32,i32,i32)->i32, exports memory + funcs sharing one body.
+    nglobals mutable i32 globals (at least one per name in globals, which exports them)."""
     t3 = b"\x60\x03\x7f\x7f\x7f\x01\x7f"
     types = _sec(1, _vec([t3]))
     imp = _sec(2, _vec([_str(module) + _str(n) + b"\x00\x00" for n in imports]))
     nf = len(exports)
     fn = _sec(3, _vec([b"\x00"] * nf))
     mem = _sec(5, _vec([b"\x00\x01"]))
+    ng = max(nglobals, len(globals))
+    glob = _sec(6, _vec([b"\x7f\x01\x41\x00\x0b"] * ng)) if ng else b""
     exp = _sec(7, _vec([_str("memory") + b"\x02\x00"] +
-                       [_str(n) + b"\x00" + _leb(len(imports) + k) for k, n in enumerate(exports)]))
+                       [_str(n) + b"\x00" + _leb(len(imports) + k) for k, n in enumerate(exports)] +
+                       [_str(n) + b"\x03" + _leb(k) for k, n in enumerate(globals)]))
     if simd:
         body = b"\xfd\x0c" + b"\x00" * 16 + b"\x1a" + body
     code1 = _leb(0) + body
     code = _sec(10, _vec([_leb(len(code1)) + code1] * nf))
-    return MAGIC + types + imp + fn + mem + exp + code
+    return MAGIC + types + imp + fn + mem + glob + exp + code
 
 
 def _expect_fail(fn, *a, contains=""):
@@ -759,6 +777,15 @@ def selftest():
     gate(shipped_simd, good_simd, "good simd")
     _expect_fail(gate, shipped, bad_import, "bad import", contains="imports differ")
     _expect_fail(gate, shipped, bad_export, "bad export", contains="exports differ")
+    # A real llhttp blob has the (unexported) stack pointer global.
+    sp_shipped = mkwasm(nglobals=1)
+    sp_rebuilt = mkwasm(body=b"\x41\x01\x0b", globals=("__stack_pointer",))
+    gate(sp_shipped, sp_rebuilt, "linker __stack_pointer")
+    _expect_fail(gate, sp_shipped, sp_rebuilt, "no tolerance under wbg", True, contains="exports differ")
+    _expect_fail(gate, sp_shipped, mkwasm(body=b"\x41\x01\x0b", globals=("__tls_base",)), "other global",
+                 contains="exports differ")
+    _expect_fail(gate, sp_shipped, mkwasm(body=b"\x41\x01\x0b", exports=("malloc",), globals=("__stack_pointer",)),
+                 "stack pointer does not mask a missing export", contains="exports differ")
     _expect_fail(gate, shipped, bad_bulk, "bulk-memory", contains="bulk-memory")
     _expect_fail(gate, shipped, bad_overlong, "overlong", contains="call-indirect-overlong")
     _expect_fail(gate, shipped, good_simd, "simd in plain", contains="simd128")
