@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let cabal = import "../cabal/build.ncl" in
 let base = import "../base/build.ncl" in
 let ghc = import "../ghc/build.ncl" in
@@ -53,4 +53,8 @@ let version = "3.11.1" in
       },
       build_cost_multiple = 3,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/stack --version",
+  },
 } | BuildSpec
