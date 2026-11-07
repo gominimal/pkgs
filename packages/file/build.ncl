@@ -14,6 +14,7 @@ let lz4 = import "../lz4/build.ncl" in
 let xz = import "../xz/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
+let bzip2 = import "../bzip2/build.ncl" in
 let version = "5.48" in
 {
   name = "file",
@@ -33,6 +34,7 @@ let version = "5.48" in
     grep,
     coreutils,
     toolchain,
+    bzip2,
   ],
   runtime_deps = [
     glibc,
@@ -40,6 +42,10 @@ let version = "5.48" in
     xz,
     zlib,
     zstd,
+    # configure links libbz2 whenever it is in the build closure. It was there
+    # on arm64 only and undeclared (libbz2.so.1.0 missing at run time), so it
+    # is declared in both lists and both arches build the same file.
+    bzip2,
   ],
 
   cmd = "./build.sh",

@@ -4,6 +4,8 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let expect = import "../expect/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let sed = import "../sed/build.ncl" in
 let version = "1.6.3" in
 {
   name = "dejagnu",
@@ -20,6 +22,10 @@ let version = "1.6.3" in
   runtime_deps = [
     bash,
     expect,
+    # runtest is a sh script: expr and sed (lines 39-135), and runtest.exp
+    # runs `whoami` (coreutils) for the log name.
+    coreutils,
+    sed,
   ],
 
   cmd = "./build.sh",
