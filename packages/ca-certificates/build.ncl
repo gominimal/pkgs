@@ -8,7 +8,7 @@ let openssl = import "../openssl/build.ncl" in
 # Upstream: https://curl.se/ca/cacert-<YYYY-MM-DD>.pem (dated, immutable), checksum at
 # https://curl.se/ca/cacert-<YYYY-MM-DD>.pem.sha256. Mirrored to staging byte-for-byte.
 # The version is the bundle date with dots; the file name uses dashes.
-let version = "2026.10.20" in
+let version = "2026.11.05" in
 let date = std.string.replace "." "-" version in
 {
   name = "ca-certificates",
@@ -24,7 +24,7 @@ let date = std.string.replace "." "-" version in
     { file = "test-good-letsencrypt-e7.pem" } | Local,
     {
       url = "gs://minimal-staging-archives/cacert-%{date}.pem",
-      sha256 = "796f1389bfea13c0ed78f663b765baaff54a508e5483786bd6ece73c5e3e3cbe"
+      sha256 = "427c064216761a1e72a8b30f0d954d08cb6e4435a82091fb865afd20c8497285"
     } | Source,
     base-bootstrap,
     openssl,

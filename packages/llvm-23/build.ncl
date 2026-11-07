@@ -7,8 +7,8 @@ let { Attrs, BuildSpec, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "23.1.4" in
-let llvm = (import "../llvm/versioned.ncl") version "819ecf7351f1a66f76b2d701d8942faaf5faeb324cb90c9d5b090de142434bb2" in
+let version = "23.1.5" in
+let llvm = (import "../llvm/versioned.ncl") version "fb50b1eac93ddeb3aa8dab4cfe324dff74f4a9c2bdee6160c9e36188f8d06a6e" in
 let prefix = llvm.prefix in
 {
   name = llvm.name,
