@@ -24,7 +24,13 @@ let coreutils = import "../coreutils/build.ncl" in
             "/usr/bin/bash",
             "-c",
             m%%%"
-              [[ $(< /etc/resolv.conf) == *'nameserver 8.8.8.8'* ]]
+              # An active line naming exactly 8.8.8.8: not commented out,
+              # not 8.8.8.80.
+              ok=
+              while read -r kw addr _; do
+                [[ $kw == nameserver && $addr == 8.8.8.8 ]] && ok=1
+              done < /etc/resolv.conf
+              [[ -n $ok ]]
             "%%%
           ],
         ],
