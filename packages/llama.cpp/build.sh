@@ -36,5 +36,29 @@ cmake --build build --config Release -j $(nproc)
 
 mkdir -pv $OUTPUT_DIR/usr/{bin,lib}
 
-install -vm755 build/bin/*.so $OUTPUT_DIR/usr/lib/
+# The shared libraries ship as built: lib*.so -> lib*.so.0 -> lib*.so.0.x.y.
+# `install build/bin/*.so` followed each link and wrote the library under its
+# unversioned name only, so the binaries' DT_NEEDED (the SONAME, libllama.so.0
+# etc.) was never shipped and llama-cli/llama-server exited 127 at startup.
+cp -av build/bin/*.so* $OUTPUT_DIR/usr/lib/
 install -vm755 build/bin/llama-{cli,server} $OUTPUT_DIR/usr/bin/
+
+# Fail closed: every library a shipped ELF needs that this build produced (it is
+# in build/bin) must be in the output under that exact name. `found` keeps the
+# check from passing vacuously (llama-cli alone needs libllama.so.0).
+command -v readelf >/dev/null
+missing=0
+found=0
+for f in $OUTPUT_DIR/usr/bin/* $OUTPUT_DIR/usr/lib/*.so*; do
+  [ -L "$f" ] && continue
+  for lib in $(readelf -d "$f" | sed -n 's/.*(NEEDED).*\[\(.*\)\]/\1/p'); do
+    [ -e "build/bin/$lib" ] || continue
+    found=$((found + 1))
+    if [ ! -e "$OUTPUT_DIR/usr/lib/$lib" ]; then
+      echo "ERROR: $f needs $lib, built here but not installed" >&2
+      missing=1
+    fi
+  done
+done
+[ "$found" -gt 0 ] || { echo "ERROR: no DT_NEEDED resolved to build/bin" >&2; exit 1; }
+[ "$missing" = 0 ]
