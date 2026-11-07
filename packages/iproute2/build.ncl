@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let bison = import "../bison/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -47,4 +47,8 @@ let version = "7.3.0" in
       license_spdx = "GPL-2.0-only",
       repology_project = "iproute2",
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/sbin/ip -V",
+  },
 } | BuildSpec
