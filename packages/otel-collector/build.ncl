@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -54,6 +54,13 @@ let obi_version = "v0.15.2" in
 
   outputs = {
     otel-collector = { glob = "usr/bin/otelcol-contrib" } | OutputBin,
+  },
+
+  # Both run every package init(); a component whose init panics (asapauth's
+  # SermoDigital/jose under go 1.27, see build.sh) fails them.
+  tests = {
+    version = standaloneTest "/usr/bin/otelcol-contrib --version",
+    components = standaloneTest "/usr/bin/otelcol-contrib components",
   },
 
   attrs =
