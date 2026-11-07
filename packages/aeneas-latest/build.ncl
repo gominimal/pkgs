@@ -1,12 +1,10 @@
-let { Attrs, BuildSpec, Local, Needs, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let lean = import "../lean/build.ncl" in
-let curl = import "../curl/build.ncl" in
-let git = import "../git/build.ncl" in
-let ca-certificates = import "../ca-certificates/build.ncl" in
-let toolchain = import "../toolchain/build.ncl" in
-let leangz = import "../leangz/build.ncl" in
+let mathlib = import "../mathlib/build.ncl" in
+let make = import "../make/build.ncl" in
+let jq = import "../jq/build.ncl" in
 let cadical = import "../cadical/build.ncl" in
 
 # The date of the AeneasVerif/aeneas main commit this tracks (ab34bd28).
@@ -16,25 +14,24 @@ let aeneas_sha = "ab34bd28458a08c150b7cbf1873e59af74588138" in
   name = "aeneas-latest",
   # The Lean side of aeneas — the `Aeneas` Lean library that every model
   # `aeneas -backend lean` emits `import`s — built for the lean we ship,
-  # bundled with the exact Mathlib closure it pins. Upstream now targets the
-  # same Lean we ship (lean-toolchain = leanprover/lean4:v4.35.0, Mathlib
-  # v4.35.0), so it builds unpatched; the old 4.34 port patch is gone.
+  # against the `mathlib` package. Upstream targets the same Lean we ship
+  # (lean-toolchain = leanprover/lean4:v4.35.0, Mathlib v4.35.0), so it
+  # builds unpatched.
   #
-  # `lean` and this package move TOGETHER: Mathlib's own tooling is compiled
-  # against the running Lean, so a Mathlib pinned for one Lean minor does not
-  # build on the next (lean 4.35's Lake changed `PackageEntrySrc.path`, which
-  # broke the Sept pin's `Cache/Requests.lean`; pkgs#999). Bump lean only with
-  # an aeneas commit whose backends/lean/lean-toolchain names it.
+  # `lean`, `mathlib-oleans`, `mathlib` and this package move TOGETHER: a
+  # Mathlib tag supports exactly one Lean, and Aeneas pins one Mathlib tag.
+  # build.sh refuses a lean-toolchain mismatch, and refuses a `mathlib`
+  # package whose tag or Lake dependency revisions differ from the pinned
+  # Aeneas source's lake-manifest.json (`mathlib` itself refuses oleans not
+  # compiled from its sources). Bump lean only with an aeneas commit whose
+  # backends/lean/lean-toolchain names it (pkgs#999).
   #
-  # Offline-lake mechanism adopted from nixpkgs `pkgs/build-support/lake`
-  # (MIT, © Eelco Dolstra and the Nixpkgs/NixOS contributors): every Lake
-  # dependency is a pinned source placed under `.lake/packages/<name>`, an
-  # on-disk `.lake/package-overrides.json` tells lake to use those directories,
-  # `LAKE_NO_CACHE=1` + an empty `RESERVOIR_API_URL` keep it from reaching out.
-  # The ONE network use is Mathlib's own build cache (`lake exe cache get`),
-  # fetching only the olean closure of the 31 Mathlib modules Aeneas imports
-  # (1,474 files as of Mathlib v4.35.0, versus 5.9 GB for all of Mathlib). Those files are
-  # content-addressed, so two builds are byte-identical.
+  # OFFLINE, no prebuilt. Mathlib comes from the `mathlib` package, compiled
+  # from sha256-pinned sources (mathlib-oleans/build.ncl says why not
+  # Mathlib's cache), and this package compiles only Aeneas's own ~270
+  # modules with plain `lean` (see build.sh for why not lake). It installs
+  # only those, and its LEAN_PATH file chains the `mathlib` package's
+  # entries, so all of Mathlib is importable next to Aeneas.
   #
   # The translator (`aeneas` package) is NOT bumped here. Upstream's library is
   # now a Lean `module`; the translator's default non-module output (`import
@@ -43,101 +40,42 @@ let aeneas_sha = "ab34bd28458a08c150b7cbf1873e59af74588138" in
   # translator is the charon/rust-nightly cascade (`pkgmgr bundle-bump aeneas`).
   build_deps = [
     { file = "build.sh" } | Local,
+    # Verbatim copy of the pinned source's backends/lean/lake-manifest.json.
+    # pkgmgr reads it for Aeneas's Lean version when it checks a lean bump
+    # (data/toolchain_constraints.toml); build.sh refuses a copy that
+    # differs from the tarball's.
     { file = "lake-manifest.json" } | Local,
     {
       url = "gs://minimal-staging-archives/aeneas-latest/aeneas-ab34bd2.tar.gz",
       sha256 = "cbdf6ca6efc17a994172de6f2c284b3c86807601996da417a345a7791742061b",
       extract = true,
     } | Source,
-    # leanprover-community/mathlib4 @ 56a005855ea17e0b0958f73ec801ae140b0a1679 (lake-manifest.json)
-    {
-      url = "gs://minimal-staging-archives/aeneas-latest/mathlib-56a0058.tar.gz",
-      sha256 = "45567f6e07607b787026d287c8ec1828f6cabc8debe11a45a521750580e3a0d5",
-      extract = true,
-    } | Source,
-    # leanprover-community/plausible @ dfa4f38190d07c37e315953e08b90fe2d95b3c24 (lake-manifest.json)
-    {
-      url = "gs://minimal-staging-archives/aeneas-latest/plausible-dfa4f38.tar.gz",
-      sha256 = "3f157cbc2450a6d14f32f18c7a1efd12ee8209a335b3c8ea05248eece9beb342",
-      extract = true,
-    } | Source,
-    # leanprover-community/LeanSearchClient @ d6b4c7be5be75ec4917c873ac50c756dc1436372 (lake-manifest.json)
-    {
-      url = "gs://minimal-staging-archives/aeneas-latest/LeanSearchClient-d6b4c7b.tar.gz",
-      sha256 = "bdd04cafc4385c3a236568127692ec197a06b97de413436623cba3e7811e010c",
-      extract = true,
-    } | Source,
-    # leanprover-community/import-graph @ a41f0e9a4dea23188ea9cc1c41ac9f8bbafe0b93 (lake-manifest.json)
-    {
-      url = "gs://minimal-staging-archives/aeneas-latest/importGraph-a41f0e9.tar.gz",
-      sha256 = "578c04f8b0df045c0e4091cf3633336c4785927269ef77bb47a6080e5d3b2ca5",
-      extract = true,
-    } | Source,
-    # leanprover-community/ProofWidgets4 @ df72b022e558978a1c50264cfc4d7fec86fa8e04 (lake-manifest.json)
-    {
-      url = "gs://minimal-staging-archives/aeneas-latest/proofwidgets-df72b02.tar.gz",
-      sha256 = "1eaae7c4f21d9f0d7595ff7dd8b527b8ac6c59c932c162f5bdd9116f40407dec",
-      extract = true,
-    } | Source,
-    # leanprover-community/aesop @ 4a174c490d8707121c4a9290800489f105d85e07 (lake-manifest.json)
-    {
-      url = "gs://minimal-staging-archives/aeneas-latest/aesop-4a174c4.tar.gz",
-      sha256 = "51146a125539b3eab0390c94bf90440cbfd4a4af1ab3fc3a1cc65fa49d248d98",
-      extract = true,
-    } | Source,
-    # leanprover-community/quote4 @ dce0ad79c486cb1fb504af04f953c3466b0c6db8 (lake-manifest.json)
-    {
-      url = "gs://minimal-staging-archives/aeneas-latest/Qq-dce0ad7.tar.gz",
-      sha256 = "ea7f24d48b20dc748c419a57926280de9611769f21d9db1dbb0ef7a5e536335f",
-      extract = true,
-    } | Source,
-    # leanprover-community/batteries @ 66e469188fe07963e5cf666c7d4433f45b8131c5 (lake-manifest.json)
-    {
-      url = "gs://minimal-staging-archives/aeneas-latest/batteries-66e4691.tar.gz",
-      sha256 = "e186aeb771cc7abaa64a738f0cee2743e89ca34e09e7efcb48520af847e2e92d",
-      extract = true,
-    } | Source,
-    # leanprover/lean4-cli @ c24fe6078c630e89b489bffe59b3e20ac30d12c8 (lake-manifest.json)
-    {
-      url = "gs://minimal-staging-archives/aeneas-latest/Cli-c24fe60.tar.gz",
-      sha256 = "d9647a8d34708a3ecc8eb075c5c2910be9310017ecfb46c77510b2480f55285e",
-      extract = true,
-    } | Source,
     base,
     coreutils,
-    lean,
-    # `lake exe cache get` first compiles Mathlib's cache tool to a native
-    # executable (Lean → C → object), so a C toolchain is needed even though
-    # the library itself is oleans only. `leangz` provides the `leantar` the
-    # cache tool needs to unpack `.ltar` files (an official Lean release
-    # bundles it; our from-source lean does not).
-    toolchain,
-    leangz,
+    # lean and mathlib are runtime deps (below), so they are in this build
+    # too.
+    # build.sh orders the module builds with make and reads lean's
+    # `--deps-json` header parse and the lake manifests with jq.
+    make,
+    jq,
     # `bv_decide` shells out to `cadical`; lean releases bundle it, ours
     # doesn't. The library build runs 60 solver call sites (Bvify's
     # `bv_decide` examples, and BvTac's `bv_tac` examples, Tests and simp
     # lemmas), so this build is the real-goal test of a cadical bump.
     cadical,
-    curl,
-    git,
-    ca-certificates,
   ],
-
-  needs =
-    {
-      dns = {},
-      internet = {},
-    } | Needs,
 
   cmd = "./build.sh",
   build_args = {
     include version,
   },
 
-  # Oleans only, one directory per Lake package, dot-free so the globs see
-  # them: `usr/lib/lean/pkgs/<name>/lib/…`. A consumer sets
-  #   LEAN_PATH=/usr/lib/lean/pkgs/aeneas/lib:/usr/lib/lean/pkgs/mathlib/lib:…
-  # (see the aeneas loadout) and runs plain `lean`; no lake needed downstream.
+  # Aeneas's oleans only, dot-free so the globs see them:
+  # `usr/lib/lean/pkgs/aeneas/lib/…`. Mathlib and its dependencies are
+  # `mathlib-oleans`' (via `mathlib`), under usr/lib/lean/mathlib/<name>/lib.
+  # A consumer runs
+  #   LEAN_PATH=$(cat /usr/lib/lean/pkgs/LEAN_PATH) lean …
+  # (Aeneas first, then the mathlib package's entries); no lake downstream.
   outputs = {
     oleans = { glob = "usr/lib/lean/pkgs/**/*.olean*" } | OutputData,
     ileans = { glob = "usr/lib/lean/pkgs/**/*.ilean" } | OutputData,
@@ -154,6 +92,14 @@ let aeneas_sha = "ab34bd28458a08c150b7cbf1873e59af74588138" in
 
   runtime_deps = [
     lean,
+    # Every Mathlib module (and batteries, aesop, Qq, ProofWidgets, ...),
+    # built from source, for this build and for consumers. `mathlib` is the
+    # thin layer (LEAN_PATH, MANIFEST, lake-manifest.json under
+    # /usr/share/mathlib, plus the licences); the oleans are
+    # `mathlib-oleans`', which `mathlib` brings in as a runtime dep, under
+    # /usr/lib/lean/mathlib/<lake package>/lib. build.sh reads
+    # /usr/share/mathlib/LEAN_PATH, and our LEAN_PATH file chains it.
+    mathlib,
   ],
 
   attrs =
@@ -177,6 +123,18 @@ let aeneas_sha = "ab34bd28458a08c150b7cbf1873e59af74588138" in
         test_deps = [base, lean],
         cmds = [
           ["/bin/bash", "-c", "export LEAN_PATH=$(cat /usr/lib/lean/pkgs/LEAN_PATH) && printf 'import Aeneas\\nopen Aeneas.Std\\n#eval (1:Nat)+1\\n' > /tmp/t.lean && lean /tmp/t.lean"],
+        ],
+      } | Test,
+    # All of Mathlib is reachable through the same LEAN_PATH, not only the
+    # closure Aeneas imports: Real.rpow lives in
+    # Mathlib.Analysis.SpecialFunctions.Pow.Real, which no Aeneas module
+    # imports.
+    imports_full_mathlib =
+      {
+        class = 'Standalone,
+        test_deps = [base, lean],
+        cmds = [
+          ["/bin/bash", "-c", "export LEAN_PATH=$(cat /usr/lib/lean/pkgs/LEAN_PATH) && printf 'import Aeneas\\nimport Mathlib.Analysis.SpecialFunctions.Pow.Real\\nexample (x : Real) : x ^ (1 : Real) = x := Real.rpow_one x\\n#check Real.rpow_natCast\\n' > /tmp/m.lean && lean /tmp/m.lean 2>&1"],
         ],
       } | Test,
   },
