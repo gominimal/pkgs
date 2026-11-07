@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -47,4 +47,8 @@ let version = "2.47" in
         name = "binutils",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/arm-none-eabi-ld --version",
+  },
 } | BuildSpec

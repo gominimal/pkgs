@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -37,4 +37,8 @@ let version = "0.23.1" in
       source_provenance = { category = 'GithubRepo, owner = "imsnif", repo = "bandwhich" },
       license_spdx = "MIT",
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/bandwhich --version",
+  },
 } | BuildSpec

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -77,4 +77,8 @@ in
       # Claude code wires `.claude.json`, which contains anthropic credentials for the user
       env_file_mappings = [{ read_only = false, path = "~/.claude.json", class = 'Credential }],
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/claude --version",
+  },
 } | BuildSpec
