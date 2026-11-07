@@ -6,7 +6,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.2.100" in
+let version = "0.2.130" in
 {
   name = "wasm-bindgen-cli",
   # The wasm-bindgen post-processor: turns a rustc wasm32-unknown-unknown module plus its
@@ -16,7 +16,7 @@ let version = "0.2.100" in
     { file = "build.sh" } | Local,
     {
       url = "https://static.crates.io/crates/wasm-bindgen-cli/wasm-bindgen-cli-%{version}.crate",
-      sha256 = "9e7f06f41580c87b6f4f84176d033f09c0838db1523a8d1899064b53cbb92c59",
+      sha256 = "c37f6904387d19a319525c74af274c73912f3871c35555aa49f3ea64ebb2fc7a",
       # a .crate is a gzipped tar; build.sh unpacks it (Source extraction keys on the extension)
       extract = false,
     } | Source,
