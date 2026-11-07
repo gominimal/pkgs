@@ -44,6 +44,10 @@ LDFLAGS = ("-Wl,-error-limit=0 -Wl,-O3 -Wl,--lto-O3 -Wl,--strip-all "
 # clang 17's "generic" cpu; clang 21's generic adds bulk-memory, multivalue, reference-types,
 # nontrapping-fptoint and call-indirect-overlong, none of which the shipped blobs use.
 CPU = ["-mcpu=mvp", "-mmutable-globals"]
+# undici's own wasm.js says wasm32-unknown-wasi (pinned above, not used). clang 23 deprecates the
+# bare wasi OS, and clang links from <sysroot>/lib/<arch>-<os>, so the triple must match the dir
+# packages/wasi-libc installs: lib/wasm32-wasip1.
+TRIPLE = "wasm32-wasip1"
 LLHTTP_SRCS = ("api.c", "http.c", "llhttp.c")
 GATE_ALLOWED = {"mutable-globals"}
 
@@ -588,7 +592,7 @@ def check_undici_src(src, version, llhttp):
 
 
 def compile_cmd(cc, sysroot, rt, out, simd):
-    cmd = [cc, "--sysroot=" + sysroot, "-target", "wasm32-unknown-wasi"] + CPU + CFLAGS
+    cmd = [cc, "--sysroot=" + sysroot, "--target=" + TRIPLE] + CPU + CFLAGS
     if simd:
         cmd.append("-msimd128")
     # clang's wasm driver runs wasm-opt after an -Ofast link whenever wasm-opt is on PATH.
@@ -601,6 +605,9 @@ def compile_cmd(cc, sysroot, rt, out, simd):
 
 def build(src, outdir, version, llhttp, cc, sysroot, rt, dry_run):
     check_undici_src(src, version, llhttp)
+    libc = os.path.join(sysroot, "lib", TRIPLE, "libc.a")
+    if not dry_run and not os.path.isfile(libc):
+        raise Fail("%s missing: --sysroot must be a wasi-libc built for %s" % (libc, TRIPLE))
     src = os.path.abspath(src)
     outdir = os.path.abspath(outdir)
     os.makedirs(outdir, exist_ok=True)
