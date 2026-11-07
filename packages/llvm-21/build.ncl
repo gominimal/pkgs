@@ -1,10 +1,9 @@
-# LLVM 21, prefixed under /usr/lib/llvm-21 (see ../llvm/versioned.ncl). A frozen copy of the
-# 21.1.8 the unprefixed ../llvm ships today, for consumers that must stay on LLVM 21 when the
-# default llvm moves on (LLVM plan step 7): the Rust bootstrap rungs (each build.sh asserts
-# llvm-config 21.x), the amd64 bedrock rustc-1.97.1 tarball (link-shared against
-# libLLVM.so.21.1) and emscripten 4.0.11 (EXPECTED_LLVM_VERSION = 21). Same release and build
-# configuration as ../llvm, from the monorepo tarball instead of the eight per-project ones.
-# 21.1.8 is the final 21.x release.
+# LLVM 21.1.8, the final 21.x release, frozen and prefixed under /usr/lib/llvm-21 (see
+# ../llvm/versioned.ncl), built from the llvm-project monorepo tarball. The default,
+# unprefixed ../llvm is a later major. Consumers that need LLVM 21: the Rust bootstrap rungs
+# rustc-1.91.1 through rustc-1.98.1 (each build.sh asserts llvm-config 21.x), the amd64
+# bedrock rustc-1.97.1 tarball (link-shared against libLLVM.so.21.1), emscripten 4.0.11
+# (EXPECTED_LLVM_VERSION = 21) and bun.
 # The record literal lives here, not in the helper: minimal identifies a package by the
 # source position of its BuildSpec record, so two packages sharing one literal collapse
 # into one.

@@ -67,8 +67,8 @@ export LIBSQLITE3_SYS_USE_PKG_CONFIG=1
 export LIBSSH2_SYS_USE_PKG_CONFIG=1
 
 # --- LLVM 21: the prefixed llvm-21 package, not the default llvm ---
-# Every rung targets LLVM 21 and stays on it when the default `llvm` moves on (LLVM plan step 7),
-# so it builds against the frozen llvm-21 under /usr/lib/llvm-21. Nothing of it is in /usr/bin or
+# Every rung needs LLVM 21 and the default `llvm` is a later major, so it builds against the
+# frozen llvm-21 under /usr/lib/llvm-21. Nothing of it is in /usr/bin or
 # /usr/lib: its bin/ goes first on PATH (clang, clang++, llvm-config; they find their own libs
 # through llvm-21's $ORIGIN/../lib RPATH). Every compiler x.py builds gets a RUNPATH to its lib/
 # from the RUSTFLAGS_* link-arg below: bootstrap appends RUSTFLAGS_BOOTSTRAP to what the stage0

@@ -11,7 +11,7 @@ let glibc = import "../glibc/build.ncl" in
 # LLVM top-of-tree -- so the version is pinned to the last release whose
 # EXPECTED_LLVM_VERSION is 21, and it takes LLVM from the frozen, prefixed
 # llvm-21 (/usr/lib/llvm-21; build.sh points LLVM_ROOT there) rather than the
-# default llvm, which moves past 21. Bumping emscripten means moving it to the
+# default llvm, which is a later major. Bumping emscripten means moving it to the
 # llvm-<N> line it expects; tools/shared.py holds the expected major.
 #
 # LIMITATION -- no JavaScript optimizer. This package ships without the npm

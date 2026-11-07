@@ -43,7 +43,6 @@ cmake \
 ninja
 DESTDIR=$OUTPUT_DIR ninja 'install/strip'
 
-# The installed tools must report the pinned version (the unprefixed /usr layout is
-# unchanged from the per-project-tarball build).
+# The installed tools must report the pinned version.
 LD_LIBRARY_PATH="$OUTPUT_DIR/usr/lib" "$OUTPUT_DIR/usr/bin/clang" --version | grep -F "clang version $V"
 test "$(LD_LIBRARY_PATH="$OUTPUT_DIR/usr/lib" "$OUTPUT_DIR/usr/bin/llvm-config" --version)" = "$V"
