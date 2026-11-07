@@ -4,6 +4,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let sed = import "../sed/build.ncl" in
 let make = import "../make/build.ncl" in
 let libpng = import "../libpng/build.ncl" in
+let bzip2 = import "../bzip2/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 let version = "2.15.0" in
@@ -26,6 +27,9 @@ let version = "2.15.0" in
   runtime_deps = [
     glibc,
     libpng,
+    # configure auto-detects bzip2 (the build closure has it); libfreetype.so.6
+    # then NEEDS libbz2.so.1.0 (smoke-test finding: linking -lharfbuzz failed).
+    bzip2,
   ],
 
   cmd = "./build.sh",

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -6,6 +6,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
+let zlib = import "../zlib/build.ncl" in
 
 let version = "10.6p1" in
 {
@@ -26,6 +27,7 @@ let version = "10.6p1" in
   runtime_deps = [
     glibc,
     openssl,
+    zlib,
   ],
 
   cmd = "./build.sh",
@@ -51,4 +53,8 @@ let version = "10.6p1" in
         repo = "openssh-portable",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/ssh -V",
+  },
 } | BuildSpec
