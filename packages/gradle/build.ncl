@@ -4,14 +4,14 @@ let bash = import "../bash/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 let python = import "../python/build.ncl" in
 
-let version = "9.8.2" in
+let version = "9.9.0" in
 {
   name = "gradle",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://services.gradle.org/distributions/gradle-%{version}-bin.zip",
-      sha256 = "21bd5da2de49b642904077f38c0efdc7778e92b3ed0889392dca61b97e389607",
+      sha256 = "0b00b0ffe07c4d4789c12d4935a44a7057d55774b7540bd4a3f76f336deb177a",
     } | Source,
     base,
     python,
