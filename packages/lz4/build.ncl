@@ -7,6 +7,7 @@ let sed = import "../sed/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let diffutils = import "../diffutils/build.ncl" in
+let findutils = import "../findutils/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
@@ -27,6 +28,7 @@ let version = "1.11.0" in
     grep,
     coreutils,
     diffutils,
+    findutils,
     toolchain,
   ],
   runtime_deps = [
