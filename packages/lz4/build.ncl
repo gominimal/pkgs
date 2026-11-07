@@ -11,14 +11,14 @@ let toolchain = import "../toolchain/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.10.0" in
+let version = "1.11.0" in
 {
   name = "lz4",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/lz4-%{version}.tar.gz",
-      sha256 = "537512904744b35e232912055ccf8ec66d768639ff3abe5788d90d792ec5f48b"
+      sha256 = "247e5fa64da5f7b75ee3dd3bed484076396c9ebe8254d9ccf693eb62800c5e26"
     } | Source,
     bash-bootstrap,
     tar,

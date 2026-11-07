@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof lz4-1.10.0.tar.gz
-cd lz4-1.10.0
+tar -xof lz4-1.11.0.tar.gz
+cd lz4-1.11.0
 
 export CC=gcc
 case $(uname -m) in
