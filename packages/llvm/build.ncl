@@ -1,5 +1,7 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let binutils = import "../binutils/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let llvm-bootstrap = import "../llvm-bootstrap/build.ncl" in
@@ -8,6 +10,7 @@ let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let linux_headers = import "../linux_headers/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let version = "21.1.8" in
@@ -56,8 +59,10 @@ let version = "21.1.8" in
     toolchain,
   ],
   runtime_deps = [
+    binutils, # clang's driver links through `ld`
     coreutils, # For /usr/bin/env
     glibc,
+    linux_headers,
     libffi,
     zlib,
     subsetOf gcc ["libgcc", "libstdcpp"],
@@ -102,4 +107,18 @@ let version = "21.1.8" in
       },
       build_cost_multiple = 6,
     } | Attrs,
+
+  tests = {
+    # Only clang's own runtime closure may supply ld and the kernel headers here.
+    compile_exec_c_kernel_headers =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils],
+        cmds = [
+          ["/bin/bash", "-c", "printf '#include <linux/types.h>\\nint main() { __u32 x = 0; return x; }\\n' > hello.c"],
+          ["/bin/clang", "hello.c", "-o", "hello"],
+          ["/bin/bash", "-c", "./hello"],
+        ],
+      } | Test,
+  },
 } | BuildSpec
