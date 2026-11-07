@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -54,4 +54,8 @@ let version = "0.98" in
         downloads_page = "https://download.savannah.nongnu.org/releases/fastjar/",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/fastjar --version",
+  },
 } | BuildSpec
