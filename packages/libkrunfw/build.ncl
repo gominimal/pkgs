@@ -1,4 +1,5 @@
-let { BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let bc = import "../bc/build.ncl" in
 let bison = import "../bison/build.ncl" in
@@ -78,5 +79,27 @@ let version = "5.6.2" in
       owner = "libkrun",
       repo = "libkrunfw",
     },
+  },
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t -lkrunfw <<'EOF'
+              extern void krunfw_get_kernel(void);
+              int main(void) { void *volatile p = (void *)krunfw_get_kernel; return p ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
   },
 } | BuildSpec
