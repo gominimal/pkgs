@@ -63,6 +63,21 @@ grep -q 'cockroachdb/swiss' manifest.yaml && { echo "swiss already replaced/pinn
 sed -i '/^replaces:/a\  - github.com/cockroachdb/swiss => github.com/cockroachdb/swiss v0.0.0-20260820225851-333444432258' manifest.yaml
 grep -q 'cockroachdb/swiss => ' manifest.yaml
 
+# go 1.27 bridge #2: drop the asapauth extension, as upstream did after 0.164.0
+# (opentelemetry-collector-releases#1742, for contrib#51868). It pulls in
+# github.com/SermoDigital/jose, whose crypto/none.go init() calls
+# crypto.RegisterHash(crypto.Hash(0), ...). Go 1.27 rejects hash value 0
+# (golang/go 5a0e0838, "crypto: disallow RegisterHash with hash value 0"), so
+# with asapauth compiled in, every otelcol-contrib invocation, even --version,
+# panics in package init with "crypto: RegisterHash of unknown hash function".
+# Upstream's fix comments the line out, so once a release ships without it the
+# grep below fails: drop this patch then.
+grep -q '^  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension ' manifest.yaml || {
+  echo "asapauthextension is no longer enabled in the manifest: drop this patch"; exit 1;
+}
+sed -i '/^  - gomod: github.com\/open-telemetry\/opentelemetry-collector-contrib\/extension\/asapauthextension /d' manifest.yaml
+if grep -q '^ *- gomod: .*asapauthextension' manifest.yaml; then echo "asapauthextension still in manifest" >&2; exit 1; fi
+
 $OCB --config=manifest.yaml
 
 mkdir -p $OUTPUT_DIR/usr/bin
