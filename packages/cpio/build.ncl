@@ -10,7 +10,7 @@ let version = "2.15" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://mirrors.kernel.org/gnu/cpio/cpio-%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/cpio-%{version}.tar.gz",
       sha256 = "efa50ef983137eefc0a02fdb51509d624b5e3295c980aa127ceee4183455499e",
       extract = true,
       strip_prefix = "cpio-%{version}",

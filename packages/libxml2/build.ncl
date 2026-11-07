@@ -15,7 +15,7 @@ let version = "2.15.4" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/GNOME/libxml2/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/GNOME/libxml2/v%{version}.tar.gz",
       sha256 = "bb01bd9ac9a7403f9706816fd6d3e7888041d32b0211075feb20e755d2a9f29d",
       extract = true,
       strip_prefix = "libxml2-%{version}",

@@ -13,7 +13,7 @@ let version = "1.1.45" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/GNOME/libxslt/archive/refs/tags/v%{version}.tar.gz",
+      url = "gs://minimal-staging-archives/GNOME/libxslt/v%{version}.tar.gz",
       sha256 = "023900618fbf789dba364f38f184a0fe2d3ebad2b2ab06003ffd2d1ee2d5461c",
       extract = true,
       strip_prefix = "libxslt-%{version}",
