@@ -13,7 +13,14 @@ esac
 export CFLAGS="$MARCH -O3 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
+# 1.11.0's multiconf build re-resolves the phony `lz4` target with the flags of
+# each make invocation, so `lz4-release`'s -DNDEBUG would not survive into
+# `install`'s rebuild. Set it for every invocation instead.
+export CPPFLAGS="-DNDEBUG"
 
-make -j$(nproc) BUILD_STATIC=no PREFIX=/usr
+# No separate default build: in 1.11.0, `lib`/`lib-release` require liblz4.a
+# even with BUILD_STATIC=no (the rule only exists when it is yes), so the
+# default target fails. `install` builds exactly what BUILD_STATIC/BUILD_SHARED
+# select (the lz4 CLI and the shared liblz4).
 # make -j1 check
-make BUILD_STATIC=no PREFIX=/usr DESTDIR=$OUTPUT_DIR install
+make -j$(nproc) BUILD_STATIC=no PREFIX=/usr DESTDIR=$OUTPUT_DIR install
