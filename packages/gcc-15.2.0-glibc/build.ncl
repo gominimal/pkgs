@@ -118,7 +118,7 @@ match {
     else
       # SEALED (switch off): the same sha-pinned artifact the production toolchain
       # package already anchors on (see packages/gcc/build.ncl), with this
-      # package's own outputs, so anything that imports it (the jvm ladder roots) gets a
+      # package's own outputs, so anything that imports it gets a
       # real tree rather than an empty stub. Provenance: gominimal/minimermetic#16.
       (
         {
@@ -126,8 +126,9 @@ match {
           prebuilt = true,
           build_deps = [
             {
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/617e2057a63fc5d7840b752a8b1cdfdbef3ba193c36eed52ebb97396122cb148/gcc-15.2.0-glibc-15.2.0.tar.zst",
-              sha256 = "617e2057a63fc5d7840b752a8b1cdfdbef3ba193c36eed52ebb97396122cb148",
+              # gominimal/bootstrap gen-13 object (generations/gen-13/manifest.json)
+              url = "gs://minimal-bootstrap/gen-13/sha256/931b342257874bbd946a55443ba75f1930433bf4dc12d6924fec674e75f4c007/gcc-15.2.0-glibc-15.2.0-x86_64.tar.zst",
+              sha256 = "931b342257874bbd946a55443ba75f1930433bf4dc12d6924fec674e75f4c007",
               extract = true,
             } | Source,
           ],
