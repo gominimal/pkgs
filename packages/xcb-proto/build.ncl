@@ -40,8 +40,11 @@ let version = "1.17.0" in
       {
         class = 'Standalone,
         test_deps = [python],
+        # xcbgen.xtypes reads `__main__.output[...]` at import time: its
+        # caller (libxcb's c_client.py) defines that dict of emitters first.
+        # A defaultdict stands in for it, so the bare import works.
         cmds = [
-          ["/usr/bin/python3", "-c", "import xcbgen.xtypes, xml.etree.ElementTree as E; r = E.parse('/usr/share/xcb/xproto.xml').getroot(); assert r.get('header') == 'xproto'; print(len(r))"],
+          ["/usr/bin/python3", "-c", "import __main__, collections; __main__.output = collections.defaultdict(lambda: None); import xcbgen.xtypes as T, xml.etree.ElementTree as E; assert T.tcard32.size == 4; r = E.parse('/usr/share/xcb/xproto.xml').getroot(); assert r.get('header') == 'xproto'; print(len(r))"],
         ],
       } | Test,
   },
