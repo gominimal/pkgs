@@ -9,7 +9,7 @@ let rustc-1-97-1 = import "../rustc-1.97.1/build.ncl" in # the stage0 (amd64)
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let curl = import "../curl/build.ncl" in
-let llvm = import "../llvm/build.ncl" in
+let llvm-21 = import "../llvm-21/build.ncl" in # LLVM 21, prefixed under /usr/lib/llvm-21
 let openssl = import "../openssl/build.ncl" in
 let openssl-3-5 = import "../openssl-3.5/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -40,10 +40,11 @@ let stage0 =
         #
         # LLVM bumpers: unlike the arm64 tarball below, which bundles its own libLLVM.so.21.1,
         # this one was built `host-llvm: external, link-shared`. It ships only
-        # librustc_driver-*.so and loads the LIVE `llvm` package's libLLVM at run time. With the
-        # chain on, an llvm soname bump rebuilt the rung; with it off, the bump breaks this stage0
-        # (and so rust on amd64) until the tarball is regenerated against the new llvm, or the
-        # switch is flipped back on.
+        # librustc_driver-*.so and loads libLLVM.so.21.1 at run time, with no RUNPATH to it. It
+        # gets that library from the frozen, prefixed `llvm-21` (/usr/lib/llvm-21/lib, found
+        # through the LD_LIBRARY_PATH build.sh exports), not from the default `llvm`, so moving
+        # the default llvm past 21 does not break this stage0. It has to stay on LLVM 21 until
+        # the tarball is regenerated.
         (
           {
             name = "rustc-1.97.1 (bedrock)",
@@ -58,11 +59,16 @@ let stage0 =
             # = the rung's runtime_deps (rustc-1.97.1/build.ncl amd64_spec), plus openssl-3-5:
             # this tarball's cargo has DT_NEEDED libssl.so.3 + libcrypto.so.3, which packages/
             # openssl (4.x, libssl.so.4) no longer provides.
-            runtime_deps = [libffi, llvm, openssl, openssl-3-5, sqlite, subsetOf gcc ["libgcc", "libstdcpp"]],
+            runtime_deps = [libffi, llvm-21, openssl, openssl-3-5, sqlite, subsetOf gcc ["libgcc", "libstdcpp"]],
             outputs = { usr = { glob = "usr/**/*", allow_executable = true } | OutputData },
           } | BuildSpec
         ),
     { arch = 'Arm64, .. } =>
+      # Bundles its own libLLVM.so.21.1 (Rust's LLVM fork, which builds targets such as Xtensa
+      # that llvm-21 does not) and finds it through $ORIGIN/../lib. llvm-21's library has the same
+      # soname, so build.sh must not put /usr/lib/llvm-21/lib on LD_LIBRARY_PATH for this stage0
+      # (it would win over the RUNPATH: pkgs#1339's arm64 failure); its stage0-libLLVM block reads
+      # the mode from the driver and fails early if the wrong copy would load.
       {
         url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/de0724a4bf882c5f4641dc6edd6284ee0fa565a405d4ea264a4f305e3bfe5e6e/rustc-1.97.1-aarch64.tar.zst",
         sha256 = "de0724a4bf882c5f4641dc6edd6284ee0fa565a405d4ea264a4f305e3bfe5e6e",
@@ -103,7 +109,7 @@ let spec =
     ],
     runtime_deps = [
       libffi,
-      llvm, # clang, clang++, llvm-config and libLLVM-21.so; also present at build time
+      llvm-21, # clang, clang++, llvm-config and libLLVM.so.21.1 under /usr/lib/llvm-21; also present at build time
       openssl,
       sqlite,
       subsetOf gcc ["libgcc", "libstdcpp"],

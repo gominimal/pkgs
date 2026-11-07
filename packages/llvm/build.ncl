@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
@@ -10,43 +10,23 @@ let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
-let version = "21.1.8" in
+let version = "23.1.5" in
 
+# The default, UNPREFIXED LLVM (/usr/bin/clang, /usr/lib/libLLVM.so.23.1, ...). Consumers
+# that must stay on an older major use the prefixed lines instead (llvm-21: the Rust ladder
+# rungs, emscripten and bun; llvm-22: zig, odin), which live under /usr/lib/llvm-<major> so
+# they can share a closure with this package. Built by llvm-bootstrap (LLVM 21, built by
+# gcc): LLVM 23 needs a GCC 7.4 / Clang 5.0 host and CMake 3.20, same as 21.
 {
   name = "llvm",
   build_deps = [
     { file = "build.sh" } | Local,
+    # Upstream stopped publishing per-project tarballs after 21.x (22.x and 23.x ship
+    # only the monorepo tarball, with a sigstore attestation from release-sources.yml),
+    # so this is the same source the prefixed llvm-22 / llvm-23 lines use.
     {
-      url = "gs://minimal-staging-archives/clang-%{version}.src.tar.xz",
-      sha256 = "6090e3f23720d003cdd84483a47d0eec6d01adbb5e0c714ac0c8b58de546aa62"
-    } | Source,
-    {
-      url = "gs://minimal-staging-archives/clang-tools-extra-%{version}.src.tar.xz",
-      sha256 = "6ddb7e731bf09ab821132e2e8a3c706b6d9c52c92a9ce9a9ed0976a9c6c28829"
-    } | Source,
-    {
-      url = "gs://minimal-staging-archives/cmake-%{version}.src.tar.xz",
-      sha256 = "85735f20fd8c81ecb0a09abb0c267018475420e93b65050cc5b7634eab744de9"
-    } | Source,
-    {
-      url = "gs://minimal-staging-archives/compiler-rt-%{version}.src.tar.xz",
-      sha256 = "dd54ae21aee1780fac59445b51ebff601ad016b31ac3a7de3b21126fd3ccb229"
-    } | Source,
-    {
-      url = "gs://minimal-staging-archives/lld-%{version}.src.tar.xz",
-      sha256 = "d9524c5ee952500a2af92c27042a0d90ab089962af47816d4c85d0ebf76373d1"
-    } | Source,
-    {
-      url = "gs://minimal-staging-archives/libunwind-%{version}.src.tar.xz",
-      sha256 = "03e8adc6c3bdde657dcaedc94886ea70d1f7d551d622fcd8a36a8300e5c36cbc"
-    } | Source,
-    {
-      url = "gs://minimal-staging-archives/llvm-%{version}.src.tar.xz",
-      sha256 = "d9022ddadb40a15015f6b27e6549a7144704ded8828ba036ffe4b8165707de21"
-    } | Source,
-    {
-      url = "gs://minimal-staging-archives/third-party-%{version}.src.tar.xz",
-      sha256 = "7fe99424384aea529ffaeec9cc9dfb8b451fd1852c03fc109e426fe208a1f1a7"
+      url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-%{version}/llvm-project-%{version}.src.tar.xz",
+      sha256 = "fb50b1eac93ddeb3aa8dab4cfe324dff74f4a9c2bdee6160c9e36188f8d06a6e",
     } | Source,
     base,
     cmake,
@@ -64,6 +44,9 @@ let version = "21.1.8" in
   ],
 
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
   outputs = {
     bins = { glob = "usr/bin/*" } | OutputBin,
     clangd = { glob = "usr/bin/clangd" } | OutputBin,
@@ -90,6 +73,28 @@ let version = "21.1.8" in
     includes = { glob = "usr/include/**" } | OutputData,
     include_clang = { glob = "usr/include/clang*/**" } | OutputData,
     include_llvm = { glob = "usr/include/llvm*/**" } | OutputData,
+  },
+  tests = {
+    versions =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          ["/bin/bash", "-c", "/usr/bin/clang --version | grep -F 'clang version %{version}'"],
+          ["/bin/bash", "-c", "test \"$(/usr/bin/llvm-config --version)\" = %{version}"],
+          ["/bin/bash", "-c", "/usr/bin/ld.lld --version | grep -F 'LLD %{version}'"],
+        ],
+      } | Test,
+    hello_clang_lld =
+      {
+        class = 'Standalone,
+        test_deps = [base, glibc, gcc],
+        cmds = [
+          ["/bin/bash", "-c", "printf '#include <stdio.h>\\nint main(void){puts(\"hello llvm\");return 0;}\\n' > hello.c"],
+          ["/usr/bin/clang", "-fuse-ld=lld", "hello.c", "-o", "hello"],
+          ["/bin/bash", "-c", "./hello | grep -qx 'hello llvm'"],
+        ],
+      } | Test,
   },
   attrs =
     {
