@@ -4,7 +4,7 @@
 # SHARED gmp/libsigsegv/libtecla/buddy — Maude's INSTALL assumes STATIC libs (and
 # hides the .so's), but minimal ships them --disable-static, so we link
 # dynamically. CVC4 + Yices2 SMT backends disabled to start. See pkgmgr-rs#528.
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } =
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } =
   import "minimal.ncl"
 in
 let base = import "../base/build.ncl" in
@@ -77,4 +77,8 @@ let version = "3.5.1" in
       },
       build_cost_multiple = 5,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/maude --version",
+  },
 } | BuildSpec

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -35,4 +35,13 @@ let version = "4.40" in
       upstream_version = version,
       license_spdx = "MPL-2.0",
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [["/bin/bash", "-c", "/usr/bin/nspr-config --version"]],
+      } | Test,
+  },
 } | BuildSpec
