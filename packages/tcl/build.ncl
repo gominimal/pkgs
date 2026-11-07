@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -46,4 +46,13 @@ let version = "8.6.18" in
         repo = "tcl",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [["/bin/bash", "-c", "echo 'puts [expr {6*7}]' | /usr/bin/tclsh8.6 | grep -qx 42"]],
+      } | Test,
+  },
 } | BuildSpec

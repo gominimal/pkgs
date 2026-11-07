@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 
@@ -38,4 +38,8 @@ let version = "2.15.2" in
         repo = "nats-server",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/nats-server --version",
+  },
 } | BuildSpec

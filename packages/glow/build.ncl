@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -39,4 +39,8 @@ let version = "3.0.0" in
         repo = "glow",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/glow --version",
+  },
 } | BuildSpec

@@ -14,7 +14,7 @@ let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "7.3.79" in
+let version = "7.3.81" in
 {
   name = "foundationdb",
 
@@ -22,7 +22,7 @@ let version = "7.3.79" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/apple/foundationdb/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "ebdf764422d7135f1c80fc6f39592fbab189f679b4a11240ce5103c77a10dcba",
+      sha256 = "27cb330913378637de778334f117ea567f91a74e07877225d4bbf6d32547d1d9",
       extract = true,
       strip_prefix = "foundationdb-%{version}",
     } | Source,

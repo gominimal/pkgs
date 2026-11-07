@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 
@@ -43,4 +43,8 @@ let version = "1.9.4" in
         repo = "grpcurl",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/grpcurl --version",
+  },
 } | BuildSpec

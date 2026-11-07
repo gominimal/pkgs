@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let meson = import "../meson/build.ncl" in
@@ -46,4 +47,27 @@ let version = "2.62.1" in
       upstream_version = version,
       license_spdx = "LGPL-2.1-only",
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              test -s /usr/include/at-spi-2.0/atspi/atspi.h
+              gcc -x c - -o t -latspi <<'EOF'
+              extern void atspi_init(void);
+              int main(void) { void *volatile p = (void *)atspi_init; return p ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

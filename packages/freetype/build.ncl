@@ -1,4 +1,5 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -43,4 +44,13 @@ let version = "2.15.0" in
   },
   attrs.upstream_version = version,
   attrs.license_spdx = "FTL OR GPL-2.0-or-later",
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap],
+        cmds = [["/usr/bin/bash", "-c", "/usr/bin/freetype-config --version"]],
+      } | Test,
+  },
 } | BuildSpec
