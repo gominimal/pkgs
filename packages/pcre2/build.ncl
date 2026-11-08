@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
@@ -56,6 +56,8 @@ let version = "10.49" in
   ],
   runtime_deps = [
     glibc,
+    bzip2,
+    zlib,
   ],
 
   cmd = "./build.sh",
@@ -114,4 +116,8 @@ let version = "10.49" in
         repo = "pcre2",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/pcre2grep --version",
+  },
 } | BuildSpec

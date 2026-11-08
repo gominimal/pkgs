@@ -1,10 +1,10 @@
 # Imported from Wolfi `serve` by `pkgmgr import-wolfi` (node build),
 # with outputs refined from a verified `minimal package` build.
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let version = "14.2.6" in
+let version = "14.2.7" in
 {
   name = "serve",
   build_deps = [
@@ -31,4 +31,13 @@ let version = "14.2.6" in
       upstream_version = version,
       license_spdx = "MIT",
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [["/bin/bash", "-c", "/usr/bin/serve --version"]],
+      } | Test,
+  },
 } | BuildSpec

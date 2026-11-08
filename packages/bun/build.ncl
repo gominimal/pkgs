@@ -5,7 +5,7 @@ let bash = import "../bash/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
-let llvm = import "../llvm/build.ncl" in
+let llvm-21 = import "../llvm-21/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let go = import "../go/build.ncl" in
 let python = import "../python/build.ncl" in
@@ -63,7 +63,10 @@ in
     toolchain,
     cmake,
     ninja,
-    llvm,
+    # bun 1.3.x's configure accepts only clang / ld.lld 21.1.x (scripts/build/tools.ts
+    # LLVM_VERSION_RANGE) and searches /usr/lib/llvm-21/bin before PATH, so it builds on
+    # the frozen llvm-21 now that the default llvm is 23. bun 1.4 moves to llvm-23 (#1057).
+    llvm-21,
     rust,
     go,
     python,

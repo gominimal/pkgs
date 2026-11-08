@@ -1,6 +1,6 @@
 # Auto-bootstrapped from https://github.com/go-swagger/go-swagger by `pkgmgr import github` (go build).
 # TODO: REVIEWER — verify outputs/runtime_deps + the build.sh.
-let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -36,4 +36,8 @@ let version = "0.36.7" in
       source_provenance = { category = 'GithubRepo, owner = "go-swagger", repo = "go-swagger" },
       license_spdx = "Apache-2.0",
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/swagger version",
+  },
 } | BuildSpec

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let diffutils = import "../diffutils/build.ncl" in
@@ -80,4 +80,8 @@ let version = "2.78" in
         usr = { glob = "usr/**/*" } | OutputLib,
       },
     } | BuildSpec,
+
+  tests = {
+    smoketest = standaloneTest "/usr/sbin/capsh --print",
+  },
 } | BuildSpec

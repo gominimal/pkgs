@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
@@ -53,4 +53,8 @@ let version = "1.5.0" in
         repo = "pi",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/pi --version",
+  },
 } | BuildSpec

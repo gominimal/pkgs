@@ -1,17 +1,17 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.56.0" in
+let version = "1.57.0" in
 {
   name = "syft",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/anchore/syft/v%{version}.tar.gz",
-      sha256 = "b10a7b5f009746a0c30a4bc0a89d4e3f632fdd787a474bdb865810a17f1ac655",
+      sha256 = "04f03d36dd080677127ca4b00eb3189d4447d5f9a26e7746f3011c66edf7a8a5",
       extract = true,
       strip_prefix = "syft-%{version}",
     } | Source,
@@ -51,4 +51,8 @@ let version = "1.56.0" in
       },
       build_cost_multiple = 2,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/syft version",
+  },
 } | BuildSpec

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
 let bash = import "../bash/build.ncl" in
@@ -124,4 +124,8 @@ let version = "2.44" in
       ],
       outputs = all_outputs,
     } | BuildSpec,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/iconv --version",
+  },
 } | BuildSpec
