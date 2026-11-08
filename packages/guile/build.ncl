@@ -1,5 +1,7 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 let make = import "../make/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -86,7 +88,7 @@ let version = "3.0.11" in
     eval =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           ["/bin/bash", "-c", "test \"$(GUILE_AUTO_COMPILE=0 guile -c '(display (version))')\" = 3.0.11"],
           ["/bin/bash", "-c", "test \"$(GUILE_AUTO_COMPILE=0 guile -c '(use-modules (srfi srfi-1)) (display (fold + 0 (iota 101)))')\" = 5050"],

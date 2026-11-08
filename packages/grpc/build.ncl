@@ -3,6 +3,7 @@ let { subsetOf, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test
 let version = "1.85.1" in
 
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
@@ -90,7 +91,7 @@ let python = import "../python/build.ncl" in
     link_and_run =
       {
         class = 'Standalone,
-        test_deps = [base, toolchain, binutils, linux_headers],
+        test_deps = [bash-bootstrap, toolchain, binutils, linux_headers],
         cmds = [
           ["/bin/bash", "-c", "echo '#include <grpc/grpc.h>\nint main() { grpc_init(); grpc_shutdown(); return 0; }' > test.c"],
           ["/bin/gcc", "test.c", "-lgrpc", "-o", "test"],
@@ -100,7 +101,7 @@ let python = import "../python/build.ncl" in
     plugin_check =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "for p in cpp csharp node objective_c php python ruby; do command -v grpc_${p}_plugin > /dev/null || exit 1; done"],
         ],
@@ -108,7 +109,7 @@ let python = import "../python/build.ncl" in
     proto_compile =
       {
         class = 'Standalone,
-        test_deps = [base, toolchain, binutils, protobuf, python, linux_headers],
+        test_deps = [bash-bootstrap, toolchain, binutils, protobuf, python, linux_headers],
         cmds = [
           ["/bin/bash", "-c", "echo 'syntax = \"proto3\"; package test; service Echo { rpc Ping (Message) returns (Message) {} } message Message { string body = 1; }' > test.proto"],
           ["/bin/bash", "-c", "protoc --cpp_out=. test.proto"],

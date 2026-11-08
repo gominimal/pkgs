@@ -1,6 +1,7 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 let version = "13.3.0" in
@@ -68,7 +69,7 @@ let arm64_sha256 = "07015a0c34a8cfad8b3548984a86a7afe689e1929f5f77d9ae8f7636429e
     subcommands_replace_the_dropped_bins =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           # `grafana-server` and `grafana-cli` are gone as of 13. Assert the
           # subcommands that replaced them actually exist, so "we dropped two

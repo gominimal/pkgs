@@ -1,5 +1,8 @@
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -110,7 +113,7 @@ let version = "4.35.0" in
     compiles_hello =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           ["/bin/bash", "-c", "printf '#eval 1+1\\n' > /tmp/t.lean && lean /tmp/t.lean"],
           ["/bin/bash", "-c", "printf 'theorem t : 1 + 1 = 2 := rfl\\n' > /tmp/u.lean && lean /tmp/u.lean"],
@@ -133,7 +136,7 @@ let version = "4.35.0" in
     bv_decide =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "cd /tmp && printf '%s\\n' 'import Std.Tactic.BVDecide' 'theorem mul3 (x : BitVec 32) : x * 3 = x + x + x := by bv_decide' 'theorem andor (x y : BitVec 32) : (x &&& y) + (x ||| y) = x + y := by bv_decide' 'theorem mulcomm (x y : BitVec 8) : x * y = y * x := by bv_decide (config := { solverMode := .proof })' 'theorem csub (a b c2 c5 : BitVec 32) (ha : a < 3329#32) (hb : b < 3329#32) (hc2 : c2 = a + b - 3329#32) (hc5 : c5 = c2 + (3329#32 &&& (c2 >>> 16))) : c5 % 3329#32 = (a + b) % 3329#32 ∧ c5 < 3329#32 := by bv_decide' > bv.lean && lean bv.lean"],
           ["/bin/bash", "-c", "cd /tmp && printf '%s\\n' 'import Std.Tactic.BVDecide' 'theorem bad (x : BitVec 8) : x < x + 1 := by bv_decide' > cex.lean; out=\"$(lean cex.lean 2>&1)\"; echo \"$out\"; echo \"$out\" | grep -q 'The prover found a counterexample'"],

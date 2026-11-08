@@ -2,6 +2,9 @@ let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .
 let autoconf = import "../autoconf/build.ncl" in
 let automake = import "../automake/build.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 let m4 = import "../m4/build.ncl" in
@@ -65,7 +68,7 @@ let version = "0.9.6" in
     link_and_run =
       {
         class = 'Standalone,
-        test_deps = [base, toolchain],
+        test_deps = [bash-bootstrap, toolchain, coreutils, grep],
         cmds = [
           [
             "/bin/bash",
@@ -104,7 +107,7 @@ EOF
     pscap_runs =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "pscap --help 2>&1 || true"],
         ],
