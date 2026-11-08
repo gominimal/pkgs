@@ -13,6 +13,7 @@ let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Sourc
 in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
@@ -104,7 +105,7 @@ in
     rustc_private_resolves =
       {
         class = 'Standalone,
-        test_deps = [base, glibc, zlib, gcc],
+        test_deps = [bash-bootstrap, glibc, zlib, gcc],
         cmds = [
           ["/usr/bin/rustc", "--version"],
           [

@@ -1,5 +1,10 @@
 let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let diffutils = import "../diffutils/build.ncl" in
+let findutils = import "../findutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let libglvnd = import "../libglvnd/build.ncl" in
@@ -127,7 +132,7 @@ let box2d_version = "3.1.1" in
     compile_run =
       {
         class = 'Standalone,
-        test_deps = [base, glibc],
+        test_deps = [bash-bootstrap, glibc],
         cmds = [
           ["/bin/bash", "-c", "printf 'package main\\nimport \"core:fmt\"\\nmain :: proc() { fmt.println(\"ok\") }\\n' > hellope.odin"],
           ["/bin/odin", "run", "hellope.odin", "-file"],
@@ -140,7 +145,7 @@ let box2d_version = "3.1.1" in
     llvm22_toolchain =
       {
         class = 'Standalone,
-        test_deps = [base, glibc],
+        test_deps = [bash-bootstrap, glibc, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "if command -v clang || command -v wasm-ld; then exit 1; fi"],
           ["/bin/bash", "-c", "set -eu; /bin/odin report | tee report.txt; grep -E 'LLVM:? *22\\.' report.txt"],
@@ -164,7 +169,7 @@ let box2d_version = "3.1.1" in
     deterministic_output =
       {
         class = 'Standalone,
-        test_deps = [base, glibc, util-linux],
+        test_deps = [bash-bootstrap, glibc, util-linux, coreutils],
         cmds = [
           ["/bin/bash", "-c", "printf 'package main\\nimport \"core:fmt\"\\nmain :: proc() { fmt.println(\"ok\") }\\n' > det.odin"],
           ["/bin/bash", "-c", "set -eu; build() { setarch --addr-no-randomize /bin/odin build det.odin -file -out:det -o:speed -no-threaded-checker -extra-linker-flags:'-Wl,--build-id=none'; }; build; cp det det.first; build; test \"$(sha256sum < det)\" = \"$(sha256sum < det.first)\""],
@@ -178,7 +183,7 @@ let box2d_version = "3.1.1" in
     vendor_link =
       {
         class = 'Standalone,
-        test_deps = [base, glibc],
+        test_deps = [bash-bootstrap, glibc],
         cmds = [
           ["/bin/bash", "-c", "printf 'package main\\nimport stbi \"vendor:stb/image\"\\nimport \"vendor:cgltf\"\\nimport b3 \"vendor:box3d\"\\nimport b2 \"vendor:box2d\"\\nmain :: proc() {\\n_ = stbi.failure_reason()\\ncgltf.free(nil)\\n_ = b3.GetVersion()\\n_ = b2.GetByteCount()\\n}\\n' > vendor.odin"],
           ["/bin/odin", "build", "vendor.odin", "-file"],
@@ -194,7 +199,7 @@ let box2d_version = "3.1.1" in
     vendor_link_raylib =
       {
         class = 'Standalone,
-        test_deps = [base, glibc],
+        test_deps = [bash-bootstrap, glibc],
         cmds = [
           ["/bin/bash", "-c", "printf 'package main\\nimport rl \"vendor:raylib\"\\nmain :: proc() { _ = rl.GetRandomValue(1, 1) }\\n' > rl.odin"],
           ["/bin/odin", "build", "rl.odin", "-file"],
@@ -208,7 +213,7 @@ let box2d_version = "3.1.1" in
     vendor_provenance =
       {
         class = 'Standalone,
-        test_deps = [base, lua51, lua52, lua53, lua54, raygui, raylib],
+        test_deps = [bash-bootstrap, lua51, lua52, lua53, lua54, raygui, raylib, coreutils, diffutils],
         cmds = [
           ["/bin/bash", "-c", "set -eu; V=$(/bin/odin root)/vendor; case $(uname -m) in x86_64) RL=linux;; *) RL=linux-arm64;; esac; cmp $V/raylib/$RL/libraylib.a /usr/lib/libraylib.a; cmp $V/raylib/$RL/libraylib.so.600 /usr/lib/libraylib.so.6.0.0; cmp $V/raylib/linux/libraygui.a /usr/lib/libraygui.a; cmp $V/raylib/linux/libraygui.so /usr/lib/libraygui.so"],
           ["/bin/bash", "-c", "set -eu; V=$(/bin/odin root)/vendor; cmp $V/raylib/wasm/libraylib.web.a /usr/lib/emscripten/libraylib.web.a; cmp $V/raylib/wasm/libraygui.a /usr/lib/emscripten/libraygui.a"],
@@ -225,7 +230,7 @@ let box2d_version = "3.1.1" in
     vendor_tree =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, findutils],
         cmds = [
           # Native libraries built from the vendored C source.
           ["/bin/bash", "-c", "set -eu; V=$(/bin/odin root)/vendor; case $(uname -m) in x86_64) A=linux-amd64; B2=box2d_other_amd64_avx2.a;; *) A=linux-arm64; B2=box2d_other.a;; esac; test -f $V/box3d/lib/$A/libbox3d.a; test -f $V/stb/lib/stb_image.a; test -f $V/cgltf/lib/cgltf.a; test -f $V/box2d/lib/$B2"],

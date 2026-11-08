@@ -1,5 +1,8 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -88,7 +91,7 @@ let version = "3.4.12" in
     smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "/usr/bin/ruby --version | grep -qF 'ruby %{version} '"],
         ],
@@ -97,7 +100,7 @@ let version = "3.4.12" in
     eval =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "ruby -e 'puts 1+1' | grep -q '^2$'"],
         ],
@@ -107,7 +110,7 @@ let version = "3.4.12" in
     utf8_default_external =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "LANG=C.UTF-8 LC_ALL=C.UTF-8 ruby -e 'exit(Encoding.default_external == Encoding::UTF_8 ? 0 : 1)'"],
         ],
@@ -151,7 +154,7 @@ let version = "3.4.12" in
     gem_global_install =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",

@@ -1,5 +1,10 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
+let bzip2 = import "../bzip2/build.ncl" in
+let file = import "../file/build.ncl" in
 let make = import "../make/build.ncl" in
 let gdbm = import "../gdbm/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
@@ -106,7 +111,7 @@ let version = "3.14.10" in
     smoketest_output =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "echo 'print(\"Hello Python\")' > script.py"],
           ["/bin/python3", "script.py"],
@@ -119,7 +124,7 @@ let version = "3.14.10" in
     smoketest_zoneinfo =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [],
         cmds = [
           ["/bin/python3", "-c", "import zoneinfo; zoneinfo.ZoneInfo('Europe/Paris')"],
         ],
@@ -128,7 +133,7 @@ let version = "3.14.10" in
     smoketest_math =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "echo 'print(2 + 2)' > math.py"],
           ["/bin/bash", "-c", "python3 math.py | grep -q '^4$'"],
@@ -140,7 +145,7 @@ let version = "3.14.10" in
     smoketest_imports =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "cat > mymodule.py << 'EOF'\ndef greet(name):\n    return f\"Hello, {name}\"\nEOF"],
           ["/bin/bash", "-c", "cat > use_module.py << 'EOF'\nimport mymodule\nprint(mymodule.greet(\"World\"))\nEOF"],
@@ -160,7 +165,7 @@ let version = "3.14.10" in
     tarfile_filter_stays_in_destination =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, file],
         cmds = [
           [
             "/bin/bash",
@@ -213,7 +218,7 @@ let version = "3.14.10" in
     tarfile_link_fallback_honors_filter_none =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -273,7 +278,7 @@ let version = "3.14.10" in
     pip_certifi_distrusts_emsign_ecc_g3 =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -329,7 +334,7 @@ let version = "3.14.10" in
     poplib_rejects_control_characters =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -379,7 +384,7 @@ let version = "3.14.10" in
     tempfile_cleanup_race_fix =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -421,7 +426,7 @@ let version = "3.14.10" in
     urllib_credentials_scoped_by_scheme =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -468,7 +473,7 @@ let version = "3.14.10" in
     zipfile_read_bounds_decompression =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, bzip2],
         cmds = [
           [
             "/bin/bash",
@@ -535,7 +540,7 @@ let version = "3.14.10" in
     idna_nameprep_uses_unicode_3_2_case_folding =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",

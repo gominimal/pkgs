@@ -1,6 +1,9 @@
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
+let file = import "../file/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
@@ -100,7 +103,7 @@ let version = "12.18.0" in
     cli =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep, file],
         cmds = [
           ["/bin/bash", "-c", "out=$(pnpm --version 2>&1) && echo \"$out\" && test \"$out\" = '%{version}'"],
           ["/bin/bash", "-c", "out=$(pn --version 2>&1) && test \"$out\" = '%{version}'"],
@@ -113,7 +116,7 @@ let version = "12.18.0" in
     install =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "set -e; mkdir -p /tmp/p && cd /tmp/p && printf '%s' '{\"name\":\"t\",\"version\":\"1.0.0\",\"scripts\":{\"postinstall\":\"command -v node-gyp > gyp.txt && node --version > node.txt\"}}' > package.json && pnpm install --offline 2>&1 | tee log.txt; if grep -qi download log.txt; then exit 1; fi; grep -q '/usr/libexec/pnpm/dist/node-gyp-bin/node-gyp' gyp.txt; test -s node.txt"],
         ],
@@ -123,7 +126,7 @@ let version = "12.18.0" in
     global_install =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           [
             "/bin/bash",
