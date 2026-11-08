@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+: "${MINIMAL_ARG_VERSION:?build_args must include version}"
 
 tar -xof tcl$MINIMAL_ARG_VERSION-src.tar.gz
 cd tcl$MINIMAL_ARG_VERSION

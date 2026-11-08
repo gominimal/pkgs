@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+: "${MINIMAL_ARG_VERSION:?build_args must include version}"
 
 tar -xof "perl-${MINIMAL_ARG_VERSION}.tar.xz"
 cd "perl-${MINIMAL_ARG_VERSION}"

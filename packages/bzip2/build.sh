@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+: "${MINIMAL_ARG_VERSION:?build_args must include version}"
 
 tar -xof "bzip2-${MINIMAL_ARG_VERSION}.tar.gz"
 cd "bzip2-${MINIMAL_ARG_VERSION}"

@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+: "${MINIMAL_ARG_VERSION:?build_args must include version}"
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
