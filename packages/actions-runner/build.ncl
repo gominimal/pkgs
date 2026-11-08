@@ -54,6 +54,7 @@ in
   runtime_deps = [
     bash,
     ca-certificates,
+    coreutils, # the wrappers `cp -a` the runner into a fresh RUNNER_HOME
     glibc,
     icu,
     openssl,
@@ -83,6 +84,8 @@ in
         cmds = [
           ["/bin/bash", "-c", "test -x /usr/bin/actions-runner"],
           ["/bin/bash", "-c", "RUNNER_HOME=/tmp/runner /usr/bin/actions-runner --help || true"],
+          # --help's exit status is not the point, but the wrapper's setup is.
+          ["/bin/bash", "-c", "test -x /tmp/runner/run.sh"],
         ],
       } | Test,
     # CVE-2026-111943: under the wrapper, the bundled node trusts the system
