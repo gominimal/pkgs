@@ -3,6 +3,7 @@ let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
+let tzdata = import "../tzdata/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
 let file = import "../file/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -120,11 +121,12 @@ let version = "3.14.10" in
         ],
       } | Test,
 
-    # base carries tzdata, so zoneinfo resolves IANA zone names without extra packages
+    # zoneinfo resolves IANA zone names from the system tz database
+    # (/usr/share/zoneinfo, the tzdata package; base used to bring it in)
     smoketest_zoneinfo =
       {
         class = 'Standalone,
-        test_deps = [],
+        test_deps = [tzdata],
         cmds = [
           ["/bin/python3", "-c", "import zoneinfo; zoneinfo.ZoneInfo('Europe/Paris')"],
         ],

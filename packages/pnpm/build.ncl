@@ -3,6 +3,7 @@ let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let grep = import "../grep/build.ncl" in
+let sed = import "../sed/build.ncl" in
 let file = import "../file/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -126,7 +127,7 @@ let version = "12.18.0" in
     global_install =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, coreutils, grep],
+        test_deps = [bash-bootstrap, coreutils, grep, sed], # the generated gbin shim runs sed
         cmds = [
           [
             "/bin/bash",
