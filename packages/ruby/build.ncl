@@ -23,12 +23,14 @@ let readline = import "../readline/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
 let version = "4.0.9" in
+# Release directory on cache.ruby-lang.org is the major.minor series.
+let api = std.string.join "." (std.array.slice 0 2 (std.string.split "." version)) in
 {
   name = "ruby",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://cache.ruby-lang.org/pub/ruby/4.0/ruby-%{version}.tar.gz",
+      url = "https://cache.ruby-lang.org/pub/ruby/%{api}/ruby-%{version}.tar.gz",
       sha256 = "c35350682ff050b79702d57ade4516e7336063f510155d19fb2fb5b3f3909511",
     } | Source,
     base,

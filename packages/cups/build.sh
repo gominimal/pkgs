@@ -42,7 +42,7 @@ includedir=\${prefix}/include
 
 Name: cups
 Description: CUPS Client Library
-Version: 2.4.13
+Version: ${MINIMAL_ARG_VERSION}
 Libs: -L\${libdir} -lcups
 Cflags: -I\${includedir}
 EOF

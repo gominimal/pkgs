@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof bzip2-1.0.8.tar.gz
-cd bzip2-1.0.8
+tar -xof "bzip2-${MINIMAL_ARG_VERSION}.tar.gz"
+cd "bzip2-${MINIMAL_ARG_VERSION}"
 
 sed -i 's@\(ln -s -f \)$(PREFIX)/bin/@\1@' Makefile
 sed -i "s@(PREFIX)/man@(PREFIX)/share/man@g" Makefile
@@ -27,7 +27,7 @@ make -j$(nproc)
 make PREFIX="$OUTPUT_DIR/usr" install
 
 cp -av libbz2.so.* "$OUTPUT_DIR/usr/lib/"
-ln -sv libbz2.so.1.0.8 "$OUTPUT_DIR/usr/lib/libbz2.so"
+ln -sv "libbz2.so.${MINIMAL_ARG_VERSION}" "$OUTPUT_DIR/usr/lib/libbz2.so"
 
 cp -v bzip2-shared "$OUTPUT_DIR/usr/bin/bzip2"
 for i in "$OUTPUT_DIR/usr/bin/"{bzcat,bunzip2}; do

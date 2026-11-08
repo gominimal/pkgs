@@ -88,7 +88,7 @@ let version = "3.0.11" in
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          ["/bin/bash", "-c", "test \"$(GUILE_AUTO_COMPILE=0 guile -c '(display (version))')\" = 3.0.11"],
+          ["/bin/bash", "-c", "test \"$(GUILE_AUTO_COMPILE=0 guile -c '(display (version))')\" = %{version}"],
           ["/bin/bash", "-c", "test \"$(GUILE_AUTO_COMPILE=0 guile -c '(use-modules (srfi srfi-1)) (display (fold + 0 (iota 101)))')\" = 5050"],
         ],
       } | Test,

@@ -12,7 +12,7 @@ export CXXFLAGS="${CFLAGS}"
 
 ./configure  --prefix=/usr      \
             --disable-static    \
-            --docdir="/usr/share/doc/pkgconf-2.5.1"
+            --docdir="/usr/share/doc/pkgconf-${MINIMAL_ARG_VERSION}"
 
 make -j$(nproc)
 make DESTDIR=$OUTPUT_DIR install

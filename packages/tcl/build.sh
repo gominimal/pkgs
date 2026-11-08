@@ -14,6 +14,7 @@ export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
 SRCDIR=$(pwd)
+TCL_API="${MINIMAL_ARG_VERSION%.*}"
 cd unix
 # --with-tzdata: configure otherwise skips the bundled zone data whenever
 # /usr/share/zoneinfo exists (base ships tzdata), leaving the tzdata output empty.
@@ -34,7 +35,7 @@ ITCL=$(basename "$SRCDIR"/pkgs/itcl[0-9]*)
 
 sed -e "s|$SRCDIR/unix/pkgs/$TDBC|/usr/lib/$TDBC|" \
     -e "s|$SRCDIR/pkgs/$TDBC/generic|/usr/include|" \
-    -e "s|$SRCDIR/pkgs/$TDBC/library|/usr/lib/tcl8.6|" \
+    -e "s|$SRCDIR/pkgs/$TDBC/library|/usr/lib/tcl$TCL_API|" \
     -e "s|$SRCDIR/pkgs/$TDBC|/usr/include|" \
     -i pkgs/$TDBC/tdbcConfig.sh
 

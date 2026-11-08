@@ -39,6 +39,9 @@ let version = "2.4.20" in
   ],
 
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
 
   outputs = {
     libs = { glob = "usr/lib/libcups*.so*" } | OutputLib,
