@@ -1,6 +1,8 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let icu = import "../icu/build.ncl" in
@@ -77,7 +79,7 @@ in
     smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "test -x /usr/bin/actions-runner"],
           ["/bin/bash", "-c", "RUNNER_HOME=/tmp/runner /usr/bin/actions-runner --help || true"],
@@ -91,7 +93,7 @@ in
     bundled_node_uses_system_store =
       {
         class = 'Standalone,
-        test_deps = [base, openssl],
+        test_deps = [bash-bootstrap, openssl, coreutils],
         cmds = [
           [
             "/bin/bash",
