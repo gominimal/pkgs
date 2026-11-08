@@ -2,6 +2,9 @@
 # with outputs + runtime_deps refined from a verified `minimal package` build.
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -46,7 +49,7 @@ let version = "1.9.1" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           # Smoke test ported from the Wolfi recipe's test block.
           ["/bin/bash", "-c", "tldr --version"],
@@ -58,7 +61,7 @@ let version = "1.9.1" in
     system_ca_default =
       {
         class = 'Standalone,
-        test_deps = [base, ca-certificates],
+        test_deps = [bash-bootstrap, ca-certificates, coreutils, grep],
         cmds = [
           [
             "/bin/bash",
