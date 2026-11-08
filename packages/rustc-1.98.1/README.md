@@ -24,7 +24,7 @@ used, extracted to `${BUILDROOT}/rustc-1.97.1-aarch64`; amd64 is unchanged (the 
 
 - Crates: the source tarball ships `.cargo/config.toml` redirecting crates-io to its bundled `vendor/`.
 - Stage0 download: disabled by the `[build] rustc`/`cargo` pins.
-- LLVM: external `llvm-config = /usr/bin/llvm-config` (packages/llvm, LLVM 21) with `[llvm] link-shared`.
+- LLVM: external `llvm-config = /usr/lib/llvm-21/bin/llvm-config` (packages/llvm-21, the frozen, prefixed LLVM 21) with `[llvm] link-shared`; the installed librustc_driver carries a RUNPATH to `/usr/lib/llvm-21/lib`. `LD_LIBRARY_PATH=/usr/lib/llvm-21/lib` is exported only for a stage0 that cannot find its libLLVM by itself (the amd64 bedrock); the arm64 bedrock bundles a same-soname `libLLVM.so.21.1` that it must keep loading (`build.sh` prints the mode as `rustc STAGE0-LLVM:`).
 - `curl`/`wget`: stubs that exit non-zero and record a tripwire. `git`: a stub that allows local
   read-only verbs and fails on network verbs.
 - Vendored `curl-sys`/`libssh2-sys`: an empty `.git` marker in each bundled submodule dir keeps
@@ -44,7 +44,7 @@ used, extracted to `${BUILDROOT}/rustc-1.97.1-aarch64`; amd64 is unchanged (the 
 
 | file | role |
 |---|---|
-| `build.ncl` | spec: stage0 build_dep, source, system LLVM, one `OutputData` glob over `usr/lib/rustc-1.98.1/**`; empty on arm64 |
+| `build.ncl` | spec: stage0 build_dep, source, llvm-21, one `OutputData` glob over `usr/lib/rustc-1.98.1/**`; empty on arm64 |
 | `build.sh` | preconditions, offline stubs, submodule markers, `bootstrap.toml`, `x.py build`, install, gates, seal |
 | `gatelib.rs`, `gatestd.rs`, `gate_pm.rs`, `gate_pm_use.rs` | readable copies of the gate sources heredoc'd in `build.sh` |
 | `rustc-1.98.1.answers` | sha256 pins for `bin/rustc` and `bin/cargo`; none yet, so the seal check is skipped |

@@ -50,6 +50,26 @@ export LDFLAGS="-Wl,--build-id=none"
 export LIBSQLITE3_SYS_USE_PKG_CONFIG=1
 export LIBSSH2_SYS_USE_PKG_CONFIG=1
 
+# --- LLVM 21: the prefixed llvm-21 package, not the default llvm ---
+# Every rung needs LLVM 21 and the default `llvm` is a later major, so it builds against the
+# frozen llvm-21 under /usr/lib/llvm-21. Nothing of it is in /usr/bin or
+# /usr/lib: its bin/ goes first on PATH (clang, clang++, llvm-config; they find their own libs
+# through llvm-21's $ORIGIN/../lib RPATH). Every compiler x.py builds gets a RUNPATH to its lib/
+# from the RUSTFLAGS_* link-arg below: bootstrap appends RUSTFLAGS_BOOTSTRAP to what the stage0
+# compiler builds (x.py's stage1) and RUSTFLAGS_NOT_BOOTSTRAP to everything later (the installed
+# compiler). P3 checks it with readelf, and P5 runs the gates with LD_LIBRARY_PATH unset to prove it.
+# The stage0 is the one compiler that may need LD_LIBRARY_PATH; P0's "stage0 libLLVM" block decides
+# from the stage0's own librustc_driver, and exports it only for a stage0 that cannot find
+# libLLVM.so.21 by itself (the amd64 bedrock).
+LLVM_PREFIX=/usr/lib/llvm-21
+PATH="${LLVM_PREFIX}/bin:${PATH}"; export PATH
+export RUSTFLAGS_BOOTSTRAP="-Clink-arg=-Wl,-rpath,${LLVM_PREFIX}/lib"
+export RUSTFLAGS_NOT_BOOTSTRAP="-Clink-arg=-Wl,-rpath,${LLVM_PREFIX}/lib"
+[ "$(command -v llvm-config)" = "${LLVM_PREFIX}/bin/llvm-config" ] || {
+  echo "rustc: FATAL llvm-config resolves to '$(command -v llvm-config)', expected ${LLVM_PREFIX}/bin/llvm-config (packages/llvm-21)" >&2; exit 1; }
+[ "$(command -v clang)" = "${LLVM_PREFIX}/bin/clang" ] || {
+  echo "rustc: FATAL clang resolves to '$(command -v clang)', expected ${LLVM_PREFIX}/bin/clang (packages/llvm-21)" >&2; exit 1; }
+
 # --- P0 preconditions: tools, LLVM major, the stage0 itself, the extracted source ---
 for t in clang clang++ llvm-config ar ranlib python3 pkg-config cmake \
          find sed grep tar xz sha256sum readelf; do
@@ -68,11 +88,72 @@ esac
 [ -x "${STAGE0_RUSTC}" ] || { echo "rustc: FATAL stage0 rustc missing at ${STAGE0_RUSTC} — the stage0 package is required" >&2; exit 1; }
 [ -x "${STAGE0_CARGO}" ] || { echo "rustc: FATAL stage0 cargo missing at ${STAGE0_CARGO}" >&2; exit 1; }
 
+# --- stage0 libLLVM: how the stage0 finds it, and LD_LIBRARY_PATH only when it cannot alone ---
+# LD_LIBRARY_PATH outranks DT_RUNPATH. A stage0 that bundles its own libLLVM.so.21.1 (the arm64
+# bedrock: Rust's LLVM fork, with targets such as Xtensa that upstream LLVM 21 does not build) and
+# finds it through $ORIGIN/../lib must never see ${LLVM_PREFIX}/lib there: the same soname from
+# llvm-21 would be loaded instead and the stage0 dies on an undefined LLVMInitializeXtensaTarget
+# (pkgs#1339, arm64). So the mode is read from the stage0's librustc_driver:
+#   none     - no librustc_driver, or it does not link a libLLVM (the mrustc stage0)
+#   bundled  - its NEEDED libLLVM ships in the stage0's own lib/
+#   runpath  - its RUNPATH already names ${LLVM_PREFIX}/lib (a rung built by this recipe)
+#   ldpath   - neither (the amd64 bedrock, built link-shared with no RUNPATH): export
+#              LD_LIBRARY_PATH=${LLVM_PREFIX}/lib for the whole build, the only mode that does
+S0_DRV="$(ls "${STAGE0_PREFIX}"/lib/librustc_driver-*.so 2>/dev/null | head -1 || true)"
+S0_LLVM_SO=""
+S0_RUNPATH=""
+if [ -n "${S0_DRV}" ]; then
+  S0_LLVM_SO="$(readelf -d "${S0_DRV}" | grep '(NEEDED)' | sed -n 's/.*\[\(libLLVM[^]]*\)\].*/\1/p' | head -1)"
+  S0_RUNPATH="$(readelf -d "${S0_DRV}" | grep -E '\((RUNPATH|RPATH)\)' | sed 's/.*\[\(.*\)\].*/\1/' | head -1)"
+fi
+if [ -z "${S0_LLVM_SO}" ]; then
+  S0_LLVM_MODE=none
+elif [ -e "${STAGE0_PREFIX}/lib/${S0_LLVM_SO}" ]; then
+  S0_LLVM_MODE=bundled
+elif echo ":${S0_RUNPATH}:" | grep -qF ":${LLVM_PREFIX}/lib:"; then
+  S0_LLVM_MODE=runpath
+else
+  S0_LLVM_MODE=ldpath
+fi
+case "${S0_LLVM_MODE}" in
+  runpath|ldpath)
+    [ -e "${LLVM_PREFIX}/lib/${S0_LLVM_SO}" ] || {
+      echo "rustc: FATAL stage0 ${S0_DRV} needs ${S0_LLVM_SO}, which is neither bundled in ${STAGE0_PREFIX}/lib nor in ${LLVM_PREFIX}/lib (llvm-21 ships: $(ls "${LLVM_PREFIX}"/lib/libLLVM*.so* 2>/dev/null | tr '\n' ' '))" >&2; exit 1; } ;;
+esac
+if [ "${S0_LLVM_MODE}" = ldpath ]; then
+  LD_LIBRARY_PATH="${LLVM_PREFIX}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"; export LD_LIBRARY_PATH
+fi
+# Nothing on an inherited LD_LIBRARY_PATH may carry a second copy of the stage0's libLLVM soname
+# ahead of the one it is meant to load (the ldpath mode's own ${LLVM_PREFIX}/lib is the one).
+if [ -n "${S0_LLVM_SO}" ] && [ -n "${LD_LIBRARY_PATH:-}" ]; then
+  _ifs="${IFS}"; IFS=:
+  for _d in ${LD_LIBRARY_PATH}; do
+    [ -n "${_d}" ] && [ -e "${_d}/${S0_LLVM_SO}" ] || continue
+    [ "${S0_LLVM_MODE}" = ldpath ] && [ "${_d}" = "${LLVM_PREFIX}/lib" ] && continue
+    IFS="${_ifs}"
+    echo "rustc: FATAL LD_LIBRARY_PATH entry ${_d} has ${S0_LLVM_SO}, which would shadow the stage0's own (mode ${S0_LLVM_MODE}); LD_LIBRARY_PATH=${LD_LIBRARY_PATH}" >&2; exit 1
+  done
+  IFS="${_ifs}"
+fi
+# Which file the loader actually picks (ldd, when the sandbox has it): it must be the one the mode
+# promised, so a future mismatch fails here and names both, not as a symbol lookup error.
+S0_LLVM_RESOLVED="(no ldd in the sandbox; not checked)"
+[ -n "${S0_LLVM_SO}" ] || S0_LLVM_RESOLVED="n/a"
+if [ -n "${S0_LLVM_SO}" ] && command -v ldd >/dev/null 2>&1; then
+  S0_LLVM_RESOLVED="$(ldd "${S0_DRV}" 2>&1 | grep -F "${S0_LLVM_SO}" | sed -n 's/.*=> *\([^ ]*\).*/\1/p' | head -1)"
+  case "${S0_LLVM_MODE}:${S0_LLVM_RESOLVED}" in
+    bundled:"${STAGE0_PREFIX}"/*|runpath:"${LLVM_PREFIX}"/lib/*|ldpath:"${LLVM_PREFIX}"/lib/*) : ;;
+    *) echo "rustc: FATAL stage0 ${S0_LLVM_SO} resolves to '${S0_LLVM_RESOLVED}', not where mode ${S0_LLVM_MODE} expects it" >&2
+       ldd "${S0_DRV}" >&2 || true; exit 1 ;;
+  esac
+fi
+echo "rustc STAGE0-LLVM: mode=${S0_LLVM_MODE} driver=${S0_DRV:-none} needs=${S0_LLVM_SO:-none} runpath='${S0_RUNPATH}' resolves=${S0_LLVM_RESOLVED} LD_LIBRARY_PATH='${LD_LIBRARY_PATH:-}'" >&2
+
 # The 1.90.0 stage0 reports `1.90.0-stable-mrustc`; later stage0s report a bare version, so this
 # is a substring match.  x.py's own stage0-version check runs early and fails fast anyway.
 S0V="$("${STAGE0_RUSTC}" --version 2>&1 || true)"
 echo "${S0V}" | grep -qF "${STAGE0_VERSION}" || {
-  echo "rustc: FATAL stage0 rustc --version = '${S0V}', expected to contain ${STAGE0_VERSION}" >&2; exit 1; }
+  echo "rustc: FATAL stage0 rustc --version = '${S0V}', expected to contain ${STAGE0_VERSION} (stage0 libLLVM mode ${S0_LLVM_MODE}, ${S0_LLVM_SO:-none} -> ${S0_LLVM_RESOLVED})" >&2; exit 1; }
 # --print sysroot must resolve to the stage0 prefix: proves the stage0 runs in place and that its
 # std is where x.py will look for it.
 S0SR="$("${STAGE0_RUSTC}" --print sysroot 2>&1 || true)"
@@ -239,7 +320,7 @@ llvm-bitcode-linker = false
 cc = "clang"
 cxx = "clang++"
 linker = "clang"
-llvm-config = "/usr/bin/llvm-config"
+llvm-config = "${LLVM_PREFIX}/bin/llvm-config"
 
 [install]
 prefix = "${PREFIX}"
@@ -272,6 +353,15 @@ DESTDIR="${OUTPUT_DIR}" ./x.py install
 [ -x "${DST}/bin/cargo" ] || { echo "rustc: FATAL install produced no ${DST}/bin/cargo (extended=true should install it)" >&2; exit 1; }
 [ -d "${DST}/lib/rustlib/${TRIPLE}/lib" ] || { echo "rustc: FATAL installed std sysroot missing at ${DST}/lib/rustlib/${TRIPLE}/lib" >&2; exit 1; }
 ls "${DST}"/lib/librustc_driver*.so >/dev/null 2>&1 || { echo "rustc: FATAL librustc_driver*.so missing from ${DST}/lib" >&2; exit 1; }
+# librustc_driver links libLLVM.so.21.1 from the llvm-21 prefix, which is on no default search
+# path: it must carry a RUNPATH to it (the next rung and packages/rust load it as their stage0).
+for drv in "${DST}"/lib/librustc_driver*.so; do
+  readelf -d "${drv}" | grep -q 'NEEDED.*libLLVM\.so\.21' || {
+    echo "rustc: FATAL ${drv} does not link libLLVM.so.21:" >&2; readelf -d "${drv}" | grep -E 'NEEDED|R(UN)?PATH' >&2; exit 1; }
+  readelf -d "${drv}" | grep -E 'R(UN)?PATH' | grep -qF "${LLVM_PREFIX}/lib" || {
+    echo "rustc: FATAL ${drv} has no RUNPATH to ${LLVM_PREFIX}/lib:" >&2; readelf -d "${drv}" | grep -E 'NEEDED|R(UN)?PATH' >&2; exit 1; }
+done
+echo "rustc INSTALL: librustc_driver links libLLVM.so.21 with RUNPATH ${LLVM_PREFIX}/lib" >&2
 
 # rust-gdbgui is a shell script with a re-rooted path; packages/rust drops it too.
 rm -f "${DST}/bin/rust-gdbgui"
@@ -285,8 +375,9 @@ ls -la "${DST}" >&2 || true
 cat > "${DST}/BUILDINFO" <<EOF
 rustc-version: ${VERSION}
 built-by-stage0: rustc ${STAGE0_VERSION} (${S0V}) from ${STAGE0_PREFIX}
-host-cc: clang (packages/llvm ${LLVMVER})
-host-llvm: external /usr/bin/llvm-config (${LLVMVER}), link-shared
+stage0-llvm: ${S0_LLVM_MODE} (${S0_LLVM_SO:-none} -> ${S0_LLVM_RESOLVED})
+host-cc: clang (packages/llvm-21 ${LLVMVER}, ${LLVM_PREFIX}/bin)
+host-llvm: external ${LLVM_PREFIX}/bin/llvm-config (${LLVMVER}), link-shared, RUNPATH ${LLVM_PREFIX}/lib
 target: ${TRIPLE}
 offline: in-tree .cargo vendor redirect; stage0 pin skips src/stage0 download; external llvm-config; vendored -sys submodule markers
 seal-status: see rustc-${VERSION}.answers
@@ -312,6 +403,10 @@ if [ -n "${hits_o}" ]; then
 else
   echo "rustc SWEEP: clean of staging paths (relocatable)" >&2
 fi
+
+# The gates run without the build's LD_LIBRARY_PATH, so they also prove the installed toolchain
+# finds libLLVM through its own RUNPATH, as its consumers will.
+unset LD_LIBRARY_PATH
 
 # --- P5 gates: run the installed binaries from ${OUTPUT_DIR}, after install ---
 # GATE-3 runs ten std constructs whose exit code is their computed sum (42), never a literal.
