@@ -1,5 +1,6 @@
 let { subsetOf, Attrs, BuildSpec, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let base = import "../base/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let libssh2 = import "../libssh2/build.ncl" in
@@ -47,12 +48,14 @@ let version = "1.98.1" in
     zlib,
     subsetOf gcc ["libgcc", "libstdcpp"],
   ],
-  # the binary runs from its own runtime closure, outside any build sandbox
+  # the binary runs from its own runtime closure, outside any build sandbox; libLLVM.so.21.1 is
+  # under llvm-21's prefix, which only the environment can name (see runtime_deps above)
   tests = {
     rustc_version =
       {
         class = 'Standalone,
-        cmds = [["/usr/lib/rustc-1.98.1/bin/rustc", "-vV"]],
+        test_deps = [base],
+        cmds = [["/bin/sh", "-c", "LD_LIBRARY_PATH=/usr/lib/llvm-21/lib /usr/lib/rustc-1.98.1/bin/rustc -vV"]],
       } | Test,
   },
   outputs = {
