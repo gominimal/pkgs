@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
@@ -31,7 +31,7 @@ let version = "0.7.1" in
   cmd = "./build.sh",
 
   outputs = {
-    jnv = { glob = "usr/bin/jnv" } | OutputLib,
+    jnv = { glob = "usr/bin/jnv" } | OutputBin,
   },
 
   attrs =
