@@ -1,5 +1,9 @@
 let { BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let gawk = import "../gawk/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let bison = import "../bison/build.ncl" in
 let flex = import "../flex/build.ncl" in
@@ -62,13 +66,13 @@ let version = "46" in
     smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [["/bin/bash", "-c", "ngspice -v 2>&1 | grep -q ngspice"]],
       } | Test,
     rc_transient =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, gawk],
         cmds = [
           [
             "/bin/bash",

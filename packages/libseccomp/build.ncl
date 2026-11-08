@@ -1,5 +1,8 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let gperf = import "../gperf/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -52,7 +55,7 @@ let version = "2.6.1" in
     link_and_run =
       {
         class = 'Standalone,
-        test_deps = [base, toolchain],
+        test_deps = [bash-bootstrap, toolchain, coreutils, grep],
         cmds = [
           [
             "/bin/bash",
@@ -82,7 +85,7 @@ EOF
     scmp_sys_resolver =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "scmp_sys_resolver --help 2>&1 || true"],
         ],

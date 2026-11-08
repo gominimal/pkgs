@@ -1,5 +1,7 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let llvm-bootstrap = import "../llvm-bootstrap/build.ncl" in
@@ -78,7 +80,7 @@ let version = "23.1.5" in
     versions =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "/usr/bin/clang --version | grep -F 'clang version %{version}'"],
           ["/bin/bash", "-c", "test \"$(/usr/bin/llvm-config --version)\" = %{version}"],
@@ -88,7 +90,7 @@ let version = "23.1.5" in
     hello_clang_lld =
       {
         class = 'Standalone,
-        test_deps = [base, glibc, gcc],
+        test_deps = [bash-bootstrap, glibc, gcc, grep],
         cmds = [
           ["/bin/bash", "-c", "printf '#include <stdio.h>\\nint main(void){puts(\"hello llvm\");return 0;}\\n' > hello.c"],
           ["/usr/bin/clang", "-fuse-ld=lld", "hello.c", "-o", "hello"],
