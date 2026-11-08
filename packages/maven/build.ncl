@@ -5,6 +5,7 @@ let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let bash = import "../bash/build.ncl" in
+let sed = import "../sed/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 let patchelf = import "../patchelf/build.ncl" in
@@ -24,6 +25,10 @@ let version = "3.10.0" in
   ],
   runtime_deps = [
     bash, # mvn is a shell script
+    # bin/mvn derives MAVEN_HOME with dirname (and runs uname); with a
+    # .mvn/jvm.config it pipes it through tr and sed.
+    coreutils,
+    sed,
     glibc, # libjlinenative.so (JLine's native terminal support, 3.10.0+)
     jdk,
   ],

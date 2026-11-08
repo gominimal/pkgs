@@ -2,6 +2,7 @@ let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Sourc
 let autoconf = import "../autoconf/build.ncl" in
 let automake = import "../automake/build.ncl" in
 let base = import "../base/build.ncl" in
+let bash = import "../bash/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
@@ -45,6 +46,7 @@ let version = "6.12.0.206" in
     toolchain,
   ],
   runtime_deps = [
+    bash, # mcs and the other usr/bin wrappers are #!/bin/sh scripts
     glibc,
     zlib,
     subsetOf gcc ["libgcc", "libstdcpp"],
