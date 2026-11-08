@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -27,7 +27,7 @@ let version = "1.13.2" in
 
   cmd = "./build.sh",
   outputs = {
-    ninja = { glob = "usr/bin/ninja" } | OutputLib,
+    ninja = { glob = "usr/bin/ninja" } | OutputBin,
   },
 
   attrs =
@@ -41,4 +41,8 @@ let version = "1.13.2" in
         repo = "ninja",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/ninja --version",
+  },
 } | BuildSpec
