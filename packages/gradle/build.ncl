@@ -3,6 +3,9 @@ let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let findutils = import "../findutils/build.ncl" in
+let sed = import "../sed/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 let python = import "../python/build.ncl" in
 
@@ -20,6 +23,11 @@ let version = "9.9.0" in
   ],
   runtime_deps = [
     bash, # gradle is a shell script
+    # bin/gradle (Gradle's unixStartScript) dies "xargs is not available"
+    # without findutils, then pipes the JVM opts through sed and tr; uname too.
+    coreutils,
+    findutils,
+    sed,
     jdk,
   ],
 
