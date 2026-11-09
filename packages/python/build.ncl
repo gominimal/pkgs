@@ -5,7 +5,6 @@ let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let tzdata = import "../tzdata/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
-let file = import "../file/build.ncl" in
 let make = import "../make/build.ncl" in
 let gdbm = import "../gdbm/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
@@ -168,7 +167,7 @@ let version = "3.14.10" in
     tarfile_filter_stays_in_destination =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, coreutils, file],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
