@@ -252,8 +252,11 @@ in
     # openssl 3.5.7-r0 (see `lib/apk/db/installed`, `o:openssl`), which has ten
     # unfixed CVEs: CVE-2026-14456, -14457, -18798, -54874, -63072, -63073,
     # -63074, -63075, -63076, -75803. Alpine fixed them in 3.5.8-r0, in v3.24
-    # main — but the newest minirootfs RELEASE is still 3.24.1, so bumping
-    # `alpine_release` cannot pick the fix up. There is no 3.24.2 to move to.
+    # main. When this override was written the newest minirootfs RELEASE was
+    # 3.24.1, so bumping `alpine_release` could not pick the fix up. 3.24.4 has
+    # since been released and records libcrypto3/libssl3 3.5.9-r0, musl 1.2.6-r3,
+    # ca-certificates-bundle 20261020-r0 and zlib 1.3.2-r1, so moving to it
+    # retires every override here except zlib 1.4-r0 (tracked separately).
     #
     # Both packages install to the same `usr/lib/libcrypto.so.3` /
     # `usr/lib/libssl.so.3` the base layer uses, so the overlay replaces the
@@ -264,7 +267,9 @@ in
     #
     # DROP THESE the moment `alpine_release` reaches a minirootfs carrying
     # >= 3.5.8-r0; keeping a stale override is how an image ends up pinned
-    # BELOW its base layer.
+    # BELOW its base layer. build.sh enforces it: OVERRIDE_BASE records the
+    # base-layer version each override replaces, and the build fails when the
+    # minirootfs records anything else.
     apk
       "libcrypto3-3.5.9-r0"
       "2676a2b0b6e23ea2edccf3ee982b9842a665d52603d047de3d0a185dc316d983"
@@ -330,8 +335,10 @@ in
     # usr/lib/libz.so.1.3.2 with usr/lib/libz.so.1 pointing at it, and 1.4-r0
     # ships usr/lib/libz.so.1.4 with libz.so.1 pointing at THAT. The overlay
     # replaces the libz.so.1 symlink, so the loader (which resolves the
-    # DT_NEEDED soname libz.so.1) gets 1.4; the old libz.so.1.3.2 file stays on
-    # disk, unreferenced, because the overlay only adds and replaces paths.
+    # DT_NEEDED soname libz.so.1) gets 1.4. The overlay only adds and replaces
+    # paths, so build.sh then removes the base layer's old libz.so.1.3.2 (and
+    # moves zlib's db file entry to libz.so.1.4); otherwise a file-level scanner
+    # would report this override's own CVEs against the image.
     #
     # DROP THIS once `alpine_release` reaches a minirootfs carrying >= 1.4-r0.
     apk
