@@ -213,7 +213,7 @@ let version = "3.2.4" in
               server=$!
               trap 'kill "$server"' EXIT
               for _ in $(seq 100); do [ -s port ] && break; sleep 0.1; done
-              url="https://localhost:$(cat port)/"
+              url="https://127.0.0.1:$(cat port)/"
               unset HTTPS_PROXY https_proxy HTTP_PROXY http_proxy ALL_PROXY all_proxy REQUESTS_CA_BUNDLE CURL_CA_BUNDLE
               if http --ignore-stdin --check-status --timeout 10 GET "$url" > out 2>&1; then
                 echo "an unknown CA was trusted by default" >&2; exit 1
