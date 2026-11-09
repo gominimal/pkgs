@@ -86,7 +86,9 @@ let version = "12.2.0" in
           # `emudhra_spki_blocklist` test checks the binary). A floor, not the
           # exact pin, so a headless-shell bump does not break it.
           ["/bin/bash", "-c", "grep -qx 'export PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-headless-shell' /bin/mmdc"],
-          ["/bin/bash", "-c", "grep -qF '\"headless\":\"shell\"' /usr/share/mermaid-cli/puppeteer.json /usr/share/mermaid-cli/puppeteer-root.json"],
+          # One grep per file: over both at once, either file alone would pass.
+          ["/bin/bash", "-c", "grep -qF '\"headless\":\"shell\"' /usr/share/mermaid-cli/puppeteer.json"],
+          ["/bin/bash", "-c", "grep -qF '\"headless\":\"shell\"' /usr/share/mermaid-cli/puppeteer-root.json"],
           [
             "/bin/bash",
             "-c",

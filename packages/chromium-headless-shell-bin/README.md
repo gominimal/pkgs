@@ -34,8 +34,11 @@ For Playwright there are two routes:
   directory key is `revision` in `build.ncl` (currently **1243**); a
   playwright-core version that expects a different revision looks for a
   different directory, so use the second route.
-- `launchOptions: { executablePath: '/bin/chromium-headless-shell' }`, which
-  bypasses Playwright's registry lookup and works under revision drift.
+- `executablePath: '/bin/chromium-headless-shell'`, which bypasses
+  Playwright's registry lookup and works under revision drift. A direct launch
+  passes it to `chromium.launch({ executablePath: '/bin/chromium-headless-shell' })`;
+  Playwright Test sets it in the config as
+  `use: { launchOptions: { executablePath: '/bin/chromium-headless-shell' } }`.
 
 ## Sandbox
 
