@@ -1,5 +1,7 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
@@ -70,7 +72,7 @@ let version = "0.9.14" in
     runs =
       {
         class = 'Standalone,
-        test_deps = [base, node-lts],
+        test_deps = [bash-bootstrap, node-lts, grep],
         cmds = [
           # capy must run and report its version with no auth/network/config.
           ["/bin/bash", "-c", "capy --version | grep -q '%{version}'"],

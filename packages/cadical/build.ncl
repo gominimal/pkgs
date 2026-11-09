@@ -1,5 +1,6 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
@@ -70,7 +71,7 @@ let version = "3.0.1" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "cadical --version"],
           # A two-clause satisfiable formula: exit code 10 is SAT by DIMACS convention.
