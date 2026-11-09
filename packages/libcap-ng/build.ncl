@@ -109,7 +109,9 @@ EOF
         class = 'Standalone,
         test_deps = [bash-bootstrap],
         cmds = [
-          ["/bin/bash", "-c", "pscap --help 2>&1 || true"],
+          # pscap's usage() prints this line and exits 1 for any unknown argument
+          # (utils/pscap.c); the output does not depend on the sandbox's processes.
+          ["/bin/bash", "-c", "out=$(pscap --help 2>&1); rc=$?; echo \"$out\"; [[ $rc == 1 && $out == 'usage: pscap [-a] [-p pid] [--tree]' ]]"],
         ],
       } | Test,
   },
