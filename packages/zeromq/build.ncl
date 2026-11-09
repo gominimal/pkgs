@@ -2,6 +2,9 @@
 # with outputs + runtime_deps refined from a verified `minimal package` build.
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -53,7 +56,7 @@ let version = "4.3.5" in
       {
         class = 'Standalone,
         # libzmq links libsodium, so the compile-link needs it (+ pkgconf).
-        test_deps = [base, toolchain, pkgconf, libsodium],
+        test_deps = [bash-bootstrap, toolchain, pkgconf, libsodium, coreutils, grep],
         cmds = [
           # Compile-and-link a real libzmq consumer (ported from the -dev test),
           # then run the installed curve_keygen to confirm the bin loads.
