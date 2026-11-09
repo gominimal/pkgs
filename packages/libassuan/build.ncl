@@ -51,10 +51,12 @@ let version = "3.0.2" in
       upstream_version = version,
       source_provenance = { category = 'GithubRepo, owner = "gpg", repo = "libassuan" },
       # Upstream 3.0.2 AUTHORS: "License (library): LGPLv2.1+" and
-      # "License (manual): GPLv3+". The build installs no manual (the tree has
-      # no info or man pages), so the GPLv3+ half may be removable; kept until
-      # that is reviewed on its own.
-      license_spdx = "LGPL-2.1-or-later AND GPL-3.0-or-later",
+      # "License (manual): GPLv3+". What this package installs (read from the
+      # built tree, both arches): libassuan.so.* and assuan.h (LGPLv2.1+ per
+      # their notices), libassuan.pc, and aclocal/libassuan.m4, which upstream
+      # tags "SPDX-License-Identifier: FSFULLR". No manual is installed, so
+      # the GPLv3+ term does not apply.
+      license_spdx = "LGPL-2.1-or-later AND FSFULLR",
     } | Attrs,
   tests = {
     smoke =

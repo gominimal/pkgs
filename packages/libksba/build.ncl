@@ -72,10 +72,13 @@ let version = "1.8.1" in
       # OR) rather than jointly licensed. Upstream 1.8.1 AUTHORS:
       #   "License (library): LGPLv3+/GPLv2+"
       #   "License (tools, manual): GPLv3+"
-      # ksba.m4 ships; ksba.info is not installed (the tree has no info or
-      # man pages), so the GPLv3+ half may be removable; kept until that is
-      # reviewed on its own.
-      license_spdx = "(LGPL-3.0-or-later OR GPL-2.0-or-later) AND GPL-3.0-or-later",
+      # What this package installs (read from the built tree, both arches):
+      # libksba.so.* / libksba.a and ksba.h (the LGPLv3+/GPLv2+ choice per
+      # their notices), ksba.pc, and aclocal/ksba.m4, whose "unlimited
+      # permission ... as long as this notice is preserved" notice is the
+      # wording GnuPG tags FSFULLR (libassuan.m4). No tools and no ksba.info
+      # are installed, so the "tools, manual: GPLv3+" term does not apply.
+      license_spdx = "(LGPL-3.0-or-later OR GPL-2.0-or-later) AND FSFULLR",
     } | Attrs,
   tests = {
     smoke =
