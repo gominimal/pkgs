@@ -5,6 +5,7 @@ let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let icu = import "../icu/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
@@ -56,6 +57,7 @@ in
     ca-certificates,
     coreutils, # the wrappers `cp -a` the runner into a fresh RUNNER_HOME
     glibc,
+    grep, # upstream config.sh checks for ICU with `ldconfig -NXv | grep libicu` and exits if grep fails
     icu,
     openssl,
     # The bundled .NET 8 runtime (sdk 8.0.422 at 2.336.0) dlopens libssl.so.3 /
@@ -86,6 +88,9 @@ in
           # --help's exit status is not the point, but the wrapper's setup is. One
           # command: each cmd gets a fresh /tmp, so a separate `test -x` sees nothing.
           ["/bin/bash", "-c", "RUNNER_HOME=/tmp/runner /usr/bin/actions-runner --help || true; test -x /tmp/runner/run.sh"],
+          # The config wrapper runs upstream config.sh's dependency checks (ldd, ldconfig,
+          # grep) before anything else; a tool missing from the closure fails them.
+          ["/bin/bash", "-c", "out=$(RUNNER_HOME=/tmp/rc RUNNER_ALLOW_RUNASROOT=1 /usr/bin/actions-runner-config --help 2>&1); echo \"$out\"; [[ $out != *'is missing'* && $out != *'Can not find'* && -x /tmp/rc/config.sh ]]"],
         ],
       } | Test,
     # CVE-2026-111943: under the wrapper, the bundled node trusts the system
