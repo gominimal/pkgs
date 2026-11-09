@@ -83,9 +83,9 @@ in
         test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "test -x /usr/bin/actions-runner"],
-          ["/bin/bash", "-c", "RUNNER_HOME=/tmp/runner /usr/bin/actions-runner --help || true"],
-          # --help's exit status is not the point, but the wrapper's setup is.
-          ["/bin/bash", "-c", "test -x /tmp/runner/run.sh"],
+          # --help's exit status is not the point, but the wrapper's setup is. One
+          # command: each cmd gets a fresh /tmp, so a separate `test -x` sees nothing.
+          ["/bin/bash", "-c", "RUNNER_HOME=/tmp/runner /usr/bin/actions-runner --help || true; test -x /tmp/runner/run.sh"],
         ],
       } | Test,
     # CVE-2026-111943: under the wrapper, the bundled node trusts the system
