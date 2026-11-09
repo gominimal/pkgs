@@ -28,17 +28,49 @@ case $(uname -m) in
   *)       MARCH="" ;;
 esac
 
-export CXX=clang++
-export LLVM_CONFIG=llvm-config
+# --- LLVM 22 -----------------------------------------------------------------
+# odin supports LLVM 17-22 and the default llvm is 23, so it builds on the
+# prefixed llvm-22. Everything LLVM it touches is pinned to /usr/lib/llvm-22:
+# the compiler that builds it, the libLLVM it links (with a RUNPATH, since the
+# prefix is not on the loader path), the clang it drives as its linker at run
+# time, and the wasm-ld it runs for wasm targets.
+LLVM_PREFIX=/usr/lib/llvm-22
+export PATH="$LLVM_PREFIX/bin:$PATH"
+case "$("$LLVM_PREFIX/bin/llvm-config" --version)" in
+  22.*) ;;
+  *) echo "odin needs LLVM 22 from $LLVM_PREFIX" >&2; exit 1 ;;
+esac
+
+# Upstream links by running `clang` from PATH (ODIN_CLANG_PATH overrides it) and
+# `wasm-ld` from PATH. Nothing puts llvm-22 on PATH where odin runs: without the
+# default llvm in the closure there is no `clang` at all, and with it a bare
+# `clang` is LLVM 23's -- a different toolchain from the one odin's own codegen
+# (and its `-lto` bitcode) comes from. Bake in the absolute paths;
+# ODIN_CLANG_PATH still overrides. sed exits 0 on no match, so assert each
+# substitution landed and that no bare `clang ` / `wasm-ld ` command string is left.
+sed -i 's|clang_path = "clang";|clang_path = "'"$LLVM_PREFIX"'/bin/clang";|' src/linker.cpp
+grep -q "clang_path = \"$LLVM_PREFIX/bin/clang\";" src/linker.cpp
+sed -i 's|"wasm-ld %s -o |"'"$LLVM_PREFIX"'/bin/wasm-ld %s -o |' src/linker.cpp
+grep -q "\"$LLVM_PREFIX/bin/wasm-ld %s -o " src/linker.cpp
+if grep -nE '"(clang|wasm-ld) ' src/linker.cpp; then exit 1; fi
+
+export CXX="$LLVM_PREFIX/bin/clang++"
+export LLVM_CONFIG="$LLVM_PREFIX/bin/llvm-config"
 export CPPFLAGS="-ffile-prefix-map=$(pwd)=/builddir"
 export CXXFLAGS="$MARCH -pipe -gno-record-gcc-switches"
-export LDFLAGS="-Wl,--build-id=none"
+export LDFLAGS="-Wl,--build-id=none -Wl,-rpath,$LLVM_PREFIX/lib"
 
 # `release` compiles with -O3; `release-native` would add -march=native, which
 # is not reproducible across builders.
 ./build_odin.sh release
 
 ODIN_ROOT="$OUTPUT_DIR/usr/lib/odin"
+
+# The compiler must load llvm-22's libLLVM through its own RUNPATH (nothing sets
+# LD_LIBRARY_PATH where odin runs), and report LLVM 22.
+readelf -d odin | grep -E 'NEEDED.*libLLVM\.so\.22'
+readelf -d odin | grep -E '(RUNPATH|RPATH).*'"$LLVM_PREFIX/lib"
+env -u LD_LIBRARY_PATH ./odin report | grep -E 'LLVM 22\.'
 
 install -D -m 0755 odin "$ODIN_ROOT/odin"
 install -D -m 0644 LICENSE "$ODIN_ROOT/LICENSE"

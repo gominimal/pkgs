@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -12,9 +12,9 @@ let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let { version, amd64_sha256, arm64_sha256, gcs_bucket } = {
   gcs_bucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases",
-  version = "2.1.318",
-  amd64_sha256 = "708c77b204db30086ff6f1ed34577bda03e1be74ced80557cbf7b54249ebf0bd",
-  arm64_sha256 = "53a0d7e219d7b0804ecba5dbc002745e89f786cc946d2de85a6470d5b2d1fb06",
+  version = "2.1.319",
+  amd64_sha256 = "dabafec82ca1319fa43d8be36a10fc61b1d11821cb98ad5df04ad95e199b8eed",
+  arm64_sha256 = "a7e687fd1cb054d651c7588223de3786c99d4c682365e3c3ae1e59ce7f3a591f",
 }
 in
 
@@ -77,4 +77,8 @@ in
       # Claude code wires `.claude.json`, which contains anthropic credentials for the user
       env_file_mappings = [{ read_only = false, path = "~/.claude.json", class = 'Credential }],
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/claude --version",
+  },
 } | BuildSpec

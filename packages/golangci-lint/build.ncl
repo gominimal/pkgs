@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let go = import "../go/build.ncl" in
@@ -44,4 +44,8 @@ let version = "2.15.0" in
         repo = "golangci-lint",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/golangci-lint --version",
+  },
 } | BuildSpec

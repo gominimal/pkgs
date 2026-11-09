@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -53,4 +53,13 @@ let version = "2.5.4" in
         repo = "openjpeg",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [["/bin/bash", "-c", "printf 'P5\\n2 2\\n255\\n\\x00\\x40\\x80\\xff' > /tmp/a.pgm && /usr/bin/opj_compress -n 1 -i /tmp/a.pgm -o /tmp/a.j2k && /usr/bin/opj_decompress -i /tmp/a.j2k -o /tmp/b.pgm && [ \"$(tail -c 4 /tmp/b.pgm | od -An -tx1)\" = \"$(tail -c 4 /tmp/a.pgm | od -An -tx1)\" ]"]],
+      } | Test,
+  },
 } | BuildSpec

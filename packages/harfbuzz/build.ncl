@@ -1,6 +1,7 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let meson = import "../meson/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -44,6 +45,28 @@ let version = "15.1.0" in
     libs = { glob = "usr/lib/libharfbuzz*.so*" } | OutputLib,
     includes = { glob = "usr/include/harfbuzz/**" } | OutputData,
     pkgconfigs = { glob = "usr/lib/pkgconfig/*.pc" } | OutputData,
+  },
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t -lharfbuzz <<'EOF'
+              #include <harfbuzz/hb.h>
+              int main(void) { hb_buffer_t *b = hb_buffer_create(); hb_buffer_add_utf8(b, "abc", -1, 0, -1);
+                int ok = hb_buffer_get_length(b) == 3 && hb_version_string()[0] != 0; hb_buffer_destroy(b); return ok ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
   },
   attrs =
     {

@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let meson = import "../meson/build.ncl" in
@@ -6,6 +7,7 @@ let ninja = import "../ninja/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 
 let glib = import "../glib/build.ncl" in
+let atk = import "../atk/build.ncl" in
 let dbus = import "../dbus/build.ncl" in
 let libxml2 = import "../libxml2/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -28,6 +30,8 @@ let version = "2.62.1" in
     toolchain,
   ],
   runtime_deps = [
+    # libatk-bridge-2.0.so NEEDS libatk-1.0.so.0 (smoke-test finding).
+    atk,
     glib,
     dbus,
     libxml2,
@@ -46,4 +50,27 @@ let version = "2.62.1" in
       upstream_version = version,
       license_spdx = "LGPL-2.1-only",
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              test -s /usr/include/at-spi-2.0/atspi/atspi.h
+              gcc -x c - -o t -latspi <<'EOF'
+              extern void atspi_init(void);
+              int main(void) { void *volatile p = (void *)atspi_init; return p ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

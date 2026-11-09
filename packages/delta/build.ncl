@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -54,4 +54,8 @@ let version = "0.20.1" in
       },
       build_cost_multiple = 3,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/delta --version",
+  },
 } | BuildSpec

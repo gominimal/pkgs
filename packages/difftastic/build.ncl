@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -45,4 +45,8 @@ let version = "0.72.0" in
       },
       build_cost_multiple = 2,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/difft --version",
+  },
 } | BuildSpec

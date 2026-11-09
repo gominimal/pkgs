@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -37,4 +38,13 @@ let version = "0.1.0" in
         repo = "jqfmt",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap],
+        cmds = [["/usr/bin/bash", "-c", "/usr/bin/jqfmt -h; rc=$?; [ $rc -lt 126 ]"]],
+      } | Test,
+  },
 } | BuildSpec
