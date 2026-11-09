@@ -49,6 +49,7 @@ let version = "12.18.0" in
     # through `sh`.
     bash,
     coreutils,
+    sed, # the generated `gbin` shim for globally installed bins runs sed
     # ONLY the `node` binary from `node-lts` — deliberately NOT npm/npx/node_modules.
     #
     # pnpm 12 no longer needs node to run ITSELF (it is native), but a pnpm with
@@ -127,7 +128,7 @@ let version = "12.18.0" in
     global_install =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, coreutils, grep, sed], # the generated gbin shim runs sed
+        test_deps = [bash-bootstrap, coreutils, grep], # sed (the gbin shim) is a runtime dep
         cmds = [
           [
             "/bin/bash",

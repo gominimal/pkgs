@@ -69,6 +69,7 @@ let version = "3.14.10" in
     openssl,
     glibc,
     zlib,
+    bzip2, # _bz2 links libbz2 (bzip2 reaches the build through base)
     subsetOf util-linux ["libuuid"],
     xz,
   ],
@@ -475,7 +476,7 @@ let version = "3.14.10" in
     zipfile_read_bounds_decompression =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, coreutils, bzip2],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -493,9 +494,10 @@ let version = "3.14.10" in
                       print('skip: %s module not built' % mod, file=sys.stderr)
                       continue
                   methods.append((name, const))
-              if not any(n == 'lzma' for n, _ in methods):
-                  print('FAIL: lzma module missing; nothing exercises the fix', file=sys.stderr)
-                  sys.exit(1)
+              for need in ('lzma', 'bzip2'):
+                  if not any(n == need for n, _ in methods):
+                      print('FAIL: %s module missing from the runtime closure' % need, file=sys.stderr)
+                      sys.exit(1)
 
               SIZE = 32 * 1024 * 1024
               # liblzma's decoder state (an 8 MiB dictionary at the default preset) is
