@@ -1,6 +1,7 @@
 # Imported from Wolfi `libassuan` by `pkgmgr import wolfi` (autotools build).
-# TODO: REVIEWER — verify deps/outputs/runtime_deps + the build.sh opts.
-let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
+# TODO: REVIEWER — verify the build.sh opts. (outputs and runtime_deps are
+# taken from the built install tree: its file list and each ELF's DT_NEEDED.)
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let autoconf = import "../autoconf/build.ncl" in
 let automake = import "../automake/build.ncl" in
@@ -37,19 +38,22 @@ let version = "3.0.2" in
   ],
   cmd = "./build.sh",
   outputs = {
-    # Discovery catch-all — rerun with `--from-build <artifact>` to refine
-    # into precise, typed outputs (bins/libs/includes/…).
-    everything = { glob = "usr/**", allow_executable = true } | OutputData,
+    libs = { glob = "usr/lib/libassuan.so*" } | OutputLib,
+    includes = { glob = "usr/include/**" } | OutputData,
+    pkgconfig = { glob = "usr/lib/pkgconfig/**" } | OutputData,
+    # aclocal macros (AM_PATH_*) for consumers that regenerate configure.
+    share = { glob = "usr/share/**" } | OutputData,
   },
-  # TODO: REVIEWER — trim to the shared libraries the binary actually links (ldd the build).
-  runtime_deps = [glibc, autoconf, automake, libgpg-error, libtool, readline],
+  # libassuan.so.9 links libgpg-error.so.0 and libc.
+  runtime_deps = [glibc, libgpg-error],
   attrs =
     {
       upstream_version = version,
       source_provenance = { category = 'GithubRepo, owner = "gpg", repo = "libassuan" },
       # Upstream 3.0.2 AUTHORS: "License (library): LGPLv2.1+" and
-      # "License (manual): GPLv3+". The output glob is usr/**, so the info
-      # manual ships and its licence belongs in the expression.
+      # "License (manual): GPLv3+". The build installs no manual (the tree has
+      # no info or man pages), so the GPLv3+ half may be removable; kept until
+      # that is reviewed on its own.
       license_spdx = "LGPL-2.1-or-later AND GPL-3.0-or-later",
     } | Attrs,
   tests = {
