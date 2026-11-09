@@ -1,4 +1,5 @@
-let { BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -41,5 +42,27 @@ let version = "1.0.30" in
       owner = "libusb",
       repo = "libusb",
     },
+  },
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t -lusb-1.0 <<'EOF'
+              #include <libusb-1.0/libusb.h>
+              int main(void) { const struct libusb_version *v = libusb_get_version(); return v->major == 1 ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
   },
 } | BuildSpec
