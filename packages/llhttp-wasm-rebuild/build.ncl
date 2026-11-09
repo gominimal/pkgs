@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputData, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let python = import "../python/build.ncl" in
 
@@ -26,4 +26,7 @@ let python = import "../python/build.ncl" in
         cmds = [["python3", "/usr/share/llhttp-wasm-rebuild/rebuild-llhttp-wasm.py", "selftest"]],
       } | Test,
   },
+  # Authored in this repository, so Apache-2.0 like every recipe here
+  # (LICENSING.md section 1).
+  attrs = { license_spdx = "Apache-2.0" } | Attrs,
 } | BuildSpec
