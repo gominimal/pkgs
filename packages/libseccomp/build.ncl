@@ -87,7 +87,9 @@ EOF
         class = 'Standalone,
         test_deps = [bash-bootstrap],
         cmds = [
-          ["/bin/bash", "-c", "scmp_sys_resolver --help 2>&1 || true"],
+          # read is syscall 0 on x86_64 and 63 on aarch64 (the generic table);
+          # -a picks the ABI, so the answer is the same on either build host.
+          ["/bin/bash", "-c", "x=$(scmp_sys_resolver -a x86_64 read); a=$(scmp_sys_resolver -a aarch64 read); echo \"x86_64=$x aarch64=$a\"; [[ $x == 0 && $a == 63 ]]"],
         ],
       } | Test,
   },
