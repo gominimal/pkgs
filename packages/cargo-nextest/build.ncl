@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.9.145" in
+let version = "0.9.151" in
 {
   name = "cargo-nextest",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/nextest-rs/nextest/archive/refs/tags/cargo-nextest-%{version}.tar.gz",
-      sha256 = "6ba31b7dace0cfa57a7f9f534a82732d037481e161e076bd713c3edf1fdf6a63",
+      sha256 = "613c8855e6a5b9f9d12920bf74a0c191af3f8b5f86ff4cf27446f0f7adfc44ec",
       extract = true,
       strip_prefix = "nextest-cargo-nextest-%{version}",
     } | Source,

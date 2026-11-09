@@ -1,4 +1,5 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
@@ -316,4 +317,23 @@ let version = "25.07.1" in
       # source_provenance is deliberately absent: there is no single upstream to
       # point at, the package aggregates the 43 repositories pinned above.
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              n=0; for f in /usr/lib/helix/runtime/grammars/*.so; do test -s "$f" && n=$((n+1)); done; [ $n -gt 10 ]
+              test -s /usr/lib/helix/runtime/grammars/rust.so
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

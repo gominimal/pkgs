@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let python = import "../python/build.ncl" in
@@ -53,4 +53,8 @@ let version = "2.18.3" in
   },
   attrs.upstream_version = version,
   attrs.license_spdx = "HPND-sell-variant",
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/fc-cache --version",
+  },
 } | BuildSpec

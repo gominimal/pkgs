@@ -1,4 +1,4 @@
-let { subsetOf, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -46,5 +46,9 @@ let version = "0.51.1" in
       owner = "ast-grep",
       repo = "ast-grep",
     },
+  },
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/ast-grep --version",
   },
 } | BuildSpec

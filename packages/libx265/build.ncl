@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
@@ -45,4 +45,8 @@ let version = "4.2" in
       upstream_version = version,
       license_spdx = "GPL-2.0-only",
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/x265 --version",
+  },
 } | BuildSpec
