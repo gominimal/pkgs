@@ -67,6 +67,9 @@ cargo build --locked --release
 
 mkdir -p $OUTPUT_DIR/usr/bin
 cp target/release/uv $OUTPUT_DIR/usr/bin/uv
+# uvx (crates/uv/src/bin/uvx.rs) is built by the same workspace build; it
+# runs `uv tool run` through the uv binary next to it.
+cp target/release/uvx $OUTPUT_DIR/usr/bin/uvx
 
 # System-level uv.toml: trust the system CA store (/etc/ssl/certs) instead of
 # the Mozilla roots compiled into uv, so a fix to ca-certificates reaches uv

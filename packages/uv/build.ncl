@@ -46,6 +46,7 @@ let version = "0.13.7" in
   },
   outputs = {
     minimal = { glob = "usr/bin/uv" } | OutputBin,
+    uvx = { glob = "usr/bin/uvx" } | OutputBin,
     config = { glob = "etc/uv/uv.toml" } | OutputData,
   },
 
@@ -98,6 +99,13 @@ let version = "0.13.7" in
             "%
           ],
         ],
+      } | Test,
+    # uvx finds uv next to itself; --version answers without the network.
+    uvx_version =
+      {
+        class = 'Standalone,
+        test_deps = [],
+        cmds = [["/usr/bin/uvx", "--version"]],
       } | Test,
   },
 } | BuildSpec

@@ -48,6 +48,7 @@ let version = "26.9.1" in
 
   outputs = {
     yazi = { glob = "usr/bin/yazi" } | OutputBin,
+    ya = { glob = "usr/bin/ya" } | OutputBin,
   },
 
   attrs =
@@ -65,5 +66,6 @@ let version = "26.9.1" in
 
   tests = {
     smoketest = standaloneTest "/usr/bin/yazi --version",
+    ya_version = standaloneTest "/usr/bin/ya --version",
   },
 } | BuildSpec
