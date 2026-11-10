@@ -1,5 +1,8 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let go = import "../go/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 
@@ -49,7 +52,7 @@ let version = "1.33.1" in
     smtp_roundtrip =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "mailpit version 2>&1 | grep -q %{version} && d=$(mktemp -d) && { mailpit --database \"$d/db\" --smtp 127.0.0.1:1025 --listen 127.0.0.1:8025 >\"$d/log\" 2>&1 & pid=$!; } && trap 'kill $pid 2>/dev/null; wait $pid 2>/dev/null' EXIT && for i in $(seq 50); do (exec 3<>/dev/tcp/127.0.0.1/1025) 2>/dev/null && break; sleep 0.2; done && exec 3<>/dev/tcp/127.0.0.1/1025 && printf 'HELO t\\r\\nMAIL FROM:<a@example.com>\\r\\nRCPT TO:<b@example.com>\\r\\nDATA\\r\\nSubject: mailpit-smoke\\r\\n\\r\\nhi\\r\\n.\\r\\nQUIT\\r\\n' >&3 && sleep 1 && exec 4<>/dev/tcp/127.0.0.1/8025 && printf 'GET /api/v1/messages HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&4 && grep -q mailpit-smoke <&4"],
         ],

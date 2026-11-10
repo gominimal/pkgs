@@ -1,6 +1,8 @@
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glib = import "../glib/build.ncl" in
 let libvips = import "../libvips/build.ncl" in
@@ -100,7 +102,7 @@ let swc_arm64_sha256 = "072340019c1fcaa040f88eef2d670616cedb028d55419af260dd9606
     cli =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "next --version | grep -q '16'"],
           ["/bin/bash", "-c", "next telemetry status | grep -q 'Status'"],
@@ -113,7 +115,7 @@ let swc_arm64_sha256 = "072340019c1fcaa040f88eef2d670616cedb028d55419af260dd9606
     swc_binary_ships =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "node -e \"const swc = require('/usr/libexec/next/lib/node_modules/next/dist/build/swc/index.js'); const out = swc.transformSync('const a: number = 1; export default a;', { jsc: { parser: { syntax: 'typescript' } } }); if (!/a = 1;/.test(out.code) || /: number/.test(out.code)) { throw new Error('unexpected SWC output: ' + out.code); } const addon = Object.keys(require.cache).find((f) => f.endsWith('.node')); if (!addon || !/\\/node_modules\\/@next\\/swc-linux-(x64|arm64)-gnu\\/next-swc\\.linux-(x64|arm64)-gnu\\.node$/.test(addon)) { throw new Error('SWC loaded from an unexpected path: ' + addon); } console.log(addon);\""],
         ],
@@ -121,7 +123,7 @@ let swc_arm64_sha256 = "072340019c1fcaa040f88eef2d670616cedb028d55419af260dd9606
     sharp_uses_system_libvips =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "node -e \"const s = require('/usr/libexec/next/lib/node_modules/next/node_modules/sharp'); const v = s.versions; console.log('vips:', v.vips); if (!v.vips) { throw new Error('no vips version'); }\""],
           ["/bin/bash", "-c", "node -e \"const s = require('/usr/libexec/next/lib/node_modules/next/node_modules/sharp'); if (!s.versions.vips.startsWith('8.18')) { throw new Error('expected vips 8.18.x, got ' + s.versions.vips); }\""],

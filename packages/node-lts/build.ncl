@@ -3,6 +3,8 @@ let make = import "../make/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let python = import "../python/build.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -121,7 +123,7 @@ let version = "24.22.1" in
     type_strip =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "printf 'interface P { n: number }\\nconst p: P = { n: 6 };\\nconsole.log(p.n * 7);\\n' > t.ts"],
           ["/bin/bash", "-c", "node t.ts | grep -qx 42"],
@@ -130,7 +132,7 @@ let version = "24.22.1" in
     eval =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "echo 'console.log(\"Hello Node\")' > script.js"],
           ["/bin/bash", "-c", "node script.js | grep -q '^Hello Node$'"],
@@ -141,7 +143,7 @@ let version = "24.22.1" in
     inline_eval =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "node -e 'console.log(10 * 5)' | grep -q '^50$'"],
         ],
@@ -149,7 +151,7 @@ let version = "24.22.1" in
     npm_global_prefix =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           # The builtin npmrc must redirect npm's global prefix away from the
           # read-only /usr store (gominimal/inbox#559).
@@ -164,7 +166,7 @@ let version = "24.22.1" in
     emsign_roots_removed =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -203,7 +205,7 @@ let version = "24.22.1" in
     spki_blocklist_rejects_emudhra_intermediate =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -305,7 +307,7 @@ let version = "24.22.1" in
     system_ca_store_default =
       {
         class = 'Standalone,
-        test_deps = [base, ca-certificates],
+        test_deps = [bash-bootstrap, ca-certificates, coreutils],
         cmds = [
           [
             "/bin/bash",

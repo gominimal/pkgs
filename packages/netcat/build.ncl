@@ -1,6 +1,8 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let libbsd = import "../libbsd/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -65,7 +67,7 @@ let debian_revision = "1" in
     loopback =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           # A listener receives what a client sends it over loopback.
           [
