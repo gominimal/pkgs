@@ -10,7 +10,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.19.7" in
+let version = "1.19.8" in
 {
   name = "libkrun",
 
@@ -53,7 +53,7 @@ let version = "1.19.7" in
     { file = "0002-vsock-refuse-stream-when-unix-proxy-creation-fails.patch" } | Local,
     {
       url = "https://github.com/libkrun/libkrun/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "d4541fcd959ad43fb073bff61bc91b645ea6413a10b8319e9b61664a6102d20c",
+      sha256 = "8896c71117462f868f41d26efd157c3270091814eaab3af27ca70c6857a85eb2",
       extract = true,
       strip_prefix = "libkrun-%{version}",
     } | Source,
