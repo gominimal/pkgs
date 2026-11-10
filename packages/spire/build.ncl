@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -46,7 +47,7 @@ let version = "1.16.0" in
     server_smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "/bin/spire-server --help || true"],
         ],
@@ -54,7 +55,7 @@ let version = "1.16.0" in
     agent_smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "/bin/spire-agent --help || true"],
         ],
@@ -62,7 +63,7 @@ let version = "1.16.0" in
     oidc_provider_smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "/bin/oidc-discovery-provider -version || true"],
         ],

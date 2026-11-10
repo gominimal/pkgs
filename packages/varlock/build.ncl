@@ -1,6 +1,8 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 
@@ -81,7 +83,7 @@ let version = "1.24.0" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "varlock --version | grep -q '%{version}'"],
           ["/bin/bash", "-c", "varlock --help"],
@@ -96,7 +98,7 @@ let version = "1.24.0" in
     trust_store_without_emsign =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           ["/bin/bash", "-c", "test \"$(head -c 19 /usr/bin/varlock)\" = '#!/usr/bin/env node'"],
           [

@@ -1,6 +1,7 @@
 let { Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let version = "2.19.0" in
@@ -58,7 +59,7 @@ in
     smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "test -x /usr/bin/edgedelta"],
           # Usability: the binary must actually execute. The exit code of

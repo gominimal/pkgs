@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let toolchain = import "../toolchain/build.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
@@ -84,4 +85,28 @@ let version = "6.12.115" in
         repo = "linux",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t  <<'EOF'
+              #include <linux/version.h>
+              #include <linux/types.h>
+              #include <asm/unistd.h>
+              int main(void) { return LINUX_VERSION_CODE > KERNEL_VERSION(5, 0, 0) ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

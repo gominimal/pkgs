@@ -1,6 +1,9 @@
 let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
@@ -131,7 +134,7 @@ in
     eval =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "bun --eval 'console.log(1+1)' | grep -q '^2$'"],
         ],
@@ -142,7 +145,7 @@ in
     emsign_roots_removed =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -230,7 +233,7 @@ in
     system_ca_store_default =
       {
         class = 'Standalone,
-        test_deps = [base, ca-certificates, openssl],
+        test_deps = [bash-bootstrap, ca-certificates, openssl, coreutils, grep],
         cmds = [
           [
             "/bin/bash",
@@ -372,7 +375,7 @@ in
     global_install =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",

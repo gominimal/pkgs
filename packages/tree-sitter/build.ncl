@@ -1,4 +1,5 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -50,4 +51,34 @@ let version = "0.27.1" in
         repo = "tree-sitter",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              cd /tmp
+              gcc -x c - -o t -x none -ltree-sitter <<'EOF'
+              #include <stdio.h>
+              #include <tree_sitter/api.h>
+              int main(void) {
+                TSParser *p = ts_parser_new();
+                if (!p) return 1;
+                printf("tree-sitter language ABI %d\n", TREE_SITTER_LANGUAGE_VERSION);
+                ts_parser_delete(p);
+                return 0;
+              }
+              EOF
+              ./t
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

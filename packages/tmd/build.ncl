@@ -1,6 +1,8 @@
 let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let liberation-fonts = import "../liberation-fonts/build.ncl" in
 let zig = import "../zig/build.ncl" in
@@ -52,7 +54,7 @@ let version = "0.2.0" in
     render =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "printf '# Title\\n\\n**bold** text\\n' | tmd -p | grep -q 'bold text'"],
         ],
@@ -60,7 +62,7 @@ let version = "0.2.0" in
     notices =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "grep -q 'Apache License' /usr/share/licenses/tmd/LICENSE"],
           ["/bin/bash", "-c", "grep -q '^## musl' /usr/share/licenses/tmd/THIRD_PARTY_NOTICES.md && grep -q '^## Ghostty' /usr/share/licenses/tmd/THIRD_PARTY_NOTICES.md"],

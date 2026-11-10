@@ -1,5 +1,8 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
@@ -57,7 +60,7 @@ let version = "0.15.1" in
     template_path_escape_refused =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "mkdir -p pkgs/local/evil/0.1.0 secret && echo stolen > secret/main.typ"],
           ["/bin/bash", "-c", "printf '[package]\\nname = \"evil\"\\nversion = \"0.1.0\"\\nentrypoint = \"lib.typ\"\\n\\n[template]\\npath = \"../../../../secret\"\\nentrypoint = \"main.typ\"\\n' > pkgs/local/evil/0.1.0/typst.toml"],
@@ -70,7 +73,7 @@ let version = "0.15.1" in
     template_path_absolute_is_package_relative =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "mkdir -p pkgs/local/abs/0.1.0/template && echo Hello > pkgs/local/abs/0.1.0/template/main.typ"],
           ["/bin/bash", "-c", "printf '[package]\\nname = \"abs\"\\nversion = \"0.1.0\"\\nentrypoint = \"lib.typ\"\\n\\n[template]\\npath = \"/template\"\\nentrypoint = \"main.typ\"\\n' > pkgs/local/abs/0.1.0/typst.toml"],

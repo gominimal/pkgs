@@ -1,6 +1,9 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let gawk = import "../gawk/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let unzip = import "../unzip/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
@@ -91,14 +94,14 @@ let browser_version = chromium-headless-shell-bin.attrs.upstream_version in
     smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [],
         cmds = [["/bin/chromedriver", "--version"]],
       } | Test,
     # The driver must report the same version as the packaged browser.
     matches_browser =
       {
         class = 'Standalone,
-        test_deps = [base, chromium-headless-shell-bin],
+        test_deps = [bash-bootstrap, chromium-headless-shell-bin, gawk, grep],
         cmds = [
           ["/bin/bash", "-c", "d=$(/bin/chromedriver --version | awk '{print $2}'); b=$(/bin/chromium-headless-shell --version | grep -oE '[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+'); test \"$d\" = \"$b\" && test \"$d\" = %{browser_version}"],
         ],

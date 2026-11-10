@@ -1,5 +1,7 @@
 let { Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let zig = import "../zig/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
@@ -51,7 +53,7 @@ let version = "0.0.16" in
     reports_version =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           # Proves the binary runs and the embedded app_version (read from
           # src/main.zig at build time) is the release we packaged. Offline:
