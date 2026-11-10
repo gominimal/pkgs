@@ -23,7 +23,7 @@ let toolchain = import "../toolchain/build.ncl" in
 # the dwarves build_dep that supplies `pahole` for CONFIG_DEBUG_INFO_BTF. Source
 # moved off the gs:// staging mirror (only 6.1/6.12 staged there) to cdn.kernel.org,
 # matching the libkrunfw package's accepted pattern.
-let version = "6.18.60" in
+let version = "6.18.62" in
 {
   name = "virtio-linux-detonation",
 
@@ -31,7 +31,7 @@ let version = "6.18.60" in
     { file = "build.sh" } | Local,
     {
       url = "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-%{version}.tar.xz",
-      sha256 = "3c2f44ef6acc021a7ad444d9a2e6ec1ef488ff09368793d0004a6080f69d621e",
+      sha256 = "490a7aedf1b355c565d3a6c05333ccccb5da82064eca46b590448a7099d7d651",
       extract = true,
       strip_prefix = "linux-%{version}",
     } | Source,
