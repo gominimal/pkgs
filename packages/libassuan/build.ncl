@@ -1,7 +1,7 @@
 # Imported from Wolfi `libassuan` by `pkgmgr import wolfi` (autotools build).
 # TODO: REVIEWER — verify the build.sh opts. (outputs and runtime_deps are
 # taken from the built install tree: its file list and each ELF's DT_NEEDED.)
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let autoconf = import "../autoconf/build.ncl" in
 let automake = import "../automake/build.ncl" in
