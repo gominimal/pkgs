@@ -1,5 +1,7 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -61,7 +63,7 @@ let version = "133" in
     emscripten_tools =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "set -eu; for t in wasm-opt wasm-emscripten-finalize wasm-dis wasm-as wasm2js wasm-metadce; do command -v $t >/dev/null; done"],
         ],
@@ -70,7 +72,7 @@ let version = "133" in
     roundtrip =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "printf '(module (func $$f (result i32) (i32.const 42)) (export \"f\" (func $$f)))' > m.wat"],
           ["/bin/bash", "-c", "wasm-as m.wat -o m.wasm && wasm-opt -O3 m.wasm -o m.opt.wasm && wasm-dis m.opt.wasm | grep -q 'i32.const 42'"],

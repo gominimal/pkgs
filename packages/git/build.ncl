@@ -7,6 +7,9 @@ let openssl = import "../openssl/build.ncl" in
 let pcre2 = import "../pcre2/build.ncl" in
 let python = import "../python/build.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
@@ -71,7 +74,7 @@ let version = "2.56.0" in
     version_check =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [],
         cmds = [
           ["git", "--version"],
         ],
@@ -79,7 +82,7 @@ let version = "2.56.0" in
     basic_repo_ops =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "mkdir repo && cd repo && git init"],
           ["/bin/bash", "-c", "cd repo && echo 'hello' > file.txt && git add file.txt"],

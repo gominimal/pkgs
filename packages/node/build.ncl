@@ -34,7 +34,8 @@ let undici_llhttp = "9.3.1" in
 let npm_undici = "6.28.0" in
 # The llhttp that the npm-vendored undici pins (forwarded so a bump is one edit).
 let npm_undici_llhttp = "8.1.0" in
-let amaro = "1.1.11" in
+# amaro is recorded once, in amaro-wasm/versions.ncl, so node, node-lts and amaro-wasm agree.
+let amaro = (import "../amaro-wasm/versions.ncl").bundled.node in
 let version = "26.12.1" in
 {
   name = "node",

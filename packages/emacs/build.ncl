@@ -1,6 +1,8 @@
 let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let autoconf = import "../autoconf/build.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -69,7 +71,7 @@ let version = "31.1" in
     batch_eval =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "emacs --batch --eval '(message \"hello\")' 2>&1 | grep -q hello"],
         ],
@@ -78,7 +80,7 @@ let version = "31.1" in
     byte_compile =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "echo '(defun test-fn () 42)' > /tmp/test.el && emacs --batch -f batch-byte-compile /tmp/test.el && test -f /tmp/test.elc"],
         ],
@@ -87,7 +89,7 @@ let version = "31.1" in
     gnutls =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "emacs --batch --eval '(message \"%s\" (gnutls-available-p))' 2>&1 | grep -q t"],
         ],
@@ -102,7 +104,7 @@ let version = "31.1" in
     libxml2_available =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "emacs --batch --eval '(message \"%s\" (libxml-available-p))' 2>&1 | grep -q t"],
         ],
@@ -111,7 +113,7 @@ let version = "31.1" in
     zlib_available =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "emacs --batch --eval '(message \"%s\" (zlib-available-p))' 2>&1 | grep -q t"],
         ],
@@ -120,7 +122,7 @@ let version = "31.1" in
     dynamic_modules =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "emacs --batch --eval '(message \"%s\" module-file-suffix)' 2>&1 | grep -q '[.]so'"],
         ],
@@ -129,7 +131,7 @@ let version = "31.1" in
     threads =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "emacs --batch --eval '(message \"%s\" (and (fboundp (quote make-thread)) t))' 2>&1 | grep -q t"],
         ],
@@ -138,7 +140,7 @@ let version = "31.1" in
     inotify_file_notify =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "emacs --batch --eval '(message \"%s\" (and (featurep (quote inotify)) t))' 2>&1 | grep -q t"],
         ],
@@ -148,7 +150,7 @@ let version = "31.1" in
     emacsclient_runs =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "emacsclient --version 2>&1 | grep -qi emacsclient"],
         ],
@@ -157,7 +159,7 @@ let version = "31.1" in
     tree_sitter =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "emacs --batch --eval '(message \"%s\" (treesit-available-p))' 2>&1 | grep -q t"],
         ],
@@ -171,7 +173,7 @@ let version = "31.1" in
     treesit_predicate_syntax =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "out=$(emacs --batch --eval '(princ (treesit-query-expand (quote ((a) @x (:match \"^a\" @x) (:equal @x \"a\") (:match? @x \"^a\") (:eq? @x \"a\")))))' 2>/dev/null); echo \"$out\"; echo \"$out\" | grep -q '(#match? \"^a\" @x) (#eq? @x \"a\") (#match? @x \"^a\") (#eq? @x \"a\")'"],
         ],
