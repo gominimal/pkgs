@@ -12,10 +12,10 @@ let libxfixes = import "../libxfixes/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 # X11 Input extension library (libXi.so.6). Pulled in as a runtime dep of
-# libxtst (and, transitively, chromium-bin — Chrome links libXi.so.6). Deps
-# taken straight from libXi-1.8.4's pkg-config: `Requires.private: x11 xext
-# xfixes` (so it links libXfixes too), plus xorgproto for the input/xproto
-# headers.
+# libxtst (and, transitively, chromium-headless-shell-bin — Chrome links
+# libXi.so.6). Deps taken straight from libXi-1.8.4's pkg-config:
+# `Requires.private: x11 xext xfixes` (so it links libXfixes too), plus
+# xorgproto for the input/xproto headers.
 let version = "1.8.4" in
 {
   name = "libxi",

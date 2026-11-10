@@ -3,9 +3,12 @@ let base = import "../base/build.ncl" in
 let jq = import "../jq/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 
-# Machine-wide Chromium enterprise policy, shared by every Chromium-branded
-# browser package (today chromium-bin; its replacement build should keep this
-# runtime dep). Installed as /etc/chromium/policies/managed/<name>.json, the
+# Machine-wide Chromium enterprise policy for a full Chromium-branded browser
+# package. It currently has NO installed consumer: chromium-bin, the only one,
+# was pulled (stuck at 156, no ungoogled-chromium-portablelinux 157), and
+# agent-browser and mermaid-cli moved to chromium-headless-shell-bin, which
+# cannot read it (below). It is kept for the next full-browser package, which
+# should take it as a runtime dep. Installed as /etc/chromium/policies/managed/<name>.json, the
 # directory Chromium-branded builds read (`policy::kPolicyPath` in
 # components/policy/core/common/policy_paths.cc). Verified by grepping the
 # shipped binaries for the path string: the chromium-browser-snapshots x64
@@ -35,10 +38,11 @@ let openssl = import "../openssl/build.ncl" in
 #     emSign-issued chains reach; Sectigo's AAA root is already out of the
 #     Chrome Root Store. Collateral: every other site under that root stops
 #     validating too, which is what Mozilla and Chrome chose.
-# Our pinned 153/155 builds predate both upstream changes (their compiled-in
-# root store still holds the root and their blocklist lacks the keys), and
-# they get no CRLSet or root-store component updates, so this file is their
-# only protection until a release carries the upstream fix.
+# Chromium 157 (157.0.8103.38) carries the blocklist change but not root
+# store v43, which arrives in 158, so a 157 full browser would still need this
+# file for the root. Builds get no CRLSet or root-store component updates, so
+# for a browser that reads it this file is the only protection until a
+# release carries both upstream changes.
 #
 # One file per policy key. Chromium merges every *.json in the directory, but
 # a key set in two files is not merged (the lexicographically last file wins),

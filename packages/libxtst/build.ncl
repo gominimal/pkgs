@@ -12,8 +12,10 @@ let libxi = import "../libxi/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 # X11 Testing extension library (libXtst.so.6) — provides XTest/XRecord.
-# Chrome links libXtst.so.6 directly, so chromium-bin needs it in its runtime
-# closure (147→151 surfaced this: 151 fails to even print --version without it).
+# Chrome links libXtst.so.6 directly, so a Chromium package needs it in its
+# runtime closure; chromium-headless-shell-bin declares it. (147→151 surfaced
+# this in the since-pulled chromium-bin: 151 failed to even print --version
+# without it.)
 # Deps from libXtst-1.2.6's pkg-config: `Requires.private: x11 xext xextproto
 # xi` (so it links libXi too), plus xorgproto for the record/xext headers.
 let version = "1.2.6" in
