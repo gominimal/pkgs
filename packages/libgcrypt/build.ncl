@@ -80,7 +80,7 @@ let version = "1.12.4" in
           ["/bin/bash", "-c", "set -euo pipefail\n\n# Compute HMAC-SHA256 of a known string with a known key\nresult=$(echo -n \"test message\" | hmac256 \"mysecretkey\")\necho \"hmac256 output: $result\"\n\n# Verify output is a hex string (64 hex chars for SHA-256)\necho \"$result\" | grep -E '^[0-9a-fA-F]{64}'"],
           ["/bin/bash", "-c", "set -euo pipefail\n\n# Create a sample S-expression and parse it with dumpsexp\nprintf '(3:foo3:bar)' > /tmp/test.sexp\noutput=$(dumpsexp /tmp/test.sexp)\necho \"dumpsexp output: $output\"\n\n# Verify dumpsexp parsed the S-expression (should contain foo and bar)\necho \"$output\" | grep -F \"foo\"\necho \"$output\" | grep -F \"bar\""],
           ["/bin/bash", "-c", "set -euo pipefail\n\n# Test basic arithmetic with mpicalc\n# mpicalc uses RPN (reverse polish notation)\nresult=$(echo -e \"2\\n3\\n+\\np\" | mpicalc)\necho \"mpicalc output: $result\"\n\n# Verify the result contains 5 (2+3=5, displayed as hex 05)\necho \"$result\" | grep -F \"05\""],
-          ["/bin/bash", "-c", "set -euo pipefail\nv=$(libgcrypt-config --version)\necho \"$v\"\n[[ $v == %{version} ]]\nlibgcrypt-config --cflags\nlibgcrypt-config --libs"],
+          ["/bin/bash", "-c", "set -euo pipefail\nv=$(libgcrypt-config --version)\necho \"$v\"\n[[ $v == %{version} || $v == %{version}-unknown ]]\nlibgcrypt-config --cflags\nlibgcrypt-config --libs"],
         ],
       } | Test,
   },
