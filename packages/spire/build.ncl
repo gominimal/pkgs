@@ -49,7 +49,7 @@ let version = "1.16.0" in
         class = 'Standalone,
         test_deps = [bash-bootstrap],
         cmds = [
-          ["/bin/bash", "-c", "/bin/spire-server --help || true"],
+          ["/bin/bash", "-c", "v=$(/bin/spire-server --version 2>&1); echo \"$v\"; [[ $v == %{version} ]]"],
         ],
       } | Test,
     agent_smoketest =
@@ -57,7 +57,7 @@ let version = "1.16.0" in
         class = 'Standalone,
         test_deps = [bash-bootstrap],
         cmds = [
-          ["/bin/bash", "-c", "/bin/spire-agent --help || true"],
+          ["/bin/bash", "-c", "v=$(/bin/spire-agent --version 2>&1); echo \"$v\"; [[ $v == %{version} ]]"],
         ],
       } | Test,
     oidc_provider_smoketest =
@@ -65,7 +65,7 @@ let version = "1.16.0" in
         class = 'Standalone,
         test_deps = [bash-bootstrap],
         cmds = [
-          ["/bin/bash", "-c", "/bin/oidc-discovery-provider -version || true"],
+          ["/bin/bash", "-c", "v=$(/bin/oidc-discovery-provider -version); echo \"$v\"; [[ $v == %{version} ]]"],
         ],
       } | Test,
   },
