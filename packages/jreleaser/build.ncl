@@ -1,5 +1,8 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
+let tar = import "../tar/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let findutils = import "../findutils/build.ncl" in
@@ -81,7 +84,7 @@ let version = "1.27.0" in
     jreleaser_version =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "jreleaser --version > out.txt 2>&1; grep -qx 'jreleaser %{version}' out.txt"],
         ],
@@ -91,7 +94,7 @@ let version = "1.27.0" in
     init =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           [
             "/bin/bash",
@@ -116,7 +119,7 @@ let version = "1.27.0" in
     assemble =
       {
         class = 'Standalone,
-        test_deps = [base, git],
+        test_deps = [bash-bootstrap, git, coreutils, grep, tar],
         cmds = [
           [
             "/bin/bash",

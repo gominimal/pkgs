@@ -1,5 +1,8 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let uv = import "../uv/build.ncl" in
@@ -88,7 +91,7 @@ let version = "3.2.4" in
     smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "/bin/http --version | grep -q 3.2.4"],
           # Exercise an actual import path, not just --version: httpie's
@@ -105,7 +108,7 @@ let version = "3.2.4" in
     certifi_distrusts_emsign_ecc_g3 =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -143,7 +146,7 @@ let version = "3.2.4" in
     system_ca_default =
       {
         class = 'Standalone,
-        test_deps = [base, ca-certificates],
+        test_deps = [bash-bootstrap, ca-certificates, coreutils, grep],
         cmds = [
           [
             "/bin/bash",
@@ -210,7 +213,7 @@ let version = "3.2.4" in
               server=$!
               trap 'kill "$server"' EXIT
               for _ in $(seq 100); do [ -s port ] && break; sleep 0.1; done
-              url="https://localhost:$(cat port)/"
+              url="https://127.0.0.1:$(cat port)/"
               unset HTTPS_PROXY https_proxy HTTP_PROXY http_proxy ALL_PROXY all_proxy REQUESTS_CA_BUNDLE CURL_CA_BUNDLE
               if http --ignore-stdin --check-status --timeout 10 GET "$url" > out 2>&1; then
                 echo "an unknown CA was trusted by default" >&2; exit 1

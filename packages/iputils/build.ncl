@@ -2,6 +2,8 @@
 # TODO: REVIEWER — verify deps/outputs/runtime_deps + the build.sh opts.
 let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let libcap = import "../libcap/build.ncl" in
 let libxslt = import "../libxslt/build.ncl" in
 let meson = import "../meson/build.ncl" in
@@ -51,7 +53,7 @@ let version = "20250605" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           # The Wolfi-ported block sent real ICMP echoes to loopback. Those
           # need CAP_NET_RAW, which the build sandbox does not grant, and the

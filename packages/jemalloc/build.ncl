@@ -2,6 +2,9 @@
 # with outputs + runtime_deps refined from a verified `minimal package` build.
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let autoconf = import "../autoconf/build.ncl" in
 let automake = import "../automake/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
@@ -61,7 +64,7 @@ let version = "5.4.0" in
     compile_link =
       {
         class = 'Standalone,
-        test_deps = [base, toolchain, pkgconf],
+        test_deps = [bash-bootstrap, toolchain, pkgconf, coreutils, grep],
         cmds = [
           # Compile-link-RUN a real jemalloc consumer, and lock the version-stamp
           # fix (jemalloc-config must report 5.4.0, not the git-archive 0.0.0).
