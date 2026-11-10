@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -81,4 +81,36 @@ let version = "1.4" in
         repo = "zlib",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              cd /tmp
+              gcc -x c - -o t -x none -lz <<'EOF'
+              #include <string.h>
+              #include <zlib.h>
+              int main(void) {
+                if (strcmp(zlibVersion(), ZLIB_VERSION) != 0) return 1;
+                const char *in = "hello hello hello hello";
+                unsigned char c[128], d[128];
+                uLongf cl = sizeof c, dl = sizeof d;
+                if (compress(c, &cl, (const Bytef *)in, strlen(in) + 1) != Z_OK) return 2;
+                if (uncompress(d, &dl, c, cl) != Z_OK) return 3;
+                return strcmp((char *)d, in) != 0;
+              }
+              EOF
+              ./t
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

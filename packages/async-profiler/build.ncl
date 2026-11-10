@@ -4,6 +4,9 @@ let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .
 # (see build.sh): the native agent libasyncProfiler.so, the asprof attach
 # launcher, the jfrconv converter and the Java API jar.
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
@@ -68,7 +71,7 @@ let version = "4.6" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "asprof --version | grep -q 'Async-profiler %{version} '"],
           ["/bin/bash", "-c", "jfrconv --version | grep -q 'JFR converter %{version} '"],
@@ -81,7 +84,7 @@ let version = "4.6" in
     agent =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           [
             "/bin/bash",
@@ -133,7 +136,7 @@ let version = "4.6" in
     attach =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           [
             "/bin/bash",

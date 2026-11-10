@@ -15,6 +15,7 @@
 # charon binary at runtime.
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let ocaml = import "../ocaml/build.ncl" in
 let dune = import "../dune/build.ncl" in
 let ocamlfind = import "../ocamlfind/build.ncl" in
@@ -82,7 +83,7 @@ let version = "20261030" in
     runs =
       {
         class = 'Standalone,
-        test_deps = [base, ocaml, zarith, charon-ml, grep],
+        test_deps = [bash-bootstrap, ocaml, zarith, charon-ml, grep],
         cmds = [
           # aeneas needs a charon .llbc for real work (the Rust binary lands in a
           # later PR); here we just smoke-test that the binary links + runs.

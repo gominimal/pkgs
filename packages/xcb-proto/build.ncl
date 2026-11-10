@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -34,4 +34,18 @@ let version = "1.17.0" in
       upstream_version = version,
       license_spdx = "X11-swapped",
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [python],
+        # xcbgen.xtypes reads `__main__.output[...]` at import time: its
+        # caller (libxcb's c_client.py) defines that dict of emitters first.
+        # A defaultdict stands in for it, so the bare import works.
+        cmds = [
+          ["/usr/bin/python3", "-c", "import __main__, collections; __main__.output = collections.defaultdict(lambda: None); import xcbgen.xtypes as T, xml.etree.ElementTree as E; assert T.tcard32.size == 4; r = E.parse('/usr/share/xcb/xproto.xml').getroot(); assert r.get('header') == 'xproto'; print(len(r))"],
+        ],
+      } | Test,
+  },
 } | BuildSpec

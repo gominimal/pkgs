@@ -97,3 +97,10 @@ category = "CredentialAccess"
 pattern = ".npmrc"
 sha256 = "d17f86f16032ad6fc9f293277864203f65561e1552e7b521e330dfcf4c7ecb1b"
 reason = "False positive: unit test. Writes fixture `.npmrc` files into temp repos and passes in-memory `.npmrc` settings sources (home: tempDir()) to assert which package names are withheld. Added in https://github.com/backnotprop/plannotator/commit/c0010c83c4c60563797f2247066d704a7b020be9 and https://github.com/backnotprop/plannotator/commit/e92b102b9d2ed25129849c4c4f7b433fb282a89f"
+
+[[allow]]
+file = "packages/server/inbox-launch-env.test.ts"
+category = "FileSystemAccess"
+pattern = "launchctl"
+sha256 = "5a6bc693670d6c43ec299171ca848ac4f32d8142b280fb22befd1d2f09202568"
+reason = "False positive: line 151 is a bun test NAME (\"what launchd and the session give (SSH_AUTH_SOCK, a launchctl proxy, LC_*) reaches the shell and the --bg env\"); the test only asserts that existing env vars pass through createLoginEnv/launchSpawnEnv with a fake runner. Nothing in v0.28.51 executes launchctl (the only other occurrence, packages/server/inbox-launch-env.ts:12, is a JSDoc comment). Test files are not bundled (build.sh bundles apps/hook/server/index.ts). Added in https://github.com/backnotprop/plannotator/commit/37f0e88cd6184b9745564c6febae3f98b7ef898a (#2376)"

@@ -1,4 +1,6 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let e2fsprogs = import "../e2fsprogs/build.ncl" in
@@ -330,4 +332,25 @@ in
     {
       upstream_version = alpine_release,
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              r=/usr/share/microvm-rootfs/rootfs.img
+              test -s $r
+              # ext4 superblock magic 0xEF53 at byte 1080
+              test "$(od -An -tx1 -j1080 -N2 $r)" = ' 53 ef'
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

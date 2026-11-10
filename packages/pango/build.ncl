@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let meson = import "../meson/build.ncl" in
@@ -53,4 +54,35 @@ let version = "1.58.2" in
       upstream_version = version,
       license_spdx = "LGPL-2.0-only",
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain, pkgconf],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              cd /tmp
+              gcc -x c - -o t -x none $(pkg-config --cflags --libs pango) <<'EOF'
+              #include <stdio.h>
+              #include <pango/pango.h>
+              int main(void) {
+                PangoFontDescription *d = pango_font_description_from_string("Sans Bold 12");
+                int ok = pango_font_description_get_weight(d) == PANGO_WEIGHT_BOLD &&
+                         pango_font_description_get_size(d) == 12 * PANGO_SCALE;
+                printf("pango %s\n", pango_version_string());
+                pango_font_description_free(d);
+                return !ok;
+              }
+              EOF
+              ./t
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec
