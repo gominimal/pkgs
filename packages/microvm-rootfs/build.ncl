@@ -171,9 +171,9 @@ in
       "1c108314af454a885ac0b053201db57027470c4f2309412c016897e2a2bf5d0e"
       "78c5a1993342ab1bdcdce30639fd0937e8000f6d0d85cea171f573d31decd036",
     apk
-      "libexpat-2.9.0-r0"
-      "7128bfe18b8a315b9cf90ddf0beffeee454648ae72ff7898ff7d7b09803a559d"
-      "32b127f31e0a919110a18a7f0bb3780d8fb66ba4d8d61b2d301d633f0e319d0e",
+      "libexpat-2.10.0-r0"
+      "99144fe0b1bb9316a3bc30c38707996767806661f4a0456fcf4565ac92e79b0f"
+      "e7e7408ea787ed06d00159b0ff1f9b65a63cf634f36d9e0fa7512ce2c489a503",
     apk
       "libfdisk-2.42.3-r1"
       "061e5c9c82eff00f806bd51bdd414d3ff6aaec99de02ed4c1b60f3e13578e2b7"
@@ -254,8 +254,11 @@ in
     # openssl 3.5.7-r0 (see `lib/apk/db/installed`, `o:openssl`), which has ten
     # unfixed CVEs: CVE-2026-14456, -14457, -18798, -54874, -63072, -63073,
     # -63074, -63075, -63076, -75803. Alpine fixed them in 3.5.8-r0, in v3.24
-    # main — but the newest minirootfs RELEASE is still 3.24.1, so bumping
-    # `alpine_release` cannot pick the fix up. There is no 3.24.2 to move to.
+    # main. When this override was written the newest minirootfs RELEASE was
+    # 3.24.1, so bumping `alpine_release` could not pick the fix up. 3.24.4 has
+    # since been released and records libcrypto3/libssl3 3.5.9-r0, musl 1.2.6-r3,
+    # ca-certificates-bundle 20261020-r0 and zlib 1.3.2-r1, so moving to it
+    # retires every override here except zlib 1.4-r0 (tracked separately).
     #
     # Both packages install to the same `usr/lib/libcrypto.so.3` /
     # `usr/lib/libssl.so.3` the base layer uses, so the overlay replaces the
@@ -266,7 +269,9 @@ in
     #
     # DROP THESE the moment `alpine_release` reaches a minirootfs carrying
     # >= 3.5.8-r0; keeping a stale override is how an image ends up pinned
-    # BELOW its base layer.
+    # BELOW its base layer. build.sh enforces it: OVERRIDE_BASE records the
+    # base-layer version each override replaces, and the build fails when the
+    # minirootfs records anything else.
     apk
       "libcrypto3-3.5.9-r0"
       "2676a2b0b6e23ea2edccf3ee982b9842a665d52603d047de3d0a185dc316d983"
@@ -320,6 +325,28 @@ in
       "musl-utils-1.2.6-r3"
       "bb460bdc009e88989bd5adca8a7c8298c339cba99da11c6196c818e042fbaf49"
       "47263d05842c5e12d01e0369e5b5bea51733323501c00ca21968a5102de137ca",
+
+    # zlib, same override pattern. alpine-minirootfs-3.24.1 ships zlib
+    # 1.3.2-r0 (`lib/apk/db/installed`), which is missing CVE-2026-85091
+    # (fixed in 1.3.2-r1) and CVE-2026-4738 (fixed in 1.4-r0) per the v3.24
+    # secdb. git and libcurl in the closure both link so:libz.so.1, so the
+    # guest loads it. zlib-1.4-r0 depends only on so:libc.musl and provides
+    # so:libz.so.1=1.4, so nothing else moves.
+    #
+    # Unlike the overrides above, the real file is renamed: the base layer has
+    # usr/lib/libz.so.1.3.2 with usr/lib/libz.so.1 pointing at it, and 1.4-r0
+    # ships usr/lib/libz.so.1.4 with libz.so.1 pointing at THAT. The overlay
+    # replaces the libz.so.1 symlink, so the loader (which resolves the
+    # DT_NEEDED soname libz.so.1) gets 1.4. The overlay only adds and replaces
+    # paths, so build.sh then removes the base layer's old libz.so.1.3.2 (and
+    # moves zlib's db file entry to libz.so.1.4); otherwise a file-level scanner
+    # would report this override's own CVEs against the image.
+    #
+    # DROP THIS once `alpine_release` reaches a minirootfs carrying >= 1.4-r0.
+    apk
+      "zlib-1.4-r0"
+      "d3e30d012a3445222b0b4a28f1d4d97ce67387f8b48561921111696da174f0de"
+      "7b05bc778b8b25cd880835b40114182bd4d1581717504d0129c810c0a14291cb",
   ],
 
   cmd = "./build.sh",
