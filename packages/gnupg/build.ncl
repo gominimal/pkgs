@@ -2,6 +2,9 @@
 # TODO: REVIEWER — verify deps/outputs/runtime_deps + the build.sh opts.
 let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let autoconf = import "../autoconf/build.ncl" in
 let automake = import "../automake/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
@@ -20,7 +23,6 @@ let libgcrypt = import "../libgcrypt/build.ncl" in
 let libgpg-error = import "../libgpg-error/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
-let coreutils = import "../coreutils/build.ncl" in
 let gettext = import "../gettext/build.ncl" in
 let readline = import "../readline/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
@@ -145,7 +147,7 @@ let version = "2.5.24" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           # TODO: REVIEWER — ported from the Wolfi test block; verify each
           # against minimal's toolchain (bins on PATH, flags supported).

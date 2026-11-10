@@ -1,4 +1,5 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -74,4 +75,33 @@ let version = "26.2.6" in
       upstream_version = version,
       license_spdx = "MIT AND SGI-B-2.0",
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              cd /tmp
+              gcc -x c - -o t -x none -lEGL <<'EOF'
+              #include <stdio.h>
+              #include <EGL/egl.h>
+              int main(void) {
+                /* client extensions need no display: proves libEGL and its deps load */
+                const char *ext = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
+                printf("EGL client extensions: %s\n", ext ? ext : "(null)");
+                return ext == NULL;
+              }
+              EOF
+              ./t
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

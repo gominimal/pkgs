@@ -13,8 +13,27 @@ export LD=gcc
 # remapped, as nushell and zola do.
 export RUSTFLAGS="-C linker=gcc -C codegen-units=1 -C symbol-mangling-version=v0 --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 
-# Needed for crates that use bindgen / libclang
-export LIBCLANG_PATH="$(dirname $(find /usr/lib -name 'libclang*.so' | head -1))"
+# Needed for crates that use bindgen / libclang (clang-sys searches ONLY this directory
+# when it is set). Pinned to the default `llvm` build dep's /usr/lib rather than a
+# `find /usr/lib -name 'libclang*.so' | head -1` pick: once a prefixed line such as
+# llvm-21 (/usr/lib/llvm-21/lib/libclang.so) shares the closure, that pick depends on
+# directory order. Fail closed unless every libclang in it is the default llvm's major.
+export LIBCLANG_PATH=/usr/lib
+llvm_major=$(/usr/bin/llvm-config --version | cut -d. -f1)
+libclangs=$(find "$LIBCLANG_PATH" -maxdepth 1 -name 'libclang.so*' -exec readlink -f {} + | sort -u)
+if [ -z "$llvm_major" ] || [ -z "$libclangs" ]; then
+  echo "ERROR: no default llvm (/usr/bin/llvm-config) or no libclang.so in $LIBCLANG_PATH" >&2
+  exit 1
+fi
+for lib in $libclangs; do
+  case "${lib##*/}" in
+    "libclang.so.$llvm_major" | "libclang.so.$llvm_major".*) ;;
+    *)
+      echo "ERROR: $lib is not the default llvm's libclang (LLVM $llvm_major)" >&2
+      exit 1
+      ;;
+  esac
+done
 
 # OpenSSL 4: openssl-sys 0.9.117 and openssl 0.10.81 (see build.ncl), applied before
 # the workspace sync below so its registry-pin baseline already carries them.

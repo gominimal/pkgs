@@ -1,5 +1,7 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let diffutils = import "../diffutils/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 
@@ -56,7 +58,7 @@ let version = "2.0.0" in
     format =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, diffutils],
         cmds = [
           [
             "/bin/bash",
@@ -76,7 +78,7 @@ let version = "2.0.0" in
     check_mode =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           [
             "/bin/bash",

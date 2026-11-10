@@ -1,5 +1,7 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let diffutils = import "../diffutils/build.ncl" in
 let go = import "../go/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -54,7 +56,7 @@ let version = "1.3.2" in
     encrypt_decrypt =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, diffutils],
         cmds = [
           ["/bin/bash", "-c", "echo uwu_text > plaintext"],
           ["/bin/age-keygen", "-o", "key.txt"],

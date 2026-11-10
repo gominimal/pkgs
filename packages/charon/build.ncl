@@ -9,6 +9,7 @@
 # the build is hermetic + offline (no `needs { internet }`).
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
@@ -80,7 +81,7 @@ let version = "0.1.304" in
     runs =
       {
         class = 'Standalone,
-        test_deps = [base, rust-nightly-charon, glibc, zlib, gcc, grep],
+        test_deps = [bash-bootstrap, rust-nightly-charon, glibc, zlib, gcc, grep],
         cmds = [
           # --help is before toolchain resolution, so it doesn't need rustup /
           # CHARON_TOOLCHAIN_IS_IN_PATH — just proves the binary links + runs.

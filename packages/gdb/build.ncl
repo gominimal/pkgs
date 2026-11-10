@@ -1,5 +1,7 @@
 let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let expat = import "../expat/build.ncl" in
@@ -97,7 +99,7 @@ let version = "18.1" in
     capabilities =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           # --with-python: gef is a Python extension. Without this gdb reports
           # "Python scripting is not supported in this copy of GDB" and gef

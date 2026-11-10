@@ -1,8 +1,11 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let icu = import "../icu/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
@@ -52,7 +55,9 @@ in
   runtime_deps = [
     bash,
     ca-certificates,
+    coreutils, # the wrappers `cp -a` the runner into a fresh RUNNER_HOME
     glibc,
+    grep, # upstream config.sh checks for ICU with `ldconfig -NXv | grep libicu` and exits if grep fails
     icu,
     openssl,
     # The bundled .NET 8 runtime (sdk 8.0.422 at 2.336.0) dlopens libssl.so.3 /
@@ -77,10 +82,15 @@ in
     smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "test -x /usr/bin/actions-runner"],
-          ["/bin/bash", "-c", "RUNNER_HOME=/tmp/runner /usr/bin/actions-runner --help || true"],
+          # --help's exit status is not the point, but the wrapper's setup is. One
+          # command: each cmd gets a fresh /tmp, so a separate `test -x` sees nothing.
+          ["/bin/bash", "-c", "RUNNER_HOME=/tmp/runner /usr/bin/actions-runner --help || true; test -x /tmp/runner/run.sh"],
+          # The config wrapper runs upstream config.sh's dependency checks (ldd, ldconfig,
+          # grep) before anything else; a tool missing from the closure fails them.
+          ["/bin/bash", "-c", "out=$(RUNNER_HOME=/tmp/rc RUNNER_ALLOW_RUNASROOT=1 /usr/bin/actions-runner-config --help 2>&1); echo \"$out\"; [[ $out != *'is missing'* && $out != *'Can not find'* && -x /tmp/rc/config.sh ]]"],
         ],
       } | Test,
     # CVE-2026-111943: under the wrapper, the bundled node trusts the system
@@ -91,7 +101,7 @@ in
     bundled_node_uses_system_store =
       {
         class = 'Standalone,
-        test_deps = [base, openssl],
+        test_deps = [bash-bootstrap, openssl, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -101,7 +111,7 @@ in
               d=$(mktemp -d); cd "$d"
               openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -keyout ca.key -out ca.pem -days 2 -subj /CN=throwaway-test-ca 2>/dev/null
               openssl req -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -keyout leaf.key -out leaf.csr -subj /CN=localhost 2>/dev/null
-              printf 'subjectAltName=DNS:localhost
+              printf 'subjectAltName=DNS:localhost,IP:127.0.0.1
 basicConstraints=CA:FALSE
 extendedKeyUsage=serverAuth
 ' > leaf.ext
@@ -116,7 +126,7 @@ extendedKeyUsage=serverAuth
               printf '#!/bin/bash
 exec "$@"
 ' > rh/run.sh; chmod +x rh/run.sh
-              js="require('https').get('https://localhost:18443/', (r) => { console.log('ok', r.statusCode); process.exit(0) }).on('error', (e) => { console.log('refused', e.code); process.exit(1) })"
+              js="require('https').get('https://127.0.0.1:18443/', (r) => { console.log('ok', r.statusCode); process.exit(0) }).on('error', (e) => { console.log('refused', e.code); process.exit(1) })"
               for n in node20 node24; do
                 echo "$n via wrapper:"
                 RUNNER_HOME=$d/rh SSL_CERT_FILE=$d/bundle.pem /usr/bin/actions-runner "externals/$n/bin/node" -e "$js"

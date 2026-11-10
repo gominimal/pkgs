@@ -1,5 +1,5 @@
 let { BuildSpec, Test, .. } = import "minimal.ncl" in
-let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let claude-code = import "../claude-code/build.ncl" in
 let claude-code-minimal-plugin = import "../claude-code-minimal-plugin/build.ncl" in
 
@@ -28,7 +28,7 @@ let claude-code-minimal-plugin = import "../claude-code-minimal-plugin/build.ncl
     both_halves_present =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "set -e; test -x /usr/bin/claude; test -f /usr/share/claude/plugins/minimal/.claude-plugin/plugin.json"],
         ],

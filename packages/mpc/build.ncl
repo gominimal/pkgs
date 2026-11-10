@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let toolchain = import "../toolchain/build.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
@@ -113,4 +114,37 @@ let version = "1.4.1" in
         name = "mpc",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              cd /tmp
+              gcc -x c - -o t -x none -lmpc -lmpfr -lgmp <<'EOF'
+              #include <stdio.h>
+              #include <mpc.h>
+              int main(void) {
+                mpc_t z;
+                mpc_init2(z, 128);
+                mpc_set_si_si(z, 0, 1, MPC_RNDNN);
+                mpc_sqr(z, z, MPC_RNDNN);
+                double re = mpfr_get_d(mpc_realref(z), MPFR_RNDN);
+                printf("mpc %s i^2=%f\n", mpc_get_version(), re);
+                mpc_clear(z);
+                return re != -1.0;
+              }
+              EOF
+              ./t
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec
