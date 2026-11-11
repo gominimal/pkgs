@@ -49,6 +49,8 @@ let version = "5.3" in
   outputs = {
     bash = { glob = "usr/bin/bash" } | OutputBin,
     sh = { glob = "usr/bin/sh" } | OutputBin,
+    # #!/bin/sh script; the sh it needs is this package, which cannot be its own runtime dep.
+    bashbug = { glob = "usr/bin/bashbug", allow_missing_interpreter = true } | OutputBin,
 
     mans = { glob = "usr/share/man/**" } | OutputData,
     includes = { glob = "usr/include/**" } | OutputData,

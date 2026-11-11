@@ -43,6 +43,7 @@ let version = "2.15.4" in
   outputs = {
     xmllint = { glob = "usr/bin/xmllint" } | OutputBin,
     xmlcatalog = { glob = "usr/bin/xmlcatalog" } | OutputBin,
+    "xml2-config" = { glob = "usr/bin/xml2-config", allow_missing_interpreter = true } | OutputBin,
 
     libs = { glob = "usr/lib/libxml2.so*" } | OutputLib,
     includes = { glob = "usr/include/libxml2/**" } | OutputData,

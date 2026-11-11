@@ -36,6 +36,7 @@ let version = "1.1.45" in
 
   outputs = {
     xsltproc = { glob = "usr/bin/xsltproc" } | OutputBin,
+    "xslt-config" = { glob = "usr/bin/xslt-config", allow_missing_interpreter = true } | OutputBin,
 
     libxslt = { glob = "usr/lib/libxslt.so*" } | OutputLib,
     libexslt = { glob = "usr/lib/libexslt.so*" } | OutputLib,
