@@ -74,7 +74,9 @@ let version = "16.1.1" in
     include version,
   },
   outputs = {
-    dot = { glob = "usr/bin/dot" } | OutputBin,
+    # Every tool `make install` puts in usr/bin: dot and its layout links (neato,
+    # fdp, circo, ...), gvpr, the graph filters, and two sh scripts.
+    bins = { glob = "usr/bin/*", allow_missing_interpreter = true } | OutputBin,
 
     libs = { glob = "usr/lib/lib*.so*" } | OutputLib,
     graphviz_plugins = { glob = "usr/lib/graphviz/*.so*" } | OutputLib,

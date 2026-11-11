@@ -37,6 +37,7 @@ let version = "0.22.1" in
 
   outputs = {
     crane = { glob = "usr/bin/crane" } | OutputBin,
+    gcrane = { glob = "usr/bin/gcrane" } | OutputBin,
   },
 
   attrs =

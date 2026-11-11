@@ -40,6 +40,8 @@ let version = "3.274.1" in
     pulumi-language-go = { glob = "usr/bin/pulumi-language-go" } | OutputBin,
     pulumi-language-nodejs = { glob = "usr/bin/pulumi-language-nodejs" } | OutputBin,
     pulumi-language-python = { glob = "usr/bin/pulumi-language-python" } | OutputBin,
+    # The python language host execs this script to run the program.
+    pulumi-language-python-exec = { glob = "usr/bin/pulumi-language-python-exec", allow_missing_interpreter = true } | OutputBin,
   },
 
   attrs =

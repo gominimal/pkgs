@@ -84,6 +84,7 @@ let version = "18.1" in
     gdb_add_index = { glob = "usr/bin/gdb-add-index" } | OutputBin,
     gcore = { glob = "usr/bin/gcore" } | OutputBin,
     gdbserver = { glob = "usr/bin/gdbserver" } | OutputBin,
+    gstack = { glob = "usr/bin/gstack" } | OutputBin,
     # gdb's Python runtime support files — the `python` directory it loads its
     # own pretty-printers and commands from.
     gdb_data = { glob = "usr/share/gdb/**" } | OutputData,

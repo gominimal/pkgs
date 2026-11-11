@@ -37,6 +37,7 @@ let version = "9.3" in
 
   outputs = {
     bin = { glob = "usr/bin/nano" } | OutputBin,
+    rnano = { glob = "usr/bin/rnano" } | OutputBin,
     languages = { glob = "usr/share/nano/*" } | OutputData,
     man = { glob = "usr/share/man/**/*" } | OutputData,
   },

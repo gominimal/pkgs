@@ -34,6 +34,7 @@ let version = "0.75.0" in
 
   outputs = {
     fzf = { glob = "usr/bin/fzf" } | OutputBin,
+    fzf-tmux = { glob = "usr/bin/fzf-tmux", allow_missing_interpreter = true } | OutputBin,
 
     completions = { glob = "usr/share/bash-completion/completions/*" } | OutputData,
   },

@@ -26,6 +26,7 @@ let version = "7.3" in
   cmd = "./build.sh",
   outputs = {
     strace = { glob = "usr/bin/strace" } | OutputBin,
+    strace-log-merge = { glob = "usr/bin/strace-log-merge", allow_missing_interpreter = true } | OutputBin,
 
     mans = { glob = "usr/share/man/**" } | OutputData,
   },
