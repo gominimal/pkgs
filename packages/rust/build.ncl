@@ -1,6 +1,7 @@
-let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let llvm = import "../llvm/build.ncl" in
@@ -91,5 +92,24 @@ let version = "1.99.1" in
 
   tests = {
     smoketest = standaloneTest "/usr/bin/rustc --version",
+    # No `-C linker` anywhere: the compiled-in default linker (bootstrap.toml `default-linker`)
+    # must exist.  toolchain supplies gcc, binutils and glibc's crt/libc; it stays a test dep
+    # rather than a runtime dep so rust's closure does not grow.
+    default_linker_rustc =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          ["/usr/bin/bash", "-c", "printf 'fn main() { println!(\"hello rust\"); }\\n' > hello.rs && /usr/bin/rustc hello.rs -o h && out=\"$(./h)\" && [ \"$out\" = 'hello rust' ]"],
+        ],
+      } | Test,
+    default_linker_cargo =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          ["/usr/bin/bash", "-c", "export CARGO_HOME=\"$PWD/cargo-home\" RUSTC=/usr/bin/rustc && /usr/bin/cargo new --offline --vcs none hi && cd hi && /usr/bin/cargo build --offline && out=\"$(./target/debug/hi)\" && [ \"$out\" = 'Hello, world!' ]"],
+        ],
+      } | Test,
   },
 } | BuildSpec
