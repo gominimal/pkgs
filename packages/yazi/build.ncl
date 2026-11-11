@@ -1,4 +1,4 @@
-let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let rust = import "../rust/build.ncl" in
@@ -47,7 +47,8 @@ let version = "26.9.1" in
   },
 
   outputs = {
-    yazi = { glob = "usr/bin/yazi" } | OutputLib,
+    yazi = { glob = "usr/bin/yazi" } | OutputBin,
+    ya = { glob = "usr/bin/ya" } | OutputBin,
   },
 
   attrs =
@@ -65,5 +66,6 @@ let version = "26.9.1" in
 
   tests = {
     smoketest = standaloneTest "/usr/bin/yazi --version",
+    ya_version = standaloneTest "/usr/bin/ya --version",
   },
 } | BuildSpec

@@ -1,5 +1,8 @@
-let { Attrs, BuildSpec, Local, Needs, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -42,7 +45,8 @@ let version = "0.13.7" in
     include version,
   },
   outputs = {
-    minimal = { glob = "usr/bin/uv" } | OutputLib,
+    minimal = { glob = "usr/bin/uv" } | OutputBin,
+    uvx = { glob = "usr/bin/uvx" } | OutputBin,
     config = { glob = "etc/uv/uv.toml" } | OutputData,
   },
 
@@ -72,7 +76,7 @@ let version = "0.13.7" in
     system_certs =
       {
         class = 'Standalone,
-        test_deps = [base, ca-certificates],
+        test_deps = [bash-bootstrap, ca-certificates, coreutils, grep],
         cmds = [
           [
             "/bin/bash",
@@ -95,6 +99,13 @@ let version = "0.13.7" in
             "%
           ],
         ],
+      } | Test,
+    # uvx finds uv next to itself; --version answers without the network.
+    uvx_version =
+      {
+        class = 'Standalone,
+        test_deps = [],
+        cmds = [["/usr/bin/uvx", "--version"]],
       } | Test,
   },
 } | BuildSpec

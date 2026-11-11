@@ -1,4 +1,4 @@
-let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -30,7 +30,7 @@ let version = "0.7.0" in
   cmd = "./build.sh",
 
   outputs = {
-    ut = { glob = "usr/bin/ut" } | OutputLib,
+    ut = { glob = "usr/bin/ut" } | OutputBin,
   },
   attrs =
     {

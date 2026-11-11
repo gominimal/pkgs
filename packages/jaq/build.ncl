@@ -1,5 +1,7 @@
-let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
@@ -30,7 +32,7 @@ let version = "3.1.2" in
   cmd = "./build.sh",
 
   outputs = {
-    jaq = { glob = "usr/bin/jaq" } | OutputLib,
+    jaq = { glob = "usr/bin/jaq" } | OutputBin,
   },
   attrs =
     {
@@ -49,7 +51,7 @@ let version = "3.1.2" in
     filtering =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "echo '[{\"name\":\"x\",\"val\":10},{\"name\":\"y\",\"val\":20},{\"name\":\"z\",\"val\":5}]' > items.json"],
           ["/bin/bash", "-c", "jaq '[.[] | select(.val > 10)]' items.json > filtered.json"],
