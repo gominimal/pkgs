@@ -21,6 +21,11 @@ let libksba = import "../libksba/build.ncl" in
 let libassuan = import "../libassuan/build.ncl" in
 let libgcrypt = import "../libgcrypt/build.ncl" in
 let libgpg-error = import "../libgpg-error/build.ncl" in
+let bash = import "../bash/build.ncl" in
+let bzip2 = import "../bzip2/build.ncl" in
+let gettext = import "../gettext/build.ncl" in
+let readline = import "../readline/build.ncl" in
+let zlib = import "../zlib/build.ncl" in
 let patch = import "../patch/build.ncl" in
 # SOURCE: upstream's official release tarball (gnupg.org), mirrored to gs://,
 # NOT the GitHub auto-generated archive. Still a full source build — we compile
@@ -56,6 +61,9 @@ let version = "2.5.24" in
     m4,
     make,
     pkgconf,
+    # autoreconf runs autopoint: configure.ac calls AM_GNU_GETTEXT. This used to
+    # arrive only through libgpg-error's and npth's runtime_deps.
+    gettext,
     toolchain,
     glibc,
     # gnupg's five-library stack, all packaged alongside it in this bundle.
@@ -105,6 +113,19 @@ let version = "2.5.24" in
     libusb,
     sqlite,
     gnutls,
+    # Read from the built binaries' DT_NEEDED: gpg, gpgv and gpgsplit link
+    # libz.so.1 and libbz2.so.1.0; gpg, gpgsm, gpg-card, gpg-connect-agent and
+    # gpgscm link libreadline.so.8 (which used to arrive only through
+    # libassuan's runtime_deps).
+    bzip2,
+    readline,
+    zlib,
+    # addgnupghome, applygnupgdefaults, gpg-authcode-sign.sh and the libexec
+    # gpg-wks-client wrapper are /bin/sh scripts using cp, mkdir, mktemp, rm
+    # and cat. Both used to arrive only through the libraries' autotools
+    # runtime_deps.
+    bash,
+    coreutils,
   ],
   attrs =
     {
