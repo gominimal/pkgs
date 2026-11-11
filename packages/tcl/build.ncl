@@ -8,6 +8,8 @@ let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
 let version = "8.6.18" in
+# tclsh and the script library are named for the major.minor series (tclsh8.6, /usr/lib/tcl8.6).
+let api = std.string.join "." (std.array.slice 0 2 (std.string.split "." version)) in
 {
   name = "tcl",
   build_deps = [
@@ -28,7 +30,7 @@ let version = "8.6.18" in
   cmd = "./build.sh",
   build_args = { include version },
   outputs = {
-    "tclsh8.6" = { glob = "usr/bin/tclsh8.6" } | OutputBin,
+    tclsh_versioned = { glob = "usr/bin/tclsh%{api}" } | OutputBin,
     libs = { glob = "usr/lib/**/*.{a,so*}" } | OutputLib,
 
     datas = { glob = "usr/lib/**/{tclIndex,*.c,*.tm,*.uuid,*.tcl,*.sh,*.enc,*.msg}" } | OutputData,
@@ -54,7 +56,7 @@ let version = "8.6.18" in
       {
         class = 'Standalone,
         test_deps = [bash-bootstrap, grep],
-        cmds = [["/bin/bash", "-c", "echo 'puts [expr {6*7}]' | /usr/bin/tclsh8.6 | grep -qx 42"]],
+        cmds = [["/bin/bash", "-c", "echo 'puts [expr {6*7}]' | /usr/bin/tclsh%{api} | grep -qx 42"]],
       } | Test,
   },
 } | BuildSpec

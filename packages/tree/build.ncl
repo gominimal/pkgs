@@ -77,7 +77,7 @@ let version = "2.3.2" in
         cmds = [
           # Assert it actually walks a tree, not just that it exits 0.
           ["/bin/bash", "-c", "mkdir -p /tmp/t/a/b && /bin/tree /tmp/t | grep -q b"],
-          ["/bin/bash", "-c", "/bin/tree --version | grep -q 2.3.2"],
+          ["/bin/bash", "-c", "/bin/tree --version | grep -q %{version}"],
         ],
       } | Test,
   },

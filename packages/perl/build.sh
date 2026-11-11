@@ -1,8 +1,9 @@
 #!/bin/sh
 set -e
+: "${MINIMAL_ARG_VERSION:?build_args must include version}"
 
-tar -xof perl-5.44.0.tar.xz
-cd perl-5.44.0
+tar -xof "perl-${MINIMAL_ARG_VERSION}.tar.xz"
+cd "perl-${MINIMAL_ARG_VERSION}"
 
 # Upstream make -j race: Getopt::Long (2.57+, perl5#21629) does `use base`,
 # but write_buildcustomize.pl only puts dist/base/lib on miniperl's bootstrap
@@ -52,20 +53,23 @@ cf_email='build@builder'
 perladmin='build@builder'
 EOF
 
-sh Configure  -des                                          \
-             -D cc=gcc                                     \
-             -D prefix=/usr                                 \
-             -D vendorprefix=/usr                           \
-             -D privlib=/usr/lib/perl5/5.42/core_perl      \
-             -D archlib=/usr/lib/perl5/5.42/core_perl      \
-             -D sitelib=/usr/lib/perl5/5.42/site_perl      \
-             -D sitearch=/usr/lib/perl5/5.42/site_perl     \
-             -D vendorlib=/usr/lib/perl5/5.42/vendor_perl  \
-             -D vendorarch=/usr/lib/perl5/5.42/vendor_perl \
-             -D man1dir=/usr/share/man/man1                \
-             -D man3dir=/usr/share/man/man3                \
-             -D pager="/usr/bin/less -isR"                 \
-             -D useshrplib                                 \
+# @INC directories are keyed by the major.minor series (5.44.0 -> 5.44).
+PERL_API="${MINIMAL_ARG_VERSION%.*}"
+
+sh Configure  -des                                              \
+             -D cc=gcc                                          \
+             -D prefix=/usr                                     \
+             -D vendorprefix=/usr                               \
+             -D privlib=/usr/lib/perl5/$PERL_API/core_perl      \
+             -D archlib=/usr/lib/perl5/$PERL_API/core_perl      \
+             -D sitelib=/usr/lib/perl5/$PERL_API/site_perl      \
+             -D sitearch=/usr/lib/perl5/$PERL_API/site_perl     \
+             -D vendorlib=/usr/lib/perl5/$PERL_API/vendor_perl  \
+             -D vendorarch=/usr/lib/perl5/$PERL_API/vendor_perl \
+             -D man1dir=/usr/share/man/man1                     \
+             -D man3dir=/usr/share/man/man3                     \
+             -D pager="/usr/bin/less -isR"                      \
+             -D useshrplib                                      \
              -D usethreads
 
 make -j$(nproc)

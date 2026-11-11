@@ -24,6 +24,9 @@ let version = "3.0.10" in
   ],
 
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
   outputs = {
     pkgconf = { glob = "usr/bin/pkgconf" } | OutputBin,
     bomtool = { glob = "usr/bin/bomtool" } | OutputBin,

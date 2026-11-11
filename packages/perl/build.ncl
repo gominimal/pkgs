@@ -55,6 +55,9 @@ let version = "5.44.0" in
   ],
 
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
   outputs = {
     bins = { glob = "usr/bin/*" } | OutputBin,
     perl_data = { glob = "usr/lib/perl*/**/*.{pl,pm,pod}" } | OutputData,
