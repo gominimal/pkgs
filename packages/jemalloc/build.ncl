@@ -51,6 +51,9 @@ let version = "5.4.0" in
     # interpreter check is waived (cf. pcre2-config). jeprof (perl) is NOT
     # shipped: it would need a perl runtime_dep to be a working tool.
     config = { glob = "usr/bin/jemalloc-config", allow_missing_interpreter = true } | OutputBin,
+    # jeprof (perl heap-profile reader) and jemalloc.sh (sh LD_PRELOAD wrapper).
+    jeprof = { glob = "usr/bin/jeprof", allow_missing_interpreter = true } | OutputBin,
+    "jemalloc.sh" = { glob = "usr/bin/jemalloc.sh", allow_missing_interpreter = true } | OutputBin,
   },
   runtime_deps = [glibc, subsetOf gcc ["libgcc", "libstdcpp"]],
   attrs =

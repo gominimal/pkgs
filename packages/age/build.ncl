@@ -37,6 +37,8 @@ let version = "1.3.2" in
   outputs = {
     age = { glob = "usr/bin/age" } | OutputBin,
     age-keygen = { glob = "usr/bin/age-keygen" } | OutputBin,
+    age-inspect = { glob = "usr/bin/age-inspect" } | OutputBin,
+    age-plugin-batchpass = { glob = "usr/bin/age-plugin-batchpass" } | OutputBin,
   },
 
   attrs =

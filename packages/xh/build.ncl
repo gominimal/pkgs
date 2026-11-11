@@ -33,6 +33,8 @@ let version = "0.26.3" in
   cmd = "./build.sh",
   outputs = {
     xh = { glob = "usr/bin/xh" } | OutputBin,
+    # Invoked as xhs, xh defaults to https (upstream documents the link).
+    xhs = { glob = "usr/bin/xhs" } | OutputBin,
   },
   runtime_deps = [glibc, subsetOf gcc ["libgcc"]],
   attrs =

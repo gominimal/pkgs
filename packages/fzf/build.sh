@@ -9,5 +9,6 @@ export GOROOT=/usr/go
 go build -trimpath -ldflags "-buildid= -s -w -X main.version=${FZF_VERSION} -X main.revision=${FZF_REVISION}" -o bin/fzf
 
 install -D -m 0755 bin/fzf "$OUTPUT_DIR/usr/bin/fzf"
+install -D -m 0755 bin/fzf-tmux "$OUTPUT_DIR/usr/bin/fzf-tmux"
 
 install -D -m 0755 shell/completion.bash "$OUTPUT_DIR/usr/share/bash-completion/completions/fzf"

@@ -29,8 +29,8 @@ let version = "9.2.1316" in
     include version,
   },
   outputs = {
-    vim = { glob = "usr/bin/vim" } | OutputBin,
-    vimdiff = { glob = "usr/bin/vimdiff" } | OutputBin,
+    # vim, its ex/view/rvim/rview/vimdiff links, xxd and the vimtutor sh script.
+    bins = { glob = "usr/bin/*", allow_missing_interpreter = true } | OutputBin,
 
     data = { glob = "usr/share/**/*" } | OutputData,
   },
