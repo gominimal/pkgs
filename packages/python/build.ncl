@@ -68,7 +68,7 @@ let version = "3.14.10" in
     openssl,
     glibc,
     zlib,
-    bzip2, # _bz2 links libbz2 (bzip2 reaches the build through base)
+    bzip2, # _bz2 links libbz2
     subsetOf util-linux ["libuuid"],
     xz,
   ],
@@ -122,7 +122,7 @@ let version = "3.14.10" in
       } | Test,
 
     # zoneinfo resolves IANA zone names from the system tz database
-    # (/usr/share/zoneinfo, the tzdata package; base used to bring it in)
+    # (/usr/share/zoneinfo, from the tzdata package)
     smoketest_zoneinfo =
       {
         class = 'Standalone,
@@ -468,10 +468,10 @@ let version = "3.14.10" in
       } | Test,
 
     # CVE-2026-15310 regression: FAILS on stock 3.14.7, where one read(8192)
-    # of a 32 MiB all-zero LZMA (and bzip2, if built) member peaks at ~80+ MiB
-    # because the whole first compressed chunk is expanded at once. 3.14.8
-    # ships the gh-156002 fix: the peak is the decoder state plus one bounded
-    # chunk.
+    # of a 32 MiB all-zero LZMA or bzip2 member peaks at ~80+ MiB because
+    # the whole first compressed chunk is expanded at once. 3.14.8 ships the
+    # gh-156002 fix: the peak is the decoder state plus one bounded chunk.
+    # Both modules are required: a missing lzma or bz2 fails the test.
     zipfile_read_bounds_decompression =
       {
         class = 'Standalone,
@@ -490,7 +490,7 @@ let version = "3.14.10" in
                   try:
                       __import__(mod)
                   except ImportError:
-                      print('skip: %s module not built' % mod, file=sys.stderr)
+                      print('missing: %s module does not import' % mod, file=sys.stderr)
                       continue
                   methods.append((name, const))
               for need in ('lzma', 'bzip2'):
