@@ -17,10 +17,15 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
-# stage0 = the rustc-1.98.1 rung on both arches (1.99.0's src/stage0 pins 1.98.0; x.py accepts any
+# stage0 = rustc-1.98.1 (the gen-13 prebuilt) on both arches (1.99.0's src/stage0 pins 1.98.0; x.py accepts any
 # 1.98.x), hydrated read-only at /usr/lib/rustc-1.98.1.  The stage0 is injected into bootstrap.toml
 # [build] rustc/cargo below; x.py never downloads one, and a missing stage0 fails the build.
 STAGE0_PREFIX=/usr/lib/rustc-1.98.1
+# The stage0's librustc_driver needs libLLVM.so.21.1 and carries only an $ORIGIN/../lib RUNPATH;
+# neither gen-13 tarball bundles a libLLVM, so it comes from the frozen, prefixed llvm-21 (the default
+# llvm is a later major). LD_LIBRARY_PATH is the one way to reach it; the compilers x.py builds link
+# the default llvm's libLLVM under another soname, so this shadows nothing of theirs.
+export LD_LIBRARY_PATH=/usr/lib/llvm-21/lib
 SEED_RUSTC="${STAGE0_PREFIX}/bin/rustc"
 SEED_CARGO="${STAGE0_PREFIX}/bin/cargo"
 [ -x "$SEED_RUSTC" ] || { echo "rust: FATAL stage0 rustc missing at $SEED_RUSTC — the rustc-1.98.1 package is required" >&2; exit 1; }
