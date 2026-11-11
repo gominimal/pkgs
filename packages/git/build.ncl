@@ -14,15 +14,15 @@ let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "2.56.0" in
+let version = "2.56.1" in
 {
   name = "git",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://www.kernel.org/pub/software/scm/git/git-2.56.0.tar.xz
+      # https://www.kernel.org/pub/software/scm/git/git-2.56.1.tar.xz
       url = "gs://minimal-staging-archives/git-%{version}.tar.xz",
-      sha256 = "26c56c296b38c0695b26fa95f475f1d01704d2d38e73465ca30b0b2f5dc789d3",
+      sha256 = "f0b0bf89264b9bd2e1c640363e7529643989da76281600473c50745cd34a607f",
       extract = true,
       strip_prefix = "git-%{version}",
     } | Source,
