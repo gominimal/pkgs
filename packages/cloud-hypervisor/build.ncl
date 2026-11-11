@@ -7,7 +7,7 @@ let openssl = import "../openssl/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "54.0" in
+let version = "54.1" in
 {
   name = "cloud-hypervisor",
 
@@ -19,7 +19,7 @@ let version = "54.0" in
     { file = "security-floors-lock.patch" } | Local,
     {
       url = "https://github.com/cloud-hypervisor/cloud-hypervisor/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "000b1194ce4fcc05c496854de96a2b911b91eea59a5e09250e1790f1d6fd2b1c",
+      sha256 = "766e91fc0f6be59bb52b241fd0e500351f9769e0b1655353b20306728afb24a6",
       extract = true,
       strip_prefix = "cloud-hypervisor-%{version}",
     } | Source,
