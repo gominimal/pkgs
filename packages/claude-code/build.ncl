@@ -12,9 +12,9 @@ let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let { version, amd64_sha256, arm64_sha256, gcs_bucket } = {
   gcs_bucket = "https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases",
-  version = "2.1.321",
-  amd64_sha256 = "426c33815ca6645a772f722fbff10dbf2cbdb124a8aeab733c1365dbf8bbf61f",
-  arm64_sha256 = "6bea0633074627ba79328e00115ed0588c3acf906a8463612b25db696dbfd3f0",
+  version = "2.1.322",
+  amd64_sha256 = "bfb3703ad5380242328459bc62ada4bde8ae7ba57c6e1eeadb9c00e08874c478",
+  arm64_sha256 = "f220ca50ea4f3222043ff83cc224a1262e0196e9897acc0871efa94235b0c1fd",
 }
 in
 
