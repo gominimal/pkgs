@@ -22,7 +22,7 @@ let undici = "6.28.0" in
 # The llhttp that undici release vendors (its build.sh pins the wasm to it).
 let undici_llhttp = "8.1.0" in
 
-let version = "16.4.5" in
+let version = "16.4.6" in
 # The native SWC compiler Next loads at build/dev time. Upstream publishes it as a
 # per-platform npm package (`@next/swc-linux-<arch>-gnu`) that `next` lists as an
 # optionalDependency; the source build above does not produce it. Without it, every
@@ -34,15 +34,15 @@ let version = "16.4.5" in
 # (`rust-toolchain.toml`: nightly-2026-08-20), which pkgs doesn't package. Tracked
 # in gominimal/pkgs#985; `binary_from` below records the exception.
 # Bump these alongside `version`: the binary must match next exactly.
-let swc_amd64_sha256 = "01e56b1d3607d068f8f96601256264f73baaf1a5f5fd4c9e2fc8f7f7e9c2ea99" in
-let swc_arm64_sha256 = "072340019c1fcaa040f88eef2d670616cedb028d55419af260dd9606119fd019" in
+let swc_amd64_sha256 = "9695f19eb812ce0f0de0eb6a1065a4ae040270d5eaef3962e7082cfd8c709e0d" in
+let swc_arm64_sha256 = "e253ba86f5a1242108600445612f533b94c6d6a6a31e84de2bbc05a8ad0bb85f" in
 {
   name = "next",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/vercel/next.js/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "15da77d00c2ca86733c783c39a7dd65c77fbd48413ead4560316e8d96d2cd352",
+      sha256 = "248d0ea591b75872ae83215f17c244fa107172cd4a3870a6bcababa20d4ceb26",
       extract = true,
       strip_prefix = "next.js-%{version}",
     } | Source,
