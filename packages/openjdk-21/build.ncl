@@ -35,6 +35,8 @@ let version = "21.0.2" in
         } | Source,
       { arch = 'Arm64, .. } =>
         {
+          # source-hash-guard: allow 8c397907dd69cd4c7991e9843d812353955bf72568f2f96abdd903e65559fe25 gen-15 re-publishes the gen-13 arm64 object
+          # unchanged (generations/gen-15/manifest.json lists this sha256 at this url)
           url = "gs://minimal-bootstrap/gen-15/sha256/8c397907dd69cd4c7991e9843d812353955bf72568f2f96abdd903e65559fe25/openjdk-21-21.0.2-aarch64.tar.zst",
           sha256 = "8c397907dd69cd4c7991e9843d812353955bf72568f2f96abdd903e65559fe25",
           extract = true,
