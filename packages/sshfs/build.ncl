@@ -11,14 +11,14 @@ let glibc = import "../glibc/build.ncl" in
 let libfuse = import "../libfuse/build.ncl" in
 let glib = import "../glib/build.ncl" in
 
-let version = "3.7.6" in
+let version = "3.7.7" in
 {
   name = "sshfs",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libfuse/sshfs/sshfs-%{version}.tar.xz",
-      sha256 = "6a1bcb31450a077e9cb1b7ff158c71de34db697c3c0da6cb362502131e495893",
+      sha256 = "893013ce6cdbf6f9fa790c9a4ca2b07eea95139f965f5c14f06b458cbe17f00d",
       extract = true,
       strip_prefix = "sshfs-%{version}",
     } | Source,
