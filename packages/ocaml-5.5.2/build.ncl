@@ -47,10 +47,12 @@ let version = "5.5.2" in
     {
       upstream_version = version,
       license_spdx = "LGPL-2.1-only WITH OCaml-LGPL-linking-exception",
+      # Same upstream as packages/ocaml. A GithubRepo provenance is what lets the
+      # vuln scan query advisories for it; the Website form left this seed dark.
       source_provenance = {
-        category = 'Website,
-        homepage = "https://ocaml.org/",
-        downloads_page = "https://caml.inria.fr/pub/distrib/ocaml-5.5/",
+        category = 'GithubRepo,
+        owner = "ocaml",
+        repo = "ocaml",
       },
     } | Attrs,
 } | BuildSpec
