@@ -34,6 +34,21 @@ sed -i '/package_bindingtester/s/^/#/' bindings/CMakeLists.txt
 # Fix toml11 compatibility with CMake 4.x (old cmake_minimum_required)
 sed -i '/-Dtoml11_BUILD_TEST/a\      -DCMAKE_POLICY_VERSION_MINIMUM:STRING=3.5' cmake/FDBComponents.cmake
 
+# C++20 forbids naming a constructor with a template-id (`Promise<T>(...)`
+# inside `class Promise`); gcc 16 rejects it (-Wtemplate-id-cdtor, found by
+# the gcc 16.2 world-build canary, gominimal/pkgmgr-rs#1182). Upstream still
+# has all four on main. The plain name means the same thing in every standard,
+# so this is a no-op for gcc 15. sed -i is silent on a miss, so check after.
+sed -i 's/explicit Promise<T>(SAV<T>\* ptr)/explicit Promise(SAV<T>* ptr)/' flow/include/flow/flow.h
+sed -i 's/explicit ReplyPromise<T>(SAV<T>\* ptr)/explicit ReplyPromise(SAV<T>* ptr)/' fdbrpc/include/fdbrpc/fdbrpc.h
+sed -i 's/explicit IteratorImpl<isConst>(/explicit IteratorImpl(/' fdbrpc/include/fdbrpc/RangeMap.h flow/include/flow/IndexedSet.h
+if grep -nE 'explicit (Promise<T>|ReplyPromise<T>|IteratorImpl<isConst>)\(' \
+  flow/include/flow/flow.h fdbrpc/include/fdbrpc/fdbrpc.h \
+  fdbrpc/include/fdbrpc/RangeMap.h flow/include/flow/IndexedSet.h; then
+  echo "foundationdb: template-id constructor fix did not apply" >&2
+  exit 1
+fi
+
 cmake -B build -G Ninja \
   -DCMAKE_INSTALL_PREFIX=/usr \
   -DCMAKE_BUILD_TYPE=Release \
