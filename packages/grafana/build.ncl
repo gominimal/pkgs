@@ -4,10 +4,10 @@ let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "13.3.0" in
+let version = "13.3.1" in
 
-let amd64_sha256 = "cec8f98cc59bc1a1945833b652371a073be678c5c159a9b1695ad63c04fae5a7" in
-let arm64_sha256 = "07015a0c34a8cfad8b3548984a86a7afe689e1929f5f77d9ae8f7636429e67fe" in
+let amd64_sha256 = "6acf8939dd2f73332cbcafc27a33973fb1115b8867e7ffa3223c6e2ecbed8531" in
+let arm64_sha256 = "a96fa3dfe94eebb036e53bb4c9c19a9b35bb19fb42f788baf17000f8b6972b33" in
 
 {
   name = "grafana",
