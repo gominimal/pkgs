@@ -99,14 +99,12 @@ in
     {
       upstream_version = version,
       binary_from = "https://storage.googleapis.com/cloud-sdk-release",
-      # `Pixar` + `Python-2.0.1` from auto-scan were false positives:
-      # `Pixar` matched a docstring in pygments' USD lexer (the file
-      # itself is BSD-licensed; "Pixar" is the format it parses), and
-      # `Python-2.0.1` matched a literal in packaging's SPDX-IDs
-      # database file (data table, not licensed code). The
-      # `Python-2.0` here is the bundled CPython interpreter's real
-      # license. Tracked at pkgmgr-rs#129.
-      license_spdx = "(Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND MIT AND MIT-0 AND Python-2.0)",
+      # `Pixar` from auto-scan was a false positive: it matched a
+      # docstring in pygments' USD lexer (the file itself is
+      # BSD-licensed; "Pixar" is the format it parses). Tracked at
+      # pkgmgr-rs#129. `Python-2.0.1` is the bundled CPython
+      # interpreter's license, the same id packages/python declares.
+      license_spdx = "(Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND MIT AND MIT-0 AND Python-2.0.1)",
       env_dir_mappings = [{ read_only = false, path = "~/.config/gcloud", class = 'Credential }],
     } | Attrs,
 } | BuildSpec
