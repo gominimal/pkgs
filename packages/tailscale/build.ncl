@@ -5,14 +5,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let iproute2 = import "../iproute2/build.ncl" in
 
-let version = "1.104.5" in
+let version = "1.104.6" in
 {
   name = "tailscale",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/tailscale/tailscale/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "0704fa4ce8624463ce421f45f0d20ae8d710b9ee7354eaa1f4a772e9a3cd4ded",
+      sha256 = "a6ea0771776ab9d3b93147cc221ad02f1b75073ce34380bb29d58b7df9863f44",
       extract = true,
       strip_prefix = "tailscale-%{version}",
     } | Source,
