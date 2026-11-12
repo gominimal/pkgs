@@ -3,6 +3,7 @@ let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let git = import "../git/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
 let curl = import "../curl/build.ncl" in
@@ -15,6 +16,9 @@ let version = "b12110" in
   name = "llama.cpp",
   build_deps = [
     { file = "build.sh" } | Local,
+    # CVE-2023-45663: upstream stb's TGA/HDR fix (nothings/stb cd44845) for the
+    # vendored stb_image 2.30. See build.sh.
+    { file = "stb-cve-2023-45663.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/ggml-org/llama.cpp/%{version}.tar.gz",
       sha256 = "442a8ec2c5e8b8895175abfcede851964572370f0a56b33166c94905260da008",
@@ -33,6 +37,7 @@ let version = "b12110" in
     } | Source,
     base,
     git,
+    patch,
     make,
     cmake,
     toolchain,

@@ -28,6 +28,18 @@ test -s tools/ui/dist/index.html || {
 }
 find tools/ui/dist -exec touch -h -d @315532800 {} +
 
+# CVE-2023-45663: the vendored stb_image 2.30 ignores stbi__getn's return in the
+# TGA and HDR loaders, so a short file leaves uninitialized heap/stack in the
+# decoded pixels. llama-server decodes image_url data with stbi_load_from_memory
+# and every stb_image decoder is compiled in. The patch is upstream's own fix,
+# nothings/stb cd44845 ("stb_image: Fix bugs in TGA and HDR", v2.31), unchanged.
+# Both hashes are checked, so a different vendored copy fails here instead of
+# patching the wrong file, and a partial apply cannot pass. Drop when llama.cpp
+# vendors stb_image >= 2.31.
+echo "594c2fe35d49488b4382dbfaec8f98366defca819d916ac95becf3e75f4200b3  vendor/stb/stb_image.h" | sha256sum -c -
+patch -Np1 -i ./stb-cve-2023-45663.patch
+echo "a604136650368a391554f4a4b45f285d4c8fe94c7bf28a414b37edd28407899e  vendor/stb/stb_image.h" | sha256sum -c -
+
 # GGML_NATIVE=OFF is a guard: ggml already defaults it OFF when SOURCE_DATE_EPOCH is
 # set (the sandbox sets it), and -march=native would make the code follow the build
 # host's CPU instead of the explicit $MARCH in CFLAGS.
