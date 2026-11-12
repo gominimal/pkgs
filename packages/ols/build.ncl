@@ -1,5 +1,8 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let odin = import "../odin/build.ncl" in
 let util-linux = import "../util-linux/build.ncl" in
 
@@ -60,7 +63,7 @@ let version = "dev-2026-06" in
     odinfmt =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "printf 'package main\\nmain::proc(){x:=1;_=x}\\n' > f.odin"],
           ["/bin/odinfmt", "-w", "f.odin"],
@@ -82,7 +85,7 @@ let version = "dev-2026-06" in
     lsp_hover =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           [
             "/bin/bash",

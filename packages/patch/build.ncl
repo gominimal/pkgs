@@ -1,6 +1,9 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let attr = import "../attr/build.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let diffutils = import "../diffutils/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
@@ -49,7 +52,7 @@ let version = "2.8.1" in
     diff_and_apply =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, diffutils],
         cmds = [
           ["/bin/bash", "-c", "echo 'line1\nline2\nline3' > original.txt"],
           ["/bin/bash", "-c", "echo 'line1\nmodified line\nline3' > modified.txt"],

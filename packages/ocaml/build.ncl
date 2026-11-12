@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -64,7 +65,7 @@ let version = "5.5.2" in
     version_check =
       {
         class = 'Standalone,
-        test_deps = [base, grep, coreutils],
+        test_deps = [bash-bootstrap, grep, coreutils],
         cmds = [
           ["/bin/bash", "-c", "/usr/bin/ocaml -version | grep -q '%{version}'"],
         ],
@@ -75,7 +76,7 @@ let version = "5.5.2" in
     compile_bytecode_and_native =
       {
         class = 'Standalone,
-        test_deps = [base, toolchain, grep, coreutils],
+        test_deps = [bash-bootstrap, toolchain, grep, coreutils],
         cmds = [
           ["/bin/bash", "-c", "echo 'let () = print_string \"ok\"' > t.ml && /usr/bin/ocamlc t.ml -o tb && ./tb | grep -q ok"],
           ["/bin/bash", "-c", "echo 'let () = print_string \"ok\"' > t.ml && /usr/bin/ocamlopt t.ml -o tn && ./tn | grep -q ok"],

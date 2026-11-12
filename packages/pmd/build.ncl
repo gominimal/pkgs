@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
@@ -71,7 +72,7 @@ let version = "7.28.0" in
     check =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           [
             "/bin/bash",
@@ -99,7 +100,7 @@ let version = "7.28.0" in
     cpd =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           [
             "/bin/bash",

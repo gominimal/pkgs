@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let ocaml = import "../ocaml/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -56,7 +57,7 @@ let version = "1.9.8" in
     list =
       {
         class = 'Standalone,
-        test_deps = [base, grep, coreutils],
+        test_deps = [bash-bootstrap, grep, coreutils],
         cmds = [
           ["/bin/bash", "-c", "/usr/bin/ocamlfind list 2>&1 | grep -qi findlib"],
         ],
@@ -67,7 +68,7 @@ let version = "1.9.8" in
     query_and_compile =
       {
         class = 'Standalone,
-        test_deps = [base, ocaml, toolchain, grep, coreutils],
+        test_deps = [bash-bootstrap, ocaml, toolchain, grep, coreutils],
         cmds = [
           ["/bin/bash", "-c", "OCAMLPATH=/usr/lib/ocaml /usr/bin/ocamlfind query stdlib | grep -q /usr/lib/ocaml"],
           ["/bin/bash", "-c", "echo 'let () = print_string \"ok\"' > t.ml && OCAMLPATH=/usr/lib/ocaml /usr/bin/ocamlfind ocamlopt t.ml -o t && ./t | grep -q ok"],

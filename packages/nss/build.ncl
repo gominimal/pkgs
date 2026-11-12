@@ -1,5 +1,7 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let perl = import "../perl/build.ncl" in
@@ -50,7 +52,7 @@ let version = "3.133" in
     smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [["/bin/bash", "-c", "mkdir -p /tmp/nssdb && /usr/bin/certutil -N -d sql:/tmp/nssdb --empty-password && /usr/bin/certutil -L -d sql:/tmp/nssdb"]],
       } | Test,
   },

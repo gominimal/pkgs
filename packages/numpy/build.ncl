@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let cython = import "../cython/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let meson-python = import "../meson-python/build.ncl" in
@@ -54,7 +55,7 @@ let version = "2.5.4" in
     smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [["/bin/bash", "-c", "python3 -c 'import numpy; assert numpy.dot([1,2],[3,4]) == 11'"]],
       } | Test,
   },
