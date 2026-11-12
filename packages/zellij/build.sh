@@ -44,8 +44,11 @@ grep -q 'features = \["text-decoding"\]' Cargo.toml || {
 # CVE-2026-119375 (RUSTSEC-2026-0459): zellij-utils turns on rusqlite's
 # `bundled` feature, which compiles libsqlite3-sys 0.27.0's own pre-3.54.0
 # SQLite into the binary. Drop it so libsqlite3-sys links the system
-# libsqlite3 (packages/sqlite, 3.54.1). Cargo.lock is unchanged: features are
-# not recorded there and libsqlite3-sys lists the same deps either way.
+# libsqlite3 (packages/sqlite, 3.54.1). Cargo.lock has to follow: `bundled`
+# is what pulls libsqlite3-sys's optional `cc` build-dependency, and without it
+# cargo drops `cc` from libsqlite3-sys's dependency list, which `--locked`
+# refuses to write. `cc` itself stays in the lock (13 other crates use it), so
+# that one list entry is the whole change.
 sed -i 's/rusqlite = { version = "0.30", default-features = false, features = \["bundled"\]/rusqlite = { version = "0.30", default-features = false/' zellij-utils/Cargo.toml
 if grep -q 'rusqlite.*bundled' zellij-utils/Cargo.toml; then
   echo "ERROR: rusqlite's bundled feature is still on (CVE-2026-119375)" >&2
@@ -53,6 +56,15 @@ if grep -q 'rusqlite.*bundled' zellij-utils/Cargo.toml; then
 fi
 grep -q '^rusqlite = { version = "0.30", default-features = false' zellij-utils/Cargo.toml || {
   echo "ERROR: zellij-utils no longer declares rusqlite the way this edit expects" >&2
+  exit 1
+}
+sed -i '/^name = "libsqlite3-sys"$/,/^]$/{/^ "cc",$/d}' Cargo.lock
+if awk '/^name = "libsqlite3-sys"$/{f=1} f&&/^]$/{f=0} f&&/^ "cc",$/{found=1} END{exit !found}' Cargo.lock; then
+  echo "ERROR: libsqlite3-sys still lists cc in Cargo.lock" >&2
+  exit 1
+fi
+grep -A3 '^name = "libsqlite3-sys"$' Cargo.lock | grep -q '^version = "0.27.0"$' || {
+  echo "ERROR: Cargo.lock no longer pins libsqlite3-sys 0.27.0, which this edit expects" >&2
   exit 1
 }
 cargo build --locked --release --no-default-features --features plugins_from_target,web_server_capability
