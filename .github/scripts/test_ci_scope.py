@@ -83,17 +83,17 @@ class Scope(unittest.TestCase):
         self.assertEqual(old_decide(records), ("scoped", ["gcc"], []))
 
     def test_shared_helper_reaches_its_importers(self):
-        importers = files_referencing('"../hex0/amd64-ladder.ncl"')
-        self.assertGreaterEqual(len(importers), 40)
-        # The edge itself, not just reachability: most importers also reach
-        # hex0 through the stage0 chain, which would hide a regex that only
-        # matches build.ncl imports.
-        self.assertLessEqual(importers - {"hex0"}, Graph.importers["hex0"])
-        records = [rec("packages/hex0/amd64-ladder.ncl")]
+        importers = files_referencing('"../llvm/versioned.ncl"')
+        self.assertGreaterEqual(len(importers), 3)
+        # The edge itself, not just reachability: the importers also reach
+        # llvm through build.ncl, which would hide a regex that only matches
+        # build.ncl imports.
+        self.assertLessEqual(importers - {"llvm"}, Graph.importers["llvm"])
+        records = [rec("packages/llvm/versioned.ncl")]
         mode, pkgs, _, _ = self.check(records, max_scoped=UNLIMITED)
-        self.assertLessEqual(importers, set(pkgs) | {"hex0"})
+        self.assertLessEqual(importers, set(pkgs) | {"llvm"})
         self.assertEqual(self.check(records)[0], "full")
-        self.assertEqual(old_decide(records), ("scoped", ["hex0"], []))
+        self.assertEqual(old_decide(records), ("scoped", ["llvm"], []))
 
     def test_helper_imported_by_a_helper(self):
         # jdk-21 imports jdk/cve-2026-111943.ncl, which imports
