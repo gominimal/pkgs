@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let ocaml = import "../ocaml/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -59,7 +60,7 @@ let version = "3.24.2" in
     version_check =
       {
         class = 'Standalone,
-        test_deps = [base, grep, coreutils],
+        test_deps = [bash-bootstrap, grep, coreutils],
         cmds = [
           ["/bin/bash", "-c", "/usr/bin/dune --version | grep -q '%{version}'"],
         ],
@@ -69,7 +70,7 @@ let version = "3.24.2" in
     builds_a_project =
       {
         class = 'Standalone,
-        test_deps = [base, ocaml, toolchain, grep, coreutils],
+        test_deps = [bash-bootstrap, ocaml, toolchain, grep, coreutils],
         cmds = [
           ["/bin/bash", "-c", "mkdir -p proj && cd proj && printf '(lang dune 3.0)\\n' > dune-project && printf '(executable (name main))\\n' > dune && printf 'let () = print_string \"ok\"\\n' > main.ml && OCAMLPATH=/usr/lib/ocaml CAML_LD_LIBRARY_PATH=/usr/lib/ocaml/stublibs /usr/bin/dune build ./main.exe && ./_build/default/main.exe | grep -q ok"],
         ],

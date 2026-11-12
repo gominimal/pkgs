@@ -11,41 +11,53 @@ let ca-certificates = import "../ca-certificates/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-# chromium-bin (its `chromium`, run headless), NOT chromium-headless-shell-bin.
+# chromium-headless-shell-bin (Chrome for Testing `chrome-headless-shell`,
+# Stable, x86_64 and arm64). It brings the Chromium system-lib closure
+# (alsa-lib, cairo, cups, nss, mesa, the X11 stack, eudev, liberation-fonts)
+# transitively, so we declare only the pkg.
+#
+# From pkgs#1114 this was chromium-bin (ungoogled-chromium-portablelinux, the
+# full browser run headless), which read the chromium-policies distrust
+# policy. chromium-bin was pulled: it was stuck at 156 with 158 open CVEs
+# (30 Critical) because portablelinux had not released 157. headless-shell is
+# a separate, reduced headless binary, so these agent-browser features do NOT
+# work against it:
+#
+#   --extensions        (no extension support in headless-shell)
+#   --headed            (there is no headed mode in this binary)
+#   WebGPU screenshots  (upstream documents these as requiring headed)
 #
 # SECURITY, CVE-2026-111943 (eMudhra intermediate key compromise). agent-browser
 # drives the browser against arbitrary, untrusted sites, so the browser's trust
-# store is this package's trust store. chrome-headless-shell cannot be fixed
-# from our side: its compiled-in Chrome Root Store still holds emSign ECC Root
-# CA - G3, its blocklist lacks the 8 compromised keys, it gets no component
-# updates, and it has no platform policy loader, so it cannot read the
-# `CADistrustedCertificates` policy (see chromium-headless-shell-bin's build.ncl
-# and gominimal/pkgmgr-rs#1028). No Chrome for Testing Stable carries the
-# upstream fix yet (Stable 156.0.8078.47 is branch position 1706539; the fixes
-# are main@{#1723080} and main@{#1723181}).
-#
-# chromium-bin's full browser does read the policy: it depends on
-# chromium-policies, which installs /etc/chromium/policies/managed/
-# ca-distrusted-certificates.json. Checked with the TLS trust harness
-# (gominimal/pkgs#976): through headless-shell, `agent-browser open` loads every
-# eMudhra test host; through chromium-bin it refuses them with
-# net::ERR_CERT_AUTHORITY_INVALID and still loads letsencrypt.org.
-#
-# Both arches: chromium-bin is ungoogled-chromium-portablelinux (x86_64 and
-# arm64, Stable, no Widevine). Running the full browser headless also brings
-# back what headless-shell lacked (--extensions, --headed with a display).
-# Return to headless-shell only once its pinned CfT Stable carries both
-# upstream changes (the pkgmgr-rs#1028 trigger), if the smaller closure matters.
-let chromium-bin = import "../chromium-bin/build.ncl" in
+# store is this package's trust store. On Linux, Chromium verifies only against
+# its compiled-in Chrome Root Store (`chrome_root_store_only`,
+# net/features.gni), so /etc/ssl/certs does not apply to the browser. At
+# chrome-headless-shell 157.0.8103.38:
+#   * BLOCKED: `kSPKIBlockList` (net/cert/cert_verify_proc_blocklist.inc)
+#     holds all 8 compromised intermediate keys, so a chain through any of
+#     them is refused whatever root it reaches. chromium-headless-shell-bin's
+#     `emudhra_spki_blocklist` test checks the shipped binary for them.
+#   * STILL TRUSTED until Chrome 158: the compiled-in root store is
+#     version_major 42 and still holds emSign ECC Root CA - G3 (86a1ecba...).
+#     Chrome Root Store v43 removes it, and 158.0.8127.18 carries v43. Until
+#     then, a certificate under that root that does not chain through one of
+#     the 8 keys still validates.
+#   * headless-shell has no platform policy loader, so it cannot read the
+#     `CADistrustedCertificates` policy chromium-policies installs (see
+#     chromium-headless-shell-bin's build.ncl).
+# The TLS trust harness (gominimal/pkgs#976) result for headless-shell (every
+# eMudhra test host loaded) predates 157 and has not been re-run on it.
+# Bumping chromium-headless-shell-bin to 158 closes the root gap.
+let chromium-headless-shell-bin = import "../chromium-headless-shell-bin/build.ncl" in
 
-let version = "0.41.1" in
+let version = "0.42.0" in
 {
   name = "agent-browser",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/vercel-labs/agent-browser/v%{version}.tar.gz",
-      sha256 = "b3d9d60b8a38f05e0f9b4d84d9e0b6995c21df2eb963eefb703008682a69f3bb",
+      sha256 = "f2533ef11197a88300efac00e8cc76b8efbeefd1e0532dfabcd50dcf37000e8c",
       extract = true,
       strip_prefix = "agent-browser-%{version}",
     } | Source,
@@ -65,7 +77,7 @@ let version = "0.41.1" in
   runtime_deps = [
     bash, # the /usr/bin/agent-browser wrapper
     glibc,
-    chromium-bin,
+    chromium-headless-shell-bin,
     # The wrapper sets AGENT_BROWSER_USE_SYSTEM_CA=1: the CLI's own HTTPS
     # (`read`, `doctor`, plugins…) reads /etc/ssl/certs instead of its
     # compiled-in webpki-roots (pkgs AGENTS.md "Trust store").
@@ -161,33 +173,48 @@ let version = "0.41.1" in
         test_deps = [base],
         cmds = [
           # End-to-end: the CLI starts its native daemon, which launches
-          # chromium-bin's /usr/bin/chromium headless (the wrapper's
+          # /usr/bin/chromium-headless-shell (the wrapper's
           # AGENT_BROWSER_EXECUTABLE_PATH), navigates to a data: URL, and
           # prints the page title.
           # TEST-ONLY --no-sandbox: the build-bot's test sandbox has no
           # unprivileged user namespaces, so Chromium aborts with "No usable
-          # sandbox!" (pkgs#1269 build-bot run, both arches). chromium-bin's own
-          # launch test does the same. The shipped wrapper keeps Chromium's
-          # sandbox; AGENT_BROWSER_ARGS (comma-separated launch args, cli
-          # flags.rs) is set only inside these test shells.
-          ["/bin/bash", "-c", "export AGENT_BROWSER_ARGS=--no-sandbox,--disable-dev-shm-usage; /bin/agent-browser open 'data:text/html,<title>agent-browser-open-ok</title>' | grep -q agent-browser-open-ok"],
+          # sandbox!" (pkgs#1269 build-bot run, both arches).
+          # chromium-headless-shell-bin's own launch test passes the same
+          # flags. The shipped wrapper keeps Chromium's sandbox;
+          # AGENT_BROWSER_ARGS (comma-separated launch args, cli flags.rs) is
+          # set only inside these test shells.
+          ["/bin/bash", "-c", "export AGENT_BROWSER_ARGS=--no-sandbox,--disable-gpu,--disable-dev-shm-usage; /bin/agent-browser open 'data:text/html,<title>agent-browser-open-ok</title>' | grep -q agent-browser-open-ok"],
           # A follow-up command reaches the same daemon and page. One shell:
           # the daemon does not outlive a test command.
-          ["/bin/bash", "-c", "set -o pipefail; export AGENT_BROWSER_ARGS=--no-sandbox,--disable-dev-shm-usage; /bin/agent-browser open 'data:text/html,<title>agent-browser-reuse-ok</title>' >/dev/null && /bin/agent-browser get title | grep -q agent-browser-reuse-ok; rc=$?; /bin/agent-browser close >/dev/null; exit $rc"],
+          ["/bin/bash", "-c", "set -o pipefail; export AGENT_BROWSER_ARGS=--no-sandbox,--disable-gpu,--disable-dev-shm-usage; /bin/agent-browser open 'data:text/html,<title>agent-browser-reuse-ok</title>' >/dev/null && /bin/agent-browser get title | grep -q agent-browser-reuse-ok; rc=$?; /bin/agent-browser close >/dev/null; exit $rc"],
         ],
       } | Test,
-    # CVE-2026-111943: the daemon must launch chromium-bin's full browser,
-    # which reads the CADistrustedCertificates policy. headless-shell cannot
-    # (see the comment at the chromium-bin import). And the CLI's own HTTPS
-    # must use the system store, not its compiled-in webpki-roots.
-    distrust_policy_wired =
+    # CVE-2026-111943: the daemon must launch chromium-headless-shell-bin's
+    # browser, at 157.0.8103.38 or later: the pinned build, checked to carry the
+    # 8 compromised eMudhra keys in its blocklist. That package's
+    # `emudhra_spki_blocklist` test checks the keys in the binary; the emSign
+    # ECC G3 root stays trusted until 158 (see the comment at the import).
+    # A floor, not the exact pin, so a headless-shell bump does not break it.
+    # And the CLI's own HTTPS must use the system store, not its compiled-in
+    # webpki-roots.
+    browser_wired =
       {
         class = 'Standalone,
         test_deps = [base],
         cmds = [
-          ["/bin/bash", "-c", "grep -qF 'AGENT_BROWSER_EXECUTABLE_PATH:-/usr/bin/chromium}' /usr/bin/agent-browser"],
+          ["/bin/bash", "-c", "grep -qF 'AGENT_BROWSER_EXECUTABLE_PATH:-/usr/bin/chromium-headless-shell}' /usr/bin/agent-browser"],
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -euo pipefail
+              floor=157.0.8103.38
+              v=$(/usr/bin/chromium-headless-shell --version | grep -oE '[0-9]+(\.[0-9]+){3}' | head -n1)
+              test -n "$v"
+              test "$(printf '%s\n' "$floor" "$v" | sort -V | head -n1)" = "$floor"
+            "%,
+          ],
           ["/bin/bash", "-c", "grep -qF 'AGENT_BROWSER_USE_SYSTEM_CA:-1}' /usr/bin/agent-browser"],
-          ["/bin/bash", "-c", "grep -q CADistrustedCertificates /etc/chromium/policies/managed/ca-distrusted-certificates.json"],
           ["/bin/bash", "-c", "test -s /etc/ssl/certs/ca-certificates.crt"],
         ],
       } | Test,

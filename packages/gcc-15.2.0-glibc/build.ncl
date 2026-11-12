@@ -118,7 +118,7 @@ match {
     else
       # SEALED (switch off): the same sha-pinned artifact the production toolchain
       # package already anchors on (see packages/gcc/build.ncl), with this
-      # package's own outputs, so anything that imports it (the jvm ladder roots) gets a
+      # package's own outputs, so anything that imports it gets a
       # real tree rather than an empty stub. Provenance: gominimal/minimermetic#16.
       (
         {

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -26,6 +26,7 @@ let version = "7.3" in
   cmd = "./build.sh",
   outputs = {
     strace = { glob = "usr/bin/strace" } | OutputBin,
+    strace-log-merge = { glob = "usr/bin/strace-log-merge", allow_missing_interpreter = true } | OutputBin,
 
     mans = { glob = "usr/share/man/**" } | OutputData,
   },
@@ -39,4 +40,8 @@ let version = "7.3" in
         repo = "strace",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/strace -V",
+  },
 } | BuildSpec

@@ -1,11 +1,14 @@
 let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
-let llvm = import "../llvm/build.ncl" in
+let llvm-21 = import "../llvm-21/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let go = import "../go/build.ncl" in
 let python = import "../python/build.ncl" in
@@ -63,7 +66,10 @@ in
     toolchain,
     cmake,
     ninja,
-    llvm,
+    # bun 1.3.x's configure accepts only clang / ld.lld 21.1.x (scripts/build/tools.ts
+    # LLVM_VERSION_RANGE) and searches /usr/lib/llvm-21/bin before PATH, so it builds on
+    # the frozen llvm-21 now that the default llvm is 23. bun 1.4 moves to llvm-23 (#1057).
+    llvm-21,
     rust,
     go,
     python,
@@ -128,7 +134,7 @@ in
     eval =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "bun --eval 'console.log(1+1)' | grep -q '^2$'"],
         ],
@@ -139,7 +145,7 @@ in
     emsign_roots_removed =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -227,7 +233,7 @@ in
     system_ca_store_default =
       {
         class = 'Standalone,
-        test_deps = [base, ca-certificates, openssl],
+        test_deps = [bash-bootstrap, ca-certificates, openssl, coreutils, grep],
         cmds = [
           [
             "/bin/bash",
@@ -369,7 +375,7 @@ in
     global_install =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",

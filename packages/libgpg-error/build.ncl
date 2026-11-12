@@ -1,6 +1,7 @@
 # Imported from Wolfi `libgpg-error` by `pkgmgr import wolfi` (autotools build).
-# TODO: REVIEWER — verify deps/outputs/runtime_deps + the build.sh opts.
-let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
+# TODO: REVIEWER — verify the build.sh opts. (outputs and runtime_deps are
+# taken from the built install tree: its file list and each ELF's DT_NEEDED.)
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let autoconf = import "../autoconf/build.ncl" in
 let automake = import "../automake/build.ncl" in
@@ -35,12 +36,18 @@ let version = "1.61" in
   ],
   cmd = "./build.sh",
   outputs = {
-    # Discovery catch-all — rerun with `--from-build <artifact>` to refine
-    # into precise, typed outputs (bins/libs/includes/…).
-    everything = { glob = "usr/**", allow_executable = true } | OutputData,
+    bins = { glob = "usr/bin/{gpg-error,yat2m}" } | OutputBin,
+    # A /bin/sh script that consumers' configure runs inside their own build,
+    # which always has a shell; nothing runs it from this package's closure.
+    config = { glob = "usr/bin/gpgrt-config", allow_missing_interpreter = true } | OutputBin,
+    libs = { glob = "usr/lib/libgpg-error.{a,so*}" } | OutputLib,
+    includes = { glob = "usr/include/**" } | OutputData,
+    pkgconfig = { glob = "usr/lib/pkgconfig/**" } | OutputData,
+    # aclocal macros (AM_PATH_*) for consumers that regenerate configure.
+    share = { glob = "usr/share/**" } | OutputData,
   },
-  # TODO: REVIEWER — trim to the shared libraries the binary actually links (ldd the build).
-  runtime_deps = [glibc, autoconf, automake, gettext, pkgconf],
+  # gpg-error, yat2m and libgpg-error.so.0 link only libc (and the library itself).
+  runtime_deps = [glibc],
   attrs =
     {
       upstream_version = version,
@@ -55,7 +62,7 @@ let version = "1.61" in
         cmds = [
           # TODO: REVIEWER — ported from the Wolfi test block; verify each
           # against minimal's toolchain (bins on PATH, flags supported).
-          ["/bin/bash", "-c", "gpg-error --version\nyat2m --version\ngpg-error --help\nyat2m --help"],
+          ["/bin/bash", "-c", "set -e\ngpg-error --version\nyat2m --version\ngpg-error --help\nyat2m --help"],
           ["/bin/bash", "-c", "tee test.c <<'EOF'\n#include <gpg-error.h>\n#include <stdio.h>\nint main() {\n    gpg_error_t err = gpg_err_make(GPG_ERR_SOURCE_USER_1, GPG_ERR_GENERAL);\n    const char *msg = gpg_strerror(err);\n    printf(\"Error message: %s\\n\", msg);\n    return (msg != NULL) ? 0 : 1;\n}\nEOF\n\ngcc $(pkg-config --cflags gpg-error) test.c -o test $(pkg-config --libs gpg-error)\n./test"],
           ["/bin/bash", "-c", "# gpg-error translates numeric error codes to human-readable strings\noutput=$(gpg-error 1)\necho \"$output\" | grep -i \"General error\"\n\n# Test with a known GPG error source prefix\noutput=$(gpg-error 0)\necho \"$output\" | grep -i \"success\""],
           ["/bin/bash", "-c", "# Create a minimal yat2m input file\ntee /tmp/test.texi <<'EOF'\n@manpage test.1\n@mansect 1\n@ifset manverb\n.TH TEST 1\n@end ifset\n\n@mansect name\n@ifset manverb\ntest \\- a test man page\n@end ifset\n\n@mansect description\nThis is a test description.\nEOF\n\n# Run yat2m and verify it produces output\nyat2m -I /tmp/test.texi -o /tmp/test.1 || yat2m /tmp/test.texi\n# Verify yat2m ran without error (the tool processed the input)\necho \"yat2m executed successfully\""],

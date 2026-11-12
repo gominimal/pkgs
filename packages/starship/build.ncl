@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -53,4 +53,8 @@ let version = "1.27.0" in
         repo = "starship",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/starship --version",
+  },
 } | BuildSpec

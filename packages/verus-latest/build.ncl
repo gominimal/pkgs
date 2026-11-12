@@ -3,6 +3,8 @@ let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, ..
 in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let git = import "../git/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -11,8 +13,8 @@ let gcc = import "../gcc/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let z3-4-16-0 = import "../z3-4.16.0/build.ncl" in
 
-let version = "0.2026.10.26.d17fbd0" in
-let sha = "d17fbd0c58abf0d5e86825ea64b96aba72b1b31f" in
+let version = "0.2026.11.02.8bf68ee" in
+let sha = "8bf68ee741df833ea5d0fe6a2255126fdea87e47" in
 # Verus's rust-toolchain.toml channel, with rustc-dev (rust_verify links
 # rustc_private). The `rust` package ships no rustc-dev, so the toolchain is
 # vendored privately even when the versions agree.
@@ -55,13 +57,14 @@ in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/verus-lang/verus/archive/refs/tags/release/%{version}.tar.gz",
-      sha256 = "f0b0985dc8b7b1daa150acfe86034ef76a3ad31ae6afaf500fe2bcf7478c473e",
+      sha256 = "0f77e6de9934239e72364f004d9c1ca49790010c8864b591ac170b0f59ac3e34",
       extract = true,
       strip_prefix = "verus-release-%{version}",
     } | Source,
     # `cargo vendor --locked --versioned-dirs` of source/ (372 crates incl. the
     # utaal/getopts git fork). Packed deterministically: sorted, mtime 0,
     # root:root, gzip -n.
+    # source-hash-guard: allow 5e3f794a840e95f3fce62bdb36eb1d355e22bd53eb818f220aa6ecbb957356ba 0.2026.11.02's vendor tarball is byte-identical to 0.2026.10.26's (same sha256/md5/size; Cargo.lock changed no registry crate between the tags), checked against the new object at this url
     {
       url = "gs://minimal-staging-archives/verus-vendor-%{version}.tar.gz",
       sha256 = "5e3f794a840e95f3fce62bdb36eb1d355e22bd53eb818f220aa6ecbb957356ba",
@@ -122,7 +125,10 @@ in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "MIT",
+      # Verus is MIT. The bundled toolchain is MIT OR Apache-2.0 and ships libLLVM; the
+      # rustc tarball's COPYRIGHT.html gives src/llvm-project as
+      # "Apache-2.0 WITH LLVM-exception AND NCSA".
+      license_spdx = "MIT AND (MIT OR Apache-2.0) AND Apache-2.0 WITH LLVM-exception AND NCSA",
       source_provenance = {
         category = 'GithubRepo,
         owner = "verus-lang",
@@ -134,7 +140,7 @@ in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           # A postcondition Verus must reject...
           ["/bin/bash", "-c", "printf 'use vstd::prelude::*;\\nverus!{\\nfn inc(x: u8) -> (r: u8) requires x < 255 ensures r == x { x + 1 }\\nfn main(){}\\n}\\n' > /tmp/bad.rs; verus /tmp/bad.rs >/tmp/bad.out 2>&1; test $? -ne 0 && grep -q 'postcondition not satisfied' /tmp/bad.out"],

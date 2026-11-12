@@ -1,9 +1,9 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 
-let version = "6.0.2" in
+let version = "6.0.3" in
 {
   name = "typescript-language-server",
   build_deps = [
@@ -38,4 +38,8 @@ let version = "6.0.2" in
       upstream_version = version,
       license_spdx = "Apache-2.0",
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/typescript-language-server --version",
+  },
 } | BuildSpec

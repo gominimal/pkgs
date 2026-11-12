@@ -1,5 +1,7 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
@@ -68,7 +70,8 @@ let version = "6.11.0" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "BSD-4-Clause",
+      # cbmc's LICENSE is BSD-4-Clause; minisat2 and cadical, compiled in, are MIT.
+      license_spdx = "BSD-4-Clause AND MIT",
       source_provenance = {
         category = 'GithubRepo,
         owner = "diffblue",
@@ -82,7 +85,7 @@ let version = "6.11.0" in
         class = 'Standalone,
         # `cbmc file.c` preprocesses with `gcc -E`. Kani hands CBMC goto
         # binaries, not C, so gcc is not a runtime dep; these C tests need it.
-        test_deps = [base, gcc],
+        test_deps = [bash-bootstrap, gcc, grep],
         cmds = [
           ["/bin/bash", "-c", "cbmc --version | grep -q '^%{version}'"],
           # An out-of-bounds write CBMC must find: exit 10 is "VERIFICATION FAILED".

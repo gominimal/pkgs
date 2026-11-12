@@ -2,17 +2,18 @@
 # with outputs + runtime_deps refined from a verified `minimal package` build.
 let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "0.2.95" in
+let version = "0.2.97" in
 {
   name = "act",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/nektos/act/v%{version}.tar.gz",
-      sha256 = "e30d650c4fcd13c5e1c2e634461858e22587ef81786c6c1c8fae7bd8a673767f",
+      sha256 = "807e43becd597f65c76c7d5dd6dbe5ff94285629214f6005ad18ce618b70e49c",
       extract = true,
       strip_prefix = "act-%{version}",
     } | Source,
@@ -46,7 +47,7 @@ let version = "0.2.95" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           # Smoke test ported from the Wolfi recipe's test block.
           ["/bin/bash", "-c", "act --version"],

@@ -23,6 +23,9 @@ let version = "1.0.8" in
   ],
 
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
   outputs = {
     # Technically a bunch of these binaries need a shell interpreter, but given how low level this
     # package is its better not to bring in bash at this level.

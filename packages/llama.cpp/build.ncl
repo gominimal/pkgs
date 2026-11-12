@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
@@ -10,14 +10,14 @@ let hwdata = import "../hwdata/build.ncl" in
 let pciutils = import "../pciutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "b11960" in
+let version = "b12110" in
 {
   name = "llama.cpp",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/ggml-org/llama.cpp/%{version}.tar.gz",
-      sha256 = "2b37ffa871595f90b94164f6c510ad9a34bd7f94da21557cc9878587e163af37",
+      sha256 = "442a8ec2c5e8b8895175abfcede851964572370f0a56b33166c94905260da008",
       extract = true,
       strip_prefix = "llama.cpp-%{version}",
     } | Source,
@@ -28,7 +28,7 @@ let version = "b11960" in
       # tools/ui/dist so the build doesn't fetch the moving `latest` UI.
       # Bump with `version`.
       url = "gs://minimal-staging-archives/ggml-org/llama-ui/%{version}-dist.tar.gz",
-      sha256 = "edc6b05ff2621f5f08cee4e79cf8beb02805f21888776354dd1ddcf9fc2609e8",
+      sha256 = "a0c7954a7ca79bb418d9bef77bb2f5c4f7d667d3ba6813451ef5f1b693e9dd50",
       extract = false,
     } | Source,
     base,
@@ -78,4 +78,11 @@ let version = "b11960" in
       },
       build_cost_multiple = 3,
     } | Attrs,
+
+  # No test_deps: base would mask a missing library. Both binaries exited 127
+  # (libllama.so.0 etc. not shipped) before build.sh kept the SONAME links.
+  tests = {
+    llama-cli = standaloneTest "/usr/bin/llama-cli --version",
+    llama-server = standaloneTest "/usr/bin/llama-server --version",
+  },
 } | BuildSpec

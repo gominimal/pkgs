@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
@@ -125,4 +125,8 @@ let version = "2.47" in
         usr_share = { glob = "usr/share/**/*" } | OutputLib,
       },
     } | BuildSpec,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/ld --version",
+  },
 } | BuildSpec

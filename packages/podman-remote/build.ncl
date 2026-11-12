@@ -1,10 +1,8 @@
 # Auto-bootstrapped from https://github.com/containers/podman by `pkgmgr import github` (go build).
-# TODO: REVIEWER — verify outputs/runtime_deps + the build.sh.
-let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let glibc = import "../glibc/build.ncl" in
 let version = "6.1.4" in
 {
   name = "podman-remote",
@@ -29,11 +27,16 @@ let version = "6.1.4" in
   outputs = {
     bin = { glob = "usr/bin/podman-remote" } | OutputBin,
   },
-  runtime_deps = [glibc],
+  # CGO_ENABLED=0: a static binary with no DT_NEEDED, so nothing at runtime.
+  runtime_deps = [],
   attrs =
     {
       upstream_version = version,
       source_provenance = { category = 'GithubRepo, owner = "podman-container-tools", repo = "podman" },
       license_spdx = "Apache-2.0",
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/podman-remote --version",
+  },
 } | BuildSpec

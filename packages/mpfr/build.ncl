@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let toolchain = import "../toolchain/build.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
@@ -106,4 +107,36 @@ let version = "4.2.2" in
         name = "mpfr",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              cd /tmp
+              gcc -x c - -o t -x none -lmpfr -lgmp <<'EOF'
+              #include <stdio.h>
+              #include <mpfr.h>
+              int main(void) {
+                mpfr_t x;
+                mpfr_init2(x, 200);
+                mpfr_sqrt_ui(x, 2, MPFR_RNDN);
+                double d = mpfr_get_d(x, MPFR_RNDN);
+                printf("mpfr %s sqrt2=%.15f\n", mpfr_get_version(), d);
+                mpfr_clear(x);
+                return !(d > 1.41421356 && d < 1.41421357);
+              }
+              EOF
+              ./t
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

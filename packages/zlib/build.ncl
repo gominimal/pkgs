@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -8,14 +8,14 @@ let coreutils = import "../coreutils/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.3.2" in
+let version = "1.4" in
 {
   name = "zlib",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/zlib-%{version}.tar.gz",
-      sha256 = "b99a0b86c0ba9360ec7e78c4f1e43b1cbdf1e6936c8fa0f6835c0cd694a495a1"
+      sha256 = "02dd159783677a749c04adbdd02b55b8a2bcc7e054f51b76b549199a916ad584"
     } | Source,
     bash-bootstrap,
     make,
@@ -75,4 +75,36 @@ let version = "1.3.2" in
         repo = "zlib",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              cd /tmp
+              gcc -x c - -o t -x none -lz <<'EOF'
+              #include <string.h>
+              #include <zlib.h>
+              int main(void) {
+                if (strcmp(zlibVersion(), ZLIB_VERSION) != 0) return 1;
+                const char *in = "hello hello hello hello";
+                unsigned char c[128], d[128];
+                uLongf cl = sizeof c, dl = sizeof d;
+                if (compress(c, &cl, (const Bytef *)in, strlen(in) + 1) != Z_OK) return 2;
+                if (uncompress(d, &dl, c, cl) != Z_OK) return 3;
+                return strcmp((char *)d, in) != 0;
+              }
+              EOF
+              ./t
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

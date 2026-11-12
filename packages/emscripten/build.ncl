@@ -1,7 +1,10 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let findutils = import "../findutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let binaryen = import "../binaryen/build.ncl" in
-let llvm = import "../llvm/build.ncl" in
+let llvm-21 = import "../llvm-21/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 let python = import "../python/build.ncl" in
 
@@ -9,8 +12,10 @@ let glibc = import "../glibc/build.ncl" in
 
 # Emscripten does not support stable LLVM releases in general -- it tracks
 # LLVM top-of-tree -- so the version is pinned to the last release whose
-# EXPECTED_LLVM_VERSION is 21, matching the llvm package. Bumping emscripten
-# means bumping llvm in lockstep; tools/shared.py holds the expected major.
+# EXPECTED_LLVM_VERSION is 21, and it takes LLVM from the frozen, prefixed
+# llvm-21 (/usr/lib/llvm-21; build.sh points LLVM_ROOT there) rather than the
+# default llvm, which is a later major. Bumping emscripten means moving it to the
+# llvm-<N> line it expects; tools/shared.py holds the expected major.
 #
 # LIMITATION -- no JavaScript optimizer. This package ships without the npm
 # dependencies emscripten's own installer would fetch (see build.sh), so the
@@ -44,7 +49,9 @@ let version = "4.0.11" in
     glibc,
     subsetOf node-lts ["node"],
     python,
-    subsetOf llvm ["bins", "libllvm", "libs_clang", "liblld", "libclang"],
+    # bins = clang, wasm-ld, llvm-ar & co.; libs = libLLVM, libclang-cpp, liblld and
+    # clang's resource dir, which those binaries load through their $ORIGIN/../lib RPATH.
+    subsetOf llvm-21 ["bins", "libs"],
   ],
 
   cmd = "./build.sh",
@@ -72,7 +79,7 @@ let version = "4.0.11" in
     version_check =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [],
         cmds = [["/bin/emcc", "--version"]],
       } | Test,
 
@@ -82,7 +89,7 @@ let version = "4.0.11" in
     no_build_scaffolding =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, findutils],
         cmds = [
           ["/bin/bash", "-c", "test ! -e /usr/share/emscripten/build.sh"],
           ["/bin/bash", "-c", "test ! -e /usr/share/emscripten/output"],
@@ -99,7 +106,7 @@ let version = "4.0.11" in
     fetches_nothing =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "test ! -e /usr/share/emscripten/node_modules"],
           ["/bin/bash", "-c", "test ! -e /usr/share/emscripten/cache/ports"],
@@ -112,7 +119,7 @@ let version = "4.0.11" in
     compile_archive =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "printf '#include <stdio.h>\\nint answer(void){ return 42; }\\n' > a.c"],
           ["/bin/bash", "-c", "emcc -c a.c -o a.o && emar rcs liba.a a.o"],
@@ -124,7 +131,7 @@ let version = "4.0.11" in
     link_run =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "printf '#include <stdio.h>\\nint main(void){ printf(\"ok\\\\n\"); return 0; }\\n' > m.c"],
           # No EM_CACHE set: this also covers the wrapper seeding a writable

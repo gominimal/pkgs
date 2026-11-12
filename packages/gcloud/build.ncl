@@ -1,12 +1,15 @@
 let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 let python = import "../python/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 
-let version = "591.0.0" in
+let version = "592.0.0" in
 # Google's per-version GCS bucket; explicit per-version path. The
 # previous rapid-channel URL
 # (dl.google.com/dl/cloudsdk/channels/rapid/downloads) has the
@@ -17,8 +20,8 @@ let version = "591.0.0" in
 let dl_base = "https://storage.googleapis.com/cloud-sdk-release" in
 
 let { amd64_sha256, arm64_sha256 } = {
-  amd64_sha256 = "78c570f5fcfe58a9311bd98c06b75530595e3cae6277aad75a676a39e6ee7b63",
-  arm64_sha256 = "f5e5df0433f77c0e7f5df9fd4bce2e46c7b7967e79cf66e31b1164d3d4c86546",
+  amd64_sha256 = "2d841a23a681ab94486af6841e5f1cd123cd300fb8c4be6ba5b51350fca3d50b",
+  arm64_sha256 = "ba588759c4c42122a8c14536009738c0f0030989ca75788235f9956555e44f4d",
 }
 in
 
@@ -69,7 +72,7 @@ in
     config_ops =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "gcloud config set project test-project 2>/dev/null && gcloud config get project 2>/dev/null | grep -q 'test-project'"],
         ],
@@ -83,7 +86,7 @@ in
     ca_certs_from_system_store =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "export CLOUDSDK_CONFIG=$(mktemp -d) && test \"$(gcloud config get core/custom_ca_certs_file 2>/dev/null)\" = /etc/ssl/certs/ca-certificates.crt"],
           ["/bin/bash", "-c", "test -s /etc/ssl/certs/ca-certificates.crt"],

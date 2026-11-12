@@ -3,8 +3,9 @@
 # tree at /usr/lib/verus:
 #
 #   verus, rust_verify, cargo-verus, libvstd.rlib, vstd.vir, builtin libs ...
-#   toolchain/   Rust 1.98.1 WITH rustc-dev (rust_verify is a rustc driver),
-#                private so it never shadows the system rust
+#   toolchain/   the pinned Rust (build.ncl `rust`) WITH rustc-dev
+#                (rust_verify is a rustc driver), private so it never
+#                shadows the system rust
 #
 # /usr/bin/verus and /usr/bin/cargo-verus are wrappers: VERUS_USE_RUSTUP=0
 # (no rustup in Minimal), VERUS_Z3_PATH at the pinned z3-4.16.0, and the

@@ -49,12 +49,20 @@ cc = "clang"
 cxx = "clang++"
 linker = "clang"
 llvm-config = "/usr/bin/llvm-config"
+# `linker` above is only what x.py links THIS build with.  `default-linker` is compiled into the
+# shipped rustc (CFG_DEFAULT_LINKER, the target-spec default) and replaces upstream's `cc`, which
+# pkgs does not ship: without it a plain `rustc hello.rs` or a default cargo build fails with
+# "linker `cc` not found".  gcc is the driver toolchain provides and the one the Rust recipes
+# already pass via `-C linker=gcc`.
+default-linker = "gcc"
 
 [target.aarch64-unknown-linux-gnu]
 cc = "clang"
 cxx = "clang++"
 linker = "clang"
 llvm-config = "/usr/bin/llvm-config"
+# See [target.x86_64-unknown-linux-gnu].
+default-linker = "gcc"
 
 
 [install]

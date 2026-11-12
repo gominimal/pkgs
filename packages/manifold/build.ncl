@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -52,4 +53,34 @@ let version = "3.5.4" in
         repo = "manifold",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              cd /tmp
+              g++ -x c++ - -o t -x none -std=c++17 -lmanifold <<'EOF'
+              #include <cstdio>
+              #include <manifold/manifold.h>
+              int main() {
+                manifold::Manifold a = manifold::Manifold::Cube({2.0, 2.0, 2.0});
+                manifold::Manifold b = manifold::Manifold::Cube({1.0, 1.0, 1.0});
+                double v = (a - b).Volume();
+                std::printf("volume=%f\n", v);
+                return !(v > 6.99 && v < 7.01);
+              }
+              EOF
+              ./t
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

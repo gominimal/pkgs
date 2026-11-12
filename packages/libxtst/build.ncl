@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -11,8 +12,10 @@ let libxi = import "../libxi/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 # X11 Testing extension library (libXtst.so.6) — provides XTest/XRecord.
-# Chrome links libXtst.so.6 directly, so chromium-bin needs it in its runtime
-# closure (147→151 surfaced this: 151 fails to even print --version without it).
+# Chrome links libXtst.so.6 directly, so a Chromium package needs it in its
+# runtime closure; chromium-headless-shell-bin declares it. (147→151 surfaced
+# this in the since-pulled chromium-bin: 151 failed to even print --version
+# without it.)
 # Deps from libXtst-1.2.6's pkg-config: `Requires.private: x11 xext xextproto
 # xi` (so it links libXi too), plus xorgproto for the record/xext headers.
 let version = "1.2.6" in
@@ -52,4 +55,26 @@ let version = "1.2.6" in
       upstream_version = version,
       license_spdx = "MIT",
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain, xorgproto],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t -lXtst <<'EOF'
+              #include <X11/extensions/XTest.h>
+              int main(void) { void *volatile p = (void *)XTestQueryExtension; return p ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -53,4 +53,8 @@ let version = "3.7.6" in
         repo = "sshfs",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/sshfs --version",
+  },
 } | BuildSpec

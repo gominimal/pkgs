@@ -3,6 +3,8 @@ let make = import "../make/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let python = import "../python/build.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -18,8 +20,23 @@ let zstd = import "../zstd/build.ncl" in
 let gtest = import "../gtest/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let llvm = import "../llvm/build.ncl" in
+let wasi-libc = import "../wasi-libc/build.ncl" in
+let llhttp-wasm-rebuild = import "../llhttp-wasm-rebuild/build.ncl" in
+let amaro-wasm = import "../amaro-wasm/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 
+# What this node tree bundles, verified by build.sh (check-tree / build fail on a mismatch),
+# so a node bump re-derives each one here: undici under deps/undici (its llhttp C rebuilds
+# the wasm js2c'd into node), the undici npm vendors under deps/npm (rebuilt from the
+# mirrored release tarball below), and amaro (its swc wasm comes from packages/amaro-wasm).
+let undici = "7.30.1" in
+let undici_llhttp = "9.3.0" in
+let npm_undici = "6.28.0" in
+# The llhttp that the npm-vendored undici pins (forwarded so a bump is one edit).
+let npm_undici_llhttp = "8.1.0" in
+# amaro is recorded once, in amaro-wasm/versions.ncl, so node, node-lts and amaro-wasm agree.
+let amaro = (import "../amaro-wasm/versions.ncl").bundled.node-lts in
 let version = "24.22.1" in
 {
   name = "node-lts",
@@ -29,9 +46,17 @@ let version = "24.22.1" in
       url = "https://nodejs.org/dist/v%{version}/node-v%{version}.tar.gz",
       sha256 = "001773d9bd53fbd27a25efd42aa6a9693ebfe500998ca9bec635e9b6ee79bc91",
     } | Source,
+    {
+      url = "gs://minimal-staging-archives/undici-%{npm_undici}.tar.gz",
+      sha256 = "555a14624f66628d8aa7fcd0691ab2371f3e4512c40358bb7320bfabbb6763ec",
+    } | Source,
     # 24.22.1 carries the CVE-2026-111943 fixes upstream (nodejs/node#66871 SPKI
     # blocklist, #66877 NSS 3.131.1 roots), so the backports are no longer carried.
     base,
+    llvm, # clang + wasm-ld for the llhttp wasm
+    wasi-libc,
+    llhttp-wasm-rebuild, # rebuilds and splices undici's llhttp wasm blobs
+    amaro-wasm, # amaro's TypeScript-stripper wasm, rebuilt from swc
     make,
     pkgconf,
     python,
@@ -62,6 +87,11 @@ let version = "24.22.1" in
   cmd = "./build.sh",
   build_args = {
     include version,
+    include undici,
+    include undici_llhttp,
+    include npm_undici,
+    include npm_undici_llhttp,
+    include amaro,
   },
 
   outputs = {
@@ -90,10 +120,19 @@ let version = "24.22.1" in
     } | Attrs,
 
   tests = {
+    type_strip =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, grep],
+        cmds = [
+          ["/bin/bash", "-c", "printf 'interface P { n: number }\\nconst p: P = { n: 6 };\\nconsole.log(p.n * 7);\\n' > t.ts"],
+          ["/bin/bash", "-c", "node t.ts | grep -qx 42"],
+        ],
+      } | Test,
     eval =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "echo 'console.log(\"Hello Node\")' > script.js"],
           ["/bin/bash", "-c", "node script.js | grep -q '^Hello Node$'"],
@@ -104,7 +143,7 @@ let version = "24.22.1" in
     inline_eval =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "node -e 'console.log(10 * 5)' | grep -q '^50$'"],
         ],
@@ -112,7 +151,7 @@ let version = "24.22.1" in
     npm_global_prefix =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           # The builtin npmrc must redirect npm's global prefix away from the
           # read-only /usr store (gominimal/inbox#559).
@@ -127,7 +166,7 @@ let version = "24.22.1" in
     emsign_roots_removed =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -166,7 +205,7 @@ let version = "24.22.1" in
     spki_blocklist_rejects_emudhra_intermediate =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -268,7 +307,7 @@ let version = "24.22.1" in
     system_ca_store_default =
       {
         class = 'Standalone,
-        test_deps = [base, ca-certificates],
+        test_deps = [bash-bootstrap, ca-certificates, coreutils],
         cmds = [
           [
             "/bin/bash",

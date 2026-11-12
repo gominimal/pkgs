@@ -1,5 +1,8 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let go = import "../go/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 
@@ -8,14 +11,14 @@ let node-lts = import "../node-lts/build.ncl" in
 # UI on :8025). Single static binary with the UI embedded; the UI is built
 # with npm from the locked package-lock.json before `go build`, as upstream's
 # release build does.
-let version = "1.33.0" in
+let version = "1.33.1" in
 {
   name = "mailpit",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/axllent/mailpit/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "4c43bef67f3aabd8eb1e571829ddafad42da33061a911ae9cea19ad209ba3c64",
+      sha256 = "db2b71b4b1a535e379c62db72f1bc302346fde2dfecbf90ed0780ea2de1b8798",
       extract = true,
       strip_prefix = "mailpit-%{version}",
     } | Source,
@@ -49,7 +52,7 @@ let version = "1.33.0" in
     smtp_roundtrip =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "mailpit version 2>&1 | grep -q %{version} && d=$(mktemp -d) && { mailpit --database \"$d/db\" --smtp 127.0.0.1:1025 --listen 127.0.0.1:8025 >\"$d/log\" 2>&1 & pid=$!; } && trap 'kill $pid 2>/dev/null; wait $pid 2>/dev/null' EXIT && for i in $(seq 50); do (exec 3<>/dev/tcp/127.0.0.1/1025) 2>/dev/null && break; sleep 0.2; done && exec 3<>/dev/tcp/127.0.0.1/1025 && printf 'HELO t\\r\\nMAIL FROM:<a@example.com>\\r\\nRCPT TO:<b@example.com>\\r\\nDATA\\r\\nSubject: mailpit-smoke\\r\\n\\r\\nhi\\r\\n.\\r\\nQUIT\\r\\n' >&3 && sleep 1 && exec 4<>/dev/tcp/127.0.0.1/8025 && printf 'GET /api/v1/messages HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&4 && grep -q mailpit-smoke <&4"],
         ],

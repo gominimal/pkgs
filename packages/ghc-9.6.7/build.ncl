@@ -1,8 +1,10 @@
-let { Attrs, BuildSpec, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
+let bash = import "../bash/build.ncl" in # bin/ghc is a /bin/sh wrapper
+let llvm = import "../llvm/build.ncl" in # arm64: settings name ld.lld as the linker and object merger
 # ghc-9.6.7: the boot compiler for `ghc`, from gen-15 of gominimal/bootstrap: the top of the
 # source-only GHC ladder, microhs-0.16 (C, gcc) -> ghc-4.08.2 -> 5.04.3 -> 6.6.1 -> 6.10.4 -> 7.0.4
 # -> 7.6.3 -> 7.8.4 -> 7.10.3 -> 8.2.2 -> 8.6.5 -> 8.10.7 -> 9.2.8 -> 9.6.7, every rung built on the
@@ -32,8 +34,18 @@ let version = "9.6.7" in
         } | Source,
     } target,
   ],
-  # the compiler links libgmp and libncursesw from /usr/lib (libffi is bundled)
-  runtime_deps = [glibc, gmp, ncurses],
+  # the compiler links libgmp and libncursesw from /usr/lib (libffi is bundled); arm64 also
+  # needs llvm for ld.lld
+  runtime_deps = [glibc, gmp, ncurses] @ (if is_arm then [llvm] else []),
+  # the binary runs from its own runtime closure, outside any build sandbox
+  tests = {
+    ghc_version =
+      {
+        class = 'Standalone,
+        test_deps = [bash],
+        cmds = [["/bin/sh", "-c", "v=$(/usr/lib/ghc-9.6.7/bin/ghc --numeric-version) && [ \"$v\" = 9.6.7 ]"]],
+      } | Test,
+  },
   outputs = {
     ghc = { glob = "usr/lib/ghc-9.6.7/**", allow_executable = true } | OutputData,
     buildinfo = { glob = "usr/share/ghc-9.6.7/BUILDINFO" } | OutputData,

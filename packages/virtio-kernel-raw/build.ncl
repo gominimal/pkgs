@@ -1,9 +1,11 @@
-let { Attrs, BuildSpec, Local, OutputData, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Test, .. } = import "minimal.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let virtio-linux = import "../virtio-linux/build.ncl" in
 
 # Tracks the virtio-linux kernel version; this package only decompresses it.
-let version = "6.12.115" in
+let version = "6.12.116" in
 {
   name = "virtio-kernel-raw",
 
@@ -32,4 +34,27 @@ let version = "6.12.115" in
       upstream_version = version,
       license_spdx = "GPL-2.0-only",
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              i=/usr/share/virtio-linux/Image
+              test -s $i
+              case $(uname -m) in
+                aarch64) test "$(od -An -c -j56 -N4 $i | tr -d ' ')" = ARMd ;;
+                x86_64) test "$(od -An -c -j514 -N4 $i | tr -d ' ')" = HdrS ;;
+              esac
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

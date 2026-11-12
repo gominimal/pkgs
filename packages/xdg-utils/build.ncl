@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let sed = import "../sed/build.ncl" in
 let findutils = import "../findutils/build.ncl" in
 let gawk = import "../gawk/build.ncl" in
@@ -68,7 +69,7 @@ let version = "1.2.1" in
     smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           # These are shell scripts, so the meaningful check is that they are
           # present, executable and parse — not that they can reach a desktop.

@@ -26,3 +26,4 @@ fi
 cargo build --locked --release
 mkdir -p "$OUTPUT_DIR/usr/bin"
 cp "target/release/xh" "$OUTPUT_DIR/usr/bin/"
+ln -s xh "$OUTPUT_DIR/usr/bin/xhs"

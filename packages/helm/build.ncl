@@ -1,4 +1,4 @@
-let { BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 
@@ -42,5 +42,9 @@ let version = "4.3.1" in
       owner = "helm",
       repo = "helm",
     },
+  },
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/helm version",
   },
 } | BuildSpec

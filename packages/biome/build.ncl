@@ -1,5 +1,6 @@
 let { standaloneTest, subsetOf, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let make = import "../make/build.ncl" in
 let rust = import "../rust/build.ncl" in
@@ -8,7 +9,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.6.4" in
+let version = "2.6.6" in
 {
   name = "biome",
 
@@ -23,7 +24,7 @@ let version = "2.6.4" in
     { file = "cve-2026-111943-webpki-lock.patch" } | Local,
     {
       url = "https://github.com/biomejs/biome/archive/refs/tags/@biomejs/biome@%{version}.tar.gz",
-      sha256 = "7d9f013cf8f8f15d38a0a545241bf81b188af8caef78c6d8982cfe8a7b132065",
+      sha256 = "c0588dd352e9bebcf8de334baf0b5a120fa50933b57787b277e720e7057cb476",
       extract = true,
       strip_prefix = "biome--biomejs-biome-%{version}",
     } | Source,
@@ -71,7 +72,7 @@ let version = "2.6.4" in
     version_is_stamped =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "test \"$(/usr/bin/biome --version)\" = 'Version: %{version}'"],
         ],

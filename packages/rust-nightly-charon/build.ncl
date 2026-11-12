@@ -87,7 +87,9 @@ in
   attrs =
     {
       upstream_version = "nightly-%{date}",
-      license_spdx = "MIT OR Apache-2.0",
+      # usr/lib ships libLLVM; the rustc tarball's COPYRIGHT.html
+      # gives src/llvm-project as "Apache-2.0 WITH LLVM-exception AND NCSA".
+      license_spdx = "(MIT OR Apache-2.0) AND Apache-2.0 WITH LLVM-exception AND NCSA",
       source_provenance = {
         category = 'GithubRepo,
         owner = "rust-lang",

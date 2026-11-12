@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let glibc = import "../glibc/build.ncl" in
 # go-1.24.9: the bootstrap for `go`, from gen-13 of gominimal/bootstrap: the top of the Go ladder,
@@ -28,6 +28,14 @@ let version = "1.24.9" in
     } target,
   ],
   runtime_deps = [glibc],
+  # the binary runs from its own runtime closure, outside any build sandbox
+  tests = {
+    go_version =
+      {
+        class = 'Standalone,
+        cmds = [["/usr/lib/go-1.24.9/bin/go", "version"]],
+      } | Test,
+  },
   outputs = {
     goroot = { glob = "usr/lib/go-1.24.9/**", allow_executable = true } | OutputData,
     buildinfo = { glob = "usr/share/go-1.24.9/BUILDINFO" } | OutputData,

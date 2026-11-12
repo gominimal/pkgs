@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -14,14 +14,14 @@ let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 
-let version = "18.24.4" in
+let version = "18.24.6" in
 {
   name = "atuin",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/atuinsh/atuin/v%{version}.tar.gz",
-      sha256 = "1b966b0780c1cf6a30211d706834282ca54be7a215fd4268c8e7baf9795d3fb8",
+      sha256 = "fdfcaab891ecc33561372d6763b8c279112a0d10c7ddb3a3b464abe039045423",
       extract = true,
       strip_prefix = "atuin-%{version}",
     } | Source,
@@ -60,4 +60,8 @@ let version = "18.24.4" in
       },
       build_cost_multiple = 3,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/atuin --version",
+  },
 } | BuildSpec

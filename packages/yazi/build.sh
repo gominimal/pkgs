@@ -34,3 +34,6 @@ cargo build --release --locked
 
 mkdir -p $OUTPUT_DIR/usr/bin
 cp target/release/yazi $OUTPUT_DIR/usr/bin
+# ya (yazi-cli) is a default workspace member: the plugin/flavor manager and
+# DDS client the docs tell users to run.
+cp target/release/ya $OUTPUT_DIR/usr/bin

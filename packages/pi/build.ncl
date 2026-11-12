@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
@@ -11,14 +11,14 @@ let node-lts = import "../node-lts/build.ncl" in
 # ships an npm-shrinkwrap.json, so installing it locks the transitive
 # dependency tree and keeps the build reproducible. The `#!/usr/bin/env node`
 # shebang of the installed bin is served by coreutils(env) + node.
-let version = "1.5.0" in
+let version = "1.5.1" in
 {
   name = "pi",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-%{version}.tgz",
-      sha256 = "5bfb66848a4c4b81c637ce8d2136be01945b70aac8e8556b091cb02241b385df",
+      sha256 = "b213c062307356a5434880ed9d38b26c27bfab0a091fe01571c74e972af532c9",
     } | Source,
     base,
     node-lts,
@@ -53,4 +53,8 @@ let version = "1.5.0" in
         repo = "pi",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/pi --version",
+  },
 } | BuildSpec

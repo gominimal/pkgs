@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -7,12 +7,12 @@ let toolchain = import "../toolchain/build.ncl" in
 let go-1-24-9 = import "../go-1.24.9/build.ncl" in
 let git = import "../git/build.ncl" in
 
-let version = "1.27.3" in
+let version = "1.27.4" in
 let variants = {
   # Bumping go means updating `version` and `source_sha256` only.  The bootstrap pins change
   # only when go's minimum bootstrap version (src/cmd/dist/buildtool.go) moves past 1.24.
   source_url = "https://go.dev/dl/go%{version}.src.tar.gz",
-  source_sha256 = "6e7749035cf360f06b2575d162ea79df9fda8ef671889e5c375f8e50777f26bb",
+  source_sha256 = "73cfb8571aec0c01177687db87163d46aa20e9779672772891aa17654d9a6099",
 }
 in
 {
@@ -96,4 +96,8 @@ in
       },
       build_cost_multiple = 2,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/go version",
+  },
 } | BuildSpec

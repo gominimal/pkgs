@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -9,14 +9,14 @@ let zlib = import "../zlib/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "3.132" in
+let version = "3.133" in
 {
   name = "nss",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/nss-%{version}.tar.gz",
-      sha256 = "ee9cf4837ba801141a804321c4462ad8f452ff4314275c6d5108a6b05af227ff",
+      sha256 = "4d752526b9846a1d962588cfbd09b7cc2a4f6a4effbd9157d58a30e8a2573065",
       extract = true,
       strip_prefix = "nss-%{version}",
     } | Source,
@@ -45,4 +45,13 @@ let version = "3.132" in
       upstream_version = version,
       license_spdx = "MPL-2.0",
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [["/bin/bash", "-c", "mkdir -p /tmp/nssdb && /usr/bin/certutil -N -d sql:/tmp/nssdb --empty-password && /usr/bin/certutil -L -d sql:/tmp/nssdb"]],
+      } | Test,
+  },
 } | BuildSpec

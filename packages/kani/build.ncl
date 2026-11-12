@@ -3,6 +3,8 @@ let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, ..
 in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
@@ -122,7 +124,9 @@ in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "Apache-2.0 OR MIT",
+      # The bundled toolchain ships libLLVM; the rustc tarball's COPYRIGHT.html
+      # gives src/llvm-project as "Apache-2.0 WITH LLVM-exception AND NCSA".
+      license_spdx = "(Apache-2.0 OR MIT) AND Apache-2.0 WITH LLVM-exception AND NCSA",
       source_provenance = {
         category = 'GithubRepo,
         owner = "model-checking",
@@ -134,7 +138,7 @@ in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "kani --version | grep -q '%{version}'"],
           # A harness Kani must refute: u8 addition overflows.
