@@ -34,6 +34,7 @@ let version = "2.6.2" in
   outputs = {
     libtoolize = { glob = "usr/bin/libtoolize" } | OutputBin,
     libtool = { glob = "usr/bin/libtool" } | OutputBin,
+    "libtool-next-version" = { glob = "usr/bin/libtool-next-version" } | OutputBin,
     libs = { glob = "usr/lib/libltdl.{a,so*}" } | OutputLib,
 
     ltconfigs = { glob = "usr/lib/*.la" } | OutputData,
