@@ -70,10 +70,9 @@ export RUSTY_V8_ARCHIVE=/nonexistent/librusty_v8-not-pinned.a
 # this script used to compile): interposes getrandom/getentropy so build.rs /
 # proc-macro / rustc-internal HashMaps iterate in the same order every build. It wraps
 # only the offline BUILD (`--frozen` refuses any network access); the produced binary
-# is unaffected.
-DETBUILD=/usr/lib/minimal/libdetbuild.so
-[ -f "$DETBUILD" ] || { echo "ERROR: $DETBUILD missing (detbuild build dep)" >&2; exit 1; }
-LD_PRELOAD="$DETBUILD" cargo build --frozen --release -p codex-cli
+# is unaffected. The literal one-command prefix is what pkgs' detbuild-preload-guard
+# requires; `detbuild` is in build_deps so the library is in the sandbox.
+LD_PRELOAD=/usr/lib/minimal/libdetbuild.so cargo build --frozen --release -p codex-cli
 
 mkdir -p $OUTPUT_DIR/usr/bin
 install -m 755 target/release/codex $OUTPUT_DIR/usr/bin/codex
