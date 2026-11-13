@@ -67,21 +67,12 @@ export CXXFLAGS="${CFLAGS}"
 grep -q '^channel = "nightly-' rust-toolchain.toml || { echo "ERROR: bun's rust-toolchain.toml no longer pins a nightly channel; revisit the toolchain handling below" >&2; exit 1; }
 : > rust-toolchain.toml
 export RUSTC_BOOTSTRAP=1
-# bun 1.4.3+ uses core::mem::type_info::of (Rust >= 1.100) in bun_collections;
-# Rust 1.99 has every TypeId reflection method it calls except that free
-# function, so rust-1.99-type-info-of.patch defines it locally with 1.100's
-# body (const { core::intrinsics::type_id::<T>() }). Once our rustc reaches 1.100
-# the patch is dead weight: fail so it gets removed instead of lingering.
+# bun 1.4.3+ needs Rust >= 1.100: bun_collections calls core::mem::type_info::of
+# and lint_js.rs derives Default over std::sync::Once (once_default), both new
+# in 1.100.
 rust_minor=$(rustc --version | sed -nE 's/^rustc 1\.([0-9]+)\..*/\1/p')
 [ -n "$rust_minor" ] || { echo "ERROR: cannot parse rustc --version: $(rustc --version)" >&2; exit 1; }
-if [ "$rust_minor" -ge 100 ]; then
-  echo "ERROR: rustc is 1.$rust_minor; drop rust-1.99-type-info-of.patch from bun's build.ncl and build.sh" >&2
-  exit 1
-fi
-patch -Np1 -i rust-1.99-type-info-of.patch
-grep -q 'const { core::intrinsics::type_id::<T>() }' src/collections/multi_array_list.rs || { echo "ERROR: type_info::of shim not applied" >&2; exit 1; }
-! grep -q '^use core::mem::type_info;' src/collections/multi_array_list.rs || { echo "ERROR: multi_array_list.rs still imports core::mem::type_info" >&2; exit 1; }
-grep -q '^impl Default for Start {$' src/runtime/cli/lint_js.rs || { echo "ERROR: lint_js.rs Start Default impl (Once::new) not applied" >&2; exit 1; }
+[ "$rust_minor" -ge 100 ] || { echo "ERROR: bun 1.4.3+ needs rustc >= 1.100; got 1.$rust_minor" >&2; exit 1; }
 test -d "$(rustc --print sysroot)/lib/rustlib/src/rust/library" || { echo "ERROR: rust-src missing from the rust sysroot; bun 1.4 builds std with -Zbuild-std" >&2; exit 1; }
 
 # CVE-2026-111943: upstream dropped the three emSign roots NSS 3.131.1 removed
