@@ -35,11 +35,16 @@ for lib in $libclangs; do
   esac
 done
 
-# OpenSSL 4: openssl-sys 0.9.117 and openssl 0.10.81 (see build.ncl), applied before
-# the workspace sync below so its registry-pin baseline already carries them.
-( cd .. && patch -Np1 -i ./openssl-4-openssl-sys-lock.patch )
-grep -A1 '^name = "openssl-sys"$' Cargo.lock | grep -q '^version = "0.9.117"$' || {
-  echo "ERROR: openssl-sys 0.9.117 is not in Cargo.lock (OpenSSL 4)" >&2
+# OpenSSL 4: openssl-sys before 0.9.114 panics in its build script on OpenSSL 4.x.
+# Upstream's lock carries a new enough one since 0.169.0 (0.9.118), so the lock patch
+# that moved it to 0.9.117 is gone; fail closed if a release ever ships an older one.
+osys=$(grep -A1 '^name = "openssl-sys"$' Cargo.lock | sed -n 's/^version = "\(.*\)"$/\1/p')
+case "$osys" in
+  0.9.*) [ "${osys#0.9.}" -ge 114 ] 2>/dev/null ;;
+  0.[1-9][0-9].* | [1-9]*.*) true ;;
+  *) false ;;
+esac || {
+  echo "ERROR: Cargo.lock's openssl-sys ($osys) predates 0.9.114 and fails on OpenSSL 4" >&2
   exit 1
 }
 

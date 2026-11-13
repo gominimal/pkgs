@@ -18,10 +18,6 @@ let version = "0.169.0" in
   name = "codex",
   build_deps = [
     { file = "build.sh" } | Local,
-    # OpenSSL 4: Cargo.lock's openssl-sys 0.9.111 panics in its build script on 4.x
-    # (4.x support starts at 0.9.114). Moves it to 0.9.117 and openssl to 0.10.81. Applied by name, so a
-    # stale patch fails the build.
-    { file = "openssl-4-openssl-sys-lock.patch" } | Local,
     {
       url = "https://github.com/openai/codex/archive/refs/tags/rust-v%{version}.tar.gz",
       sha256 = "d9b6335151f66d1d4ae9123f55553164ff339f30b14f64a358ea78139c4c093e",
