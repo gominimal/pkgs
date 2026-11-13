@@ -79,7 +79,7 @@ grep -A3 '^name = "libsqlite3-sys"$' Cargo.lock | grep -q '^version = "0.27.0"$'
 #     (zellij-utils/src/distribution.rs). A release build always embeds
 #     upstream's prebuilt plugin wasm from zellij-utils/assets/plugins/*.wasm
 #     (include_bytes!), with or without it. Building those plugins from source
-#     is tracked in a follow-up issue (to be linked).
+#     is tracked in gominimal/pkgs#1500.
 cargo build --locked --release --no-default-features --features web_server_capability
 readelf -d target/release/zellij | grep -q 'NEEDED.*libcurl\.so' || {
   echo "ERROR: zellij does not link the system libcurl (vendored curl crept back in?)" >&2
