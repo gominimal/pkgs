@@ -22,6 +22,8 @@ let version = "6.11.0" in
   # solver.
   build_deps = [
     { file = "build.sh" } | Local,
+    # diffblue/cbmc#9024 (post-6.11.0): gcc 16 -Werror fixes. See build.sh.
+    { file = "gcc16-warnings.patch" } | Local,
     {
       url = "https://github.com/diffblue/cbmc/archive/refs/tags/cbmc-%{version}.tar.gz",
       sha256 = "217e5ed631bbd4b39659fde37a603482003605abd4cb2586b09c2da344d925db",
