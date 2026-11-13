@@ -238,6 +238,10 @@ in
     #   sysx file + empty dir          default                R=out C=in S=ok
     #   sysx file + empty dir          NODE_USE_SYSTEM_CA=0   R=in  C=in S=ok
     #   sysx file + empty dir          --use-bundled-ca       R=in  C=in S=ok
+    #   sysx file + empty dir          --use-openssl-ca       R=out C=in S=ok
+    #   sysx file + empty dir          --use-openssl-ca and   R=out C=in S=ok
+    #                                  NODE_USE_SYSTEM_CA=
+    #                                  0/false/no/off
     #   SSL_CERT_DIR=<dir with T>      default                T=ok
     #   SSL_CERT_DIR=<dir with T>      NODE_USE_SYSTEM_CA=0   T=out
     #   SSL_CERT_DIR=<dir with T>      --use-bundled-ca       T=out
@@ -254,6 +258,9 @@ in
     #     that row.
     #   - A patch that drops the compiled-in roots and never puts them back:
     #     R=out fails both opt-out rows and the fallback row.
+    #   - A patch that lets the NODE_USE_SYSTEM_CA opt-out override an
+    #     explicit --use-openssl-ca: R=in fails the openssl rows with the
+    #     opt-out set.
     #   The opt-out and fallback rows pass on unpatched bun BY DESIGN: there
     #   the patch promises upstream's store exactly. Their job is the last
     #   case, not the first two.
@@ -421,6 +428,11 @@ in
               expect "R=out C=in S=ok" "sysx store, default" sysx bun check.js $real
               expect "R=in C=in S=ok" "sysx store, NODE_USE_SYSTEM_CA=0" sysx NODE_USE_SYSTEM_CA=0 bun check.js $real
               expect "R=in C=in S=ok" "sysx store, --use-bundled-ca" sysx bun --use-bundled-ca check.js $real
+              expect "R=out C=in S=ok" "sysx store, --use-openssl-ca" sysx bun --use-openssl-ca check.js $real
+              for v in 0 false no off; do
+                expect "R=out C=in S=ok" "sysx store, --use-openssl-ca, NODE_USE_SYSTEM_CA=$v" \
+                  sysx NODE_USE_SYSTEM_CA=$v bun --use-openssl-ca check.js $real
+              done
               expect "T=ok" "SSL_CERT_DIR=sys, default" clean SSL_CERT_DIR="$d/sys" bun check.js "T:$port_T"
               expect "T=out" "SSL_CERT_DIR=sys, NODE_USE_SYSTEM_CA=0" \
                 clean SSL_CERT_DIR="$d/sys" NODE_USE_SYSTEM_CA=0 bun check.js "T:$port_T"

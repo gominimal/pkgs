@@ -25,7 +25,8 @@ This patch:
     store is empty (no ca-certificates), so bun keeps working rather than trust
     nothing. (a) and (b) are upstream's store exactly, where --use-system-ca /
     NODE_USE_SYSTEM_CA=1 still add the system roots. --use-openssl-ca leaves
-    the compiled-in roots and the system loader out, as #46542 does.
+    the compiled-in roots and the system loader out, as #46542 does, even
+    with the NODE_USE_SYSTEM_CA opt-out set (the explicit flag wins).
 
 Not changed: tls.rootCertificates and tls.getCACertificates('bundled') still
 list the compiled-in roots; tls.getCACertificates('default') (src/js/node/tls.ts)
@@ -48,7 +49,7 @@ index 3a6f010c3b..be6ea377fc 100644
  #include <string_view>
  #include <unordered_set>
  #include <vector>
-@@ -51,17 +53,36 @@ static void us_cert_file_into_bio(void *ctx, const uint8_t *data, size_t len) {
+@@ -51,17 +53,38 @@ static void us_cert_file_into_bio(void *ctx, const uint8_t *data, size_t len) {
  // External variable from Zig CLI arguments
  extern "C" bool Bun__Node__UseSystemCA;
  
@@ -68,9 +69,11 @@ index 3a6f010c3b..be6ea377fc 100644
 +}
 +
 +// minimal: upstream's store (compiled-in roots plus OpenSSL's default paths),
-+// asked for with --use-bundled-ca or the NODE_USE_SYSTEM_CA opt-out.
++// asked for with --use-bundled-ca or the NODE_USE_SYSTEM_CA opt-out. An
++// explicit --use-openssl-ca beats the environment opt-out.
 +static bool minimal_upstream_ca_store() {
-+  return Bun__Node__MinimalCAStore == MINIMAL_CA_BUNDLED || minimal_system_ca_opted_out();
++  return Bun__Node__MinimalCAStore == MINIMAL_CA_BUNDLED ||
++         (Bun__Node__MinimalCAStore == MINIMAL_CA_SYSTEM && minimal_system_ca_opted_out());
 +}
 +
  // Helper function to check if system CA should be used
@@ -93,7 +96,7 @@ index 3a6f010c3b..be6ea377fc 100644
  }
  
  // Platform-specific system certificate loading implementations are separated:
-@@ -298,10 +319,22 @@ extern "C" X509_STORE *us_get_default_ca_store() {
+@@ -298,10 +321,22 @@ extern "C" X509_STORE *us_get_default_ca_store() {
    }
    X509_STORE_set_flags(store, X509_V_FLAG_IGNORE_EXPIRED_TRUST_ANCHORS);
  
