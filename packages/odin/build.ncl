@@ -23,8 +23,17 @@ let util-linux = import "../util-linux/build.ncl" in
 
 let version = "dev-2026-11a" in
 # Odin stamps its own `ODIN_VERSION` from the month of the release commit.
-# Pinned here so the build does not read the wall clock (see build.sh).
-let version_date = "2026-11" in
+# Pinned here so the build does not read the wall clock (see build.sh). Derived
+# from `version` (`dev-YYYY-MM[x]` -> `YYYY-MM`) so an automated bump, which
+# only rewrites `version`, cannot leave it stale. A tag of any other shape
+# fails evaluation here rather than stamping a wrong date; build.sh re-checks.
+let version_date =
+  let d = std.string.substring 4 11 version in
+  if std.string.is_match "^dev-[0-9]{4}-(0[1-9]|1[0-2])[a-z]?$" version then
+    d
+  else
+    std.fail_with "odin: version %{version} is not dev-YYYY-MM[x]; cannot derive version_date"
+in
 # Matches the version upstream's vendor/box2d/build_box2d.sh pins.
 let box2d_version = "3.2.0" in
 {

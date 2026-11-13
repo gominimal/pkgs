@@ -12,6 +12,16 @@ patch -Np1 -i "$BUILD_ROOT/odin-deterministic-serial-thread-pool.patch"
 # it falls back to `date +%Y-%m`, which reads the wall clock and would make the
 # build non-reproducible; pin it to the month of the release instead. Fail loudly
 # if upstream stops stamping the version this way.
+# VERSION_DATE is derived from VERSION in build.ncl; refuse anything that is not
+# a real YYYY-MM, or one that disagrees with the tag it came from.
+case "$MINIMAL_ARG_VERSION_DATE" in
+  [0-9][0-9][0-9][0-9]-0[1-9]|[0-9][0-9][0-9][0-9]-1[0-2]) ;;
+  *) echo "odin: VERSION_DATE '$MINIMAL_ARG_VERSION_DATE' is not YYYY-MM" >&2; exit 1 ;;
+esac
+case "$MINIMAL_ARG_VERSION" in
+  "dev-$MINIMAL_ARG_VERSION_DATE"|"dev-$MINIMAL_ARG_VERSION_DATE"[a-z]) ;;
+  *) echo "odin: VERSION_DATE '$MINIMAL_ARG_VERSION_DATE' does not match VERSION '$MINIMAL_ARG_VERSION'" >&2; exit 1 ;;
+esac
 grep -q 'date +"%Y-%m"' build_odin.sh
 sed -i "s|^\([[:space:]]*\)GIT_DATE=.*|\1GIT_DATE=\"${MINIMAL_ARG_VERSION_DATE}\"|" build_odin.sh
 
