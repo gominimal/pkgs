@@ -11,7 +11,7 @@ export RUSTFLAGS="-C linker=gcc"
 # >>> pkgmgr lock-patch (generated; regenerate with `pkgmgr lock-patch uv`, never edit)
 # security-floors-lock.patch is a cargo-resolved delta against upstream's Cargo.lock; it is
 # only valid for the exact lock it was generated from.
-echo "888a278b0bf71d66142fe520431d53b0a8b5f2f5864846acc9a1a4f2270952e9  Cargo.lock" | sha256sum -c --status - || {
+echo "97c02f24815e01c1519241841e03d50c44c62e3c2100ba763b93b3a2e7d98e50  Cargo.lock" | sha256sum -c --status - || {
   echo "ERROR: upstream Cargo.lock changed; run: pkgmgr lock-patch uv" >&2
   exit 1
 }
@@ -27,6 +27,10 @@ if grep -A1 '^name = "event-listener"$' Cargo.lock | grep -qE '^version = "5[.]4
 fi
 if grep -A1 '^name = "memmap2"$' Cargo.lock | grep -qE '^version = "0[.]9[.](([0-9]|10)([-+][^"]*)?|11-[^"]*)"$'; then
   echo "ERROR: memmap2 below its security floor 0.9.11 is in Cargo.lock (RUSTSEC-2026-0186)" >&2
+  exit 1
+fi
+if grep -A1 '^name = "rustix"$' Cargo.lock | grep -qE '^version = "1[.]1[.](([0-5])([-+][^"]*)?|6-[^"]*)"$'; then
+  echo "ERROR: rustix below its security floor 1.1.6 is in Cargo.lock (RUSTSEC-2026-0486)" >&2
   exit 1
 fi
 if grep -A1 '^name = "tokio"$' Cargo.lock | grep -qE '^version = "1[.]53[.](([0-2])([-+][^"]*)?|3-[^"]*)"$'; then
