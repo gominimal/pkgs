@@ -33,10 +33,10 @@ install -m 0644 src/libraylib.a "$OUTPUT_DIR/usr/lib/libraylib.a"
 
 # Upstream links the shared library without a SONAME, so anything linking
 # -lraylib records a bare "libraylib.so". Set the versioned one instead.
-build SHARED -Wl,-soname,libraylib.so.600
-install -m 0755 src/libraylib.so.6.0.0 "$OUTPUT_DIR/usr/lib/libraylib.so.6.0.0"
-ln -sf libraylib.so.6.0.0 "$OUTPUT_DIR/usr/lib/libraylib.so.600"
-ln -sf libraylib.so.600 "$OUTPUT_DIR/usr/lib/libraylib.so"
+build SHARED -Wl,-soname,libraylib.so.620
+install -m 0755 src/libraylib.so.6.2.0 "$OUTPUT_DIR/usr/lib/libraylib.so.6.2.0"
+ln -sf libraylib.so.6.2.0 "$OUTPUT_DIR/usr/lib/libraylib.so.620"
+ln -sf libraylib.so.620 "$OUTPUT_DIR/usr/lib/libraylib.so"
 
 install -m 0644 src/raylib.h src/raymath.h src/rlgl.h "$OUTPUT_DIR/usr/include/"
 
