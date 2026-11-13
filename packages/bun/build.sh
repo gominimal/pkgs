@@ -51,7 +51,7 @@ export CXXFLAGS="${CFLAGS}"
 
 # bun 1.4 is written in Rust and pins a nightly (rust-toolchain.toml): it uses
 # #![feature] gates and always rebuilds std from source (-Zbuild-std, so it
-# needs rust's rust-src, which the rust package ships). Remove the toolchain
+# needs rust's rust-src, which the rust package ships). Empty the toolchain
 # file so the build uses minimal's stable rust rather than asking rustup for the
 # nightly, and let that stable rustc/cargo accept the nightly-only features and
 # -Z flags. If the stable release lags the pinned nightly far enough that a
@@ -59,7 +59,13 @@ export CXXFLAGS="${CFLAGS}"
 # rust, not a pin. (1.3.x's lol-html -Zbuild-std sed is gone: lol-html is a
 # workspace crate now, and every crate builds that way.) The arm64 zig
 # codegen-shard cap (bun/arm64-zig-codegen-cap) is gone too: 1.4 has no Zig.
-rm -f rust-toolchain.toml
+# Empty it rather than delete it: bun's ninja graph lists rust-toolchain.toml
+# as an input of rust-target/plan.json (scripts/build/rust.ts planEdgeInputs), so
+# a missing file fails with "missing and no known rule to make it". With no
+# `channel` line, config.ts/tools.ts set no RUSTUP_TOOLCHAIN (our rustc is not
+# a rustup proxy and would ignore it anyway).
+grep -q '^channel = "nightly-' rust-toolchain.toml || { echo "ERROR: bun's rust-toolchain.toml no longer pins a nightly channel; revisit the toolchain handling below" >&2; exit 1; }
+: > rust-toolchain.toml
 export RUSTC_BOOTSTRAP=1
 test -d "$(rustc --print sysroot)/lib/rustlib/src/rust/library" || { echo "ERROR: rust-src missing from the rust sysroot; bun 1.4 builds std with -Zbuild-std" >&2; exit 1; }
 
