@@ -52,7 +52,7 @@ let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let version = "1.7.0" in
+let version = "1.8.0" in
 {
   name = "vlt",
   build_deps = [
