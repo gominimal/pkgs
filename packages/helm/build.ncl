@@ -2,14 +2,14 @@ let { standaloneTest, BuildSpec, Local, Needs, OutputBin, Source, .. } = import 
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 
-let version = "4.3.1" in
+let version = "4.3.2" in
 {
   name = "helm",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/helm/helm/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "e7b803b6a248c18aea067dbccacaf651c29946db75d05fb23f318ff2f15961c6",
+      sha256 = "7d848fa8880cca40f9548e46255d38e3e25259847fe81775c5a09af0c3dda2e1",
       extract = true,
       strip_prefix = "helm-%{version}",
     } | Source,
