@@ -16,7 +16,7 @@ let pyelftools = import "../pyelftools/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "5.6.2" in
+let version = "5.6.4" in
 {
   name = "libkrunfw",
 
@@ -24,7 +24,7 @@ let version = "5.6.2" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/libkrun/libkrunfw/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "df45d649fcbd07a4d0ca03fa836b2f640fdcf9b40187f3eb7023259c6e83d582",
+      sha256 = "5b92b6f2a5ee6a16583bd37014a37794451a00d120fceee104f84404118757d0",
       extract = true,
       strip_prefix = "libkrunfw-%{version}",
     } | Source,
