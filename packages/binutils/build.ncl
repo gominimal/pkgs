@@ -101,9 +101,12 @@ let version = "2.47" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # gominimal/bootstrap gen-13 object (generations/gen-13/manifest.json)
-              url = "gs://minimal-bootstrap/gen-13/sha256/7fe673db8a870d879aa91c24c0554f233872cc4505acb0929ebd522ecd666e5a/binutils-2.46-glibc-2.46.0-x86_64.tar.zst",
-              sha256 = "7fe673db8a870d879aa91c24c0554f233872cc4505acb0929ebd522ecd666e5a",
+              # gominimal/bootstrap gen-16 object (generations/gen-16/manifest.json): binutils-2.46-glibc-seed,
+              # the same binutils on the plain /usr/lib/ld-linux-x86-64.so.2 loader with no RUNPATH
+              # (bootstrap#12). gen-13's binutils-2.46-glibc named the glibc-bedrock-2.42 loader, which a
+              # build without the bedrock tree cannot exec (`as` fails; minimermetic's hermetic glibc pass).
+              url = "gs://minimal-bootstrap/gen-16/sha256/741ece75ff16f44bb8ddfb14134d0f5dcc7baeae3ab850aed367396ad2e2080a/binutils-2.46-glibc-seed-2.46.0-x86_64.tar.zst",
+              sha256 = "741ece75ff16f44bb8ddfb14134d0f5dcc7baeae3ab850aed367396ad2e2080a",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
