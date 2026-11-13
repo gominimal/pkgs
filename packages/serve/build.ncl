@@ -5,7 +5,7 @@ let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let version = "14.2.7" in
+let version = "14.2.8" in
 {
   name = "serve",
   build_deps = [
