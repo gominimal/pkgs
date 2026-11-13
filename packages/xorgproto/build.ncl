@@ -1,17 +1,19 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let pkgconf = import "../pkgconf/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let meson = import "../meson/build.ncl" in
 
-let version = "2025.1" in
+let version = "2026.1" in
 {
   name = "xorgproto",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/xorgproto-%{version}.tar.xz",
-      sha256 = "56898c716c0578df8a2d828c9c3e5c528277705c0484381a81960fe1a67668e8",
+      sha256 = "f9bfe4a9ed8c8ab9d2a3b0d49797f046052dadd06b7a8b45dbffaffb137e8290",
       extract = true,
       strip_prefix = "xorgproto-%{version}",
     } | Source,
@@ -33,4 +35,29 @@ let version = "2025.1" in
       upstream_version = version,
       license_spdx = "BSD-2-Clause AND HPND AND HPND-sell-variant AND ICU AND MIT AND MIT-open-group AND SGI-B-2.0 AND SMLNJ AND X11 AND X11-distribute-modifications-variant",
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain, pkgconf],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              cd /tmp
+              pkg-config --exists --print-errors xproto
+              gcc -x c - -o t -x none  <<'EOF'
+              #include <X11/X.h>
+              #include <X11/Xproto.h>
+              int main(void) { return sizeof(xConnClientPrefix) == 0 || KeyPress != 2; }
+              EOF
+              ./t
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

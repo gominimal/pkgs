@@ -1,17 +1,17 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.16.3" in
+let version = "1.17.2" in
 {
   name = "terraform",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/hashicorp/terraform/v%{version}.tar.gz",
-      sha256 = "3522226b12fcd7a6af0ae65ec8a5a9bc6cea348043a1d60a0361945f03316470",
+      sha256 = "281fe94bfc27634164bae0bc26d1eefeb9d5ee4a0ce616d950aba5a9ac8e5b42",
       extract = true,
       strip_prefix = "terraform-%{version}",
     } | Source,
@@ -51,4 +51,8 @@ let version = "1.16.3" in
       },
       build_cost_multiple = 2,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/terraform version",
+  },
 } | BuildSpec

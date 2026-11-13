@@ -4,25 +4,23 @@ set -e
 tar -xof "Python-${MINIMAL_ARG_VERSION}.tar.xz"
 cd "Python-${MINIMAL_ARG_VERSION}"
 
-# CVE-2026-19672 -- see the patch header and the note in build.ncl. Applied
-# before configure so a failed hunk fails the build under `set -e` rather than
-# quietly producing a python whose tarfile filters still escape. The patch
+# CVE-2025-15367 (poplib command injection, gh-143923) -- cherry-picked from main;
+# upstream never backported it to 3.14, so 3.14.10 still lacks it. Applied before
+# configure so a failed hunk fails the build under `set -e` rather than quietly
+# producing an unpatched poplib; -F0 refuses fuzzy hunks so a context drift on a
+# later bump fails too, instead of landing the check somewhere else. The patch
 # lives one level up because we extracted into a subdirectory above.
-patch -Np1 -i "../0001-gh-155999-tarfile-normalize-parent-dir-components.patch"
+#
+# Earlier backports ship upstream and were dropped on the bump that first carried
+# them: gh-155999, gh-155694, gh-156002, gh-155292 in 3.14.8; gh-157265 (tarfile),
+# gh-157579 (tempfile) and the CVE-2026-111943 ensurepip pip swap (gh-159894, pip
+# 26.2.2) in 3.14.9. Each is listed in that release's own Misc/NEWS.
+patch -Np1 -F0 -i "../0003-gh-143923-poplib-reject-control-characters.patch"
 
-# CVE-2026-87910 -- see the patch header and the note in build.ncl. Same
-# fail-closed placement as 0001; applied after it because its line numbers
-# were regenerated against the 0001-patched tree.
-patch -Np1 -i "../0002-gh-157265-tarfile-honor-filter-none-link-fallback.patch"
-
-# CVE-2026-15806 (urllib), CVE-2026-15310 (zipfile) and CVE-2026-17084
-# (stringprep/idna) -- same deal: 3.14-branch backports that first ship in
-# 3.14.8. 0004 carries two upstream commits that must apply in order; they
-# live in one file so that order cannot be got wrong. 0002 is reserved for
-# the tarfile fix in pkgs#765.
-patch -Np1 -i "../0003-gh-155694-urllib-scope-credentials-by-scheme.patch"
-patch -Np1 -i "../0004-gh-156002-zipfile-bound-decompression.patch"
-patch -Np1 -i "../0005-gh-155292-stringprep-pin-unicode-3.2.patch"
+# OpenSSL 4 support for _ssl (python/cpython#149783, Modules/ only; see build.ncl).
+# Same -F0 rule: a context drift fails the build instead of landing elsewhere.
+patch -Np1 -F0 -i "../0004-gh-148292-openssl-4-support.patch"
+grep -q '_ssl_data_40.h' Modules/_ssl.c
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
@@ -61,3 +59,22 @@ make -j$(nproc)
 # TODO
 #make test TESTOPTS="--timeout 120"
 make DESTDIR=$OUTPUT_DIR install
+
+# CVE-2026-111943, after install: the pip that ensurepip put into site-packages
+# must not vendor a CA bundle containing emSign ECC
+# Root CA - G3. The needle is one line of that root's base64 PEM body (its public
+# key), so it matches regardless of certifi's comment headers. 3.14.9 bundles
+# pip 26.2.2 (fixed); this keeps a future bump from shipping an older pip.
+PIP_CACERT="$(ls "$OUTPUT_DIR"/usr/lib/python3.*/site-packages/pip/_vendor/certifi/cacert.pem)"
+[ -s "$PIP_CACERT" ] || {
+  echo "python: ensurepip installed no pip/_vendor/certifi/cacert.pem" >&2
+  exit 1
+}
+ls -d "$OUTPUT_DIR"/usr/lib/python3.*/site-packages/pip-*.dist-info >/dev/null || {
+  echo "python: ensurepip installed no pip into site-packages" >&2
+  exit 1
+}
+if grep -q 'djAQBgcqhkjOPQIBBgUrgQQAIgNiAAQjpQy4LRL1KPOxst3iAhKAnjlfSU2fySU0' "$PIP_CACERT"; then
+  echo "python: bundled pip's certifi still trusts emSign ECC Root CA - G3 (CVE-2026-111943)" >&2
+  exit 1
+fi

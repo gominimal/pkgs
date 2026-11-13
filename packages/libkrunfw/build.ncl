@@ -1,4 +1,5 @@
-let { BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let bc = import "../bc/build.ncl" in
 let bison = import "../bison/build.ncl" in
@@ -15,33 +16,40 @@ let pyelftools = import "../pyelftools/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "5.6.1" in
+let version = "5.6.4" in
+let kernel_version = "6.12.115" in
 {
   name = "libkrunfw",
 
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/containers/libkrunfw/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "b8ec9f2205f1092a5fcd8ab8ecb8e1a939dea15bb842d844da99c5a062e3f453",
+      url = "https://github.com/libkrun/libkrunfw/archive/refs/tags/v%{version}.tar.gz",
+      sha256 = "5b92b6f2a5ee6a16583bd37014a37794451a00d120fceee104f84404118757d0",
       extract = true,
       strip_prefix = "libkrunfw-%{version}",
     } | Source,
-    # Guest kernel firmware source, vendored so the build is hermetic (the
-    # Makefile otherwise curls it into tarballs/ at build time).
+    # Guest kernel source, vendored so the build is hermetic (the Makefile
+    # otherwise curls it into tarballs/ at build time).
     #
-    # ⚠ THIS VERSION IS COUPLED TO `version` ABOVE and must be bumped with it.
-    # libkrunfw's Makefile hard-pins the kernel it builds against:
-    #   5.5.0:  KERNEL_VERSION = linux-6.12.91
-    #   5.6.1:  KERNEL_VERSION = linux-6.12.109
-    # If they disagree, the Makefile does not find its tarball under tarballs/
-    # and falls back to curling it — which fails in the hermetic sandbox with
-    # "make: curl: No such file or directory", not with a version error. Check
-    # KERNEL_VERSION at the top of the Makefile for the tag being pinned.
-    # sha256 is kernel.org's published sha256sums.asc entry for the file.
+    # As of 5.6.4 libkrunfw no longer builds a vanilla kernel.org tarball plus
+    # its own patches/ (5.6.1 still used linux-6.12.109.tar.xz): it fetches a
+    # pre-patched tree from libkrun/linux, tagged
+    # v<FULL_VERSION>-<KERNEL_VERSION>, and its Makefile pins both:
+    #   KERNEL_VERSION = 6.12.115   (5.6.4)
+    #   KERNEL_TARBALL = tarballs/v$(FULL_VERSION)-$(KERNEL_VERSION).tar.gz
+    # ⚠ `kernel_version` must match KERNEL_VERSION at the top of the Makefile
+    # for the tag being pinned. build.sh checks this and fails loudly; without
+    # the check a mismatch surfaces only as "make: curl: No such file or
+    # directory".
+    #
+    # sha256 is of GitHub's tag archive (codeload), verified to carry commit
+    # cb18e1849e6f8d8866f5e6f65fd428f1846726d4 (the tag's target) and the
+    # top-level dir linux-5.6.4-6.12.115/ the Makefile untars to. This relies
+    # on GitHub's archive bytes staying stable, as other tag-archive Sources here do.
     {
-      url = "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.12.109.tar.xz",
-      sha256 = "5484e552a334e15019f4aeba89e5b58f04651cf2f4e24e04de9f152f1c38e3fa",
+      url = "https://github.com/libkrun/linux/archive/refs/tags/v%{version}-%{kernel_version}.tar.gz",
+      sha256 = "050fcea96b607e49f135f270472bc95346c172c9d6df5f9256aeb6f7972675d5",
     } | Source,
     base,
     toolchain,
@@ -75,8 +83,30 @@ let version = "5.6.1" in
     license_spdx = "(LGPL-2.1-only AND GPL-2.0-only)",
     source_provenance = {
       category = 'GithubRepo,
-      owner = "containers",
+      owner = "libkrun",
       repo = "libkrunfw",
     },
+  },
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t -lkrunfw <<'EOF'
+              extern void krunfw_get_kernel(void);
+              int main(void) { void *volatile p = (void *)krunfw_get_kernel; return p ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
   },
 } | BuildSpec

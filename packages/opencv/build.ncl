@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
@@ -13,15 +13,15 @@ let openjpeg = import "../openjpeg/build.ncl" in
 # See:
 #  - https://docs.opencv.org/4.x/db/d05/tutorial_config_reference.html
 #  - https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html
-let version = "4.13.0" in
+let version = "4.14.0" in
 {
   name = "opencv",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://github.com/opencv/opencv/archive/refs/tags/4.13.0.tar.gz
+      # https://github.com/opencv/opencv/archive/refs/tags/4.14.0.tar.gz
       url = "gs://minimal-staging-archives/opencv-%{version}.tar.gz",
-      sha256 = "1d40ca017ea51c533cf9fd5cbde5b5fe7ae248291ddf2af99d4c17cf8e13017d",
+      sha256 = "ee8fb9b30eb60850431b4656447080e3737b56e45719c92b67f245950609f86e",
       extract = true,
     } | Source,
     base,
@@ -70,4 +70,8 @@ let version = "4.13.0" in
       },
       build_cost_multiple = 2,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/opencv_version",
+  },
 } | BuildSpec

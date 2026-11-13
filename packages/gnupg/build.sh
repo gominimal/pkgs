@@ -9,7 +9,6 @@ export CXXFLAGS="$CFLAGS"
 export LDFLAGS="${LDFLAGS:-} -Wl,--build-id=none"
 export ARFLAGS=Drc
 # Wolfi patches (applied before configure).
-patch -Np1 -i "libassun-version.patch"
 patch -Np1 -i "0010-avoid-beta-warning.patch"
 patch -Np1 -i "0210-dirmngr-hkp-avoid-potential-race-condition-when-some-host-die.patch"
 patch -Np1 -i "fix-i18n.patch"
@@ -17,12 +16,13 @@ patch -Np1 -i "make-aes-default-for-fips.patch"
 # ALWAYS regenerate, do not condition on ./configure being absent.
 #
 # The release tarball ships an executable `configure`, so the old
-# `if [ ! -x ./configure ]` guard skipped autoreconf entirely — and
-# libassun-version.patch edits only configure.ac. The patch applied cleanly,
-# the build succeeded, and the generated configure still carried the OLD
-# Libassuan version requirement. Nothing failed; the patch simply did nothing.
+# `if [ ! -x ./configure ]` guard skipped autoreconf entirely, and a patch to
+# configure.ac or autogen.sh (0010-avoid-beta-warning.patch, which configure.ac
+# runs through `autogen.sh --find-version`) applied cleanly but did nothing.
 # (CodeRabbit caught this on #721; it appeared when this package moved from the
 # GitHub archive, which has no configure, to the release tarball, which does.)
+# libassun-version.patch was dropped at 2.5.24: upstream now requires
+# libassuan 3.0.0 itself.
 autoreconf -fi
 #: doc/Makefile.am renders the module-overview and card-
 # architecture diagrams from SVG with ImageMagick's `convert`, which we do not
@@ -47,3 +47,10 @@ make MAKEINFO=true -j"$(nproc)"
 make MAKEINFO=true DESTDIR="$OUTPUT_DIR" install
 # Drop libtool archives — they embed absolute build-time paths.
 find "$OUTPUT_DIR" -name '*.la' -delete
+# The sandbox seeds $OUTPUT_DIR/usr/lib64 -> lib so lib64 installs land in
+# usr/lib. Our usr/** output glob would ship that symlink (followed, it also
+# duplicates every library under a real usr/lib64/). One package shipping
+# usr/lib64 as a symlink and another as a directory is a path collision in any
+# sandbox holding both; the order is spec-hash-dependent, and the wrong order is
+# a hard "File exists" (gnupg's smoke test, pkgs#1242). Libraries live in usr/lib.
+rm -f "$OUTPUT_DIR/usr/lib64"

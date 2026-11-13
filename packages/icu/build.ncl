@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -54,4 +54,8 @@ let version = "78.3" in
         repo = "icu",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/uconv --version",
+  },
 } | BuildSpec

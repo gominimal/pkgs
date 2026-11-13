@@ -3,19 +3,52 @@ set -e
 
 export CC=gcc
 
-tar -xof "node-${MINIMAL_ARG_VERSION}.tar.gz"
-cd "node-${MINIMAL_ARG_VERSION}"
+tar -xof "node-v${MINIMAL_ARG_VERSION}.tar.gz"
+cd "node-v${MINIMAL_ARG_VERSION}"
 
-# Applied by name, never a glob, so a patch that stops being fetched fails the
-# build instead of being silently skipped (same convention as packages/libssh2).
-patch -Np1 -i "../lief-1.x-macho-section-ctor.patch"
-
-# Prove it landed: `patch` can exit 0 on an already-applied hunk, so a zero
-# exit is necessary but not sufficient.
-grep -q "LIEF::MachO::Section::create(section_name, data)" src/node_sea_bin.cc || {
-  echo "ERROR: LIEF 1.x Section patch did not land in src/node_sea_bin.cc" >&2
+# CVE-2026-111943 is fixed upstream (nodejs/node#66871 SPKI blocklist,
+# #66877 NSS 3.131.1 roots). Fail the build if a future version regresses either.
+grep -q "constexpr SpkiHash kBlockedSPKIs" src/crypto/crypto_context.cc &&
+grep -q "InstallCertVerifyCallback(sc->ctx_.get());" src/crypto/crypto_context.cc || {
+  echo "ERROR: upstream CVE-2026-111943 SPKI blocklist missing from src/crypto/crypto_context.cc" >&2
   exit 1
 }
+if grep -q "emSign ECC Root CA - G3" src/node_root_certs.h; then
+  echo "ERROR: emSign ECC Root CA - G3 is back in src/node_root_certs.h (CVE-2026-111943)" >&2
+  exit 1
+fi
+
+# llhttp wasm: rebuilt from undici's C and spliced over the sha-pinned shipped
+# base64 blobs. Every pin fails the build on a node bump until re-derived.
+LH="python3 /usr/share/llhttp-wasm-rebuild/rebuild-llhttp-wasm.py"
+UNDICI="${MINIMAL_ARG_UNDICI:?build.ncl forwards undici}"
+UNDICI_LLHTTP="${MINIMAL_ARG_UNDICI_LLHTTP:?build.ncl forwards undici_llhttp}"
+NPM_UNDICI="${MINIMAL_ARG_NPM_UNDICI:?build.ncl forwards npm_undici}"
+AMARO_VERSION="${MINIMAL_ARG_AMARO:?build.ncl forwards amaro}"
+NPM_LH=deps/npm/node_modules/undici/lib/llhttp
+$LH check-tree --undici "$UNDICI" --npm-undici "$NPM_UNDICI"
+$LH build deps/undici/src ../wasm --version "$UNDICI" --llhttp "$UNDICI_LLHTTP" --sysroot /usr/lib/wasi
+tar -xof "../undici-${NPM_UNDICI}.tar.gz" -C ..
+$LH build "../undici-${NPM_UNDICI}" ../wasm-npm --version "$NPM_UNDICI" --llhttp "${MINIMAL_ARG_NPM_UNDICI_LLHTTP:?build.ncl forwards npm_undici_llhttp}" --sysroot /usr/lib/wasi
+$LH splice deps/undici/undici.js ab4573a06c43574936dc98c3943b10a4ee32798e9797329e9f327e5f64115f54 ../wasm/llhttp.wasm
+$LH splice deps/undici/undici.js 18403ee56fab07f89a845028bad358bb3ebcda213f8e2ec0989a991e9c33da69 ../wasm/llhttp_simd.wasm
+$LH splice "$NPM_LH/llhttp-wasm.js" b96063c7ce14045f91f17489d8b30a2bf5129308bd801d7dde715579d16d0e21 ../wasm-npm/llhttp.wasm
+$LH splice "$NPM_LH/llhttp_simd-wasm.js" 989f2025b23e92ae5093ceb357093df7bdf2e1e7f1f1bf383b0a4dc69a78151d ../wasm-npm/llhttp_simd.wasm
+# Never installed.
+rm deps/undici/src/lib/llhttp/llhttp.wasm deps/undici/src/lib/llhttp/llhttp_simd.wasm \
+   deps/undici/src/lib/llhttp/llhttp-wasm.js deps/undici/src/lib/llhttp/llhttp_simd-wasm.js
+# undici 8.12 vendors milo (Rust) as two base64 wasm carriers in its source tree; node's
+# bundled undici.js compiles milo out (`getMiloEnabled } = false ? null : {}`), so never installed.
+rm deps/undici/src/lib/milo/simd.js deps/undici/src/lib/milo/no-simd.js
+# amaro (`node x.ts` type stripping): swc's wasm, rebuilt by packages/amaro-wasm and spliced
+# over the sha-pinned shipped blob; --wasm-bindgen also renames the glue's one renumbered shim.
+AMARO=/usr/share/amaro-wasm/$AMARO_VERSION/wasm_bg.wasm
+grep -q "\"version\": \"$AMARO_VERSION\"" deps/amaro/package.json || { echo "deps/amaro is not $AMARO_VERSION" >&2; exit 1; }
+$LH splice deps/amaro/dist/index.js 79c79a0be6c92c7d8a1968cb1a7bed88737755d38d2b47ddfe4da5e51796a4e9 "$AMARO" --wasm-bindgen
+LH_WASM="--wasm ../wasm/llhttp.wasm --wasm ../wasm/llhttp_simd.wasm --wasm ../wasm-npm/llhttp.wasm --wasm ../wasm-npm/llhttp_simd.wasm --wasm $AMARO"
+$LH census $LH_WASM --allow-path 'deps/v8/third_party/wasm-api/example/*' --allow-path 'deps/v8/test/*' --allow-path 'deps/v8/src/runtime/runtime-test-wasm.cc' --allow-path 'deps/v8/samples/*' \
+    --expect deps/undici/undici.js=2 --expect "$NPM_LH/llhttp-wasm.js=1" --expect "$NPM_LH/llhttp_simd-wasm.js=1" --expect deps/amaro/dist/index.js=1 \
+    deps lib src
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
@@ -26,11 +59,39 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
-./configure --prefix=/usr \
+# Trust the system CA store (/etc/ssl, from ca-certificates) instead of the
+# Mozilla roots compiled into node, so a CA removed from ca-certificates
+# (CVE-2026-111943, eMudhra) stops being trusted without a node rebuild.
+# --openssl-use-def-ca-store defines NODE_OPENSSL_CERT_STORE, which makes
+# `--use-openssl-ca` the default (configure.py, src/node_options.h at
+# v26.12.1). With it, NewRootCertStore() in src/crypto/crypto_context.cc calls
+# X509_STORE_set_default_paths() INSTEAD of adding the bundled roots: the store
+# is replaced, not extended. Our openssl is built with --openssldir=/etc/ssl,
+# so the default paths are /etc/ssl/cert.pem and /etc/ssl/certs ($SSL_CERT_FILE
+# and $SSL_CERT_DIR override them, as in OpenSSL). NODE_EXTRA_CA_CERTS is still
+# added on top. `--use-system-ca` is accepted but has no effect in this mode.
+# tls.getCACertificates('default') still lists the bundled roots: lib/tls.js
+# keys that list on the --use-openssl-ca flag, not on the store in use.
+# Opt out with `--use-bundled-ca`, on the command line or in NODE_OPTIONS
+# (kAllowedInEnvvar), which restores the compiled-in store.
+./configure --prefix=/usr --openssl-use-def-ca-store \
     --with-intl=system-icu --shared-openssl --shared-zlib --shared-zstd --shared-sqlite --shared-libuv \
     --shared-nghttp2 --shared-nghttp3 --shared-ngtcp2 --shared-gtest  --shared-lief --shared-cares
 make -j$(nproc)
+# type stripping runs on the rebuilt amaro
+printf 'const n: number = 6;\nconsole.log(n * 7);\n' > ../strip.ts
+out/Release/node ../strip.ts | grep -qx 42
+$LH smoke out/Release/node ../wasm/llhttp.wasm ../wasm/llhttp_simd.wasm \
+    ../wasm-npm/llhttp.wasm ../wasm-npm/llhttp_simd.wasm --require deps/npm/node_modules/undici --fetch
 make DESTDIR=$OUTPUT_DIR install
+
+# The flag must have reached the binary: its --help marks the OpenSSL store as
+# the default only when NODE_OPENSSL_CERT_STORE is defined (src/node_options.cc;
+# tr undoes the help text's line folding).
+"$OUTPUT_DIR/usr/bin/node" --help | tr -s ' \n' ' ' | grep -q "use OpenSSL's default CA store (default)" || {
+  echo "ERROR: node was not built with --openssl-use-def-ca-store" >&2
+  exit 1
+}
 
 # npm's compiled-in global prefix is /usr, which is the read-only package
 # store at session time, so every `npm i -g` fails with ENOENT. Ship a
@@ -38,3 +99,10 @@ make DESTDIR=$OUTPUT_DIR install
 # user config) pointing globals at ~/.local, whose bin/ is already on the
 # session PATH. See gominimal/inbox#559.
 printf 'prefix=~/.local\n' > "$OUTPUT_DIR/usr/lib/node_modules/npm/npmrc"
+
+# Installed wasm is exactly the rebuilt blobs: js2c'd into node, verbatim in npm's undici.
+# V8 test runtime (runtime-test-wasm.cc) compiles in two type-section-only modules.
+$LH census -C "$OUTPUT_DIR" $LH_WASM --expect usr/bin/node=2+ --allow-raw usr/bin/node=2 \
+    --expect usr/lib/node_modules/npm/node_modules/undici/lib/llhttp/llhttp-wasm.js=1 \
+    --expect usr/lib/node_modules/npm/node_modules/undici/lib/llhttp/llhttp_simd-wasm.js=1 \
+    usr

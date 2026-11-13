@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+: "${MINIMAL_ARG_VERSION:?build_args must include version}"
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
@@ -9,6 +10,9 @@ esac
 export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
+
+# Upstream fix for the 2.4.20 no-DNS-SD build break (OpenPrinting/cups#1740); see build.ncl.
+patch -Np1 -i ./0001-dest-enumeration-without-dnssd.patch
 
 ./configure --prefix=/usr \
             --disable-static \
@@ -39,7 +43,7 @@ includedir=\${prefix}/include
 
 Name: cups
 Description: CUPS Client Library
-Version: 2.4.13
+Version: ${MINIMAL_ARG_VERSION}
 Libs: -L\${libdir} -lcups
 Cflags: -I\${includedir}
 EOF

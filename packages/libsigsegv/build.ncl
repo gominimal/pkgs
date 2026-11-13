@@ -1,6 +1,7 @@
 # libsigsegv — GNU library for page-fault / stack-overflow handling in user
 # mode. A Maude (rewriting engine) build prerequisite; see pkgmgr-rs#528.
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -40,4 +41,26 @@ let version = "2.15" in
         name = "libsigsegv",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t -lsigsegv <<'EOF'
+              #include <sigsegv.h>
+              int main(void) { return libsigsegv_version > 0 ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
-cd btop-1.4.7
+cd btop-1.4.8
 
 # C++23 -> C++20 bridge: btop 1.4.7 uses std::ranges::to (needs gcc >= 14),
 # but during world rebuilds the arm64 bootstrap seed (g++ 12.4.0) compiles

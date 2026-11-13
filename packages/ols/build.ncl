@@ -1,20 +1,28 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let odin = import "../odin/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let util-linux = import "../util-linux/build.ncl" in
 
-let version = "dev-2026-06" in
+let version = "dev-2026-10" in
 {
   name = "ols",
 
   build_deps = [
     { file = "build.sh" } | Local,
+    # Upstream 78bf891 (after dev-2026-10): builds against odin dev-2026-11's
+    # changed io.write_quoted_string. build.sh fails once it is no longer needed.
+    { file = "ols-write-quoted-json-string.patch" } | Local,
     {
       url = "https://github.com/DanielGavin/ols/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "f8055ff723994dc4debc02817c230d0173c43a23df4a9d6a7104fea69bfeeb79",
+      sha256 = "49ce783760429421645f6b4125dda374154148fdfbcb66fce61f772dbfaba851",
       extract = true,
     } | Source,
     base,
+    patch,
     util-linux,
   ],
 
@@ -60,7 +68,7 @@ let version = "dev-2026-06" in
     odinfmt =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "printf 'package main\\nmain::proc(){x:=1;_=x}\\n' > f.odin"],
           ["/bin/odinfmt", "-w", "f.odin"],
@@ -82,7 +90,7 @@ let version = "dev-2026-06" in
     lsp_hover =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           [
             "/bin/bash",

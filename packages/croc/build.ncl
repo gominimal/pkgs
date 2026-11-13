@@ -2,17 +2,18 @@
 # with outputs + runtime_deps refined from a verified `minimal package` build.
 let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "11.5.4" in
+let version = "11.6.5" in
 {
   name = "croc",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/schollz/croc/v%{version}.tar.gz",
-      sha256 = "16910b594704b40e9df35eb3bc637db675fe3d770a4588bd32b5a12c5ff174ff",
+      sha256 = "2558b6d44f661e4fb32d5146a6c76ce0c2af9a732baeeaf42c717e17245be8b2",
       extract = true,
       strip_prefix = "croc-%{version}",
     } | Source,
@@ -40,7 +41,7 @@ let version = "11.5.4" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           # Smoke test ported from the Wolfi recipe's test block.
           ["/bin/bash", "-c", "croc --version"],

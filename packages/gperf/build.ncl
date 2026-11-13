@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -40,4 +40,8 @@ let version = "3.3" in
         name = "gperf",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/gperf --version",
+  },
 } | BuildSpec

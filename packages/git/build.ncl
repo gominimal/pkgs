@@ -7,19 +7,22 @@ let openssl = import "../openssl/build.ncl" in
 let pcre2 = import "../pcre2/build.ncl" in
 let python = import "../python/build.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "2.55.0" in
+let version = "2.56.1" in
 {
   name = "git",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://www.kernel.org/pub/software/scm/git/git-2.55.0.tar.xz
+      # https://www.kernel.org/pub/software/scm/git/git-2.56.1.tar.xz
       url = "gs://minimal-staging-archives/git-%{version}.tar.xz",
-      sha256 = "457fdb04dc8728e007d4688695e6912e6f680727920f2a40bf11eacc17505357",
+      sha256 = "f0b0bf89264b9bd2e1c640363e7529643989da76281600473c50745cd34a607f",
       extract = true,
       strip_prefix = "git-%{version}",
     } | Source,
@@ -71,7 +74,7 @@ let version = "2.55.0" in
     version_check =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [],
         cmds = [
           ["git", "--version"],
         ],
@@ -79,7 +82,7 @@ let version = "2.55.0" in
     basic_repo_ops =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "mkdir repo && cd repo && git init"],
           ["/bin/bash", "-c", "cd repo && echo 'hello' > file.txt && git add file.txt"],

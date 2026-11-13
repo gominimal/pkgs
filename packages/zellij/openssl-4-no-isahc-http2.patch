@@ -1,0 +1,38 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -85,7 +85,7 @@
+ fuzzy-matcher = { version = "0.3.7", default-features = false }
+ humantime = { version = "2.1.0", default-features = false }
+ interprocess = { version = "2.2", default-features = false, features = ["tokio"] }
+-isahc = { version = "1.7.2", default-features = false, features = ["http2", "text-decoding"] }
++isahc = { version = "1.7.2", default-features = false, features = ["text-decoding"] }
+ kdl = { version = "4.5.0", default-features = false, features = ["span"] }
+ lazy_static = { version = "1.4.0", default-features = false }
+ libc = { version = "0.2", default-features = false, features = ["std"] }
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -894,7 +894,6 @@
+ dependencies = [
+  "cc",
+  "libc",
+- "libnghttp2-sys",
+  "libz-sys",
+  "openssl-sys",
+  "pkg-config",
+@@ -2065,16 +2064,6 @@
+ checksum = "f9fbbcab51052fe104eb5e5d351cf728d30a5be1fe14d9be8a3b097481fb97de"
+ 
+ [[package]]
+-name = "libnghttp2-sys"
+-version = "0.1.8+1.55.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "4fae956c192dadcdb5dace96db71fa0b827333cce7c7b38dc71446f024d8a340"
+-dependencies = [
+- "cc",
+- "libc",
+-]
+-
+-[[package]]
+ name = "libredox"
+ version = "0.1.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"

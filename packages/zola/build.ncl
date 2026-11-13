@@ -2,6 +2,8 @@
 # with outputs + runtime_deps refined from a verified `minimal package` build.
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -12,6 +14,14 @@ let version = "0.23.6" in
   name = "zola",
   build_deps = [
     { file = "build.sh" } | Local,
+    # CVE-2026-111943 (eMudhra intermediate key compromise): pins rustls-webpki
+    # 0.103.16 (RUSTSEC-2026-0382, distrusts the 8 intermediates) and
+    # webpki-roots / webpki-root-certs 1.0.10 (RUSTSEC-2026-0383, drops emSign ECC
+    # Root CA - G3) in upstream's Cargo.lock. Lock-only: version + checksum lines
+    # (plus whatever cargo had to move with them). Drop on the first upstream
+    # release whose Cargo.lock already has those versions; a version bump that
+    # keeps it fails at `patch` rather than silently shipping the old lock.
+    { file = "cve-2026-111943-webpki-lock.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/getzola/zola/v%{version}.tar.gz",
       sha256 = "193db594222cd9c1097387ce17272cbbe672c3a894c263f6f4c436a7fedb379f",
@@ -19,6 +29,7 @@ let version = "0.23.6" in
       strip_prefix = "zola-%{version}",
     } | Source,
     base,
+    patch,
     rust,
     toolchain,
     make,
@@ -45,7 +56,7 @@ let version = "0.23.6" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           # Smoke test ported from the Wolfi recipe's test block.
           ["/bin/bash", "-c", "zola --version"],

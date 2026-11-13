@@ -1,5 +1,7 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -41,6 +43,7 @@ let version = "2.15.4" in
   outputs = {
     xmllint = { glob = "usr/bin/xmllint" } | OutputBin,
     xmlcatalog = { glob = "usr/bin/xmlcatalog" } | OutputBin,
+    "xml2-config" = { glob = "usr/bin/xml2-config", allow_missing_interpreter = true } | OutputBin,
 
     libs = { glob = "usr/lib/libxml2.so*" } | OutputLib,
     includes = { glob = "usr/include/libxml2/**" } | OutputData,
@@ -53,6 +56,8 @@ let version = "2.15.4" in
       upstream_version = version,
       license_spdx = "MIT",
       repology_project = "libxml2",
+      # Official GNOME GitHub mirror (canonical forge: gitlab.gnome.org); allowed by
+      # AGENTS.md "Official upstream mirrors" for CPE/advisory coverage.
       source_provenance = {
         category = 'GithubRepo,
         owner = "GNOME",
@@ -66,7 +71,7 @@ let version = "2.15.4" in
     parse_xml =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "echo '<root><item>hello</item></root>' > test.xml"],
           ["/bin/bash", "-c", "xmllint --xpath '/root/item/text()' test.xml | grep -q 'hello'"],

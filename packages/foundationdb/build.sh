@@ -8,6 +8,11 @@ case $(uname -m) in
 esac
 export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
 export LDFLAGS="-Wl,--build-id=none"
+# OpenSSL 3.5 LTS from packages/openssl-3.5, not the 4.x in /usr/include (see build.ncl).
+# The -I keeps every translation unit on the 3.5 headers, including ones that include
+# <openssl/...> without linking OpenSSL::SSL (boost.asio).
+OSSL3=/usr/lib/openssl-3.5
+export CFLAGS="$CFLAGS -I$OSSL3/include"
 export CXXFLAGS="${CFLAGS}"
 
 # Use shared OpenSSL (static libs not available in this environment)
@@ -29,6 +34,21 @@ sed -i '/package_bindingtester/s/^/#/' bindings/CMakeLists.txt
 # Fix toml11 compatibility with CMake 4.x (old cmake_minimum_required)
 sed -i '/-Dtoml11_BUILD_TEST/a\      -DCMAKE_POLICY_VERSION_MINIMUM:STRING=3.5' cmake/FDBComponents.cmake
 
+# C++20 forbids naming a constructor with a template-id (`Promise<T>(...)`
+# inside `class Promise`); gcc 16 rejects it (-Wtemplate-id-cdtor, found by
+# the gcc 16.2 world-build canary, gominimal/pkgmgr-rs#1182). Upstream still
+# has all four on main. The plain name means the same thing in every standard,
+# so this is a no-op for gcc 15. sed -i is silent on a miss, so check after.
+sed -i 's/explicit Promise<T>(SAV<T>\* ptr)/explicit Promise(SAV<T>* ptr)/' flow/include/flow/flow.h
+sed -i 's/explicit ReplyPromise<T>(SAV<T>\* ptr)/explicit ReplyPromise(SAV<T>* ptr)/' fdbrpc/include/fdbrpc/fdbrpc.h
+sed -i 's/explicit IteratorImpl<isConst>(/explicit IteratorImpl(/' fdbrpc/include/fdbrpc/RangeMap.h flow/include/flow/IndexedSet.h
+if grep -nE 'explicit (Promise<T>|ReplyPromise<T>|IteratorImpl<isConst>)\(' \
+  flow/include/flow/flow.h fdbrpc/include/fdbrpc/fdbrpc.h \
+  fdbrpc/include/fdbrpc/RangeMap.h flow/include/flow/IndexedSet.h; then
+  echo "foundationdb: template-id constructor fix did not apply" >&2
+  exit 1
+fi
+
 cmake -B build -G Ninja \
   -DCMAKE_INSTALL_PREFIX=/usr \
   -DCMAKE_BUILD_TYPE=Release \
@@ -40,7 +60,11 @@ cmake -B build -G Ninja \
   -DSSD_ROCKSDB_EXPERIMENTAL=OFF \
   -DBUILD_AWS_BACKUP=OFF \
   -DBUILD_TESTING=OFF \
-  -DUSE_JEMALLOC=OFF
+  -DUSE_JEMALLOC=OFF \
+  -DOPENSSL_ROOT_DIR="$OSSL3" \
+  -DOPENSSL_INCLUDE_DIR="$OSSL3/include" \
+  -DOPENSSL_SSL_LIBRARY="$OSSL3/lib/libssl.so" \
+  -DOPENSSL_CRYPTO_LIBRARY="$OSSL3/lib/libcrypto.so"
 
 # Create stub Python binding files so copy_binding_output_files target succeeds
 # (Python bindings are disabled but the binding tester still tries to copy them)
@@ -69,3 +93,18 @@ for name in fdbrestore fdbdr dr_agent backup_agent; do
 done
 rm -rf "$OUTPUT_DIR/usr/lib/foundationdb" 2>/dev/null || true
 
+# Fail closed: built against openssl-3.5 (libssl.so.3), never 4.x (libssl.so.4):
+test -e "$OUTPUT_DIR/usr/bin/fdbserver"
+# Built against openssl-3.5: nothing we ship may NEED the 4.x libraries, and
+# fdbserver (which does TLS) must NEED libssl.so.3 as the positive control.
+# Not every library links OpenSSL: libfdb_c_shim.so dlopen()s libfdb_c at run
+# time and links no SSL itself, so "links .so.3" is required of fdbserver only.
+readelf -d "$OUTPUT_DIR/usr/bin/fdbserver" | grep -q 'NEEDED.*\[libssl\.so\.3\]' || {
+  echo "ERROR: fdbserver does not link libssl.so.3 (openssl-3.5)" >&2; exit 1; }
+for f in "$OUTPUT_DIR"/usr/bin/* "$OUTPUT_DIR"/usr/lib/*.so*; do
+  [ -L "$f" ] && continue
+  [ -f "$f" ] || continue
+  readelf -h "$f" >/dev/null 2>&1 || continue
+  ! readelf -d "$f" | grep -qE 'NEEDED.*lib(ssl|crypto)\.so\.4' || {
+    echo "ERROR: $f links OpenSSL 4 (libssl/libcrypto .so.4)" >&2; exit 1; }
+done

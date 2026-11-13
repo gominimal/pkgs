@@ -1,0 +1,24 @@
+OpenSSL 4: move Cargo.lock's openssl-sys to 0.9.117 (and openssl to 0.10.81 where locked).
+
+openssl-sys before 0.9.114 panics in its build script on OpenSSL 4 ("This crate is
+only compatible with OpenSSL (version 1.1.0, 1.1.1, or 3.x)"); 0.9.114 added 4.x
+support. 0.9.117 / 0.10.81 is the pair Arch Linux pins for its OpenSSL 4 rebuild
+(cargo update -p openssl-sys --precise 0.9.117; -p openssl --precise 0.10.81).
+Versions and checksums from the crates.io index; openssl 0.10.81 drops its once_cell
+dependency. Hand-written: regenerate with `pkgmgr lock-patch` on the next bump.
+
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -2516,9 +2516,9 @@
+ 
+ [[package]]
+ name = "openssl-sys"
+-version = "0.9.111"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "82cab2d520aa75e3c58898289429321eb788c3106963d0dc886ec7a5f4adc321"
++version = "0.9.117"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "b47e7e6bb2c38cd930d25a23b40fa52e068c10e85f3e03a7f5ba5aaca5713695"
+ dependencies = [
+  "cc",
+  "libc",

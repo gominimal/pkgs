@@ -1,11 +1,11 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.26.0" in
+let version = "1.27.0" in
 {
   name = "starship",
 
@@ -13,7 +13,7 @@ let version = "1.26.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/starship/starship/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "8c95e8a6c596b29ac192104eae00dd991e8c8fd66083fd2b34d6b223a5803a59",
+      sha256 = "f1887ffa88a7ba437d2932501794047e28d03387996f7d1c364631c053cffc44",
       extract = true,
       strip_prefix = "starship-%{version}",
     } | Source,
@@ -53,4 +53,8 @@ let version = "1.26.0" in
         repo = "starship",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/starship --version",
+  },
 } | BuildSpec

@@ -7,11 +7,14 @@ export CC=gcc
 export LD=gcc
 export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 
-# vsock fix (see build.ncl). Applied by explicit name, not by glob. `set -e`
+# vsock fixes (see build.ncl). Applied by explicit name, not by glob. `set -e`
 # plus patch's non-zero exit on a rejected hunk makes a stale patch abort the
 # build; a silently-skipped patch would publish a libkrun that looks fixed and
-# is not.
-patch -Np1 -i "0001-vsock-bound-outstanding-packets.patch"
+# is not. -F0: patch's default fuzz 2 lets a hunk whose context went stale
+# apply somewhere else and still succeed (0001's update_peer_credit hunk did
+# against 1.19.7, gominimal/pkgs#1018), so a stale hunk must fail instead.
+patch -F0 -Np1 -i "0001-vsock-bound-outstanding-packets.patch"
+patch -F0 -Np1 -i "0002-vsock-refuse-stream-when-unix-proxy-creation-fails.patch"
 
 # BLK=1 enables virtio-blk (exports krun_add_disk2); `blk` is not a default
 # libkrun feature, so consumers fail to link without it.

@@ -1,17 +1,17 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.102.0" in
+let version = "2.103.3" in
 {
   name = "gh",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/cli/cli/v%{version}.tar.gz",
-      sha256 = "08bf0ef8b4409893889175e0f5279d30d6edd96465816042c0d7c72eac598158",
+      sha256 = "bb148138a3a2fe023e57c78042fe3b42fc09171c0e8fff4cf983b227b7a2eade",
       extract = true,
       strip_prefix = "cli-%{version}",
     } | Source,
@@ -53,4 +53,8 @@ let version = "2.102.0" in
         repo = "cli",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/gh --version",
+  },
 } | BuildSpec

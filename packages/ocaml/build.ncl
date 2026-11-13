@@ -1,30 +1,32 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
-
-let version = "5.5.1" in
+let ocaml-5-5-2 = import "../ocaml-5.5.2/build.ncl" in # the boot compiler, from gominimal/bootstrap gen-13
+let version = "5.5.2" in
 {
   name = "ocaml",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://github.com/ocaml/ocaml/releases/download/5.5.1/ocaml-5.5.1.tar.gz
+      # https://github.com/ocaml/ocaml/releases/download/5.5.2/ocaml-5.5.2.tar.gz
       url = "gs://minimal-staging-archives/ocaml-%{version}.tar.gz",
-      sha256 = "ae47728d0a876665ccc7b745e3a8d8c9ca5ba63c4f7a11d4db6cdbd1dbeef4bb",
+      sha256 = "bb3ffef5e4fce4f04915b9f254f570663311e1f227fd669aa87a5ef7de9a1523",
       extract = true,
       strip_prefix = "ocaml-%{version}",
     } | Source,
     base,
     toolchain,
     make,
+    ocaml-5-5-2,
   ],
-  # OCaml self-bootstraps from the tarball's own boot/ocamlc bytecode image, so
-  # NO `needs { internet }` — the entire build is offline. The only inputs are a
-  # C compiler + make (toolchain).
+  # The tarball's own boot/ocamlc bytecode is deleted; build.sh boots from ocaml-5.5.2's
+  # bytecode compiler instead (gen-13 of gominimal/bootstrap, a source-only ladder from camlboot).
+  # NO `needs { internet }`: the entire build is offline.
   #
   # runtime_deps: `ocamlopt` links every native binary by invoking the gcc
   # DRIVER (gcc -> cc1 -> collect2 -> ld), not ld directly — that driver lives
@@ -63,7 +65,7 @@ let version = "5.5.1" in
     version_check =
       {
         class = 'Standalone,
-        test_deps = [base, grep, coreutils],
+        test_deps = [bash-bootstrap, grep, coreutils],
         cmds = [
           ["/bin/bash", "-c", "/usr/bin/ocaml -version | grep -q '%{version}'"],
         ],
@@ -74,7 +76,7 @@ let version = "5.5.1" in
     compile_bytecode_and_native =
       {
         class = 'Standalone,
-        test_deps = [base, toolchain, grep, coreutils],
+        test_deps = [bash-bootstrap, toolchain, grep, coreutils],
         cmds = [
           ["/bin/bash", "-c", "echo 'let () = print_string \"ok\"' > t.ml && /usr/bin/ocamlc t.ml -o tb && ./tb | grep -q ok"],
           ["/bin/bash", "-c", "echo 'let () = print_string \"ok\"' > t.ml && /usr/bin/ocamlopt t.ml -o tn && ./tn | grep -q ok"],

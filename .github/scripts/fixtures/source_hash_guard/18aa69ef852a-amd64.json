@@ -1,0 +1,134 @@
+[
+ {
+  "attrs": {
+   "license_spdx": {
+    "pos": [
+     1134,
+     1144
+    ],
+    "value": "blessing"
+   },
+   "source_provenance": {
+    "type": "map",
+    "value": {
+     "category": {
+      "pos": null,
+      "value": "GithubRepo"
+     },
+     "owner": {
+      "pos": [
+       1222,
+       1230
+      ],
+      "value": "sqlite"
+     },
+     "repo": {
+      "pos": [
+       1247,
+       1255
+      ],
+      "value": "sqlite"
+     }
+    }
+   },
+   "upstream_version": {
+    "pos": [
+     357,
+     365
+    ],
+    "value": "3.50.4"
+   }
+  },
+  "build_args": null,
+  "build_deps": [
+   {
+    "filename": "build.sh",
+    "hash": "1d91ebc38ac9fb80d9ace2eec3f0473f3134b845e7c374c4484d47fa20783e19",
+    "type": "local_file"
+   },
+   {
+    "extract": false,
+    "from": {
+     "sha256": "a3db587a1b92ee5ddac2f66b3edb41b26f9c867275782d46c3a088977d6a5b18",
+     "sha256_pos": {
+      "end_offset": 605,
+      "start_offset": 539
+     },
+     "type": "web",
+     "url": "gs://minimal-staging-archives/sqlite-autoconf-3500400.tar.gz",
+     "url_pos": {
+      "end_offset": 522,
+      "start_offset": 460
+     }
+    },
+    "strip_prefix": null,
+    "type": "source"
+   },
+   {
+    "name": "base-bootstrap",
+    "type": "package"
+   },
+   {
+    "name": "make",
+    "type": "package"
+   },
+   {
+    "name": "toolchain",
+    "type": "package"
+   }
+  ],
+  "is_collection": false,
+  "is_prebuilt": false,
+  "name": "sqlite",
+  "needs": {},
+  "outputs": {
+   "includes": {
+    "type": "data",
+    "value": {
+     "allow_executable": false,
+     "glob": "usr/include/sqlite3*.h"
+    }
+   },
+   "libs": {
+    "type": "library",
+    "value": {
+     "allow_data": false,
+     "glob": "usr/lib/libsqlite3.so*"
+    }
+   },
+   "mans": {
+    "type": "data",
+    "value": {
+     "allow_executable": false,
+     "glob": "usr/share/man/**"
+    }
+   },
+   "pkgconfigs": {
+    "type": "data",
+    "value": {
+     "allow_executable": false,
+     "glob": "usr/lib/pkgconfig/*.pc"
+    }
+   },
+   "sqlite3": {
+    "type": "binary",
+    "value": {
+     "allow_missing_interpreter": false,
+     "glob": "usr/bin/sqlite3"
+    }
+   }
+  },
+  "runtime_deps": [
+   {
+    "name": "glibc",
+    "type": "package"
+   },
+   {
+    "name": "zlib",
+    "type": "package"
+   }
+  ],
+  "spec_hash": "f59a555f7bdc5a8d64f61254ef0023106a5ef2bec320a1bec0e1cc2238c1b441",
+  "target": "amd64/linux"
+ }
+]

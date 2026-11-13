@@ -1,17 +1,17 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "4.53.6" in
+let version = "4.54.3" in
 {
   name = "yq",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/mikefarah/yq/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "132a28a669526f99dba52486ac80de3bdafdf9a1a52a0c6bd6045301aca0cd25",
+      sha256 = "93143d49b2a3bd6cb723477f585366b29f70c636af4653191d61b49b0c47de7f",
       extract = true,
       strip_prefix = "yq-%{version}",
     } | Source,
@@ -49,4 +49,8 @@ let version = "4.53.6" in
         repo = "yq",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/yq --version",
+  },
 } | BuildSpec

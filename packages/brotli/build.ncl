@@ -2,12 +2,15 @@
 # with outputs + runtime_deps refined from a verified `minimal package` build.
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let diffutils = import "../diffutils/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "1.2.0" in
+let version = "1.2.1" in
 {
   name = "brotli",
   build_deps = [
@@ -20,7 +23,7 @@ let version = "1.2.0" in
     glibc,
     {
       url = "gs://minimal-staging-archives/google/brotli/v%{version}.tar.gz",
-      sha256 = "816c96e8e8f193b40151dad7e8ff37b1221d019dbcb9c35cd3fadbfe6477dfec",
+      sha256 = "98d35d11a78dc453aebb7d10c3748f3f73ff78c8267c0dc697b8631f67bf7e8f",
       extract = true,
       strip_prefix = "brotli-%{version}",
     } | Source,
@@ -44,7 +47,7 @@ let version = "1.2.0" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, diffutils],
         cmds = [
           # Smoke test ported from the Wolfi recipe's test block.
           ["/bin/bash", "-c", "brotli --help"],

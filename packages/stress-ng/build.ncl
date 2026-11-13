@@ -2,6 +2,8 @@
 # with outputs + runtime_deps refined from a verified `minimal package` build.
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let make = import "../make/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -14,7 +16,7 @@ let acl = import "../acl/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let mpfr = import "../mpfr/build.ncl" in
 let xz = import "../xz/build.ncl" in
-let version = "0.21.04" in
+let version = "0.22.02" in
 {
   name = "stress-ng",
   build_deps = [
@@ -34,7 +36,7 @@ let version = "0.21.04" in
     xz,
     {
       url = "gs://minimal-staging-archives/ColinIanKing/stress-ng/V%{version}.tar.gz",
-      sha256 = "a328ba050bd3014f07a3265fb6c1aab071ae942dfad75c7459cce45a987869e1",
+      sha256 = "860004ce7484311b3296fc52796fbbc34dfb7f644a769bbd4e03935b7a1b0ccb",
       extract = true,
       strip_prefix = "stress-ng-%{version}",
     } | Source,
@@ -57,7 +59,7 @@ let version = "0.21.04" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         # Deterministic checks only. The Wolfi recipe's real ~5-30s stressor
         # workloads (--cpu/--vm/--iomix) are dropped — they run genuine load and
         # exit non-zero when a stressor can't run in a constrained CI sandbox,

@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let meson = import "../meson/build.ncl" in
@@ -8,14 +8,14 @@ let nasm = import "../nasm/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "3.2.0" in
+let version = "3.2.1" in
 {
   name = "libvmaf",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/Netflix/vmaf/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "a28f93f3b4fa65601be324587072e32a6a704a304ba7b1aec9b70b3f709bc1dc",
+      sha256 = "5df7386911bc15fd1ca783132528748d219768ae4fc5f8e0b61184f041648092",
       extract = true,
       strip_prefix = "vmaf-%{version}",
     } | Source,
@@ -48,4 +48,8 @@ let version = "3.2.0" in
         repo = "vmaf",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/vmaf --version",
+  },
 } | BuildSpec

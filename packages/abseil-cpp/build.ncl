@@ -1,24 +1,22 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 
-let patch = import "../patch/build.ncl" in
-
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "20260526.0" in
+let version = "20260817.0" in
 {
   name = "abseil-cpp",
   build_deps = [
     { file = "build.sh" } | Local,
-    { file = "abseil-cpp-gcc15-bmi2intrin.patch" } | Local,
     {
       url = "https://github.com/abseil/abseil-cpp/releases/download/%{version}/abseil-cpp-%{version}.tar.gz",
-      sha256 = "6e1aee535473414164bf83e4ebc40240dec71a4701f8a642d906e95bea1aea0c",
+      sha256 = "f7e05179df39c45434cad433f5783840bb3788ef322976f9138bc6b72b3a107d",
       extract = true,
       strip_prefix = "abseil-cpp-%{version}",
     } | Source,
@@ -26,7 +24,6 @@ let version = "20260526.0" in
     make,
     cmake,
     ninja,
-    patch,
     toolchain,
   ],
   runtime_deps = [
@@ -52,4 +49,27 @@ let version = "20260526.0" in
         repo = "abseil-cpp",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              g++ -std=c++17 -x c++ - -o t -labsl_strings <<'EOF'
+              #include <absl/strings/str_cat.h>
+              #include <string>
+              int main() { std::string s = absl::StrCat("a", 1, "b"); return s == "a1b" ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

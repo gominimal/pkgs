@@ -1,5 +1,8 @@
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glib = import "../glib/build.ncl" in
 let libvips = import "../libvips/build.ncl" in
@@ -9,18 +12,59 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let pnpm = import "../pnpm/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+let llvm = import "../llvm/build.ncl" in
+let wasi-libc = import "../wasi-libc/build.ncl" in
+let llhttp-wasm-rebuild = import "../llhttp-wasm-rebuild/build.ncl" in
 
-let version = "16.3.8" in
+# undici whose llhttp C rebuilds the wasm next bundles into its edge runtime.
+# Forwarded to build.sh as MINIMAL_ARG_UNDICI.
+let undici = "6.28.0" in
+# The llhttp that undici release vendors (its build.sh pins the wasm to it).
+let undici_llhttp = "8.1.0" in
+
+let version = "16.4.6" in
+# The native SWC compiler Next loads at build/dev time. Upstream publishes it as a
+# per-platform npm package (`@next/swc-linux-<arch>-gnu`) that `next` lists as an
+# optionalDependency; the source build above does not produce it. Without it, every
+# `next build` tries to download one into next's own tree, which is read-only here.
+#
+# PREBUILT, as an interim exception to AGENTS.md's build-from-source rule (Rust is
+# packaged). Building it means upstream's `napi build -p next-napi-bindings` over
+# the turbopack + swc Cargo workspace, and next.js pins its own Rust nightly
+# (`rust-toolchain.toml`: nightly-2026-08-20), which pkgs doesn't package. Tracked
+# in gominimal/pkgs#985; `binary_from` below records the exception.
+# Bump these alongside `version`: the binary must match next exactly.
+let swc_amd64_sha256 = "9695f19eb812ce0f0de0eb6a1065a4ae040270d5eaef3962e7082cfd8c709e0d" in
+let swc_arm64_sha256 = "e253ba86f5a1242108600445612f533b94c6d6a6a31e84de2bbc05a8ad0bb85f" in
 {
   name = "next",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/vercel/next.js/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "4d816a9a081f4c3984dd246724f2d50cd3efd53507c44a042c406db15c6c9a7f",
+      sha256 = "248d0ea591b75872ae83215f17c244fa107172cd4a3870a6bcababa20d4ceb26",
       extract = true,
       strip_prefix = "next.js-%{version}",
     } | Source,
+    {
+      url = "gs://minimal-staging-archives/undici-%{undici}.tar.gz",
+      sha256 = "555a14624f66628d8aa7fcd0691ab2371f3e4512c40358bb7320bfabbb6763ec",
+    } | Source,
+    llvm, # clang + wasm-ld for the llhttp wasm
+    wasi-libc,
+    llhttp-wasm-rebuild,
+    match {
+      { arch = 'Amd64, .. } =>
+        {
+          url = "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-%{version}.tgz",
+          sha256 = swc_amd64_sha256,
+        } | Source,
+      { arch = 'Arm64, .. } =>
+        {
+          url = "https://registry.npmjs.org/@next/swc-linux-arm64-gnu/-/swc-linux-arm64-gnu-%{version}.tgz",
+          sha256 = swc_arm64_sha256,
+        } | Source,
+    } target,
     base,
     glib,
     make,
@@ -45,6 +89,8 @@ let version = "16.3.8" in
   cmd = "./build.sh",
   build_args = {
     include version,
+    include undici,
+    include undici_llhttp,
   },
 
   outputs = {
@@ -56,17 +102,28 @@ let version = "16.3.8" in
     cli =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "next --version | grep -q '16'"],
           ["/bin/bash", "-c", "next telemetry status | grep -q 'Status'"],
           ["/bin/bash", "-c", "node -e \"const c = require('/usr/libexec/next/lib/node_modules/next/dist/shared/lib/constants.js'); if (c.PHASE_PRODUCTION_BUILD !== 'phase-production-build') process.exit(1);\""],
         ],
       } | Test,
+    # The SWC addon loads and compiles. `loadBindingsSync` tries only the native
+    # addon (no download, no wasm fallback), and the loaded `.node` must be the one
+    # shipped under next's own node_modules.
+    swc_binary_ships =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap],
+        cmds = [
+          ["/bin/bash", "-c", "node -e \"const swc = require('/usr/libexec/next/lib/node_modules/next/dist/build/swc/index.js'); const out = swc.transformSync('const a: number = 1; export default a;', { jsc: { parser: { syntax: 'typescript' } } }); if (!/a = 1;/.test(out.code) || /: number/.test(out.code)) { throw new Error('unexpected SWC output: ' + out.code); } const addon = Object.keys(require.cache).find((f) => f.endsWith('.node')); if (!addon || !/\\/node_modules\\/@next\\/swc-linux-(x64|arm64)-gnu\\/next-swc\\.linux-(x64|arm64)-gnu\\.node$/.test(addon)) { throw new Error('SWC loaded from an unexpected path: ' + addon); } console.log(addon);\""],
+        ],
+      } | Test,
     sharp_uses_system_libvips =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "node -e \"const s = require('/usr/libexec/next/lib/node_modules/next/node_modules/sharp'); const v = s.versions; console.log('vips:', v.vips); if (!v.vips) { throw new Error('no vips version'); }\""],
           ["/bin/bash", "-c", "node -e \"const s = require('/usr/libexec/next/lib/node_modules/next/node_modules/sharp'); if (!s.versions.vips.startsWith('8.18')) { throw new Error('expected vips 8.18.x, got ' + s.versions.vips); }\""],
@@ -83,5 +140,12 @@ let version = "16.3.8" in
         owner = "vercel",
         repo = "next.js",
       },
+      # next itself is built from source; only the SWC addon is prebuilt (see the
+      # comment at the top and gominimal/pkgs#985).
+      binary_from =
+        match {
+          { arch = 'Amd64, .. } => "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-%{version}.tgz",
+          { arch = 'Arm64, .. } => "https://registry.npmjs.org/@next/swc-linux-arm64-gnu/-/swc-linux-arm64-gnu-%{version}.tgz",
+        } target,
     } | Attrs,
 } | BuildSpec

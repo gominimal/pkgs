@@ -1,0 +1,28 @@
+From d36b1e398c9459705e7f0daf570102bc3d1fd87c Mon Sep 17 00:00:00 2001
+From: Hilko Bengen <bengen@debian.org>
+Date: Tue, 2 Jun 2026 00:14:06 +0200
+Subject: [PATCH] Use OpenSSL ASN1_STRING accessor functions instead of direct
+ field access
+
+---
+ xio-openssl.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xio-openssl.c b/xio-openssl.c
+index 344709b..e328ee2 100644
+--- a/xio-openssl.c
++++ b/xio-openssl.c
+@@ -1898,8 +1898,8 @@ static int openssl_handle_peer_certificate(struct single *sfd,
+ 		  case GEN_IPADD:
+ 		     {
+ 			/* binary address format */
+-			const unsigned char *data = pName->d.iPAddress->data;
+-			size_t len = pName->d.iPAddress->length;
++			const unsigned char *data = ASN1_STRING_get0_data(pName->d.iPAddress);
++			size_t len = ASN1_STRING_length(pName->d.iPAddress);
+ 			char aBuffer[INET6_ADDRSTRLEN]; 	/* canonical peername */
+ 			struct in6_addr ip6bin;
+ 
+-- 
+2.53.0
+

@@ -11,14 +11,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let ocamlfind = import "../ocamlfind/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let version = "0.38.0" in
+let version = "0.39.0" in
 {
   name = "ppxlib",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/ocaml-ppx/ppxlib/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "cb88f34179731182aa73bb25e4d081f94a6a9a7f99b1f818ddb2969f97123b19",
+      sha256 = "552cd7d02e3b7e55912af3d00a620c42e7ef96750b22aa26d1a840fd4b9ff0e8",
       extract = true,
       strip_prefix = "ppxlib-%{version}",
     } | Source,

@@ -1,9 +1,9 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 
-let version = "1.1.413" in
+let version = "1.1.414" in
 {
   name = "pyright",
   build_deps = [
@@ -37,4 +37,8 @@ let version = "1.1.413" in
       upstream_version = version,
       license_spdx = "MIT",
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/pyright --version",
+  },
 } | BuildSpec

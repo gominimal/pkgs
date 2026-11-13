@@ -1,14 +1,21 @@
 name: notify-webapp
 
-# On every push to main, tell gominimal/webapp to rebuild. The webapp
-# prerenders /pkgs and /pkgs/<name> by baking lockStateLatest() at build
-# time, so without this nudge those static pages only refresh on a webapp
-# code deploy and drift from the catalog. The matching trigger lives in
-# webapp/.github/workflows/deploy-cloudrun.yml (repository_dispatch:
-# types: [pkgs-updated]).
+# On every push to main that changes a package, tell gominimal/webapp to
+# rebuild. The webapp prerenders /pkgs and /pkgs/<name> by baking
+# lockStateLatest() at build time, so without this nudge those static pages
+# only refresh on a webapp code deploy and drift from the catalog. The
+# matching trigger lives in webapp/.github/workflows/deploy-cloudrun.yml
+# (repository_dispatch: types: [pkgs-updated]).
 on:
   push:
     branches: [main]
+    # Must match pkgmgr's package_name_from_path. The webapp deploy waits for
+    # pkgmgr's package_deps sync to reach the dispatched sha, and pkgmgr only
+    # syncs pushes that change packages/<name>/. A dispatch for any other push
+    # waits out its 15 minutes and fails, and would also cancel the pending
+    # notify for the package push before it.
+    paths:
+      - "packages/*/**"
 
 # Debounce catalog-commit bursts: a rapid series of package updates
 # cancels superseded notify runs so only the last one dispatches, and the

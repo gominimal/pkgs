@@ -1,16 +1,17 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "2.73.0" in
+let version = "2.74.1" in
 {
   name = "chezmoi",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/twpayne/chezmoi/v%{version}.tar.gz",
-      sha256 = "f6fba40bec4662d5438eecce5cd5c1bcad0bcae5ec34a547fdcf66fb58535764",
+      sha256 = "818984475f981bb79d516f144386d0f4aeb03f035bca3c6d6287da2bdae61829",
       extract = true,
       strip_prefix = "chezmoi-%{version}",
     } | Source,
@@ -41,7 +42,7 @@ let version = "2.73.0" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           # Version/help smoke checks. The Wolfi recipe's dotfile-flow tests
           # (chezmoi init/add/apply/data/doctor) need a writable $HOME + git

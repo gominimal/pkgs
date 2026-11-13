@@ -15,17 +15,33 @@ export GONOSUMDB=*
 # We declare that same tarball as a checksummed Source in build.ncl (repo
 # convention: every input pinned by sha256) and stage it here instead of
 # fetching at build time. Globbed so the version lives in ONE place (build.ncl).
-mkdir -p internal/obi-src
-tar -xof obi-*-source-generated.tar.gz -C internal/obi-src --strip-components=1
+MANIFEST=distributions/otelcol-contrib/manifest.yaml
 
-# Install the OpenTelemetry Collector Builder (ocb). This pin MUST track the
-# distribution version: a mismatched builder resolves otelcol/service at its own
-# version while the manifest pulls the rest at %{version}, which fails to build.
-# Keeping it byte-equal to the package version is also what lets pkgmgr's
-# build.sh version rewrite carry it forward on the next bump (the old
-# `v0.150.0` pin never matched the `0.150.1` package version, so it silently
-# stayed behind).
-go install -trimpath go.opentelemetry.io/collector/cmd/builder@v0.159.0
+# The staged OBI tarball must be the version the manifest asks for (the line
+# upstream's prepare-obi.sh reads). build.ncl pins it separately because it does
+# not follow the package version.
+OBI_WANT=$(awk '/- gomod: go\.opentelemetry\.io\/obi\/collector / {print $NF; exit}' "$MANIFEST")
+[ -n "$OBI_WANT" ] || { echo "ERROR: no go.opentelemetry.io/obi/collector line in $MANIFEST" >&2; exit 1; }
+[ -f "obi-${OBI_WANT}-source-generated.tar.gz" ] || {
+  echo "ERROR: manifest wants OBI ${OBI_WANT}; staged: $(ls obi-*-source-generated.tar.gz)." >&2
+  echo "       Move obi_version + its sha256 in build.ncl to ${OBI_WANT}." >&2
+  exit 1
+}
+mkdir -p internal/obi-src
+tar -xof "obi-${OBI_WANT}-source-generated.tar.gz" -C internal/obi-src --strip-components=1
+
+# Install the OpenTelemetry Collector Builder (ocb) at the CORE collector version
+# the manifest pins (its go.opentelemetry.io/collector/* v0.x modules), not the
+# package version: the releases repo can cut patch releases (0.163.2) on a core
+# that stays at 0.163.0, and cmd/builder is only tagged with core. A mismatched
+# builder resolves otelcol/service at its own version and fails to build, so
+# derive it and require exactly one v0 core version.
+BUILDER_VERSION=$(sed -n 's#^ *- gomod: go\.opentelemetry\.io/collector/[^ ]* \(v0\.[0-9][^ ]*\)$#\1#p' "$MANIFEST" | sort -u)
+[ "$(printf '%s\n' "$BUILDER_VERSION" | grep -c .)" = 1 ] || {
+  echo "ERROR: expected one v0 core collector version in $MANIFEST, got: $BUILDER_VERSION" >&2
+  exit 1
+}
+go install -trimpath "go.opentelemetry.io/collector/cmd/builder@${BUILDER_VERSION}"
 OCB=$(go env GOPATH)/bin/builder
 
 # Run ocb FROM the distribution directory. The manifest's `output_path: ./_build`
@@ -46,6 +62,18 @@ grep -q '^replaces:' manifest.yaml
 grep -q 'cockroachdb/swiss' manifest.yaml && { echo "swiss already replaced/pinned in manifest — drop this patch"; exit 1; }
 sed -i '/^replaces:/a\  - github.com/cockroachdb/swiss => github.com/cockroachdb/swiss v0.0.0-20260820225851-333444432258' manifest.yaml
 grep -q 'cockroachdb/swiss => ' manifest.yaml
+
+# go 1.27 guard: the asapauth extension must stay out of the manifest. It pulls
+# in github.com/SermoDigital/jose, whose crypto/none.go init() calls
+# crypto.RegisterHash(crypto.Hash(0), ...); Go 1.27 rejects hash value 0
+# (golang/go 5a0e0838), so with asapauth compiled in every otelcol-contrib
+# invocation panics in package init. Upstream dropped it after 0.164.0
+# (opentelemetry-collector-releases#1742, for contrib#51868), which replaced the
+# deletion patch pkgs#1369 carried for 0.164.0.
+if grep -q '^ *- gomod: .*asapauthextension' manifest.yaml; then
+  echo "asapauthextension is back in the manifest: it panics under go 1.27" >&2
+  exit 1
+fi
 
 $OCB --config=manifest.yaml
 

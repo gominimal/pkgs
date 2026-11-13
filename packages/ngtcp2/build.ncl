@@ -7,14 +7,14 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 
-let version = "1.25.0" in
+let version = "1.26.0" in
 {
   name = "ngtcp2",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/ngtcp2/ngtcp2/releases/download/v%{version}/ngtcp2-%{version}.tar.gz",
-      sha256 = "1c0843076528a87b65e9a9d455100941f4cb65d44f96c5da6ae56df146043955",
+      sha256 = "85174d674e7f8fd911a827c6e483fd417b21b1f54d7853dac464cee446c8d35f",
       extract = true,
       strip_prefix = "ngtcp2-%{version}",
     } | Source,

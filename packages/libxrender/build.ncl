@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -8,14 +9,14 @@ let xorgproto = import "../xorgproto/build.ncl" in
 let libx11 = import "../libx11/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.9.12" in
+let version = "0.9.13" in
 {
   name = "libxrender",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libXrender-%{version}.tar.xz",
-      sha256 = "b832128da48b39c8d608224481743403ad1691bf4e554e4be9c174df171d1b97",
+      sha256 = "3fe88c609df6782e1e7af2e4de36b2563d70cd70ff7dcb1cda561ad64912bb64",
       extract = true,
       strip_prefix = "libXrender-%{version}",
     } | Source,
@@ -43,4 +44,26 @@ let version = "0.9.12" in
       upstream_version = version,
       license_spdx = "MIT",
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain, xorgproto],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t -lXrender <<'EOF'
+              #include <X11/extensions/Xrender.h>
+              int main(void) { void *volatile p = (void *)XRenderQueryVersion; return p ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

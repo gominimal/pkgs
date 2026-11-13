@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let toolchain = import "../toolchain/build.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
@@ -14,14 +15,14 @@ let binutils = import "../binutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
-let version = "6.12.43" in
+let version = "6.12.115" in
 {
   name = "linux_headers",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/linux-%{version}.tar.xz",
-      sha256 = "0fcbbbbcd456e87bbbfc8bf37af541fda62ccfcce76903503424fd101ef7bdee"
+      sha256 = "0ec90fe4b20422b1b664b77e6d2dde22b40bd41e7eb2cad8ac8739a4749cb1bb"
     } | Source,
     bash-bootstrap,
     coreutils,
@@ -50,22 +51,16 @@ let version = "6.12.43" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
-              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
-              # gominimal/minimermetic#16. Applied by minimermetic's
-              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/083cdb678eb2a154373819a5b3511b2b0e73c6261a010dce896287c742be83c3/stage0-linux-headers-6.12.43-6.12.43.tar.zst",
-              sha256 = "083cdb678eb2a154373819a5b3511b2b0e73c6261a010dce896287c742be83c3",
+              # gominimal/bootstrap gen-13 object (generations/gen-13/manifest.json)
+              url = "gs://minimal-bootstrap/gen-13/sha256/f57bd1fbb754c2b60188d269c10f1936c07a78c5556c927b2dc9720d24d148e8/stage0-linux-headers-6.12.43-6.12.43-x86_64.tar.zst",
+              sha256 = "f57bd1fbb754c2b60188d269c10f1936c07a78c5556c927b2dc9720d24d148e8",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
-              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
-              # gominimal/minimermetic#16. Applied by minimermetic's
-              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/862f0245057fb5210c22ad09a537ab099d4672754052328a290a5c9b698dee76/stage0-linux-headers-arm-aarch64.tar.zst",
-              sha256 = "862f0245057fb5210c22ad09a537ab099d4672754052328a290a5c9b698dee76",
+              # gominimal/bootstrap gen-13 object (generations/gen-13/manifest.json)
+              url = "gs://minimal-bootstrap/gen-13/sha256/a7307552a1e59c7d70b341ba5686b11f21c42ccec20ca843f40e76751f52d5e8/stage0-linux-headers-6.12.43-aarch64.tar.zst",
+              sha256 = "a7307552a1e59c7d70b341ba5686b11f21c42ccec20ca843f40e76751f52d5e8",
               extract = true,
             } | Source,
         } target,
@@ -84,4 +79,28 @@ let version = "6.12.43" in
         repo = "linux",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t  <<'EOF'
+              #include <linux/version.h>
+              #include <linux/types.h>
+              #include <asm/unistd.h>
+              int main(void) { return LINUX_VERSION_CODE > KERNEL_VERSION(5, 0, 0) ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

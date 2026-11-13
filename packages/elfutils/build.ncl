@@ -1,5 +1,7 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -13,14 +15,14 @@ let xz = import "../xz/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "0.196" in
+let version = "0.197" in
 {
   name = "elfutils",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/elfutils-%{version}.tar.bz2",
-      sha256 = "fd5cc6b77ad6773cac93cb3f415f9318ac3b3455eecf801f6b4a742c4f6c7209",
+      sha256 = "1fdf525f22dcf796d99a99ba3ea00a1f7b1ae5421bc62e8443a708920b99b904",
     } | Source,
     base,
     m4,
@@ -65,7 +67,7 @@ let version = "0.196" in
     readelf_sections =
       {
         class = 'Standalone,
-        test_deps = [base, toolchain],
+        test_deps = [bash-bootstrap, toolchain, grep],
         cmds = [
           ["/bin/bash", "-c", "echo 'int main() { return 42; }' > prog.c"],
           ["/bin/gcc", "prog.c", "-o", "prog"],

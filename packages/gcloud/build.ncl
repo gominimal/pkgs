@@ -1,11 +1,15 @@
 let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 let python = import "../python/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 
-let version = "581.0.0" in
+let version = "593.0.0" in
 # Google's per-version GCS bucket; explicit per-version path. The
 # previous rapid-channel URL
 # (dl.google.com/dl/cloudsdk/channels/rapid/downloads) has the
@@ -16,8 +20,8 @@ let version = "581.0.0" in
 let dl_base = "https://storage.googleapis.com/cloud-sdk-release" in
 
 let { amd64_sha256, arm64_sha256 } = {
-  amd64_sha256 = "deffdbe82ca6e3d19ffb291d063a651488e04e1b33799b5a238e4b5c6784e3c6",
-  arm64_sha256 = "22cfc09888525c6daadb8764388ce14e6c26baf80ab07938eacb08c2b4ae64c9",
+  amd64_sha256 = "42c32b7553c712f71fcf6f124546c0519437f53755f47f9bd0c957998cd6b826",
+  arm64_sha256 = "f40acaca49c9774bca035c96dcf7350a13c09007e906cb4832e91dc36ce11497",
 }
 in
 
@@ -41,6 +45,10 @@ in
   ],
   runtime_deps = [
     base,
+    # The SDK's installation properties point core/custom_ca_certs_file at this
+    # package's /etc/ssl/certs/ca-certificates.crt (see build.sh, CVE-2026-111943),
+    # and gcloud rejects that property when the file does not exist.
+    ca-certificates,
     python,
     glibc,
     subsetOf sqlite ["libs"],
@@ -64,9 +72,25 @@ in
     config_ops =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "gcloud config set project test-project 2>/dev/null && gcloud config get project 2>/dev/null | grep -q 'test-project'"],
+        ],
+      } | Test,
+
+    # CVE-2026-111943: the SDK's vendored CA bundles still trust emSign ECC Root
+    # CA - G3, so build.sh points core/custom_ca_certs_file at the system store
+    # in the installation properties. Offline: checks that a user with no config
+    # of their own resolves the property to the system bundle, that the bundle
+    # is there, and that gsutil's and bq's bootstraps still forward it.
+    ca_certs_from_system_store =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils, grep],
+        cmds = [
+          ["/bin/bash", "-c", "export CLOUDSDK_CONFIG=$(mktemp -d) && test \"$(gcloud config get core/custom_ca_certs_file 2>/dev/null)\" = /etc/ssl/certs/ca-certificates.crt"],
+          ["/bin/bash", "-c", "test -s /etc/ssl/certs/ca-certificates.crt"],
+          ["/bin/bash", "-c", "grep -q 'properties.VALUES.core.custom_ca_certs_file' /usr/lib/google-cloud-sdk/bin/bootstrapping/gsutil.py && grep -q 'properties.VALUES.core.custom_ca_certs_file' /usr/lib/google-cloud-sdk/bin/bootstrapping/bq.py"],
         ],
       } | Test,
   },
@@ -75,14 +99,12 @@ in
     {
       upstream_version = version,
       binary_from = "https://storage.googleapis.com/cloud-sdk-release",
-      # `Pixar` + `Python-2.0.1` from auto-scan were false positives:
-      # `Pixar` matched a docstring in pygments' USD lexer (the file
-      # itself is BSD-licensed; "Pixar" is the format it parses), and
-      # `Python-2.0.1` matched a literal in packaging's SPDX-IDs
-      # database file (data table, not licensed code). The
-      # `Python-2.0` here is the bundled CPython interpreter's real
-      # license. Tracked at pkgmgr-rs#129.
-      license_spdx = "(Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND MIT AND MIT-0 AND Python-2.0)",
+      # `Pixar` from auto-scan was a false positive: it matched a
+      # docstring in pygments' USD lexer (the file itself is
+      # BSD-licensed; "Pixar" is the format it parses). Tracked at
+      # pkgmgr-rs#129. `Python-2.0.1` is the bundled CPython
+      # interpreter's license, the same id packages/python declares.
+      license_spdx = "(Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND MIT AND MIT-0 AND Python-2.0.1)",
       env_dir_mappings = [{ read_only = false, path = "~/.config/gcloud", class = 'Credential }],
     } | Attrs,
 } | BuildSpec

@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -10,14 +11,14 @@ let autoconf = import "../autoconf/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.52.1" in
+let version = "1.53.0" in
 {
   name = "libuv",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libuv/libuv/v%{version}.tar.gz",
-      sha256 = "478baf2599bfbc882c355288c9cb6f92e0e7dda435fa04031fa5b607cf3f414c",
+      sha256 = "279f3f67a24bb9921fe999ca6cd5e332fade8d515873ef9ba054b70e70a31d9e",
       extract = true,
       strip_prefix = "libuv-%{version}",
     } | Source,
@@ -58,4 +59,27 @@ let version = "1.52.1" in
         repo = "libuv",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t -luv <<'EOF'
+              #include <uv.h>
+              int main(void) { uv_loop_t *l = uv_default_loop(); int ok = l && uv_run(l, UV_RUN_DEFAULT) == 0 && uv_version() > 0;
+                return ok ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

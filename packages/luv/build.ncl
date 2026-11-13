@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
@@ -8,7 +9,7 @@ let libuv = import "../libuv/build.ncl" in
 let luajit = import "../luajit/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.52.1-0" in
+let version = "1.53.0-1" in
 # Header-only Lua compatibility shims vendored by luv as a git submodule,
 # which GitHub archive tarballs don't include — fetched separately.
 let compat53_version = "0.13" in
@@ -18,7 +19,7 @@ let compat53_version = "0.13" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/luvit/luv/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "e8b8774b31d24be4fcf2b021b90599ecccc8e476c61efcc59c3c10cab813a885",
+      sha256 = "e7d7c872637560e9e9ac0cdcaad1b06c4058152fb0eb9d039f38612b183d01a7",
       extract = true,
       strip_prefix = "luv-%{version}",
     } | Source,
@@ -56,4 +57,26 @@ let compat53_version = "0.13" in
         repo = "luv",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t -lluv -lluajit-5.1 <<'EOF'
+              extern void luaopen_luv(void);
+              int main(void) { void *volatile p = (void *)luaopen_luv; return p ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

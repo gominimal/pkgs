@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2026.9.3" in
+let version = "2026.11.0" in
 {
   name = "cloudflared",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/cloudflare/cloudflared/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "f247f358f4dcc54d83a717be25b337f3e87ab4033e95e703b2d7e576bd534fef",
+      sha256 = "9913452304215e1e7b0ecd75b3e1ca400d5c8b64156e176c5e0aaaca4238c539",
       extract = true,
       strip_prefix = "cloudflared-%{version}",
     } | Source,

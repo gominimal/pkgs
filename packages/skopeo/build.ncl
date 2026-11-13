@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -6,15 +6,16 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 
-let version = "1.24.1" in
+let version = "1.25.1" in
 {
   name = "skopeo",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/containers/skopeo/v%{version}.tar.gz",
-      sha256 = "6a3f342a327ec7684198eb0e15114940b6101506db48d9a96590f5942cb3b335",
+      sha256 = "8e889df322ec3d9457a2e3b61ba9fa77759dd81dac857514333fb3b837e98b65",
       extract = true,
       strip_prefix = "skopeo-%{version}",
     } | Source,
@@ -27,6 +28,8 @@ let version = "1.24.1" in
 
   runtime_deps = [
     glibc,
+    # Verifies TLS against /etc/ssl/certs at runtime; see AGENTS.md "Trust store".
+    ca-certificates,
   ],
 
   cmd = "./build.sh",
@@ -44,9 +47,13 @@ let version = "1.24.1" in
       license_spdx = "Apache-2.0",
       source_provenance = {
         category = 'GithubRepo,
-        owner = "containers",
+        owner = "podman-container-tools",
         repo = "skopeo",
       },
       build_cost_multiple = 2,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/skopeo --version",
+  },
 } | BuildSpec

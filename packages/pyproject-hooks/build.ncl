@@ -1,17 +1,17 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 
 let python = import "../python/build.ncl" in
 let flit-core = import "../flit-core/build.ncl" in
 
-let version = "1.2.0" in
+let version = "1.3.3" in
 {
   name = "pyproject-hooks",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://files.pythonhosted.org/packages/source/p/pyproject-hooks/pyproject_hooks-%{version}.tar.gz",
-      sha256 = "1e859bd5c40fae9448642dd871adf459e5e2084186e8d2c2a79a824c970da1f8",
+      sha256 = "defda19b854fa0d3bd4f76ea4ddcba8abd7dcfcdd585a6690ade050744fc5f43",
       extract = true,
       strip_prefix = "pyproject_hooks-%{version}",
     } | Source,
@@ -40,4 +40,15 @@ let version = "1.2.0" in
         repo = "pyproject-hooks",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [python],
+        cmds = [
+          ["/usr/bin/python3", "-c", "import pyproject_hooks; print(pyproject_hooks.BuildBackendHookCaller)"],
+        ],
+      } | Test,
+  },
 } | BuildSpec

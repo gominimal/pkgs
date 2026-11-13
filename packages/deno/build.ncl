@@ -1,12 +1,16 @@
 let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let python = import "../python/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 
-let version = "2.9.5" in
+let version = "2.9.8" in
 {
   name = "deno",
   build_deps = [
@@ -15,12 +19,12 @@ let version = "2.9.5" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://github.com/denoland/deno/releases/download/v%{version}/deno-x86_64-unknown-linux-gnu.zip",
-          sha256 = "8b010a3b1a4a0188a67cdb8a7a27348b2a501af78aec7fc74f2ace167368d530",
+          sha256 = "e890975bc2549807bbcc0b584ffafda72cc7c93349dd99c80483dd784f6c4609",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://github.com/denoland/deno/releases/download/v%{version}/deno-aarch64-unknown-linux-gnu.zip",
-          sha256 = "6b7cae3a8fc4385a59dea3146fcb8bad7fea4230e0ad36a8c692afacbc254be0",
+          sha256 = "d49596c20b9788cf8f5d8ddf644103d4bde56ed239753f0bdb92ba9361d51905",
         } | Source,
     } target,
     base,
@@ -30,6 +34,9 @@ let version = "2.9.5" in
     glibc,
     subsetOf gcc ["libgcc"],
     bash, # the /usr/bin wrapper is a #!/bin/sh script (bash provides bin/sh)
+    # The wrapper defaults DENO_TLS_CA_STORE=system (CVE-2026-111943), so the
+    # OS store must be present or every TLS connection fails.
+    ca-certificates,
   ],
 
   cmd = "./build.sh",
@@ -62,9 +69,27 @@ let version = "2.9.5" in
     eval =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "deno eval 'console.log(1+1)' | grep -q '^2$'"],
+        ],
+      } | Test,
+    # CVE-2026-111943: the wrapper defaults deno to the OS trust store, and a
+    # caller's own choice still wins.
+    tls_ca_store_default =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              test "$(env -u DENO_TLS_CA_STORE deno eval 'console.log(Deno.env.get("DENO_TLS_CA_STORE"))')" = system
+              test "$(DENO_TLS_CA_STORE=mozilla deno eval 'console.log(Deno.env.get("DENO_TLS_CA_STORE"))')" = mozilla
+            "%
+          ],
         ],
       } | Test,
     # `deno install -g` lands a script in ~/.local/bin, where the session PATH
@@ -72,7 +97,7 @@ let version = "2.9.5" in
     global_install =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           [
             "/bin/bash",

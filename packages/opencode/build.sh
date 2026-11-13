@@ -24,8 +24,10 @@ bun install --ignore-scripts
 export OPENCODE_VERSION="$MINIMAL_ARG_VERSION"
 export OPENCODE_CHANNEL="local"
 
-# Build a single-target native binary, matching the upstream nix recipe.
-cd packages/opencode
+# Build a single-target native binary, matching the upstream nix recipe
+# (nix/opencode.nix). opencode 2.x moved the CLI from packages/opencode to
+# packages/cli, and its build.ts names the output dir cli-<os>-<arch>.
+cd packages/cli
 bun --bun ./script/build.ts --single --skip-install
 
 case "$(uname -m)" in
@@ -35,4 +37,4 @@ case "$(uname -m)" in
 esac
 
 mkdir -p "$OUTPUT_DIR/usr/bin"
-install -m 755 "dist/opencode-linux-${DIST_ARCH}/bin/opencode" "$OUTPUT_DIR/usr/bin/opencode"
+install -m 755 "dist/cli-linux-${DIST_ARCH}/bin/opencode" "$OUTPUT_DIR/usr/bin/opencode"

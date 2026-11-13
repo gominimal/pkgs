@@ -1,4 +1,5 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -6,14 +7,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.14.9" in
+let version = "0.15.0" in
 {
   name = "bottom",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/ClementTsang/bottom/%{version}.tar.gz",
-      sha256 = "1dbb940c763fb583b7e1c7dfa165b73ed9a0ba712e72cc97311c5b1c098d5b72",
+      sha256 = "9b38fd551ef9e67bb8dc09a658e7c9594913fc5c43154f264d5b776416ad1c4d",
       extract = true,
       strip_prefix = "bottom-%{version}",
     } | Source,
@@ -30,7 +31,7 @@ let version = "0.14.9" in
   cmd = "./build.sh",
 
   outputs = {
-    btm = { glob = "usr/bin/btm" } | OutputLib,
+    btm = { glob = "usr/bin/btm" } | OutputBin,
     bash_completion = { glob = "usr/share/bash-completion/completions/btm" } | OutputData,
     fish_completion = { glob = "usr/share/fish/vendor_completions.d/btm.fish" } | OutputData,
     zsh_completion = { glob = "usr/share/zsh/site-functions/_btm" } | OutputData,
@@ -47,4 +48,22 @@ let version = "0.14.9" in
         repo = "bottom",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              /usr/bin/btm --version
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

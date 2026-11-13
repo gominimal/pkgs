@@ -1,27 +1,23 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let patch = import "../patch/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.74.0" in
+let version = "0.76.2" in
 {
   name = "trivy",
   build_deps = [
     { file = "build.sh" } | Local,
-    # Go 1.27 json/v2 compile fix backported from upstream main; see the patch.
-    { file = "go127-json-skipfunc.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/aquasecurity/trivy/v%{version}.tar.gz",
-      sha256 = "04268af574690b84bc3474a5f19e002cd6da3e16899fac9fd39c6e84e7843940",
+      sha256 = "ea2670e94696508b12687e1f8ac35a6fe529893e351b7e38362c4a385ff2db9a",
       extract = true,
       strip_prefix = "trivy-%{version}",
     } | Source,
     base,
     go,
     toolchain,
-    patch,
   ],
 
   needs =
@@ -55,4 +51,8 @@ let version = "0.74.0" in
       },
       build_cost_multiple = 2,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/trivy --version",
+  },
 } | BuildSpec

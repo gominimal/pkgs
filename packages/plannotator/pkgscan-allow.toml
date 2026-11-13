@@ -1,0 +1,106 @@
+# pkgscan triage for plannotator (see pkgmgr-rs src/pkgscan/repo_allowlist.rs).
+# Each entry is pinned to the whole file's sha256: any change to the file makes
+# the finding gate again. A match regrades (Critical -> Medium, High -> Info),
+# never hides.
+#
+# Triaged for the 0.27.16 -> 0.28.44 bot update (aborted 2026-11-02T17:13Z,
+# Critical CredentialAccess). Hashes verified against the v0.28.44, v0.28.45
+# and v0.28.46 tags, where all 11 files are byte-identical, and a production
+# `pkgscan diff 0.27.16 -> 0.28.46` reports the same 30 findings as -> 0.28.44.
+#
+# Two kinds of entry:
+#  (a) ACCEPTED REAL CAPABILITY, not a false positive: the shipped binary reads
+#      ~/.npmrc at runtime (package-changes-service.ts, package-metadata.ts).
+#  (b) False positives: JSDoc comments, security tests that write decoy
+#      credentials into a temp HOME, and the VS Code extension, which build.sh
+#      does not compile (it compiles only apps/hook/server/index.ts).
+
+# --- (a) Accepted real capability -------------------------------------------
+
+[[allow]]
+file = "packages/shared/package-changes-service.ts"
+category = "CredentialAccess"
+pattern = ".npmrc"
+sha256 = "74e1fa9efde4b79a9d31088e1f758853be2372da69339f99a566bf93aeff64b2"
+reason = "ACCEPTED REAL CAPABILITY, not a false positive. Shipped code (reached from apps/hook/server/index.ts via packages/server/review.ts) reads ~/.npmrc (or $npm_config_userconfig, line 160), npm's global npmrc and the reviewed repo's .npmrc (line 138) at runtime, by default, whenever a reviewed diff has package.json/lockfile changes; opt out with PLANNOTATOR_PACKAGE_LOOKUP=0. Only `registry=` lines are parsed, `_authToken` is ignored, and the result is used only to decide which package names to WITHHOLD from the opt-in registry.npmjs.org lookup; nothing read leaves the machine. Line 16 is a JSDoc comment. Accepted by the recipe maintainer (Bryan) as intended behaviour of a code-review tool. Added in https://github.com/backnotprop/plannotator/commit/c0010c83c4c60563797f2247066d704a7b020be9"
+
+[[allow]]
+file = "packages/shared/package-metadata.ts"
+category = "CredentialAccess"
+pattern = ".npmrc"
+sha256 = "c29f4e2f5aa2f724a491c8c50afd8ac767bda48ccb89b50de6df3dbdf5ea2f83"
+reason = "ACCEPTED REAL CAPABILITY, not a false positive. Line 257 parses the .npmrc text package-changes-service.ts read at runtime: readNpmrc() keeps only `registry=` / `@scope:registry=` lines (an `_authToken` line never matches) and marks scopes or the default registry private when they point anywhere but registry.npmjs.org/registry.yarnpkg.com, so those names are withheld from the npm lookup. The read happens by default (opt out with PLANNOTATOR_PACKAGE_LOOKUP=0); the registry.npmjs.org lookup itself is opt-in (config.json packageChanges.lookup, default false). Accepted by the recipe maintainer (Bryan) as intended behaviour of a code-review tool. Added in https://github.com/backnotprop/plannotator/commit/c0010c83c4c60563797f2247066d704a7b020be9"
+
+# --- (b) False positives: comments ------------------------------------------
+
+[[allow]]
+file = "packages/shared/doc-resolve.ts"
+category = "CredentialAccess"
+pattern = ".ssh/id_"
+sha256 = "3d27b4bb1f6030e41d01d384c17b32dd59ad3800c23b2e823f839e98512efe43"
+reason = "False positive: line 172 is inside a JSDoc comment on isDocServeAllowed() describing the attack it REFUSES (`key.md -> ~/.ssh/id_ed25519` is not served). pkgscan strips /* */ comments only in C-family files. Comment added in https://github.com/backnotprop/plannotator/commit/311b2835f413b6c5cf3815c7db88f6a1946fbe1a (#2291)"
+
+[[allow]]
+file = "apps/vscode-extension/src/guides/safe-path.ts"
+category = "CredentialAccess"
+pattern = ".aws/credentials"
+sha256 = "036d09bf7d65555681670141d73ed6076fd4d8f3ed242f7c984624db65ce04f5"
+reason = "False positive: lines 4 and 36 are JSDoc comments naming the symlink attack (`notes.md -> ~/.aws/credentials`) that realFileInside() refuses to follow out of the repository. Part of the VS Code extension, which build.sh never compiles (only apps/hook/server/index.ts is bundled), so not shipped. Added in https://github.com/backnotprop/plannotator/commit/16c8ee211c9b2d7340da1ea8311b98acb7cd9420"
+
+# --- (b) False positives: tests (not shipped; build.sh runs no tests) --------
+
+[[allow]]
+file = "packages/server/doc-any-path.scenarios.ts"
+category = "CredentialAccess"
+pattern = ".ssh/id_"
+sha256 = "28ec40cc7ac26e2525104e883d459f7ecf00fab70843139a26a9f1698777c280"
+reason = "False positive: security test scenarios (imported only by doc-any-path.test.ts files). isolate() sets process.env.HOME to a fresh environment.makeTempDir(); lines 186/190/243 write a decoy 'SECRET-SSH-KEY' to <temp HOME>/.ssh/id_ed25519, symlink key.md to it and assert /api/doc refuses to serve it. Line 12 is a JSDoc comment. Added in https://github.com/backnotprop/plannotator/commit/96e4a3662193c8ba68ed28da1e942bfd690fb6ec (#2291)"
+
+[[allow]]
+file = "packages/server/reference-readers.scenarios.ts"
+category = "CredentialAccess"
+pattern = ".ssh/id_"
+sha256 = "19bee159b63931328cdf24b9c4798c62cc1e721180aa1d7ae65a03b086a5ba21"
+reason = "False positive: security test scenarios (imported only by reference-readers.test.ts files). isolate() sets process.env.HOME to a temp dir; lines 149/153 write a decoy 'SECRET-SSH-KEY' to <temp HOME>/.ssh/id_ed25519 and symlink a vault key.md to it, to assert the Obsidian/Files readers refuse it. Added in https://github.com/backnotprop/plannotator/commit/a92e3eb21f726307ea4fe2da8440a7a8442c4daf"
+
+[[allow]]
+file = "packages/server/inbox-attachments-kinds.test.ts"
+category = "CredentialAccess"
+pattern = ".docker/config.json"
+sha256 = "4bc2c23d717732bd7877438129ccc2ae31bbdf84dd456e1a8014779ef86b03a2"
+reason = "False positive: test. Line 324 requests `.docker/config.json` (and other hidden/dotenv paths) from a local test server at 127.0.0.1 and asserts they are NOT served (404). Reads nothing from disk. Added in https://github.com/backnotprop/plannotator/commit/f742bd5693f32ade651e37c91597e79a71b1c26c (#1834)"
+
+[[allow]]
+file = "packages/core/inbox-actions.test.ts"
+category = "CredentialAccess"
+pattern = ".ssh/id_"
+sha256 = "e5ebb6f1048c1dbe178c321f7c713f647eea25eaf080e0a2e3992a295eeecd47"
+reason = "False positive: markdown-parser unit test. Line 147 is an expected string containing the instruction text `ssh-copy-id -i ~/.ssh/id_ed25519.pub user@host` from an Inbox action block fixture (line 133); nothing is read or executed. Added in https://github.com/backnotprop/plannotator/commit/94a4709bb77240de53713b51af073b3a2a3072a7"
+
+[[allow]]
+file = "packages/shared/package-metadata.test.ts"
+category = "CredentialAccess"
+pattern = ".npmrc"
+sha256 = "9bd728cd2d46bdfec285667dd3dbc04ef35db6340d463a369e18eb78dbbd8374"
+reason = "False positive: unit test. Line 7 passes an inline .npmrc string (with a placeholder `_authToken=x`) to packageRouting() and asserts the private scope is withheld; no file is read. Added in https://github.com/backnotprop/plannotator/commit/c0010c83c4c60563797f2247066d704a7b020be9"
+
+[[allow]]
+file = "packages/server/package-changes-endpoint.test.ts"
+category = "CredentialAccess"
+pattern = ".npmrc"
+sha256 = "a721ff4b632462910f28e2a8a90a3f56e2ba66831f6c2fb897c36ac44be25c12"
+reason = "False positive: endpoint test. Writes a fixture `.npmrc` (and a .gitignore naming it) into a mkdtempSync repo, removed after each test, to assert a gitignored .npmrc still withholds its scope; lines 12/14 are comments. Added in https://github.com/backnotprop/plannotator/commit/c0010c83c4c60563797f2247066d704a7b020be9"
+
+[[allow]]
+file = "packages/shared/package-changes-service.test.ts"
+category = "CredentialAccess"
+pattern = ".npmrc"
+sha256 = "d17f86f16032ad6fc9f293277864203f65561e1552e7b521e330dfcf4c7ecb1b"
+reason = "False positive: unit test. Writes fixture `.npmrc` files into temp repos and passes in-memory `.npmrc` settings sources (home: tempDir()) to assert which package names are withheld. Added in https://github.com/backnotprop/plannotator/commit/c0010c83c4c60563797f2247066d704a7b020be9 and https://github.com/backnotprop/plannotator/commit/e92b102b9d2ed25129849c4c4f7b433fb282a89f"
+
+[[allow]]
+file = "packages/server/inbox-launch-env.test.ts"
+category = "FileSystemAccess"
+pattern = "launchctl"
+sha256 = "5a6bc693670d6c43ec299171ca848ac4f32d8142b280fb22befd1d2f09202568"
+reason = "False positive: line 151 is a bun test NAME (\"what launchd and the session give (SSH_AUTH_SOCK, a launchctl proxy, LC_*) reaches the shell and the --bg env\"); the test only asserts that existing env vars pass through createLoginEnv/launchSpawnEnv with a fake runner. Nothing in v0.28.51 executes launchctl (the only other occurrence, packages/server/inbox-launch-env.ts:12, is a JSDoc comment). Test files are not bundled (build.sh bundles apps/hook/server/index.ts). Added in https://github.com/backnotprop/plannotator/commit/37f0e88cd6184b9745564c6febae3f98b7ef898a (#2376)"

@@ -2,17 +2,19 @@
 # with outputs + runtime_deps refined from a verified `minimal package` build.
 let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "0.64.1" in
+let version = "0.66.3" in
 {
   name = "lazygit",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/jesseduffield/lazygit/v%{version}.tar.gz",
-      sha256 = "b1df6ee72f17efc0ef95fc20a64821cd9eda3935b81cb98b1719c8266163bd07",
+      sha256 = "49e80d28e03e53048105f6ebb5afefbe5caacffa8549347d8a59eab3a00dafe1",
       extract = true,
       strip_prefix = "lazygit-%{version}",
     } | Source,
@@ -43,7 +45,7 @@ let version = "0.64.1" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           # Smoke test ported from the Wolfi recipe's test block.
           ["/bin/bash", "-c", "lazygit --help"],

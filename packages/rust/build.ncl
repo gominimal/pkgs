@@ -1,6 +1,7 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let llvm = import "../llvm/build.ncl" in
@@ -12,8 +13,8 @@ let libffi = import "../libffi/build.ncl" in
 let libssh2 = import "../libssh2/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let rustc-1-97-1 = import "../rustc-1.97.1/build.ncl" in # the stage0
-let version = "1.98.1" in
+let rustc-1-98-1 = import "../rustc-1.98.1/build.ncl" in # the stage0
+let version = "1.99.1" in
 {
   name = "rust",
   build_deps =
@@ -22,7 +23,7 @@ let version = "1.98.1" in
       { file = "build.sh" } | Local,
       {
         url = "gs://minimal-staging-archives/rustc-%{version}-src.tar.xz",
-        sha256 = "be1816e7f6c40abb90245ad6e024bed2a7e88d7dda4561e4d5470207df616b9f",
+        sha256 = "6451598a99e77f07571960f6b21d577399d3a30f33e80cbd2e3a4aae6535d265",
         extract = true,
         strip_prefix = "rustc-%{version}-src",
       } | Source,
@@ -35,28 +36,11 @@ let version = "1.98.1" in
       python,
       toolchain,
     ]
-    # stage0 = the rustc-1.97.1 rung (1.98.1's src/stage0 pins 1.97.1), built by the chain
-    # gcc-15.2.0 -> mrustc 0.12.0 -> rustc-1.90.0 -> 1.91.1 -> ... -> 1.97.1.  amd64 takes the
-    # rung build_dep; arm64 takes a sha-pinned tarball of the same rung.  build.sh injects it
-    # into bootstrap.toml [build] rustc/cargo; x.py never downloads a stage0.
-    @ (
-      match {
-        { arch = 'Amd64, .. } => [rustc-1-97-1],
-        { arch = 'Arm64, .. } =>
-          [
-            # arm64 stage0: rustc-1.97.1 built by the same rung recipes on arm64 hardware.  The
-            # tarball bundles the libLLVM.so.21.1 it links (built with all targets; the llvm
-            # package here omits experimental ones) and that library's non-glibc dependencies,
-            # each with an $ORIGIN RUNPATH.  `extract = true` unpacks it to ./rustc-1.97.1-aarch64
-            # inside the source root; build.sh points bootstrap.toml [build] rustc/cargo at it.
-            {
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/de0724a4bf882c5f4641dc6edd6284ee0fa565a405d4ea264a4f305e3bfe5e6e/rustc-1.97.1-aarch64.tar.zst",
-              sha256 = "de0724a4bf882c5f4641dc6edd6284ee0fa565a405d4ea264a4f305e3bfe5e6e",
-              extract = true,
-            } | Source,
-          ],
-      } target
-    ),
+    # stage0 = rustc-1.98.1 on BOTH arches (1.99.0's src/stage0 pins 1.98.0; x.py's
+    # check_stage0_version accepts any 1.98.x): the top of the source-only ladder mrustc 0.12.0 ->
+    # rustc-1.90.0 -> ... -> 1.97.1 -> 1.98.1, built in gominimal/bootstrap (gen-13).  build.sh injects
+    # it into bootstrap.toml [build] rustc/cargo; x.py never downloads a stage0.
+    @ [rustc-1-98-1],
   # The build itself is offline (build.sh stubs curl/wget/git and fails on any attempt). The flags stay
   # because the builder grants a package network access when ANY of its dependencies declares it, and
   # the Rust programs that depend on this package still fetch their crates during their own builds.
@@ -103,4 +87,27 @@ let version = "1.98.1" in
       },
       build_cost_multiple = 3,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/rustc --version",
+    # No `-C linker` anywhere: the compiled-in default linker (bootstrap.toml `default-linker`)
+    # must exist.  toolchain supplies gcc, binutils and glibc's crt/libc; it stays a test dep
+    # rather than a runtime dep so rust's closure does not grow.
+    default_linker_rustc =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          ["/usr/bin/bash", "-c", "printf 'fn main() { println!(\"hello rust\"); }\\n' > hello.rs && /usr/bin/rustc hello.rs -o h && out=\"$(./h)\" && [ \"$out\" = 'hello rust' ]"],
+        ],
+      } | Test,
+    default_linker_cargo =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          ["/usr/bin/bash", "-c", "export CARGO_HOME=\"$PWD/cargo-home\" RUSTC=/usr/bin/rustc && /usr/bin/cargo new --offline --vcs none hi && cd hi && /usr/bin/cargo build --offline && out=\"$(./target/debug/hi)\" && [ \"$out\" = 'Hello, world!' ]"],
+        ],
+      } | Test,
+  },
 } | BuildSpec

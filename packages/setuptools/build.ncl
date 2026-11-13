@@ -1,16 +1,16 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "84.0.0" in
+let version = "84.2.1" in
 {
   name = "setuptools",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/setuptools-%{version}.tar.gz",
-      sha256 = "1cdd0d67229315c742282343f265cac91bb0976f83b2cf78dfa2f4a14343fe2a"
+      sha256 = "99f6fbe42e4857bf52f43915a9505e2a9d1439f9c7652823a22822fd73d35bb0"
     } | Source,
     base,
     python,
@@ -35,4 +35,15 @@ let version = "84.0.0" in
         repo = "setuptools",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [python],
+        cmds = [
+          ["/usr/bin/python3", "-c", "import setuptools; print(setuptools.__version__)"],
+        ],
+      } | Test,
+  },
 } | BuildSpec

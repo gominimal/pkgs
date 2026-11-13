@@ -1,0 +1,25 @@
+name: ci-scope test
+
+# Tests ci_scope.py, which decides what minimal-check covers on a pull
+# request, against the real package graph. A scoper that silently checks too
+# little shows up only as a green check, so it gets its own test whenever it
+# or the graph code it reuses changes.
+on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - ".github/scripts/ci_scope.py"
+      - ".github/scripts/test_ci_scope.py"
+      - ".github/scripts/blast_radius_report.py"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/ci-scope-test.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: python3 -I .github/scripts/test_ci_scope.py

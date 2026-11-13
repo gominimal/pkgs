@@ -15,6 +15,27 @@ mkdir -p "$NPM_STUB"
 printf '#!/bin/sh\nexit 0\n' > "$NPM_STUB/npm"
 chmod 0755 "$NPM_STUB/npm"
 
+# Emscripten only runs against the LLVM major tools/shared.py names (a
+# mismatch is merely a warning at emcc time), so check it here against the
+# llvm-<N> line build.ncl pulls in, and fail the build rather than ship a
+# toolchain pair upstream never tested.
+LLVM_BIN=/usr/lib/llvm-23/bin
+expected_llvm=$(sed -n 's/^EXPECTED_LLVM_VERSION = \([0-9][0-9]*\)$/\1/p' tools/shared.py)
+actual_llvm=$("$LLVM_BIN/clang" --version | sed -n 's/^clang version \([0-9][0-9]*\)\..*/\1/p')
+if [ -z "$expected_llvm" ] || [ "$expected_llvm" != "$actual_llvm" ]; then
+  echo "ERROR: emscripten $MINIMAL_ARG_VERSION expects LLVM '$expected_llvm', $LLVM_BIN/clang is '$actual_llvm'; move emscripten to the matching llvm-<N> line" >&2
+  exit 1
+fi
+
+# Since 5.0.2 the shell launchers (emcc, em++, emar, ...) are no longer in git
+# or the release tarball: a git checkout creates them with bootstrap.py, whose
+# other steps are `npm ci` and git submodules. Create just the launchers, from
+# the same script bootstrap.py runs, so install.py copies them with the tree.
+python3 tools/maint/create_entry_points.py
+for t in emcc em++ emar embuilder; do
+  [ -x "$t" ] || { echo "ERROR: create_entry_points.py did not create $t" >&2; exit 1; }
+done
+
 # Emscripten's own packaging entry point: like `make dist`, but it drops the
 # test corpus, git metadata and other things end users never need.
 PATH="$NPM_STUB:$PATH" python3 tools/install.py "$EM_ROOT"
@@ -23,10 +44,11 @@ rm -rf "$NPM_STUB"
 
 # Emscripten looks for a config beside its own root before falling back to
 # $HOME, so the packaged config lives inside the install tree and needs no
-# environment set up by the caller. LLVM_ROOT is a directory of binaries;
-# BINARYEN_ROOT is a prefix with bin/ underneath it.
+# environment set up by the caller. LLVM_ROOT is a directory of binaries:
+# LLVM 23's, from the prefixed llvm-23 package (the version check above uses
+# the same directory). BINARYEN_ROOT is a prefix with bin/ underneath it.
 cat > "$EM_ROOT/.emscripten" <<'EOF'
-LLVM_ROOT = '/usr/bin'
+LLVM_ROOT = '/usr/lib/llvm-23/bin'
 BINARYEN_ROOT = '/usr'
 NODE_JS = '/usr/bin/node'
 EOF
@@ -44,8 +66,8 @@ rm -rf "$EM_ROOT/output"
 # looking for /usr/bin/emcc.py. Hence wrappers rather than links.
 mkdir -p "$OUTPUT_DIR/usr/bin"
 for t in em++ em-config emar embuilder emcc emcmake emconfigure emdwp emmake \
-         emnm emprofile emranlib emrun emscan-deps emscons emsize emstrip \
-         emsymbolizer; do
+         emnm empath-split emprofile emranlib emrun emscan-deps emscons emsize \
+         emstrip emsymbolizer; do
   cat > "$OUTPUT_DIR/usr/bin/$t" <<EOF
 #!/bin/sh
 # emcc writes to its cache while linking even when every entry is already

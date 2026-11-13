@@ -1,5 +1,10 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
+let tzdata = import "../tzdata/build.ncl" in
+let bzip2 = import "../bzip2/build.ncl" in
 let make = import "../make/build.ncl" in
 let gdbm = import "../gdbm/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
@@ -17,49 +22,34 @@ let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let xz = import "../xz/build.ncl" in
 
-let version = "3.14.7" in
+let version = "3.14.10" in
 {
   name = "python",
   build_deps = [
     { file = "build.sh" } | Local,
-    # CVE-2026-19672 (PSF-2026-38, gh-155999): tarfile's `data`/`tar` filters
-    # create intermediate directories from the member name as given, so a name
-    # that leaves the destination and comes back creates them outside it even
-    # though the resolved-path containment check passes. Upstream fixed it on
-    # the 3.14 branch two weeks AFTER the 3.14.7 tag, so it is in no released
-    # 3.14.x -- it first ships in 3.14.8. Drop this patch on that bump.
-    { file = "0001-gh-155999-tarfile-normalize-parent-dir-components.patch" } | Local,
-    # CVE-2026-87910 (PSF-2026-40, gh-157265): when a hard link falls back to
-    # extracting a copy of its target, tarfile called the filter with the
-    # link's name and threw the result away, so a custom filter that rejects
-    # a member by returning None (instead of raising) was ignored. The stock
-    # `data`/`tar` filters raise, so only None-returning custom filters are
-    # affected. Fixed on main (fb2f0bbc) and 3.13; the 3.14 backport
-    # (python/cpython#157307) is not in any released 3.14.x -- it is expected
-    # in 3.14.8. Drop this patch on that bump.
-    { file = "0002-gh-157265-tarfile-honor-filter-none-link-fallback.patch" } | Local,
-    # CVE-2026-15806 (PSF-2026-36, gh-155694): urllib's HTTPPasswordMgr
-    # dropped the URL scheme when matching, so credentials added for
-    # https://host/ were handed out for http://host/ and sent in cleartext.
-    # Fixed on the 3.14 branch after the 3.14.7 tag; first ships in 3.14.8.
-    # Drop this patch on the 3.14.8 bump.
-    { file = "0003-gh-155694-urllib-scope-credentials-by-scheme.patch" } | Local,
-    # CVE-2026-15310 (PSF-2026-39, gh-156002): zipfile decompressed
-    # bzip2/LZMA/Zstandard members without a per-read bound, so a tiny member
-    # read in small chunks still expanded into one huge allocation. Carries
-    # the fix AND its follow-up (monkey-patched decompressors), in that order.
-    # Fixed on the 3.14 branch after the 3.14.7 tag; first ships in 3.14.8.
-    # Drop this patch on the 3.14.8 bump.
-    { file = "0004-gh-156002-zipfile-bound-decompression.patch" } | Local,
-    # CVE-2026-17084 (PSF-2026-37, gh-155292): stringprep (IDNA2003 nameprep)
-    # case-folded with the current Unicode instead of the 3.2.0 that RFC 3454
-    # mandates, so labels with post-3.2 case pairs encoded to non-standard
-    # A-labels. Fixed on the 3.14 branch after the 3.14.7 tag; first ships in
-    # 3.14.8. Drop this patch on the 3.14.8 bump.
-    { file = "0005-gh-155292-stringprep-pin-unicode-3.2.patch" } | Local,
+    # Dropped on the 3.14.9 bump, because 3.14.9 ships each fix (its own
+    # Misc/NEWS Security section lists all three): gh-157265 (tarfile,
+    # CVE-2026-87910), gh-157579 (tempfile, CVE-2026-12345) and gh-159894
+    # (ensurepip bundles pip 26.2.2, the CVE-2026-111943 certifi fix we used to
+    # swap in by hand). Earlier drops: gh-155999, gh-155694, gh-156002 and
+    # gh-155292 on the 3.14.8 bump. Their regression tests below stay as guards.
+    #
+    # CVE-2025-15367 (gh-143923): poplib built each command from caller-supplied
+    # text and sent it unchecked, so a CR/LF inside an argument injected extra
+    # POP3 commands. Fixed on main (b234a2b6, 3.15.0a6) only: the 3.14 branch has
+    # no commit touching poplib.py since 2025-03-02, and neither 3.14.9's nor
+    # 3.14.10's Misc/NEWS has an entry for gh-143923 (3.14.10's `_putcmd` still
+    # sends the line unchecked). A straight cherry-pick (applies at fuzz 0 to
+    # 3.14.10); drop it on the first 3.14.x whose changelog lists gh-143923.
+    { file = "0003-gh-143923-poplib-reject-control-characters.patch" } | Local,
+    # OpenSSL 4: the Modules/ part of python/cpython#149783 (the unmerged 3.14 backport of
+    # gh-146207 / gh-148600 / gh-148292). Without it _ssl references TLSv1_method() and the
+    # other fixed-version methods 4.0 removed. No-op on OpenSSL 3. Drop it on the first
+    # 3.14.x whose Misc/NEWS lists gh-148292, or on 3.15.
+    { file = "0004-gh-148292-openssl-4-support.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/Python-%{version}.tar.xz",
-      sha256 = "3b48dac8fb59f62eaa67ac83c1eb12bda1b7a08406dd286e252c11a66be27f81"
+      sha256 = "de414a57119abef52784d8993e341d53aed635fc2b05c2607d9f98a2c5b72032"
     } | Source,
     base,
     make,
@@ -78,6 +68,7 @@ let version = "3.14.7" in
     openssl,
     glibc,
     zlib,
+    bzip2, # _bz2 links libbz2
     subsetOf util-linux ["libuuid"],
     xz,
   ],
@@ -121,7 +112,7 @@ let version = "3.14.7" in
     smoketest_output =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "echo 'print(\"Hello Python\")' > script.py"],
           ["/bin/python3", "script.py"],
@@ -130,11 +121,12 @@ let version = "3.14.7" in
         ],
       } | Test,
 
-    # base carries tzdata, so zoneinfo resolves IANA zone names without extra packages
+    # zoneinfo resolves IANA zone names from the system tz database
+    # (/usr/share/zoneinfo, from the tzdata package)
     smoketest_zoneinfo =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [tzdata],
         cmds = [
           ["/bin/python3", "-c", "import zoneinfo; zoneinfo.ZoneInfo('Europe/Paris')"],
         ],
@@ -143,7 +135,7 @@ let version = "3.14.7" in
     smoketest_math =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "echo 'print(2 + 2)' > math.py"],
           ["/bin/bash", "-c", "python3 math.py | grep -q '^4$'"],
@@ -155,7 +147,7 @@ let version = "3.14.7" in
     smoketest_imports =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "cat > mymodule.py << 'EOF'\ndef greet(name):\n    return f\"Hello, {name}\"\nEOF"],
           ["/bin/bash", "-c", "cat > use_module.py << 'EOF'\nimport mymodule\nprint(mymodule.greet(\"World\"))\nEOF"],
@@ -163,11 +155,9 @@ let version = "3.14.7" in
         ],
       } | Test,
 
-    # CVE-2026-19672 regression. This test FAILS on stock 3.14.7 and passes
-    # only with the gh-155999 patch applied, so it is the thing that would
-    # catch the patch silently going missing on a future bump -- including the
-    # 3.14.8 bump that is supposed to make it redundant, where dropping the
-    # patch is correct but dropping it too early is not.
+    # CVE-2026-19672 regression. FAILS on 3.14.7 and passes on 3.14.8, which
+    # ships the gh-155999 fix (we carried it as a patch until the 3.14.8 bump).
+    # Kept as the guard that the fix is really in the interpreter we ship.
     #
     # The member name leaves the destination and comes back. The resolved path
     # lands inside, so the containment check passes and the FILE is extracted
@@ -177,7 +167,7 @@ let version = "3.14.7" in
     tarfile_filter_stays_in_destination =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -218,9 +208,9 @@ let version = "3.14.7" in
         ],
       } | Test,
 
-    # CVE-2026-87910 regression. FAILS on stock 3.14.7 (checked against the
-    # unpatched Lib/tarfile.py) and passes only with the gh-157265 patch, so
-    # it catches the patch going missing on a bump before 3.14.8.
+    # CVE-2026-87910 regression. FAILS on stock 3.14.7 and 3.14.8 and passes on
+    # 3.14.9, which ships the gh-157265 fix (we carried it as a patch until the
+    # 3.14.9 bump). Kept as the guard that the fix is really in what we ship.
     #
     # `q` is a hard link to the symlink `a/b/s -> ../escape`. `a/b/s` itself
     # is fine (it resolves inside the destination), so linking fails over to
@@ -230,7 +220,7 @@ let version = "3.14.7" in
     tarfile_link_fallback_honors_filter_none =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -280,13 +270,165 @@ let version = "3.14.7" in
         ],
       } | Test,
 
-    # CVE-2026-15806 regression: FAILS on stock 3.14.7 (the https
-    # credentials come back for the http URL, and HTTPPasswordMgrWithPriorAuth
-    # pre-emptively sends them), passes only with the gh-155694 patch.
+    # CVE-2026-111943 regression: FAILS on stock 3.14.8, whose ensurepip
+    # installs pip 26.2.1 with a vendored certifi that still trusts emSign ECC
+    # Root CA - G3; passes on 3.14.9, which bundles pip 26.2.2 (we swapped the
+    # wheel in by hand until the 3.14.9 bump). Requires pip >= 26.2.2 rather than
+    # an exact version, so a later 3.14.x bundling a newer pip still passes. Checks the root by its SHA-256 fingerprint, in both the pip
+    # the interpreter ships in site-packages and the wheel ensurepip would
+    # install from. No network.
+    pip_certifi_distrusts_emsign_ecc_g3 =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              cat > poc.py <<'PYEOF'
+              import hashlib, re, ssl, sys, zipfile
+              import ensurepip, pip
+              from pip._vendor import certifi
+
+              G3 = '86a1ecba089c4a8d3bbe2734c612ba341d813e043cf9e8a862cd5c57a36bbe6b'
+
+              def fingerprints(pem):
+                  return {hashlib.sha256(ssl.PEM_cert_to_DER_cert(c)).hexdigest()
+                          for c in re.findall(r'-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----',
+                                              pem, re.S)}
+
+              def ver(v):
+                  return tuple(int(x) for x in re.match(r'\d+(?:\.\d+)*', v).group().split('.'))
+
+              failures = []
+              if ver(pip.__version__) < (26, 2, 2):
+                  failures.append('site-packages pip is %s, want >= 26.2.2' % pip.__version__)
+              if ver(ensurepip.version()) < (26, 2, 2):
+                  failures.append('ensurepip bundles pip %s, want >= 26.2.2' % ensurepip.version())
+
+              installed = fingerprints(open(certifi.where()).read())
+              if len(installed) < 100:
+                  failures.append('pip certifi bundle has only %d roots' % len(installed))
+              if G3 in installed:
+                  failures.append('site-packages pip certifi trusts emSign ECC Root CA - G3')
+
+              with ensurepip._get_pip_whl_path_ctx() as whl:
+                  with zipfile.ZipFile(whl) as z:
+                      bundled = fingerprints(z.read('pip/_vendor/certifi/cacert.pem').decode())
+              if G3 in bundled:
+                  failures.append('ensurepip wheel certifi trusts emSign ECC Root CA - G3')
+
+              for f in failures:
+                  print('FAIL: ' + f, file=sys.stderr)
+              sys.exit(1 if failures else 0)
+              PYEOF
+              python3 poc.py
+            "%
+          ],
+        ],
+      } | Test,
+
+    # CVE-2025-15367 regression: FAILS on stock 3.14.10 (poplib sends a command
+    # containing CR/LF verbatim, so a username can smuggle in extra POP3
+    # commands) and passes only with the gh-143923 patch. Exercises `_putcmd`
+    # directly -- no network.
+    poplib_rejects_control_characters =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              cat > poc.py <<'PYEOF'
+              import poplib, sys
+
+              class Fake(poplib.POP3):
+                  def __init__(self):
+                      self.encoding = 'UTF-8'
+                      self._debugging = 0
+                      self.sent = []
+                  def _putline(self, line):
+                      self.sent.append(line)
+
+              failures = []
+              f = Fake()
+              f._putcmd('USER alice')
+              if f.sent != [b'USER alice']:
+                  failures.append('a normal command was not sent: %r' % (f.sent,))
+              for bad in ('USER a\r\nDELE 1', 'USER a\nQUIT', 'NOOP\x00', 'USER a\x7f'):
+                  try:
+                      f._putcmd(bad)
+                  except ValueError:
+                      continue
+                  failures.append('control characters were sent: %r' % (bad,))
+
+              for m in failures:
+                  print('FAIL: ' + m, file=sys.stderr)
+              sys.exit(1 if failures else 0)
+              PYEOF
+              python3 poc.py
+            "%
+          ],
+        ],
+      } | Test,
+
+    # CVE-2026-12345 regression (gh-157579). The race itself is not
+    # reproducible deterministically, so this guards the fix's presence and its
+    # normal behaviour: on Linux the fixed cleanup works relative to open
+    # directory fds (`tempfile._rmtree_use_dir_fd`) and rmtree passes the fd to
+    # its error hook (`_onexc_kwargs`). FAILS on stock 3.14.8 (neither exists);
+    # passes on 3.14.9, which ships the fix (carried as a patch until then).
+    # Then a tree with a read-only subdirectory, which forces the
+    # permission-reset path the fix rewrote, must still clean up completely.
+    tempfile_cleanup_race_fix =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              cat > poc.py <<'PYEOF'
+              import inspect, os, shutil, stat, sys, tempfile
+
+              failures = []
+              if getattr(tempfile, '_rmtree_use_dir_fd', None) is not True:
+                  failures.append('tempfile does not clean up via directory fds')
+              if '_onexc_kwargs' not in inspect.signature(shutil.rmtree).parameters:
+                  failures.append('shutil.rmtree lacks the gh-157579 onexc kwargs')
+
+              d = tempfile.TemporaryDirectory()
+              root = d.name
+              sub = os.path.join(root, 'ro')
+              os.mkdir(sub)
+              with open(os.path.join(sub, 'f'), 'w') as fh:
+                  fh.write('x')
+              os.chmod(sub, stat.S_IRUSR | stat.S_IXUSR)
+              d.cleanup()
+              if os.path.exists(root):
+                  failures.append('cleanup left %s behind' % root)
+
+              for m in failures:
+                  print('FAIL: ' + m, file=sys.stderr)
+              sys.exit(1 if failures else 0)
+              PYEOF
+              python3 poc.py
+            "%
+          ],
+        ],
+      } | Test,
+
+    # CVE-2026-15806 regression: FAILS on 3.14.7 (the https credentials come
+    # back for the http URL, and HTTPPasswordMgrWithPriorAuth pre-emptively
+    # sends them) and passes on 3.14.8, which ships the gh-155694 fix.
     urllib_credentials_scoped_by_scheme =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -326,13 +468,14 @@ let version = "3.14.7" in
       } | Test,
 
     # CVE-2026-15310 regression: FAILS on stock 3.14.7, where one read(8192)
-    # of a 32 MiB all-zero LZMA (and bzip2, if built) member peaks at ~80+ MiB
-    # because the whole first compressed chunk is expanded at once. With the
-    # gh-156002 patch the peak is the decoder state plus one bounded chunk.
+    # of a 32 MiB all-zero LZMA or bzip2 member peaks at ~80+ MiB because
+    # the whole first compressed chunk is expanded at once. 3.14.8 ships the
+    # gh-156002 fix: the peak is the decoder state plus one bounded chunk.
+    # Both modules are required: a missing lzma or bz2 fails the test.
     zipfile_read_bounds_decompression =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -347,12 +490,13 @@ let version = "3.14.7" in
                   try:
                       __import__(mod)
                   except ImportError:
-                      print('skip: %s module not built' % mod, file=sys.stderr)
+                      print('missing: %s module does not import' % mod, file=sys.stderr)
                       continue
                   methods.append((name, const))
-              if not any(n == 'lzma' for n, _ in methods):
-                  print('FAIL: lzma module missing; nothing exercises the fix', file=sys.stderr)
-                  sys.exit(1)
+              for need in ('lzma', 'bzip2'):
+                  if not any(n == need for n, _ in methods):
+                      print('FAIL: %s module missing from the runtime closure' % need, file=sys.stderr)
+                      sys.exit(1)
 
               SIZE = 32 * 1024 * 1024
               # liblzma's decoder state (an 8 MiB dictionary at the default preset) is
@@ -399,7 +543,7 @@ let version = "3.14.7" in
     idna_nameprep_uses_unicode_3_2_case_folding =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",

@@ -1,4 +1,5 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -50,4 +51,28 @@ let version = "2.0.1" in
         repo = "Clipper2",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              g++ -std=c++17 -x c++ - -o t -lClipper2 <<'EOF'
+              #include <clipper2/clipper.h>
+              using namespace Clipper2Lib;
+              int main() { Paths64 s{MakePath({0,0, 10,0, 10,10, 0,10})};
+                Paths64 r = Union(s, FillRule::NonZero); return (r.size() == 1 && Area(r) == 100) ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

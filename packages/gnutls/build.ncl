@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -12,12 +12,14 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
 let version = "3.8.13" in
+# The gnupg.org directory is the major.minor series (v3.8/).
+let api = std.string.join "." (std.array.slice 0 2 (std.string.split "." version)) in
 {
   name = "gnutls",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-%{version}.tar.xz",
+      url = "https://www.gnupg.org/ftp/gcrypt/gnutls/v%{api}/gnutls-%{version}.tar.xz",
       sha256 = "ffed8ec1bf09c2426d4f14aae377de4753b53e537d685e604e99a8b16ca9c97e",
       extract = true,
       strip_prefix = "gnutls-%{version}",
@@ -63,4 +65,8 @@ let version = "3.8.13" in
         name = "gnutls",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/gnutls-cli --version",
+  },
 } | BuildSpec

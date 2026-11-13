@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -9,14 +10,14 @@ let glibc = import "../glibc/build.ncl" in
 let clipper2 = import "../clipper2/build.ncl" in
 let onetbb = import "../onetbb/build.ncl" in
 
-let version = "3.5.2" in
+let version = "3.5.4" in
 {
   name = "manifold",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/elalish/manifold/manifold-%{version}.tar.gz",
-      sha256 = "ce5f4d87877daca99a910d0af73c028f2a36b9288dd2bf3cd1cecf8faff9f7c8",
+      sha256 = "db2a8e7aac6abac12fe54fa7b055d24741362b5706fee6f5c5b8f0bccd2de4ec",
       extract = true,
       strip_prefix = "manifold-%{version}",
     } | Source,
@@ -52,4 +53,34 @@ let version = "3.5.2" in
         repo = "manifold",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              cd /tmp
+              g++ -x c++ - -o t -x none -std=c++17 -lmanifold <<'EOF'
+              #include <cstdio>
+              #include <manifold/manifold.h>
+              int main() {
+                manifold::Manifold a = manifold::Manifold::Cube({2.0, 2.0, 2.0});
+                manifold::Manifold b = manifold::Manifold::Cube({1.0, 1.0, 1.0});
+                double v = (a - b).Volume();
+                std::printf("volume=%f\n", v);
+                return !(v > 6.99 && v < 7.01);
+              }
+              EOF
+              ./t
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

@@ -8,7 +8,7 @@ let make = import "../make/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.8.0" in
+let version = "1.9.0" in
 {
   name = "stlink",
 
@@ -16,7 +16,7 @@ let version = "1.8.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/stlink-org/stlink/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "cff760b5c212c2cc480f705b9ca7f3828d6b9c267950c6a547002cd0a1f5f6ac",
+      sha256 = "10d6c3bff3d5a7f6aefd00e096339822cafc65acf32e43c842369e346d2e5069",
       extract = true,
       strip_prefix = "stlink-%{version}",
     } | Source,

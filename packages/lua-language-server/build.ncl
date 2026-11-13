@@ -6,7 +6,7 @@ let base = import "../base/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let tar = import "../tar/build.ncl" in
 
-let version = "3.19.1" in
+let version = "3.19.2" in
 {
   name = "lua-language-server",
   # LuaLS (sumneko) language server, repackaged from the official
@@ -17,12 +17,12 @@ let version = "3.19.1" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://github.com/LuaLS/lua-language-server/releases/download/%{version}/lua-language-server-%{version}-linux-x64.tar.gz",
-          sha256 = "e9235d2d72ef55bc41cf8c99cda2ed64777682024b4bb81f5dea425060c5cbb8",
+          sha256 = "93ad326b10f6c00911dd8c450fa098332dbd8f9f45d1052f5636a2d54479b947",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://github.com/LuaLS/lua-language-server/releases/download/%{version}/lua-language-server-%{version}-linux-arm64.tar.gz",
-          sha256 = "abd2572e8fc929dc838a81ffb8473c5bce0bf39bfe8edb4b120b3b623176ce83",
+          sha256 = "17b8e401a874440adeb649e5024c364f2bb9d15156c74a40e56d1ae9a1b2e4f2",
         } | Source,
     } target,
     base,

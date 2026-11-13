@@ -1,0 +1,263 @@
+From fdb38b89f18a3a3f835ff02b6d428bd226fe6ded Mon Sep 17 00:00:00 2001
+From: Laurenz <laurmaedje@gmail.com>
+Date: Thu, 22 Oct 2026 10:42:35 +0000
+Subject: [PATCH] Turn all manifest paths into virtual paths (#8989)
+
+---
+ crates/typst-cli/src/init.rs       |  7 ++--
+ crates/typst-cli/tests/smoke.rs    | 51 ++++++++++++++++++++++++++++++
+ crates/typst-eval/src/import.rs    |  5 +--
+ crates/typst-syntax/src/package.rs | 22 ++++++-------
+ crates/typst-syntax/src/path.rs    | 37 +++++++++++++++++++++-
+ 5 files changed, 104 insertions(+), 18 deletions(-)
+
+diff --git a/crates/typst-cli/src/init.rs b/crates/typst-cli/src/init.rs
+index b35fbb6a..30289b8f 100644
+--- a/crates/typst-cli/src/init.rs
++++ b/crates/typst-cli/src/init.rs
+@@ -77,7 +77,10 @@ fn scaffold_project(
+         bail!("project directory already exists (at {})", project_dir.display());
+     }
+ 
+-    let template_dir = package_path.join(template.path.as_str());
++    let template_dir = template
++        .path
++        .realize(package_path)
++        .map_err(|err| eco_format!("invalid template directory ({err})"))?;
+     if !template_dir.exists() {
+         bail!("template directory does not exist (at {})", template_dir.display());
+     }
+@@ -119,7 +122,7 @@ fn print_summary(
+     writeln!(
+         out,
+         "typst watch {}",
+-        shell_escape::escape(template.entrypoint.to_string().into()),
++        shell_escape::escape(template.entrypoint.get_without_slash().into()),
+     )?;
+     writeln!(out)?;
+     Ok(())
+diff --git a/crates/typst-cli/tests/smoke.rs b/crates/typst-cli/tests/smoke.rs
+index b56582ff..829f0c32 100644
+--- a/crates/typst-cli/tests/smoke.rs
++++ b/crates/typst-cli/tests/smoke.rs
+@@ -458,6 +458,57 @@ fn test_path_to_package() {
+     output.stderr.must_contain("error: panicked with: (7, 42)");
+ }
+ 
++#[test]
++fn test_template_path_escapes() {
++    let package = tempfs();
++    package.write(
++        "local/escaping/0.1.0/typst.toml",
++        r#"[package]
++           name = "escaping"
++           version = "0.1.0"
++           entrypoint = "lib.typ"
++
++           [template]
++           path = "../escaping"
++           entrypoint = "main.typ""#,
++    );
++    let output = exec()
++        .arg("init")
++        .arg("@local/escaping:0.1.0")
++        .arg("--package-path")
++        .arg(package.path())
++        .must_fail();
++    output
++        .stderr
++        .must_contain("error: package manifest is malformed (path escapes root)");
++}
++
++#[test]
++fn test_template_path_absolute() {
++    let project = tempfs();
++    let package = tempfs();
++    package.write(
++        "local/absolute/0.1.0/typst.toml",
++        r#"[package]
++           name = "absolute"
++           version = "0.1.0"
++           entrypoint = "lib.typ"
++
++           [template]
++           path = "/template"
++           entrypoint = "main.typ""#,
++    );
++    package.write("local/absolute/0.1.0/template/main.typ", "Hello");
++    exec()
++        .arg("init")
++        .arg("@local/absolute:0.1.0")
++        .arg(project.path().join("project"))
++        .arg("--package-path")
++        .arg(package.path())
++        .must_succeed();
++    project.read("project/main.typ").must_match_lines(["Hello"]);
++}
++
+ #[test]
+ fn test_network_access_hint() {
+     // Using a CLI test because the error message differs across operating
+diff --git a/crates/typst-eval/src/import.rs b/crates/typst-eval/src/import.rs
+index 131deef3..90a926c9 100644
+--- a/crates/typst-eval/src/import.rs
++++ b/crates/typst-eval/src/import.rs
+@@ -287,9 +287,6 @@ fn resolve_package(
+     // Evaluate the entry point.
+     Ok((
+         manifest.package.name,
+-        PathOrStr::Str(manifest.package.entrypoint.into())
+-            .resolve(manifest_id)
+-            .at(span)?
+-            .intern(),
++        RootedPath::new(manifest_id.root().clone(), manifest.package.entrypoint).intern(),
+     ))
+ }
+diff --git a/crates/typst-syntax/src/package.rs b/crates/typst-syntax/src/package.rs
+index c9b5e191..ee9228d1 100644
+--- a/crates/typst-syntax/src/package.rs
++++ b/crates/typst-syntax/src/package.rs
+@@ -9,7 +9,7 @@ use serde::de::IgnoredAny;
+ use serde::{Deserialize, Deserializer, Serialize, Serializer};
+ use unscanny::Scanner;
+ 
+-use crate::is_ident;
++use crate::{VirtualPath, is_ident};
+ 
+ /// A type alias for a map of key-value pairs used to collect unknown fields
+ /// where values are completely discarded.
+@@ -80,14 +80,14 @@ pub struct ToolInfo {
+ pub struct TemplateInfo {
+     /// The directory within the package that contains the files that should be
+     /// copied into the user's new project directory.
+-    pub path: EcoString,
++    pub path: VirtualPath,
+     /// A path relative to the template's path that points to the file serving
+     /// as the compilation target.
+-    pub entrypoint: EcoString,
++    pub entrypoint: VirtualPath,
+     /// A path relative to the package's root that points to a PNG or lossless
+     /// WebP thumbnail for the template.
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+-    pub thumbnail: Option<EcoString>,
++    pub thumbnail: Option<VirtualPath>,
+     /// All parsed but unknown fields, this can be used for validation.
+     #[serde(flatten, skip_serializing)]
+     pub unknown_fields: UnknownFields,
+@@ -103,7 +103,7 @@ pub struct PackageInfo {
+     /// The package's version.
+     pub version: PackageVersion,
+     /// The path of the entrypoint into the package.
+-    pub entrypoint: EcoString,
++    pub entrypoint: VirtualPath,
+     /// A list of the package's authors.
+     #[serde(default, skip_serializing_if = "Vec::is_empty")]
+     pub authors: Vec<EcoString>,
+@@ -185,10 +185,10 @@ impl PackageManifest {
+ 
+ impl TemplateInfo {
+     /// Create a new template info with only required fields.
+-    pub fn new(path: impl Into<EcoString>, entrypoint: impl Into<EcoString>) -> Self {
++    pub fn new(path: VirtualPath, entrypoint: VirtualPath) -> Self {
+         TemplateInfo {
+-            path: path.into(),
+-            entrypoint: entrypoint.into(),
++            path,
++            entrypoint,
+             thumbnail: None,
+             unknown_fields: UnknownFields::new(),
+         }
+@@ -200,12 +200,12 @@ impl PackageInfo {
+     pub fn new(
+         name: impl Into<EcoString>,
+         version: PackageVersion,
+-        entrypoint: impl Into<EcoString>,
++        entrypoint: VirtualPath,
+     ) -> Self {
+         PackageInfo {
+             name: name.into(),
+             version,
+-            entrypoint: entrypoint.into(),
++            entrypoint,
+             authors: vec![],
+             categories: vec![],
+             compiler: None,
+@@ -587,7 +587,7 @@ mod tests {
+                 package: PackageInfo::new(
+                     "package",
+                     PackageVersion { major: 0, minor: 1, patch: 0 },
+-                    "src/lib.typ"
++                    VirtualPath::new("src/lib.typ").unwrap(),
+                 ),
+                 template: None,
+                 tool: ToolInfo { sections: BTreeMap::new() },
+diff --git a/crates/typst-syntax/src/path.rs b/crates/typst-syntax/src/path.rs
+index 02582a5d..78fb9676 100644
+--- a/crates/typst-syntax/src/path.rs
++++ b/crates/typst-syntax/src/path.rs
+@@ -10,6 +10,7 @@ use std::sync::{LazyLock, RwLock};
+ 
+ use ecow::{EcoString, eco_format};
+ use rustc_hash::FxHashMap;
++use serde::{Deserialize, Serialize};
+ 
+ use crate::package::PackageSpec;
+ 
+@@ -389,6 +390,26 @@ impl Debug for VirtualPath {
+     }
+ }
+ 
++impl<'de> Deserialize<'de> for VirtualPath {
++    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
++    where
++        D: serde::Deserializer<'de>,
++    {
++        let str = EcoString::deserialize(deserializer)?;
++        VirtualPath::new(str)
++            .map_err(|err| serde::de::Error::custom(format_args!("{err}")))
++    }
++}
++
++impl Serialize for VirtualPath {
++    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
++    where
++        S: serde::Serializer,
++    {
++        serializer.serialize_str(self.get_without_slash())
++    }
++}
++
+ /// A component in a virtual path.
+ #[derive(Debug, Copy, Clone, Eq, PartialEq)]
+ enum Component<'a> {
+@@ -630,7 +651,7 @@ pub enum PathError {
+ impl fmt::Display for PathError {
+     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+         match self {
+-            Self::Escapes => write!(f, "path escapes project root"),
++            Self::Escapes => write!(f, "path escapes root"),
+             Self::Backslash => write!(f, "path contains backslash"),
+         }
+     }
+@@ -891,4 +912,18 @@ mod tests {
+         assert_eq!(Segment::new("."), Err("."));
+         assert_eq!(Segment::new(".."), Err(".."));
+     }
++
++    #[test]
++    fn test_virtual_path_deserialize() {
++        #[derive(Debug, Deserialize)]
++        struct Example {
++            path: VirtualPath,
++        }
++
++        let m = toml::de::from_str::<Example>(r#"path = "hello""#).unwrap();
++        assert_eq!(m.path, VirtualPath::new("/hello").unwrap());
++
++        let e = toml::de::from_str::<Example>(r#"path = "../hello""#).unwrap_err();
++        assert_eq!(e.message(), "path escapes root");
++    }
+ }
+-- 
+2.54.0 (Apple Git-157)
+

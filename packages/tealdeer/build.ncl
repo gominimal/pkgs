@@ -2,19 +2,23 @@
 # with outputs + runtime_deps refined from a verified `minimal package` build.
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let version = "1.9.0" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
+let version = "1.9.1" in
 {
   name = "tealdeer",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/tealdeer-rs/tealdeer/v%{version}.tar.gz",
-      sha256 = "1387a04ddba714668ff0925377a2de0d0ab14533d44dd0766d673fbbd71e3119",
+      sha256 = "78e7dbfcc2c8975c143a9746b073a3af875cdee72819bc383fbd411bae2c553c",
       extract = true,
       strip_prefix = "tealdeer-%{version}",
     } | Source,
@@ -37,7 +41,7 @@ let version = "1.9.0" in
     {
       upstream_version = version,
       source_provenance = { category = 'GithubRepo, owner = "tealdeer-rs", repo = "tealdeer" },
-      # Dual-licensed: v1.9.0 Cargo.toml declares "MIT OR Apache-2.0" and ships
+      # Dual-licensed: v1.9.1 Cargo.toml declares "MIT OR Apache-2.0" and ships
       # both LICENSE-MIT and LICENSE-APACHE.
       license_spdx = "MIT OR Apache-2.0",
     } | Attrs,
@@ -45,11 +49,33 @@ let version = "1.9.0" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           # Smoke test ported from the Wolfi recipe's test block.
           ["/bin/bash", "-c", "tldr --version"],
           ["/bin/bash", "-c", "tldr --help"],
+        ],
+      } | Test,
+    # The default config this build writes names the native-roots backend,
+    # and the compiled-in webpki backend is gone.
+    system_ca_default =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, ca-certificates, coreutils, grep],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -eu
+              export TEALDEER_CONFIG_DIR="$(mktemp -d)"
+              tldr --seed-config
+              grep -qx 'tls_backend = "rustls-with-native-roots"' "$TEALDEER_CONFIG_DIR/config.toml"
+              printf '[updates]\ntls_backend = "rustls-with-webpki-roots"\n' > /tmp/webpki.toml
+              ! tldr --config-path /tmp/webpki.toml --show-paths > /tmp/out 2>&1
+              grep -q 'Unsupported TLS backend' /tmp/out
+            "%
+          ],
         ],
       } | Test,
   },

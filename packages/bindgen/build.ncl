@@ -17,14 +17,14 @@ let llvm = import "../llvm/build.ncl" in
 # libclang is a RUNTIME dependency: bindgen dlopens libclang.so to parse
 # headers, and needs clang's resource headers (usr/lib/clang/<ver>/) for
 # builtin includes — both from the llvm package.
-let version = "0.72.1" in
+let version = "0.73.2" in
 {
   name = "bindgen",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/rust-lang/rust-bindgen/v%{version}.tar.gz",
-      sha256 = "4ffb17061b2d71f19c5062d2e17e64107248f484f9775c0b7d30a16a8238dfd1",
+      sha256 = "5fc3277dd334e4bbbd7bdb8cad5d4fb87a667b2e95a2bae350a8d5424c280629",
       extract = true,
       strip_prefix = "rust-bindgen-%{version}",
     } | Source,

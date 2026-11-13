@@ -6,7 +6,76 @@ export RUSTFLAGS="-C linker=gcc"
 export OPENSSL_DIR=/usr
 export OPENSSL_NO_VENDOR=1
 
-cargo build --release
+# CVE-2026-111943: move upstream's Cargo.lock to rustls-webpki 0.103.16 and
+# webpki-roots / webpki-root-certs 1.0.10 (see build.ncl). Applied by name so a
+# missing or stale patch fails the build.
+patch -Np1 -i ./cve-2026-111943-webpki-lock.patch
+# Prove it landed, fail-closed: the fixed verifier is locked, and no pre-fix
+# rustls-webpki 0.103.x or webpki-roots / webpki-root-certs 1.0.x remains.
+grep -A1 '^name = "rustls-webpki"$' Cargo.lock | grep -q '^version = "0.103.16"$' || {
+  echo "ERROR: rustls-webpki 0.103.16 is not in Cargo.lock (CVE-2026-111943)" >&2
+  exit 1
+}
+if grep -A1 -E '^name = "(rustls-webpki|webpki-roots|webpki-root-certs)"$' Cargo.lock |
+  grep -qE '^version = "(0[.]103[.]([0-9]|1[0-5])|1[.]0[.][0-9])"$'; then
+  echo "ERROR: a pre-CVE-2026-111943 rustls-webpki / webpki-roots is still in Cargo.lock" >&2
+  exit 1
+fi
+
+# OpenSSL 4: openssl-sys 0.9.117 (see build.ncl). Fail closed if the bump
+# did not land.
+patch -Np1 -i ./openssl-4-openssl-sys-lock.patch
+grep -A1 '^name = "openssl-sys"$' Cargo.lock | grep -q '^version = "0.9.117"$' || {
+  echo "ERROR: openssl-sys 0.9.117 is not in Cargo.lock (OpenSSL 4)" >&2
+  exit 1
+}
+
+# OpenSSL 4: curl-sys's bundled curl 8.4.0 reads OpenSSL's now-opaque
+# ASN1_INTEGER and fails on 4.x, so zellij must link the system libcurl.
+# Two things forced the bundled copy: the default `vendored_curl` feature
+# (isahc/static-curl), dropped here, and isahc's `http2` feature, because
+# curl-sys only accepts a system curl that reports HTTP2 (ours has no nghttp2).
+# The patch removes `http2` (Cargo.toml + the matching Cargo.lock edit).
+patch -Np1 -i ./openssl-4-no-isahc-http2.patch
+grep -q 'features = \["text-decoding"\]' Cargo.toml || {
+  echo "ERROR: isahc http2 removal did not apply" >&2
+  exit 1
+}
+# CVE-2026-119375 (RUSTSEC-2026-0459): zellij-utils turns on rusqlite's
+# `bundled` feature, which compiles libsqlite3-sys 0.27.0's own pre-3.54.0
+# SQLite into the binary. Drop it so libsqlite3-sys links the system
+# libsqlite3 (packages/sqlite, 3.54.1). Cargo.lock has to follow: `bundled`
+# is what pulls libsqlite3-sys's optional `cc` build-dependency, and without it
+# cargo drops `cc` from libsqlite3-sys's dependency list, which `--locked`
+# refuses to write. `cc` itself stays in the lock (13 other crates use it), so
+# that one list entry is the whole change.
+sed -i 's/rusqlite = { version = "0.30", default-features = false, features = \["bundled"\]/rusqlite = { version = "0.30", default-features = false/' zellij-utils/Cargo.toml
+if grep -q 'rusqlite.*bundled' zellij-utils/Cargo.toml; then
+  echo "ERROR: rusqlite's bundled feature is still on (CVE-2026-119375)" >&2
+  exit 1
+fi
+grep -q '^rusqlite = { version = "0.30", default-features = false' zellij-utils/Cargo.toml || {
+  echo "ERROR: zellij-utils no longer declares rusqlite the way this edit expects" >&2
+  exit 1
+}
+sed -i '/^name = "libsqlite3-sys"$/,/^]$/{/^ "cc",$/d}' Cargo.lock
+if awk '/^name = "libsqlite3-sys"$/{f=1} f&&/^]$/{f=0} f&&/^ "cc",$/{found=1} END{exit !found}' Cargo.lock; then
+  echo "ERROR: libsqlite3-sys still lists cc in Cargo.lock" >&2
+  exit 1
+fi
+grep -A3 '^name = "libsqlite3-sys"$' Cargo.lock | grep -q '^version = "0.27.0"$' || {
+  echo "ERROR: Cargo.lock no longer pins libsqlite3-sys 0.27.0, which this edit expects" >&2
+  exit 1
+}
+cargo build --locked --release --no-default-features --features plugins_from_target,web_server_capability
+readelf -d target/release/zellij | grep -q 'NEEDED.*libcurl\.so' || {
+  echo "ERROR: zellij does not link the system libcurl (vendored curl crept back in?)" >&2
+  exit 1
+}
+readelf -d target/release/zellij | grep -q 'NEEDED.*libsqlite3\.so' || {
+  echo "ERROR: zellij does not link the system libsqlite3 (bundled SQLite crept back in?)" >&2
+  exit 1
+}
 
 mkdir -p $OUTPUT_DIR/usr/bin
 install -m 755 target/release/zellij $OUTPUT_DIR/usr/bin/zellij

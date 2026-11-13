@@ -2,6 +2,9 @@
 # TODO: REVIEWER — verify deps/outputs/runtime_deps + the build.sh opts.
 let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let autoconf = import "../autoconf/build.ncl" in
 let automake = import "../automake/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
@@ -18,6 +21,11 @@ let libksba = import "../libksba/build.ncl" in
 let libassuan = import "../libassuan/build.ncl" in
 let libgcrypt = import "../libgcrypt/build.ncl" in
 let libgpg-error = import "../libgpg-error/build.ncl" in
+let bash = import "../bash/build.ncl" in
+let bzip2 = import "../bzip2/build.ncl" in
+let gettext = import "../gettext/build.ncl" in
+let readline = import "../readline/build.ncl" in
+let zlib = import "../zlib/build.ncl" in
 let patch = import "../patch/build.ncl" in
 # SOURCE: upstream's official release tarball (gnupg.org), mirrored to gs://,
 # NOT the GitHub auto-generated archive. Still a full source build — we compile
@@ -34,15 +42,14 @@ let patch = import "../patch/build.ncl" in
 # the rule never fires and we keep the complete docs.
 #
 # It is also better provenance: gnupg.org publishes a detached PGP signature
-# (gnupg-2.4.9.tar.bz2.sig) alongside it, while GitHub's archive/refs/tags
+# (gnupg-2.5.24.tar.bz2.sig) alongside it, while GitHub's archive/refs/tags
 # tarballs are generated on demand, unsigned, and have changed compression in
 # the past — silently changing the sha256 for an unchanged tag.
-let version = "2.4.9" in
+let version = "2.5.24" in
 {
   name = "gnupg",
   build_deps = [
     { file = "build.sh" } | Local,
-    { file = "libassun-version.patch" } | Local,
     { file = "0010-avoid-beta-warning.patch" } | Local,
     { file = "0210-dirmngr-hkp-avoid-potential-race-condition-when-some-host-die.patch" } | Local,
     { file = "fix-i18n.patch" } | Local,
@@ -54,6 +61,9 @@ let version = "2.4.9" in
     m4,
     make,
     pkgconf,
+    # autoreconf runs autopoint: configure.ac calls AM_GNU_GETTEXT. This used to
+    # arrive only through libgpg-error's and npth's runtime_deps.
+    gettext,
     toolchain,
     glibc,
     # gnupg's five-library stack, all packaged alongside it in this bundle.
@@ -79,7 +89,7 @@ let version = "2.4.9" in
     patch,
     {
       url = "gs://minimal-staging-archives/gnupg-%{version}.tar.bz2",
-      sha256 = "dd17ab2e9a04fd79d39d853f599cbc852062ddb9ab52a4ddeb4176fd8b302964",
+      sha256 = "bf149d01a2b9fcc0e4589b8ae8697d3d5c557ea48ed95a3fa55dd3b1187e6039",
       extract = true,
       strip_prefix = "gnupg-%{version}",
     } | Source,
@@ -103,6 +113,19 @@ let version = "2.4.9" in
     libusb,
     sqlite,
     gnutls,
+    # Read from the built binaries' DT_NEEDED: gpg, gpgv and gpgsplit link
+    # libz.so.1 and libbz2.so.1.0; gpg, gpgsm, gpg-card, gpg-connect-agent and
+    # gpgscm link libreadline.so.8 (which used to arrive only through
+    # libassuan's runtime_deps).
+    bzip2,
+    readline,
+    zlib,
+    # addgnupghome, applygnupgdefaults, gpg-authcode-sign.sh and the libexec
+    # gpg-wks-client wrapper are /bin/sh scripts using cp, mkdir, mktemp, rm
+    # and cat. Both used to arrive only through the libraries' autotools
+    # runtime_deps.
+    bash,
+    coreutils,
   ],
   attrs =
     {
@@ -124,7 +147,7 @@ let version = "2.4.9" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           # TODO: REVIEWER — ported from the Wolfi test block; verify each
           # against minimal's toolchain (bins on PATH, flags supported).

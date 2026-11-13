@@ -1,18 +1,18 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let setuptools = import "../setuptools/build.ncl" in
 
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "3.2.9" in
+let version = "3.3.1" in
 {
   name = "cython",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/cython/cython/releases/download/%{version}/cython-%{version}.tar.gz",
-      sha256 = "d249c9022ab13286b17bd66f30609e800c5f95efeecb06168990c7a66cecde6c",
+      sha256 = "e0e45989e821bef6aa9ae15c7d583ab5e055f7406c4b3624e49e06d24e90375a",
       extract = true,
       strip_prefix = "cython-%{version}",
     } | Source,
@@ -49,4 +49,8 @@ let version = "3.2.9" in
       },
       build_cost_multiple = 2,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/cython --version",
+  },
 } | BuildSpec

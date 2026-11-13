@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -32,9 +32,10 @@ let version = "3.43" in
   },
 
   outputs = {
-    fio = { glob = "usr/bin/fio" } | OutputBin,
-    fio2gnuplot = { glob = "usr/bin/fio2gnuplot", allow_missing_interpreter = true } | OutputBin,
-    fio_generate_plots = { glob = "usr/bin/fio_generate_plots", allow_missing_interpreter = true } | OutputBin,
+    # fio plus the 7 SCRIPTS its install target copies (python and sh).
+    bins = { glob = "usr/bin/*", allow_missing_interpreter = true } | OutputBin,
+    # gnuplot templates fio2gnuplot reads.
+    gpm = { glob = "usr/share/fio/*.gpm" } | OutputData,
     mans = { glob = "usr/share/man/**" } | OutputData,
   },
 
@@ -48,4 +49,8 @@ let version = "3.43" in
         repo = "fio",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/fio --version",
+  },
 } | BuildSpec

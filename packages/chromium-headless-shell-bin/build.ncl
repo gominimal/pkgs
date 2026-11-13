@@ -40,14 +40,14 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 
 # Prebuilt Chromium headless-shell — the stripped headless build that
 # Playwright's `chromium.launch()` and Puppeteer drive in default
-# headless mode. Sibling to `chromium-bin` (the full headed browser);
-# they share a revision and a layout under
-# /usr/share/playwright-browsers/. Consumers that only need headless
-# rendering (mermaid-cli, e.g.) depend on this pkg alone to avoid
-# pulling the full browser.
+# headless mode, laid out under /usr/share/playwright-browsers/ in
+# Playwright's registry format. It is the tree's only Chromium today:
+# agent-browser and mermaid-cli drive it. The full-browser sibling,
+# chromium-bin, was pulled (stuck at 156, no ungoogled-chromium-portablelinux
+# 157 release); it can come back when a good full-browser source exists.
 #
-# ⚠ CHANNEL: this package tracks Chrome for Testing **Stable**, so unlike
-# chromium-bin it is NOT pre-stable. The pkgmgr-rs#646 caveat ("ahead of
+# ⚠ CHANNEL: this package tracks Chrome for Testing **Stable**, so it is NOT
+# pre-stable. The pkgmgr-rs#646 caveat ("ahead of
 # the published feed", NOT "audited clean") applied while we tracked
 # Playwright's pinned pre-stable Chromium; on Stable a CVE match is an
 # ordinary version-tracking question again. Do NOT retarget this at Beta:
@@ -55,8 +55,8 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # stable. The security win is the CHANNEL, not the hostname.
 #
 # SOURCE: both legs are Chrome for Testing `chrome-headless-shell`, one
-# zip per arch, no grafting. This deliberately diverges from chromium-bin,
-# which stays on true open-source Chromium:
+# zip per arch, no grafting. This deliberately diverges from the old
+# chromium-bin, which stayed on true open-source Chromium:
 #
 #   The inbox#284 decision (CfT is branded Google Chrome, whose ToS does
 #   not permit redistribution, and our cache redistributes) is about the
@@ -99,8 +99,35 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # pinned to playwright-core ^1.59 still resolve. It no longer names a
 # Playwright build. `browser_version` is the CfT Stable version and is the
 # only pin to bump.
+#
+# ⚠ CVE-2026-111943 (eMudhra intermediate key compromise): PARTLY
+# MITIGATED at 157.0.8103.38, and nothing package-side can close the rest.
+# Checked against the Chromium 157.0.8103.38 sources:
+#   * The 8 compromised intermediate keys ARE blocked. `kSPKIBlockList`
+#     (net/cert/cert_verify_proc_blocklist.inc) carries all 8 SPKI hashes
+#     (upstream chromium/src da63b94c, main@{#1723080}), so any chain through
+#     one of them is refused. The `emudhra_spki_blocklist` test below checks
+#     the shipped binary for them.
+#   * emSign ECC Root CA - G3 is STILL TRUSTED. The compiled-in
+#     root_store.textproto is version_major 42 and still lists it
+#     (sha256 86a1ecba...). Chrome Root Store v43 (chromium/src 8793082f,
+#     main@{#1723181}) removes it; 158.0.8127.18 carries v43, 157 does not.
+#     A certificate under that root that avoids the 8 keys validates until
+#     this package reaches 158.
+#   * On Linux the verifier uses only the Chrome Root Store
+#     (`chrome_root_store_only`, net/features.gni), so /etc/ssl/certs and
+#     packages/ca-certificates/distrust.txt do not reach it, and it gets no
+#     CRLSet or root-store component updates.
+#   * chrome-headless-shell has no platform policy loader (Chromium deleted
+#     headless/lib/browser/policy/ between 145 and 150; the 155.0.8059.84
+#     binary contains no /etc/.../policies path and no
+#     "CADistrustedCertificates" string), so the chromium-policies
+#     distrust policy cannot close the root gap. Adding the chromium-policies
+#     dep here would only look like a fix.
+# Bump to 158 (the first CfT Stable with root store v43) to remove the root.
+# Tracked in gominimal/pkgmgr-rs#1028.
 let revision = "1243" in
-let browser_version = "153.0.8010.52" in
+let browser_version = "157.0.8103.78" in
 {
   name = "chromium-headless-shell-bin",
   build_deps = [
@@ -113,12 +140,12 @@ let browser_version = "153.0.8010.52" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chrome-headless-shell-linux64.zip",
-          sha256 = "944dc1eae654637fed4d57650198774f9c43b45f34e48febb84f43c541b5de76",
+          sha256 = "f90329720fb61e5a76da9b6b509b6ad12a484c9c5df0359403e935177c6d153a",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux-arm64/chrome-headless-shell-linux-arm64.zip",
-          sha256 = "d8e97f3bf2537280a60f4b9bae8e9f463d112c9cdce349f89c2c7611150282d7",
+          sha256 = "912fbf877e53de34d7b3cca5104f3b95607d41bd35412ccc6cd2a599ff0c0dbf",
         } | Source,
     } target,
     base,
@@ -175,10 +202,18 @@ let browser_version = "153.0.8010.52" in
     {
       upstream_version = browser_version,
       license_spdx = "BSD-3-Clause",
+      # Chrome for Testing, the same home chromedriver-bin names. Chrome's
+      # CVEs do NOT come through this repo: supply-chain's
+      # package_cpe_identity.toml maps the package NAME
+      # `chromium-headless-shell-bin` to google:chrome (pkgmgr-rs#1029), and
+      # that identity takes precedence over this provenance. It is keyed by
+      # name because chromedriver-bin shares this repo and is not the
+      # browser. Renaming the package without moving that entry makes it scan
+      # 0/0/0. pkgmgr's chromium resolver checks and updates it by name.
       source_provenance = {
         category = 'GithubRepo,
-        owner = "microsoft",
-        repo = "playwright",
+        owner = "GoogleChromeLabs",
+        repo = "chrome-for-testing",
       },
       binary_from =
         match {
@@ -195,6 +230,54 @@ let browser_version = "153.0.8010.52" in
         test_deps = [base],
         cmds = [
           ["/bin/bash", "-c", "/bin/chromium-headless-shell --no-sandbox --disable-gpu --disable-dev-shm-usage --dump-dom 'data:text/html,<title>shell-launch-ok</title>' | grep -q shell-launch-ok"],
+        ],
+      } | Test,
+    # CVE-2026-111943: the shipped binary carries the 8 compromised eMudhra
+    # intermediate keys of Chromium's `kSPKIBlockList` (each a raw 32-byte
+    # SHA-256 of the SPKI, the same 8 keys chromium-policies' policy lists).
+    # A build without the upstream blocklist change fails here. Checked on the
+    # CfT linux64 zips: 157.0.8103.38 and 156.0.8078.79 pass (the change was
+    # merged back to 156), 156.0.8078.47 and 155.0.8059.84 fail. It says
+    # nothing about the emSign ECC G3 root, which this build still trusts
+    # (see the comment above `revision`). The last command is the negative
+    # control: the first key's bytes reversed must NOT be found, so the
+    # search cannot pass vacuously. None of the hashes holds a 0x00 or 0x0a
+    # byte, so each is a single fixed-string line for grep.
+    emudhra_spki_blocklist =
+      {
+        class = 'Standalone,
+        test_deps = [base],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -euo pipefail
+              shopt -s nullglob
+              bins=(/usr/share/playwright-browsers/chromium_headless_shell-*/chrome-headless-shell-linux*/chrome-headless-shell)
+              test "${#bins[@]}" -eq 1
+              bin=${bins[0]}
+              has() {
+                local pat
+                pat=$(printf "$(printf '%s' "$1" | sed 's/../\\x&/g')")
+                LC_ALL=C grep -qaF -- "$pat" "$bin"
+              }
+              keys=(
+                49dd353dc2b919a3770645117d0e60c16115e7d1bc259eefe734b00ea434fe5f
+                ebed6475c2c2d80fcb199f3fe8dd6e6b3ce60b77eb15d4e42c3dec0c6f5b5105
+                5c0660a2b164910d8ff589c18e14552e9e0ec237dcefe2cb736d41a4811f81a0
+                43bffa19d6ef651451f6841e019931e96f6f2eaeff28ab4b6f1ce4576de2717b
+                63ecefee431d49523bc1136c4e72d0206a477086caf606cd5cf025686c109cf8
+                e0254c7fcdc265e2f0f8a428dabb75ab4ae039b4872d62f5ee57f0877d5a8a41
+                92c063d67e8f14db71d288e11266ffdaf69cbf115f7bab14f3bc2f68d25e0e30
+                ec4ffa1ad0ac88081314b7aaffef6a91f97cd57291bb5ba686c5415f5eb4f6b6
+              )
+              for h in "${keys[@]}"; do
+                has "$h" || { echo "blocklist key $h not in $bin" >&2; exit 1; }
+              done
+              ! has 5ffe34a40eb034e7ef9e25bcd1e71561c1600e7d11450677a319b9c23d35dd49
+            "%,
+          ],
         ],
       } | Test,
   },

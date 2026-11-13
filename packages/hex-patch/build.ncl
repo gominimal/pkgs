@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -9,14 +9,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.13.0" in
+let version = "1.13.1" in
 {
   name = "hex-patch",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/Etto48/HexPatch/v%{version}.tar.gz",
-      sha256 = "b61b0948425a3bc432c0b30effd9e67e7bc178928e39240b395a6b03a13afdbc",
+      sha256 = "95e36866e2a22616c3642a943038ece6bdfce693284ea91bc3ae4f900ba85f83",
       extract = true,
       strip_prefix = "HexPatch-%{version}",
     } | Source,
@@ -49,4 +49,8 @@ let version = "1.13.0" in
       },
       build_cost_multiple = 2,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/hex-patch --version",
+  },
 } | BuildSpec

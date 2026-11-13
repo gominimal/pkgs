@@ -40,6 +40,17 @@ sed -i 's|Core_unix\.mkdir_p dest_dir|(let rec mkdir_p d = if not (Sys.file_exis
 # InterpPaths.ml: Core.Fn.compose f g  ==  fun x -> f (g x).
 sed -i 's|Core\.Fn\.compose backward new_back|(fun x -> backward (new_back x))|' src/interp/InterpPaths.ml
 
+# --- default to NON-module Lean output (matches the aeneas-latest we ship) ---
+# Since ~2026-09 aeneas emits Lean files headed `module` (`public import
+# Aeneas`). The `Aeneas` library in aeneas-latest is not built as a module, so
+# lean rejects that output ("cannot import non-`module` Aeneas from `module`").
+# `-use-lean-modules false` restores plain imports, and the dwell model and its
+# proofs check against aeneas-latest that way (verified 2026-10-08). Make it the
+# default so every caller of the installed toolchain gets coherent output. Drop
+# this when aeneas-latest moves to a module-based Aeneas library.
+sed -i 's|^let use_lean_modules = ref true$|let use_lean_modules = ref false|' src/Config.ml
+grep -q '^let use_lean_modules = ref false$' src/Config.ml
+
 # --- src/dune: drop core_unix / progress / domainslib from the aeneas library ---
 sed -i '/^  core_unix$/d; /^  progress$/d; /^  domainslib$/d' src/dune
 

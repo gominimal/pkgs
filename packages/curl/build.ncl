@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let libpsl = import "../libpsl/build.ncl" in
@@ -7,15 +7,16 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+let zstd = import "../zstd/build.ncl" in
 
-let version = "8.22.0" in
+let version = "8.23.0" in
 {
   name = "curl",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/curl-%{version}.tar.xz",
-      sha256 = "f7ef3ae8a22e521f289803fe93543eb64c329b58aa73a9e224dfd915a2a5f4f7",
+      sha256 = "8dadd7d2536a314f982ad05a651b713f426bf7d02cc2c76cffb9796f2218e6c5",
       extract = true,
       strip_prefix = "curl-%{version}",
     } | Source,
@@ -29,6 +30,7 @@ let version = "8.22.0" in
     libpsl,
     openssl,
     zlib,
+    zstd,
   ],
   needs =
     {
@@ -61,4 +63,8 @@ let version = "8.22.0" in
         repo = "curl",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/curl --version",
+  },
 } | BuildSpec

@@ -1,4 +1,5 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
@@ -9,14 +10,14 @@ let xz = import "../xz/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.91.0-1" in
+let version = "1.92.0" in
 {
   name = "boost",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/boost-%{version}-b2-nodocs.tar.xz",
-      sha256 = "7334bb672b9c7aa135da88bcc3111a64a198be9a7d44eb5151d9248e7cfd43ef",
+      sha256 = "ea7b982002cc9dfbe59b0b217b206f470dc75f3de0bb2973d844118934d82411",
     } | Source,
     base,
     python,
@@ -60,4 +61,27 @@ let version = "1.91.0-1" in
       },
       build_cost_multiple = 2,
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              g++ -x c++ - -o t -lboost_filesystem <<'EOF'
+              #include <boost/version.hpp>
+              #include <boost/filesystem.hpp>
+              int main() { return (BOOST_VERSION > 0 && !boost::filesystem::current_path().empty()) ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

@@ -1,4 +1,6 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let e2fsprogs = import "../e2fsprogs/build.ncl" in
@@ -125,9 +127,9 @@ in
     # transitive set needed for them to load — nothing here is a direct guest
     # tool. It must be re-resolved as a unit on an Alpine bump.
     apk
-      "brotli-libs-1.2.0-r1"
-      "e0e7a7892f28326a9f18e09607b1aea72baedda470bc4e3d2b11262b9ae5dda3"
-      "f0823de7c6d45859aeb6a7facfc5cfbf2dadb83ad4f27c794cb6ecc74e578cee",
+      "brotli-libs-1.2.1-r0"
+      "f802b9d5a329c216f02e73607cb8f662c434767e41686367ac0afcf6d0d45d64"
+      "62a7e37e43bbfc1f8525a00ad2125fd5897135dc93b849733884cb78ffd8e26c",
     apk
       "c-ares-1.34.8-r0"
       "689603d300dc56f0b99e313506e4d7b3a3ffb87cec536324f8a306bc218afe67"
@@ -157,9 +159,9 @@ in
       "a75b5955ff57046e33fc2842cfe466dc77d8e68305d5c86c6646b38a069490a2"
       "4723d0fb8e286dc6adb54dd3cdaedcd8db54260f75ee778a5acb4c16922c0f52",
     apk
-      "libcurl-8.22.0-r0"
-      "cbec830a63888be570c06d20d87c85649aff1db38c3b4dcc17884b14471e39e3"
-      "40b2a8e15a8d24bc95a5f42aaeb018313a1ff457cee71d8e15aaf1328da765e8",
+      "libcurl-8.23.0-r0"
+      "64ae89f6e5d318ed5209778232191806ce49644ce9e09540b7d7830a5330d127"
+      "1f70ca404818805a6465b615bbfe84ef861488a963d7e630108ebd7fbaa51665",
     apk
       "libeconf-0.8.3-r0"
       "cf0899d49ded0a6891e3cdf1b37887f2ecd77293afe1d8f3cb8937763c83f183"
@@ -169,9 +171,9 @@ in
       "1c108314af454a885ac0b053201db57027470c4f2309412c016897e2a2bf5d0e"
       "78c5a1993342ab1bdcdce30639fd0937e8000f6d0d85cea171f573d31decd036",
     apk
-      "libexpat-2.8.4-r0"
-      "ca1be5be36985a8370f4a8e9e33a25788ac95260295718e1b0b721a16bb2aa61"
-      "34fa41e3994d9a844f50a7c01cb40bb2e272fa7f506b96e92a2b4a20b23a81bc",
+      "libexpat-2.10.0-r0"
+      "99144fe0b1bb9316a3bc30c38707996767806661f4a0456fcf4565ac92e79b0f"
+      "e7e7408ea787ed06d00159b0ff1f9b65a63cf634f36d9e0fa7512ce2c489a503",
     apk
       "libfdisk-2.42.3-r1"
       "061e5c9c82eff00f806bd51bdd414d3ff6aaec99de02ed4c1b60f3e13578e2b7"
@@ -217,13 +219,13 @@ in
       "e0c546b9461bdce206a90bc720cb69aa4628b5a5b8d908c3e5084e00f28f6a9d"
       "ce83be6d0bd10584a53c3a5868cc1595ce5f0f8e0b621f8f7f70b6144e521fc9",
     apk
-      "nghttp2-libs-1.69.0-r0"
-      "10ec950fca526db87bbdc0702ba623fca6639df15abb48229f548d6812563b33"
-      "7d7705cea464389989d3ca6b9505dbfce3cf25cfca1eeb06709a9909f93f4f11",
+      "nghttp2-libs-1.70.0-r0"
+      "7ef451f4dcdc065aa872c2f3c78b9d9bb4348caa5bcc70dee0c9e1fcf8e4c1fd"
+      "f0c4014eb2f10308dcdfd84cd49c121673c7b78cb8182b6e7a1388d8ae112a3b",
     apk
-      "pcre2-10.48-r0"
-      "0e8a425ec23fca1b549e83758b385e7186a070597e8dc014163462f960079167"
-      "cffaedb6cf404647619a8b0323958d293d9cd240e8f887c16bdf4b0a039f993a",
+      "pcre2-10.49-r0"
+      "03efd0b29f7f38deb10a9ccb54f56e19683eb7ac27eb1f347e6dbd2e59ea000d"
+      "2919897914820f42a17a8d7d37df310d2dfad1c82ebe5f539cc5c765f916752a",
     apk
       "readline-8.3.3-r1"
       "9f0ae0923c02b0d6aba62e9173542b65396ba3f0efefcbf087ea32f1120e7b34"
@@ -252,8 +254,11 @@ in
     # openssl 3.5.7-r0 (see `lib/apk/db/installed`, `o:openssl`), which has ten
     # unfixed CVEs: CVE-2026-14456, -14457, -18798, -54874, -63072, -63073,
     # -63074, -63075, -63076, -75803. Alpine fixed them in 3.5.8-r0, in v3.24
-    # main — but the newest minirootfs RELEASE is still 3.24.1, so bumping
-    # `alpine_release` cannot pick the fix up. There is no 3.24.2 to move to.
+    # main. When this override was written the newest minirootfs RELEASE was
+    # 3.24.1, so bumping `alpine_release` could not pick the fix up. 3.24.4 has
+    # since been released and records libcrypto3/libssl3 3.5.9-r0, musl 1.2.6-r3,
+    # ca-certificates-bundle 20261020-r0 and zlib 1.3.2-r1, so moving to it
+    # retires every override here except zlib 1.4-r0 (tracked separately).
     #
     # Both packages install to the same `usr/lib/libcrypto.so.3` /
     # `usr/lib/libssl.so.3` the base layer uses, so the overlay replaces the
@@ -264,15 +269,84 @@ in
     #
     # DROP THESE the moment `alpine_release` reaches a minirootfs carrying
     # >= 3.5.8-r0; keeping a stale override is how an image ends up pinned
-    # BELOW its base layer.
+    # BELOW its base layer. build.sh enforces it: OVERRIDE_BASE records the
+    # base-layer version each override replaces, and the build fails when the
+    # minirootfs records anything else.
     apk
-      "libcrypto3-3.5.8-r0"
-      "35b892813c23664a3592e4fc8c12a03538a22c579057655361c7043305272a9a"
-      "161223a16f042b8e469e9441291e071464fd91d4f4bbe6f496ee8d0abd4e0701",
+      "libcrypto3-3.5.9-r0"
+      "2676a2b0b6e23ea2edccf3ee982b9842a665d52603d047de3d0a185dc316d983"
+      "6632d758d8f5e9ea3b650fe966f23bbf9a202f8b8dceecac93da135dec5e3689",
     apk
-      "libssl3-3.5.8-r0"
-      "d6ec970cc10e01539e41626f720c4e0ac69016eaa2079a10ef776ffd3243db5b"
-      "aca521e5ae4a321322a9d47ed64a1775f5ab1ffd215d1e9fc0433c58f7bfd037",
+      "libssl3-3.5.9-r0"
+      "20ac252b276d73f2c69c1d25f84537c7fba81caefc026c6be1094b394af2082e"
+      "05e3393fb95aa5751ca2f9d242f659f6cff82c1cc7767cc2df4a086f7ad01877",
+
+    # The CA trust store, same override pattern. alpine-minirootfs-3.24.1 ships
+    # ca-certificates-bundle 20260611-r0 (119 roots), which still trusts
+    # "emSign ECC Root CA - G3" (SHA-256 86A1ECBA...A36BBE6B). Its operator,
+    # eMudhra, had an intermediate key compromised (CVE-2026-111943, Mozilla
+    # bug 2083449) and Mozilla distrusted the root; 20261020-r0 (118 roots) is
+    # Alpine's rebuild without it. The package is a single file,
+    # etc/ssl/certs/ca-certificates.crt (plus the etc/ssl/cert.pem and
+    # etc/ssl1.1 symlinks), and has no install script, so overlaying it replaces
+    # the base layer's bundle outright; build.sh's apk-db reconcile then moves
+    # the recorded `V:` to 20261020-r0.
+    #
+    # DROP THIS once `alpine_release` reaches a minirootfs carrying
+    # >= 20261020-r0.
+    apk
+      "ca-certificates-bundle-20261020-r0"
+      "d0a573c27d337c369ad3abe3f39f09ffe67b95af23861577a8d134738375176a"
+      "bb008f6d214b6af7576324659856fb63dc8dcb4373f8345ff706388696f1254d",
+
+    # musl itself, same override pattern. alpine-minirootfs-3.24.1 ships musl
+    # and musl-utils 1.2.6-r2, and every musl through 1.2.6 has the regcomp
+    # integer overflows of CVE-2026-107891 (undersized heap allocations, then
+    # out-of-bounds heap writes, from a large or complex pattern;
+    # https://www.openwall.com/lists/oss-security/2026/10/21/18). Upstream's
+    # fix ships in 1.2.7; Alpine carries the patch in 1.2.6-r3 (aports
+    # 3.24-stable main/musl secfixes). Reaching it needs a regex from an
+    # untrusted source compiled by a guest tool (busybox grep/sed/awk, bash
+    # `=~`, git); matching untrusted text with a trusted pattern is not enough.
+    #
+    # musl owns lib/ld-musl-<arch>.so.1 (the loader and libc in one) and its
+    # lib/libc.musl-<arch>.so.1 symlink; musl-utils owns ldconfig, getconf,
+    # getent, iconv and ldd. Neither has an install script, so the overlay
+    # replaces the base layer's files outright and the apk-db reconcile moves
+    # both recorded versions to 1.2.6-r3.
+    #
+    # DROP THESE once `alpine_release` reaches a minirootfs carrying
+    # >= 1.2.6-r3.
+    apk
+      "musl-1.2.6-r3"
+      "2e17864102278d9049c3a56f1bceed9e8cf287065617e579325123443daed8a5"
+      "e142255d0fa397f14318996bc10378093dcc069dc3dd1b6818c8f28a789c21da",
+    apk
+      "musl-utils-1.2.6-r3"
+      "bb460bdc009e88989bd5adca8a7c8298c339cba99da11c6196c818e042fbaf49"
+      "47263d05842c5e12d01e0369e5b5bea51733323501c00ca21968a5102de137ca",
+
+    # zlib, same override pattern. alpine-minirootfs-3.24.1 ships zlib
+    # 1.3.2-r0 (`lib/apk/db/installed`), which is missing CVE-2026-85091
+    # (fixed in 1.3.2-r1) and CVE-2026-4738 (fixed in 1.4-r0) per the v3.24
+    # secdb. git and libcurl in the closure both link so:libz.so.1, so the
+    # guest loads it. zlib-1.4-r0 depends only on so:libc.musl and provides
+    # so:libz.so.1=1.4, so nothing else moves.
+    #
+    # Unlike the overrides above, the real file is renamed: the base layer has
+    # usr/lib/libz.so.1.3.2 with usr/lib/libz.so.1 pointing at it, and 1.4-r0
+    # ships usr/lib/libz.so.1.4 with libz.so.1 pointing at THAT. The overlay
+    # replaces the libz.so.1 symlink, so the loader (which resolves the
+    # DT_NEEDED soname libz.so.1) gets 1.4. The overlay only adds and replaces
+    # paths, so build.sh then removes the base layer's old libz.so.1.3.2 (and
+    # moves zlib's db file entry to libz.so.1.4); otherwise a file-level scanner
+    # would report this override's own CVEs against the image.
+    #
+    # DROP THIS once `alpine_release` reaches a minirootfs carrying >= 1.4-r0.
+    apk
+      "zlib-1.4-r0"
+      "d3e30d012a3445222b0b4a28f1d4d97ce67387f8b48561921111696da174f0de"
+      "7b05bc778b8b25cd880835b40114182bd4d1581717504d0129c810c0a14291cb",
   ],
 
   cmd = "./build.sh",
@@ -285,4 +359,25 @@ in
     {
       upstream_version = alpine_release,
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              r=/usr/share/microvm-rootfs/rootfs.img
+              test -s $r
+              # ext4 superblock magic 0xEF53 at byte 1080
+              test "$(od -An -tx1 -j1080 -N2 $r)" = ' 53 ef'
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

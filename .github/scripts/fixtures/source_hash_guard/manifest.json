@@ -1,0 +1,164 @@
+{
+  "_comment": [
+    "Every file here is real `mip dump -p --format json --arch <arch>` output for a gominimal/pkgs",
+    "commit, cut down to the listed packages: each package object is copied whole and unedited",
+    "(re-serialized with sorted keys). test_source_hash_guard.py's FixtureProvenance re-dumps each",
+    "commit and checks the fields the guard reads still match (set SOURCE_HASH_GUARD_VERIFY_FIXTURES=1).",
+    "A commit with a `pr` is not on main (the PR was squash-merged); the provenance check fetches refs/pull/<pr>/head for it."
+  ],
+  "mip": "mip 0.5.1-rc1.dev.12.g046d1d1e",
+  "commits": {
+    "2c316bd1287c19e92cb214ea378d3755b45b1123": {
+      "file_prefix": "2c316bd1287c",
+      "packages": [
+        "chromedriver-bin",
+        "chromium-headless-shell-bin"
+      ]
+    },
+    "a2ad69e777bb7e9449f2cf8923b3270fc26eb8d0": {
+      "file_prefix": "a2ad69e777bb",
+      "packages": [
+        "chromedriver-bin",
+        "chromium-headless-shell-bin"
+      ],
+      "pr": 1003
+    },
+    "950d0f8542fb056f4238803303fa77bc6bc60d35": {
+      "file_prefix": "950d0f8542fb",
+      "packages": [
+        "chromedriver-bin",
+        "chromium-headless-shell-bin"
+      ],
+      "pr": 1003
+    },
+    "18aa69ef852a2cd553871afc99fe3ac146e983b8": {
+      "file_prefix": "18aa69ef852a",
+      "packages": [
+        "sqlite"
+      ]
+    },
+    "aa36f83aa3a824e62fb58ee5da7f17c5daa4b360": {
+      "file_prefix": "aa36f83aa3a8",
+      "packages": [
+        "sqlite"
+      ]
+    },
+    "d3456eb8817e34d28c9db181ceec3a1facf3d513": {
+      "file_prefix": "d3456eb8817e",
+      "packages": [
+        "sqlite"
+      ]
+    },
+    "dc9f81d296f8795287a37d9387a66d57c46416e3": {
+      "file_prefix": "dc9f81d296f8",
+      "packages": [
+        "sqlite"
+      ]
+    },
+    "549a5727cd38986c7413c75377973a11ba4020a9": {
+      "file_prefix": "549a5727cd38",
+      "packages": [
+        "libkrun",
+        "podman-remote"
+      ]
+    },
+    "f4decf6a1b66cb0db17ad6595adc23c1130b628e": {
+      "file_prefix": "f4decf6a1b66",
+      "packages": [
+        "libkrun",
+        "podman-remote"
+      ]
+    }
+  },
+  "cases": [
+    {
+      "name": "pkgs1003-stale",
+      "why": "pkgs#1003 first commit a2ad69e: the browser bump moved chromedriver-bin's urls by interpolation, its sha256s kept",
+      "base": "2c316bd1287c19e92cb214ea378d3755b45b1123",
+      "head": "a2ad69e777bb7e9449f2cf8923b3270fc26eb8d0",
+      "expect": [
+        [
+          "error",
+          "amd64",
+          "chromedriver-bin"
+        ],
+        [
+          "error",
+          "arm64",
+          "chromedriver-bin"
+        ]
+      ]
+    },
+    {
+      "name": "pkgs1003-fixed",
+      "why": "negative control: the same PR after 950d0f85 re-pinned both chromedriver hashes",
+      "base": "2c316bd1287c19e92cb214ea378d3755b45b1123",
+      "head": "950d0f8542fb056f4238803303fa77bc6bc60d35",
+      "expect": []
+    },
+    {
+      "name": "pkgs402-stale-url",
+      "why": "pkgs#402 bumped sqlite's version and sha256 to 3.53.3 and left the url on 3.50.4's archive",
+      "base": "18aa69ef852a2cd553871afc99fe3ac146e983b8",
+      "head": "aa36f83aa3a824e62fb58ee5da7f17c5daa4b360",
+      "expect": [
+        [
+          "error",
+          "amd64",
+          "sqlite"
+        ],
+        [
+          "error",
+          "arm64",
+          "sqlite"
+        ]
+      ]
+    },
+    {
+      "name": "pkgs511-url-correction",
+      "why": "pkgs#511 corrected that url and rightly kept the sha256: the guard cannot tell, so it needs the opt-out marker",
+      "base": "d3456eb8817e34d28c9db181ceec3a1facf3d513",
+      "head": "dc9f81d296f8795287a37d9387a66d57c46416e3",
+      "expect": [
+        [
+          "error",
+          "amd64",
+          "sqlite"
+        ],
+        [
+          "error",
+          "arm64",
+          "sqlite"
+        ]
+      ]
+    },
+    {
+      "name": "pkgs847-relocation",
+      "why": "pkgs#847 followed GitHub org moves: same tag, same bytes, new url",
+      "base": "549a5727cd38986c7413c75377973a11ba4020a9",
+      "head": "f4decf6a1b66cb0db17ad6595adc23c1130b628e",
+      "expect": [
+        [
+          "note",
+          "amd64",
+          "libkrun"
+        ],
+        [
+          "note",
+          "arm64",
+          "libkrun"
+        ],
+        [
+          "note",
+          "amd64",
+          "podman-remote"
+        ],
+        [
+          "note",
+          "arm64",
+          "podman-remote"
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+name: chromium-policy-distrust
+
+# BLOCKING. Chromium's CADistrustedCertificates policy
+# (packages/chromium-policies/ca-distrusted-certificates.json) must stay inside
+# the canonical denylist (packages/ca-certificates/distrust.txt): every
+# certificate in the policy needs its SPKI SHA-256 as an `spki` line there.
+# The policy has to carry whole certificates, so it cannot be generated from
+# the hashes; this check stops the two drifting apart. Rationale in
+# .github/scripts/chromium_policy_distrust_check.py.
+#
+# A missing distrust.txt fails the job (it is never a warn-and-pass).
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "packages/chromium-policies/**"
+      - "packages/ca-certificates/distrust.txt"
+      - ".github/scripts/chromium_policy_distrust_check.py"
+      - ".github/workflows/chromium-policy-distrust.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chromium-policy-distrust-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: policy keys are listed in distrust.txt
+        run: python3 .github/scripts/chromium_policy_distrust_check.py .

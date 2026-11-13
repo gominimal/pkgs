@@ -1,8 +1,9 @@
 let { subsetOf, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 
-let version = "1.83.1" in
+let version = "1.85.2" in
 
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
@@ -26,9 +27,19 @@ let python = import "../python/build.ncl" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/grpc/grpc/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "60caa8397426d8a500e3e57ab6a49d1cb5aa62a36f2591eb9da3d77fa38ad8c9",
+      sha256 = "a2d40910e72038dd5e7a0dbe785ec2a1944992fd4559cb4c67b892124a7b03c4",
       extract = true,
       strip_prefix = "grpc-%{version}",
+    } | Source,
+    # grpc 1.84.0 added `third_party/grpc-proto` as a git submodule, which the
+    # GitHub tag archive leaves empty (CMake then can't find
+    # grpc/reflection/v1/reflection.proto). Pinned to the submodule commit at
+    # v1.85.2; the sha256 is the one grpc's own CMakeLists.txt records for this
+    # archive. build.sh unpacks it into place. Re-check the pin on every bump.
+    {
+      url = "https://github.com/grpc/grpc-proto/archive/dd549fc4ed04b60b0fdd3866b82ef0a7c87c6e4f.tar.gz",
+      sha256 = "6aaa807572edfe307eaddc15161ce684d02d054e3fca36b38993efc85575ddfa",
+      extract = false,
     } | Source,
     base,
     toolchain,
@@ -80,7 +91,7 @@ let python = import "../python/build.ncl" in
     link_and_run =
       {
         class = 'Standalone,
-        test_deps = [base, toolchain, binutils, linux_headers],
+        test_deps = [bash-bootstrap, toolchain, binutils, linux_headers],
         cmds = [
           ["/bin/bash", "-c", "echo '#include <grpc/grpc.h>\nint main() { grpc_init(); grpc_shutdown(); return 0; }' > test.c"],
           ["/bin/gcc", "test.c", "-lgrpc", "-o", "test"],
@@ -90,7 +101,7 @@ let python = import "../python/build.ncl" in
     plugin_check =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "for p in cpp csharp node objective_c php python ruby; do command -v grpc_${p}_plugin > /dev/null || exit 1; done"],
         ],
@@ -98,7 +109,7 @@ let python = import "../python/build.ncl" in
     proto_compile =
       {
         class = 'Standalone,
-        test_deps = [base, toolchain, binutils, protobuf, python, linux_headers],
+        test_deps = [bash-bootstrap, toolchain, binutils, protobuf, python, linux_headers],
         cmds = [
           ["/bin/bash", "-c", "echo 'syntax = \"proto3\"; package test; service Echo { rpc Ping (Message) returns (Message) {} } message Message { string body = 1; }' > test.proto"],
           ["/bin/bash", "-c", "protoc --cpp_out=. test.proto"],

@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let git = import "../git/build.ncl" in
 let bun = import "../bun/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -21,10 +22,12 @@ let toolchain = import "../toolchain/build.ncl" in
 # The build steps mirror upstream's own release.yml exactly (install with the
 # frozen lockfile, build the review + hook UI, then `bun build --compile` the
 # hook server entrypoint). Deviating from that is how you ship something that
-# is not the tool people expect.
+# is not the tool people expect. The deliberate deviations (compile target,
+# --ignore-scripts, the fallback guides.show viewer pin instead of a rebuilt
+# one, no release telemetry mark) are each explained in build.sh.
 #
 # `needs` is set because `bun install` fetches from the npm registry.
-let version = "0.27.16" in
+let version = "0.28.50" in
 
 {
   name = "plannotator",
@@ -32,7 +35,7 @@ let version = "0.27.16" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/backnotprop/plannotator/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "e925db8d3a770632e42ea627d4f54c4e05d9d6ec6239c24d9180f0bb79be1fea",
+      sha256 = "39ab011073eaf2866ecfa8ca395143bdfeb5d29fa5c464a20c2633e4163f57bc",
       extract = true,
       strip_prefix = "plannotator-%{version}",
     } | Source,
@@ -66,7 +69,10 @@ let version = "0.27.16" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "Apache-2.0",
+      # Upstream README: "Dual-licensed under Apache 2.0 or MIT at your option"
+      # (LICENSE-APACHE + LICENSE-MIT). GitHub's repo metadata shows only
+      # Apache-2.0 because it reads one file.
+      license_spdx = "MIT OR Apache-2.0",
       source_provenance = {
         category = 'GithubRepo,
         owner = "backnotprop",
@@ -78,7 +84,7 @@ let version = "0.27.16" in
     smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "/bin/plannotator --version"],
         ],

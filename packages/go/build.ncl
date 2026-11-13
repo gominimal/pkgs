@@ -1,42 +1,25 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-# amd64 bootstraps from the go-1.24.9 rung, the top of the go-1.4 -> ... -> 1.24.9 ladder.
-# arm64 bootstraps from a sha-pinned go1.24.9 GOROOT tarball (the Source below): Go 1.5 was the
-# first release with an arm64 port, so the C-hosted go-1.4 root cannot produce one.
+# Both arches bootstrap from go-1.24.9, gen-13 of gominimal/bootstrap: the top of the Go ladder,
+# built from source on the hex0-rooted toolchain and reproduced on two machines (see that package).
 let go-1-24-9 = import "../go-1.24.9/build.ncl" in
 let git = import "../git/build.ncl" in
 
-let version = "1.27.1" in
+let version = "1.27.4" in
 let variants = {
   # Bumping go means updating `version` and `source_sha256` only.  The bootstrap pins change
   # only when go's minimum bootstrap version (src/cmd/dist/buildtool.go) moves past 1.24.
   source_url = "https://go.dev/dl/go%{version}.src.tar.gz",
-  source_sha256 = "4e408abae126d916b6164627193f2c54f0e3ca1312d693b86db45f862ab238b1",
+  source_sha256 = "73cfb8571aec0c01177687db87163d46aa20e9779672772891aa17654d9a6099",
 }
 in
 {
   name = "go",
   build_deps = [
     { file = "build.sh" } | Local,
-    match {
-      { arch = 'Amd64, .. } => go-1-24-9,
-      { arch = 'Arm64, .. } =>
-        {
-          # BEDROCK ROOT (arm64): this bootstrap Go is go1.24.9 from the hex0-rooted arm
-          # ladder (hex0 -> gccgo-15.2.0 -> go1.17.13 -> 1.20.14 -> 1.22.6 -> 1.24.9; gccgo is
-          # the Go frontend shipped inside the gcc source tarball, so no new trust root),
-          # replacing the go.dev linux-arm64 bindist. The three upper rungs reproduced
-          # byte-identically across two runs, and 1.17.13 reproduced under two independently
-          # built gccgo hosts. Seal transcripts and evidence: gominimal/minimermetic#16.
-          # `extract = true` unpacks it to ./go — build.sh MUST move it aside before untarring
-          # the go source tree into that same path.
-          url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/fb0df54229ff3bf08ecde83e6095b07fbdb7d0b77c586ed4d468b7f546a8be56/go1.24.9-aarch64.tar.zst",
-          sha256 = "fb0df54229ff3bf08ecde83e6095b07fbdb7d0b77c586ed4d468b7f546a8be56",
-          extract = true,
-        } | Source,
-    } target,
+    go-1-24-9,
     {
       url = variants.source_url,
       sha256 = variants.source_sha256,
@@ -113,4 +96,8 @@ in
       },
       build_cost_multiple = 2,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/go version",
+  },
 } | BuildSpec

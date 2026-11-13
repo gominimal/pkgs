@@ -49,9 +49,10 @@
 # correct here, not an oversight.
 let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let version = "1.3.6" in
+let version = "1.7.0" in
 {
   name = "vlt",
   build_deps = [
@@ -96,7 +97,7 @@ let version = "1.3.6" in
     version_is_exact =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           # Exact equality, NOT `--version | grep '%{version}'`: vlt's usage
           # banner also carries the version ("next-gen package management
@@ -111,7 +112,7 @@ let version = "1.3.6" in
     companion_bins_work =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           # Five bins are declared as outputs; they are PATH symlinks into the
           # private libexec prefix, so a broken relative link fails here and
@@ -125,7 +126,7 @@ let version = "1.3.6" in
     reads_a_manifest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           # Real work, offline: `vlt pkg get` parses a package.json and returns
           # a field. This exercises the bundled JS beyond argv handling — a

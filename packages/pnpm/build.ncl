@@ -1,6 +1,10 @@
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
+let sed = import "../sed/build.ncl" in
+let file = import "../file/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
@@ -9,7 +13,7 @@ let tar = import "../tar/build.ncl" in
 
 let node-lts = import "../node-lts/build.ncl" in
 
-let version = "12.5.1" in
+let version = "12.20.0" in
 {
   name = "pnpm",
   build_deps = [
@@ -22,17 +26,17 @@ let version = "12.5.1" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://registry.npmjs.org/@pnpm/exe.linux-x64/-/exe.linux-x64-%{version}.tgz",
-          sha256 = "c980bc463e4b1dcd34ab136c738d987dd21a5590f4b4b82dc2c8ad3e605e2f7f"
+          sha256 = "5077f74396f37caacf24e929cd83bc80a3dd68f5fd37eccd86a83a7fe5236c64"
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://registry.npmjs.org/@pnpm/exe.linux-arm64/-/exe.linux-arm64-%{version}.tgz",
-          sha256 = "d6b8b296256372cdbd02be78b7e19b8387de252abcf920017987660b76c429e8"
+          sha256 = "41d25e31a2c9ad47480628246283c45cbff5f63a8fb906bb588fc8db8c9b0b96"
         } | Source,
     } target,
     {
       url = "https://registry.npmjs.org/pnpm/-/pnpm-%{version}.tgz",
-      sha256 = "3c1439171c1396d7f30892d2444135c9f11de739175058a1503cdf53788f2099"
+      sha256 = "ceda63b71b366307d27f788c54eb22ded67644d1c1add0486c875f9dd602cf85"
     } | Source,
     base,
     tar,
@@ -45,6 +49,7 @@ let version = "12.5.1" in
     # through `sh`.
     bash,
     coreutils,
+    sed, # the generated `gbin` shim for globally installed bins runs sed
     # ONLY the `node` binary from `node-lts` — deliberately NOT npm/npx/node_modules.
     #
     # pnpm 12 no longer needs node to run ITSELF (it is native), but a pnpm with
@@ -100,7 +105,7 @@ let version = "12.5.1" in
     cli =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep, file],
         cmds = [
           ["/bin/bash", "-c", "out=$(pnpm --version 2>&1) && echo \"$out\" && test \"$out\" = '%{version}'"],
           ["/bin/bash", "-c", "out=$(pn --version 2>&1) && test \"$out\" = '%{version}'"],
@@ -113,7 +118,7 @@ let version = "12.5.1" in
     install =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "set -e; mkdir -p /tmp/p && cd /tmp/p && printf '%s' '{\"name\":\"t\",\"version\":\"1.0.0\",\"scripts\":{\"postinstall\":\"command -v node-gyp > gyp.txt && node --version > node.txt\"}}' > package.json && pnpm install --offline 2>&1 | tee log.txt; if grep -qi download log.txt; then exit 1; fi; grep -q '/usr/libexec/pnpm/dist/node-gyp-bin/node-gyp' gyp.txt; test -s node.txt"],
         ],
@@ -123,7 +128,7 @@ let version = "12.5.1" in
     global_install =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep], # sed (the gbin shim) is a runtime dep
         cmds = [
           [
             "/bin/bash",

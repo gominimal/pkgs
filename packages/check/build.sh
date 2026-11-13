@@ -22,7 +22,8 @@ make -j$(nproc)
 # those two known-flaky binaries. Anything else bubbles up as a real
 # failure with logs dumped.
 if ! make -j$(nproc) check; then
-    unexpected=$(grep '^FAIL:' tests/test-suite.log 2>/dev/null \
+    # ERROR: (exit 99) and XPASS: are failures too, not only FAIL:.
+    unexpected=$(grep -E '^(FAIL|ERROR|XPASS):' tests/test-suite.log 2>/dev/null \
         | grep -v -xE 'FAIL: (check_check|check_check_export)' || true)
     if [ -n "$unexpected" ]; then
         echo "UNEXPECTED test failures (not in known-flaky allowlist):" >&2

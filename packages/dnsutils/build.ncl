@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -11,14 +12,14 @@ let libcap = import "../libcap/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "9.20.29" in
+let version = "9.20.30" in
 {
   name = "dnsutils",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://downloads.isc.org/isc/bind9/%{version}/bind-%{version}.tar.xz",
-      sha256 = "587029508b3b1b43229fae416c97e5543aba45809cefaca98a5004a02a5736c1",
+      sha256 = "9e1443a40a72a30272cbc3196d020a6b2e26937111c83e59e101e82e1e3b4fef",
     } | Source,
     base,
     toolchain,
@@ -65,7 +66,7 @@ let version = "9.20.29" in
     dig_version =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [["/bin/bash", "-c", "dig -v"]],
       } | Test,
   },

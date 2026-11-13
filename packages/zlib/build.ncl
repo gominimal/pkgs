@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -8,14 +8,14 @@ let coreutils = import "../coreutils/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.3.2" in
+let version = "1.4" in
 {
   name = "zlib",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/zlib-%{version}.tar.gz",
-      sha256 = "b99a0b86c0ba9360ec7e78c4f1e43b1cbdf1e6936c8fa0f6835c0cd694a495a1"
+      sha256 = "02dd159783677a749c04adbdd02b55b8a2bcc7e054f51b76b549199a916ad584"
     } | Source,
     bash-bootstrap,
     make,
@@ -44,22 +44,16 @@ let version = "1.3.2" in
         match {
           { arch = 'Amd64, .. } =>
             {
-              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
-              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
-              # gominimal/minimermetic#16. Applied by minimermetic's
-              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/717d2671877766c03338838d2072f4b3db719827f387fa7ade4daf74d13083ab/stage0-zlib-amd-x86_64.tar.zst",
-              sha256 = "717d2671877766c03338838d2072f4b3db719827f387fa7ade4daf74d13083ab",
+              # gominimal/bootstrap gen-13 object (generations/gen-13/manifest.json)
+              url = "gs://minimal-bootstrap/gen-13/sha256/caf05bdb8fd7b37b502130ed0bcb94d8d598a9124197d457a25286009b3808d5/zlib-x86_64.tar.zst",
+              sha256 = "caf05bdb8fd7b37b502130ed0bcb94d8d598a9124197d457a25286009b3808d5",
               extract = true,
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              # BEDROCK ROOT: this artifact is built by the hex0-rooted bootstrap ladder and
-              # replaces the previous prebuilt in this slot. Provenance, seals, and evidence:
-              # gominimal/minimermetic#16. Applied by minimermetic's
-              # bin/queue/update-bedrock-roots.py from its bedrock-roots-manifest.txt.
-              url = "gs://minimal-staging-archives/prebuilts/bedrock/sha256/d3b6f8f598e48ff5e8a062b3a65fa97fcbd895ddb173cfe9bde0ee855c783d4a/stage0-zlib-arm-aarch64.tar.zst",
-              sha256 = "d3b6f8f598e48ff5e8a062b3a65fa97fcbd895ddb173cfe9bde0ee855c783d4a",
+              # gominimal/bootstrap gen-13 object (generations/gen-13/manifest.json)
+              url = "gs://minimal-bootstrap/gen-13/sha256/fadaa94a026f3891dc88b778f323a571b2c80440049ca88846d6c931adaee927/zlib-aarch64.tar.zst",
+              sha256 = "fadaa94a026f3891dc88b778f323a571b2c80440049ca88846d6c931adaee927",
               extract = true,
             } | Source,
         } target,
@@ -81,4 +75,36 @@ let version = "1.3.2" in
         repo = "zlib",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              cd /tmp
+              gcc -x c - -o t -x none -lz <<'EOF'
+              #include <string.h>
+              #include <zlib.h>
+              int main(void) {
+                if (strcmp(zlibVersion(), ZLIB_VERSION) != 0) return 1;
+                const char *in = "hello hello hello hello";
+                unsigned char c[128], d[128];
+                uLongf cl = sizeof c, dl = sizeof d;
+                if (compress(c, &cl, (const Bytef *)in, strlen(in) + 1) != Z_OK) return 2;
+                if (uncompress(d, &dl, c, cl) != Z_OK) return 3;
+                return strcmp((char *)d, in) != 0;
+              }
+              EOF
+              ./t
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

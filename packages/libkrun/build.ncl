@@ -1,4 +1,5 @@
-let { subsetOf, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -9,7 +10,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "1.19.4" in
+let version = "1.19.8" in
 {
   name = "libkrun",
 
@@ -34,14 +35,25 @@ let version = "1.19.4" in
     # credit-request wakeup fix (push_credit_req must set signal_queue), which
     # the count ceiling makes reachable during bulk transfer.
     #
-    # Identical to the patch the macOS source build carries at
-    # vendor/libkrun/patches/ in gominimal/minimal (#926); drop it once the
-    # fix lands in an upstream release we can pin.
+    # The same change as the patch the macOS source build carries at
+    # vendor/libkrun/patches/ in gominimal/minimal (#926), rebased onto
+    # 1.19.7 (gominimal/pkgs#1018); drop it once the fix lands in an upstream
+    # release we can pin.
     # https://github.com/gominimal/minimal/issues/869
     { file = "0001-vsock-bound-outstanding-packets.patch" } | Local,
+    # A guest-to-host vsock stream whose host unix socket cannot be created
+    # (EMFILE, ENFILE, ENOBUFS) hit UnixProxy::new(...).unwrap() in
+    # muxer.rs, and the panic aborted the whole VMM. The patch logs the error
+    # and answers that one stream with OP_RST instead, so the guest's
+    # connect() fails and the VM keeps running. 1.19.7 does not fix this.
+    #
+    # Identical to the patch gominimal/minimal carries at
+    # vendor/libkrun/patches/ (#2105); drop it once upstream releases the fix.
+    # https://github.com/gominimal/minimal/issues/2103
+    { file = "0002-vsock-refuse-stream-when-unix-proxy-creation-fails.patch" } | Local,
     {
-      url = "https://github.com/containers/libkrun/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "e8775fab2b460972a67ca6cd936296bb79cdb078d852d712a283cb290dd0b284",
+      url = "https://github.com/libkrun/libkrun/archive/refs/tags/v%{version}.tar.gz",
+      sha256 = "8896c71117462f868f41d26efd157c3270091814eaab3af27ca70c6857a85eb2",
       extract = true,
       strip_prefix = "libkrun-%{version}",
     } | Source,
@@ -82,8 +94,30 @@ let version = "1.19.4" in
     license_spdx = "Apache-2.0",
     source_provenance = {
       category = 'GithubRepo,
-      owner = "containers",
+      owner = "libkrun",
       repo = "libkrun",
     },
+  },
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t -lkrun <<'EOF'
+              #include <libkrun.h>
+              int main(void) { return krun_set_log_level(0) == 0 ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
   },
 } | BuildSpec

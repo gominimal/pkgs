@@ -28,15 +28,9 @@ rm -rf "$GHIDRA_TREE/docs/GhidraClass"
 find "$GHIDRA_TREE" -type d -name "win_*" -prune -exec rm -rf {} +
 find "$GHIDRA_TREE" -type d -name "mac_*" -prune -exec rm -rf {} +
 
-# ...and the 7-Zip JNI blobs, which the two finds above MISS: sevenzipjbinding
-# uses its own platform naming (`Mac-x86_64`, `Windows-amd64`), not Ghidra's
-# `os/<platform>` convention.
-rm -rf "$GHIDRA_TREE/Ghidra/Features/FileFormats/data/sevenzipnativelibs/Mac-x86_64"
-rm -rf "$GHIDRA_TREE/Ghidra/Features/FileFormats/data/sevenzipnativelibs/Windows-amd64"
-
-# Host architecture, resolved ONCE and early because two later sections branch
-# on it. It used to be defined below the 7-Zip block that reads it, so
-# $HOST_OSDIR was empty there and the arm64 arm silently never ran — the build
+# Host architecture, resolved ONCE and early because later sections branch on
+# it. It once sat below a block that read it, so $HOST_OSDIR was empty there
+# and that arm64 arm silently never ran — the build
 # still succeeded and simply produced a package missing the thing it had just
 # been taught to add. `set -u` above now makes that class of mistake fatal
 # instead of quiet.
@@ -50,73 +44,19 @@ case "$(uname -m)" in
 esac
 
 # ---------------------------------------------------------------------------
-# 7-Zip JNI native — the one real arm64/amd64 PARITY gap, and it is closable.
+# 7-Zip: no JNI natives since 12.2.
 # ---------------------------------------------------------------------------
 #
-# Upstream's `-all-platforms` roll-up ships Linux-amd64, Linux-i386,
-# Mac-x86_64, Windows-amd64 and Windows-x86 — no ARM, BY DESIGN (upstream
-# ReleaseNotes.txt: "ARM (WARNING: Not a part of -AllPlatform or -AllLinux
-# !!!)"). But the per-platform artifact exists at the EXACT version Ghidra
-# vendors, and has since Feb 2020. This was a missing artifact reference, not
-# a missing build — an earlier revision of this file asserted the opposite.
-#
-# Without it an arm64 user loses 7z/RAR/CAB/CHM/LHA/ARJ/WIM/VHD/XAR/RPM
-# containers and — worse, because it is silent — `.zip`/`.apk`/`.jar` quietly
-# fall back to java.util.zip, losing password-protected and obfuscated entries.
-# analyzeHeadless swallows the failure and exits 0.
-#
-# ONE NON-OBVIOUS CONSTRAINT. SevenZip.getPlatformBestMatch() returns
-# availablePlatform.get(0) unconditionally when the list holds exactly ONE
-# entry; otherwise it matches os.name+"-"+os.arch, which here is
-# "Linux-aarch64" and can NEVER equal the artifact's "Linux-arm64". So the
-# arm64 jar must REPLACE the all-platforms jar rather than accompany it
-# (getPlatformList reads the FIRST platforms.properties on the classpath, and
-# GhidraLauncher sorts jars by filename, so "all-platforms" would
-# deterministically win), and the platform must stay spelled "Linux-arm64" —
-# that string indexes BOTH the on-disk data dir AND a classpath resource, so
-# renaming either half breaks the other.
-SZ_VER=16.02-2.01
-SZ_LIB="$GHIDRA_TREE/Ghidra/Features/FileFormats/lib"
-SZ_DATA="$GHIDRA_TREE/Ghidra/Features/FileFormats/data/sevenzipnativelibs"
-
-# This native jar is pinned INDEPENDENTLY of the Ghidra version, which is
-# correct (upstream froze it) but creates skew risk: a Ghidra bump that
-# revendors sevenzipjbinding would pair new Java classes with our old native,
-# and a JNI symbol mismatch degrades SILENTLY. Make that a build failure on the
-# exact PR that causes it, rather than a mystery months later.
-VENDORED=$(basename "$SZ_LIB"/sevenzipjbinding-[0-9]*.jar .jar)
-VENDORED=${VENDORED#sevenzipjbinding-}
-if [ "$VENDORED" != "$SZ_VER" ]; then
-    echo "ghidra revendored sevenzipjbinding $VENDORED; our pinned native is $SZ_VER" >&2
+# Ghidra 12.2 removed sevenzipjbinding (GP-7095): zip, 7z, bzip2 and xz now go
+# through Apache commons-compress in pure Java, so the arm64 parity gap this
+# recipe used to close with a pinned aarch64 sevenzipjbinding native is gone,
+# and that pin (a second Source) is gone with it. If a future Ghidra brings the
+# JNI library back, it would again ship x86-only natives and silently degrade
+# arm64; fail here so that bump restores the arm64 handling first (see this
+# recipe's git history for 12.1.x, which carried it).
+if find "$GHIDRA_TREE" \( -name 'sevenzipjbinding*.jar' -o -name 'lib7-Zip-JBinding.so' -o -type d -name sevenzipnativelibs \) | grep -q .; then
+    echo "ghidra ships sevenzipjbinding again; restore the arm64 7-Zip native handling" >&2
     exit 1
-fi
-
-if [ "$HOST_OSDIR" = linux_arm_64 ]; then
-    rm -f "$SZ_LIB"/sevenzipjbinding-all-platforms-*.jar
-    cp "sevenzipjbinding-linux-arm64-$SZ_VER.jar" "$SZ_LIB/"
-
-    # Extract ONLY the .so — a plain unzip would scatter META-INF and a stray
-    # platforms.properties into the data directory.
-    python3 - "$SZ_LIB/sevenzipjbinding-linux-arm64-$SZ_VER.jar" "$SZ_DATA/Linux-arm64" <<'PYX'
-import pathlib, sys, zipfile
-jar, dest = sys.argv[1], pathlib.Path(sys.argv[2])
-dest.mkdir(parents=True, exist_ok=True)
-with zipfile.ZipFile(jar) as z:
-    blob = z.read("Linux-arm64/lib7-Zip-JBinding.so")
-(dest / "lib7-Zip-JBinding.so").write_bytes(blob)
-PYX
-
-    # ASSERT THE ARCH of anything we inject. Upstream release CI genuinely does
-    # mislabel assets (Z3 publishes an "arm64" zip containing x86-64 binaries),
-    # and a wrong blob would look exactly like parity while failing at
-    # System.load — inside a data file the output-types checker never opens.
-    python3 -c 'import sys; d=open(sys.argv[1],"rb").read(20); m=int.from_bytes(d[18:20],"little"); sys.exit(0 if m==0xb7 else "not aarch64: e_machine=0x%x" % m)' \
-        "$SZ_DATA/Linux-arm64/lib7-Zip-JBinding.so"
-    chmod 755 "$SZ_DATA/Linux-arm64/lib7-Zip-JBinding.so"
-
-    # Exactly one classes jar + one platform jar. Two platform jars would send
-    # getPlatformBestMatch() back to the os.arch match, which cannot succeed.
-    test "$(ls "$SZ_LIB"/sevenzipjbinding-*.jar | wc -l)" -eq 2
 fi
 
 # ---------------------------------------------------------------------------
@@ -295,17 +235,6 @@ else
     cd "$SRC/.."
 fi
 
-# The remaining 7-Zip JNI blob is x86_64-only and there is no aarch64 build to
-# put in its place (see above). Drop it on a non-x86_64 host: it can never
-# load here, and removing it makes the outcome deterministic — an absent
-# platform directory raises the SevenZipNativeInitializationException that
-# SevenZipFileSystemFactory.initNativeLibraries() actually catches, rather
-# than an arch-mismatch UnsatisfiedLinkError, which is an Error and not
-# covered by that catch.
-if [ "$HOST_OSDIR" != linux_x86_64 ]; then
-    rm -rf "$GHIDRA_TREE/Ghidra/Features/FileFormats/data/sevenzipnativelibs/Linux-amd64"
-fi
-
 # Now that os/$HOST_OSDIR is populated for every native module, drop the
 # foreign-arch Linux natives. Before this, an arm64 package shipped 4.8 MB of
 # x86_64 ELF that can never execute here (and, sitting inside an OutputData
@@ -355,7 +284,7 @@ with zipfile.ZipFile(zpath) as z:
             continue
         path = os.path.join(tree, rel[1])
         if not os.path.exists(path):
-            skipped += 1      # win_*/mac_*/GhidraClass/sevenzip — deleted above
+            skipped += 1      # win_*/mac_*/GhidraClass — deleted above
             continue
         os.chmod(path, os.stat(path).st_mode | 0o111)
         restored += 1

@@ -1,5 +1,6 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let cython = import "../cython/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let meson-python = import "../meson-python/build.ncl" in
@@ -7,14 +8,14 @@ let meson-python = import "../meson-python/build.ncl" in
 let python = import "../python/build.ncl" in
 let openblas = import "../openblas/build.ncl" in
 
-let version = "2.5.3" in
+let version = "2.5.4" in
 {
   name = "numpy",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://files.pythonhosted.org/packages/source/n/numpy/numpy-%{version}.tar.gz",
-      sha256 = "df2d5874ff183595a4ba404edd04f6bd9b5505c1d7708573f6a6c17489a67563",
+      sha256 = "9a94cf751c9ad8ebaa835bcd3d40dacf8534ad086b88c38029b65123c7999d2a",
       extract = true,
       strip_prefix = "numpy-%{version}",
     } | Source,
@@ -49,4 +50,13 @@ let version = "2.5.3" in
         repo = "numpy",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap],
+        cmds = [["/bin/bash", "-c", "python3 -c 'import numpy; assert numpy.dot([1,2],[3,4]) == 11'"]],
+      } | Test,
+  },
 } | BuildSpec

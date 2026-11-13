@@ -1,0 +1,76 @@
+name: source-hash-guard
+
+# BLOCKING. A Source whose url moves to a new version must get a new sha256
+# (gominimal/pkgs#1003). Sources are fetched by hash, so a stale sha256 is
+# served from the store and the OLD release is rebuilt silently. Compares the
+# evaluated catalog of this PR's merge commit with its base on both arches,
+# so a url that moves through Nickel interpolation (chromedriver-bin's did,
+# in a build.ncl the PR never touched) is caught like an edited literal. A
+# sha256 that changes under an unchanged versioned url is a warning only.
+# Rules, rationale and the opt-out marker live in
+# .github/scripts/source_hash_guard.py.
+#
+# A dump failure fails too (exit 2 = UNVERIFIED): a guard that cannot see the
+# catalog must not go green.
+
+on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "packages/**"
+      - "stacks/**"
+      - ".github/scripts/source_hash_guard.py"
+      - ".github/scripts/test_source_hash_guard.py"
+      - ".github/scripts/fixtures/source_hash_guard/**"
+      - ".github/workflows/source-hash-guard.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: source-hash-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned to a SHA (matches ruby-flavor-guard.yml / node-runtime-guard.yml).
+      # Full history: the merge commit's base parent, and the pkgs commits the
+      # test fixtures were cut from, must be reachable.
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # The runner's pinned, sha256-verified evaluator, as node-runtime-guard uses.
+      - uses: ./.github/actions/setup-mip
+
+      # Unit tests, plus a re-dump of every commit a fixture was cut from.
+      - name: Guard unit tests
+        env:
+          SOURCE_HASH_GUARD_VERIFY_FIXTURES: "1"
+        run: python3 -m unittest discover -s .github/scripts -p 'test_source_hash_guard.py' -v
+
+      # HEAD is the PR's merge commit; its first parent is the base it was
+      # merged onto, so HEAD^1..HEAD is exactly what this PR would land.
+      - name: Dump catalog (base + head, amd64 + arm64)
+        run: |
+          set -euo pipefail
+          test "$(git rev-list --parents -n 1 HEAD | wc -w)" -eq 3 \
+            || { echo "::error::HEAD is not a merge commit; cannot find the PR's base"; exit 2; }
+          git worktree add --detach "$RUNNER_TEMP/base" HEAD^1
+          mip --version || true
+          for arch in amd64 arm64; do
+            (cd "$RUNNER_TEMP/base" && mip dump -p --format json --arch "$arch") > "base-$arch.json"
+            mip dump -p --format json --arch "$arch" > "head-$arch.json"
+            echo "dumped $(jq 'length' "base-$arch.json") base / $(jq 'length' "head-$arch.json") head packages ($arch)"
+          done
+          git diff HEAD^1 HEAD > pr.diff
+
+      - name: source-hash guard
+        run: |
+          python3 .github/scripts/source_hash_guard.py \
+            --pair base-amd64.json head-amd64.json \
+            --pair base-arm64.json head-arm64.json \
+            --diff pr.diff

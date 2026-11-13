@@ -1,12 +1,14 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 let git = import "../git/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 
-let version = "0.9.8" in
+let version = "0.9.16" in
 {
   name = "capy",
   build_deps = [
@@ -16,7 +18,7 @@ let version = "0.9.8" in
     # into this registry.
     {
       url = "https://github.com/capysc/capy-cli/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "80e890904d483c050861cb28de3aa9566a8250bbb06783231ac3b37368cce72c",
+      sha256 = "5f21895f59b6ed94262b861578953a8e262b63cbf84d9e8f8aaea1cfaa3e4363",
       extract = true,
       strip_prefix = "capy-cli-%{version}",
     } | Source,
@@ -70,7 +72,7 @@ let version = "0.9.8" in
     runs =
       {
         class = 'Standalone,
-        test_deps = [base, node-lts],
+        test_deps = [bash-bootstrap, node-lts, grep],
         cmds = [
           # capy must run and report its version with no auth/network/config.
           ["/bin/bash", "-c", "capy --version | grep -q '%{version}'"],

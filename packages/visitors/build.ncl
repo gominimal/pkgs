@@ -41,7 +41,9 @@ let version = "20251114" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "LGPL-2.0-only",
+      # LICENSE is LGPL 2.1 and visitors.opam says LGPL-2.1-only. No OCaml linking
+      # exception, so the VisitorsRuntime that aeneas links statically is plain LGPL.
+      license_spdx = "LGPL-2.1-only",
     } | Attrs,
   tests = {
     findlib_resolve =

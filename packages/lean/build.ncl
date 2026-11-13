@@ -1,5 +1,8 @@
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -12,14 +15,14 @@ let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let cadical = import "../cadical/build.ncl" in
 
-let version = "4.34.1" in
+let version = "4.35.0" in
 {
   name = "lean",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/leanprover/lean4/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "9bb0bed7bae752a281e9923163d50da4193e36480cf5f639658e2e1502294056",
+      sha256 = "6747b099d03d3675f2716e7cf5924a16bfbf75822b13a3d36f51f933ffcc307b",
     } | Source,
     base,
     toolchain,
@@ -38,9 +41,13 @@ let version = "4.34.1" in
     # `bv_decide` shells out to the `cadical` SAT solver by name on PATH. An
     # official Lean release bundles it in `bin/`; built from source we don't
     # get one, and `bv_decide` fails with "could not execute external process
-    # 'cadical'" (found building aeneas-latest). Same release Lean pins.
+    # 'cadical'" (found building aeneas-latest). Our cadical is the latest
+    # release, not the older one Lean's CMake bundles: `bv_decide` verifies
+    # the solver's LRAT certificate, so a newer solver cannot make lean accept
+    # a false goal. The `bv_decide` test below is a smoke test of the pair.
+    # aeneas-latest's build is the real-goal coverage (see cadical/build.ncl).
     cadical,
-    # `lean` and `libleanshared.so` link libssl.so.3 / libcrypto.so.3 (lake's
+    # `lean` and `libleanshared.so` link libssl.so.4 / libcrypto.so.4 (lake's
     # HTTP client). Without this the binary does not START in a closure that
     # lacks openssl — `lean --version` exits 127 from the loader — which the
     # standalone test below now catches. Every session that had run lean so
@@ -106,13 +113,33 @@ let version = "4.34.1" in
     compiles_hello =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           ["/bin/bash", "-c", "printf '#eval 1+1\\n' > /tmp/t.lean && lean /tmp/t.lean"],
           ["/bin/bash", "-c", "printf 'theorem t : 1 + 1 = 2 := rfl\\n' > /tmp/u.lean && lean /tmp/u.lean"],
           # `lake` must be able to configure and build a project: this is what
           # the missing `.ir` files broke while `lean` itself still worked.
           ["/bin/bash", "-c", "mkdir -p /tmp/lk && cd /tmp/lk && printf 'import Lake\\nopen Lake DSL\\npackage t\\n@[default_target] lean_lib T\\n' > lakefile.lean && mkdir -p T && printf 'def hello := 42\\n' > T.lean && LAKE_NO_CACHE=1 HOME=/tmp/lk lake build"],
+        ],
+      } | Test,
+    # `bv_decide` end to end, against the `cadical` runtime dep. Lean bit-blasts
+    # each goal to CNF, runs cadical (`--lrat --binary=true --quiet ...`), and
+    # replays the LRAT certificate in its own checker, so this proves both that
+    # cadical is found and that lean accepts the proofs this cadical writes.
+    # Each goal reaches the SAT solver (none is closed by bv_decide's
+    # preprocessing): with a fake `cadical` that prints garbage, every one of
+    # them fails. `csub` is a realistic query: Aeneas's ML-KEM conditional
+    # subtraction (aeneas-latest's Bvify.lean), restated on plain BitVec 32
+    # so it needs no Aeneas import. It takes under a second. The second
+    # command takes the SAT path: a false goal must be refuted with a
+    # counterexample, not proved and not errored.
+    bv_decide =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, grep],
+        cmds = [
+          ["/bin/bash", "-c", "cd /tmp && printf '%s\\n' 'import Std.Tactic.BVDecide' 'theorem mul3 (x : BitVec 32) : x * 3 = x + x + x := by bv_decide' 'theorem andor (x y : BitVec 32) : (x &&& y) + (x ||| y) = x + y := by bv_decide' 'theorem mulcomm (x y : BitVec 8) : x * y = y * x := by bv_decide (config := { solverMode := .proof })' 'theorem csub (a b c2 c5 : BitVec 32) (ha : a < 3329#32) (hb : b < 3329#32) (hc2 : c2 = a + b - 3329#32) (hc5 : c5 = c2 + (3329#32 &&& (c2 >>> 16))) : c5 % 3329#32 = (a + b) % 3329#32 ∧ c5 < 3329#32 := by bv_decide' > bv.lean && lean bv.lean"],
+          ["/bin/bash", "-c", "cd /tmp && printf '%s\\n' 'import Std.Tactic.BVDecide' 'theorem bad (x : BitVec 8) : x < x + 1 := by bv_decide' > cex.lean; out=\"$(lean cex.lean 2>&1)\"; echo \"$out\"; echo \"$out\" | grep -q 'The prover found a counterexample'"],
         ],
       } | Test,
   },

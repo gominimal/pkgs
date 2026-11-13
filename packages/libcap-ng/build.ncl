@@ -2,6 +2,9 @@ let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .
 let autoconf = import "../autoconf/build.ncl" in
 let automake = import "../automake/build.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 let m4 = import "../m4/build.ncl" in
@@ -11,14 +14,14 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.9.3" in
+let version = "0.9.6" in
 {
   name = "libcap-ng",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/stevegrubb/libcap-ng/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "fe11ebbb55904763b3532f19069f13ec319042634620180a03bd4653d301563e",
+      sha256 = "399040138e0ca62fa2bcabd63da9af4431a246ef7a654561a0ca3cb00010a539",
       extract = true,
       strip_prefix = "libcap-ng-%{version}",
     } | Source,
@@ -65,7 +68,7 @@ let version = "0.9.3" in
     link_and_run =
       {
         class = 'Standalone,
-        test_deps = [base, toolchain],
+        test_deps = [bash-bootstrap, toolchain, coreutils, grep],
         cmds = [
           [
             "/bin/bash",
@@ -104,9 +107,11 @@ EOF
     pscap_runs =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
-          ["/bin/bash", "-c", "pscap --help 2>&1 || true"],
+          # pscap's usage() prints this line and exits 1 for any unknown argument
+          # (utils/pscap.c); the output does not depend on the sandbox's processes.
+          ["/bin/bash", "-c", "out=$(pscap --help 2>&1); rc=$?; echo \"$out\"; [[ $rc == 1 && $out == 'usage: pscap [-a] [-p pid] [--tree]' ]]"],
         ],
       } | Test,
   },

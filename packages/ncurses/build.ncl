@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let attr = import "../attr/build.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
@@ -49,4 +49,8 @@ let version = "6.6" in
         name = "ncurses",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/infocmp -V",
+  },
 } | BuildSpec

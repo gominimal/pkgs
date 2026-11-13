@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -9,14 +10,14 @@ let xtrans = import "../xtrans/build.ncl" in
 let libxcb = import "../libxcb/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.8.13" in
+let version = "1.8.14" in
 {
   name = "libx11",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libX11-%{version}.tar.xz",
-      sha256 = "69606f485c2c07c14ef64f75b7bb326d48587af33795d9ab3e607c0b5f94f11c",
+      sha256 = "bbc78c46217174655c2b32b138ad119f3ac15f50808b4d0b3a2677a4b1afc950",
       extract = true,
       strip_prefix = "libX11-%{version}",
     } | Source,
@@ -45,4 +46,26 @@ let version = "1.8.13" in
       upstream_version = version,
       license_spdx = "MIT",
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain, xorgproto],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t -lX11 <<'EOF'
+              #include <X11/Xlib.h>
+              int main(void) { return XInitThreads() ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

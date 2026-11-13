@@ -4,10 +4,14 @@ export CC=gcc
 export LD=gcc
 export RUSTFLAGS="-C linker=gcc"
 
-# 0.9.2 restructured the repo into a Cargo workspace: the old standalone
-# `daemon/` crate is now the `crates/teamtype` member. Build the `teamtype` bin
-# by name from the workspace root (robust to the layout change) rather than
-# `cd`-ing into a hardcoded subdir. The workspace `target/` is at the root.
-cargo build --release --bin teamtype
+# Security floor (data/security_floors.toml): kept by pkgmgr when the lock
+# patch it guarded became unnecessary. No pre-fix version may be locked.
+if grep -A1 -E '^name = "(rustls-webpki|webpki-roots|webpki-root-certs)"$' Cargo.lock |
+  grep -qE '^version = "(0[.]103[.]([0-9]|1[0-5])|1[.]0[.][0-9])"$'; then
+  echo "ERROR: a pre-CVE-2026-111943 rustls-webpki / webpki-roots is still in Cargo.lock" >&2
+  exit 1
+fi
+
+cargo build --locked --release --bin teamtype
 
 install -D -m 0755 target/release/teamtype "$OUTPUT_DIR/usr/bin/teamtype"

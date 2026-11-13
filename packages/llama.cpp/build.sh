@@ -10,10 +10,67 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
-cmake -B build
+# The embedded web UI (llama-ui, linked into libllama-server-impl.so). Left to
+# itself, scripts/ui-assets.cmake downloads dist.tar.gz from Hugging Face at build
+# time, and with no .git in the tarball the build number is 0, so it falls back to
+# the moving `latest` tag: a different UI got embedded as upstream published new
+# ones, which was the 2026-10 prod-pair diff (31% of libllama-server-impl.so,
+# identical symbols). Instead, the b12110 UI is a pinned Source, unpacked where the
+# script looks first (tools/ui/dist), and both fetch paths are off. The script
+# gzips each asset without -n, so the gzip header carries the file's mtime: pin
+# the mtimes too. Not to SOURCE_DATE_EPOCH: the sandbox's is 0, which gzip can't
+# store ("file timestamp out of range", exit 2), so 1980-01-01 instead.
+mkdir -p tools/ui/dist
+tar -xof "${MINIMAL_ARG_VERSION}-dist.tar.gz" -C tools/ui/dist
+test -s tools/ui/dist/index.html || {
+  echo "ERROR: pinned llama-ui dist has no index.html" >&2
+  exit 1
+}
+find tools/ui/dist -exec touch -h -d @315532800 {} +
+
+# CVE-2023-45663: the vendored stb_image 2.30 ignores stbi__getn's return in the
+# TGA and HDR loaders, so a short file leaves uninitialized heap/stack in the
+# decoded pixels. llama-server decodes image_url data with stbi_load_from_memory
+# and every stb_image decoder is compiled in. The patch is upstream's own fix,
+# nothings/stb cd44845 ("stb_image: Fix bugs in TGA and HDR", v2.31), unchanged.
+# Both hashes are checked, so a different vendored copy fails here instead of
+# patching the wrong file, and a partial apply cannot pass. Drop when llama.cpp
+# vendors stb_image >= 2.31.
+echo "594c2fe35d49488b4382dbfaec8f98366defca819d916ac95becf3e75f4200b3  vendor/stb/stb_image.h" | sha256sum -c -
+patch -Np1 -i ./stb-cve-2023-45663.patch
+echo "a604136650368a391554f4a4b45f285d4c8fe94c7bf28a414b37edd28407899e  vendor/stb/stb_image.h" | sha256sum -c -
+
+# GGML_NATIVE=OFF is a guard: ggml already defaults it OFF when SOURCE_DATE_EPOCH is
+# set (the sandbox sets it), and -march=native would make the code follow the build
+# host's CPU instead of the explicit $MARCH in CFLAGS.
+cmake -B build -DGGML_NATIVE=OFF -DLLAMA_BUILD_UI=OFF -DLLAMA_USE_PREBUILT_UI=OFF
 cmake --build build --config Release -j $(nproc)
 
 mkdir -pv $OUTPUT_DIR/usr/{bin,lib}
 
-install -vm755 build/bin/*.so $OUTPUT_DIR/usr/lib/
+# The shared libraries ship as built: lib*.so -> lib*.so.0 -> lib*.so.0.x.y.
+# `install build/bin/*.so` followed each link and wrote the library under its
+# unversioned name only, so the binaries' DT_NEEDED (the SONAME, libllama.so.0
+# etc.) was never shipped and llama-cli/llama-server exited 127 at startup.
+cp -av build/bin/*.so* $OUTPUT_DIR/usr/lib/
 install -vm755 build/bin/llama-{cli,server} $OUTPUT_DIR/usr/bin/
+
+# Fail closed: every library a shipped ELF needs that this build produced (it is
+# in build/bin) must be in the output under that exact name. `found` keeps the
+# check from passing vacuously (llama-cli alone needs libllama.so.0).
+command -v readelf >/dev/null
+missing=0
+found=0
+for f in $OUTPUT_DIR/usr/bin/* $OUTPUT_DIR/usr/lib/*.so*; do
+  [ -L "$f" ] && continue
+  for lib in $(readelf -d "$f" | sed -n 's/.*(NEEDED).*\[\(.*\)\]/\1/p'); do
+    [ -e "build/bin/$lib" ] || continue
+    found=$((found + 1))
+    if [ ! -e "$OUTPUT_DIR/usr/lib/$lib" ]; then
+      echo "ERROR: $f needs $lib, built here but not installed" >&2
+      missing=1
+    fi
+  done
+done
+[ "$found" -gt 0 ] || { echo "ERROR: no DT_NEEDED resolved to build/bin" >&2; exit 1; }
+[ "$missing" = 0 ]

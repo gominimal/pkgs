@@ -72,6 +72,25 @@ stacks should use `stack` and live at `stacks/<name>/stack.ncl`.
 
 Current stacks cover: aeneas, bun, cabal, cmake, deno, go, gradle, make, maven, meson, npm, ocaml, odin, pip, pnpm, pulumi-go, pulumi-nodejs, rust, shell, stack, uv, zig.
 
+### Tests
+
+`tests/<name>/` holds checks that exercise packages the way users get them, across
+several packages at once. A single package's checks stay in that package's `tests`
+block. Each directory under `tests/`:
+
+ * is a self-contained min project: its own `minimal.toml`, with `[upstream]` pinning
+   `gominimal/pkgs` (`locked_commit`) and `[tasks]` to run. It is not a package or a
+   stack, nothing imports it, and the package checks never evaluate it;
+ * tests the commit its pin names, never the checkout it sits in. `min update` re-pins
+   it to main, or `[upstream]` can point at a PR head;
+ * has a README saying how to run it, what each result means, and who acts on a
+   failure;
+ * holds no secrets or private keys. Captured data (certificates, fixtures) is public,
+   pinned by checksum, and cites its source;
+ * has no `profiles/` subdirectory, because min reserves `profiles/<name>/profile.ncl`.
+
+Current tests: `tls-trust` (every TLS client refuses a distrusted CA, per distrust response).
+
 
 
 ## Package declarations
@@ -340,6 +359,17 @@ source_provenance = {
 },
 ```
 
+If it came from a GitLab instance (`host` names the instance, e.g. `gitlab.com`; see `packages/psmisc`,
+`packages/tree`):
+
+```ncl
+source_provenance = {
+  category = 'Gitlab,
+  host = "gitlab.com",
+  owner = "<gitlab group or user>",
+  repo = "<gitlab project>",
+},
+```
 
 If its a gnu project:
 
@@ -351,6 +381,27 @@ source_provenance = {
 ```
 
 Omit it if its not one of these variants.
+
+**One exception: official upstream mirrors.** Some upstreams develop on a self-hosted forge but publish an
+official GitHub mirror themselves. GNOME, for example, develops on gitlab.gnome.org and mirrors to
+`github.com/GNOME`. Such a package may declare `'GithubRepo` pointing at the mirror when all of the following
+hold:
+
+- the mirror lives in a GitHub org or account that the upstream project itself controls (a mirror that the
+  upstream's docs merely link to, run by someone else, does not qualify);
+- the mirror carries the same release tags at the same commit SHAs as the canonical forge (spot-check the tag
+  you package);
+- the package needs it for advisory coverage. Today the scanner's GitHub path keeps a package's curated CPE
+  identity, but its GitLab path consults the curated identity only when the GitLab identity holds no
+  advisories at all, so a self-hosted GitLab provenance can drop NVD-CPE coverage.
+
+This covers `source_provenance` only. Where the build fetches its `Source` from is a separate choice: libxml2
+and libxslt fetch the mirror's tag archives, glib a staging copy of GNOME's release tarball.
+
+Say so in a comment beside the provenance block. The packages using this exception are `glib`, `libxml2` and
+`libxslt`; adding a fourth means adding it to this list in the same PR. The exception ends when
+minimal-supply-chain's GitLab path also consults the curated CPE identity (gominimal/pkgmgr-rs#1029): then
+move all three to `'Gitlab` with `host = "gitlab.gnome.org"`.
 
 
 ### Other fields
@@ -372,7 +423,31 @@ Declares the package's output as a checked-in prebuilt binary rather than someth
 
 The source tarball for a `prebuilt = true` package must already match the on-disk layout that the package emits — there's no build step to move files around. For example, a prebuilt `bash` package needs its tarball to contain the binary at `usr/bin/bash` so it lands where the `OutputBin` glob expects it.
 
+## Trust store
 
+The system trust store is the `ca-certificates` package. It installs the PEM bundle `/etc/ssl/certs/ca-certificates.crt`, one `<Label>.crt` file per root, and the OpenSSL `<subject_hash>.<n>` links next to them. `openssl` is built with `--openssldir=/etc/ssl`, so OpenSSL and what links it (curl, git, Python's `ssl`, Ruby) look for roots there. Go's `crypto/x509` and rustls-native-certs (through openssl-probe) do not go through openssldir: they probe `/etc/ssl/certs` themselves, which this layout also satisfies.
+
+### How the store reaches an environment
+
+Every environment mounts exactly a dependency closure and nothing else. A build sandbox gets the package's build and runtime deps with their runtime closures. A standalone test, a session or task, and an OCI image get the runtime closure of their packages. `ca-certificates` gets into a closure in one of two ways:
+
+1. **Injected.** `ca-certificates` sets `attrs.needed_for_internet`. minimal adds every package with that attribute to the closure of any package that declares `needs.internet`. The injection then follows that package into the closure of everything that depends on it at runtime (minimal `crates/graph/src/transitives.rs`, `Transitives::new_with_seenset`). `curl` and `wget` declare `needs.internet`, so anything that brings in curl, git for example, also gets the store. The injected edge is not part of any spec hash, so a new bundle rebuilds none of these packages.
+2. **Declared.** `ca-certificates` is listed in `runtime_deps`. This edge is hashed, so every bundle update rebuilds the package and everything that depends on it.
+
+The planner also adds `needed_for_internet` packages to the top level of every build plan (the `HACK` in `ExecPlan::with_toplevels`, `crates/graph/src/planner.rs`). That only gets `ca-certificates` **built**. It does not put it into any environment. A session with `packages = ["python"]` has no `/etc/ssl/certs`.
+
+### Rules
+
+- **Declare the store when you read it.** If a package's binaries verify TLS against `/etc/ssl/certs` at runtime and nothing in its runtime closure already brings in `ca-certificates`, add `ca-certificates` to its `runtime_deps`. `ruby`, `typst`, `atuin`, `gws` and `skopeo` do this.
+- **Not in the toolchain closure.** `python`, `perl` and `openssl` are build inputs of nearly every package. A `ca-certificates` edge on any one of them rehashes about 90% of the tree now, and again on every bundle update. `openssl` cannot take the edge at all, because `ca-certificates` build-depends on it. These three get the store only when something else in the environment brings it in. If you ship a Python or Perl program that talks TLS, add `ca-certificates` to that package.
+- **Do not use `needs.internet` to get the store.** It also gives network access to the package's own build and to the build of everything that has it in its closure.
+- **Do not embed a trust store.** A runtime reads `/etc/ssl/certs` through a build flag, a config default or a wrapper. It does not compile in its own roots or vendor a certifi-style bundle. Several upstreams default to a store of their own: node's bundled roots, bun, deno's webpki-roots, the JDK `cacerts` keystore, Chromium's root store, gcloud's vendored bundles, and Rust crates that pin `webpki-roots`. Switch them to the system store where upstream allows it. Where it does not, the package applies the denylist below, and its `build.ncl` says why it cannot use the system store.
+- **Denylists: two today, meant to be one.** Distrusted roots, intermediates and keys are listed as SHA-256 fingerprints in two files under `packages/ca-certificates/`, and each distrust response has to land in both until they converge (gominimal/pkgmgr-rs#1020):
+  - `distrust.txt` (`<cert|spki> <sha256>  <note>` lines, one block per distrust response citing its CVE and the Mozilla/NSS bugs). Read by the `ca-certificates` build gate (the build fails if any certificate it ships matches), by the Chromium policy checker (`.github/scripts/chromium_policy_distrust_check.py`, which requires every key in `packages/chromium-policies/ca-distrusted-certificates.json` to be an `spki` line here) and by `pkgmgr truststores`.
+  - `cve-2026-111943-blocked-sha256.txt`, exposed through `cve-2026-111943.ncl`. Read by the JDK patch (`packages/jdk/cve-2026-111943.sh`, used by jdk-21, jdk-25 and jdk-27), which needs all 48 certificate fingerprints, every malleable encoding of the compromised intermediates, because `blocked.certs` matches whole certificates, not keys.
+
+  Append a block for each distrust response and never delete one. Patched embedded stores read one of these files rather than keeping their own copy.
+- **When a CA is distrusted:** rebuild `ca-certificates` from a dated curl/Mozilla extract, append the response's block to `distrust.txt` (and, while the JDK patch still reads its own file, give it the response's full certificate fingerprints), then fix every embedded store listed above. A package that only reads `/etc/ssl/certs` needs no edit; it gets the new bundle through its closure.
 
 ## Creating packages workflow
 
@@ -430,6 +505,17 @@ Getting this wrong means future version bumps chase a dead repo and `source_prov
 - The toolchain is already there — there's no meaningful cost saving from shipping the prebuilt.
 
 Only fall back to a prebuilt binary if the required toolchain genuinely isn't packaged yet, and call that out explicitly in the package.
+
+**JVM tools are such a case for now.** `maven` and `gradle` are themselves upstream binary distributions, and nothing stages Maven Central dependencies for an offline build the way `cargo vendor`, goproxy and `pnpm fetch` do. Until both exist (#969), a tool that is JVM bytecode only may ship its upstream release jar if:
+
+- its sha256 matches the one upstream publishes;
+- `binary_from` records it;
+- it runs on the packaged `jdk` and does not download a JDK of its own;
+- the tool's own code is complete in that checksummed artifact: every jar it loads to run is bundled (or shaded in), so it starts and runs offline, and it never downloads or executes code of its own outside that sha256.
+
+Fetching on the user's behalf is the tool's job, not part of its own code: Maven and mvnd resolving a project's dependencies and plugins, jbang fetching a script's deps, or a search tool querying Maven Central for metadata. Declare that through `needs`, the same way `cargo`, `uv` and `curl` do. What the rule excludes is a launcher that bootstraps its own implementation from the network (a wrapper that downloads the real tool, a plugin manager that fetches the tool's own components on first run).
+
+This exception does not cover native code shipped alongside the jars (for example a GraalVM native image or bundled `.so` files); justify that separately. When #969 lands, these packages convert to source builds together.
 
 #### Example: C library (autotools)
 
@@ -688,6 +774,23 @@ done
 
 `pkgmgr import npm <name>` generates this layout (using a committed lockfile and `npm ci`); see `packages/vlt`.
 
+#### Ruby pattern
+
+`ruby`, `ruby-3.3` and `ruby-3.4` install the same paths (`usr/bin/ruby`, `usr/lib/ruby/**`, `libruby.so`, `usr/etc/gemrc`), so two of them in one closure blend into one broken interpreter. `.github/workflows/ruby-flavor-guard.yml` enforces two rules:
+
+- **Use `ruby`, not a versioned line**, in `build_deps` and `runtime_deps`. `ruby-3.3` and `ruby-3.4` are there for users to opt into, like `node` (Current); packages don't use them. An exception goes in `VERSIONED_ALLOWED` in `.github/scripts/ruby_flavor_guard.py`, with the reason.
+- **No closure may hold two Ruby lines**, runtime or build, and that includes stacks: a stack naming `ruby-3.4` next to `ruby-lsp` fails. A user's own loadout isn't in the catalog, so the guard can't see `ruby-3.4` + `ruby-lsp` chosen there.
+
+
+#### OpenSSL pattern
+
+`openssl` is the 4.x line: `libssl.so.4` / `libcrypto.so.4` in `/usr/lib`, providers in `/usr/lib/ossl-modules`, no engines. `openssl-3.5` is a compat package on the 3.5 LTS line for code that cannot build or run against 4.x. Its runtime libraries are `/usr/lib/libssl.so.3` and `/usr/lib/libcrypto.so.3`, and everything else (headers, `.so` dev links, pkg-config, CMake files) sits under `/usr/lib/openssl-3.5`, so its paths are disjoint from `openssl`'s and both can be in one closure. Their symbols are versioned (`OPENSSL_4.*` vs `OPENSSL_3.*`), so a process that loads both binds each reference to its own library.
+
+- **Port to 4.x first.** Most breakage is a removed API with a small upstream fix: python carries cpython#149783, socat a Debian ASN1 patch, wget drops `SSLv3_client_method`, and Rust crates move to `openssl-sys` 0.9.117+. Use `openssl-3.5` only when that isn't possible: a sealed or prebuilt binary that NEEDs `libssl.so.3` (the bedrock rustc's cargo, actions-runner's bundled .NET 8), or a codebase that doesn't build on 4.x yet (foundationdb 7.3).
+- **To build against it:** add `openssl-3-5` (`import "../openssl-3.5/build.ncl"`) to `build_deps` and point the build at the prefix: `PKG_CONFIG_PATH=/usr/lib/openssl-3.5/lib/pkgconfig`, `OPENSSL_ROOT_DIR=/usr/lib/openssl-3.5` (CMake) or `OPENSSL_DIR=/usr/lib/openssl-3.5` (openssl-sys).
+- **At runtime, depend on the libraries only:** `subsetOf openssl-3-5 ["libssl", "libcrypto"]`.
+- **Check the result in build.sh**, fail-closed: `readelf -d` should show the binary NEEDs `libssl.so.3` and never `lib(ssl|crypto).so.4` (see `packages/foundationdb/build.sh`).
+- **4.1 drops the CN fallback.** Hostname verification no longer falls back to the subject CN when a certificate has no SAN of the checked type (openssl/openssl#31982). A test certificate needs a `subjectAltName` (`-addext subjectAltName=DNS:localhost,IP:127.0.0.1`).
 
 ### Reproducibility (required)
 
@@ -698,8 +801,11 @@ are documented once, publicly, at:
 **<https://minimal.dev/docs/reference/reproducibility>**
 
 Read that page rather than a copy of it here. It also covers what the build sandbox already
-sets for you (`SOURCE_DATE_EPOCH=0`, `PYTHONHASHSEED=0`, both of which the checker **rejects**
-if you set them again), and how to verify: build twice, diff the two `$OUTPUT_DIR` trees.
+sets for you (`SOURCE_DATE_EPOCH=0`, `PYTHONHASHSEED=0`; the checker **rejects** setting either
+to `0` again), and how to verify: build twice, diff the two `$OUTPUT_DIR` trees. A tool that
+cannot use epoch 0 (e.g. jmod rejects pre-1980 dates) should get its date through its own
+option, not by re-exporting `SOURCE_DATE_EPOCH`: the checker does not catch a non-zero
+override, but it changes the date for every tool in the build.
 
 Two things specific to this repo, which the public page does not carry:
 
@@ -711,6 +817,20 @@ Two things specific to this repo, which the public page does not carry:
   make variables its version header is generated from (`SH_DATE` from `$SOURCE_DATE_EPOCH`,
   `SH_NOW=` to omit the build time) rather than re-exporting `SOURCE_DATE_EPOCH`.
 
+
+#### Preloading detbuild
+
+`packages/detbuild` ships `libdetbuild.so`, an `LD_PRELOAD` shim for builds that leak process entropy or the host kernel version into what they ship (rustc and proc-macro `HashMap` order, LuaJIT's string hash, perl's `Config`). It replaces getrandom, getentropy, the raw getrandom syscall, arc4random and reads of `/dev/urandom` and `/dev/random` with a fixed-seed stream, and pins `uname`'s release to `6.1.0-minimal`. `packages/detbuild/detbuild.c` lists what it does not cover (AT_RANDOM, static and Go binaries, glibc-internal entropy).
+
+Every byte it hands out is predictable, including the keys behind a TLS handshake made under it. So:
+
+- **Add `detbuild` to `build_deps`.** A build sandbox mounts only the dependency closure. Without the dependency, `ld.so` reports that the object cannot be preloaded and ignores it, so the command runs unpinned and the build still succeeds.
+- **Preload one command:** `LD_PRELOAD=/usr/lib/minimal/libdetbuild.so cargo build --frozen --release`. Never `export LD_PRELOAD`, and never set it through a `.ncl` `env` or `vars`.
+- **Never on a command that uses the network.** A build has the network when the package declares `needs.internet` or when any package in its build closure does (its `build_deps` and `runtime_deps`, and their runtime closures). Every package that build-depends on `rust` has the network this way, with no `needs` of its own. In such a build, fetch first without the preload (`cargo fetch --locked`, and any prebuilt download such as rusty_v8), then preload only the offline step (`cargo build --frozen`). A preloaded `cargo` always takes `--frozen` or `--offline`.
+- **Never a sandbox default** (gominimal/minimal#2227 proposed one).
+- **The kernel version is fake.** It is deliberately lower than any build host, so a version-keyed feature check can only turn a feature off. A build that needs a newer kernel feature should probe for the feature, not the version.
+
+`.github/scripts/detbuild_preload_guard.py` enforces the first three rules on sources, and reads each build's closure from the evaluator's catalog dump. gominimal/minimal#2489 tracks rejecting `libdetbuild` strings captured into built outputs (libtool wrappers, configure caches).
 
 ### Step 4: Validate
 

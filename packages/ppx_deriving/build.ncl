@@ -10,14 +10,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let ocamlfind = import "../ocamlfind/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let version = "6.1.3" in
+let version = "6.2.0" in
 {
   name = "ppx_deriving",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/ocaml-ppx/ppx_deriving/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "38098855208f8fead642ccfed4903206f5ff5103568ce1f7ba03ced3223ab25b",
+      sha256 = "ae29e66e40056e2cbac577a7aa6dce17f0263032e7b33b6526f7a1897efcf9ab",
       extract = true,
       strip_prefix = "ppx_deriving-%{version}",
     } | Source,

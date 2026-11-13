@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
@@ -12,16 +12,16 @@ let zlib = import "../zlib/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 
-let version = "3.8.9" in
+let version = "3.8.11" in
 {
   name = "libarchive",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # Upstream: https://github.com/libarchive/libarchive/releases/download/v3.8.9/libarchive-3.8.9.tar.gz
-      # STAGING: gcloud storage cp libarchive-3.8.9.tar.gz gs://minimal-staging-archives/
+      # Upstream: https://github.com/libarchive/libarchive/releases/download/v3.8.11/libarchive-3.8.11.tar.gz
+      # STAGING: gcloud storage cp libarchive-3.8.11.tar.gz gs://minimal-staging-archives/
       url = "gs://minimal-staging-archives/libarchive-%{version}.tar.gz",
-      sha256 = "f5a6539059cf5e597dbeda37bfa4874b1e8dea063c8d93bf85a2b44af90a5bd4"
+      sha256 = "900fe9fc7237c2b04f090f3c3648de8fe597525771f5035016537ce2d667d12b"
     } | Source,
     bash-bootstrap,
     make,
@@ -59,4 +59,27 @@ let version = "3.8.9" in
         repo = "libarchive",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t -larchive <<'EOF'
+              #include <archive.h>
+              int main(void) { struct archive *a = archive_write_new(); int ok = a && archive_version_number() > 0;
+                archive_write_free(a); return ok ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

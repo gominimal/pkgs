@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -44,4 +44,8 @@ let version = "2.6.4" in
         repo = "flex",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/flex --version",
+  },
 } | BuildSpec

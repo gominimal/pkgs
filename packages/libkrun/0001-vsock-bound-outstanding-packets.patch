@@ -37,12 +37,19 @@ this, 0 of 5 uploads complete; with it, 6 of 6, a guest kernel instrumented
 on the rejection path logs zero resets, and the transfer still completes in
 ~200 ms (no throughput penalty -- the reader keeps up, so the bound is
 rarely reached).
+
+Rebased onto v1.19.7 (gominimal/pkgs#1018). v1.19.7's update_peer_credit()
+returns early unless the proxy is waiting for credit and has some; the
+drain_forwarded() call goes BEFORE that return, so every credit update
+retires forwarded packets, not only the one that resumes a waiting stream.
+Against v1.19.7 the v1.19.6 hunk applied only with fuzz 2, which can land it
+at a different `peer_fwd_cnt` assignment; build.sh now applies with -F0.
 ---
 diff --git a/src/devices/src/virtio/vsock/tsi_stream.rs b/src/devices/src/virtio/vsock/tsi_stream.rs
-index c819398..b544896 100644
+index 5f18766..2649718 100644
 --- a/src/devices/src/virtio/vsock/tsi_stream.rs
 +++ b/src/devices/src/virtio/vsock/tsi_stream.rs
-@@ -834,6 +834,12 @@ impl Proxy for TsiStreamProxy {
+@@ -901,6 +901,12 @@ impl Proxy for TsiStreamProxy {
                          fwd_cnt: self.tx_cnt.0,
                      };
                      update.push_credit_req = Some(rx);
@@ -56,7 +63,7 @@ index c819398..b544896 100644
  
                  if self.status == ProxyStatus::Closed {
 diff --git a/src/devices/src/virtio/vsock/unix.rs b/src/devices/src/virtio/vsock/unix.rs
-index 2f51c05..37e78b3 100644
+index ce0c078..9882c85 100644
 --- a/src/devices/src/virtio/vsock/unix.rs
 +++ b/src/devices/src/virtio/vsock/unix.rs
 @@ -9,7 +9,7 @@ use nix::sys::socket::{
@@ -68,7 +75,7 @@ index 2f51c05..37e78b3 100644
  use std::num::Wrapping;
  use std::os::fd::{FromRawFd, OwnedFd};
  use std::os::unix::io::{AsRawFd, RawFd};
-@@ -45,6 +45,13 @@ pub struct UnixProxy {
+@@ -46,6 +46,13 @@ pub struct UnixProxy {
      last_tx_cnt_sent: Wrapping<u32>,
      push_cnt: Wrapping<u32>,
      rx_cnt: Wrapping<u32>,
@@ -82,7 +89,7 @@ index 2f51c05..37e78b3 100644
  }
  
  fn proxy_fd_create(id: u64) -> Result<OwnedFd, ProxyError> {
-@@ -119,6 +126,7 @@ impl UnixProxy {
+@@ -121,6 +128,7 @@ impl UnixProxy {
              last_tx_cnt_sent: Wrapping(0),
              push_cnt: Wrapping(0),
              rx_cnt: Wrapping(0),
@@ -90,7 +97,7 @@ index 2f51c05..37e78b3 100644
          })
      }
  
-@@ -152,6 +160,7 @@ impl UnixProxy {
+@@ -155,6 +163,7 @@ impl UnixProxy {
              peer_fwd_cnt: Wrapping(0),
              push_cnt: Wrapping(0),
              path: Default::default(),
@@ -98,7 +105,7 @@ index 2f51c05..37e78b3 100644
          }
      }
  
-@@ -203,6 +212,47 @@ impl UnixProxy {
+@@ -206,6 +215,47 @@ impl UnixProxy {
          (Wrapping(self.peer_buf_alloc) - (self.rx_cnt - self.peer_fwd_cnt)).0 as usize
      }
  
@@ -146,7 +153,7 @@ index 2f51c05..37e78b3 100644
      fn recv_to_pkt(&self, pkt: &mut VsockPacket) -> RecvPkt {
          if let Some(buf) = pkt.buf_mut() {
              let peer_credit = self.peer_avail_credit();
-@@ -219,6 +269,13 @@ impl UnixProxy {
+@@ -222,6 +272,13 @@ impl UnixProxy {
                  return RecvPkt::WaitForCredit;
              }
  
@@ -160,7 +167,7 @@ index 2f51c05..37e78b3 100644
              match recv(
                  self.fd.as_raw_fd(),
                  &mut buf[..max_len],
-@@ -258,6 +315,10 @@ impl UnixProxy {
+@@ -264,6 +321,10 @@ impl UnixProxy {
                      }
                      RecvPkt::Read(cnt) => {
                          self.rx_cnt += Wrapping(cnt as u32);
@@ -171,7 +178,7 @@ index 2f51c05..37e78b3 100644
                          self.init_data_pkt(&mut pkt);
                          pkt.set_len(cnt as u32);
                          pkt.hdr().len() + cnt
-@@ -369,6 +430,7 @@ impl Proxy for UnixProxy {
+@@ -392,6 +453,7 @@ impl Proxy for UnixProxy {
  
          self.peer_buf_alloc = pkt.buf_alloc();
          self.peer_fwd_cnt = Wrapping(pkt.fwd_cnt());
@@ -179,15 +186,15 @@ index 2f51c05..37e78b3 100644
  
          self.local_port = pkt.dst_port();
          self.peer_port = pkt.src_port();
-@@ -466,6 +528,7 @@ impl Proxy for UnixProxy {
+@@ -489,6 +551,7 @@ impl Proxy for UnixProxy {
          );
          self.peer_buf_alloc = pkt.buf_alloc();
          self.peer_fwd_cnt = Wrapping(pkt.fwd_cnt());
 +        self.drain_forwarded();
  
-         self.status = ProxyStatus::Connected;
- 
-@@ -499,6 +562,7 @@ impl Proxy for UnixProxy {
+         if self.status != ProxyStatus::WaitingCreditUpdate || self.peer_avail_credit() == 0 {
+             return ProxyUpdate::default();
+@@ -526,6 +589,7 @@ impl Proxy for UnixProxy {
  
          self.peer_buf_alloc = pkt.buf_alloc();
          self.peer_fwd_cnt = Wrapping(pkt.fwd_cnt());
@@ -195,7 +202,7 @@ index 2f51c05..37e78b3 100644
  
          self.switch_to_connected();
  
-@@ -576,6 +640,16 @@ impl Proxy for UnixProxy {
+@@ -623,6 +687,16 @@ impl Proxy for UnixProxy {
                          fwd_cnt: self.tx_cnt.0,
                      };
                      update.push_credit_req = Some(rx);

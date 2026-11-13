@@ -131,10 +131,33 @@ let amd64_spec =
       } | Attrs,
   } | BuildSpec
 in
-# This package exists on amd64 only (the amd64 bootstrap chain). On arm64 the spec is an empty
-# collection: no build runs and nothing on the arm graph depends on it.
+# This package builds on amd64 only, and only while hex0/amd64-ladder.ncl is enabled (the amd64
+# bootstrap chain). While the switch is off, amd64 takes the sealed artifact below instead (no
+# build); on arm64 the spec is an empty collection.
 match {
-  { arch = 'Amd64, .. } => amd64_spec,
+  { arch = 'Amd64, .. } =>
+    if (import "../hex0/amd64-ladder.ncl").enabled then
+      amd64_spec
+    else
+      # SEALED (switch off): the same sha-pinned artifact the production toolchain
+      # package already anchors on (see packages/glibc/build.ncl), with this
+      # package's own outputs, so anything that imports it (the jvm ladder roots) gets a
+      # real tree rather than an empty stub. Provenance: gominimal/minimermetic#16.
+      (
+        {
+          name = "glibc-bedrock-2.42",
+          prebuilt = true,
+          build_deps = [
+            {
+              # gominimal/bootstrap gen-13 object (generations/gen-13/manifest.json)
+              url = "gs://minimal-bootstrap/gen-13/sha256/231f7f3752eb1ecdf413aae53c1b6102f04e7cbf6e553e9e350cb99e0db61d9f/glibc-bedrock-2.42-2.42-x86_64.tar.zst",
+              sha256 = "231f7f3752eb1ecdf413aae53c1b6102f04e7cbf6e553e9e350cb99e0db61d9f",
+              extract = true,
+            } | Source,
+          ],
+          outputs = all_outputs,
+        } | BuildSpec
+      ),
   { arch = 'Arm64, .. } =>
     {
       name = "glibc-bedrock-2.42",
