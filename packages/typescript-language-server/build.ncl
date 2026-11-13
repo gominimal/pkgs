@@ -3,7 +3,7 @@ let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 
-let version = "6.0.3" in
+let version = "6.1.0" in
 {
   name = "typescript-language-server",
   build_deps = [
