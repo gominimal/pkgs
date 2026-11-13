@@ -9,6 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let nss = import "../nss/build.ncl" in
 let nspr = import "../nspr/build.ncl" in
+let dbus = import "../dbus/build.ncl" in
 let glib = import "../glib/build.ncl" in
 let libxcb = import "../libxcb/build.ncl" in
 let chromium-headless-shell-bin = import "../chromium-headless-shell-bin/build.ncl" in
@@ -46,28 +47,35 @@ let browser_version = chromium-headless-shell-bin.attrs.upstream_version in
       { arch = 'Amd64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chromedriver-linux64.zip",
-          sha256 = "59185c80d24d93dbd3d3fcf4f91038f9f7c434db31a03afa747e032252889aed",
+          sha256 = "0c27ff9aac902d3f7d2d01dde2235c1ff9c320bb8914b3624f4c79d52abacaea",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux-arm64/chromedriver-linux-arm64.zip",
-          sha256 = "77fb13482d885fef0b234ef219a317e966334f4753c436bdc83699d6dfe43dcc",
+          sha256 = "54b2a50b393dd44463242eca9ee2d35a63baa7baf2fd5882daada15fd1f5a5be",
         } | Source,
     } target,
     base,
     unzip,
   ],
-  # DT_NEEDED of the 157.0.8103.38 binaries (re-read from both zips): libc/libdl/libpthread/libm,
-  # libgcc_s, glib, nspr, nss and libxcb, the same on both arches. Through 156 the amd64
-  # binary also needed libdbus-1; 157 dropped it, so dbus is no longer a runtime dep.
-  runtime_deps = [
-    glibc,
-    subsetOf gcc ["libgcc"],
-    nss,
-    nspr,
-    glib,
-    libxcb,
-  ],
+  # DT_NEEDED of the 157.0.8103.78 binaries (re-read from both zips): libc/libdl/libpthread/libm,
+  # libgcc_s, glib, nspr, nss and libxcb on both arches, plus libdbus-1 on amd64 only.
+  # The amd64 binary needed libdbus-1 through 156, dropped it in 157.0.8103.38 and needs
+  # it again in .78 (smoketest: "libdbus-1.so.3: cannot open shared object file"), so
+  # re-read DT_NEEDED on every bump.
+  runtime_deps =
+    [
+      glibc,
+      subsetOf gcc ["libgcc"],
+      nss,
+      nspr,
+      glib,
+      libxcb,
+    ]
+    @ match {
+      { arch = 'Amd64, .. } => [dbus],
+      { arch = 'Arm64, .. } => [],
+    } target,
   cmd = "./build.sh",
   outputs = {
     chromedriver = { glob = "usr/bin/chromedriver" } | OutputBin,
