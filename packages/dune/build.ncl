@@ -7,15 +7,15 @@ let make = import "../make/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
 
-let version = "3.24.2" in
+let version = "3.25.0" in
 {
   name = "dune",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://github.com/ocaml/dune/releases/download/3.24.2/dune-3.24.2.tbz
+      # https://github.com/ocaml/dune/releases/download/3.25.0/dune-3.25.0.tbz
       url = "gs://minimal-staging-archives/dune-%{version}.tbz",
-      sha256 = "472798691b0216daf538709f0f4703b3617ef24ad0866c9096068baaba4d762a",
+      sha256 = "1d706779fa8405769a1ae667e4baaf4220ed87ec9d8be9d4fea0cf75bd79013b",
       # minimal's extractor doesn't know `.tbz`; unpack it in build.sh (tar -xf
       # autodetects bzip2), mirroring how ghc handles its source archive.
       extract = false,
