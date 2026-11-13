@@ -5,7 +5,6 @@ let coreutils = import "../coreutils/build.ncl" in
 let diffutils = import "../diffutils/build.ncl" in
 let findutils = import "../findutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
-let cmake = import "../cmake/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let libglvnd = import "../libglvnd/build.ncl" in
 let libx11 = import "../libx11/build.ncl" in
@@ -14,6 +13,7 @@ let lua51 = import "../lua51/build.ncl" in
 let lua52 = import "../lua52/build.ncl" in
 let lua53 = import "../lua53/build.ncl" in
 let lua54 = import "../lua54/build.ncl" in
+let lua55 = import "../lua55/build.ncl" in
 let make = import "../make/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let raygui = import "../raygui/build.ncl" in
@@ -21,12 +21,12 @@ let raylib = import "../raylib/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let util-linux = import "../util-linux/build.ncl" in
 
-let version = "dev-2026-07a" in
+let version = "dev-2026-11a" in
 # Odin stamps its own `ODIN_VERSION` from the month of the release commit.
 # Pinned here so the build does not read the wall clock (see build.sh).
-let version_date = "2026-07" in
+let version_date = "2026-11" in
 # Matches the version upstream's vendor/box2d/build_box2d.sh pins.
-let box2d_version = "3.1.1" in
+let box2d_version = "3.2.0" in
 {
   name = "odin",
 
@@ -35,7 +35,7 @@ let box2d_version = "3.1.1" in
     { file = "odin-deterministic-serial-thread-pool.patch" } | Local,
     {
       url = "https://github.com/odin-lang/Odin/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "8f4f02fd9a3426b441cd0dfbe0aca1b95fd93c95d86940fcb4417ef6044c83cd",
+      sha256 = "f8ab36b8d6045d7ae953b60e30edea80d2e616da44b0712d73dd0688d684f278",
       extract = true,
       strip_prefix = "Odin-%{version}",
     } | Source,
@@ -43,11 +43,10 @@ let box2d_version = "3.1.1" in
     # build one from -- upstream's build_box2d.sh downloads this same tarball.
     {
       url = "https://github.com/erincatto/box2d/archive/refs/tags/v%{box2d_version}.tar.gz",
-      sha256 = "fb6ef914b50f4312d7d921a600eabc12318bb3c55a0b8c0b90608fa4488ef2e4",
+      sha256 = "ffec747b27a2267016f8d0240d658c82d187fb2271fa0f69fcbe53fbc067180d",
       extract = true,
     } | Source,
     base,
-    cmake, # box2d
     # odin supports LLVM 17-22 (build_odin.sh SUPPORTED_LLVM_VERSIONS, unchanged through
     # dev-2026-11a and master; LLVM 23 support is odin-lang/Odin#7491, open). The default
     # llvm is 23, so odin builds on the prefixed llvm-22 and build.sh points every LLVM
@@ -57,7 +56,9 @@ let box2d_version = "3.1.1" in
     patch,
     # vendor/raylib carries bindings and checked-in binaries but no C source at
     # all, so unlike the other vendor libraries there is nothing to compile in
-    # place -- the libraries come from these packages instead.
+    # place -- the libraries come from these packages instead. raygui's wasm
+    # archive is copied into the tree; on Linux the bindings link it as
+    # `system:raygui`, hence its `libs` in runtime_deps too.
     raygui,
     raylib,
     toolchain,
@@ -84,6 +85,12 @@ let box2d_version = "3.1.1" in
     lua52,
     lua53,
     lua54,
+    lua55,
+    # vendor:raylib's raygui bindings link `system:raygui` on Linux (after
+    # dev-2026-07a; that release used a copy in the vendor tree), so
+    # libraygui.so has to be on the library path wherever `odin build` links
+    # them. Its own runtime_deps bring raylib along.
+    subsetOf raygui ["libs"],
     # vendor:raylib's bindings declare `system:X11`, and the static libraylib.a
     # we ship pulls in libGL, so `odin build` on anything importing it needs
     # both present -- the same reasoning as the lua fallback above. Only the
@@ -194,14 +201,15 @@ let box2d_version = "3.1.1" in
     # the vendor tree (system:X11 plus libGL, via the static archive), so it is
     # the only one that can regress on runtime_deps alone. vendor_link covers
     # stb/cgltf/box2d/box3d, which link nothing external; without this, dropping
-    # the X11/GL entries above would break every raylib user silently. Links but
-    # does not run -- there is no display in the sandbox.
+    # the X11/GL entries above would break every raylib user silently. The raygui
+    # call links `system:raygui`, which only the raygui runtime dep satisfies.
+    # Links but does not run -- there is no display in the sandbox.
     vendor_link_raylib =
       {
         class = 'Standalone,
         test_deps = [bash-bootstrap, glibc],
         cmds = [
-          ["/bin/bash", "-c", "printf 'package main\\nimport rl \"vendor:raylib\"\\nmain :: proc() { _ = rl.GetRandomValue(1, 1) }\\n' > rl.odin"],
+          ["/bin/bash", "-c", "printf 'package main\\nimport rl \"vendor:raylib\"\\nmain :: proc() { _ = rl.GetRandomValue(1, 1); _ = rl.GuiIsLocked() }\\n' > rl.odin"],
           ["/bin/odin", "build", "rl.odin", "-file"],
         ],
       } | Test,
@@ -213,12 +221,12 @@ let box2d_version = "3.1.1" in
     vendor_provenance =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, lua51, lua52, lua53, lua54, raygui, raylib, coreutils, diffutils],
+        test_deps = [bash-bootstrap, lua51, lua52, lua53, lua54, lua55, raygui, raylib, coreutils, diffutils],
         cmds = [
-          ["/bin/bash", "-c", "set -eu; V=$(/bin/odin root)/vendor; case $(uname -m) in x86_64) RL=linux;; *) RL=linux-arm64;; esac; cmp $V/raylib/$RL/libraylib.a /usr/lib/libraylib.a; cmp $V/raylib/$RL/libraylib.so.600 /usr/lib/libraylib.so.6.0.0; cmp $V/raylib/linux/libraygui.a /usr/lib/libraygui.a; cmp $V/raylib/linux/libraygui.so /usr/lib/libraygui.so"],
+          ["/bin/bash", "-c", "set -eu; V=$(/bin/odin root)/vendor; case $(uname -m) in x86_64) RL=linux;; *) RL=linux-arm64;; esac; cmp $V/raylib/$RL/libraylib.a /usr/lib/libraylib.a; cmp $V/raylib/$RL/libraylib.so.620 /usr/lib/libraylib.so.6.2.0"],
           ["/bin/bash", "-c", "set -eu; V=$(/bin/odin root)/vendor; cmp $V/raylib/wasm/libraylib.web.a /usr/lib/emscripten/libraylib.web.a; cmp $V/raylib/wasm/libraygui.a /usr/lib/emscripten/libraygui.a"],
           # lua is bundled on amd64 only; elsewhere the bindings use system:lua.
-          ["/bin/bash", "-c", "set -eu; [ $(uname -m) = x86_64 ] || exit 0; V=$(/bin/odin root)/vendor; for s in 5.1:5.1 5.2:52 5.3:53 5.4:54; do a=${s%:*}; b=${s#*:}; cmp $V/lua/$a/linux/liblua$b.a /usr/lib/liblua$a.a; cmp $V/lua/$a/linux/liblua$b.so /usr/lib/liblua$a.so; done"],
+          ["/bin/bash", "-c", "set -eu; [ $(uname -m) = x86_64 ] || exit 0; V=$(/bin/odin root)/vendor; for s in 5.1:5.1 5.2:52 5.3:53 5.4:54 5.5:55; do a=${s%:*}; b=${s#*:}; cmp $V/lua/$a/linux/liblua$b.a /usr/lib/liblua$a.a; cmp $V/lua/$a/linux/liblua$b.so /usr/lib/liblua$a.so; done"],
         ],
       } | Test,
 
@@ -232,22 +240,25 @@ let box2d_version = "3.1.1" in
         class = 'Standalone,
         test_deps = [bash-bootstrap, coreutils, findutils],
         cmds = [
-          # Native libraries built from the vendored C source.
-          ["/bin/bash", "-c", "set -eu; V=$(/bin/odin root)/vendor; case $(uname -m) in x86_64) A=linux-amd64; B2=box2d_other_amd64_avx2.a;; *) A=linux-arm64; B2=box2d_other.a;; esac; test -f $V/box3d/lib/$A/libbox3d.a; test -f $V/stb/lib/stb_image.a; test -f $V/cgltf/lib/cgltf.a; test -f $V/box2d/lib/$B2"],
+          # Native libraries built from the vendored C source. box2d is one
+          # library per arch since 3.2, which picks AVX2 or SSE2 at run time.
+          ["/bin/bash", "-c", "set -eu; V=$(/bin/odin root)/vendor; case $(uname -m) in x86_64) A=linux-amd64; B2=box2d_other_amd64.a;; *) A=linux-arm64; B2=box2d_other.a;; esac; test -f $V/box3d/lib/$A/libbox3d.a; test -f $V/stb/lib/stb_image.a; test -f $V/cgltf/lib/cgltf.a; test -f $V/box2d/lib/$B2"],
 
-          # raylib and raygui, which upstream ships only as binaries.
-          ["/bin/bash", "-c", "set -eu; V=$(/bin/odin root)/vendor; case $(uname -m) in x86_64) RL=linux; test ! -e $V/raylib/linux-arm64;; *) RL=linux-arm64; test ! -e $V/raylib/linux/libraylib.a;; esac; test -f $V/raylib/$RL/libraylib.a; test -f $V/raylib/$RL/libraylib.so.600; test -f $V/raylib/linux/libraygui.a; test -f $V/raylib/linux/libraygui.so"],
+          # raylib, which upstream ships only as binaries. raygui is linked as
+          # `system:raygui` from its own package, so no copy belongs here.
+          ["/bin/bash", "-c", "set -eu; V=$(/bin/odin root)/vendor; case $(uname -m) in x86_64) RL=linux; test ! -e $V/raylib/linux-arm64;; *) RL=linux-arm64; test ! -e $V/raylib/linux/libraylib.a;; esac; test -f $V/raylib/$RL/libraylib.a; test -f $V/raylib/$RL/libraylib.so.620; test ! -e $V/raylib/linux/libraygui.a; test ! -e $V/raylib/linux/libraygui.so"],
 
           # Every wasm artifact is rebuilt from source as well -- the objects
           # from plain clang, the two raylib archives through emscripten.
-          ["/bin/bash", "-c", "set -eu; V=$(/bin/odin root)/vendor; test -f $V/box2d/lib/box2d_wasm.o; test -f $V/box2d/lib/box2d_wasm_simd.o; test -f $V/cgltf/lib/cgltf_wasm.o; for o in image image_resize image_write rect_pack sprintf truetype vorbis; do test -f $V/stb/lib/stb_${o}_wasm.o; done; test -f $V/raylib/wasm/libraylib.web.a; test -f $V/raylib/wasm/libraygui.a"],
+          # stb_image_resize became stb_image_resize2 after dev-2026-07a.
+          ["/bin/bash", "-c", "set -eu; V=$(/bin/odin root)/vendor; test -f $V/box2d/lib/box2d_wasm.o; test -f $V/box2d/lib/box2d_wasm_simd.o; test -f $V/box3d/lib/box3d_wasm.o; test -f $V/cgltf/lib/cgltf_wasm.o; for o in image image_resize2 image_write rect_pack sprintf truetype vorbis; do test -f $V/stb/lib/stb_${o}_wasm.o; done; test -f $V/raylib/wasm/libraylib.web.a; test -f $V/raylib/wasm/libraygui.a"],
 
           # lua only has a bundled library to build on amd64; elsewhere the
           # bindings fall back to system:lua<ver>.
-          ["/bin/bash", "-c", "set -eu; V=$(/bin/odin root)/vendor; if [ $(uname -m) = x86_64 ]; then test -f $V/lua/5.4/linux/liblua54.a; else test ! -e $V/lua/5.4/linux; fi"],
+          ["/bin/bash", "-c", "set -eu; V=$(/bin/odin root)/vendor; if [ $(uname -m) = x86_64 ]; then test -f $V/lua/5.4/linux/liblua54.a; test -f $V/lua/5.5/linux/liblua55.a; else test ! -e $V/lua/5.4/linux; test ! -e $V/lua/5.5/linux; fi"],
 
           # Everything we deliberately drop.
-          ["/bin/bash", "-c", "set -eu; V=$(/bin/odin root)/vendor; case $(uname -m) in x86_64) OTHER=linux-arm64;; *) OTHER=linux-amd64;; esac; test ! -e $V/box3d/lib/$OTHER; test ! -e $V/raylib/macos; test -z \"$(find $V -type d -name darwin)\"; test -z \"$(find $V -type f \\( -name '*.dll' -o -name '*.lib' -o -name '*.exe' -o -name '*.pdb' \\))\""],
+          ["/bin/bash", "-c", "set -eu; V=$(/bin/odin root)/vendor; case $(uname -m) in x86_64) OTHER=linux-arm64;; *) OTHER=linux-amd64;; esac; test ! -e $V/box3d/lib/$OTHER; test ! -e $V/raylib/macos; test ! -e $V/android/java/classes.dex; test -z \"$(find $V -type d -name darwin)\"; test -z \"$(find $V -type f \\( -name '*.dll' -o -name '*.lib' -o -name '*.exe' -o -name '*.pdb' \\))\""],
         ],
       } | Test,
   },
