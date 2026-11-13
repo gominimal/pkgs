@@ -1,12 +1,11 @@
-let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
-let llvm = import "../llvm/build.ncl" in
 let libcap = import "../libcap/build.ncl" in
-let patch = import "../patch/build.ncl" in
+let detbuild = import "../detbuild/build.ncl" in
 
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -28,10 +27,11 @@ let version = "0.169.0" in
     rust,
     toolchain,
     pkgconf,
+    # aws-lc-sys (rustls -> tokio-tungstenite) builds aws-lc with cmake.
     cmake,
-    llvm,
     openssl,
-    patch,
+    # Deterministic getrandom/getentropy for the offline build (see build.sh).
+    detbuild,
   ],
 
   runtime_deps = [
@@ -55,6 +55,9 @@ let version = "0.169.0" in
 
   outputs = {
     codex = { glob = "usr/bin/codex" } | OutputBin,
+    bash_completion = { glob = "usr/share/bash-completion/completions/codex" } | OutputData,
+    zsh_completion = { glob = "usr/share/zsh/site-functions/_codex" } | OutputData,
+    fish_completion = { glob = "usr/share/fish/vendor_completions.d/codex.fish" } | OutputData,
   },
 
   attrs =

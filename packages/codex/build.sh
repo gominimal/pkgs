@@ -13,28 +13,6 @@ export LD=gcc
 # remapped, as nushell and zola do.
 export RUSTFLAGS="-C linker=gcc -C codegen-units=1 -C symbol-mangling-version=v0 --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 
-# Needed for crates that use bindgen / libclang (clang-sys searches ONLY this directory
-# when it is set). Pinned to the default `llvm` build dep's /usr/lib rather than a
-# `find /usr/lib -name 'libclang*.so' | head -1` pick: once a prefixed line such as
-# llvm-21 (/usr/lib/llvm-21/lib/libclang.so) shares the closure, that pick depends on
-# directory order. Fail closed unless every libclang in it is the default llvm's major.
-export LIBCLANG_PATH=/usr/lib
-llvm_major=$(/usr/bin/llvm-config --version | cut -d. -f1)
-libclangs=$(find "$LIBCLANG_PATH" -maxdepth 1 -name 'libclang.so*' -exec readlink -f {} + | sort -u)
-if [ -z "$llvm_major" ] || [ -z "$libclangs" ]; then
-  echo "ERROR: no default llvm (/usr/bin/llvm-config) or no libclang.so in $LIBCLANG_PATH" >&2
-  exit 1
-fi
-for lib in $libclangs; do
-  case "${lib##*/}" in
-    "libclang.so.$llvm_major" | "libclang.so.$llvm_major".*) ;;
-    *)
-      echo "ERROR: $lib is not the default llvm's libclang (LLVM $llvm_major)" >&2
-      exit 1
-      ;;
-  esac
-done
-
 # OpenSSL 4: openssl-sys before 0.9.114 panics in its build script on OpenSSL 4.x.
 # Upstream's lock carries a new enough one since 0.169.0 (0.9.118), so the lock patch
 # that moved it to 0.9.117 is gone; fail closed if a release ever ships an older one.
@@ -80,29 +58,41 @@ fi
 cargo fetch --locked
 
 # The workspace locks `v8` (rusty_v8), whose build script downloads a prebuilt
-# librusty_v8.a with no checksum. codex-cli doesn't depend on it at this version
-# (only codex-code-mode-runtime and codex-v8-poc do). If that changes, this
-# nonexistent archive path makes v8's build script panic instead of downloading;
-# the fix then is a pinned `Source` for the archive, passed via RUSTY_V8_ARCHIVE.
+# librusty_v8.a with no checksum. codex-cli doesn't reach it (only
+# codex-code-mode-runtime and codex-v8-poc do; checked against rust-v0.169.0's
+# Cargo.lock), and v8 is also the only path to bindgen/libclang, which is why there
+# is no llvm build dep. If codex-cli ever reaches v8, this nonexistent archive path
+# makes v8's build script panic instead of downloading; the fix then is a pinned
+# `Source` for the archive (RUSTY_V8_ARCHIVE) plus llvm for its bindgen.
 export RUSTY_V8_ARCHIVE=/nonexistent/librusty_v8-not-pinned.a
 
-# Deterministic build-time entropy, the shim zola and nushell already use: interposes
-# getrandom/getentropy so build.rs / proc-macro / rustc-internal HashMaps iterate in the
-# same order every build. It wraps only the offline BUILD (`--frozen` refuses any
-# network access); the produced binaries are unaffected.
-shim_dir=$(mktemp -d)
-cat > "$shim_dir/detrand.c" <<'SHIM'
-#include <stddef.h>
-#include <sys/types.h>
-ssize_t getrandom(void *buf, size_t n, unsigned int flags) {
-    unsigned char *p = buf; size_t i;
-    for (i = 0; i < n; i++) p[i] = (unsigned char)(0xA5 ^ (i * 157));
-    return (ssize_t)n;
-}
-int getentropy(void *buf, size_t n) { getrandom(buf, n, 0); return 0; }
-SHIM
-gcc -shared -fPIC -O2 -o "$shim_dir/detrand.so" "$shim_dir/detrand.c"
-LD_PRELOAD="$shim_dir/detrand.so" cargo build --frozen --release -p codex-cli
+# Deterministic build-time entropy (packages/detbuild, replacing the copy of the shim
+# this script used to compile): interposes getrandom/getentropy so build.rs /
+# proc-macro / rustc-internal HashMaps iterate in the same order every build. It wraps
+# only the offline BUILD (`--frozen` refuses any network access); the produced binary
+# is unaffected.
+DETBUILD=/usr/lib/minimal/libdetbuild.so
+[ -f "$DETBUILD" ] || { echo "ERROR: $DETBUILD missing (detbuild build dep)" >&2; exit 1; }
+LD_PRELOAD="$DETBUILD" cargo build --frozen --release -p codex-cli
 
 mkdir -p $OUTPUT_DIR/usr/bin
 install -m 755 target/release/codex $OUTPUT_DIR/usr/bin/codex
+
+# Shell completions from the built binary (clap_complete via `codex completion <shell>`).
+# HOME and CODEX_HOME point at a scratch dir so nothing reads or writes a real ~/.codex.
+comp_home=$(mktemp -d)
+gen_completion() {
+  HOME="$comp_home" CODEX_HOME="$comp_home/.codex" ./target/release/codex completion "$1" > "$2"
+  [ -s "$2" ] || { echo "ERROR: empty $1 completion" >&2; exit 1; }
+}
+mkdir -p "$OUTPUT_DIR/usr/share/bash-completion/completions" \
+  "$OUTPUT_DIR/usr/share/zsh/site-functions" "$OUTPUT_DIR/usr/share/fish/vendor_completions.d"
+gen_completion bash "$OUTPUT_DIR/usr/share/bash-completion/completions/codex"
+gen_completion zsh "$OUTPUT_DIR/usr/share/zsh/site-functions/_codex"
+gen_completion fish "$OUTPUT_DIR/usr/share/fish/vendor_completions.d/codex.fish"
+grep -q 'complete -F _codex' "$OUTPUT_DIR/usr/share/bash-completion/completions/codex" ||
+  { echo "ERROR: bash completion lacks clap's registration" >&2; exit 1; }
+grep -q '^#compdef codex' "$OUTPUT_DIR/usr/share/zsh/site-functions/_codex" ||
+  { echo "ERROR: zsh completion lacks #compdef codex" >&2; exit 1; }
+grep -q 'complete -c codex' "$OUTPUT_DIR/usr/share/fish/vendor_completions.d/codex.fish" ||
+  { echo "ERROR: fish completion lacks complete -c codex" >&2; exit 1; }
