@@ -9,6 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let nss = import "../nss/build.ncl" in
 let nspr = import "../nspr/build.ncl" in
+let dbus = import "../dbus/build.ncl" in
 let glib = import "../glib/build.ncl" in
 let libxcb = import "../libxcb/build.ncl" in
 let chromium-headless-shell-bin = import "../chromium-headless-shell-bin/build.ncl" in
@@ -57,17 +58,24 @@ let browser_version = chromium-headless-shell-bin.attrs.upstream_version in
     base,
     unzip,
   ],
-  # DT_NEEDED of the 157.0.8103.38 binaries (re-read from both zips): libc/libdl/libpthread/libm,
-  # libgcc_s, glib, nspr, nss and libxcb, the same on both arches. Through 156 the amd64
-  # binary also needed libdbus-1; 157 dropped it, so dbus is no longer a runtime dep.
-  runtime_deps = [
-    glibc,
-    subsetOf gcc ["libgcc"],
-    nss,
-    nspr,
-    glib,
-    libxcb,
-  ],
+  # DT_NEEDED of the 157.0.8103.78 binaries (re-read from both zips): libc/libdl/libpthread/libm,
+  # libgcc_s, glib, nspr, nss and libxcb on both arches, plus libdbus-1 on amd64 only.
+  # The amd64 binary needed libdbus-1 through 156, dropped it in 157.0.8103.38 and needs
+  # it again in .78 (smoketest: "libdbus-1.so.3: cannot open shared object file"), so
+  # re-read DT_NEEDED on every bump.
+  runtime_deps =
+    [
+      glibc,
+      subsetOf gcc ["libgcc"],
+      nss,
+      nspr,
+      glib,
+      libxcb,
+    ]
+    @ match {
+      { arch = 'Amd64, .. } => [dbus],
+      { arch = 'Arm64, .. } => [],
+    } target,
   cmd = "./build.sh",
   outputs = {
     chromedriver = { glob = "usr/bin/chromedriver" } | OutputBin,
