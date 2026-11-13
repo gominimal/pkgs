@@ -9,6 +9,7 @@ let glibc = import "../glibc/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
+let sqlite = import "../sqlite/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let version = "0.45.1" in
@@ -51,6 +52,11 @@ let version = "0.45.1" in
     # ASN1_INTEGER and fails on 4.x (see build.sh).
     pkgconf,
     curl,
+    # CVE-2026-119375 (RUSTSEC-2026-0459): link this system SQLite (3.54.1, fixed
+    # in 3.54.0) instead of the copy rusqlite's `bundled` feature compiles in.
+    # libsqlite3-sys 0.27.0 bundles a pre-3.54.0 SQLite, and only its bundled
+    # build is affected. See build.sh.
+    sqlite,
   ],
 
   runtime_deps = [
@@ -58,6 +64,7 @@ let version = "0.45.1" in
     gcc,
     openssl,
     subsetOf curl ["libs"],
+    subsetOf sqlite ["libs"],
     # The system libcurl verifies TLS against /etc/ssl/certs (AGENTS.md trust
     # store rule): bring the store in so HTTPS works in an isolated loadout.
     ca-certificates,
