@@ -14,6 +14,7 @@ let version = "78.3" in
     # Builds ICU's data generators from its BUILD.bazel files without Bazel.
     { file = "minibazel.py" } | Local,
     # The tag, not the release tarballs: the data as text and the generators' sources, no prebuilt data.
+    # Mirror of https://github.com/unicode-org/icu/archive/refs/tags/release-78.3.tar.gz (byte-identical).
     {
       url = "gs://minimal-staging-archives/icu-release-%{version}.tar.gz",
       sha256 = "f06bcab72736ee9d55689033b8198a178562354128cf38edb2afc2e67e3fd931",
