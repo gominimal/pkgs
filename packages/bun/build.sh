@@ -175,6 +175,14 @@ grep -q 'BunCAStore::Bundled as u8' src/runtime/cli/Arguments.rs && { echo "ERRO
 grep -q '^  if (minimal_bundled) {$' packages/bun-usockets/src/crypto/root_certs.cpp || { echo "ERROR: bun CA store default patch did not apply to root_certs.cpp" >&2; exit 1; }
 [ "$(grep -c 'Bun__Node__CAStore' packages/bun-usockets/src/crypto/root_certs.cpp)" -ge 5 ] || { echo "ERROR: root_certs.cpp does not read Bun__Node__CAStore after the patch" >&2; exit 1; }
 
+# clang 23 (llvm-23, above) rejects bun-v1.4.2's memmem alias to
+# highway_memmem with -Werror,-Wattribute-alias (different prototypes).
+# Backport of upstream 38afee6 (bun-v1.4.4): define memmem and forward. Drop
+# with 1.4.4+. The greps fail the build if the alias is still there.
+patch -Np1 -i memmem-definition-not-alias.patch
+grep -q 'return bun::highway_memmem(static_cast<const uint8_t\*>(haystack)' src/jsc/bindings/highway_strings.cpp || { echo "ERROR: memmem definition patch did not apply to highway_strings.cpp" >&2; exit 1; }
+grep -q 'alias("highway_memmem")' src/jsc/bindings/highway_strings.cpp && { echo "ERROR: highway_strings.cpp still aliases memmem to highway_memmem" >&2; exit 1; }
+
 # The system-CA behaviour (system store replaces the compiled-in roots; the
 # opt-outs restore them) is NOT checked here: it needs ca-certificates and the
 # openssl CLI, which are not build deps. The grep guards above prove the patch

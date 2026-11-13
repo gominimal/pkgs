@@ -41,6 +41,9 @@ in
     # Trust the system CA store instead of the compiled-in roots by default
     # (gominimal/pkgmgr-rs#1026). See the patch header and build.sh.
     { file = "system-ca-store-default.patch" } | Local,
+    # clang 23 rejects 1.4.2's memmem alias (-Wattribute-alias); upstream
+    # 38afee6 (1.4.4) backport. See the patch header and build.sh.
+    { file = "memmem-definition-not-alias.patch" } | Local,
     {
       url = "https://github.com/oven-sh/bun/archive/refs/tags/bun-v%{version}.tar.gz",
       sha256 = "e14670b117d69012d828514d657f0a3133d1c25d13d69461184d05b6a8e9a876",

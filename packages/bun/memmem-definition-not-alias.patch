@@ -1,0 +1,38 @@
+Backport of oven-sh/bun 38afee6 (in bun-v1.4.4), the highway_strings.cpp hunk
+only: define memmem on Linux instead of aliasing it to highway_memmem.
+
+glibc's memmem takes const void* (and is throw() in C++); highway_memmem takes
+const uint8_t*. clang 23's -Wattribute-alias rejects an alias between the two,
+and bun builds its own sources with -Werror, so bun-v1.4.2 fails on llvm 23:
+
+  highway_strings.cpp:2628:20: error: alias and aliasee have different types
+  [-Werror,-Wattribute-alias]
+
+Same symbol, visibility and weak linkage as before; the body just forwards.
+Drop this patch when bun moves to 1.4.4 or later.
+
+--- a/src/jsc/bindings/highway_strings.cpp
++++ b/src/jsc/bindings/highway_strings.cpp
+@@ -2618,15 +2618,18 @@
+ __asm__(".globl _memmem");
+ __asm__(".set _memmem, _highway_memmem");
+ #elif OS(LINUX)
+-// On Linux, override the libc memmem with our implementation
+-// This uses the GNU-specific attribute to alias our function to the libc symbol
+-// The alias will be visible across the entire program, not just this file
++// On Linux, override the libc memmem with our implementation.
++// A definition rather than __attribute__((alias)): memmem's prototype (const
++// void*, and throw() in glibc) is not highway_memmem's, which clang 23's
++// -Wattribute-alias rejects. highway_memmem is in this file and inlines here.
+ extern "C" {
+ // Using both "default" visibility and "weak" ensures our implementation is used
+ // throughout the entire program when linked, not just in this object file
+ __attribute__((visibility("default"), weak, used)) void* memmem(const void* haystack, size_t haystacklen, const void* needle, size_t needlelen)
+-    __attribute__((alias("highway_memmem")));
++{
++    return bun::highway_memmem(static_cast<const uint8_t*>(haystack), haystacklen, static_cast<const uint8_t*>(needle), needlelen);
+ }
++}
+ 
+ #endif
+ 
