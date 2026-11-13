@@ -8,7 +8,7 @@ let bash = import "../bash/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
-let llvm-21 = import "../llvm-21/build.ncl" in
+let llvm-23 = import "../llvm-23/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let go = import "../go/build.ncl" in
 let python = import "../python/build.ncl" in
@@ -26,27 +26,23 @@ let glibc = import "../glibc/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 
-let version = "1.3.14" in
+let version = "1.4.4" in
 let dl_base = "https://github.com/oven-sh/bun/releases/download/bun-v%{version}" in
 let { amd64_sha256, arm64_sha256 } = {
-  amd64_sha256 = "951ee2aee855f08595aeec6225226a298d3fea83a3dcd6465c09cbccdf7e848f",
-  arm64_sha256 = "a27ffb63a8310375836e0d6f668ae17fa8d8d18b88c37c821c65331973a19a3b",
+  amd64_sha256 = "bf8ccbfb2b0b80159e0f9a6d15c55317add8077534dbc6130a3edb52fccb395c",
+  arm64_sha256 = "baa6bb36f51d6e58561e02bbea825038a9df454f673d6d776e8bbf86f8c7850e",
 }
 in
 {
   name = "bun",
   build_deps = [
     { file = "build.sh" } | Local,
-    # CVE-2026-111943: drops the three emSign roots NSS 3.131.1 removed from
-    # bun's compiled-in root store. See the patch header; drop it on the first
-    # bun release containing oven-sh/bun#46159.
-    { file = "cve-2026-111943-remove-emsign-roots.patch" } | Local,
     # Trust the system CA store instead of the compiled-in roots by default
     # (gominimal/pkgmgr-rs#1026). See the patch header and build.sh.
     { file = "system-ca-store-default.patch" } | Local,
     {
       url = "https://github.com/oven-sh/bun/archive/refs/tags/bun-v%{version}.tar.gz",
-      sha256 = "112a5915992807f04b183854d360c2bf87ac7c1587fb5da3c560bdbb75b8c92e",
+      sha256 = "00ce37fa5ac393a7d225bcf847365982fceb818b56a19b6884fefd67918468ff",
       extract = true,
       strip_prefix = "bun-bun-v%{version}",
     } | Source,
@@ -66,10 +62,13 @@ in
     toolchain,
     cmake,
     ninja,
-    # bun 1.3.x's configure accepts only clang / ld.lld 21.1.x (scripts/build/tools.ts
-    # LLVM_VERSION_RANGE) and searches /usr/lib/llvm-21/bin before PATH, so it builds on
-    # the frozen llvm-21 now that the default llvm is 23. bun 1.4 moves to llvm-23 (#1057).
-    llvm-21,
+    # bun 1.4.x's configure accepts only clang / ld.lld of the pinned release series
+    # (scripts/build/ci-images/spec.ts pins.llvm 23.1.1; tools.ts LLVM_VERSION_RANGE
+    # >=23.1.0 <23.1.99) and searches /usr/lib/llvm-23/bin, so it builds on the prefixed
+    # llvm-23 (pkgs#1057). It also refuses a rustc whose LLVM major differs from clang's
+    # (config.ts): rust is built on the default llvm, also 23 today. When the default llvm
+    # moves to 24, bun moves with it or rust's LLVM has to stay 23.
+    llvm-23,
     rust,
     go,
     python,
@@ -175,16 +174,16 @@ in
     # per mode (bun builds its store once per process), checked through
     # tls.connect against local `openssl s_server`s.
     #
-    # What builds the store (bun-v1.3.14 us_get_default_ca_store(), BoringSSL
-    # 0c5fce43). Every mode, stock or patched, first calls
-    # X509_STORE_set_default_paths: all of $SSL_CERT_FILE (else
-    # /etc/ssl/cert.pem) plus <subject-hash>.N lookups in $SSL_CERT_DIR (else
-    # /etc/ssl/certs). On Minimal that IS the ca-certificates store, so a CA
+    # What builds the store (bun-v1.4.4 us_get_default_ca_store()). Every mode,
+    # stock or patched, adds what X509_STORE_set_default_paths would: all of
+    # $SSL_CERT_FILE (else /etc/ssl/cert.pem) plus <subject-hash>.N lookups in
+    # $SSL_CERT_DIR (else /etc/ssl/certs). On Minimal that IS the ca-certificates store, so a CA
     # named by SSL_CERT_FILE is trusted in every mode and cannot tell modes
     # apart (pkgs#1134 review). On top of that:
-    #   - patched default: bun's own system loader (only $SSL_CERT_FILE /
-    #     $SSL_CERT_DIR when either is set, else ca-certificates.crt and the
-    #     *.crt/*.pem files under /etc/ssl/certs, ...). The compiled-in roots
+    #   - patched default: bun's own system loader (src/runtime/socket/
+    #     system_certs.rs: $SSL_CERT_FILE, else the default file and the
+    #     well-known bundles; $SSL_CERT_DIR, else the default dir and the
+    #     well-known dirs such as /etc/ssl/certs). The compiled-in roots
     #     are added only when that loader finds nothing.
     #   - opt-outs, = upstream's store: the compiled-in roots, not the loader.
     #     The system store is still trusted, through the default paths above.
@@ -217,12 +216,12 @@ in
     #   empty file + empty dir         default (fallback)     R=in  S=out
     #
     # Which rows catch which wrong bun:
-    #   - Unpatched bun-v1.3.14 trusts the compiled-in roots by default and
+    #   - Unpatched bun-v1.4.4 trusts the compiled-in roots by default and
     #     skips the loader: default gives R=in and T=out, so BOTH default rows
     #     fail.
     #   - A union patch (system roots on top of the compiled-in ones on the
     #     default path, e.g. --use-system-ca on by default): R=in fails the
-    #     real-store default row. If it only flips Arguments.zig's default,
+    #     real-store default row. If it only flips the CLI flag's default,
     #     NODE_USE_SYSTEM_CA=0 still merges the loader, so T=ok also fails
     #     that row.
     #   - A patch that drops the compiled-in roots and never puts them back:
