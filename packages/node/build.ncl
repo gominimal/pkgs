@@ -31,7 +31,7 @@ let ca-certificates = import "../ca-certificates/build.ncl" in
 # so a node bump re-derives each one here: undici under deps/undici (its llhttp C rebuilds
 # the wasm js2c'd into node), the undici npm vendors under deps/npm (rebuilt from the
 # mirrored release tarball below), and amaro (its swc wasm comes from packages/amaro-wasm).
-let undici = "8.12.2" in
+let undici = "8.12.4" in
 let undici_llhttp = "9.3.1" in
 let npm_undici = "6.28.0" in
 # The llhttp that the npm-vendored undici pins (forwarded so a bump is one edit).
