@@ -166,9 +166,9 @@ if [ "$(uname -m)" = aarch64 ]; then
   fi
 fi
 
-# amd64 twin of the lld check: the boot builds against the glibc-bedrock-2.42 sysroot, which is a build dep
-# only, so nothing shipped may name it: not the settings file (C compiler and linker flags), and no ELF
-# interpreter, RPATH or RUNPATH.
+# amd64 twin of the lld check: the boot and its C wrapper load through glibc's own loader, and nothing
+# shipped may name the retired bedrock sysroot: not the settings file (C compiler and linker flags),
+# and no ELF interpreter, RPATH or RUNPATH.
 if [ "$(uname -m)" = x86_64 ]; then
   BR=/usr/lib/glibc-bedrock-2.42
   bad=0
