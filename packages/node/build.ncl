@@ -31,14 +31,14 @@ let ca-certificates = import "../ca-certificates/build.ncl" in
 # so a node bump re-derives each one here: undici under deps/undici (its llhttp C rebuilds
 # the wasm js2c'd into node), the undici npm vendors under deps/npm (rebuilt from the
 # mirrored release tarball below), and amaro (its swc wasm comes from packages/amaro-wasm).
-let undici = "8.12.2" in
+let undici = "8.12.4" in
 let undici_llhttp = "9.3.1" in
 let npm_undici = "6.28.0" in
 # The llhttp that the npm-vendored undici pins (forwarded so a bump is one edit).
 let npm_undici_llhttp = "8.1.0" in
 # amaro is recorded once, in amaro-wasm/versions.ncl, so node, node-lts and amaro-wasm agree.
 let amaro = (import "../amaro-wasm/versions.ncl").bundled.node in
-let version = "26.12.1" in
+let version = "26.13.1" in
 {
   name = "node",
   build_deps = [
@@ -51,7 +51,7 @@ let version = "26.12.1" in
     # roots), so no patches are carried.
     {
       url = "https://nodejs.org/dist/v%{version}/node-v%{version}.tar.gz",
-      sha256 = "717244a8d757672ec86aae5077fca31e50f84b094441ec51bdf397aab12c304e",
+      sha256 = "60c6cdf11c3e9d5932fccd0eafae77f1152661584e129047684cb8646f228d3e",
     } | Source,
     {
       url = "gs://minimal-staging-archives/undici-%{npm_undici}.tar.gz",
