@@ -199,26 +199,45 @@ in
     # tls.getCACertificates('default') cannot check any of this: it is built
     # in JS (src/js/node/tls.ts) and always lists the compiled-in roots.
     #
-    # Probes. R, C and S each get a FORGED issuer: a self-signed copy of the
-    # real root (same subject) under our own key, which signs a 127.0.0.1 leaf
-    # with no authorityKeyIdentifier. BoringSSL looks the leaf's issuer up by
-    # name. If the real root is in the store it is found, the leaf's signature
-    # fails against its key, and the result is CERT_SIGNATURE_FAILURE ("in").
-    # If it is not, the result is UNABLE_TO_VERIFY_LEAF_SIGNATURE or
+    # Probes are CONSTRUCTED, not taken from real differences between the two
+    # stores. Up to bun-v1.3.14 we used a compiled-in-only root (DigiCert Global
+    # Root CA) and a ca-certificates-only one (Telia RSA TLS Root CA v3), but
+    # bun-v1.4.4's compiled-in roots (packages/bun-usockets/root_certs.der, 118)
+    # are exactly ca-certificates 2026.11.05's 118: both follow the same NSS
+    # release, so no real root tells them apart, and any later NSS or bun bump
+    # can open or close that gap again. So the store under test is built here:
+    #   sysx.pem  = /etc/ssl/certs/ca-certificates.crt minus R (by DER sha256),
+    #               plus S. The "system store" rows run with SSL_CERT_FILE=sysx.pem
+    #               and SSL_CERT_DIR=<empty dir>: with both set, bun's loader
+    #               (us_load_system_certificates_posix) reads only those, and
+    #               so do the default paths, so /etc/ssl is out of the picture.
+    #   R  a compiled-in RSA root other than C, whose subject no other root in
+    #      either list shares, picked from tls.rootCertificates (lowest DER
+    #      sha256, so stable for a given bun). Compiled in, NOT in sysx.pem by
+    #      construction.
+    #   C  ISRG Root X1: compiled in and in sysx.pem (control: the oracle can
+    #      say "in").
+    #   S  a throwaway CA that signs a real leaf ("ok" = trusted), only in
+    #      sysx.pem: the system-only probe.
+    #   T  a throwaway CA that signs a real leaf. It sits only at
+    #      $SSL_CERT_DIR/testca.pem, a name bun's loader reads but BoringSSL's
+    #      hash-dir lookup never opens, and SSL_CERT_FILE stays unset.
+    # R and C get a FORGED issuer: a self-signed copy of the real root (same
+    # subject) under our own key, which signs a 127.0.0.1 leaf with no
+    # authorityKeyIdentifier. BoringSSL looks the leaf's issuer up by name. If
+    # the real root is in the store it is found, the leaf's signature fails
+    # against its key, and the result is CERT_SIGNATURE_FAILURE ("in"). If it
+    # is not, the result is UNABLE_TO_VERIFY_LEAF_SIGNATURE or
     # UNABLE_TO_GET_ISSUER_CERT_LOCALLY ("out"). No real root key is needed.
-    #   R  DigiCert Global Root CA: compiled in, NOT in ca-certificates
-    #   C  ISRG Root X1: in both (control: the oracle can say "in")
-    #   S  Telia RSA TLS Root CA v3: in ca-certificates only
-    #   T  a throwaway CA that signs a real leaf ("ok" = trusted). It sits only
-    #      at $SSL_CERT_DIR/testca.pem, a name bun's loader reads but
-    #      BoringSSL's hash-dir lookup never opens, and SSL_CERT_FILE stays unset.
-    # roots.js asserts R/C/S membership from bun's own lists first, so a
-    # ca-certificates update that adds R or drops S fails loudly here.
+    # Sanity checks fail the test (not a row) if R is not in
+    # tls.rootCertificates, if R's DER or subject is in sysx.pem, or if bun's
+    # own tls.getCACertificates('system') under the sysx env holds R or lacks
+    # C or S.
     #
     #   env                            mode                   expect
-    #   real store                     default                R=out C=in S=in
-    #   real store                     NODE_USE_SYSTEM_CA=0   R=in  C=in S=in
-    #   real store                     --use-bundled-ca       R=in  C=in S=in
+    #   sysx file + empty dir          default                R=out C=in S=ok
+    #   sysx file + empty dir          NODE_USE_SYSTEM_CA=0   R=in  C=in S=ok
+    #   sysx file + empty dir          --use-bundled-ca       R=in  C=in S=ok
     #   SSL_CERT_DIR=<dir with T>      default                T=ok
     #   SSL_CERT_DIR=<dir with T>      NODE_USE_SYSTEM_CA=0   T=out
     #   SSL_CERT_DIR=<dir with T>      --use-bundled-ca       T=out
@@ -226,11 +245,11 @@ in
     #
     # Which rows catch which wrong bun:
     #   - Unpatched bun-v1.4.4 trusts the compiled-in roots by default and
-    #     skips the loader: default gives R=in and T=out, so BOTH default rows
-    #     fail.
+    #     skips the loader: default gives R=in and T=out, so the sysx and
+    #     SSL_CERT_DIR default rows BOTH fail.
     #   - A union patch (system roots on top of the compiled-in ones on the
     #     default path, e.g. --use-system-ca on by default): R=in fails the
-    #     real-store default row. If it only flips the CLI flag's default,
+    #     sysx default row. If it only flips the CLI flag's default,
     #     NODE_USE_SYSTEM_CA=0 still merges the loader, so T=ok also fails
     #     that row.
     #   - A patch that drops the compiled-in roots and never puts them back:
@@ -259,45 +278,85 @@ in
                   -u HTTPS_PROXY -u https_proxy -u HTTP_PROXY -u http_proxy -u ALL_PROXY -u all_proxy "$@"
               }
 
-              # The probe roots, taken from bun's own lists. In this env (no
-              # SSL_CERT_*) 'system' is bun's loader reading ca-certificates.
-              cat > roots.js <<'JS'
-              const { X509Certificate, createHash } = require("node:crypto");
-              const tls = require("node:tls");
-              const fp = p => createHash("sha256").update(new X509Certificate(p).raw).digest("hex");
-              const bundled = new Map(tls.rootCertificates.map(p => [fp(p), p]));
-              const system = new Map(tls.getCACertificates("system").map(p => [fp(p), p]));
-              // name: [DER sha256, compiled in, in ca-certificates]
-              const probes = {
-                R: ["4348a0e9444c78cb265e058d5e8944b4d84f9662bd26db257f8934a443c70161", true, false],
-                C: ["96bcec06264976f37460779acf28c5a7cfe8a3c0aae11a8ffcee05c0bddf08c6", true, true],
-                S: ["d13db1294c45ebc6fc86c6bbf69fa29bdfe692dff7c713c243c7a956c6a2284c", false, true],
-              };
-              if (bundled.size < 100 || system.size < 100) { console.log(`bundled=${bundled.size} system=${system.size}`); process.exit(1); }
-              for (const [name, [h, inBundled, inSystem]] of Object.entries(probes)) {
-                if (bundled.has(h) !== inBundled || system.has(h) !== inSystem) {
-                  console.log(`${name}: compiled in=${bundled.has(h)} system=${system.has(h)}, want ${inBundled}/${inSystem}`);
-                  process.exit(1);
-                }
-                require("node:fs").writeFileSync(`${name}.pem`, (bundled.get(h) ?? system.get(h)).trim() + "\n");
-              }
-              JS
-              clean bun roots.js
-              # R must also be absent by NAME (a same-subject root would be found).
-              openssl crl2pkcs7 -nocrl -certfile /etc/ssl/cert.pem | openssl pkcs7 -print_certs -noout > sys.subjects
-              if grep -qxF "$(openssl x509 -in R.pem -noout -subject)" sys.subjects ||
-                 ls /etc/ssl/certs/"$(openssl x509 -in R.pem -noout -subject_hash)".* >/dev/null 2>&1; then
-                echo "R's subject is in the system store; pick another compiled-in-only root" >&2; exit 1
-              fi
-
               openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out fake.key 2>/dev/null
               openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out leaf.key 2>/dev/null
               openssl req -new -key leaf.key -subj "/CN=127.0.0.1" -out leaf.csr 2>/dev/null
               printf '%s\n' subjectAltName=IP:127.0.0.1 basicConstraints=CA:FALSE \
                 keyUsage=digitalSignature,keyEncipherment extendedKeyUsage=serverAuth \
                 authorityKeyIdentifier=none > leaf.cnf
+              # S: system-only (goes into sysx.pem). T: SSL_CERT_DIR-only.
+              openssl req -x509 -newkey rsa:2048 -nodes -days 2 -subj "/CN=minimal test system CA" \
+                -keyout sca.key -out sca.pem 2>/dev/null
+              openssl x509 -req -in leaf.csr -CA sca.pem -CAkey sca.key -set_serial 8 -days 2 \
+                -extfile leaf.cnf -out S.leaf.pem 2>/dev/null
+              openssl req -x509 -newkey rsa:2048 -nodes -days 2 -subj "/CN=minimal test CA" \
+                -keyout ca.key -out sys/testca.pem 2>/dev/null
+              openssl x509 -req -in leaf.csr -CA sys/testca.pem -CAkey ca.key -set_serial 9 -days 2 \
+                -extfile leaf.cnf -out T.leaf.pem 2>/dev/null
+
+              # Pick R from bun's compiled-in roots and build sysx.pem (see the
+              # comment above the test). Writes R.pem, C.pem, sysx.pem.
+              cat > roots.js <<'JS'
+              const { X509Certificate, createHash } = require("node:crypto");
+              const tls = require("node:tls");
+              const fs = require("node:fs");
+              const fp = p => createHash("sha256").update(new X509Certificate(p).raw).digest("hex");
+              const pems = s => s.match(/-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----/g) ?? [];
+              const fail = m => { console.log(m); process.exit(1); };
+              const C = "96bcec06264976f37460779acf28c5a7cfe8a3c0aae11a8ffcee05c0bddf08c6";
+              const bundled = new Map(tls.rootCertificates.map(p => [fp(p), p]));
+              const sys = new Map(pems(fs.readFileSync("/etc/ssl/certs/ca-certificates.crt", "utf8")).map(p => [fp(p), p]));
+              if (bundled.size < 100 || sys.size < 100) fail(`bundled=${bundled.size} system=${sys.size}`);
+              if (!bundled.has(C) || !sys.has(C)) fail(`C: compiled in=${bundled.has(C)} system=${sys.has(C)}, want true/true`);
+              // subject -> DER hashes carrying it, across both lists
+              const bySubject = new Map();
+              for (const [h, p] of [...bundled, ...sys]) {
+                const s = new X509Certificate(p).subject;
+                bySubject.set(s, (bySubject.get(s) ?? new Set()).add(h));
+              }
+              const R = [...bundled.keys()].sort().find(h => {
+                const x = new X509Certificate(bundled.get(h));
+                return h !== C && x.publicKey.asymmetricKeyType === "rsa" && bySubject.get(x.subject).size === 1;
+              });
+              if (!R) fail("no compiled-in RSA root other than C with a unique subject");
+              const sysx = [...sys].filter(([h]) => h !== R).map(([, p]) => p.trim());
+              sysx.push(fs.readFileSync(process.argv[2], "utf8").trim());
+              fs.writeFileSync("sysx.pem", sysx.join("\n") + "\n");
+              fs.writeFileSync("R.pem", bundled.get(R).trim() + "\n");
+              fs.writeFileSync("C.pem", bundled.get(C).trim() + "\n");
+              // Sanity, read back from disk: R compiled in, not in sysx.pem; C in both.
+              const back = new Set(pems(fs.readFileSync("sysx.pem", "utf8")).map(fp));
+              if (!new Set(tls.rootCertificates.map(fp)).has(R) || back.has(R) || !back.has(C) || back.size !== sys.size - (sys.has(R) ? 1 : 0) + 1)
+                fail(`sysx.pem: R=${R} in=${back.has(R)} C in=${back.has(C)} size=${back.size} (system ${sys.size})`);
+              console.log(`R = ${R} ${new X509Certificate(bundled.get(R)).subject.replace(/\n/g, ", ")}`);
+              JS
+              clean bun roots.js sca.pem
+              # bun's own view of the store under test: R absent, C and S present.
+              cat > store.js <<'JS'
+              const { X509Certificate, createHash } = require("node:crypto");
+              const tls = require("node:tls");
+              const fs = require("node:fs");
+              const fp = p => createHash("sha256").update(new X509Certificate(p).raw).digest("hex");
+              const sys = new Set(tls.getCACertificates("system").map(fp));
+              const has = Object.fromEntries(process.argv.slice(2).map(f => [f, sys.has(fp(fs.readFileSync(f, "utf8")))]));
+              if (sys.size < 100 || has["R.pem"] || !has["C.pem"] || !has["sca.pem"]) {
+                console.log(`system store under test: size=${sys.size} ${JSON.stringify(has)}, want R absent, C and S present`);
+                process.exit(1);
+              }
+              JS
+              clean SSL_CERT_FILE="$d/sysx.pem" SSL_CERT_DIR="$d/empty" bun store.js R.pem C.pem sca.pem
+              # R must also be absent by NAME (a same-subject root would be found).
+              [ -z "$(ls -A empty)" ] || { echo "empty/ is not empty" >&2; exit 1; }
+              openssl crl2pkcs7 -nocrl -certfile sysx.pem | openssl pkcs7 -print_certs -noout > sys.subjects
+              if grep -qxF "$(openssl x509 -in R.pem -noout -subject)" sys.subjects; then
+                echo "R's subject is in sysx.pem" >&2; exit 1
+              fi
+              # Control: the same match finds C's subject, so the guard can fire.
+              grep -qxF "$(openssl x509 -in C.pem -noout -subject)" sys.subjects ||
+                { echo "subject guard cannot match: C's subject not found in sysx.pem" >&2; exit 1; }
+
               n=0
-              for p in R C S; do
+              for p in R C; do
                 n=$((n + 1))
                 openssl x509 -in "$p.pem" -key fake.key -days 2 -out "fake$p.pem"
                 openssl x509 -req -in leaf.csr -CA "fake$p.pem" -CAkey fake.key -set_serial "$n" -days 2 \
@@ -309,10 +368,6 @@ in
                   echo "$p: leaf carries an authorityKeyIdentifier" >&2; exit 1
                 fi
               done
-              openssl req -x509 -newkey rsa:2048 -nodes -days 2 -subj "/CN=minimal test CA" \
-                -keyout ca.key -out sys/testca.pem 2>/dev/null
-              openssl x509 -req -in leaf.csr -CA sys/testca.pem -CAkey ca.key -set_serial 9 -days 2 \
-                -extfile leaf.cnf -out T.leaf.pem 2>/dev/null
 
               # One server per probe. -no-CA* keeps s_server from appending a
               # chain from its own store: the client must see the leaf alone.
@@ -332,7 +387,7 @@ in
                 for _ in $(seq 100); do (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null && break; sleep 0.1; done
               done
 
-              # Prints e.g. "R=out C=in": ok = trusted, in/out = the forged
+              # Prints e.g. "R=out C=in S=ok": ok = trusted, in/out = the forged
               # issuer's real root is / is not in the store, else the raw code.
               cat > check.js <<'JS'
               const tls = require("node:tls");
@@ -362,9 +417,10 @@ in
                 echo "$label: $got"
                 [ "$got" = "$want" ] || { echo "  FAIL: want '$want'" >&2; fails=$((fails + 1)); }
               }
-              expect "R=out C=in S=in" "real store, default" clean bun check.js $real
-              expect "R=in C=in S=in" "real store, NODE_USE_SYSTEM_CA=0" clean NODE_USE_SYSTEM_CA=0 bun check.js $real
-              expect "R=in C=in S=in" "real store, --use-bundled-ca" clean bun --use-bundled-ca check.js $real
+              sysx() { clean SSL_CERT_FILE="$d/sysx.pem" SSL_CERT_DIR="$d/empty" "$@"; }
+              expect "R=out C=in S=ok" "sysx store, default" sysx bun check.js $real
+              expect "R=in C=in S=ok" "sysx store, NODE_USE_SYSTEM_CA=0" sysx NODE_USE_SYSTEM_CA=0 bun check.js $real
+              expect "R=in C=in S=ok" "sysx store, --use-bundled-ca" sysx bun --use-bundled-ca check.js $real
               expect "T=ok" "SSL_CERT_DIR=sys, default" clean SSL_CERT_DIR="$d/sys" bun check.js "T:$port_T"
               expect "T=out" "SSL_CERT_DIR=sys, NODE_USE_SYSTEM_CA=0" \
                 clean SSL_CERT_DIR="$d/sys" NODE_USE_SYSTEM_CA=0 bun check.js "T:$port_T"
