@@ -1,0 +1,41 @@
+diff --git a/src/collections/lib.rs b/src/collections/lib.rs
+index 22edbb9..65b931c 100644
+--- a/src/collections/lib.rs
++++ b/src/collections/lib.rs
+@@ -2,6 +2,7 @@
+ 
+ #![feature(
+     type_info,
++    core_intrinsics,
+     adt_const_params,
+     unsized_const_params,
+     const_cmp,
+@@ -9,6 +10,7 @@
+     allocator_api
+ )]
+ #![allow(incomplete_features)]
++#![allow(internal_features)]
+ #![warn(unused_must_use)]
+ 
+ pub mod hive_array;
+diff --git a/src/collections/multi_array_list.rs b/src/collections/multi_array_list.rs
+index 1f53d67..15400bc 100644
+--- a/src/collections/multi_array_list.rs
++++ b/src/collections/multi_array_list.rs
+@@ -47,7 +47,15 @@
+ 
+ use core::alloc::Layout;
+ use core::marker::PhantomData;
+-use core::mem::type_info;
++// minimal: Rust 1.99 has every `TypeId` reflection method used below but not the
++// free function `core::mem::type_info::of`, which 1.100 added. This is 1.100's
++// definition verbatim (library/core/src/mem/type_info.rs). Drop this patch once
++// the rust package is >= 1.100.
++mod type_info {
++    pub(crate) const fn of<T: ?Sized>() -> core::any::TypeId {
++        const { core::intrinsics::type_id::<T>() }
++    }
++}
+ use core::mem::{ManuallyDrop, MaybeUninit};
+ use core::ptr::{self, NonNull};
+ use std::alloc::{Allocator, Global};

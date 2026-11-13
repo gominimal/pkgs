@@ -41,6 +41,10 @@ in
     # Trust the system CA store instead of the compiled-in roots by default
     # (gominimal/pkgmgr-rs#1026). See the patch header and build.sh.
     { file = "system-ca-store-default.patch" } | Local,
+    # bun 1.4.3+ calls core::mem::type_info::of, which Rust added in 1.100; the
+    # rust package is 1.99.1. This defines it locally with 1.100's own body.
+    # build.sh fails once rustc is >= 1.100 so the patch gets dropped.
+    { file = "rust-1.99-type-info-of.patch" } | Local,
     {
       url = "https://github.com/oven-sh/bun/archive/refs/tags/bun-v%{version}.tar.gz",
       sha256 = "00ce37fa5ac393a7d225bcf847365982fceb818b56a19b6884fefd67918468ff",
