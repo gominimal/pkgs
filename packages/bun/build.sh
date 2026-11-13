@@ -15,22 +15,33 @@ chmod +x "bun-linux-${BUN_ARCH}/bun"
 export PATH="$(pwd)/bun-linux-${BUN_ARCH}:$PATH"
 bun --version
 
-# Set compilers to use LLVM/Clang: LLVM 23 from the prefixed llvm-23. bun 1.4.x's
-# configure rejects any clang / ld.lld outside the pinned release series (23.1.x:
-# scripts/build/ci-images/spec.ts pins.llvm, tools.ts LLVM_VERSION_RANGE). Put the
-# prefix first so the bare `clang` used for CC / the cargo linker is the same LLVM 23
-# configure resolves.
-export PATH="/usr/lib/llvm-23/bin:$PATH"
-case "$(clang --version)" in
-  *"clang version 23.1."*) ;;
-  *) echo "ERROR: bun 1.4.x needs clang 23.1.x first on PATH (llvm-23); got: $(clang --version | head -1)" >&2; exit 1 ;;
+# Set compilers to use LLVM/Clang: LLVM 23 from the prefixed llvm-23. bun 1.4.2
+# pins LLVM 21.1.x (scripts/build/tools.ts LLVM_VERSION / LLVM_VERSION_RANGE);
+# BUN_TOOLCHAIN_LLVM is its documented override: an LLVM prefix (the dir holding
+# bin/clang, bin/ld.lld, ...), which then becomes the ONLY place configure looks
+# for LLVM tools (pathsOnly) and turns off the 21.1.x check, since "the directory
+# is the pin". It also makes workarounds.ts's expiry tripwires warnings rather
+# than errors. Put the same prefix first on PATH so the bare `clang` used for
+# CC / the cargo linker is that LLVM too, and fail if anything else answers.
+export BUN_TOOLCHAIN_LLVM=/usr/lib/llvm-23
+export PATH="$BUN_TOOLCHAIN_LLVM/bin:$PATH"
+for t in clang clang++ ld.lld llvm-ar llvm-ranlib; do
+  [ -x "$BUN_TOOLCHAIN_LLVM/bin/$t" ] || { echo "ERROR: $BUN_TOOLCHAIN_LLVM/bin/$t missing; bun's configure only looks there" >&2; exit 1; }
+done
+case "$("$BUN_TOOLCHAIN_LLVM/bin/clang" --version)" in
+  *"clang version 23."*) ;;
+  *) echo "ERROR: bun needs clang 23 from $BUN_TOOLCHAIN_LLVM; got: $("$BUN_TOOLCHAIN_LLVM/bin/clang" --version | head -1)" >&2; exit 1 ;;
 esac
-sed -n '/^  llvm: {$/,/^  },$/p' scripts/build/ci-images/spec.ts | grep -qE '^    version: "23\.1\.[0-9]+",$' || { echo "ERROR: bun's pinned LLVM (scripts/build/ci-images/spec.ts pins.llvm) is no longer 23.1.x; move bun to the matching llvm line" >&2; exit 1; }
+[ "$(command -v clang)" = "$BUN_TOOLCHAIN_LLVM/bin/clang" ] || { echo "ERROR: clang on PATH is $(command -v clang), not $BUN_TOOLCHAIN_LLVM/bin/clang" >&2; exit 1; }
+# The override only means something while upstream still reads it and pins
+# another LLVM; if either changes, revisit (1.4.3+ pins 23.1.x on its own).
+grep -qF 'llvm: process.env.BUN_TOOLCHAIN_LLVM,' scripts/build/tools.ts || { echo "ERROR: bun's scripts/build/tools.ts no longer reads BUN_TOOLCHAIN_LLVM; the llvm-23 override is not in effect" >&2; exit 1; }
+grep -qF 'const LLVM_MAJOR = "21";' scripts/build/tools.ts || { echo "ERROR: bun's pinned LLVM is no longer 21; revisit the BUN_TOOLCHAIN_LLVM override" >&2; exit 1; }
 # bun's link reads LLVM bitcode from clang and rustc, and configure refuses a rustc
-# whose LLVM major differs from clang's (scripts/build/config.ts). Say so up front.
+# newer than clang's (scripts/build/bun.ts, cross-language LTO). Require equal.
 case "$(rustc -vV)" in
   *"LLVM version: 23."*) ;;
-  *) echo "ERROR: bun 1.4.x needs rustc built on LLVM 23 to match clang; got: $(rustc -vV | grep '^LLVM version')" >&2; exit 1 ;;
+  *) echo "ERROR: bun needs rustc built on LLVM 23 to match clang; got: $(rustc -vV | grep '^LLVM version')" >&2; exit 1 ;;
 esac
 export CC=clang
 export CXX=clang++
@@ -69,18 +80,55 @@ grep -q '^channel = "nightly-' rust-toolchain.toml || { echo "ERROR: bun's rust-
 export RUSTC_BOOTSTRAP=1
 test -d "$(rustc --print sysroot)/lib/rustlib/src/rust/library" || { echo "ERROR: rust-src missing from the rust sysroot; bun 1.4 builds std with -Zbuild-std" >&2; exit 1; }
 
-# CVE-2026-111943: upstream dropped the three emSign roots NSS 3.131.1 removed
-# in oven-sh/bun#46159 (bun-v1.4.x), so the 1.3.x patch is gone. Prove the
-# source still agrees, by label in the generated list, before building. The
-# built binary is checked by fingerprint further down.
+# CVE-2026-111943: drop the three emSign roots NSS 3.131.1 removed from bun's
+# compiled-in store. bun 1.4.2 embeds the store as packages/bun-usockets/
+# root_certs.der (u32 count, u32 offsets[count + 1], the DERs back to back,
+# little-endian; src/runtime/socket/bundled_root_certs.rs), a binary file a
+# text patch cannot edit, so rewrite it here without those three, matched by
+# SHA-256 of the DER. Upstream did the same in oven-sh/bun#46159 (bun-v1.4.3+).
+# Pinned to 1.4.2's file: any other input fails rather than being filtered
+# blind. root_certs.txt is the label list generated with it; keep it in step.
+cat > ./minimal-drop-emsign-roots.js <<'JS'
+const { createHash } = require("node:crypto");
+const fs = require("node:fs");
+const path = "packages/bun-usockets/root_certs.der";
+const expected = "c17ba7ff5faebb6c724e1cac23a4858c8656faa7768be31455344f751e944a29";
+const drop = new Set([
+  "86a1ecba089c4a8d3bbe2734c612ba341d813e043cf9e8a862cd5c57a36bbe6b", // emSign ECC Root CA - G3
+  "125609aa301da0a249b97a8239cb6a34216f44dcac9f3954b14292f2e8c8608f", // emSign Root CA - C1
+  "bc4d809b15189d78db3e1d8cf4f9726a795da1643ca5f1358e1ddb0edc0d7eb3", // emSign ECC Root CA - C3
+]);
+const sha = b => createHash("sha256").update(b).digest("hex");
+const blob = fs.readFileSync(path);
+if (sha(blob) !== expected) { console.error(`${path} is ${sha(blob)}, not bun-v1.4.2's ${expected}`); process.exit(1); }
+const count = blob.readUInt32LE(0);
+const base = 4 + 4 * (count + 1);
+const off = i => blob.readUInt32LE(4 + 4 * i);
+if (off(count) !== blob.length - base) { console.error("root_certs.der offsets do not cover the file"); process.exit(1); }
+const kept = [];
+let dropped = 0;
+for (let i = 0; i < count; i++) {
+  const der = blob.subarray(base + off(i), base + off(i + 1));
+  if (drop.has(sha(der))) dropped++;
+  else kept.push(der);
+}
+if (dropped !== drop.size) { console.error(`dropped ${dropped} of ${drop.size} emSign roots`); process.exit(1); }
+const head = Buffer.alloc(4 + 4 * (kept.length + 1));
+head.writeUInt32LE(kept.length, 0);
+let at = 0;
+kept.forEach((der, i) => { head.writeUInt32LE(at, 4 + 4 * i); at += der.length; });
+head.writeUInt32LE(at, 4 + 4 * kept.length);
+fs.writeFileSync(path, Buffer.concat([head, ...kept]));
+console.log(`root_certs.der: ${count} -> ${kept.length} roots`);
+JS
+bun ./minimal-drop-emsign-roots.js
+rm -f ./minimal-drop-emsign-roots.js
 for label in "emSign ECC Root CA - G3" "emSign Root CA - C1" "emSign ECC Root CA - C3"; do
-  if grep -qxF "$label" packages/bun-usockets/root_certs.txt; then
-    echo "ERROR: CVE-2026-111943 root '$label' is back in root_certs.txt" >&2
-    exit 1
-  fi
+  grep -qxF "$label" packages/bun-usockets/root_certs.txt || { echo "ERROR: '$label' not in root_certs.txt; the label list changed" >&2; exit 1; }
+  grep -vxF "$label" packages/bun-usockets/root_certs.txt > root_certs.txt.tmp
+  mv root_certs.txt.tmp packages/bun-usockets/root_certs.txt
 done
-roots=$(grep -c . packages/bun-usockets/root_certs.txt)
-[ "$roots" -ge 100 ] || { echo "ERROR: root_certs.txt lists only $roots roots" >&2; exit 1; }
+[ "$(od -An -tu4 -N4 packages/bun-usockets/root_certs.der | tr -d ' ')" = 118 ] || { echo "ERROR: root_certs.der does not hold 118 roots after dropping the emSign three" >&2; exit 1; }
 
 # Fingerprint check run against a bun binary: none of the removed roots may be
 # in tls.rootCertificates (the compiled-in store), by SHA-256 of the DER, and
@@ -101,25 +149,19 @@ if (fps.size < 100 || left.length) {
 }
 console.log(`roots=${fps.size} ok`);
 JS
-# Control: the same check with one removed root swapped for ISRG Root X1,
-# which bun does bundle, must fail and name it. Matching the message (not just
-# a non-zero exit) means a crash in the check cannot pass as the expected
-# failure. (The stock bootstrap bun no longer bundles the emSign roots, so it
-# can no longer serve as the control.)
-sed 's/^  "86a1ecba089c4a8d3bbe2734c612ba341d813e043cf9e8a862cd5c57a36bbe6b": "emSign ECC Root CA - G3",$/  "96bcec06264976f37460779acf28c5a7cfe8a3c0aae11a8ffcee05c0bddf08c6": "ISRG Root X1",/' \
-  ./minimal-check-emsign-roots.js > ./minimal-check-emsign-control.js
-grep -q '"ISRG Root X1"' ./minimal-check-emsign-control.js || { echo "ERROR: emSign control script was not built" >&2; exit 1; }
-control=$(bun ./minimal-check-emsign-control.js || true)
+# Control: the stock bootstrap bun 1.4.2 still bundles all three, so the check
+# must fail on it, naming all three. Matching the message (not just a non-zero
+# exit) means a crash in the check cannot pass as the expected failure.
+control=$(bun ./minimal-check-emsign-roots.js || true)
 case "$control" in
-  *"still bundled: ISRG Root X1") ;;
-  *) echo "ERROR: emSign root check did not flag a bundled root (got: $control); the check is broken" >&2; exit 1 ;;
+  *"still bundled: emSign ECC Root CA - G3, emSign Root CA - C1, emSign ECC Root CA - C3") ;;
+  *) echo "ERROR: emSign root check did not flag the stock bootstrap bun (got: $control); the check is broken" >&2; exit 1 ;;
 esac
-rm -f ./minimal-check-emsign-control.js
 
 # Trust the system CA store (/etc/ssl/certs, from ca-certificates) instead of
 # the roots compiled into bun, so a CA removed from ca-certificates
 # (CVE-2026-111943, eMudhra) stops being trusted without a bun rebuild
-# (gominimal/pkgmgr-rs#1026). bun 1.4.4 has no switch for this:
+# (gominimal/pkgmgr-rs#1026). bun 1.4.2 has no switch for this:
 # --use-system-ca / NODE_USE_SYSTEM_CA=1 only ADD the system roots to the
 # compiled-in ones, and --use-openssl-ca is parsed but ignored (fixed upstream
 # after 1.4.4, oven-sh/bun#46542). See the patch header for the exact
@@ -128,10 +170,10 @@ rm -f ./minimal-check-emsign-control.js
 # its compiled-in roots. Applied by name; the greps make an upstream rewrite of
 # either file fail the build instead of silently dropping the default.
 patch -Np1 -i system-ca-store-default.patch
-grep -q 'pub static Bun__Node__MinimalCAStore: core::sync::atomic::AtomicU8' src/bun_core/Global.rs || { echo "ERROR: bun CA store default patch did not apply to src/bun_core/Global.rs" >&2; exit 1; }
-grep -q 'Bun__Node__MinimalCAStore.store(store, Ordering::Relaxed);' src/bun_core/Global.rs || { echo "ERROR: Global.rs does not record the CA store flag after the patch" >&2; exit 1; }
+grep -q 'core::sync::atomic::AtomicU8::new(BunCAStore::System as u8); // minimal: system CA store by default' src/runtime/cli/Arguments.rs || { echo "ERROR: bun CA store default patch did not apply to src/runtime/cli/Arguments.rs" >&2; exit 1; }
+grep -q 'BunCAStore::Bundled as u8' src/runtime/cli/Arguments.rs && { echo "ERROR: Arguments.rs still defaults Bun__Node__CAStore to Bundled somewhere" >&2; exit 1; }
 grep -q '^  if (minimal_bundled) {$' packages/bun-usockets/src/crypto/root_certs.cpp || { echo "ERROR: bun CA store default patch did not apply to root_certs.cpp" >&2; exit 1; }
-[ "$(grep -c 'Bun__Node__MinimalCAStore' packages/bun-usockets/src/crypto/root_certs.cpp)" -ge 4 ] || { echo "ERROR: root_certs.cpp does not read Bun__Node__MinimalCAStore after the patch" >&2; exit 1; }
+[ "$(grep -c 'Bun__Node__CAStore' packages/bun-usockets/src/crypto/root_certs.cpp)" -ge 5 ] || { echo "ERROR: root_certs.cpp does not read Bun__Node__CAStore after the patch" >&2; exit 1; }
 
 # The system-CA behaviour (system store replaces the compiled-in roots; the
 # opt-outs restore them) is NOT checked here: it needs ca-certificates and the
@@ -185,7 +227,7 @@ build/release/bun ./minimal-check-emsign-roots.js
 
 # Install. The real binary lives in libexec; /usr/bin carries wrappers so
 # `bun add -g` lands its bins in ~/.local/bin (on the session PATH) rather
-# than the off-PATH cache-derived default. bun 1.4.4 reads two narrow knobs
+# than the off-PATH cache-derived default. bun 1.4.2 reads two narrow knobs
 # (src/install/PackageManager/PackageManagerOptions.rs), and the
 # wrapper defaults both:
 #   - BUN_INSTALL_BIN: where the global bin symlinks go.

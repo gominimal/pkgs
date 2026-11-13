@@ -27,11 +27,11 @@ let glibc = import "../glibc/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 
-let version = "1.4.4" in
+let version = "1.4.2" in
 let dl_base = "https://github.com/oven-sh/bun/releases/download/bun-v%{version}" in
 let { amd64_sha256, arm64_sha256 } = {
-  amd64_sha256 = "bf8ccbfb2b0b80159e0f9a6d15c55317add8077534dbc6130a3edb52fccb395c",
-  arm64_sha256 = "baa6bb36f51d6e58561e02bbea825038a9df454f673d6d776e8bbf86f8c7850e",
+  amd64_sha256 = "36368faef7527875d5ffa52e53cd48021741f2a83eb6208a8dd64068d422a913",
+  arm64_sha256 = "54328bbc2d9c8e0c9f892c544d66c57a83b84139e34909e5ee81758f1ac8fda7",
 }
 in
 {
@@ -43,7 +43,7 @@ in
     { file = "system-ca-store-default.patch" } | Local,
     {
       url = "https://github.com/oven-sh/bun/archive/refs/tags/bun-v%{version}.tar.gz",
-      sha256 = "00ce37fa5ac393a7d225bcf847365982fceb818b56a19b6884fefd67918468ff",
+      sha256 = "e14670b117d69012d828514d657f0a3133d1c25d13d69461184d05b6a8e9a876",
       extract = true,
       strip_prefix = "bun-bun-v%{version}",
     } | Source,
@@ -67,12 +67,12 @@ in
     # (scripts/build/deps/libjpeg-turbo.ts); compile.ts asserts "nasm not found in
     # toolchain" at the use site. Only x64 builds use it; declared on both arches.
     nasm,
-    # bun 1.4.x's configure accepts only clang / ld.lld of the pinned release series
-    # (scripts/build/ci-images/spec.ts pins.llvm 23.1.1; tools.ts LLVM_VERSION_RANGE
-    # >=23.1.0 <23.1.99) and searches /usr/lib/llvm-23/bin, so it builds on the prefixed
-    # llvm-23 (pkgs#1057). It also refuses a rustc whose LLVM major differs from clang's
-    # (config.ts): rust is built on the default llvm, also 23 today. When the default llvm
-    # moves to 24, bun moves with it or rust's LLVM has to stay 23.
+    # bun 1.4.2 pins LLVM 21.1.x (scripts/build/tools.ts), but build.sh points its
+    # BUN_TOOLCHAIN_LLVM override at the prefixed llvm-23 (pkgs#1057), which lifts the
+    # version check, and asserts clang 23. Its cross-language LTO also needs rustc's LLVM
+    # no newer than clang's: rust is built on the default llvm, also 23 today. bun stays
+    # on 1.4.2 because 1.4.3+ needs Rust >= 1.100 (core::mem::type_info::of); 1.4.3+
+    # pins LLVM 23.1.x itself, so the override goes with that bump.
     llvm-23,
     rust,
     go,
@@ -179,17 +179,17 @@ in
     # per mode (bun builds its store once per process), checked through
     # tls.connect against local `openssl s_server`s.
     #
-    # What builds the store (bun-v1.4.4 us_get_default_ca_store()). Every mode,
+    # What builds the store (bun-v1.4.2 us_get_default_ca_store()). Every mode,
     # stock or patched, adds what X509_STORE_set_default_paths would: all of
     # $SSL_CERT_FILE (else /etc/ssl/cert.pem) plus <subject-hash>.N lookups in
     # $SSL_CERT_DIR (else /etc/ssl/certs). On Minimal that IS the ca-certificates store, so a CA
     # named by SSL_CERT_FILE is trusted in every mode and cannot tell modes
     # apart (pkgs#1134 review). On top of that:
     #   - patched default: bun's own system loader (src/runtime/socket/
-    #     system_certs.rs: $SSL_CERT_FILE, else the default file and the
-    #     well-known bundles; $SSL_CERT_DIR, else the default dir and the
-    #     well-known dirs such as /etc/ssl/certs). The compiled-in roots
-    #     are added only when that loader finds nothing.
+    #     system_certs.rs: only $SSL_CERT_FILE when set, else the default
+    #     file and the well-known bundles; $SSL_CERT_DIR, else the default dir
+    #     and the well-known dirs such as /etc/ssl/certs). The compiled-in
+    #     roots are added only when that loader finds nothing.
     #   - opt-outs, = upstream's store: the compiled-in roots, not the loader.
     #     The system store is still trusted, through the default paths above.
     # tls.getCACertificates('default') cannot check any of this: it is built
@@ -221,7 +221,7 @@ in
     #   empty file + empty dir         default (fallback)     R=in  S=out
     #
     # Which rows catch which wrong bun:
-    #   - Unpatched bun-v1.4.4 trusts the compiled-in roots by default and
+    #   - Unpatched bun-v1.4.2 trusts the compiled-in roots by default and
     #     skips the loader: default gives R=in and T=out, so BOTH default rows
     #     fail.
     #   - A union patch (system roots on top of the compiled-in ones on the
