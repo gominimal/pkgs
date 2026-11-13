@@ -261,6 +261,9 @@ in
     #   - A patch that lets the NODE_USE_SYSTEM_CA opt-out override an
     #     explicit --use-openssl-ca: R=in fails the openssl rows with the
     #     opt-out set.
+    #   - A patch that keeps upstream's dedup of the OpenSSL default file
+    #     against the compiled-in roots while leaving those roots out:
+    #     C=out fails every openssl row (C is in both, so no store has it).
     #   The opt-out and fallback rows pass on unpatched bun BY DESIGN: there
     #   the patch promises upstream's store exactly. Their job is the last
     #   case, not the first two.

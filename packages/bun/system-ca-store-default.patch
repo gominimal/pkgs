@@ -27,6 +27,12 @@ This patch:
     NODE_USE_SYSTEM_CA=1 still add the system roots. --use-openssl-ca leaves
     the compiled-in roots and the system loader out, as #46542 does, even
     with the NODE_USE_SYSTEM_CA opt-out set (the explicit flag wins).
+  - root_certs.cpp, OpenSSL default file: upstream drops each certificate
+    the compiled-in set holds byte-for-byte, because upstream always adds
+    that set. Here it is dropped only when the compiled-in set is added
+    (upstream's store); otherwise the file keeps it. Without this,
+    --use-openssl-ca (no system loader, no compiled-in roots) trusted only
+    the roots bun does not compile in, i.e. almost none.
 
 Not changed: tls.rootCertificates and tls.getCACertificates('bundled') still
 list the compiled-in roots; tls.getCACertificates('default') (src/js/node/tls.ts)
@@ -36,7 +42,7 @@ replaces the bundled store, or move to --use-openssl-ca on a release that
 carries #46542.
 
 diff --git a/packages/bun-usockets/src/crypto/root_certs.cpp b/packages/bun-usockets/src/crypto/root_certs.cpp
-index 3a6f010c3b..be6ea377fc 100644
+index 3a6f010..41aeb82 100644
 --- a/packages/bun-usockets/src/crypto/root_certs.cpp
 +++ b/packages/bun-usockets/src/crypto/root_certs.cpp
 @@ -1,7 +1,9 @@
@@ -96,7 +102,19 @@ index 3a6f010c3b..be6ea377fc 100644
  }
  
  // Platform-specific system certificate loading implementations are separated:
-@@ -298,10 +321,22 @@ extern "C" X509_STORE *us_get_default_ca_store() {
+@@ -237,7 +260,10 @@ static const us_openssl_default_cert_file &us_get_openssl_default_cert_file() {
+         // encrypted private key sharing the file) are skipped, headers and all, as PEM_X509_INFO_read_bio does.
+         ok = false;
+       } else if (strcmp(name, PEM_STRING_X509) == 0 || strcmp(name, PEM_STRING_X509_OLD) == 0) {
+-        if (!bundled.count(std::string_view(reinterpret_cast<const char *>(data), len))) {
++        // minimal: skip a certificate the bundled set holds only when the bundled set is in the store. Otherwise
++        // (the system-store default, --use-openssl-ca) it is the file's copy or nothing: with bun's roots equal to
++        // ca-certificates, skipping them left --use-openssl-ca trusting almost no real root.
++        if (!minimal_upstream_ca_store() || !bundled.count(std::string_view(reinterpret_cast<const char *>(data), len))) {
+           CRYPTO_BUFFER *buf = CRYPTO_BUFFER_new(data, len, nullptr);
+           ok = buf != nullptr;
+           if (ok) certs.push_back(buf);
+@@ -298,10 +324,22 @@ extern "C" X509_STORE *us_get_default_ca_store() {
    }
    X509_STORE_set_flags(store, X509_V_FLAG_IGNORE_EXPIRED_TRUST_ANCHORS);
  
@@ -124,7 +142,7 @@ index 3a6f010c3b..be6ea377fc 100644
  
    // What X509_STORE_set_default_paths(store) trusts: the default certificate file (above) and the default hashed
 diff --git a/src/bun_core/Global.rs b/src/bun_core/Global.rs
-index 7954b6b8da..8d462080ed 100644
+index 7954b6b..8d46208 100644
 --- a/src/bun_core/Global.rs
 +++ b/src/bun_core/Global.rs
 @@ -867,6 +867,12 @@ static Bun__userAgent: SyncCStr = SyncCStr(concatcp!(user_agent, "\0").as_ptr().

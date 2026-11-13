@@ -147,6 +147,7 @@ grep -q 'pub static Bun__Node__MinimalCAStore: core::sync::atomic::AtomicU8' src
 grep -q 'Bun__Node__MinimalCAStore.store(store, Ordering::Relaxed);' src/bun_core/Global.rs || { echo "ERROR: Global.rs does not record the CA store flag after the patch" >&2; exit 1; }
 grep -q '^  if (minimal_bundled) {$' packages/bun-usockets/src/crypto/root_certs.cpp || { echo "ERROR: bun CA store default patch did not apply to root_certs.cpp" >&2; exit 1; }
 [ "$(grep -c 'Bun__Node__MinimalCAStore' packages/bun-usockets/src/crypto/root_certs.cpp)" -ge 4 ] || { echo "ERROR: root_certs.cpp does not read Bun__Node__MinimalCAStore after the patch" >&2; exit 1; }
+grep -q 'if (!minimal_upstream_ca_store() || !bundled.count(' packages/bun-usockets/src/crypto/root_certs.cpp || { echo "ERROR: root_certs.cpp still drops compiled-in duplicates from the OpenSSL default file when the compiled-in set is not in the store" >&2; exit 1; }
 
 # The system-CA behaviour (system store replaces the compiled-in roots; the
 # opt-outs restore them) is NOT checked here: it needs ca-certificates and the
