@@ -31,14 +31,14 @@ let gcc = import "../gcc/build.ncl" in
 # Same configure and shared libraries as node-lts at the same version. Like
 # node and node-lts it installs /usr/bin/node and /usr/lib/node_modules, so a
 # closure holds exactly one node flavor (subsetOf <flavor> ["node"]).
-let version = "24.22.2" in
+let version = "24.22.3" in
 {
   name = "node-24",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://nodejs.org/dist/v%{version}/node-v%{version}.tar.gz",
-      sha256 = "b2f5443a34a38d863e87c0f5f80c03630fc16917dfe16f26c1cec44c0b542959",
+      sha256 = "4690edccae352134bbe31d844b37898f2a28b2c3d67901d0112fb6c4996d556a",
     } | Source,
     # 24.22.1 carries the CVE-2026-111943 fixes upstream (nodejs/node#66871 SPKI
     # blocklist, #66877 NSS 3.131.1 roots), so the backports are no longer carried.
