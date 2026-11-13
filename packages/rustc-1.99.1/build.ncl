@@ -18,13 +18,12 @@ let zlib = import "../zlib/build.ncl" in
 # LLVM 21. Installs the whole toolchain at /usr/lib/rustc-1.99.1 (bin/ + lib/); nothing lands on
 # /usr/bin.
 #
-# TODO(gen-16): fill from tools/gen1-manifest.py output. gen-16 is NOT published yet: both
-# sha256 values below are all-zero PLACEHOLDERS and the file names follow gen-13's naming
-# (tools/gen-publish.py: <pkg>-<version>-<arch>.tar.zst, or <pkg>-<arch> when the manifest has
-# no version for that arch). Replace url and sha256 together from generations/gen-16/MANIFEST.txt.
+# Objects from gen-16's manifest (gominimal/bootstrap#13): built and compared on two machines per
+# arch, byte-identical. Names follow tools/gen-publish.py (<pkg>-<version>-<arch>.tar.zst; the
+# manifest records a version on both arches this time, unlike rustc-1.98.1-aarch64).
 let version = "1.99.1" in
-let amd64_sha256 = "0000000000000000000000000000000000000000000000000000000000000000" in # TODO(gen-16): fill from tools/gen1-manifest.py output
-let arm64_sha256 = "0000000000000000000000000000000000000000000000000000000000000000" in # TODO(gen-16): fill from tools/gen1-manifest.py output
+let amd64_sha256 = "02a0a9c89110b92e0f7c430421f3e7e5cd93f960844e5a5b755adb4e941e2620" in
+let arm64_sha256 = "07b2fdce127dc849437ad0158219d87847718a3f583ec6c5b9e2722642a56f63" in
 {
   name = "rustc-1.99.1",
   prebuilt = true,
@@ -38,7 +37,7 @@ let arm64_sha256 = "000000000000000000000000000000000000000000000000000000000000
         } | Source,
       { arch = 'Arm64, .. } =>
         {
-          url = "gs://minimal-bootstrap/gen-16/sha256/%{arm64_sha256}/rustc-1.99.1-aarch64.tar.zst",
+          url = "gs://minimal-bootstrap/gen-16/sha256/%{arm64_sha256}/rustc-1.99.1-1.99.1-aarch64.tar.zst",
           sha256 = arm64_sha256,
           extract = true,
         } | Source,
