@@ -8,6 +8,7 @@ let bash = import "../bash/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
+let nasm = import "../nasm/build.ncl" in
 let llvm-23 = import "../llvm-23/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let go = import "../go/build.ncl" in
@@ -62,6 +63,10 @@ in
     toolchain,
     cmake,
     ninja,
+    # bun 1.4 assembles libjpeg-turbo's x86_64 SIMD (.asm) with nasm
+    # (scripts/build/deps/libjpeg-turbo.ts); compile.ts asserts "nasm not found in
+    # toolchain" at the use site. Only x64 builds use it; declared on both arches.
+    nasm,
     # bun 1.4.x's configure accepts only clang / ld.lld of the pinned release series
     # (scripts/build/ci-images/spec.ts pins.llvm 23.1.1; tools.ts LLVM_VERSION_RANGE
     # >=23.1.0 <23.1.99) and searches /usr/lib/llvm-23/bin, so it builds on the prefixed
