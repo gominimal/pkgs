@@ -8,7 +8,7 @@ let ca-certificates = import "../ca-certificates/build.ncl" in
 let git = import "../git/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 
-let version = "0.9.15" in
+let version = "0.9.16" in
 {
   name = "capy",
   build_deps = [
@@ -18,7 +18,7 @@ let version = "0.9.15" in
     # into this registry.
     {
       url = "https://github.com/capysc/capy-cli/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "746f4d6f53a42e6af42d7596ccb9db7455f4c5c5523d3c500bee7eaca2334784",
+      sha256 = "5f21895f59b6ed94262b861578953a8e262b63cbf84d9e8f8aaea1cfaa3e4363",
       extract = true,
       strip_prefix = "capy-cli-%{version}",
     } | Source,
