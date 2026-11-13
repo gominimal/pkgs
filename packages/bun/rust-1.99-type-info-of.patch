@@ -39,3 +39,33 @@ index 1f53d67..15400bc 100644
  use core::mem::{ManuallyDrop, MaybeUninit};
  use core::ptr::{self, NonNull};
  use std::alloc::{Allocator, Global};
+diff --git a/src/runtime/cli/lint_js.rs b/src/runtime/cli/lint_js.rs
+--- a/src/runtime/cli/lint_js.rs
++++ b/src/runtime/cli/lint_js.rs
+@@ -407,7 +407,6 @@
+ }
+ 
+ /// Startup state that all VMs share.
+-#[derive(Default)]
+ struct Start {
+     initialize: std::sync::Once,
+     /// Set if the run won't have more than a few VMs. Stays unset if a VM starts before the files are known.
+@@ -415,6 +414,18 @@
+     memory: std::sync::OnceLock<usize>,
+ }
+ 
++// minimal: `impl Default for Once` is Rust 1.100 (once_default), so the derive
++// does not compile on 1.99. Same values the derive would produce.
++impl Default for Start {
++    fn default() -> Self {
++        Start {
++            initialize: std::sync::Once::new(),
++            is_for_few: AtomicBool::new(false),
++            memory: std::sync::OnceLock::new(),
++        }
++    }
++}
++
+ impl Start {
+     /// [`memory_for_engines`]
+     fn memory(&self) -> usize {

@@ -81,6 +81,7 @@ fi
 patch -Np1 -i rust-1.99-type-info-of.patch
 grep -q 'const { core::intrinsics::type_id::<T>() }' src/collections/multi_array_list.rs || { echo "ERROR: type_info::of shim not applied" >&2; exit 1; }
 ! grep -q '^use core::mem::type_info;' src/collections/multi_array_list.rs || { echo "ERROR: multi_array_list.rs still imports core::mem::type_info" >&2; exit 1; }
+grep -q '^impl Default for Start {$' src/runtime/cli/lint_js.rs || { echo "ERROR: lint_js.rs Start Default impl (Once::new) not applied" >&2; exit 1; }
 test -d "$(rustc --print sysroot)/lib/rustlib/src/rust/library" || { echo "ERROR: rust-src missing from the rust sysroot; bun 1.4 builds std with -Zbuild-std" >&2; exit 1; }
 
 # CVE-2026-111943: upstream dropped the three emSign roots NSS 3.131.1 removed
