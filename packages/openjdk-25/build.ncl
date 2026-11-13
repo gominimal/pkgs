@@ -1,6 +1,5 @@
 let { Attrs, BuildSpec, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
-let glibc-bedrock-2-42-sysroot = import "../glibc-bedrock-2.42-sysroot/build.ncl" in # the sysroot only (see that package)
 let glibc = import "../glibc/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
@@ -15,10 +14,10 @@ let libxext = import "../libxext/build.ncl" in
 let libxi = import "../libxi/build.ncl" in
 let libxrender = import "../libxrender/build.ncl" in
 let libxtst = import "../libxtst/build.ncl" in
-# openjdk-25: OpenJDK 25.0.2 from gen-13 of gominimal/bootstrap: the JVM ladder
+# openjdk-25: the boot JDK for jdk-25, OpenJDK 25.0.2 from gen-15 of gominimal/bootstrap: the JVM ladder
 # jikes -> classpath -> jamvm -> ant/ecj -> icedtea-7/8 -> openjdk-9 ... 25, every rung built from
 # source on the hex0-rooted toolchain and reproduced byte for byte on two independent machines
-# before publishing (generations/gen-13/manifest.json). Installs at /usr/lib/openjdk-25; nothing lands on
+# before publishing (generations/gen-15/manifest.json). Installs at /usr/lib/openjdk-25; nothing lands on
 # /usr/bin.
 let is_arm = target.arch == 'Arm64 in
 let version = "25.0.2" in
@@ -29,13 +28,15 @@ let version = "25.0.2" in
     match {
       { arch = 'Amd64, .. } =>
         {
-          url = "gs://minimal-bootstrap/gen-13/sha256/ac057555aed919f99517f6ce6977b179d48bd852a244409ab4f7ec9b87f44464/openjdk-25-25.0.2-x86_64.tar.zst",
-          sha256 = "ac057555aed919f99517f6ce6977b179d48bd852a244409ab4f7ec9b87f44464",
+          url = "gs://minimal-bootstrap/gen-15/sha256/90a3cd5c7dc56d84fdfb0bcf1d342ced9db2df0f7e1ef887e39d2b3e94800858/openjdk-25-25.0.2-x86_64.tar.zst",
+          sha256 = "90a3cd5c7dc56d84fdfb0bcf1d342ced9db2df0f7e1ef887e39d2b3e94800858",
           extract = true,
         } | Source,
       { arch = 'Arm64, .. } =>
         {
-          url = "gs://minimal-bootstrap/gen-13/sha256/0a942b63e30e45c3e900dfe4f98ffe3ed5186de6055cb6f4c3c454749a5503dd/openjdk-25-25.0.2-aarch64.tar.zst",
+          # source-hash-guard: allow 0a942b63e30e45c3e900dfe4f98ffe3ed5186de6055cb6f4c3c454749a5503dd gen-15 re-publishes the gen-13 arm64 object
+          # unchanged (generations/gen-15/manifest.json lists this sha256 at this url)
+          url = "gs://minimal-bootstrap/gen-15/sha256/0a942b63e30e45c3e900dfe4f98ffe3ed5186de6055cb6f4c3c454749a5503dd/openjdk-25-25.0.2-aarch64.tar.zst",
           sha256 = "0a942b63e30e45c3e900dfe4f98ffe3ed5186de6055cb6f4c3c454749a5503dd",
           extract = true,
         } | Source,
@@ -44,8 +45,9 @@ let version = "25.0.2" in
   # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, lcms2, libpng, giflib and libjpeg
   runtime_deps =
     []
-    # amd64 binaries name the bedrock sysroot's loader and RUNPATH; arm64's use the toolchain glibc
-    @ (if is_arm then [glibc, toolchain] else [glibc-bedrock-2-42-sysroot])
+    # amd64 binaries load through glibc's /usr/lib/ld-linux-x86-64.so.2 with no RUNPATH beyond their own
+    # $ORIGIN entries; arm64's use the toolchain glibc
+    @ (if is_arm then [glibc, toolchain] else [glibc])
     @ [
       zlib,
       freetype,

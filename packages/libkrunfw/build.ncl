@@ -16,7 +16,8 @@ let pyelftools = import "../pyelftools/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "5.6.2" in
+let version = "5.6.4" in
+let kernel_version = "6.12.115" in
 {
   name = "libkrunfw",
 
@@ -24,25 +25,31 @@ let version = "5.6.2" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/libkrun/libkrunfw/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "df45d649fcbd07a4d0ca03fa836b2f640fdcf9b40187f3eb7023259c6e83d582",
+      sha256 = "5b92b6f2a5ee6a16583bd37014a37794451a00d120fceee104f84404118757d0",
       extract = true,
       strip_prefix = "libkrunfw-%{version}",
     } | Source,
-    # Guest kernel firmware source, vendored so the build is hermetic (the
-    # Makefile otherwise curls it into tarballs/ at build time).
+    # Guest kernel source, vendored so the build is hermetic (the Makefile
+    # otherwise curls it into tarballs/ at build time).
     #
-    # ⚠ THIS VERSION IS COUPLED TO `version` ABOVE and must be bumped with it.
-    # libkrunfw's Makefile hard-pins the kernel it builds against:
-    #   5.5.0:  KERNEL_VERSION = linux-6.12.91
-    #   5.6.1:  KERNEL_VERSION = linux-6.12.109
-    # If they disagree, the Makefile does not find its tarball under tarballs/
-    # and falls back to curling it — which fails in the hermetic sandbox with
-    # "make: curl: No such file or directory", not with a version error. Check
-    # KERNEL_VERSION at the top of the Makefile for the tag being pinned.
-    # sha256 is kernel.org's published sha256sums.asc entry for the file.
+    # As of 5.6.4 libkrunfw no longer builds a vanilla kernel.org tarball plus
+    # its own patches/ (5.6.1 still used linux-6.12.109.tar.xz): it fetches a
+    # pre-patched tree from libkrun/linux, tagged
+    # v<FULL_VERSION>-<KERNEL_VERSION>, and its Makefile pins both:
+    #   KERNEL_VERSION = 6.12.115   (5.6.4)
+    #   KERNEL_TARBALL = tarballs/v$(FULL_VERSION)-$(KERNEL_VERSION).tar.gz
+    # ⚠ `kernel_version` must match KERNEL_VERSION at the top of the Makefile
+    # for the tag being pinned. build.sh checks this and fails loudly; without
+    # the check a mismatch surfaces only as "make: curl: No such file or
+    # directory".
+    #
+    # sha256 is of GitHub's tag archive (codeload), verified to carry commit
+    # cb18e1849e6f8d8866f5e6f65fd428f1846726d4 (the tag's target) and the
+    # top-level dir linux-5.6.4-6.12.115/ the Makefile untars to. This relies
+    # on GitHub's archive bytes staying stable, as other tag-archive Sources here do.
     {
-      url = "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.12.109.tar.xz",
-      sha256 = "5484e552a334e15019f4aeba89e5b58f04651cf2f4e24e04de9f152f1c38e3fa",
+      url = "https://github.com/libkrun/linux/archive/refs/tags/v%{version}-%{kernel_version}.tar.gz",
+      sha256 = "050fcea96b607e49f135f270472bc95346c172c9d6df5f9256aeb6f7972675d5",
     } | Source,
     base,
     toolchain,

@@ -4,7 +4,7 @@ let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let findutils = import "../findutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let binaryen = import "../binaryen/build.ncl" in
-let llvm-21 = import "../llvm-21/build.ncl" in
+let llvm-23 = import "../llvm-23/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 let python = import "../python/build.ncl" in
 
@@ -12,10 +12,13 @@ let glibc = import "../glibc/build.ncl" in
 
 # Emscripten does not support stable LLVM releases in general -- it tracks
 # LLVM top-of-tree -- so the version is pinned to the last release whose
-# EXPECTED_LLVM_VERSION is 21, and it takes LLVM from the frozen, prefixed
-# llvm-21 (/usr/lib/llvm-21; build.sh points LLVM_ROOT there) rather than the
-# default llvm, which is a later major. Bumping emscripten means moving it to the
-# llvm-<N> line it expects; tools/shared.py holds the expected major.
+# EXPECTED_LLVM_VERSION is 23 (6.0.3; 6.0.4 moved to 24), and it takes LLVM from
+# the prefixed llvm-23 (/usr/lib/llvm-23; build.sh points LLVM_ROOT there) rather
+# than the default llvm, so a later default major cannot silently change the
+# compiler under it. Bumping emscripten means moving it to the llvm-<N> line it
+# expects; tools/shared.py holds the expected major, and build.sh fails the
+# build when the two disagree. tools/building.py's EXPECTED_BINARYEN_VERSION
+# (129 at 6.0.3) is a warning-only check; binaryen here is newer.
 #
 # LIMITATION -- no JavaScript optimizer. This package ships without the npm
 # dependencies emscripten's own installer would fetch (see build.sh), so the
@@ -26,7 +29,7 @@ let glibc = import "../glibc/build.ncl" in
 # those modules. Compiling and archiving, which is what vendor:raylib's wasm
 # libraries need, is unaffected. Restoring it means vendoring or mirroring the
 # npm tree rather than stubbing the install.
-let version = "4.0.11" in
+let version = "6.0.3" in
 {
   name = "emscripten",
 
@@ -34,7 +37,7 @@ let version = "4.0.11" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/emscripten-core/emscripten/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "aecfc5df27141d5fb6dd2d4853d8cff0f7719fac4edea34ea7786a6a86d6ecf5",
+      sha256 = "033241f96a5c50993b43d8383c3356d2804932f5b3548e94c9839c4f68e8b5bd",
       extract = true,
       strip_prefix = "emscripten-%{version}",
     } | Source,
@@ -51,7 +54,7 @@ let version = "4.0.11" in
     python,
     # bins = clang, wasm-ld, llvm-ar & co.; libs = libLLVM, libclang-cpp, liblld and
     # clang's resource dir, which those binaries load through their $ORIGIN/../lib RPATH.
-    subsetOf llvm-21 ["bins", "libs"],
+    subsetOf llvm-23 ["bins", "libs"],
   ],
 
   cmd = "./build.sh",
