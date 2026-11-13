@@ -3,6 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
-    "vlt": "1.7.0"
+    "vlt": "1.8.0"
   }
 }
