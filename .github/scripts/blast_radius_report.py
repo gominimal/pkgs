@@ -18,7 +18,7 @@ no network and no `minimal dump`:
 
 1. Recipe imports: `import "../<pkg>/build.ncl"`, or any other path into
    another package's directory (a shared helper such as
-   `../hex0/amd64-ladder.ncl`), in any .ncl under packages/<pkg>/ — the real
+   `../llvm/versioned.ncl`), in any .ncl under packages/<pkg>/ — the real
    dependency graph as recipes express it (build and runtime deps are both
    declared this way).
 2. Name references: any quoted string in a non-package .ncl (stacks/,
@@ -43,10 +43,10 @@ import sys
 from pathlib import Path
 
 # Any path into another package's directory: `import "../gcc/build.ncl"`, a
-# shared helper (`import "../hex0/amd64-ladder.ncl"`), or a file a helper
+# shared helper (`import "../llvm/versioned.ncl"`), or a file a helper
 # names. Matching every `"../<pkg>/` string rather than only build.ncl imports
-# makes the edge coarse (importing hex0's ladder helper counts as depending on
-# hex0) but never misses one, which is the direction both this report and the
+# makes the edge coarse (importing llvm's versioned.ncl counts as depending on
+# llvm) but never misses one, which is the direction both this report and the
 # CI scoping in ci_scope.py need.
 IMPORT_RE = re.compile(r'"\.\./([a-z0-9_.+-]+)/')
 STRING_RE = re.compile(r'"([a-z0-9_.+-]+)"')
