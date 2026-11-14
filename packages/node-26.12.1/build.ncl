@@ -1,6 +1,5 @@
-let { subsetOf, Attrs, BuildSpec, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, OutputBin, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
-let coreutils = import "../coreutils/build.ncl" in
 let icu = import "../icu/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
@@ -31,22 +30,18 @@ let version = "26.12.1" in
     } target,
   ],
   runtime_deps = [
-    coreutils, # npx/npm need /usr/bin/env
     icu,
     glibc,
     subsetOf gcc ["libgcc", "libstdcpp"],
     # node trusts OpenSSL's default store, /etc/ssl
     ca-certificates,
   ],
+  # The interpreter only. `node`'s build runs it for esbuild steps, strip-comments.js and
+  # swc's patch.mjs, never npm. node and node-lts ship npm, npx, usr/lib/node_modules, the
+  # headers, man pages and BUILDINFO at the same paths, so a closure holding both would
+  # blend two npm trees (pkgs#751; .github/scripts/node_runtime_guard.py's shared-tree rule).
   outputs = {
     node = { glob = "usr/bin/node" } | OutputBin,
-    npx = { glob = "usr/bin/npx" } | OutputBin,
-    npm = { glob = "usr/bin/npm" } | OutputBin,
-    node_modules = { glob = "usr/lib/node_modules/**" } | OutputData,
-
-    includes = { glob = "usr/include/**" } | OutputData,
-    mans = { glob = "usr/share/man/**" } | OutputData,
-    buildinfo = { glob = "usr/share/node/BUILDINFO" } | OutputData,
   },
   attrs =
     {
