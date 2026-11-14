@@ -1,8 +1,8 @@
 #!/bin/sh
 set -ex
 
-tar -xof linux-6.12.115.tar.xz
-cd linux-6.12.115
+tar -xof linux-6.12.117.tar.xz
+cd linux-6.12.117
 
 make headers
 mkdir -p $OUTPUT_DIR/usr
