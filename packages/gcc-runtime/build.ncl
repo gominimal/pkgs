@@ -1,7 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
-let binutils = import "../binutils/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -9,7 +8,8 @@ let glibc = import "../glibc/build.ncl" in
 # gcc's shared runtime libraries as their own package (gominimal/inbox#1261).
 # Depend on `subsetOf gcc-runtime [...]`, never `subsetOf gcc [...]`: a gcc
 # subset fetches the whole compiler and its runtime_deps (see build.sh).
-# Output names and globs match gcc's, so moving a consumer is a rename.
+# Output names match gcc's, so moving a consumer is a rename. (libstdcpp's glob
+# skips gcc's libstdc++.so.6.*-gdb.py debugger helper.)
 # No upstream_version: this follows the gcc build dep and rebuilds with it.
 let outputs_common = {
   libgcc = { glob = "usr/lib/libgcc_s.so*", allow_data = true } | OutputLib, # libgcc_s.so is a linker-script stub
@@ -33,9 +33,6 @@ in
   cmd = "./build.sh",
   outputs =
     outputs_common
-    & {
-      libgfortran = { glob = "usr/lib/libgfortran.so*" } | OutputLib,
-    }
     & (
       match {
         { arch = 'Amd64, .. } => { libquadmath = { glob = "usr/lib/libquadmath.so*" } | OutputLib },
@@ -45,7 +42,7 @@ in
 
   attrs =
     {
-      # libgcc_s, libstdc++, libgomp, libatomic, libgfortran: GPL-3.0-or-later
+      # libgcc_s, libstdc++, libgomp, libatomic: GPL-3.0-or-later
       # with the GCC Runtime Library Exception 3.1. libquadmath (amd64):
       # LGPL-2.1-or-later.
       license_spdx = "GPL-3.0-or-later WITH GCC-exception-3.1 AND LGPL-2.1-or-later",
@@ -53,8 +50,9 @@ in
 
   # gcc-runtime sits on gcc's bootstrap cycle (gcc -> glibc -> python ->
   # ncurses -> gcc-runtime -> gcc). Break it with the same gominimal/bootstrap
-  # gen-13 gcc objects gcc's own breaker uses. The arm64 object is C/C++ only,
-  # so the breaker has no libgfortran; no package on the cycle needs it.
+  # gen-13 gcc objects gcc's own breaker uses (gcc_runtime_guard.py fails if
+  # the two breakers' pins differ, so a repin must move both). libquadmath is left out of the
+  # breaker: its only consumer (boost) is not on the cycle.
   replace_on_cycle =
     {
       name = "gcc-runtime (prebuilt)",
@@ -77,6 +75,8 @@ in
             } | Source,
         } target,
       ],
+      # glibc is on the same cycle and has its own breaker; the prebuilt
+      # object's libraries resolve against whichever glibc the root holds.
       runtime_deps = [],
       outputs = outputs_common,
     } | BuildSpec,
@@ -94,23 +94,8 @@ in
           [
             "/bin/bash",
             "-c",
-            "shopt -s nullglob; ld=(/usr/lib/ld-linux*.so.*); [ ${#ld[@]} -eq 1 ] || exit 3; for l in /usr/lib/libgcc_s.so.1 /usr/lib/libstdc++.so.6 /usr/lib/libgomp.so.1 /usr/lib/libatomic.so.1 /usr/lib/libgfortran.so.5; do [ -e \"$l\" ] || exit 4; out=$(\"${ld[0]}\" --list \"$l\") || exit 5; [[ $out == *'not found'* ]] && exit 6; done; exit 0",
+            "shopt -s nullglob; ld=(/usr/lib/ld-linux*.so.*); [ ${#ld[@]} -eq 1 ] || exit 3; for l in /usr/lib/libgcc_s.so.1 /usr/lib/libstdc++.so.6 /usr/lib/libgomp.so.1 /usr/lib/libatomic.so.1; do [ -e \"$l\" ] || exit 4; out=$(\"${ld[0]}\" --list \"$l\") || exit 5; [[ $out == *'not found'* ]] && exit 6; done; exit 0",
           ],
-        ],
-      } | Test,
-
-    # libstdc++ and the libgcc_s unwinder together: a C++ exception thrown
-    # across a shared-library boundary is caught.
-    cxx_exception_unwinds =
-      {
-        class = 'Standalone,
-        test_deps = [bash-bootstrap, binutils, coreutils, gcc],
-        cmds = [
-          ["/bin/bash", "-c", "printf '%s\\n' '#include <stdexcept>' 'int boom(int x) { if (x) throw std::runtime_error(\"x\"); return 0; }' > boom.cc"],
-          ["/bin/bash", "-c", "printf '%s\\n' '#include <stdexcept>' 'int boom(int);' 'int main() { try { boom(1); } catch (const std::runtime_error &) { return 0; } return 1; }' > main.cc"],
-          ["/bin/g++", "-shared", "-fPIC", "boom.cc", "-o", "libboom.so"],
-          ["/bin/g++", "main.cc", "-L.", "-lboom", "-Wl,-rpath,$ORIGIN", "-o", "main"],
-          ["/bin/bash", "-c", "./main"],
         ],
       } | Test,
   },

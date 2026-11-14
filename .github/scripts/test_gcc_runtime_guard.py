@@ -169,6 +169,36 @@ class Repo(unittest.TestCase):
         self.assertEqual(code, 1, out)
         self.assertIn("stale-allowlist", out)
 
+    PIN_A = 'url = "gs://minimal-bootstrap/gen-13/sha256/aa/gcc-x86_64.tar.zst",\n        sha256 = "' + "a" * 64 + '",'
+    PIN_B = 'url = "gs://minimal-bootstrap/gen-16/sha256/bb/gcc-x86_64.tar.zst",\n        sha256 = "' + "b" * 64 + '",'
+
+    def breaker(self, pin):
+        return recipe("glibc,") + "\nreplace_on_cycle = { build_deps = [ {\n        " + pin + "\n      } ] }\n"
+
+    def test_breaker_pins_matching_gcc_pass(self):
+        files = self.base()
+        files["packages/gcc/build.ncl"] = self.breaker(self.PIN_A)
+        files["packages/gcc-runtime/build.ncl"] = self.breaker(self.PIN_A)
+        code, out = self.run_main(self.tree(files))
+        self.assertEqual(code, 0, out)
+
+    def test_negative_control_breaker_pins_drift_fails(self):
+        files = self.base()
+        files["packages/gcc/build.ncl"] = self.breaker(self.PIN_B)
+        files["packages/gcc-runtime/build.ncl"] = self.breaker(self.PIN_A)
+        code, out = self.run_main(self.tree(files))
+        self.assertEqual(code, 1, out)
+        self.assertIn("breaker-pins", out)
+        self.assertIn("gen-16", out)
+
+    def test_breaker_pins_unreadable_fails(self):
+        files = self.base()
+        files["packages/gcc/build.ncl"] = self.breaker(self.PIN_A)
+        files["packages/gcc-runtime/build.ncl"] = recipe("glibc,")
+        code, out = self.run_main(self.tree(files))
+        self.assertEqual(code, 1, out)
+        self.assertIn("could not read", out)
+
     def test_unverified_without_packages(self):
         code, _ = self.run_main(tempfile.mkdtemp())
         self.assertEqual(code, 2)

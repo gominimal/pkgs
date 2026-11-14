@@ -193,7 +193,47 @@ def scan_repo(root: str) -> tuple[int, int, dict[str, list[str]]]:
             problems.setdefault(pkg, []).append(
                 f"stale-allowlist: WHOLE_GCC_ALLOWED[{pkg!r}] ({why}) but no runtime_deps takes whole gcc; remove the entry"
             )
+    for p in breaker_pin_problems(root):
+        problems.setdefault("gcc-runtime", []).append(p)
     return files, fields, problems
+
+
+# A gominimal/bootstrap object pin: `url = "gs://minimal-bootstrap/..."` then its sha256.
+BREAKER_PIN = re.compile(r'url\s*=\s*"(gs://minimal-bootstrap/[^"]+)"\s*,\s*sha256\s*=\s*"([0-9a-f]{64})"')
+
+
+def breaker_pins(path: str) -> set[tuple[str, str]]:
+    """The (url, sha256) bootstrap pins inside a recipe's replace_on_cycle."""
+    with open(path, encoding="utf-8") as f:
+        text = strip(f.read(), keep_strings=True)
+    at = text.find("replace_on_cycle")
+    return set(BREAKER_PIN.findall(text[at:])) if at >= 0 else set()
+
+
+def breaker_pin_problems(root: str) -> list[str]:
+    """gcc-runtime's cycle breaker repacks gcc's prebuilt object, so both must pin
+    the same objects. Two copies of a pin drift on the next bootstrap repin: a
+    gcc-runtime breaker still on an older gcc's libstdc++ would sit in build
+    roots beside the real gcc's (inbox#1261 review)."""
+    rt = os.path.join(root, "packages", "gcc-runtime", "build.ncl")
+    if not os.path.exists(rt):
+        return []
+    gcc = os.path.join(root, "packages", "gcc", "build.ncl")
+    rt_pins = breaker_pins(rt)
+    gcc_pins = breaker_pins(gcc) if os.path.exists(gcc) else set()
+    if not rt_pins or not gcc_pins:
+        return [
+            f"breaker-pins: could not read the bootstrap pins in replace_on_cycle "
+            f"(gcc-runtime: {len(rt_pins)}, gcc: {len(gcc_pins)}); both must name the same objects"
+        ]
+    if rt_pins != gcc_pins:
+        only_rt = sorted(u for u, _ in rt_pins - gcc_pins)
+        only_gcc = sorted(u for u, _ in gcc_pins - rt_pins)
+        return [
+            "breaker-pins: gcc-runtime's replace_on_cycle must pin exactly gcc's bootstrap objects; "
+            f"only in gcc-runtime: {only_rt}; only in gcc: {only_gcc}. Repin both together."
+        ]
+    return []
 
 
 def main(argv: list[str] | None = None) -> int:
