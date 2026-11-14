@@ -11,7 +11,7 @@ let hwdata = import "../hwdata/build.ncl" in
 let pciutils = import "../pciutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
-let version = "b12110" in
+let version = "b12359" in
 {
   name = "llama.cpp",
   build_deps = [
@@ -21,7 +21,7 @@ let version = "b12110" in
     { file = "stb-cve-2023-45663.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/ggml-org/llama.cpp/%{version}.tar.gz",
-      sha256 = "442a8ec2c5e8b8895175abfcede851964572370f0a56b33166c94905260da008",
+      sha256 = "e2eadc0fd06f81abea3b8012584e67bea3b403d91bcd1b3072b656cbcb2fb4bb",
       extract = true,
       strip_prefix = "llama.cpp-%{version}",
     } | Source,
@@ -32,7 +32,7 @@ let version = "b12110" in
       # tools/ui/dist so the build doesn't fetch the moving `latest` UI.
       # Bump with `version`.
       url = "gs://minimal-staging-archives/ggml-org/llama-ui/%{version}-dist.tar.gz",
-      sha256 = "a0c7954a7ca79bb418d9bef77bb2f5c4f7d667d3ba6813451ef5f1b693e9dd50",
+      sha256 = "273d1d4e410715f4832579c97868e128d80946c1bde86d682ab06b4b8440933b",
       extract = false,
     } | Source,
     base,
