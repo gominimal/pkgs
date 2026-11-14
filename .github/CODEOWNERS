@@ -1,2 +1,8 @@
 # Every path requires review from a code owner.
 *	@gominimal/minimalists
+
+# pkgscan triage that clears the unattended supply-chain gate
+# (packages/<name>/pkgscan-allow.toml, read by pkgmgr-rs). The security owner
+# approves every entry; agents may draft one but never merge it. Listed after
+# `*`, so it replaces that rule for these files: CODEOWNERS uses the last match.
+packages/*/pkgscan-allow.toml	@bryan-minimal
