@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-tar -xof flex-2.6.4.tar.gz
-cd flex-2.6.4
+tar -xof flex-2.6.11.tar.gz
+cd flex-2.6.11
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
@@ -14,7 +14,7 @@ export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
 ./configure  --prefix=/usr \
-            --docdir=/usr/share/doc/flex-2.6.4 \
+            --docdir=/usr/share/doc/flex-2.6.11 \
             --disable-static
 
 make -j$(nproc)
