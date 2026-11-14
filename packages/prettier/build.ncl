@@ -3,7 +3,7 @@ let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Outpu
 let base = import "../base/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let version = "3.10.0" in
+let version = "3.10.1" in
 {
   name = "prettier",
   build_deps = [
