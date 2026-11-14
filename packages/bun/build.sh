@@ -74,6 +74,20 @@ rust_minor=$(rustc --version | sed -nE 's/^rustc 1\.([0-9]+)\..*/\1/p')
 [ -n "$rust_minor" ] || { echo "ERROR: cannot parse rustc --version: $(rustc --version)" >&2; exit 1; }
 [ "$rust_minor" -ge 100 ] || { echo "ERROR: bun 1.4.3+ needs rustc >= 1.100; got 1.$rust_minor" >&2; exit 1; }
 test -d "$(rustc --print sysroot)/lib/rustlib/src/rust/library" || { echo "ERROR: rust-src missing from the rust sysroot; bun 1.4 builds std with -Zbuild-std" >&2; exit 1; }
+# Rust 1.100 stabilized part of `allocator_api` and moved the rest (Vec::new_in as
+# a const fn, among others) to `allocator_ext`. bun's pinned nightly predates the
+# split, so its crates still say `#![feature(allocator_api)]`, which 1.100 rejects
+# under -D warnings (stable_features) and which no longer unlocks the const
+# new_in. Rename the gate in every bun crate root (11 in 1.4.4; bundler and
+# shell_parser list it among others), then fail if any is left.
+grep -rlE --include='*.rs' '^#!\[feature.*[(, ]allocator_api[,)]' src | while read -r f; do
+  sed -i -E '/^#!\[feature\(/ s/([(, ])allocator_api([,)])/\1allocator_ext\2/g' "$f"
+  echo "allocator_api -> allocator_ext: $f"
+done
+if grep -rnE --include='*.rs' '^#!\[feature.*[(, ]allocator_api[,)]' src >&2; then
+  echo "ERROR: #![feature(allocator_api)] is still enabled above; rustc >= 1.100 rejects it" >&2
+  exit 1
+fi
 
 # CVE-2026-111943: upstream dropped the three emSign roots NSS 3.131.1 removed
 # in oven-sh/bun#46159 (bun-v1.4.x), so the 1.3.x patch is gone. Prove the
