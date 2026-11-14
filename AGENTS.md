@@ -216,17 +216,27 @@ These should be used where possible in lieu of exhaustively listing dependencies
 
 ### Subsets: depending on _some_ libraries in a package
 
-Some packages are really large, like `gcc`, but provide important libraries that are used a lot like
-`libgcc` or `libstdc++`. To avoid any user of a package needing to download a whole gcc, its possible
-to depend on only some _outputs_ of a package. For instance, the `gcc` package represents `libgcc`
-and `libstdc++` with outputs `libgcc` and `libstdcpp`, so if a program needed both libraries, you could
-use:
+`subsetOf <pkg> [<outputs>]` puts only the named _outputs_ of a package into the consumer's closure,
+instead of every file the package ships. For instance, if a program needs libstdc++ and the libgcc_s
+unwinder, it can use:
 
 ```ncl
-subsetOf gcc ["libgcc", "libstdcpp"],
+subsetOf gcc-runtime ["libgcc", "libstdcpp"],
 ```
 
 as an entry to `runtime_deps`. Don't forget to add `subsetOf` to the import line for `minimal.ncl`.
+
+A subset does **not** save a download. The client still fetches the parent's whole build artifact and
+cuts the subset out of it locally, and the closure also takes in all of the parent's own `runtime_deps`.
+So a subset of a large package is no cheaper to fetch than the package itself. To keep a big package's
+libraries cheap, package them on their own and take a subset of that.
+
+gcc is the case that matters: `subsetOf gcc [...]` costs the whole compiler (~300 MB unpacked) plus gcc's
+runtime deps (gmp, mpc, mpfr, zstd, ...). gcc's shared runtime libraries live in `gcc-runtime`, with the
+same output names (`libgcc`, `libstdcpp`, `libgomp`, `libatomic`, `libgfortran`, and `libquadmath` on
+amd64) and only glibc as a runtime dep. Take them from there; `.github/scripts/gcc_runtime_guard.py`
+rejects `subsetOf gcc` and a whole `gcc` in `runtime_deps` (only `toolchain` may ship the compiler).
+Building with gcc (`build_deps`, `toolchain`) is unaffected.
 
 
 ### Build steps/script
