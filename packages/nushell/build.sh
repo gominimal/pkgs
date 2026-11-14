@@ -21,23 +21,8 @@ export CONST_RANDOM_SEED=0   # pin ahash/const-random compile-time seed
 export CARGO_PROFILE_RELEASE_LTO=off
 export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1
 
-# Determinism shim (fixes a CLASS of Rust non-repro): build-time code — here the
-# pest/pest_consume proc-macros generating the parser — seeds std::HashMap from
-# getrandom(), whose per-process-random seed makes their CODE-GENERATION order vary
-# build-to-build (different Rule discriminants/match-arm order -> different .text).
-# std exposes no knob to pin its hasher, so pin the build's entropy itself: an
-# LD_PRELOAD that makes getrandom/getentropy deterministic, so every build-time
-# HashMap iterates stably. Applies to rustc + all proc-macros for this build only.
-# CVE-2026-111943: move upstream's Cargo.lock to rustls-webpki 0.103.16 and
-# webpki-roots / webpki-root-certs 1.0.10 (see build.ncl). Applied by name so a
-# missing or stale patch fails the build.
-patch -Np1 -i ./cve-2026-111943-webpki-lock.patch
-# Prove it landed, fail-closed: the fixed verifier is locked, and no pre-fix
-# rustls-webpki 0.103.x or webpki-roots / webpki-root-certs 1.0.x remains.
-grep -A1 '^name = "rustls-webpki"$' Cargo.lock | grep -q '^version = "0.103.16"$' || {
-  echo "ERROR: rustls-webpki 0.103.16 is not in Cargo.lock (CVE-2026-111943)" >&2
-  exit 1
-}
+# Security floor (data/security_floors.toml): kept by pkgmgr when the lock
+# patch it guarded became unnecessary. No pre-fix version may be locked.
 if grep -A1 -E '^name = "(rustls-webpki|webpki-roots|webpki-root-certs)"$' Cargo.lock |
   grep -qE '^version = "(0[.]103[.]([0-9]|1[0-5])|1[.]0[.][0-9])"$'; then
   echo "ERROR: a pre-CVE-2026-111943 rustls-webpki / webpki-roots is still in Cargo.lock" >&2
@@ -48,7 +33,7 @@ fi
 # checked against Cargo.lock) before the shim below is loaded, so no TLS session
 # runs on the shim's fixed bytes. This build has the network through `rust`,
 # which declares needs.internet. No build script in the dependency graph
-# downloads anything (checked for 0.116.1), so the build below needs no network.
+# downloads anything (checked for 0.117.0), so the build below needs no network.
 cargo fetch --locked
 
 cat > /tmp/detrand.c <<'CEOF'
