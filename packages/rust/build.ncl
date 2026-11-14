@@ -13,8 +13,8 @@ let libffi = import "../libffi/build.ncl" in
 let libssh2 = import "../libssh2/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let rustc-1-98-1 = import "../rustc-1.98.1/build.ncl" in # the stage0
-let version = "1.99.1" in
+let rustc-1-99-1 = import "../rustc-1.99.1/build.ncl" in # the stage0
+let version = "1.100.0" in
 {
   name = "rust",
   build_deps =
@@ -23,7 +23,7 @@ let version = "1.99.1" in
       { file = "build.sh" } | Local,
       {
         url = "gs://minimal-staging-archives/rustc-%{version}-src.tar.xz",
-        sha256 = "6451598a99e77f07571960f6b21d577399d3a30f33e80cbd2e3a4aae6535d265",
+        sha256 = "90dab90b8084eb57c35ae2b1d0b70c8e5138ace6023b22c60a5a400f586f63b2",
         extract = true,
         strip_prefix = "rustc-%{version}-src",
       } | Source,
@@ -36,11 +36,11 @@ let version = "1.99.1" in
       python,
       toolchain,
     ]
-    # stage0 = rustc-1.98.1 on BOTH arches (1.99.0's src/stage0 pins 1.98.0; x.py's
-    # check_stage0_version accepts any 1.98.x): the top of the source-only ladder mrustc 0.12.0 ->
-    # rustc-1.90.0 -> ... -> 1.97.1 -> 1.98.1, built in gominimal/bootstrap (gen-13).  build.sh injects
-    # it into bootstrap.toml [build] rustc/cargo; x.py never downloads a stage0.
-    @ [rustc-1-98-1],
+    # stage0 = rustc-1.99.1 on BOTH arches (1.100.0's src/stage0 pins 1.99.0; x.py's
+    # check_stage0_version accepts any 1.99.x): the top of the source-only ladder mrustc 0.12.0 ->
+    # rustc-1.90.0 -> ... -> 1.98.1 -> 1.99.1, built in gominimal/bootstrap (gen-16, on LLVM 23).
+    # build.sh injects it into bootstrap.toml [build] rustc/cargo; x.py never downloads a stage0.
+    @ [rustc-1-99-1],
   # The build itself is offline (build.sh stubs curl/wget/git and fails on any attempt). The flags stay
   # because the builder grants a package network access when ANY of its dependencies declares it, and
   # the Rust programs that depend on this package still fetch their crates during their own builds.

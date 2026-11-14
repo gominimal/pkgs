@@ -67,22 +67,36 @@ export CXXFLAGS="${CFLAGS}"
 grep -q '^channel = "nightly-' rust-toolchain.toml || { echo "ERROR: bun's rust-toolchain.toml no longer pins a nightly channel; revisit the toolchain handling below" >&2; exit 1; }
 : > rust-toolchain.toml
 export RUSTC_BOOTSTRAP=1
-# bun 1.4.3+ uses core::mem::type_info::of (Rust >= 1.100) in bun_collections;
-# Rust 1.99 has every TypeId reflection method it calls except that free
-# function, so rust-1.99-type-info-of.patch defines it locally with 1.100's
-# body (const { core::intrinsics::type_id::<T>() }). Once our rustc reaches 1.100
-# the patch is dead weight: fail so it gets removed instead of lingering.
+# bun 1.4.3+ needs Rust >= 1.100: bun_collections calls core::mem::type_info::of
+# and lint_js.rs derives Default over std::sync::Once (once_default), both new
+# in 1.100.
 rust_minor=$(rustc --version | sed -nE 's/^rustc 1\.([0-9]+)\..*/\1/p')
 [ -n "$rust_minor" ] || { echo "ERROR: cannot parse rustc --version: $(rustc --version)" >&2; exit 1; }
-if [ "$rust_minor" -ge 100 ]; then
-  echo "ERROR: rustc is 1.$rust_minor; drop rust-1.99-type-info-of.patch from bun's build.ncl and build.sh" >&2
-  exit 1
-fi
-patch -Np1 -i rust-1.99-type-info-of.patch
-grep -q 'const { core::intrinsics::type_id::<T>() }' src/collections/multi_array_list.rs || { echo "ERROR: type_info::of shim not applied" >&2; exit 1; }
-! grep -q '^use core::mem::type_info;' src/collections/multi_array_list.rs || { echo "ERROR: multi_array_list.rs still imports core::mem::type_info" >&2; exit 1; }
-grep -q '^impl Default for Start {$' src/runtime/cli/lint_js.rs || { echo "ERROR: lint_js.rs Start Default impl (Once::new) not applied" >&2; exit 1; }
+[ "$rust_minor" -ge 100 ] || { echo "ERROR: bun 1.4.3+ needs rustc >= 1.100; got 1.$rust_minor" >&2; exit 1; }
 test -d "$(rustc --print sysroot)/lib/rustlib/src/rust/library" || { echo "ERROR: rust-src missing from the rust sysroot; bun 1.4 builds std with -Zbuild-std" >&2; exit 1; }
+# Rust 1.100 stabilized part of `allocator_api` and moved the rest (Vec::new_in as
+# a const fn, among others) to `allocator_ext`. bun's pinned nightly predates the
+# split, so 12 bun crate roots in 1.4.4 still enable allocator_api: on one line,
+# in a list (bundler, shell_parser) or across lines (collections). Under bun's
+# -D warnings, 1.100 rejects that gate (stable_features), and which crates need
+# the moved part differs: renaming the gate left bun_ptr and bun_shell_parser with
+# an unused allocator_ext (unused_features). So leave bun's gates alone and put
+# both lines at the top of every crate root that enables allocator_api: the
+# moved part for the crates that use it, and an allow for the two lints that
+# only describe the split. Crate roots are the files with a `#![feature`; the
+# token match skips `allocator_api2`.
+alloc_ext='#![feature(allocator_ext)]'
+alloc_allow='#![allow(stable_features, unused_features)]'
+alloc_crates=$(grep -rlE --include='*.rs' '^#!\[feature' src | xargs grep -lE '(^|[(, [:space:]])allocator_api([,)[:space:]]|$)' || true)
+for f in $alloc_crates; do
+  { printf '%s\n%s\n' "$alloc_ext" "$alloc_allow"; cat "$f"; } > "$f.minimal-alloc"
+  mv "$f.minimal-alloc" "$f"
+  echo "allocator_ext + allow: $f"
+done
+for f in $alloc_crates; do
+  [ "$(sed -n 1p "$f")" = "$alloc_ext" ] && [ "$(sed -n 2p "$f")" = "$alloc_allow" ] || { echo "ERROR: $f does not start with the allocator_ext lines" >&2; exit 1; }
+done
+echo "allocator_api crate roots patched: $(echo "$alloc_crates" | grep -c . || true)"
 
 # CVE-2026-111943: upstream dropped the three emSign roots NSS 3.131.1 removed
 # in oven-sh/bun#46159 (bun-v1.4.x), so the 1.3.x patch is gone. Prove the
