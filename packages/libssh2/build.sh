@@ -29,6 +29,19 @@ patch -Np1 -i "CVE-2026-66035.patch"
 patch -Np1 -i "CVE-2026-58050.patch"
 patch -Np1 -i "CVE-2026-58051.patch"
 
+# The source is the GitHub TAG archive, whose include/libssh2.h still says
+# LIBSSH2_VERSION "1.11.1_DEV"; upstream's release tarballs stamp the suffix out.
+# CMake copies that string into libssh2.pc (`Version:`), libssh2_version() returns
+# it, and the SSH banner sends it ("SSH-2.0-libssh2_1.11.1_DEV"). libssh2-sys 0.3.4
+# (cargo in rust 1.100) semver-parses the pkg-config version and panics on `_DEV`.
+# Stamp the release version, as the release tarball has it; fail if it didn't take.
+sed -i "s/^\(#define LIBSSH2_VERSION[[:space:]]*\"\)${MINIMAL_ARG_VERSION:-1.11.1}_DEV\"/\1${MINIMAL_ARG_VERSION:-1.11.1}\"/" include/libssh2.h
+grep -q "^#define LIBSSH2_VERSION[[:space:]]*\"${MINIMAL_ARG_VERSION:-1.11.1}\"$" include/libssh2.h || {
+  echo "ERROR: include/libssh2.h LIBSSH2_VERSION is not \"${MINIMAL_ARG_VERSION:-1.11.1}\"" >&2
+  grep -n '^#define LIBSSH2_VERSION ' include/libssh2.h >&2
+  exit 1
+}
+
 export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd)=/builddir"
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
@@ -46,3 +59,8 @@ cmake -B build \
 
 cmake --build build -j$(nproc)
 DESTDIR=$OUTPUT_DIR cmake --install build
+grep -qx "Version: ${MINIMAL_ARG_VERSION:-1.11.1}" "$OUTPUT_DIR/usr/lib/pkgconfig/libssh2.pc" || {
+  echo "ERROR: libssh2.pc does not report Version: ${MINIMAL_ARG_VERSION:-1.11.1}" >&2
+  grep -n '^Version:' "$OUTPUT_DIR/usr/lib/pkgconfig/libssh2.pc" >&2 || true
+  exit 1
+}
