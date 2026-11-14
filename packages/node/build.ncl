@@ -26,6 +26,10 @@ let wasi-libc = import "../wasi-libc/build.ncl" in
 let llhttp-wasm-rebuild = import "../llhttp-wasm-rebuild/build.ncl" in
 let amaro-wasm = import "../amaro-wasm/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
+let node-26-12-1 = import "../node-26.12.1/build.ncl" in # the previous rung: the node that runs the regeneration
+# node-26.12.1's version, which build.sh checks /usr/bin/node against (not `version`: node moves on).
+let node1_version = "26.12.1" in
+let esbuild = import "../esbuild/build.ncl" in
 
 # What this node tree bundles, verified by build.sh (check-tree / build fail on a mismatch),
 # so a node bump re-derives each one here: undici under deps/undici (its llhttp C rebuilds
@@ -39,6 +43,18 @@ let npm_undici_llhttp = "8.1.0" in
 # amaro is recorded once, in amaro-wasm/versions.ncl, so node, node-lts and amaro-wasm agree.
 let amaro = (import "../amaro-wasm/versions.ncl").bundled.node in
 let version = "26.13.1" in
+# The bundled JavaScript node embeds is regenerated from its sources before the build:
+# deps/undici/undici.js, deps/amaro/dist/index.js and deps/minimatch/index.js, each by esbuild
+# the way upstream's build makes it, with ../node-26.12.1 running the steps that need a node.
+# build.sh prints how each compares with the shipped file and ships the result in BUILDINFO.
+# Still upstream's: acorn, minimatch's tsc output, npm and its node_modules,
+# src/node_root_certs.h (perl's tools/mk-ca-bundle.pl from the in-tree certdata.txt), the
+# llhttp C (llparse) and the amalgamations.
+#
+# One esbuild serves all three. Upstream used 0.28.2 for undici, 0.28.1 for minimatch and 0.23.x
+# for amaro, so those two may differ from the shipped bytes while still being regenerated.
+# build.sh fails unless the esbuild on PATH is this version.
+let esbuild_version = "0.28.2" in
 {
   name = "node",
   build_deps = [
@@ -57,7 +73,16 @@ let version = "26.13.1" in
       url = "gs://minimal-staging-archives/undici-%{npm_undici}.tar.gz",
       sha256 = "555a14624f66628d8aa7fcd0691ab2371f3e4512c40358bb7320bfabbb6763ec",
     } | Source,
+    # amaro's tag: src/*.ts and swc's scripts/patch.mjs, which the node tarball does not carry
+    {
+      url = "gs://minimal-staging-archives/nodejs/amaro/v%{amaro}.tar.gz",
+      # versions.ncl pins each bundled amaro's tag once, for amaro-wasm and here.
+      sha256 = (import "../amaro-wasm/versions.ncl").tag_sha256."%{amaro}",
+      extract = false,
+    } | Source,
     base,
+    node-26-12-1,
+    esbuild,
     llvm, # clang + wasm-ld for the llhttp wasm
     wasi-libc,
     llhttp-wasm-rebuild, # rebuilds and splices undici's llhttp wasm blobs
@@ -96,6 +121,8 @@ let version = "26.13.1" in
     include npm_undici,
     include npm_undici_llhttp,
     include amaro,
+    esbuild = esbuild_version,
+    node1 = node1_version,
   },
 
   outputs = {
@@ -106,6 +133,7 @@ let version = "26.13.1" in
 
     includes = { glob = "usr/include/**" } | OutputData,
     mans = { glob = "usr/share/man/**" } | OutputData,
+    buildinfo = { glob = "usr/share/node/BUILDINFO" } | OutputData,
   },
   attrs =
     {
