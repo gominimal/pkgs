@@ -114,4 +114,4 @@ in
         ],
       } | Test,
   },
-}
+} | BuildSpec
