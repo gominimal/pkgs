@@ -4,7 +4,7 @@ let patch = import "../patch/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let curl = import "../curl/build.ncl" in
@@ -61,7 +61,7 @@ let version = "0.45.1" in
 
   runtime_deps = [
     glibc,
-    gcc,
+    subsetOf gcc-runtime ["libgcc"],
     openssl,
     subsetOf curl ["libs"],
     subsetOf sqlite ["libs"],

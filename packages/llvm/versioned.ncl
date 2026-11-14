@@ -19,7 +19,7 @@ let { subsetOf, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let llvm-bootstrap = import "../llvm-bootstrap/build.ncl" in
@@ -52,7 +52,7 @@ fun llvm_version llvm_sha256 =>
       glibc,
       libffi,
       zlib,
-      subsetOf gcc ["libgcc", "libstdcpp"],
+      subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     ],
 
     cmd = "./versioned-build.sh",

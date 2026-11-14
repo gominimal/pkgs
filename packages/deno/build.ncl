@@ -6,7 +6,7 @@ let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let python = import "../python/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 
@@ -32,7 +32,7 @@ let version = "2.9.8" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-runtime ["libgcc"],
     bash, # the /usr/bin wrapper is a #!/bin/sh script (bash provides bin/sh)
     # The wrapper defaults DENO_TLS_CA_STORE=system (CVE-2026-111943), so the
     # OS store must be present or every TLS connection fails.

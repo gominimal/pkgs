@@ -12,6 +12,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let libsodium = import "../libsodium/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let version = "4.3.5" in
 {
@@ -44,7 +45,7 @@ let version = "4.3.5" in
     cmake_data = { glob = "usr/lib/cmake/**" } | OutputData,
     zmq_data = { glob = "usr/share/zmq/**" } | OutputData,
   },
-  runtime_deps = [glibc, subsetOf gcc ["libgcc", "libstdcpp"], libsodium],
+  runtime_deps = [glibc, subsetOf gcc-runtime ["libgcc", "libstdcpp"], libsodium],
   attrs =
     {
       upstream_version = version,

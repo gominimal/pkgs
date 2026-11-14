@@ -4,8 +4,9 @@ let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 
+let { target, .. } = import "config.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 
 let version = "0.3.34" in
 {
@@ -24,7 +25,19 @@ let version = "0.3.34" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libs"],
+    # TODO(readelf): unverified DT_NEEDED. Without NOFORTRAN, OpenBLAS builds
+    # LAPACK with gfortran, so libopenblas.so should NEED libgfortran.so.5, and
+    # on amd64 libgfortran NEEDs libquadmath.so.0 (gcc builds no libquadmath on
+    # arm64). Replaces gcc's catch-all `libs` output (inbox#1261).
+    subsetOf
+      gcc-runtime
+      (
+        ["libgcc", "libgfortran"]
+        @ match {
+          { arch = 'Amd64, .. } => ["libquadmath"],
+          { arch = 'Arm64, .. } => [],
+        } target
+      ),
   ],
 
   cmd = "./build.sh",

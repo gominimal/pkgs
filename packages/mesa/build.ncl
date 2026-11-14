@@ -1,7 +1,7 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let meson = import "../meson/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
@@ -59,7 +59,7 @@ let version = "26.3.0" in
     expat,
     zlib,
     glibc,
-    subsetOf gcc ["libstdcpp", "libgcc"],
+    subsetOf gcc-runtime ["libstdcpp", "libgcc"],
   ],
 
   cmd = "./build.sh",

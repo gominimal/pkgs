@@ -11,6 +11,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let version = "23.1.5" in
 
@@ -42,7 +43,7 @@ let version = "23.1.5" in
     glibc,
     libffi,
     zlib,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

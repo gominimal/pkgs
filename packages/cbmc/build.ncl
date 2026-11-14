@@ -11,6 +11,7 @@ let patch = import "../patch/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 let version = "6.11.0" in
@@ -55,7 +56,7 @@ let version = "6.11.0" in
 
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

@@ -14,7 +14,7 @@ let gmp = import "../gmp/build.ncl" in
 let libpoly = import "../libpoly/build.ncl" in
 let cocoalib = import "../cocoalib/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 
 # cvc5 WITH finite fields (QF_FF): the `cvc5` package's build plus CoCoALib,
 # whose Groebner bases cvc5's finite-field solver runs on.
@@ -72,7 +72,7 @@ let cadical_commit = "a384d221a920d473b770df6a7221f35fc5d99e90" in
     glibc,
     gmp,
     subsetOf libpoly ["libs"],
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

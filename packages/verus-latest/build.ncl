@@ -9,8 +9,6 @@ let toolchain = import "../toolchain/build.ncl" in
 let git = import "../git/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
-let binutils = import "../binutils/build.ncl" in
 let z3-4-16-0 = import "../z3-4.16.0/build.ncl" in
 
 let version = "0.2026.11.02.8bf68ee" in
@@ -98,12 +96,11 @@ in
     base, # /bin/sh for the verus / cargo-verus wrappers
     glibc,
     zlib,
-    subsetOf gcc ["libgcc", "libstdcpp"],
     z3-4-16-0,
     # `verus --compile` and `cargo verus` link through the toolchain; the
-    # wrappers point the linker at gcc.
-    gcc,
-    binutils,
+    # wrappers point the linker at gcc. toolchain carries gcc, binutils, glibc
+    # and linux_headers (and gcc's libgcc_s / libstdc++ for verus itself).
+    toolchain,
     # `cargo verus new` runs `git init` and aborts if it fails.
     git,
   ],

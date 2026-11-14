@@ -3,7 +3,7 @@ let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 # zig 0.17 links exactly LLVM 22 (its CMake rejects any other major), and the
 # default `llvm` is 23: build against the prefixed llvm-22 line
 # (/usr/lib/llvm-22). gominimal/pkgs#996, inbox#1170.
@@ -28,7 +28,7 @@ let version = "0.17.1" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     subsetOf llvm-22 ["libs"],
   ],
 
