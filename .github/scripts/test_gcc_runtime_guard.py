@@ -66,6 +66,7 @@ VIOLATIONS = {
     runtime_deps = [subsetOf gcc ["libgcc"]],
   } | BuildSpec,""",
     ),
+    "whole gcc-runtime": recipe("glibc,\n    gcc-runtime,"),
     "array concatenated with an arch match": recipe(
         "glibc,\n  ] @ match { { arch = 'Amd64, .. } => [gcc], { arch = 'Arm64, .. } => [] } target @ [\n    glibc,"
     ),
@@ -73,6 +74,11 @@ VIOLATIONS = {
 
 CLEAN = {
     "gcc-runtime subset": recipe('glibc, subsetOf gcc-runtime ["libgcc", "libstdcpp"],'),
+    "gcc-runtime multi-line subset": recipe(
+        """subsetOf
+      gcc-runtime
+      (["libgcc"] @ match { { arch = 'Amd64, .. } => ["libquadmath"], { arch = 'Arm64, .. } => [] } target),"""
+    ),
     "gcc in build_deps only": recipe("glibc,", build='gcc, subsetOf gcc ["libgcc"],'),
     "gcc in test_deps": recipe(
         "glibc,",
@@ -102,6 +108,7 @@ class ScanText(unittest.TestCase):
         self.assertEqual(rules(VIOLATIONS["multi-line boost form"]), ["subset"])
         self.assertEqual(rules(VIOLATIONS["whole gcc"]), ["whole-gcc"])
         self.assertEqual(rules(VIOLATIONS["inline import"]), ["inline-import"])
+        self.assertEqual(rules(VIOLATIONS["whole gcc-runtime"]), ["whole-gcc-runtime"])
 
     def test_line_numbers_point_at_the_dep(self):
         text = VIOLATIONS["one-line subset"]

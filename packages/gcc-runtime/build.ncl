@@ -18,6 +18,13 @@ let outputs_common = {
   libatomic = { glob = "usr/lib/libatomic.so*" } | OutputLib,
 }
 in
+# gcc builds libquadmath on amd64 only.
+let amd64_quadmath =
+  match {
+    { arch = 'Amd64, .. } => { libquadmath = { glob = "usr/lib/libquadmath.so*" } | OutputLib },
+    { arch = 'Arm64, .. } => {},
+  } target
+in
 {
   name = "gcc-runtime",
   build_deps = [
@@ -31,14 +38,7 @@ in
   ],
 
   cmd = "./build.sh",
-  outputs =
-    outputs_common
-    & (
-      match {
-        { arch = 'Amd64, .. } => { libquadmath = { glob = "usr/lib/libquadmath.so*" } | OutputLib },
-        { arch = 'Arm64, .. } => {},
-      } target
-    ),
+  outputs = outputs_common & amd64_quadmath,
 
   attrs =
     {
@@ -51,8 +51,13 @@ in
   # gcc-runtime sits on gcc's bootstrap cycle (gcc -> glibc -> python ->
   # ncurses -> gcc-runtime -> gcc). Break it with the same gominimal/bootstrap
   # gen-13 gcc objects gcc's own breaker uses (gcc_runtime_guard.py fails if
-  # the two breakers' pins differ, so a repin must move both). libquadmath is left out of the
-  # breaker: its only consumer (boost) is not on the cycle.
+  # the two breakers' pins differ, so a repin must move both).
+  # A prebuilt's cache entry is the WHOLE extracted object (output globs are not
+  # applied to prebuilts), so consumers must take a subset, never all of
+  # gcc-runtime (the guard enforces it); a subset still gets just its globs.
+  # The breaker declares the same outputs as the real spec: asking a prebuilt
+  # for an output it does not declare panics in minimal
+  # (crates/op/src/subsets.rs).
   replace_on_cycle =
     {
       name = "gcc-runtime (prebuilt)",
@@ -78,7 +83,7 @@ in
       # glibc is on the same cycle and has its own breaker; the prebuilt
       # object's libraries resolve against whichever glibc the root holds.
       runtime_deps = [],
-      outputs = outputs_common,
+      outputs = outputs_common & amd64_quadmath,
     } | BuildSpec,
 
   tests = {
