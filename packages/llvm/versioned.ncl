@@ -27,6 +27,7 @@ let ninja = import "../ninja/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+let zstd = import "../zstd/build.ncl" in
 fun llvm_version llvm_sha256 =>
   let llvm_major = std.array.first (std.string.split "." llvm_version) in
   let rel = "usr/lib/llvm-%{llvm_major}" in
@@ -52,6 +53,10 @@ fun llvm_version llvm_sha256 =>
       glibc,
       libffi,
       zlib,
+      # libLLVM, lld and llvm-config NEED libzstd.so.1 (published llvm 23.1.5,
+      # readelf). It used to arrive only through `subsetOf gcc`, which inherits
+      # gcc's runtime_deps; gcc-runtime does not (inbox#1261).
+      zstd,
       subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     ],
 

@@ -13,6 +13,7 @@ let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+let zstd = import "../zstd/build.ncl" in
 let version = "23.1.5" in
 
 # The default, UNPREFIXED LLVM (/usr/bin/clang, /usr/lib/libLLVM.so.23.1, ...). Consumers
@@ -43,6 +44,10 @@ let version = "23.1.5" in
     glibc,
     libffi,
     zlib,
+    # libLLVM, lld and llvm-config NEED libzstd.so.1 (published llvm 23.1.5,
+    # readelf). It used to arrive only through `subsetOf gcc`, which inherits
+    # gcc's runtime_deps; gcc-runtime does not (inbox#1261).
+    zstd,
     subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
