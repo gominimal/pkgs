@@ -22,6 +22,7 @@ let xorgproto = import "../xorgproto/build.ncl" in
 let expat = import "../expat/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let zstd = import "../zstd/build.ncl" in
 
 let version = "26.3.0" in
 {
@@ -58,6 +59,7 @@ let version = "26.3.0" in
     libxshmfence,
     expat,
     zlib,
+    zstd, # libgallium NEEDs libzstd.so.1; it came only through subsetOf gcc (inbox#1261)
     glibc,
     subsetOf gcc-runtime ["libstdcpp", "libgcc"],
   ],

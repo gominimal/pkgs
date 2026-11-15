@@ -6,6 +6,7 @@ let toolchain = import "../toolchain/build.ncl" in
 
 let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let zlib = import "../zlib/build.ncl" in
 
 let version = "0.28.0" in
 {
@@ -26,6 +27,7 @@ let version = "0.28.0" in
   runtime_deps = [
     glibc,
     subsetOf gcc-runtime ["libgcc"],
+    zlib, # usr/bin/tuicr NEEDs libz.so.1; it came only through subsetOf gcc (inbox#1261)
   ],
 
   needs = {

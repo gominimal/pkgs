@@ -5,6 +5,7 @@ let toolchain = import "../toolchain/build.ncl" in
 
 let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let zlib = import "../zlib/build.ncl" in
 
 let version = "0.9.3" in
 {
@@ -25,6 +26,7 @@ let version = "0.9.3" in
   runtime_deps = [
     glibc,
     subsetOf gcc-runtime ["libgcc", "libstdcpp"],
+    zlib, # usr/bin/teamtype NEEDs libz.so.1; it came only through subsetOf gcc (inbox#1261)
   ],
 
   cmd = "./build.sh",
