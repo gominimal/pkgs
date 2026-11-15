@@ -7,6 +7,7 @@ let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+let zstd = import "../zstd/build.ncl" in
 let version = "21.1.8" in
 
 {
@@ -47,6 +48,7 @@ let version = "21.1.8" in
     glibc,
     subsetOf gcc-runtime ["libgcc"],
     zlib,
+    zstd, # clang-21 and its tools NEED libzstd.so.1; it came only through subsetOf gcc (inbox#1261)
   ],
 
   cmd = "./build.sh",
