@@ -19,6 +19,13 @@ field (a replace_on_cycle breaker's included), rejects:
                    package that runs the compiler may do that, and it goes in
                    WHOLE_GCC_ALLOWED with the reason. A package that only needs
                    the libraries takes `subsetOf gcc-runtime [...]`.
+  3. whole-gcc-runtime
+                   a bare `gcc-runtime` dep. Always take a subset: on a
+                   bootstrap-cycle edge gcc-runtime is its prebuilt breaker,
+                   whose cache entry is the WHOLE extracted gen-13 gcc tree
+                   (output globs are not applied to prebuilts; minimal
+                   crates/op/src/specs.rs materialize_prebuilt), so a whole
+                   dep would link all of gcc 15.2 into that root.
 
 build_deps, test_deps and tests are not checked: building or testing with gcc
 is what gcc is for. `gcc` here means the identifier bound to
@@ -54,6 +61,9 @@ IDENT_CHARS = r"A-Za-z0-9_'\-"
 GCC_IMPORT = re.compile(r"""import\s+"(?:[^"]*/)?gcc/build\.ncl\"""")
 LET_GCC = re.compile(
     rf"""\blet\s+([A-Za-z_][{IDENT_CHARS}]*)\s*=\s*import\s+"(?:[^"]*/)?gcc/build\.ncl\""""
+)
+LET_GCC_RUNTIME = re.compile(
+    rf"""\blet\s+([A-Za-z_][{IDENT_CHARS}]*)\s*=\s*import\s+"(?:[^"]*/)?gcc-runtime/build\.ncl\""""
 )
 RUNTIME_FIELD = re.compile(rf"(?<![{IDENT_CHARS}.])runtime_deps\s*=")
 OPEN = "([{"
@@ -145,6 +155,13 @@ def scan_text(text: str) -> tuple[int, list[tuple[int, str, str]]]:
                     findings.append((line_of(t.start()), "subset", f"`subsetOf {name}` (gcc)"))
                 else:
                     findings.append((line_of(t.start()), "whole-gcc", f"whole `{name}` (gcc)"))
+        for name in sorted(set(LET_GCC_RUNTIME.findall(with_strings))):
+            tok = re.compile(rf"(?<![{IDENT_CHARS}.])(subsetOf\s+)?{re.escape(name)}(?![{IDENT_CHARS}.])")
+            for t in tok.finditer(value):
+                if not t.group(1):
+                    findings.append(
+                        (line_of(t.start()), "whole-gcc-runtime", f"whole `{name}` (gcc-runtime)")
+                    )
     return fields, findings
 
 
@@ -180,6 +197,11 @@ def scan_repo(root: str) -> tuple[int, int, dict[str, list[str]]]:
                     continue
                 if rule == "subset":
                     fix = "use `subsetOf gcc-runtime [...]` with the same outputs"
+                elif rule == "whole-gcc-runtime":
+                    fix = (
+                        "take `subsetOf gcc-runtime [...]`: on a cycle edge the breaker's cache "
+                        "entry is the whole gen-13 gcc tree"
+                    )
                 elif rule == "whole-gcc":
                     fix = (
                         "take `subsetOf gcc-runtime [...]` for the libraries, or add the package to "
