@@ -1,4 +1,5 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let bash-language-server = import "../bash-language-server/build.ncl" in
 let emacs = import "../emacs/build.ncl" in
@@ -190,4 +191,23 @@ let typescript-language-server = import "../typescript-language-server/build.ncl
     {
       license_spdx = "GPL-3.0-or-later",
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              m=0; for f in /usr/share/emacs/site-lisp/*; do test -e "$f" && m=$((m+1)); done; [ $m -gt 0 ]
+              n=0; for f in /usr/lib/emacs/tree-sitter/*.so; do test -s "$f" && n=$((n+1)); done; [ $n -gt 0 ]
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

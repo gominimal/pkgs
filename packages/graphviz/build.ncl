@@ -11,7 +11,7 @@ let toolchain = import "../toolchain/build.ncl" in
 
 let cairo = import "../cairo/build.ncl" in
 let fontconfig = import "../fontconfig/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let liberation-fonts = import "../liberation-fonts/build.ncl" in
 let libgd = import "../libgd/build.ncl" in
@@ -21,7 +21,7 @@ let libwebp = import "../libwebp/build.ncl" in
 let pango = import "../pango/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "16.1.0" in
+let version = "16.1.1" in
 {
   name = "graphviz",
   build_deps = [
@@ -30,7 +30,7 @@ let version = "16.1.0" in
       # The GitLab REPO archive, not the release-registry tarball.
       #
       # graphviz 15.x stopped shipping CMake build files in its release
-      # tarball: `graphviz-16.1.0.tar.xz` is an autotools `make dist` output
+      # tarball: `graphviz-16.1.1.tar.xz` is an autotools `make dist` output
       # with ZERO CMakeLists.txt in it, while this recipe is CMake-based
       # (`sed -i lib/CMakeLists.txt`, `cmake ...`). 14.1.1's tarball DID
       # include them, so this is an upstream packaging change.
@@ -39,7 +39,7 @@ let version = "16.1.0" in
       # none of the hardlink the dist tarball added, which the prefix-strip
       # extraction path can't place. One artifact fixes both.
       url = "https://gitlab.com/graphviz/graphviz/-/archive/%{version}/graphviz-%{version}.tar.gz",
-      sha256 = "1e028b2b3e84e946c1d3e8c47590f8f0741bba1041fe6eff36eee87e598ea249",
+      sha256 = "4cd5fb0d78bfd9a328006a777f385e1f4b4d873eec291307279ea3b15832299c",
       extract = true,
       strip_prefix = "graphviz-%{version}",
     } | Source,
@@ -64,7 +64,7 @@ let version = "16.1.0" in
     libwebp,
     pango,
     zlib,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",
@@ -74,7 +74,9 @@ let version = "16.1.0" in
     include version,
   },
   outputs = {
-    dot = { glob = "usr/bin/dot" } | OutputBin,
+    # Every tool `make install` puts in usr/bin: dot and its layout links (neato,
+    # fdp, circo, ...), gvpr, the graph filters, and two sh scripts.
+    bins = { glob = "usr/bin/*", allow_missing_interpreter = true } | OutputBin,
 
     libs = { glob = "usr/lib/lib*.so*" } | OutputLib,
     graphviz_plugins = { glob = "usr/lib/graphviz/*.so*" } | OutputLib,

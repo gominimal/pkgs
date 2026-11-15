@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let meson = import "../meson/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -7,14 +8,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let expat = import "../expat/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.16.2" in
+let version = "1.16.4" in
 {
   name = "dbus",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/dbus-%{version}.tar.xz",
-      sha256 = "0ba2a1a4b16afe7bceb2c07e9ce99a8c2c3508e5dec290dbb643384bd6beb7e2",
+      sha256 = "d08b05526c2cb7966a5fb79210d6112b1aca3d135f315c1b302e14b4b0297dac",
       extract = true,
       strip_prefix = "dbus-%{version}",
     } | Source,
@@ -42,7 +43,7 @@ let version = "1.16.2" in
     smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "test -f /usr/lib/libdbus-1.so.3 || test -f /usr/lib/x86_64-linux-gnu/libdbus-1.so.3"],
         ],

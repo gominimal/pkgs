@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -67,4 +67,8 @@ let version = "1.47.4" in
       upstream_version = version,
       license_spdx = "GPL-2.0-only AND LGPL-2.0-only AND BSD-3-Clause AND MIT",
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/sbin/mke2fs -V",
+  },
 } | BuildSpec

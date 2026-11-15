@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let { target, .. } = import "config.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
@@ -40,4 +41,35 @@ let version = "8.3" in
         name = "readline",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              cd /tmp
+              gcc -x c - -o t -x none -lreadline <<'EOF'
+              #include <stdio.h>
+              #include <readline/readline.h>
+              #include <readline/history.h>
+              int main(void) {
+                using_history();
+                add_history("smoke");
+                HIST_ENTRY *e = history_get(history_base);
+                printf("readline %s\n", rl_library_version);
+                return !(e && e->line[0] == 's');
+              }
+              EOF
+              ./t
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

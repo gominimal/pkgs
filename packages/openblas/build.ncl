@@ -1,10 +1,12 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
+let gcc-runtime-fortran = import "../gcc-runtime-fortran/build.ncl" in
 
 let version = "0.3.34" in
 {
@@ -23,7 +25,12 @@ let version = "0.3.34" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libs"],
+    # TODO(readelf): unverified DT_NEEDED. Without NOFORTRAN, OpenBLAS builds
+    # LAPACK with gfortran, so libopenblas.so should NEED libgfortran.so.5.
+    # gcc-runtime-fortran brings libquadmath (amd64) with it. Replaces gcc's
+    # catch-all `libs` output (inbox#1261).
+    subsetOf gcc-runtime ["libgcc"],
+    subsetOf gcc-runtime-fortran ["libgfortran"],
   ],
 
   cmd = "./build.sh",
@@ -47,4 +54,33 @@ let version = "0.3.34" in
       },
       build_cost_multiple = 2,
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              cd /tmp
+              gcc -x c - -o t -x none -lopenblas <<'EOF'
+              #include <stdio.h>
+              #include <cblas.h>
+              int main(void) {
+                double x[3] = {1, 2, 3}, y[3] = {4, 5, 6};
+                double d = cblas_ddot(3, x, 1, y, 1);
+                printf("%s ddot=%f\n", openblas_get_config(), d);
+                return d != 32.0;
+              }
+              EOF
+              ./t
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

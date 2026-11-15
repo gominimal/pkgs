@@ -1,9 +1,10 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 let version = "0.1.4" in
@@ -24,13 +25,13 @@ let version = "0.1.4" in
 
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-runtime ["libgcc"],
   ],
 
   cmd = "./build.sh",
 
   outputs = {
-    biff = { glob = "usr/bin/biff" } | OutputLib,
+    biff = { glob = "usr/bin/biff" } | OutputBin,
   },
   attrs =
     {
@@ -42,4 +43,22 @@ let version = "0.1.4" in
         repo = "bttf",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              v=$(/usr/bin/biff --version 2>&1 || true); [[ $v == bttf\ * ]]
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

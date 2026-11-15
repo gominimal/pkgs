@@ -1,11 +1,12 @@
 let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 # zig 0.17 links exactly LLVM 22 (its CMake rejects any other major), and the
-# default `llvm` stays on 21 for the Rust ladder: build against the prefixed
-# llvm-22 line (/usr/lib/llvm-22). gominimal/pkgs#996, inbox#1170.
+# default `llvm` is 23: build against the prefixed llvm-22 line
+# (/usr/lib/llvm-22). gominimal/pkgs#996, inbox#1170.
 let llvm-22 = import "../llvm-22/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -27,7 +28,7 @@ let version = "0.17.1" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     subsetOf llvm-22 ["libs"],
   ],
 
@@ -69,7 +70,7 @@ let version = "0.17.1" in
     compile_run =
       {
         class = 'Standalone,
-        test_deps = [base, glibc],
+        test_deps = [bash-bootstrap, glibc],
         cmds = [
           ["/bin/bash", "-c", "echo 'const std = @import(\"std\"); pub fn main() void { std.debug.print(\"ok\\n\", .{}); }' > test.zig"],
           ["/bin/zig", "run", "test.zig"],

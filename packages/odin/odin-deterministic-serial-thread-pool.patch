@@ -27,4 +27,5 @@ untouched.
 +	}
  	thread_pool_init(&global_thread_pool, worker_count, "ThreadPoolWorker");
  }
- gb_internal bool thread_pool_add_task(WorkerTaskProc *proc, void *data) {
+ 
+ 

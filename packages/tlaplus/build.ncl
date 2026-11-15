@@ -3,6 +3,9 @@ let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = impor
 # semantic checker, and the PlusCal translator, built from tlaplus/tlaplus
 # source with the JDK alone (see build.sh), plus /usr/bin launchers.
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 
@@ -64,7 +67,7 @@ let commit = "5a47802b5c391f59ecdd44117981f4ff8c0656ba" in
     sany =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           [
             "/bin/bash",
@@ -110,7 +113,7 @@ let commit = "5a47802b5c391f59ecdd44117981f4ff8c0656ba" in
     tlc =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           [
             "/bin/bash",
@@ -152,7 +155,7 @@ let commit = "5a47802b5c391f59ecdd44117981f4ff8c0656ba" in
     pcal =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           [
             "/bin/bash",

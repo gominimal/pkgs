@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 
 let python = import "../python/build.ncl" in
@@ -42,4 +42,15 @@ let version = "1.6.1" in
         repo = "build",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [python],
+        cmds = [
+          ["/usr/bin/python3", "-c", "import build, build.env; print(build.__version__)"],
+        ],
+      } | Test,
+  },
 } | BuildSpec

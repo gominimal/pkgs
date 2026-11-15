@@ -2,19 +2,20 @@
 # with outputs + runtime_deps refined from a verified `minimal package` build.
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
-let version = "0.17.3" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
+let version = "0.17.5" in
 {
   name = "ruff",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/astral-sh/ruff/%{version}.tar.gz",
-      sha256 = "7281befde89b669bd92231064ceb3d3211d9094e20e6983bb3b92e641b305860",
+      sha256 = "3d920afb666d51ebec3c80ec2847ae7ad14cca3badaaf39f1c0a175d100a4506",
       extract = true,
       strip_prefix = "ruff-%{version}",
     } | Source,
@@ -32,7 +33,7 @@ let version = "0.17.3" in
   outputs = {
     ruff = { glob = "usr/bin/ruff" } | OutputBin,
   },
-  runtime_deps = [glibc, subsetOf gcc ["libgcc"]],
+  runtime_deps = [glibc, subsetOf gcc-runtime ["libgcc"]],
   attrs =
     {
       upstream_version = version,
@@ -43,7 +44,7 @@ let version = "0.17.3" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           # Smoke test ported from the Wolfi recipe's test block.
           ["/bin/bash", "-c", "ruff --version"],

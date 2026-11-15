@@ -1,5 +1,7 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
@@ -92,7 +94,7 @@ let version = "0.9.1" in
         # with only `base` declared and failed with "readelf: command not
         # found" — loudly, which is the correct behaviour and how this was
         # caught, but it is a dependency and belongs here.
-        test_deps = [base, binutils],
+        test_deps = [bash-bootstrap, binutils, grep],
         cmds = [
           # Assert on the librz_* SHARED LIBRARIES, not on /usr/bin/rizin:
           # the rizin binary is a thin frontend and carries none of these in

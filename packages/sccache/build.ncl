@@ -2,6 +2,8 @@
 # with outputs + runtime_deps refined from a verified `minimal package` build.
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -9,7 +11,7 @@ let make = import "../make/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let version = "0.19.0" in
 {
   name = "sccache",
@@ -55,7 +57,7 @@ let version = "0.19.0" in
   outputs = {
     sccache = { glob = "usr/bin/sccache" } | OutputBin,
   },
-  runtime_deps = [glibc, subsetOf gcc ["libgcc"], openssl],
+  runtime_deps = [glibc, subsetOf gcc-runtime ["libgcc"], openssl],
   attrs =
     {
       upstream_version = version,
@@ -66,7 +68,7 @@ let version = "0.19.0" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           # Smoke test ported from the Wolfi recipe's test block.
           ["/bin/bash", "-c", "sccache --version\nsccache --help"],

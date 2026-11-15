@@ -1,9 +1,12 @@
 let { subsetOf, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 let version = "0.10.0" in
@@ -24,7 +27,7 @@ let version = "0.10.0" in
 
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-runtime ["libgcc"],
   ],
 
   cmd = "./build.sh",
@@ -53,7 +56,7 @@ let version = "0.10.0" in
     query_syntax =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           # setup test data
           ["/bin/bash", "-c", "echo '{\"name\":\"Alice\",\"address\":{\"city\":\"Seattle\",\"zip\":\"98101\"},\"scores\":[90,85,95]}' > data.json"],

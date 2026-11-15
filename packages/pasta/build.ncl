@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -36,4 +36,8 @@ let version = "2026_10_02.cba3570" in
       upstream_version = version,
       license_spdx = "GPL-2.0-or-later",
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/pasta --version",
+  },
 } | BuildSpec

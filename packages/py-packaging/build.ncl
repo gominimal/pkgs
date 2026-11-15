@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 
 let python = import "../python/build.ncl" in
@@ -42,4 +42,15 @@ let version = "26.3" in
         repo = "packaging",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [python],
+        cmds = [
+          ["/usr/bin/python3", "-c", "from packaging.version import Version; from packaging.requirements import Requirement; assert Version('1.10') > Version('1.9'); print(Requirement('x>=1; python_version>\"3\"'))"],
+        ],
+      } | Test,
+  },
 } | BuildSpec

@@ -1,17 +1,17 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.121.1" in
+let version = "0.121.3" in
 {
   name = "grype",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/anchore/grype/v%{version}.tar.gz",
-      sha256 = "e3037387939d3230531571d712baf180a96d0ace60042c2f7e15e6b6e7a3f127",
+      sha256 = "ced703b9f94606d33f346369ec3d2f84aaa420147232b633d8d847987f9c64bd",
       extract = true,
       strip_prefix = "grype-%{version}",
     } | Source,
@@ -51,4 +51,8 @@ let version = "0.121.1" in
       },
       build_cost_multiple = 2,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/grype version",
+  },
 } | BuildSpec

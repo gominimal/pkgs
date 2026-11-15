@@ -4,11 +4,12 @@
 # source position of its BuildSpec record, so two packages sharing one literal collapse
 # into one.
 let { Attrs, BuildSpec, Test, .. } = import "minimal.ncl" in
-let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "23.1.4" in
-let llvm = (import "../llvm/versioned.ncl") version "819ecf7351f1a66f76b2d701d8942faaf5faeb324cb90c9d5b090de142434bb2" in
+let version = "23.1.5" in
+let llvm = (import "../llvm/versioned.ncl") version "fb50b1eac93ddeb3aa8dab4cfe324dff74f4a9c2bdee6160c9e36188f8d06a6e" in
 let prefix = llvm.prefix in
 {
   name = llvm.name,
@@ -21,7 +22,7 @@ let prefix = llvm.prefix in
     versions =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "%{prefix}/bin/clang --version | grep -F 'clang version %{version}'"],
           ["/bin/bash", "-c", "test \"$(%{prefix}/bin/llvm-config --version)\" = %{version}"],
@@ -31,7 +32,7 @@ let prefix = llvm.prefix in
     hello_clang_lld =
       {
         class = 'Standalone,
-        test_deps = [base, glibc, gcc],
+        test_deps = [bash-bootstrap, glibc, gcc, grep],
         cmds = [
           ["/bin/bash", "-c", "printf '#include <stdio.h>\\nint main(void){puts(\"hello llvm-23\");return 0;}\\n' > hello.c"],
           ["%{prefix}/bin/clang", "-fuse-ld=lld", "hello.c", "-o", "hello"],

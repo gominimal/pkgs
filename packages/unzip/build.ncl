@@ -1,5 +1,7 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let make = import "../make/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -76,7 +78,7 @@ let version = "6.0" in
     roundtrip =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           # The package can extract a tiny zip archive built into this test:
           # just the bytes for a one-file zip containing "hello\n".

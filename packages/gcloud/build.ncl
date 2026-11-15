@@ -1,12 +1,15 @@
 let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 let python = import "../python/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 
-let version = "592.0.0" in
+let version = "593.0.0" in
 # Google's per-version GCS bucket; explicit per-version path. The
 # previous rapid-channel URL
 # (dl.google.com/dl/cloudsdk/channels/rapid/downloads) has the
@@ -17,8 +20,8 @@ let version = "592.0.0" in
 let dl_base = "https://storage.googleapis.com/cloud-sdk-release" in
 
 let { amd64_sha256, arm64_sha256 } = {
-  amd64_sha256 = "2d841a23a681ab94486af6841e5f1cd123cd300fb8c4be6ba5b51350fca3d50b",
-  arm64_sha256 = "ba588759c4c42122a8c14536009738c0f0030989ca75788235f9956555e44f4d",
+  amd64_sha256 = "42c32b7553c712f71fcf6f124546c0519437f53755f47f9bd0c957998cd6b826",
+  arm64_sha256 = "f40acaca49c9774bca035c96dcf7350a13c09007e906cb4832e91dc36ce11497",
 }
 in
 
@@ -69,7 +72,7 @@ in
     config_ops =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "gcloud config set project test-project 2>/dev/null && gcloud config get project 2>/dev/null | grep -q 'test-project'"],
         ],
@@ -83,7 +86,7 @@ in
     ca_certs_from_system_store =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "export CLOUDSDK_CONFIG=$(mktemp -d) && test \"$(gcloud config get core/custom_ca_certs_file 2>/dev/null)\" = /etc/ssl/certs/ca-certificates.crt"],
           ["/bin/bash", "-c", "test -s /etc/ssl/certs/ca-certificates.crt"],
@@ -96,14 +99,12 @@ in
     {
       upstream_version = version,
       binary_from = "https://storage.googleapis.com/cloud-sdk-release",
-      # `Pixar` + `Python-2.0.1` from auto-scan were false positives:
-      # `Pixar` matched a docstring in pygments' USD lexer (the file
-      # itself is BSD-licensed; "Pixar" is the format it parses), and
-      # `Python-2.0.1` matched a literal in packaging's SPDX-IDs
-      # database file (data table, not licensed code). The
-      # `Python-2.0` here is the bundled CPython interpreter's real
-      # license. Tracked at pkgmgr-rs#129.
-      license_spdx = "(Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND MIT AND MIT-0 AND Python-2.0)",
+      # `Pixar` from auto-scan was a false positive: it matched a
+      # docstring in pygments' USD lexer (the file itself is
+      # BSD-licensed; "Pixar" is the format it parses). Tracked at
+      # pkgmgr-rs#129. `Python-2.0.1` is the bundled CPython
+      # interpreter's license, the same id packages/python declares.
+      license_spdx = "(Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND MIT AND MIT-0 AND Python-2.0.1)",
       env_dir_mappings = [{ read_only = false, path = "~/.config/gcloud", class = 'Credential }],
     } | Attrs,
 } | BuildSpec

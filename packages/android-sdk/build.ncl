@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 let python = import "../python/build.ncl" in
 
@@ -51,7 +52,7 @@ let version = "15859902" in
     sdkmanager_version =
       {
         class = 'Standalone,
-        test_deps = [base, jdk],
+        test_deps = [bash-bootstrap, jdk],
         cmds = [
           ["/bin/bash", "-c", "sdkmanager --version"],
         ],

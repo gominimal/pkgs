@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 
 let python = import "../python/build.ncl" in
@@ -42,4 +42,15 @@ let version = "0.12.1" in
         repo = "pyproject-metadata",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [python],
+        cmds = [
+          ["/usr/bin/python3", "-c", "from pyproject_metadata import StandardMetadata; m = StandardMetadata.from_pyproject({'project': {'name': 'x', 'version': '1.0'}}); print(m.name, m.version)"],
+        ],
+      } | Test,
+  },
 } | BuildSpec

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -20,6 +20,7 @@ let version = "2.3.8" in
   ],
   runtime_deps = [
     glibc,
+    libunistring,
   ],
 
   cmd = "./build.sh",
@@ -42,4 +43,8 @@ let version = "2.3.8" in
         name = "libidn2",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/idn2 --version",
+  },
 } | BuildSpec

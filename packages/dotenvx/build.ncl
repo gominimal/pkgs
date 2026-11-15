@@ -1,5 +1,7 @@
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 
@@ -73,7 +75,7 @@ let version = "2.38.2" in
     smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "/bin/dotenvx --version | grep -qx '%{version}'"],
         ],
@@ -81,7 +83,7 @@ let version = "2.38.2" in
     run =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "echo 'HELLO=World' > .env"],
           ["/bin/bash", "-c", "/bin/dotenvx run -- /bin/bash -c 'echo $HELLO' | grep -q '^World$'"],
@@ -94,7 +96,7 @@ let version = "2.38.2" in
     trust_store_without_emsign =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           ["/bin/bash", "-c", "test \"$(head -c 19 /bin/dotenvx)\" = '#!/usr/bin/env node'"],
           [

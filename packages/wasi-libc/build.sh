@@ -10,6 +10,14 @@ WASM_FEATURES="-mcpu=mvp -mmutable-globals"
 # vfprintf.c xdigits[16] trips it under the Makefile's -Werror.
 NOWERR="-Wno-error=unterminated-string-initialization"
 
+# clang 23 deprecates the bare `wasm32-wasi` triple (-Wdeprecated, an error
+# under the Makefile's -Werror) in favour of `wasm32-wasip1`. The wasi-sdk-21
+# Makefile hard-codes wasm32-wasi (so do wasi-sdk-22..26's), and a command-line
+# TARGET_TRIPLE overrides it. It also names the sysroot's lib dir, which is
+# where clang looks for a wasm32-wasip1 link (lib/<triple>). check-symbols'
+# expected/<triple> dir would not match, but `finish` is not built (below).
+TRIPLE=wasm32-wasip1
+
 # Empty BULK_MEMORY_SOURCES compiles musl's memcpy/memmove/memset without the
 # per-file -mbulk-memory the Makefile adds.
 #
@@ -21,14 +29,20 @@ make -j"$(nproc)" \
   NM=llvm-nm \
   SYSROOT="$PWD/sysroot" \
   THREAD_MODEL=single \
+  TARGET_TRIPLE="$TRIPLE" \
   BULK_MEMORY_SOURCES= \
   EXTRA_CFLAGS="-O2 -DNDEBUG $WASM_FEATURES $NOWERR -ffile-prefix-map=$PWD=/builddir" \
   startup_files libc
 
 # The placeholder archives `finish` creates.
 for name in m rt pthread crypt util xnet resolv; do
-  llvm-ar crs "sysroot/lib/wasm32-wasi/lib${name}.a"
+  llvm-ar crs "sysroot/lib/$TRIPLE/lib${name}.a"
 done
+
+# Nothing may land under the deprecated triple: every consumer passes
+# --target=wasm32-wasip1 and clang searches lib/wasm32-wasip1 only.
+test -f "sysroot/lib/$TRIPLE/libc.a"
+test ! -e sysroot/lib/wasm32-wasi
 
 mkdir -p "$OUTPUT_DIR/usr/lib/wasi"
 cp -r sysroot/include sysroot/lib "$OUTPUT_DIR/usr/lib/wasi/"

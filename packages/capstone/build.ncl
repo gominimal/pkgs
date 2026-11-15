@@ -1,5 +1,8 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -66,7 +69,7 @@ let version = "5.0.9" in
     disassembles =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           # x86-64: push rbp / mov rbp, rsp — the universal function prologue.
           ["/bin/bash", "-c", "cstool x64 '554889e5' | grep -qi push && cstool x64 '554889e5' | grep -qi mov"],
@@ -97,7 +100,7 @@ let version = "5.0.9" in
     ships_shared_lib =
       {
         class = 'Standalone,
-        test_deps = [base, pkgconf],
+        test_deps = [bash-bootstrap, pkgconf, coreutils],
         cmds = [
           ["/bin/bash", "-c", "test -e /usr/lib/libcapstone.so"],
           # A real versioned SONAME, not just the dev symlink.

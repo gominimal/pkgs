@@ -1,5 +1,8 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -7,7 +10,7 @@ let rust = import "../rust/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let gdbm = import "../gdbm/build.ncl" in
 # Sessions set LANG=C.UTF-8, which the glibc locale-archive lacks. Without it
 # setlocale fails and Encoding.default_external falls back to US-ASCII, so a
@@ -23,12 +26,14 @@ let readline = import "../readline/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
 let version = "4.0.9" in
+# Release directory on cache.ruby-lang.org is the major.minor series.
+let api = std.string.join "." (std.array.slice 0 2 (std.string.split "." version)) in
 {
   name = "ruby",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://cache.ruby-lang.org/pub/ruby/4.0/ruby-%{version}.tar.gz",
+      url = "https://cache.ruby-lang.org/pub/ruby/%{api}/ruby-%{version}.tar.gz",
       sha256 = "c35350682ff050b79702d57ade4516e7336063f510155d19fb2fb5b3f3909511",
     } | Source,
     base,
@@ -42,7 +47,7 @@ let version = "4.0.9" in
     # Verifies TLS against /etc/ssl/certs at runtime; see AGENTS.md "Trust store".
     ca-certificates,
     glibc-locale-c-utf8,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     gdbm,
     gmp,
     libffi,
@@ -89,7 +94,7 @@ let version = "4.0.9" in
     eval =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "ruby -e 'puts 1+1' | grep -q '^2$'"],
         ],
@@ -99,7 +104,7 @@ let version = "4.0.9" in
     utf8_default_external =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "LANG=C.UTF-8 LC_ALL=C.UTF-8 ruby -e 'exit(Encoding.default_external == Encoding::UTF_8 ? 0 : 1)'"],
         ],
@@ -143,7 +148,7 @@ let version = "4.0.9" in
     gem_global_install =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",

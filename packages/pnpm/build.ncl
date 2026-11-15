@@ -1,15 +1,19 @@
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
+let sed = import "../sed/build.ncl" in
+let file = import "../file/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let tar = import "../tar/build.ncl" in
 
 let node-lts = import "../node-lts/build.ncl" in
 
-let version = "12.17.0" in
+let version = "12.21.0" in
 {
   name = "pnpm",
   build_deps = [
@@ -22,29 +26,30 @@ let version = "12.17.0" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://registry.npmjs.org/@pnpm/exe.linux-x64/-/exe.linux-x64-%{version}.tgz",
-          sha256 = "6c1c71d00f82765d8f7488df6d1a94533fd1ad5d47c86da41211b1da1093c9d4"
+          sha256 = "5e853227a4fa387a95cf6f61400a83d1fc7e3164943c00e275f8756b75939de2"
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://registry.npmjs.org/@pnpm/exe.linux-arm64/-/exe.linux-arm64-%{version}.tgz",
-          sha256 = "017e0264aac3a955e34d82f5d94c100504a791c0dd387f111b7a984024115d50"
+          sha256 = "0726f98c09f0f0fe6fb91e376c4d3e7793a544c1f1ec3e20baaeb2bb91c47e1f"
         } | Source,
     } target,
     {
       url = "https://registry.npmjs.org/pnpm/-/pnpm-%{version}.tgz",
-      sha256 = "6d776e285187f9e334d8826cc5a88e82e41606345f196a5a93f4403bd332553e"
+      sha256 = "0791469382b579869c51827759876616bc3eae5296d8fa880bbc3c9c1e8cf6f7"
     } | Source,
     base,
     tar,
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-runtime ["libgcc"],
     # `pn`/`pnpx`/`pnx` are upstream's `#!/bin/sh` alias scripts (they resolve
     # their symlink with `command -p readlink`), and pnpm runs lifecycle scripts
     # through `sh`.
     bash,
     coreutils,
+    sed, # the generated `gbin` shim for globally installed bins runs sed
     # ONLY the `node` binary from `node-lts` — deliberately NOT npm/npx/node_modules.
     #
     # pnpm 12 no longer needs node to run ITSELF (it is native), but a pnpm with
@@ -100,7 +105,7 @@ let version = "12.17.0" in
     cli =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep, file],
         cmds = [
           ["/bin/bash", "-c", "out=$(pnpm --version 2>&1) && echo \"$out\" && test \"$out\" = '%{version}'"],
           ["/bin/bash", "-c", "out=$(pn --version 2>&1) && test \"$out\" = '%{version}'"],
@@ -113,7 +118,7 @@ let version = "12.17.0" in
     install =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "set -e; mkdir -p /tmp/p && cd /tmp/p && printf '%s' '{\"name\":\"t\",\"version\":\"1.0.0\",\"scripts\":{\"postinstall\":\"command -v node-gyp > gyp.txt && node --version > node.txt\"}}' > package.json && pnpm install --offline 2>&1 | tee log.txt; if grep -qi download log.txt; then exit 1; fi; grep -q '/usr/libexec/pnpm/dist/node-gyp-bin/node-gyp' gyp.txt; test -s node.txt"],
         ],
@@ -123,7 +128,7 @@ let version = "12.17.0" in
     global_install =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep], # sed (the gbin shim) is a runtime dep
         cmds = [
           [
             "/bin/bash",

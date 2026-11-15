@@ -1,10 +1,10 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let version = "15.0.0" in
 {
   name = "tokei",
@@ -30,11 +30,15 @@ let version = "15.0.0" in
   outputs = {
     tokei = { glob = "usr/bin/tokei" } | OutputBin,
   },
-  runtime_deps = [glibc, subsetOf gcc ["libgcc"]],
+  runtime_deps = [glibc, subsetOf gcc-runtime ["libgcc"]],
   attrs =
     {
       upstream_version = version,
       source_provenance = { category = 'GithubRepo, owner = "XAMPPRocky", repo = "tokei" },
       license_spdx = "MIT OR Apache-2.0",
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/tokei --version",
+  },
 } | BuildSpec

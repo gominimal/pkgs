@@ -40,9 +40,9 @@ for required in icudtl.dat headless_command_resources.pak; do
 done
 
 REV="${MINIMAL_ARG_REVISION}"
-# Shared with chromium-bin so that
-# `PLAYWRIGHT_BROWSERS_PATH=/usr/share/playwright-browsers` discovers
-# both registry layouts when both pkgs are installed.
+# Playwright's registry root: a consumer can set
+# `PLAYWRIGHT_BROWSERS_PATH=/usr/share/playwright-browsers` to discover it.
+# Any other Chromium package should install beside it here.
 SHARE="$OUTPUT_DIR/usr/share/playwright-browsers"
 SHELL_DEST="$SHARE/chromium_headless_shell-${REV}"
 

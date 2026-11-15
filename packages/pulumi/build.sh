@@ -18,3 +18,4 @@ install -m 755 pulumi $OUTPUT_DIR/usr/bin/pulumi
 install -m 755 sdk/go/pulumi-language-go/pulumi-language-go $OUTPUT_DIR/usr/bin/pulumi-language-go
 install -m 755 sdk/nodejs/cmd/pulumi-language-nodejs/pulumi-language-nodejs $OUTPUT_DIR/usr/bin/pulumi-language-nodejs
 install -m 755 sdk/python/cmd/pulumi-language-python/pulumi-language-python $OUTPUT_DIR/usr/bin/pulumi-language-python
+install -m 755 sdk/python/cmd/pulumi-language-python-exec $OUTPUT_DIR/usr/bin/pulumi-language-python-exec

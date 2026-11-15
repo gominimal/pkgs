@@ -1,7 +1,5 @@
 # Imported from npm `typescript` by `pkgmgr import npm` (node build).
-# TODO: REVIEWER — installs `typescript` from npm; add any peer packages the
-# tool needs (cf. typescript-language-server pulling `typescript`).
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -53,4 +51,8 @@ let version = "7.0.2" in
         repo = "TypeScript",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/tsc --version",
+  },
 } | BuildSpec

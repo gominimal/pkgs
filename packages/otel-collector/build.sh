@@ -63,6 +63,18 @@ grep -q 'cockroachdb/swiss' manifest.yaml && { echo "swiss already replaced/pinn
 sed -i '/^replaces:/a\  - github.com/cockroachdb/swiss => github.com/cockroachdb/swiss v0.0.0-20260820225851-333444432258' manifest.yaml
 grep -q 'cockroachdb/swiss => ' manifest.yaml
 
+# go 1.27 guard: the asapauth extension must stay out of the manifest. It pulls
+# in github.com/SermoDigital/jose, whose crypto/none.go init() calls
+# crypto.RegisterHash(crypto.Hash(0), ...); Go 1.27 rejects hash value 0
+# (golang/go 5a0e0838), so with asapauth compiled in every otelcol-contrib
+# invocation panics in package init. Upstream dropped it after 0.164.0
+# (opentelemetry-collector-releases#1742, for contrib#51868), which replaced the
+# deletion patch pkgs#1369 carried for 0.164.0.
+if grep -q '^ *- gomod: .*asapauthextension' manifest.yaml; then
+  echo "asapauthextension is back in the manifest: it panics under go 1.27" >&2
+  exit 1
+fi
+
 $OCB --config=manifest.yaml
 
 mkdir -p $OUTPUT_DIR/usr/bin

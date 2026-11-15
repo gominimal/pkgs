@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+: "${MINIMAL_ARG_VERSION:?build_args must include version}"
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
@@ -12,7 +13,7 @@ export CXXFLAGS="${CFLAGS}"
 
 ./configure  --prefix=/usr      \
             --disable-static    \
-            --docdir="/usr/share/doc/pkgconf-2.5.1"
+            --docdir="/usr/share/doc/pkgconf-${MINIMAL_ARG_VERSION}"
 
 make -j$(nproc)
 make DESTDIR=$OUTPUT_DIR install

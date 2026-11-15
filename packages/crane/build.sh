@@ -12,3 +12,11 @@ go build -trimpath \
 
 mkdir -p $OUTPUT_DIR/usr/bin
 install -m 755 crane $OUTPUT_DIR/usr/bin/crane
+
+# gcrane (crane plus GCR-specific commands) is in the same module and vendor
+# tree. krane is not built: cmd/krane is a separate module whose k8s deps are
+# not vendored here.
+go build -trimpath \
+  -ldflags "-buildid= -w -s -X 'github.com/google/go-containerregistry/cmd/crane/cmd.Version=${MINIMAL_ARG_VERSION}'" \
+  -o gcrane ./cmd/gcrane
+install -m 755 gcrane $OUTPUT_DIR/usr/bin/gcrane

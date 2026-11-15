@@ -1,11 +1,11 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let meson = import "../meson/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 let version = "0.19.3" in
@@ -27,7 +27,7 @@ let version = "0.19.3" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",
@@ -45,4 +45,8 @@ let version = "0.19.3" in
         repo = "patchelf",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/patchelf --version",
+  },
 } | BuildSpec

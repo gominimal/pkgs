@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let gettext = import "../gettext/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -75,7 +76,7 @@ let version = "0.12.6" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "nvim --version"],
           # Boots the editor headless and exits — verifies the runtime dir

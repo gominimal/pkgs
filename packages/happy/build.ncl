@@ -1,5 +1,8 @@
 let { BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let ghc-bootstrap = import "../ghc-bootstrap/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
@@ -58,7 +61,7 @@ let version = "2.1.6" in
     version_check =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "/usr/bin/happy --version | grep -q 'Happy Version %{version}'"],
         ],
@@ -70,7 +73,7 @@ let version = "2.1.6" in
     generates_a_parser =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "set -euo pipefail\ncat > calc.y <<'EOF'\n{\nmodule Calc where\n}\n%name calc\n%tokentype { Token }\n%error { parseError }\n%token int { TInt $$ }\n%%\nExp : int { $1 }\n{\ndata Token = TInt Int\nparseError :: [Token] -> a\nparseError _ = error \"parse error\"\n}\nEOF\n/usr/bin/happy --ghc calc.y -o calc.hs\n# happyParse comes from HappyTemplate.hs, so finding it means the template\n# was located and inlined rather than the parser being generated empty.\ngrep -q happyParse calc.hs"],
         ],

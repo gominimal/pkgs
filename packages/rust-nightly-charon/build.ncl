@@ -13,9 +13,11 @@ let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Sourc
 in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
 let date = "2026-09-17" in
@@ -69,7 +71,7 @@ in
   runtime_deps = [
     glibc,
     zlib,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
   cmd = "./build.sh",
   outputs = {
@@ -104,7 +106,7 @@ in
     rustc_private_resolves =
       {
         class = 'Standalone,
-        test_deps = [base, glibc, zlib, gcc],
+        test_deps = [bash-bootstrap, glibc, zlib, gcc],
         cmds = [
           ["/usr/bin/rustc", "--version"],
           [

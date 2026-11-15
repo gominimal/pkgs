@@ -3,6 +3,8 @@ let make = import "../make/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let python = import "../python/build.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -17,7 +19,7 @@ let zlib = import "../zlib/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 let gtest = import "../gtest/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 
 # node-24: the Node.js 24 line, versioned. 24 entered maintenance on 2026-10-20
 # and is supported until 2028-04-30 (nodejs/Release schedule.json); 26 becomes
@@ -29,14 +31,14 @@ let gcc = import "../gcc/build.ncl" in
 # Same configure and shared libraries as node-lts at the same version. Like
 # node and node-lts it installs /usr/bin/node and /usr/lib/node_modules, so a
 # closure holds exactly one node flavor (subsetOf <flavor> ["node"]).
-let version = "24.22.2" in
+let version = "24.22.3" in
 {
   name = "node-24",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://nodejs.org/dist/v%{version}/node-v%{version}.tar.gz",
-      sha256 = "b2f5443a34a38d863e87c0f5f80c03630fc16917dfe16f26c1cec44c0b542959",
+      sha256 = "4690edccae352134bbe31d844b37898f2a28b2c3d67901d0112fb6c4996d556a",
     } | Source,
     # 24.22.1 carries the CVE-2026-111943 fixes upstream (nodejs/node#66871 SPKI
     # blocklist, #66877 NSS 3.131.1 roots), so the backports are no longer carried.
@@ -62,7 +64,7 @@ let version = "24.22.2" in
     zstd,
     gtest,
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",
@@ -99,7 +101,7 @@ let version = "24.22.2" in
     eval =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "echo 'console.log(\"Hello Node\")' > script.js"],
           ["/bin/bash", "-c", "node script.js | grep -q '^Hello Node$'"],
@@ -110,7 +112,7 @@ let version = "24.22.2" in
     inline_eval =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "node -e 'console.log(10 * 5)' | grep -q '^50$'"],
         ],
@@ -118,7 +120,7 @@ let version = "24.22.2" in
     npm_global_prefix =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           # The builtin npmrc must redirect npm's global prefix away from the
           # read-only /usr store (gominimal/inbox#559).
@@ -133,7 +135,7 @@ let version = "24.22.2" in
     emsign_roots_removed =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -172,7 +174,7 @@ let version = "24.22.2" in
     spki_blocklist_rejects_emudhra_intermediate =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",

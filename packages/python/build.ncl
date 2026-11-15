@@ -1,5 +1,10 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
+let tzdata = import "../tzdata/build.ncl" in
+let bzip2 = import "../bzip2/build.ncl" in
 let make = import "../make/build.ncl" in
 let gdbm = import "../gdbm/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
@@ -63,6 +68,7 @@ let version = "3.14.10" in
     openssl,
     glibc,
     zlib,
+    bzip2, # _bz2 links libbz2
     subsetOf util-linux ["libuuid"],
     xz,
   ],
@@ -106,7 +112,7 @@ let version = "3.14.10" in
     smoketest_output =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "echo 'print(\"Hello Python\")' > script.py"],
           ["/bin/python3", "script.py"],
@@ -115,11 +121,12 @@ let version = "3.14.10" in
         ],
       } | Test,
 
-    # base carries tzdata, so zoneinfo resolves IANA zone names without extra packages
+    # zoneinfo resolves IANA zone names from the system tz database
+    # (/usr/share/zoneinfo, from the tzdata package)
     smoketest_zoneinfo =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [tzdata],
         cmds = [
           ["/bin/python3", "-c", "import zoneinfo; zoneinfo.ZoneInfo('Europe/Paris')"],
         ],
@@ -128,7 +135,7 @@ let version = "3.14.10" in
     smoketest_math =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "echo 'print(2 + 2)' > math.py"],
           ["/bin/bash", "-c", "python3 math.py | grep -q '^4$'"],
@@ -140,7 +147,7 @@ let version = "3.14.10" in
     smoketest_imports =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "cat > mymodule.py << 'EOF'\ndef greet(name):\n    return f\"Hello, {name}\"\nEOF"],
           ["/bin/bash", "-c", "cat > use_module.py << 'EOF'\nimport mymodule\nprint(mymodule.greet(\"World\"))\nEOF"],
@@ -160,7 +167,7 @@ let version = "3.14.10" in
     tarfile_filter_stays_in_destination =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -213,7 +220,7 @@ let version = "3.14.10" in
     tarfile_link_fallback_honors_filter_none =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -273,7 +280,7 @@ let version = "3.14.10" in
     pip_certifi_distrusts_emsign_ecc_g3 =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -329,7 +336,7 @@ let version = "3.14.10" in
     poplib_rejects_control_characters =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -379,7 +386,7 @@ let version = "3.14.10" in
     tempfile_cleanup_race_fix =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -421,7 +428,7 @@ let version = "3.14.10" in
     urllib_credentials_scoped_by_scheme =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -461,14 +468,14 @@ let version = "3.14.10" in
       } | Test,
 
     # CVE-2026-15310 regression: FAILS on stock 3.14.7, where one read(8192)
-    # of a 32 MiB all-zero LZMA (and bzip2, if built) member peaks at ~80+ MiB
-    # because the whole first compressed chunk is expanded at once. 3.14.8
-    # ships the gh-156002 fix: the peak is the decoder state plus one bounded
-    # chunk.
+    # of a 32 MiB all-zero LZMA or bzip2 member peaks at ~80+ MiB because
+    # the whole first compressed chunk is expanded at once. 3.14.8 ships the
+    # gh-156002 fix: the peak is the decoder state plus one bounded chunk.
+    # Both modules are required: a missing lzma or bz2 fails the test.
     zipfile_read_bounds_decompression =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -483,12 +490,13 @@ let version = "3.14.10" in
                   try:
                       __import__(mod)
                   except ImportError:
-                      print('skip: %s module not built' % mod, file=sys.stderr)
+                      print('missing: %s module does not import' % mod, file=sys.stderr)
                       continue
                   methods.append((name, const))
-              if not any(n == 'lzma' for n, _ in methods):
-                  print('FAIL: lzma module missing; nothing exercises the fix', file=sys.stderr)
-                  sys.exit(1)
+              for need in ('lzma', 'bzip2'):
+                  if not any(n == need for n, _ in methods):
+                      print('FAIL: %s module missing from the runtime closure' % need, file=sys.stderr)
+                      sys.exit(1)
 
               SIZE = 32 * 1024 * 1024
               # liblzma's decoder state (an 8 MiB dictionary at the default preset) is
@@ -535,7 +543,7 @@ let version = "3.14.10" in
     idna_nameprep_uses_unicode_3_2_case_folding =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",

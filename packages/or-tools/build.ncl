@@ -1,4 +1,5 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
@@ -6,7 +7,7 @@ let git = import "../git/build.ncl" in
 let make = import "../make/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
@@ -50,7 +51,7 @@ let version = "9.15" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp", "libgomp"],
     zlib,
   ],
 
@@ -85,4 +86,13 @@ let version = "9.15" in
       },
       build_cost_multiple = 2,
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap],
+        cmds = [["/usr/bin/bash", "-c", "/usr/bin/fzn-cp-sat --help >/dev/null 2>&1; rc=$?; [ $rc -lt 126 ]"]],
+      } | Test,
+  },
 } | BuildSpec

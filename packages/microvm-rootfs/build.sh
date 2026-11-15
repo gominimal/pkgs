@@ -126,6 +126,43 @@ if [ ! -s "$DB" ]; then
   echo "ERROR: apk database at lib/apk/db/installed is missing or empty — the minirootfs layout changed" >&2
   exit 1
 fi
+# EXPIRY CHECK for the base-layer overrides in build.ncl. Each line names a
+# package the minirootfs records and the version its override was written to
+# replace. A "DROP THIS once alpine_release reaches ..." comment cannot fail a
+# build; this can. When alpine_release moves, any base package that changed
+# version stops the build here, so the override is re-decided instead of
+# silently pinning the image BELOW a newer base layer (the reconcile below
+# would rewrite V: to the older overlay version and pass). Fix by dropping the
+# override if the new base is at or above it, otherwise update its line here.
+OVERRIDE_BASE=(
+  "libcrypto3 3.5.7-r0"
+  "libssl3 3.5.7-r0"
+  "ca-certificates-bundle 20260611-r0"
+  "musl 1.2.6-r2"
+  "musl-utils 1.2.6-r2"
+  "zlib 1.3.2-r0"
+)
+base_version() {
+  awk -v p="$1" '$0 == "P:" p { found = 1; next } found && /^V:/ { print substr($0, 3); exit }' "$DB"
+}
+for entry in "${OVERRIDE_BASE[@]}"; do
+  read -r name want <<<"$entry"
+  have="$(base_version "$name")"
+  [ "$have" = "$want" ] || {
+    echo "ERROR: the base layer records $name ${have:-(absent)}, but its override in build.ncl was written against $want — drop the override if the base is now at or above it, else update OVERRIDE_BASE" >&2
+    exit 1
+  }
+done
+# And the reverse: an overlay that replaces a base-layer package needs a line
+# above, so a new override cannot skip the check.
+while read -r name _; do
+  [ -n "$name" ] && [ -n "$(base_version "$name")" ] || continue
+  printf '%s\n' "${OVERRIDE_BASE[@]}" | awk -v n="$name" '$1 == n { f = 1 } END { exit !f }' || {
+    echo "ERROR: the overlay replaces base-layer package $name, which has no OVERRIDE_BASE line" >&2
+    exit 1
+  }
+done < "$OVERLAID"
+
 awk -v pairfile="$OVERLAID" '
   BEGIN {
     while ((getline line < pairfile) > 0) {
@@ -159,6 +196,32 @@ while read -r name ver; do
   echo "reconciled apk db: $name -> $ver (superseded the base layer)"
 done < "$OVERLAID"
 rm -f "$OVERLAID"
+
+# zlib renames its real file between versions (libz.so.1.3.2 -> libz.so.1.4),
+# and the overlay only adds and replaces paths, so the base layer's old
+# libz.so.1.3.2 would stay on disk: unreferenced, but exactly the binary the
+# override exists to remove, and a file-level scanner would report its CVEs
+# against this image. Keep only the file libz.so.1 points at, and move the
+# zlib stanza's file entry with it.
+if [ -L "$STAGE/usr/lib/libz.so.1" ]; then
+  live="$(readlink "$STAGE/usr/lib/libz.so.1")"
+  [ -f "$STAGE/usr/lib/$live" ] || {
+    echo "ERROR: usr/lib/libz.so.1 points at $live, which is not in the staged rootfs" >&2
+    exit 1
+  }
+  for f in "$STAGE"/usr/lib/libz.so.1.*; do
+    old="$(basename "$f")"
+    [ "$old" != "$live" ] || continue
+    rm -f "$f"
+    awk -v old="R:$old" -v new="R:$live" '
+      /^P:/ { cur = substr($0, 3) }
+      cur == "zlib" && $0 == old { print new; next }
+      { print }
+    ' "$DB" > "$DB.new"
+    mv "$DB.new" "$DB"
+    echo "removed orphaned usr/lib/$old (libz.so.1 -> $live)"
+  done
+fi
 
 # CA trust store: refuse to ship a bundle that still trusts a distrusted root.
 # "emSign ECC Root CA - G3" (SHA-256 86A1ECBA089C4A8D3BBE2734C612BA341D813E04

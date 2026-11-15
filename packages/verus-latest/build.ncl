@@ -3,12 +3,12 @@ let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, ..
 in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let git = import "../git/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
-let binutils = import "../binutils/build.ncl" in
 let z3-4-16-0 = import "../z3-4.16.0/build.ncl" in
 
 let version = "0.2026.11.02.8bf68ee" in
@@ -96,12 +96,11 @@ in
     base, # /bin/sh for the verus / cargo-verus wrappers
     glibc,
     zlib,
-    subsetOf gcc ["libgcc", "libstdcpp"],
     z3-4-16-0,
     # `verus --compile` and `cargo verus` link through the toolchain; the
-    # wrappers point the linker at gcc.
-    gcc,
-    binutils,
+    # wrappers point the linker at gcc. toolchain carries gcc, binutils, glibc
+    # and linux_headers (and gcc's libgcc_s / libstdc++ for verus itself).
+    toolchain,
     # `cargo verus new` runs `git init` and aborts if it fails.
     git,
   ],
@@ -138,7 +137,7 @@ in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           # A postcondition Verus must reject...
           ["/bin/bash", "-c", "printf 'use vstd::prelude::*;\\nverus!{\\nfn inc(x: u8) -> (r: u8) requires x < 255 ensures r == x { x + 1 }\\nfn main(){}\\n}\\n' > /tmp/bad.rs; verus /tmp/bad.rs >/tmp/bad.out 2>&1; test $? -ne 0 && grep -q 'postcondition not satisfied' /tmp/bad.out"],

@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -11,10 +12,10 @@ let libxfixes = import "../libxfixes/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 # X11 Input extension library (libXi.so.6). Pulled in as a runtime dep of
-# libxtst (and, transitively, chromium-bin — Chrome links libXi.so.6). Deps
-# taken straight from libXi-1.8.4's pkg-config: `Requires.private: x11 xext
-# xfixes` (so it links libXfixes too), plus xorgproto for the input/xproto
-# headers.
+# libxtst (and, transitively, chromium-headless-shell-bin — Chrome links
+# libXi.so.6). Deps taken straight from libXi-1.8.4's pkg-config:
+# `Requires.private: x11 xext xfixes` (so it links libXfixes too), plus
+# xorgproto for the input/xproto headers.
 let version = "1.8.4" in
 {
   name = "libxi",
@@ -52,4 +53,26 @@ let version = "1.8.4" in
       upstream_version = version,
       license_spdx = "MIT",
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain, xorgproto],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t -lXi <<'EOF'
+              #include <X11/extensions/XInput2.h>
+              int main(void) { void *volatile p = (void *)XIQueryVersion; return p ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

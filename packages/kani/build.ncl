@@ -3,11 +3,11 @@ let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, ..
 in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
-let binutils = import "../binutils/build.ncl" in
 let cbmc = import "../cbmc/build.ncl" in
 let kissat = import "../kissat/build.ncl" in
 
@@ -97,14 +97,13 @@ in
     base, # /bin/sh for the kani / cargo-kani wrappers
     glibc,
     zlib,
-    subsetOf gcc ["libgcc", "libstdcpp"],
     # Kani runs CBMC and kissat by name (bundle bin/ links to them).
     cbmc,
     kissat,
     # `cargo kani` links build scripts and proc-macros of the crate under test;
-    # the wrappers point cargo's linker at gcc.
-    gcc,
-    binutils,
+    # the wrappers point cargo's linker at gcc. toolchain carries gcc, binutils,
+    # glibc and linux_headers (and gcc's libgcc_s / libstdc++ for kani itself).
+    toolchain,
   ],
 
   cmd = "./build.sh",
@@ -136,7 +135,7 @@ in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "kani --version | grep -q '%{version}'"],
           # A harness Kani must refute: u8 addition overflows.

@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let tar = import "../tar/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -37,4 +38,24 @@ let version = "2.18.0" in
         repo = "bash-completion",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              test -s /usr/share/bash-completion/bash_completion
+              /usr/bin/bash -O extglob -n /usr/share/bash-completion/bash_completion
+              n=0; for f in /usr/share/bash-completion/completions/* /usr/share/bash-completion/completions-core/*; do test -e "$f" && n=$((n+1)); done; [ $n -gt 100 ]
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -51,4 +51,8 @@ let version = "3.18.3" in
         repo = "libfuse",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/fusermount3 --version",
+  },
 } | BuildSpec

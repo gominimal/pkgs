@@ -1,0 +1,29 @@
+Build against odin dev-2026-11 and later: io.write_quoted_string changed.
+
+odin's core:io.write_quoted_string now takes a
+`strconv.Rune_Escaping_Options` bit_set as its last parameter where it used to
+take a bool, so ols dev-2026-10's two calls passing `true` no longer compile.
+This is upstream ols commit 78bf89118d626206da64f6aac46f5ec53b396361
+("fix: io.write_quoted_string is changed", 2026-11-01), which switches them to
+core:encoding/json's write_quoted_json_string. marshal.odin already imports
+core:encoding/json at dev-2026-10.
+
+Drop this patch on the next ols bump that contains 78bf891: build.sh fails
+with a message saying so once upstream already uses write_quoted_json_string.
+
+diff --git a/src/server/marshal.odin b/src/server/marshal.odin
+index c559862..5dc627c 100644
+--- a/src/server/marshal.odin
++++ b/src/server/marshal.odin
+@@ -211,9 +211,9 @@ marshal_to_writer :: proc(w: io.Writer, v: any, opt: ^Marshal_Options) -> (err:
+ 	case runtime.Type_Info_String:
+ 		switch s in a {
+ 		case string:
+-			io.write_quoted_string(w, s, '"', nil, true) or_return
++			json.write_quoted_json_string(w, s) or_return
+ 		case cstring:
+-			io.write_quoted_string(w, string(s), '"', nil, true) or_return
++			json.write_quoted_json_string(w, string(s)) or_return
+ 		}
+ 
+ 	case runtime.Type_Info_Boolean:

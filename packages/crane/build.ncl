@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -37,6 +37,7 @@ let version = "0.22.1" in
 
   outputs = {
     crane = { glob = "usr/bin/crane" } | OutputBin,
+    gcrane = { glob = "usr/bin/gcrane" } | OutputBin,
   },
 
   attrs =
@@ -50,4 +51,8 @@ let version = "0.22.1" in
         repo = "go-containerregistry",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/crane version",
+  },
 } | BuildSpec

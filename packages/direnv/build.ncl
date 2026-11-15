@@ -1,5 +1,8 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let go = import "../go/build.ncl" in
 let bash = import "../bash/build.ncl" in
 
@@ -45,7 +48,7 @@ let version = "2.38.2" in
     envrc =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "direnv version | grep -qx %{version} && d=$(mktemp -d) && cd \"$d\" && export HOME=$d XDG_CONFIG_HOME=$d/c XDG_DATA_HOME=$d/d && echo 'export DIRENV_SMOKE=ok' > .envrc && direnv allow . && test \"$(direnv exec . sh -c 'echo $DIRENV_SMOKE')\" = ok"],
         ],

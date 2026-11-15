@@ -2,6 +2,7 @@
 # (python), then finalized: outputs read from a verified `minimal package` build.
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let python = import "../python/build.ncl" in
 let setuptools = import "../setuptools/build.ncl" in
 let version = "2.2" in
@@ -38,7 +39,7 @@ let version = "2.2" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "ddgr --version"],
         ],

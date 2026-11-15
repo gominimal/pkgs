@@ -1,4 +1,6 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let pkgconf = import "../pkgconf/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -31,4 +33,24 @@ let version = "1.6.0" in
       upstream_version = version,
       license_spdx = "X11",
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, pkgconf],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              pkg-config --exists --print-errors xtrans
+              test -s /usr/include/X11/Xtrans/Xtrans.h
+              test -s /usr/include/X11/Xtrans/Xtransint.h
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

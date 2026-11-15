@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -54,5 +54,9 @@ let version = "1.6.0" in
       owner = "webmproject",
       repo = "libwebp",
     },
+  },
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/cwebp -version",
   },
 } | BuildSpec

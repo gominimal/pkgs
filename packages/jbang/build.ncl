@@ -1,5 +1,7 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
@@ -71,7 +73,7 @@ let version = "0.143.0" in
     jbang_version =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "jbang --version 2>&1 | grep -qF '%{version}'"],
         ],
@@ -84,7 +86,7 @@ let version = "0.143.0" in
     run_script =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "printf 'class hello {\\n  public static void main(String[] args) {\\n    System.out.println(\"hello \" + String.join(\",\", args));\\n  }\\n}\\n' > hello.java"],
           ["/bin/bash", "-c", "JBANG_DIR=\"$PWD/jbang-home\" jbang --offline hello.java a b > out.txt"],

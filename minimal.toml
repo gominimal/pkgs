@@ -1,17 +1,14 @@
 [stdlib]
 minimum_version = "0.0.18"
 
-[tasks.shell]
-interactive = true
+[sessions.shell]
 packages = ["base", "bash", "claude-code", "claude-code-minimal-plugin", "curl"]
 exec = "bash --noprofile -l"
 
-[tasks.claude]
-interactive = true
+[sessions.claude]
 packages = ["base", "bash", "claude-code", "claude-code-minimal-plugin", "curl"]
 exec = "claude --dangerously-skip-permissions"
 
-[tasks.opencode]
-interactive = true
+[sessions.opencode]
 packages = ["base", "bash", "opencode", "curl"]
 exec = "opencode"

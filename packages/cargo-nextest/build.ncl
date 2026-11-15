@@ -1,19 +1,20 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.9.145" in
+let version = "0.9.152" in
 {
   name = "cargo-nextest",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/nextest-rs/nextest/archive/refs/tags/cargo-nextest-%{version}.tar.gz",
-      sha256 = "6ba31b7dace0cfa57a7f9f534a82732d037481e161e076bd713c3edf1fdf6a63",
+      sha256 = "b93dfdf2c5d187f0154e71ee86bcfc40e8ea39abfe7bf20f95f1fa05c12afb2f",
       extract = true,
       strip_prefix = "nextest-cargo-nextest-%{version}",
     } | Source,
@@ -24,7 +25,7 @@ let version = "0.9.145" in
 
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-runtime ["libgcc"],
   ],
 
   needs = {
@@ -57,7 +58,7 @@ let version = "0.9.145" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "cargo-nextest nextest --version"],
           ["/bin/bash", "-c", "cargo-nextest nextest --help"],

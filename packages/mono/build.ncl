@@ -2,8 +2,12 @@ let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Sourc
 let autoconf = import "../autoconf/build.ncl" in
 let automake = import "../automake/build.ncl" in
 let base = import "../base/build.ncl" in
+let bash = import "../bash/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
 let m4 = import "../m4/build.ncl" in
@@ -42,9 +46,10 @@ let version = "6.12.0.206" in
     toolchain,
   ],
   runtime_deps = [
+    bash, # mcs and the other usr/bin wrappers are #!/bin/sh scripts
     glibc,
     zlib,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",
@@ -78,7 +83,7 @@ let version = "6.12.0.206" in
     version_check =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [],
         cmds = [
           ["/bin/mono", "--version"],
           ["/bin/mcs", "--version"],
@@ -88,7 +93,7 @@ let version = "6.12.0.206" in
     compile_hello_world =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "cat > hello.cs << 'EOF'\nusing System;\nclass Hello {\n    static void Main() {\n        Console.WriteLine(\"Hello Mono\");\n    }\n}\nEOF"],
           ["/bin/mcs", "hello.cs"],
@@ -99,7 +104,7 @@ let version = "6.12.0.206" in
     compile_math =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "cat > math.cs << 'EOF'\nusing System;\nclass MathTest {\n    static void Main() {\n        Console.WriteLine(2 + 2);\n        Console.WriteLine(10 * 5);\n    }\n}\nEOF"],
           ["/bin/mcs", "math.cs"],
@@ -111,7 +116,7 @@ let version = "6.12.0.206" in
     compile_with_library =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "cat > mylib.cs << 'EOF'\nnamespace MyLib {\n    public class Greeter {\n        public static string Greet(string name) {\n            return \"Hello, \" + name;\n        }\n    }\n}\nEOF"],
           ["/bin/mcs", "-target:library", "mylib.cs"],

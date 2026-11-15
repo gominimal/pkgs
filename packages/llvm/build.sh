@@ -1,26 +1,15 @@
 #!/bin/sh
 set -ex
 
-tar -xof llvm-21.1.8.src.tar.xz
-tar -xof cmake-21.1.8.src.tar.xz
-mv cmake-21.1.8.src cmake
-tar -xof third-party-21.1.8.src.tar.xz
-mv third-party-21.1.8.src third-party
-tar -xof clang-21.1.8.src.tar.xz
-mv clang-21.1.8.src clang
-tar -xof clang-tools-extra-21.1.8.src.tar.xz
-mv clang-tools-extra-21.1.8.src clang-tools-extra
-tar -xof lld-21.1.8.src.tar.xz
-mv lld-21.1.8.src lld
-tar -xof libunwind-21.1.8.src.tar.xz
-mv libunwind-21.1.8.src libunwind
-tar -xof compiler-rt-21.1.8.src.tar.xz
-mv compiler-rt-21.1.8.src compiler-rt
+V="$MINIMAL_ARG_VERSION"
 
-sed 's/utility/tool/' -i llvm-21.1.8.src/utils/FileCheck/CMakeLists.txt
+tar -xof "llvm-project-$V.src.tar.xz"
+cd "llvm-project-$V.src"
 
-mkdir llvm-21.1.8.src/build
-cd llvm-21.1.8.src/build
+sed 's/utility/tool/' -i llvm/utils/FileCheck/CMakeLists.txt
+
+mkdir build
+cd build
 
 export CC=clang
 export CXX=clang++
@@ -49,7 +38,11 @@ cmake \
 	-D LLVM_USE_LINKER=lld \
 	-D LLVM_ENABLE_PROJECTS="clang;clang-tools-extra;compiler-rt;lld" \
 	-D LLVM_TARGETS_TO_BUILD="all" \
-	-W no-dev -G Ninja ..
+	-W no-dev -G Ninja ../llvm
 
 ninja
 DESTDIR=$OUTPUT_DIR ninja 'install/strip'
+
+# The installed tools must report the pinned version.
+LD_LIBRARY_PATH="$OUTPUT_DIR/usr/lib" "$OUTPUT_DIR/usr/bin/clang" --version | grep -F "clang version $V"
+test "$(LD_LIBRARY_PATH="$OUTPUT_DIR/usr/lib" "$OUTPUT_DIR/usr/bin/llvm-config" --version)" = "$V"

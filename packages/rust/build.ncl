@@ -1,6 +1,7 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let llvm = import "../llvm/build.ncl" in
@@ -11,7 +12,7 @@ let sqlite = import "../sqlite/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let libssh2 = import "../libssh2/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let rustc-1-98-1 = import "../rustc-1.98.1/build.ncl" in # the stage0
 let version = "1.99.1" in
 {
@@ -35,12 +36,10 @@ let version = "1.99.1" in
       python,
       toolchain,
     ]
-    # stage0 = the rustc-1.98.1 rung on BOTH arches (1.99.0's src/stage0 pins 1.98.0; x.py's
-    # check_stage0_version accepts any 1.98.x).  amd64: built by the chain gcc-15.2.0 -> mrustc
-    # 0.12.0 -> rustc-1.90.0 -> ... -> 1.97.1 -> 1.98.1, or, while hex0/amd64-ladder.ncl is off,
-    # from the sealed rustc-1.97.1 bedrock tarball (see rustc-1.98.1/build.ncl).  arm64: the rung builds from the sha-pinned
-    # rustc-1.97.1 bedrock tarball, so no new hand-built prebuilt is needed.  build.sh injects it into
-    # bootstrap.toml [build] rustc/cargo; x.py never downloads a stage0.
+    # stage0 = rustc-1.98.1 on BOTH arches (1.99.0's src/stage0 pins 1.98.0; x.py's
+    # check_stage0_version accepts any 1.98.x): the top of the source-only ladder mrustc 0.12.0 ->
+    # rustc-1.90.0 -> ... -> 1.97.1 -> 1.98.1, built in gominimal/bootstrap (gen-13).  build.sh injects
+    # it into bootstrap.toml [build] rustc/cargo; x.py never downloads a stage0.
     @ [rustc-1-98-1],
   # The build itself is offline (build.sh stubs curl/wget/git and fails on any attempt). The flags stay
   # because the builder grants a package network access when ANY of its dependencies declares it, and
@@ -57,7 +56,7 @@ let version = "1.99.1" in
     llvm,
     openssl,
     sqlite,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",
@@ -88,4 +87,27 @@ let version = "1.99.1" in
       },
       build_cost_multiple = 3,
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/rustc --version",
+    # No `-C linker` anywhere: the compiled-in default linker (bootstrap.toml `default-linker`)
+    # must exist.  toolchain supplies gcc, binutils and glibc's crt/libc; it stays a test dep
+    # rather than a runtime dep so rust's closure does not grow.
+    default_linker_rustc =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          ["/usr/bin/bash", "-c", "printf 'fn main() { println!(\"hello rust\"); }\\n' > hello.rs && /usr/bin/rustc hello.rs -o h && out=\"$(./h)\" && [ \"$out\" = 'hello rust' ]"],
+        ],
+      } | Test,
+    default_linker_cargo =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          ["/usr/bin/bash", "-c", "export CARGO_HOME=\"$PWD/cargo-home\" RUSTC=/usr/bin/rustc && /usr/bin/cargo new --offline --vcs none hi && cd hi && /usr/bin/cargo build --offline && out=\"$(./target/debug/hi)\" && [ \"$out\" = 'Hello, world!' ]"],
+        ],
+      } | Test,
+  },
 } | BuildSpec

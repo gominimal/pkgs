@@ -1,9 +1,12 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let git = import "../git/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
@@ -26,7 +29,7 @@ let version = "0.5.10" in
 
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-runtime ["libgcc"],
     # The patched default reads /etc/ssl/certs/ca-certificates.crt; without the
     # store in the closure it silently falls back to the compiled-in roots.
     ca-certificates,
@@ -35,7 +38,7 @@ let version = "0.5.10" in
   cmd = "./build.sh",
 
   outputs = {
-    prek = { glob = "usr/bin/prek" } | OutputLib,
+    prek = { glob = "usr/bin/prek" } | OutputBin,
   },
   attrs =
     {
@@ -51,13 +54,13 @@ let version = "0.5.10" in
 
   tests = {
     # The store must come from prek's own runtime_deps edge. A test closure
-    # without any needs.internet package proves that: [base] plus prek's runtime
+    # without any needs.internet package proves that: [bash-bootstrap] plus prek's runtime
     # closure has none, so ca-certificates can only arrive through that edge
     # (AGENTS.md "Trust store", item 2). This one fails if the edge is dropped.
     store_from_runtime_deps =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           [
             "/bin/bash",
@@ -82,7 +85,7 @@ let version = "0.5.10" in
     system_ca_default =
       {
         class = 'Standalone,
-        test_deps = [base, git],
+        test_deps = [bash-bootstrap, git, coreutils, grep],
         cmds = [
           [
             "/bin/bash",

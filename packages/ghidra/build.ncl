@@ -1,7 +1,11 @@
 let { subsetOf, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let findutils = import "../findutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -63,7 +67,7 @@ let build_date = "20261016" in
     # that resolved no libstdc++ would have passed every checker and then
     # failed at exec. Declaring them as OutputBin below turns that check on.
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"], # decompile/sleigh are C++
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"], # decompile/sleigh are C++
     zlib, # `sleigh` links libz.so.1
   ],
 
@@ -141,7 +145,7 @@ let build_date = "20261016" in
     sevenzip_java =
       {
         class = 'Standalone,
-        test_deps = [base, jdk],
+        test_deps = [bash-bootstrap, jdk, coreutils, findutils, grep],
         cmds = [
           [
             "/bin/bash",
@@ -197,7 +201,7 @@ let build_date = "20261016" in
     headless_decompile =
       {
         class = 'Standalone,
-        test_deps = [base, toolchain],
+        test_deps = [bash-bootstrap, toolchain, coreutils],
         cmds = [
           [
             "/bin/bash",

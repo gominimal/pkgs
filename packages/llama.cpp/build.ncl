@@ -1,23 +1,27 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let git = import "../git/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
 let curl = import "../curl/build.ncl" in
 let hwdata = import "../hwdata/build.ncl" in
 let pciutils = import "../pciutils/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 
-let version = "b12110" in
+let version = "b12359" in
 {
   name = "llama.cpp",
   build_deps = [
     { file = "build.sh" } | Local,
+    # CVE-2023-45663: upstream stb's TGA/HDR fix (nothings/stb cd44845) for the
+    # vendored stb_image 2.30. See build.sh.
+    { file = "stb-cve-2023-45663.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/ggml-org/llama.cpp/%{version}.tar.gz",
-      sha256 = "442a8ec2c5e8b8895175abfcede851964572370f0a56b33166c94905260da008",
+      sha256 = "e2eadc0fd06f81abea3b8012584e67bea3b403d91bcd1b3072b656cbcb2fb4bb",
       extract = true,
       strip_prefix = "llama.cpp-%{version}",
     } | Source,
@@ -28,11 +32,12 @@ let version = "b12110" in
       # tools/ui/dist so the build doesn't fetch the moving `latest` UI.
       # Bump with `version`.
       url = "gs://minimal-staging-archives/ggml-org/llama-ui/%{version}-dist.tar.gz",
-      sha256 = "a0c7954a7ca79bb418d9bef77bb2f5c4f7d667d3ba6813451ef5f1b693e9dd50",
+      sha256 = "273d1d4e410715f4832579c97868e128d80946c1bde86d682ab06b4b8440933b",
       extract = false,
     } | Source,
     base,
     git,
+    patch,
     make,
     cmake,
     toolchain,
@@ -41,7 +46,7 @@ let version = "b12110" in
     curl,
     hwdata,
     pciutils,
-    subsetOf gcc ["libgcc", "libstdcpp", "libgomp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp", "libgomp"],
   ],
   cmd = "./build.sh",
   build_args = {
@@ -78,4 +83,11 @@ let version = "b12110" in
       },
       build_cost_multiple = 3,
     } | Attrs,
+
+  # No test_deps: base would mask a missing library. Both binaries exited 127
+  # (libllama.so.0 etc. not shipped) before build.sh kept the SONAME links.
+  tests = {
+    llama-cli = standaloneTest "/usr/bin/llama-cli --version",
+    llama-server = standaloneTest "/usr/bin/llama-server --version",
+  },
 } | BuildSpec

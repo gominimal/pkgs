@@ -3,6 +3,8 @@ let make = import "../make/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let python = import "../python/build.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -18,7 +20,7 @@ let zlib = import "../zlib/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 let gtest = import "../gtest/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let llvm = import "../llvm/build.ncl" in
 let wasi-libc = import "../wasi-libc/build.ncl" in
 let llhttp-wasm-rebuild = import "../llhttp-wasm-rebuild/build.ncl" in
@@ -29,13 +31,14 @@ let ca-certificates = import "../ca-certificates/build.ncl" in
 # so a node bump re-derives each one here: undici under deps/undici (its llhttp C rebuilds
 # the wasm js2c'd into node), the undici npm vendors under deps/npm (rebuilt from the
 # mirrored release tarball below), and amaro (its swc wasm comes from packages/amaro-wasm).
-let undici = "8.12.2" in
+let undici = "8.12.4" in
 let undici_llhttp = "9.3.1" in
 let npm_undici = "6.28.0" in
 # The llhttp that the npm-vendored undici pins (forwarded so a bump is one edit).
 let npm_undici_llhttp = "8.1.0" in
-let amaro = "1.1.11" in
-let version = "26.12.1" in
+# amaro is recorded once, in amaro-wasm/versions.ncl, so node, node-lts and amaro-wasm agree.
+let amaro = (import "../amaro-wasm/versions.ncl").bundled.node in
+let version = "26.13.1" in
 {
   name = "node",
   build_deps = [
@@ -48,7 +51,7 @@ let version = "26.12.1" in
     # roots), so no patches are carried.
     {
       url = "https://nodejs.org/dist/v%{version}/node-v%{version}.tar.gz",
-      sha256 = "717244a8d757672ec86aae5077fca31e50f84b094441ec51bdf397aab12c304e",
+      sha256 = "60c6cdf11c3e9d5932fccd0eafae77f1152661584e129047684cb8646f228d3e",
     } | Source,
     {
       url = "gs://minimal-staging-archives/undici-%{npm_undici}.tar.gz",
@@ -79,7 +82,7 @@ let version = "26.12.1" in
     zstd,
     gtest,
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     # node trusts OpenSSL's default store, /etc/ssl (see build.sh), so the
     # system bundle must be present or every TLS connection fails.
     ca-certificates,
@@ -124,7 +127,7 @@ let version = "26.12.1" in
     type_strip =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "printf 'interface P { n: number }\\nconst p: P = { n: 6 };\\nconsole.log(p.n * 7);\\n' > t.ts"],
           ["/bin/bash", "-c", "node t.ts | grep -qx 42"],
@@ -133,7 +136,7 @@ let version = "26.12.1" in
     eval =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "echo 'console.log(\"Hello Node\")' > script.js"],
           ["/bin/bash", "-c", "node script.js | grep -q '^Hello Node$'"],
@@ -144,7 +147,7 @@ let version = "26.12.1" in
     inline_eval =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "node -e 'console.log(10 * 5)' | grep -q '^50$'"],
         ],
@@ -152,7 +155,7 @@ let version = "26.12.1" in
     npm_global_prefix =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           # The builtin npmrc must redirect npm's global prefix away from the
           # read-only /usr store (gominimal/inbox#559).
@@ -167,7 +170,7 @@ let version = "26.12.1" in
     emsign_roots_removed =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -206,7 +209,7 @@ let version = "26.12.1" in
     spki_blocklist_rejects_emudhra_intermediate =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           [
             "/bin/bash",
@@ -308,7 +311,7 @@ let version = "26.12.1" in
     system_ca_store_default =
       {
         class = 'Standalone,
-        test_deps = [base, ca-certificates],
+        test_deps = [bash-bootstrap, ca-certificates, coreutils],
         cmds = [
           [
             "/bin/bash",

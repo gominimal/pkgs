@@ -1,5 +1,8 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 
@@ -65,7 +68,7 @@ let version = "0.11.2" in
     mcs_version =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "mcs --version > out.txt 2>&1; grep -qx 'mcs v%{version}' out.txt"],
         ],
@@ -75,7 +78,7 @@ let version = "0.11.2" in
     help =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           [
             "/bin/bash",
@@ -100,7 +103,7 @@ let version = "0.11.2" in
     offline_fails_closed =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           [
             "/bin/bash",

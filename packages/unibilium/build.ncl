@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
@@ -60,4 +61,36 @@ let version = "2.1.4" in
         repo = "unibilium",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              cd /tmp
+              gcc -x c - -o t -x none -lunibilium <<'EOF'
+              #include <stdio.h>
+              #include <unibilium.h>
+              int main(void) {
+                unibi_term *t = unibi_dummy();
+                if (!t) return 1;
+                unibi_set_num(t, unibi_columns, 80);
+                int c = unibi_get_num(t, unibi_columns);
+                printf("unibilium columns=%d\n", c);
+                unibi_destroy(t);
+                return c != 80;
+              }
+              EOF
+              ./t
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

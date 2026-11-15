@@ -1,14 +1,15 @@
 let { standaloneTest, subsetOf, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let make = import "../make/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.6.5" in
+let version = "2.6.7" in
 {
   name = "biome",
 
@@ -23,7 +24,7 @@ let version = "2.6.5" in
     { file = "cve-2026-111943-webpki-lock.patch" } | Local,
     {
       url = "https://github.com/biomejs/biome/archive/refs/tags/@biomejs/biome@%{version}.tar.gz",
-      sha256 = "0fce71ab77fcc17c4c3966681a90f5d7b8108bdb3d7e091fde57aab7b6386cd1",
+      sha256 = "4a17edfe38a4437040d1f12ebd41a78bebec056522351c446c451b856b7e9cf4",
       extract = true,
       strip_prefix = "biome--biomejs-biome-%{version}",
     } | Source,
@@ -36,7 +37,7 @@ let version = "2.6.5" in
 
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-runtime ["libgcc"],
   ],
 
   cmd = "./build.sh",
@@ -71,7 +72,7 @@ let version = "2.6.5" in
     version_is_stamped =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "test \"$(/usr/bin/biome --version)\" = 'Version: %{version}'"],
         ],

@@ -2,6 +2,9 @@
 # with outputs + runtime_deps refined from a verified `minimal package` build.
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -9,6 +12,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let libsodium = import "../libsodium/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let version = "4.3.5" in
 {
@@ -41,7 +45,7 @@ let version = "4.3.5" in
     cmake_data = { glob = "usr/lib/cmake/**" } | OutputData,
     zmq_data = { glob = "usr/share/zmq/**" } | OutputData,
   },
-  runtime_deps = [glibc, subsetOf gcc ["libgcc", "libstdcpp"], libsodium],
+  runtime_deps = [glibc, subsetOf gcc-runtime ["libgcc", "libstdcpp"], libsodium],
   attrs =
     {
       upstream_version = version,
@@ -53,7 +57,7 @@ let version = "4.3.5" in
       {
         class = 'Standalone,
         # libzmq links libsodium, so the compile-link needs it (+ pkgconf).
-        test_deps = [base, toolchain, pkgconf, libsodium],
+        test_deps = [bash-bootstrap, toolchain, pkgconf, libsodium, coreutils, grep],
         cmds = [
           # Compile-and-link a real libzmq consumer (ported from the -dev test),
           # then run the installed curve_keygen to confirm the bin loads.

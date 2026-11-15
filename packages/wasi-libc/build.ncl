@@ -29,8 +29,9 @@ let tag = "wasi-sdk-21" in
 
   cmd = "./build.sh",
   outputs = {
-    # wasm32 objects and archives, not ELF.
-    libs = { glob = "usr/lib/wasi/lib/wasm32-wasi/*.{a,o}", allow_data = true } | OutputLib,
+    # wasm32 objects and archives, not ELF. Under the wasm32-wasip1 triple: clang
+    # 23 deprecates bare wasm32-wasi, and lib/<triple> is its link search dir.
+    libs = { glob = "usr/lib/wasi/lib/wasm32-wasip1/*.{a,o}", allow_data = true } | OutputLib,
     includes = { glob = "usr/lib/wasi/include/**" } | OutputData,
     licenses = { glob = "usr/share/licenses/wasi-libc/*" } | OutputData,
   },
@@ -55,7 +56,7 @@ let tag = "wasi-sdk-21" in
         class = 'Standalone,
         test_deps = [base, llvm],
         cmds = [
-          ["/bin/bash", "-c", "set -eu; L=/usr/lib/wasi/lib/wasm32-wasi; llvm-objdump -d $L/libc.a $L/crt1-reactor.o > dis.txt; test -s dis.txt; ! grep -Eq 'memory\\.(copy|fill)|i(32|64)\\.trunc_sat' dis.txt"],
+          ["/bin/bash", "-c", "set -eu; L=/usr/lib/wasi/lib/wasm32-wasip1; llvm-objdump -d $L/libc.a $L/crt1-reactor.o > dis.txt; test -s dis.txt; ! grep -Eq 'memory\\.(copy|fill)|i(32|64)\\.trunc_sat' dis.txt"],
         ],
       } | Test,
 
@@ -67,7 +68,7 @@ let tag = "wasi-sdk-21" in
         test_deps = [base, llvm],
         cmds = [
           ["/bin/bash", "-c", "printf '#include <string.h>\\nint f(char *d, const char *s, int n) { memcpy(d, s, n); return (int)strlen(d); }\\n' > t.c"],
-          ["/bin/bash", "-c", "set -eu; clang --target=wasm32-wasi --sysroot=/usr/lib/wasi -mcpu=mvp -mmutable-globals -O2 -mexec-model=reactor -nodefaultlibs -Wl,--export=malloc -Wl,--export=free -Wl,--export=f -Wl,--no-entry -Wl,--strip-all -o t.wasm t.c -lc; test \"$(head -c 4 t.wasm | od -An -tx1 | tr -d ' ')\" = 0061736d"],
+          ["/bin/bash", "-c", "set -eu; clang --target=wasm32-wasip1 --sysroot=/usr/lib/wasi -mcpu=mvp -mmutable-globals -O2 -mexec-model=reactor -nodefaultlibs -Wl,--export=malloc -Wl,--export=free -Wl,--export=f -Wl,--no-entry -Wl,--strip-all -o t.wasm t.c -lc; test \"$(head -c 4 t.wasm | od -An -tx1 | tr -d ' ')\" = 0061736d"],
         ],
       } | Test,
   },

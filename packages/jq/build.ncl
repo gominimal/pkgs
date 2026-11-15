@@ -1,6 +1,9 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let make = import "../make/build.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let diffutils = import "../diffutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
@@ -57,7 +60,7 @@ let version = "1.8.2" in
     basic =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, diffutils, grep],
         cmds = [
           ["/bin/bash", "-c", "echo '{\"name\":\"Alice\",\"age\":30}' > data.json"],
           ["/bin/bash", "-c", "jq '.name' data.json | grep -q '\"Alice\"'"], # extract field
@@ -80,7 +83,7 @@ let version = "1.8.2" in
     filtering =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "echo '[{\"name\":\"x\",\"val\":10},{\"name\":\"y\",\"val\":20},{\"name\":\"z\",\"val\":5}]' > items.json"],
           ["/bin/bash", "-c", "jq '[.[] | select(.val > 10)]' items.json > filtered.json"],
@@ -90,7 +93,7 @@ let version = "1.8.2" in
     map =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "echo '[{\"name\":\"x\",\"val\":10},{\"name\":\"y\",\"val\":20},{\"name\":\"z\",\"val\":5}]' > items.json"],
           ["/bin/bash", "-c", "jq 'map(.val * 2)' items.json > doubled.json"],

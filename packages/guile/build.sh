@@ -1,5 +1,6 @@
 #!/bin/bash
 set -euo pipefail
+: "${MINIMAL_ARG_VERSION:?build_args must include version}"
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
@@ -29,7 +30,8 @@ make DESTDIR="$OUTPUT_DIR" install
 # gdb's auto-load helper lands beside the library as libguile-3.0.so.*-gdb.scm, inside the libs glob
 rm -f "$OUTPUT_DIR"/usr/lib/libguile-*-gdb.scm
 
-# installed compiler runs from the staged tree
-LD_LIBRARY_PATH="$OUTPUT_DIR/usr/lib" GUILE_LOAD_PATH="$OUTPUT_DIR/usr/share/guile/3.0" \
-  GUILE_LOAD_COMPILED_PATH="$OUTPUT_DIR/usr/lib/guile/3.0/ccache" \
+# installed compiler runs from the staged tree; module dirs are the major.minor effective version
+GUILE_API="${MINIMAL_ARG_VERSION%.*}"
+LD_LIBRARY_PATH="$OUTPUT_DIR/usr/lib" GUILE_LOAD_PATH="$OUTPUT_DIR/usr/share/guile/$GUILE_API" \
+  GUILE_LOAD_COMPILED_PATH="$OUTPUT_DIR/usr/lib/guile/$GUILE_API/ccache" \
   "$OUTPUT_DIR/usr/bin/guile" -c "(exit (string=? (version) \"$MINIMAL_ARG_VERSION\"))"

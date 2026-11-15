@@ -1,11 +1,15 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let gawk = import "../gawk/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let unzip = import "../unzip/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let nss = import "../nss/build.ncl" in
 let nspr = import "../nspr/build.ncl" in
+let dbus = import "../dbus/build.ncl" in
 let glib = import "../glib/build.ncl" in
 let libxcb = import "../libxcb/build.ncl" in
 let chromium-headless-shell-bin = import "../chromium-headless-shell-bin/build.ncl" in
@@ -43,28 +47,35 @@ let browser_version = chromium-headless-shell-bin.attrs.upstream_version in
       { arch = 'Amd64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chromedriver-linux64.zip",
-          sha256 = "329525fa0bf02be19794de1e9475772ef64695e0456f142888bd70df3147dc1e",
+          sha256 = "0c27ff9aac902d3f7d2d01dde2235c1ff9c320bb8914b3624f4c79d52abacaea",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux-arm64/chromedriver-linux-arm64.zip",
-          sha256 = "8166fad77893cb095a45678f29ebec7ea14a8ac89364d28d52176a6fd4b30262",
+          sha256 = "54b2a50b393dd44463242eca9ee2d35a63baa7baf2fd5882daada15fd1f5a5be",
         } | Source,
     } target,
     base,
     unzip,
   ],
-  # DT_NEEDED of the 157.0.8103.38 binaries (re-read from both zips): libc/libdl/libpthread/libm,
-  # libgcc_s, glib, nspr, nss and libxcb, the same on both arches. Through 156 the amd64
-  # binary also needed libdbus-1; 157 dropped it, so dbus is no longer a runtime dep.
-  runtime_deps = [
-    glibc,
-    subsetOf gcc ["libgcc"],
-    nss,
-    nspr,
-    glib,
-    libxcb,
-  ],
+  # DT_NEEDED of the 157.0.8103.78 binaries (re-read from both zips): libc/libdl/libpthread/libm,
+  # libgcc_s, glib, nspr, nss and libxcb on both arches, plus libdbus-1 on amd64 only.
+  # The amd64 binary needed libdbus-1 through 156, dropped it in 157.0.8103.38 and needs
+  # it again in .78 (smoketest: "libdbus-1.so.3: cannot open shared object file"), so
+  # re-read DT_NEEDED on every bump.
+  runtime_deps =
+    [
+      glibc,
+      subsetOf gcc-runtime ["libgcc"],
+      nss,
+      nspr,
+      glib,
+      libxcb,
+    ]
+    @ match {
+      { arch = 'Amd64, .. } => [dbus],
+      { arch = 'Arm64, .. } => [],
+    } target,
   cmd = "./build.sh",
   outputs = {
     chromedriver = { glob = "usr/bin/chromedriver" } | OutputBin,
@@ -91,14 +102,14 @@ let browser_version = chromium-headless-shell-bin.attrs.upstream_version in
     smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [],
         cmds = [["/bin/chromedriver", "--version"]],
       } | Test,
     # The driver must report the same version as the packaged browser.
     matches_browser =
       {
         class = 'Standalone,
-        test_deps = [base, chromium-headless-shell-bin],
+        test_deps = [bash-bootstrap, chromium-headless-shell-bin, gawk, grep],
         cmds = [
           ["/bin/bash", "-c", "d=$(/bin/chromedriver --version | awk '{print $2}'); b=$(/bin/chromium-headless-shell --version | grep -oE '[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+'); test \"$d\" = \"$b\" && test \"$d\" = %{browser_version}"],
         ],

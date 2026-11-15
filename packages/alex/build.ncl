@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let ghc-bootstrap = import "../ghc-bootstrap/build.ncl" in
@@ -45,5 +45,9 @@ let version = "3.5.4.2" in
       repo = "alex",
     },
     license_spdx = "BSD-3-Clause",
+  },
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/alex --version",
   },
 } | BuildSpec

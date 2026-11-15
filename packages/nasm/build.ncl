@@ -1,8 +1,9 @@
-let { Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let zlib = import "../zlib/build.ncl" in
 
 let version = "3.02" in
 {
@@ -21,6 +22,7 @@ let version = "3.02" in
   ],
   runtime_deps = [
     glibc,
+    zlib,
   ],
 
   cmd = "./build.sh",
@@ -33,4 +35,8 @@ let version = "3.02" in
       upstream_version = version,
       license_spdx = "BSD-2-Clause",
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/nasm -v",
+  },
 } | BuildSpec

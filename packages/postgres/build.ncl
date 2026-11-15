@@ -2,6 +2,9 @@ let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .
 let make = import "../make/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let flex = import "../flex/build.ncl" in
 let bison = import "../bison/build.ncl" in
 let m4 = import "../m4/build.ncl" in
@@ -18,7 +21,7 @@ let zlib = import "../zlib/build.ncl" in
 # without it `initdb` aborts with "invalid locale settings".
 let glibc-locale-c-utf8 = import "../glibc-locale-c-utf8/build.ncl" in
 
-let version = "18.6" in
+let version = "18.7" in
 
 # server_test runs `check` (bash, with `start` and `q` defined) against a
 # throwaway cluster, after the same passwd handling as initdb_c_utf8 below.
@@ -27,7 +30,7 @@ let version = "18.6" in
 let server_test = fun check =>
   {
     class = 'Standalone,
-    test_deps = [base],
+    test_deps = [bash-bootstrap, coreutils, grep],
     cmds = [
       [
         "/bin/bash",
@@ -54,7 +57,7 @@ in
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/postgresql-%{version}.tar.gz",
-      sha256 = "983ee554ec53dbeb9b70797bef9fcf4e67e117e7e48ca1463cc80b3ff8e8ff3f",
+      sha256 = "19c2dc7d8520e10532d082b43c36c4d2dcc6cd9e40506c6f598e7338f84bbde7",
     } | Source,
     base,
     make,
@@ -105,7 +108,7 @@ in
     initdb_c_utf8 =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "if ! id -un >/dev/null 2>&1 && ! { echo \"pgtest:x:$(id -u):$(id -g)::/tmp:/bin/sh\" >> /etc/passwd; } 2>/dev/null; then echo \"cannot run initdb: uid $(id -u) has no passwd entry and /etc/passwd is read-only\" >&2; exit 2; fi; d=$(mktemp -d) && LANG=C.UTF-8 LC_ALL= /bin/initdb -D \"$d/data\" >\"$d/log\" 2>&1 || { cat \"$d/log\" >&2; exit 1; }; grep -q 'encoding has accordingly been set to \"UTF8\"' \"$d/log\""],
         ],

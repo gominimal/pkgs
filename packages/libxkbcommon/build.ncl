@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let meson = import "../meson/build.ncl" in
@@ -58,4 +59,28 @@ let version = "1.13.2" in
         repo = "libxkbcommon",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t -lxkbcommon -lxkbcommon-x11 <<'EOF'
+              #include <xkbcommon/xkbcommon.h>
+              #include <xkbcommon/xkbcommon-x11.h>
+              int main(void) { struct xkb_context *c = xkb_context_new(XKB_CONTEXT_NO_DEFAULT_INCLUDES); if (!c) return 1;
+                xkb_context_unref(c); void *volatile p = (void *)xkb_x11_setup_xkb_extension; return p ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

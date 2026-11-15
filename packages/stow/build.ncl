@@ -1,6 +1,8 @@
 # Imported from Wolfi `stow` by `pkgmgr import-wolfi` (autotools build).
 let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 let autoconf = import "../autoconf/build.ncl" in
 let automake = import "../automake/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
@@ -49,7 +51,7 @@ let version = "2.4.1" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils],
         cmds = [
           ["/bin/bash", "-c", "stow --version\nstow --help\n\nmkdir test links\ncd test || exit\necho 'this is a test' > test.file\n\nstow -S -t ../links .\nls -1 ../links/test.file"],
         ],

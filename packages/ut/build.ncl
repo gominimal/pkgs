@@ -1,9 +1,9 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 let version = "0.7.0" in
@@ -24,13 +24,13 @@ let version = "0.7.0" in
 
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-runtime ["libgcc"],
   ],
 
   cmd = "./build.sh",
 
   outputs = {
-    ut = { glob = "usr/bin/ut" } | OutputLib,
+    ut = { glob = "usr/bin/ut" } | OutputBin,
   },
   attrs =
     {
@@ -42,4 +42,8 @@ let version = "0.7.0" in
         repo = "ut",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/ut --help",
+  },
 } | BuildSpec

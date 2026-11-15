@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
@@ -41,4 +42,35 @@ let version = "2.12.0" in
         repo = "utf8proc",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%%"
+              set -e
+              cd /tmp
+              gcc -x c - -o t -x none -lutf8proc <<'EOF'
+              #include <stdio.h>
+              #include <string.h>
+              #include <utf8proc.h>
+              int main(void) {
+                /* e + combining acute -> precomposed U+00E9 */
+                utf8proc_uint8_t *n = utf8proc_NFC((const utf8proc_uint8_t *)"e\xcc\x81");
+                int ok = n && strcmp((char *)n, "\xc3\xa9") == 0 && utf8proc_toupper('a') == 'A';
+                printf("utf8proc %s\n", utf8proc_version());
+                return !ok;
+              }
+              EOF
+              ./t
+            "%%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

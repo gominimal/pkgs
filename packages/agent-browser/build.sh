@@ -83,9 +83,8 @@ install -m 0644 cli/src/native/a11y/LICENSE-axe-core.txt \
 # The wrapper sets two defaults; a caller's own env var wins, and so does a
 # command-line flag.
 #
-# AGENT_BROWSER_EXECUTABLE_PATH -> chromium-bin's full browser, NOT
-#   chromium-headless-shell: only the full browser reads the
-#   CADistrustedCertificates policy (CVE-2026-111943; see build.ncl). The env
+# AGENT_BROWSER_EXECUTABLE_PATH -> chromium-headless-shell-bin's
+#   /usr/bin/chromium-headless-shell (CVE-2026-111943 state: see build.ncl). The env
 #   var (rather than the old prepended --executable-path) also reaches the
 #   paths that never parse the flag: the daemon's own auto-launch
 #   (native/actions.rs), `mcp` mode, and `doctor`. Upstream's fallback is to
@@ -100,7 +99,7 @@ install -m 0644 cli/src/native/a11y/LICENSE-axe-core.txt \
 #   CVE-2026-111943 emSign distrust, RUSTSEC-2026-0381).
 cat > "$OUTPUT_DIR/usr/bin/agent-browser" << 'EOF'
 #!/bin/bash
-export AGENT_BROWSER_EXECUTABLE_PATH="${AGENT_BROWSER_EXECUTABLE_PATH:-/usr/bin/chromium}"
+export AGENT_BROWSER_EXECUTABLE_PATH="${AGENT_BROWSER_EXECUTABLE_PATH:-/usr/bin/chromium-headless-shell}"
 export AGENT_BROWSER_USE_SYSTEM_CA="${AGENT_BROWSER_USE_SYSTEM_CA:-1}"
 exec /usr/libexec/agent-browser/bin/agent-browser "$@"
 EOF

@@ -2,6 +2,8 @@
 # with outputs + runtime_deps refined from a verified `minimal package` build.
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let make = import "../make/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -10,6 +12,7 @@ let libcap = import "../libcap/build.ncl" in
 let libjpeg-turbo = import "../libjpeg-turbo/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let acl = import "../acl/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let mpfr = import "../mpfr/build.ncl" in
@@ -46,7 +49,7 @@ let version = "0.22.02" in
     completions = { glob = "usr/share/bash-completion/**" } | OutputData,
     data = { glob = "usr/share/stress-ng/**" } | OutputData,
   },
-  runtime_deps = [glibc, subsetOf gcc ["libatomic"], acl, gmp, libjpeg-turbo, mpfr, xz, zlib],
+  runtime_deps = [glibc, subsetOf gcc-runtime ["libatomic"], acl, gmp, libjpeg-turbo, mpfr, xz, zlib],
   attrs =
     {
       upstream_version = version,
@@ -57,7 +60,7 @@ let version = "0.22.02" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         # Deterministic checks only. The Wolfi recipe's real ~5-30s stressor
         # workloads (--cpu/--vm/--iomix) are dropped — they run genuine load and
         # exit non-zero when a stressor can't run in a constrained CI sandbox,

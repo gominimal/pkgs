@@ -2,6 +2,9 @@
 # TODO: REVIEWER — verify deps/outputs/runtime_deps + the build.sh opts.
 let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let groff = import "../groff/build.ncl" in
 let autoconf = import "../autoconf/build.ncl" in
 let automake = import "../automake/build.ncl" in
@@ -51,7 +54,7 @@ let version = "4.99.7" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           # Rewritten from the Wolfi-ported block, which had TWO assertions that
           # could not fail:

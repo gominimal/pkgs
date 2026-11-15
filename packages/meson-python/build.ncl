@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 
 let python = import "../python/build.ncl" in
@@ -44,4 +44,15 @@ let version = "0.22.1" in
         repo = "meson-python",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [python],
+        cmds = [
+          ["/usr/bin/python3", "-c", "import mesonpy; print(mesonpy.__version__)"],
+        ],
+      } | Test,
+  },
 } | BuildSpec

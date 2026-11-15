@@ -1,5 +1,8 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -10,7 +13,7 @@ let symfpu = import "../symfpu/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let libpoly = import "../libpoly/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 
 # cvc5, the SMT solver. Latest stable release. Downstream pins, for reference
 # when bumping: Verus pins cvc5 1.1.2, Creusot pins 1.3.1 — both older than
@@ -67,7 +70,7 @@ let cadical_commit = "a384d221a920d473b770df6a7221f35fc5d99e90" in
     # Shared libraries only: cvc5's public headers and cvc5Config.cmake never
     # reference LibPoly, so consumers don't need its headers.
     subsetOf libpoly ["libs"],
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",
@@ -109,7 +112,7 @@ let cadical_commit = "a384d221a920d473b770df6a7221f35fc5d99e90" in
     solve =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "cvc5 --version | head -1 | grep -Fx 'cvc5 %{version}'"],
           # The build configuration is what we meant: LibPoly in, every GPL

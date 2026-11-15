@@ -1,19 +1,19 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "10.5.1" in
+let version = "10.5.2" in
 {
   name = "fd",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/sharkdp/fd/v%{version}.tar.gz",
-      sha256 = "3ea70c258d3390a601b436b6f4c545e3a944ff3de44c8ee5542c05588e337032",
+      sha256 = "8991b6504cac33c00528050622dfe3f2a0db1be1a6faf99f69b46d1a8f737dc5",
       extract = true,
       strip_prefix = "fd-%{version}",
     } | Source,
@@ -24,7 +24,7 @@ let version = "10.5.1" in
 
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-runtime ["libgcc"],
   ],
 
   cmd = "./build.sh",
@@ -42,4 +42,8 @@ let version = "10.5.1" in
         repo = "fd",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/fd --version",
+  },
 } | BuildSpec

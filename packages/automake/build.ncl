@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let autoconf = import "../autoconf/build.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -7,13 +7,13 @@ let toolchain = import "../toolchain/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 let perl = import "../perl/build.ncl" in
 
-let version = "1.19" in
+let version = "1.20" in
 {
   name = "automake",
   build_deps = [
     {
       url = "gs://minimal-staging-archives/automake-%{version}.tar.xz",
-      sha256 = "e3e2c2e3abf37898138db5b6c1d1dc35c9160c5978be7947d2c741705251d445"
+      sha256 = "f6f34dad4cbe395715762b0710f7c511e39bd5cf777e6b95818ccbecf7714248"
     } | Source,
     { file = "build.sh" } | Local,
     autoconf,
@@ -33,9 +33,9 @@ let version = "1.19" in
   },
 
   outputs = {
-    "automake-1.19" = { glob = "usr/bin/automake-1.19" } | OutputBin,
+    "automake-1.20" = { glob = "usr/bin/automake-1.20" } | OutputBin,
     aclocal = { glob = "usr/bin/aclocal" } | OutputBin,
-    "aclocal-1.19" = { glob = "usr/bin/aclocal-1.19" } | OutputBin,
+    "aclocal-1.20" = { glob = "usr/bin/aclocal-1.20" } | OutputBin,
     automake = { glob = "usr/bin/automake" } | OutputBin,
     share_data = { glob = "usr/share/{aclocal*,automake*}/**" } | OutputData,
 
@@ -54,4 +54,8 @@ let version = "1.19" in
         name = "automake",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/automake --version",
+  },
 } | BuildSpec

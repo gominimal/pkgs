@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputLib, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputLib, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
@@ -186,4 +186,7 @@ EOF
         ],
       } | Test,
   },
+  # Authored in this repository, so Apache-2.0 like every recipe here
+  # (LICENSING.md section 1).
+  attrs = { license_spdx = "Apache-2.0" } | Attrs,
 } | BuildSpec

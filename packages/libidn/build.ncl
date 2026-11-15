@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -51,7 +52,7 @@ let version = "1.44" in
     to_ascii =
       {
         class = 'Standalone,
-        test_deps = [base, glibc-locale-c-utf8],
+        test_deps = [bash-bootstrap, glibc-locale-c-utf8],
         cmds = [
           ["/bin/bash", "-c", "test \"$(printf 'b\\303\\274cher.example' | LC_ALL=C.UTF-8 /bin/idn --quiet --idna-to-ascii)\" = xn--bcher-kva.example"],
         ],

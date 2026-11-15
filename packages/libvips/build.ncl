@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let meson = import "../meson/build.ncl" in
@@ -13,7 +13,7 @@ let libwebp = import "../libwebp/build.ncl" in
 let lcms2 = import "../lcms2/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 
 let version = "8.18.7" in
 {
@@ -41,7 +41,7 @@ let version = "8.18.7" in
     lcms2,
     zlib,
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",
@@ -63,4 +63,8 @@ let version = "8.18.7" in
         repo = "libvips",
       },
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/vips --version",
+  },
 } | BuildSpec

@@ -5,6 +5,18 @@ set -ex
 # packed under its own directory rather than extracted over ours.
 cd "ols-$MINIMAL_ARG_VERSION"
 
+# odin dev-2026-11 changed io.write_quoted_string's last parameter from a bool to
+# a bit_set; upstream 78bf891 (after dev-2026-10) adapts ols to it. Once the
+# release we build already contains that fix, the patch is redundant: fail here
+# with a clear message so the bump drops it, rather than at a confusing reject.
+if grep -q 'json.write_quoted_json_string' src/server/marshal.odin; then
+  echo "ols $MINIMAL_ARG_VERSION already contains upstream 78bf891: drop ols-write-quoted-json-string.patch from build.ncl and build.sh" >&2
+  exit 1
+fi
+patch -Np1 -i ../ols-write-quoted-json-string.patch
+# patch exits 0 on fuzz too; assert both old bool-taking calls are gone.
+if grep -n "write_quoted_string(.*, true)" src/server/marshal.odin; then exit 1; fi
+
 # Upstream's build.sh is not usable as-is: it stamps VERSION from `date -u` plus
 # `git rev-parse HEAD` (no wall clock in a reproducible build, and no .git here)
 # and compiles with -microarch:native, which bakes the builder's CPU into the

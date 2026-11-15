@@ -1,5 +1,7 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let go = import "../go/build.ncl" in
 let tmux = import "../tmux/build.ncl" in
 
@@ -44,7 +46,7 @@ let version = "2.5.1" in
     smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "overmind --version | grep -q %{version} && tmux -V"],
         ],

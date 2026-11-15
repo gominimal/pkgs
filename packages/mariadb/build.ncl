@@ -1,6 +1,9 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
+let sed = import "../sed/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -57,6 +60,7 @@ let version = "13.2.0" in
     glibc,
     ncurses,
     openssl,
+    sed, # mysql_config / mariadb_config compute basedir and --cflags through sed
     # mariadb-import and mariadb-test link libpcre2-posix.so.3. MariaDB bundles a
     # copy of PCRE2 but prefers a system one when it finds it, and it finds ours
     # through the toolchain, so the dep is real and was caught by the
@@ -105,7 +109,7 @@ let version = "13.2.0" in
     smoketest =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "/bin/mariadb --version | grep -qi mariadb"],
           # The client must parse options and exit cleanly without a server;
@@ -126,7 +130,7 @@ let version = "13.2.0" in
     dev_files_are_usable =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap],
         cmds = [
           ["/bin/bash", "-c", "set -eu\nfound=0\nfor tok in $(/bin/mysql_config --cflags); do\n  case \"$tok\" in\n    -I*) d=${tok#-I}; [ -f \"$d/mysql.h\" ] && found=1 ;;\n  esac\ndone\nif [ \"$found\" != 1 ]; then\n  echo \"mysql_config --cflags names no directory containing mysql.h:\" >&2\n  /bin/mysql_config --cflags >&2\n  exit 1\nfi"],
           # The .so that mysql_config --libs advertises must be present too.

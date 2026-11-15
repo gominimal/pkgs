@@ -2,6 +2,9 @@
 # with outputs + runtime_deps refined from a verified `minimal package` build.
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let autoconf = import "../autoconf/build.ncl" in
 let automake = import "../automake/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
@@ -11,6 +14,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let version = "5.4.0" in
 {
   name = "jemalloc",
@@ -48,8 +52,11 @@ let version = "5.4.0" in
     # interpreter check is waived (cf. pcre2-config). jeprof (perl) is NOT
     # shipped: it would need a perl runtime_dep to be a working tool.
     config = { glob = "usr/bin/jemalloc-config", allow_missing_interpreter = true } | OutputBin,
+    # jeprof (perl heap-profile reader) and jemalloc.sh (sh LD_PRELOAD wrapper).
+    jeprof = { glob = "usr/bin/jeprof", allow_missing_interpreter = true } | OutputBin,
+    "jemalloc.sh" = { glob = "usr/bin/jemalloc.sh", allow_missing_interpreter = true } | OutputBin,
   },
-  runtime_deps = [glibc, subsetOf gcc ["libgcc", "libstdcpp"]],
+  runtime_deps = [glibc, subsetOf gcc-runtime ["libgcc", "libstdcpp"]],
   attrs =
     {
       upstream_version = version,
@@ -61,7 +68,7 @@ let version = "5.4.0" in
     compile_link =
       {
         class = 'Standalone,
-        test_deps = [base, toolchain, pkgconf],
+        test_deps = [bash-bootstrap, toolchain, pkgconf, coreutils, grep],
         cmds = [
           # Compile-link-RUN a real jemalloc consumer, and lock the version-stamp
           # fix (jemalloc-config must report 5.4.0, not the git-archive 0.0.0).

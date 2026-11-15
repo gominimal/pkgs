@@ -1,7 +1,7 @@
 let { standaloneTest, subsetOf, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let libusb = import "../libusb/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -31,7 +31,10 @@ let version = "1.9.0" in
   runtime_deps = [
     glibc,
     libusb,
-    subsetOf gcc ["libs"],
+    # TODO(readelf): unverified DT_NEEDED. A C/CMake build against libusb
+    # should need at most libgcc_s; this replaces gcc's catch-all `libs`
+    # output (inbox#1261).
+    subsetOf gcc-runtime ["libgcc"],
   ],
 
   cmd = "./build.sh",

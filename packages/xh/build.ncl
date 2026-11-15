@@ -2,11 +2,13 @@
 # with outputs + runtime_deps refined from a verified `minimal package` build.
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let version = "0.26.3" in
 {
   name = "xh",
@@ -31,8 +33,10 @@ let version = "0.26.3" in
   cmd = "./build.sh",
   outputs = {
     xh = { glob = "usr/bin/xh" } | OutputBin,
+    # Invoked as xhs, xh defaults to https (upstream documents the link).
+    xhs = { glob = "usr/bin/xhs" } | OutputBin,
   },
-  runtime_deps = [glibc, subsetOf gcc ["libgcc"]],
+  runtime_deps = [glibc, subsetOf gcc-runtime ["libgcc"]],
   attrs =
     {
       upstream_version = version,
@@ -43,7 +47,7 @@ let version = "0.26.3" in
     smoke =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           # Smoke test ported from the Wolfi recipe's test block.
           ["/bin/bash", "-c", "xh --version"],

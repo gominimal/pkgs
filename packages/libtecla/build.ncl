@@ -3,7 +3,8 @@
 # Upstream is an academic site (sites.astro.caltech.edu) with no git host or
 # canonical release archive, so the tarball is mirrored to gs:// like the other
 # archive sources; there is no `source_provenance` category that fits it.
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -59,4 +60,26 @@ let version = "1.6.3" in
       upstream_version = version,
       license_spdx = "MIT",
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t -ltecla <<'EOF'
+              #include <libtecla.h>
+              int main(void) { int a, b, c; libtecla_version(&a, &b, &c); return a > 0 ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

@@ -1,10 +1,10 @@
-let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let version = "0.23.1" in
 {
   name = "bandwhich",
@@ -30,11 +30,15 @@ let version = "0.23.1" in
   outputs = {
     bandwhich = { glob = "usr/bin/bandwhich" } | OutputBin,
   },
-  runtime_deps = [glibc, subsetOf gcc ["libgcc"]],
+  runtime_deps = [glibc, subsetOf gcc-runtime ["libgcc"]],
   attrs =
     {
       upstream_version = version,
       source_provenance = { category = 'GithubRepo, owner = "imsnif", repo = "bandwhich" },
       license_spdx = "MIT",
     } | Attrs,
+
+  tests = {
+    smoketest = standaloneTest "/usr/bin/bandwhich --version",
+  },
 } | BuildSpec

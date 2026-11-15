@@ -1,4 +1,6 @@
-let { BuildSpec, Local, OutputData, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let fontconfig = import "../fontconfig/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
 
 let version = "2.1.5" in
@@ -29,5 +31,24 @@ let version = "2.1.5" in
       owner = "liberationfonts",
       repo = "liberation-fonts",
     },
+  },
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, fontconfig],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              f=/usr/share/fonts/liberation/LiberationSans-Regular.ttf; test -s "$f"
+              fam=$(/usr/bin/fc-query -f '%{family}' "$f") && [ "${fam%%,*}" = 'Liberation Sans' ]
+            "%%
+          ],
+        ],
+      } | Test,
   },
 } | BuildSpec

@@ -1,6 +1,9 @@
 let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
@@ -100,7 +103,7 @@ in
     mvnd_version =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "export MVND_DAEMON_STORAGE=\"$PWD/mvnd\" MAVEN_REPO_LOCAL=\"$PWD/repo\"; mvnd -B --version > out.txt 2>&1; rc=$?; mvnd --stop >/dev/null 2>&1; exit $rc"],
           ["/bin/bash", "-c", "grep -qF 'mvnd) %{version}' out.txt"],
@@ -114,7 +117,7 @@ in
     offline_validate =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
           ["/bin/bash", "-c", "printf '<project xmlns=\"http://maven.apache.org/POM/4.0.0\">\\n  <modelVersion>4.0.0</modelVersion>\\n  <groupId>dev.minimal</groupId>\\n  <artifactId>smoke</artifactId>\\n  <version>1</version>\\n  <packaging>pom</packaging>\\n</project>\\n' > pom.xml"],
           ["/bin/bash", "-c", "export MVND_DAEMON_STORAGE=\"$PWD/mvnd\" MAVEN_REPO_LOCAL=\"$PWD/repo\"; mvnd -B -o -X validate > out.txt 2>&1; rc=$?; mvnd --stop >/dev/null 2>&1; exit $rc"],

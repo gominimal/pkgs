@@ -1,5 +1,6 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let ocaml = import "../ocaml/build.ncl" in
 let dune = import "../dune/build.ncl" in
 let seq = import "../seq/build.ncl" in
@@ -63,7 +64,7 @@ let version = "3.0.0" in
     findlib_resolve_and_run =
       {
         class = 'Standalone,
-        test_deps = [base, ocaml, dune, ocamlfind, toolchain, grep, coreutils],
+        test_deps = [bash-bootstrap, ocaml, dune, ocamlfind, toolchain, grep, coreutils],
         cmds = [
           ["/bin/bash", "-c", "echo 'let () = print_string (Yojson.Safe.to_string (`Int 42))' > t.ml && OCAMLPATH=/usr/lib/ocaml /usr/bin/ocamlfind ocamlopt -package yojson -linkpkg t.ml -o t && ./t | grep -q 42"],
         ],

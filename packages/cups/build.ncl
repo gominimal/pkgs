@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -38,6 +39,9 @@ let version = "2.4.20" in
   ],
 
   cmd = "./build.sh",
+  build_args = {
+    include version,
+  },
 
   outputs = {
     libs = { glob = "usr/lib/libcups*.so*" } | OutputLib,
@@ -54,4 +58,27 @@ let version = "2.4.20" in
         repo = "cups",
       },
     } | Attrs,
+
+  tests = {
+    smoketest =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%%"
+              set -e
+              gcc -x c - -o t -lcups <<'EOF'
+              #include <cups/cups.h>
+              #include <string.h>
+              int main(void) { return strcmp(ippTagString(IPP_TAG_INTEGER), "integer") == 0 ? 0 : 1; }
+              EOF
+              ./t
+            "%%
+          ],
+        ],
+      } | Test,
+  },
 } | BuildSpec

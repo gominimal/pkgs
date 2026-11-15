@@ -1,5 +1,7 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
@@ -57,7 +59,7 @@ let version = "2.4.21" in
     kotlinc_version =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "kotlinc -version 2>&1 | grep -qF 'kotlinc-jvm %{version}'"],
         ],
@@ -68,7 +70,7 @@ let version = "2.4.21" in
     compile_and_run =
       {
         class = 'Standalone,
-        test_deps = [base],
+        test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "printf 'fun main() {\\n    val xs = listOf(1, 2, 3)\\n    println(\"sum=${xs.sum()}\")\\n}\\n' > hello.kt"],
           ["/bin/bash", "-c", "kotlinc hello.kt -include-runtime -d hello.jar"],
