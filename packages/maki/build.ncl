@@ -30,7 +30,7 @@ let version = "0.7.1" in
 
   runtime_deps = [
     glibc,
-    subsetOf gcc-runtime ["libgcc"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     # isahc's vendored OpenSSL resolves the CA bundle at runtime via
     # openssl-probe, which reads the system store from /etc/ssl/certs.
     ca-certificates,

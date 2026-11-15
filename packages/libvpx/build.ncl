@@ -27,7 +27,7 @@ let version = "1.17.0" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc-runtime ["libgcc"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

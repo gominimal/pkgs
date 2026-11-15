@@ -31,10 +31,10 @@ let version = "1.9.0" in
   runtime_deps = [
     glibc,
     libusb,
-    # TODO(readelf): unverified DT_NEEDED. A C/CMake build against libusb
-    # should need at most libgcc_s; this replaces gcc's catch-all `libs`
-    # output (inbox#1261).
-    subsetOf gcc-runtime ["libgcc"],
+    # The missing-runtime_deps check found every binary and libstlink NEED
+    # libssp.so.0 (gcc 16 canary pkgs#1340 run 34ab070b); libgcc_s is kept
+    # from gcc's catch-all `libs` output this replaces (inbox#1261).
+    subsetOf gcc-runtime ["libgcc", "libssp"],
   ],
 
   cmd = "./build.sh",

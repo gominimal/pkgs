@@ -54,7 +54,7 @@ let version = "0.%{position}" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc-runtime ["libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

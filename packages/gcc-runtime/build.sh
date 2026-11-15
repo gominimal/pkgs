@@ -31,11 +31,12 @@ copy 'libgcc_s.so*'
 copy 'libstdc++.so*'
 copy 'libgomp.so*'
 copy 'libatomic.so*'
+copy 'libssp.so*'
 case $(uname -m) in
   x86_64) copy 'libquadmath.so*' ;; # gcc builds libquadmath on amd64 only
 esac
 
 # Each SONAME a consumer records in DT_NEEDED must be present.
-for so in libgcc_s.so.1 libstdc++.so.6 libgomp.so.1 libatomic.so.1; do
+for so in libgcc_s.so.1 libstdc++.so.6 libgomp.so.1 libatomic.so.1 libssp.so.0; do
   [ -e "$dst/$so" ] || { echo "ERROR: $so missing from gcc-runtime" >&2; exit 1; }
 done
