@@ -38,6 +38,13 @@ let newlib_version = "4.4.0.20231231" in
   runtime_deps = [
     bash,
     binutils-arm-none-eabi,
+    # cc1, cc1plus, lto1 and arm-none-eabi-lto-dump NEED libgmp, libmpfr, libmpc
+    # and libzstd. They came only through bash -> ncurses -> subsetOf gcc, which
+    # inherits gcc's runtime_deps (inbox#1261); zlib comes via binutils.
+    gmp,
+    mpfr,
+    mpc,
+    zstd,
   ],
 
   cmd = "./build.sh",

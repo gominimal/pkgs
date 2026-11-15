@@ -13,6 +13,7 @@ let pcre2 = import "../pcre2/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+let zstd = import "../zstd/build.ncl" in
 
 # MariaDB CLIENT only — the `mariadb` / `mysql` CLI and the client libraries.
 #
@@ -67,6 +68,7 @@ let version = "13.2.0" in
     # missing-runtime_deps checker rather than guessed at.
     pcre2,
     zlib,
+    zstd, # usr/lib/plugin/zstd.so NEEDs libzstd.so.1; it came only through bash/ncurses -> subsetOf gcc (inbox#1261)
   ],
 
   cmd = "./build.sh",
