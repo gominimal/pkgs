@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } =
+let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } =
   import "minimal.ncl"
 in
 let { target, .. } = import "config.ncl" in

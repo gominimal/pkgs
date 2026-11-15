@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, OutputLib, Test, subsetOf, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputLib, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in

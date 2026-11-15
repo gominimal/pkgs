@@ -16,6 +16,7 @@ let outputs_common = {
   libstdcpp = { glob = "usr/lib/libstdc++.so*" } | OutputLib,
   libgomp = { glob = "usr/lib/libgomp.so*" } | OutputLib,
   libatomic = { glob = "usr/lib/libatomic.so*" } | OutputLib,
+  libssp = { glob = "usr/lib/libssp.so*" } | OutputLib, # stlink NEEDs libssp.so.0
 }
 in
 # gcc builds libquadmath on amd64 only.
@@ -42,7 +43,7 @@ in
 
   attrs =
     {
-      # libgcc_s, libstdc++, libgomp, libatomic: GPL-3.0-or-later
+      # libgcc_s, libstdc++, libgomp, libatomic, libssp: GPL-3.0-or-later
       # with the GCC Runtime Library Exception 3.1. libquadmath (amd64):
       # LGPL-2.1-or-later.
       license_spdx = "GPL-3.0-or-later WITH GCC-exception-3.1 AND LGPL-2.1-or-later",
@@ -99,7 +100,7 @@ in
           [
             "/bin/bash",
             "-c",
-            "shopt -s nullglob; ld=(/usr/lib/ld-linux*.so.*); [ ${#ld[@]} -eq 1 ] || exit 3; for l in /usr/lib/libgcc_s.so.1 /usr/lib/libstdc++.so.6 /usr/lib/libgomp.so.1 /usr/lib/libatomic.so.1; do [ -e \"$l\" ] || exit 4; out=$(\"${ld[0]}\" --list \"$l\") || exit 5; [[ $out == *'not found'* ]] && exit 6; done; exit 0",
+            "shopt -s nullglob; ld=(/usr/lib/ld-linux*.so.*); [ ${#ld[@]} -eq 1 ] || exit 3; for l in /usr/lib/libgcc_s.so.1 /usr/lib/libstdc++.so.6 /usr/lib/libgomp.so.1 /usr/lib/libatomic.so.1 /usr/lib/libssp.so.0; do [ -e \"$l\" ] || exit 4; out=$(\"${ld[0]}\" --list \"$l\") || exit 5; [[ $out == *'not found'* ]] && exit 6; done; exit 0",
           ],
         ],
       } | Test,
