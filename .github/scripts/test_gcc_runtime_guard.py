@@ -186,6 +186,7 @@ class Repo(unittest.TestCase):
         files = self.base()
         files["packages/gcc/build.ncl"] = self.breaker(self.PIN_A)
         files["packages/gcc-runtime/build.ncl"] = self.breaker(self.PIN_A)
+        files["packages/gcc-runtime/stage.sh"] = files["packages/gcc-runtime-fortran/stage.sh"] = "x\n"
         code, out = self.run_main(self.tree(files))
         self.assertEqual(code, 0, out)
 
@@ -205,6 +206,29 @@ class Repo(unittest.TestCase):
         code, out = self.run_main(self.tree(files))
         self.assertEqual(code, 1, out)
         self.assertIn("could not read", out)
+
+    def with_stage(self, a="x() { :; }\n", b=None):
+        files = self.base()
+        files["packages/gcc-runtime/build.ncl"] = recipe("glibc,")
+        files["packages/gcc-runtime/stage.sh"] = a
+        files["packages/gcc-runtime-fortran/stage.sh"] = a if b is None else b
+        return files
+
+    def test_stage_helpers_identical_pass(self):
+        code, out = self.run_main(self.tree(self.with_stage()))
+        self.assertNotIn("stage-helper", out)
+
+    def test_negative_control_stage_helpers_differ_fails(self):
+        code, out = self.run_main(self.tree(self.with_stage(b="x() { :; }\n# edited\n")))
+        self.assertEqual(code, 1, out)
+        self.assertIn("stage-helper", out)
+
+    def test_stage_helper_missing_fails(self):
+        files = self.with_stage()
+        del files["packages/gcc-runtime-fortran/stage.sh"]
+        code, out = self.run_main(self.tree(files))
+        self.assertEqual(code, 1, out)
+        self.assertIn("stage-helper: missing", out)
 
     def test_unverified_without_packages(self):
         code, _ = self.run_main(tempfile.mkdtemp())

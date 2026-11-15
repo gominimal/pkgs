@@ -217,7 +217,29 @@ def scan_repo(root: str) -> tuple[int, int, dict[str, list[str]]]:
             )
     for p in breaker_pin_problems(root):
         problems.setdefault("gcc-runtime", []).append(p)
+    for p in stage_helper_problems(root):
+        problems.setdefault("gcc-runtime", []).append(p)
     return files, fields, problems
+
+
+STAGE_HELPERS = ("packages/gcc-runtime/stage.sh", "packages/gcc-runtime-fortran/stage.sh")
+
+
+def stage_helper_problems(root: str) -> list[str]:
+    """gcc-runtime and gcc-runtime-fortran each source their own stage.sh (a Local
+    file cannot come from another package's directory). The two choose where
+    gcc's runtime libraries are copied from and reject mixed gccs, so a fix to
+    one must reach the other: they must be byte-identical."""
+    paths = [os.path.join(root, p) for p in STAGE_HELPERS]
+    if not os.path.exists(os.path.join(root, "packages", "gcc-runtime")):
+        return []
+    missing = [p for p, full in zip(STAGE_HELPERS, paths) if not os.path.exists(full)]
+    if missing:
+        return [f"stage-helper: missing {', '.join(missing)}"]
+    a, b = (open(p, "rb").read() for p in paths)
+    if a != b:
+        return [f"stage-helper: {STAGE_HELPERS[0]} and {STAGE_HELPERS[1]} differ; keep them byte-identical"]
+    return []
 
 
 # A gominimal/bootstrap object pin: `url = "gs://minimal-bootstrap/..."` then its sha256.
