@@ -76,5 +76,25 @@ make -j$(nproc)
 # TODO make -k check
 make DESTDIR=$OUTPUT_DIR install-strip
 
+# A second copy of the shared runtime libraries, under a path no other object
+# ships, for gcc-runtime and gcc-runtime-fortran to repack. They cannot repack
+# usr/lib: their build roots also hold gcc-runtime's cycle breaker (a bootstrap
+# gcc, via gcc -> gmp -> gcc-runtime), and where two layers ship one path the
+# first wins by spec-hash order. On arm64 that shipped the gen-13 gcc 15
+# libstdc++.so.6 and libgcc_s.so.1 in the gcc 16 canary (pkgs#1340). Symlinks
+# are copied as symlinks, so the SONAME links still point at this build's files.
+stage="$OUTPUT_DIR/usr/lib/gcc-runtime-stage"
+mkdir -p "$stage"
+for pat in 'libgcc_s.so*' 'libstdc++.so*' 'libgomp.so*' 'libatomic.so*' 'libssp.so*' 'libquadmath.so*' 'libgfortran.so*'; do
+  for f in "$OUTPUT_DIR"/usr/lib/$pat; do
+    [ -e "$f" ] || [ -L "$f" ] || continue
+    case "$f" in *.py) continue ;; esac # libstdc++.so.6.*-gdb.py
+    cp -P "$f" "$stage/"
+  done
+done
+for so in libgcc_s.so.1 libstdc++.so.6 libgomp.so.1 libatomic.so.1 libssp.so.0 libgfortran.so.5; do
+  [ -e "$stage/$so" ] || { echo "ERROR: $so missing from $stage" >&2; exit 1; }
+done
+
 # TODO
 # ln -sf $OUTPUT_DIR/usr/bin/gcc $OUTPUT_DIR/usr/bin/cc

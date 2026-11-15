@@ -6,15 +6,8 @@
 # closure the download. Copied byte for byte from the gcc build dep.
 set -eu
 
-src=/usr/lib
-dst="$OUTPUT_DIR/usr/lib"
-mkdir -p "$dst"
+. ./stage.sh
 
-found=0
-for f in "$src"/libgfortran.so*; do
-  [ -e "$f" ] || [ -L "$f" ] || continue
-  cp -P "$f" "$dst/"
-  found=1
-done
-[ "$found" -eq 1 ] || { echo "ERROR: gcc build dep has no $src/libgfortran.so*" >&2; exit 1; }
+copy 'libgfortran.so*'
 [ -e "$dst/libgfortran.so.5" ] || { echo "ERROR: libgfortran.so.5 missing from gcc-runtime-fortran" >&2; exit 1; }
+one_real_file 'libgfortran.so.5.*' libgfortran.so.5

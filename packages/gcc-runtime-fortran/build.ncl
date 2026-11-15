@@ -15,6 +15,7 @@ let glibc = import "../glibc/build.ncl" in
   name = "gcc-runtime-fortran",
   build_deps = [
     { file = "build.sh" } | Local,
+    { file = "stage.sh" } | Local,
     bash-bootstrap,
     coreutils,
     gcc,

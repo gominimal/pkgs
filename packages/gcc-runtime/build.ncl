@@ -30,6 +30,7 @@ in
   name = "gcc-runtime",
   build_deps = [
     { file = "build.sh" } | Local,
+    { file = "stage.sh" } | Local,
     bash-bootstrap,
     coreutils,
     gcc,

@@ -10,22 +10,7 @@
 # build dep, so they cannot drift from the compiler that links against them.
 set -eu
 
-src=/usr/lib
-dst="$OUTPUT_DIR/usr/lib"
-mkdir -p "$dst"
-
-# copy <glob>: copy every match (files and symlinks, as they are) and fail when
-# gcc has none, so a library gcc stops shipping is an error, not an empty output.
-copy() {
-  found=0
-  for f in "$src"/$1; do
-    [ -e "$f" ] || [ -L "$f" ] || continue
-    case "$f" in *.py) continue ;; esac # libstdc++.so.6.*-gdb.py: debugger helper
-    cp -P "$f" "$dst/"
-    found=1
-  done
-  [ "$found" -eq 1 ] || { echo "ERROR: gcc build dep has no $src/$1" >&2; exit 1; }
-}
+. ./stage.sh
 
 copy 'libgcc_s.so*'
 copy 'libstdc++.so*'
@@ -40,3 +25,7 @@ esac
 for so in libgcc_s.so.1 libstdc++.so.6 libgomp.so.1 libatomic.so.1 libssp.so.0; do
   [ -e "$dst/$so" ] || { echo "ERROR: $so missing from gcc-runtime" >&2; exit 1; }
 done
+one_real_file 'libstdc++.so.6.*' libstdc++.so.6
+one_real_file 'libgomp.so.1.*' libgomp.so.1
+one_real_file 'libatomic.so.1.*' libatomic.so.1
+one_real_file 'libssp.so.0.*' libssp.so.0
