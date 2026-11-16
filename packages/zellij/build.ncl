@@ -1,4 +1,4 @@
-let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let rust = import "../rust/build.ncl" in
@@ -12,7 +12,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 
-let version = "0.45.1" in
+let version = "0.46.0" in
 {
   name = "zellij",
   build_deps = [
@@ -37,7 +37,7 @@ let version = "0.45.1" in
     { file = "openssl-4-no-isahc-http2.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/zellij-org/zellij/v%{version}.tar.gz",
-      sha256 = "5cbe711437d2a61afd9287165f6aca0bcccb9ab1473633665a5b11ed55467852",
+      sha256 = "2dfa237fea447f3cc98954e81b0097b9d25841010036720e11f67880fe7861f0",
       extract = true,
       strip_prefix = "zellij-%{version}",
     } | Source,
@@ -74,6 +74,9 @@ let version = "0.45.1" in
 
   outputs = {
     zellij = { glob = "usr/bin/zellij" } | OutputBin,
+    bash_completion = { glob = "usr/share/bash-completion/completions/zellij" } | OutputData,
+    fish_completion = { glob = "usr/share/fish/vendor_completions.d/zellij.fish" } | OutputData,
+    zsh_completion = { glob = "usr/share/zsh/site-functions/_zellij" } | OutputData,
   },
   attrs =
     {

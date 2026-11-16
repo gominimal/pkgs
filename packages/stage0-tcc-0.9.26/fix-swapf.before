@@ -1,5 +1,0 @@
-            SValue tmp = vtop[0];
-            int arg_stored = 1;
-
-            vtop[0] = vtop[-i];
-            vtop[-i] = tmp;

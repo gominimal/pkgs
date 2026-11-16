@@ -135,12 +135,7 @@ fi
 # would rewrite V: to the older overlay version and pass). Fix by dropping the
 # override if the new base is at or above it, otherwise update its line here.
 OVERRIDE_BASE=(
-  "libcrypto3 3.5.7-r0"
-  "libssl3 3.5.7-r0"
-  "ca-certificates-bundle 20260611-r0"
-  "musl 1.2.6-r2"
-  "musl-utils 1.2.6-r2"
-  "zlib 1.3.2-r0"
+  "zlib 1.3.2-r1"
 )
 base_version() {
   awk -v p="$1" '$0 == "P:" p { found = 1; next } found && /^V:/ { print substr($0, 3); exit }' "$DB"

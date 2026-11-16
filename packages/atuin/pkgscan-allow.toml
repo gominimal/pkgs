@@ -21,3 +21,14 @@ category = "FileSystemAccess"
 pattern = "launchctl"
 sha256 = "b4d51b454cdc756e41ea2614196f093ee763be1ff6e107ffa91fb17fb421606e"
 reason = "atuin's launchd backend (https://github.com/atuinsh/atuin/pull/4488): `launchctl kickstart -k` to restart the launchd job that runs the atuin daemon (its own agent, or an external job running the same atuin executable), `launchctl bootout` and removing its own plist when it leaves. macOS-only module; Linux builds compile launchd/unsupported.rs. Verified against the v18.24.2 tag."
+
+# atuin 18.24.7-8 added a plugin for the Hermes AI agent (maintainer-authored:
+# atuinsh/atuin#4689, #4701, #4718). `atuin hook install hermes` writes this file
+# into $HERMES_HOME/plugins/atuin/ so Hermes's shell commands land in atuin's
+# history. Its one subprocess runs atuin's own binary.
+[[allow]]
+file = "crates/atuin-common/res/harnesstools/hermes/__init__.py"
+category = "ProcessSpawn"
+pattern = "subprocess.Popen("
+sha256 = "236e7eda83b3e1dd64605e49fd66d82f5f6f8e7a18937f16c0e0b9798f240960"
+reason = "atuin's Hermes Agent plugin (https://github.com/atuinsh/atuin/pull/4689, #4701, #4718; maintainer Michelle Tilley). The Popen at line 149 runs `[ATUIN, \"hook\", \"hermes\"]`, atuin's own binary (an absolute path written at install), as an argument list with no shell. It passes the hook event as JSON on stdin, sends stdout/stderr to DEVNULL, has a timeout, and passes os.environ plus atuin's own config paths. The file has no network, encoding or eval use; its only file read is the session file the user names in `hermes atuin import <file>`. Verified against the v18.24.8 tag."
