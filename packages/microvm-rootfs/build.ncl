@@ -20,7 +20,7 @@ let e2fsprogs = import "../e2fsprogs/build.ncl" in
 # unit, not package by package), mirror the new objects, then refresh every
 # sha256 below.
 let alpine_branch = "v3.24" in
-let alpine_release = "3.24.1" in
+let alpine_release = "3.24.4" in
 
 let alpine_arch =
   match {
@@ -77,8 +77,8 @@ in
       url = "gs://minimal-staging-archives/alpine/%{alpine_branch}/releases/%{alpine_arch}/alpine-minirootfs-%{alpine_release}-%{alpine_arch}.tar.gz",
       sha256 = (
         match {
-          { arch = 'Arm64, .. } => "f55a90f69052c5bd6f92cb09a8f47065970830b194c917a006fb94028e721259",
-          { arch = 'Amd64, .. } => "41f73e3cf5fa919b8aa5ca6b30dc48f0da2720776d7423e2a7748211456fe081",
+          { arch = 'Arm64, .. } => "4b14c18f7e90a063b61462ea1462a5732c154bf6adad594974fe6487cd98a8de",
+          { arch = 'Amd64, .. } => "cdaa38cb8de3537967ee5b6c9b6cd00cc962da2b018e6eea48696bb274923012",
         } target
       ),
     } | Source,
@@ -246,85 +246,6 @@ in
       "zstd-libs-1.5.7-r2"
       "2bb5136c89f5b0bbe1554c8915a3b520d5aa63ae2a51d4d821eb81698db5a818"
       "23c6065b0049b2406441564bcf0032515a43f78e80d76fcb85535a3803ef5d4e",
-
-    # SECURITY OVERRIDES OF THE BASE LAYER.
-    #
-    # Unlike every entry above, these do not ADD a package — they REPLACE one
-    # the minirootfs tarball already ships. alpine-minirootfs-3.24.1 carries
-    # openssl 3.5.7-r0 (see `lib/apk/db/installed`, `o:openssl`), which has ten
-    # unfixed CVEs: CVE-2026-14456, -14457, -18798, -54874, -63072, -63073,
-    # -63074, -63075, -63076, -75803. Alpine fixed them in 3.5.8-r0, in v3.24
-    # main. When this override was written the newest minirootfs RELEASE was
-    # 3.24.1, so bumping `alpine_release` could not pick the fix up. 3.24.4 has
-    # since been released and records libcrypto3/libssl3 3.5.9-r0, musl 1.2.6-r3,
-    # ca-certificates-bundle 20261020-r0 and zlib 1.3.2-r1, so moving to it
-    # retires every override here except zlib 1.4-r0 (tracked separately).
-    #
-    # Both packages install to the same `usr/lib/libcrypto.so.3` /
-    # `usr/lib/libssl.so.3` the base layer uses, so the overlay replaces the
-    # vulnerable objects outright. build.sh reconciles the recorded version in
-    # `lib/apk/db/installed` afterwards — without that the image would carry
-    # patched libraries while its own database still claimed 3.5.7-r0, and
-    # every scanner reading it would report ten CVEs that are no longer there.
-    #
-    # DROP THESE the moment `alpine_release` reaches a minirootfs carrying
-    # >= 3.5.8-r0; keeping a stale override is how an image ends up pinned
-    # BELOW its base layer. build.sh enforces it: OVERRIDE_BASE records the
-    # base-layer version each override replaces, and the build fails when the
-    # minirootfs records anything else.
-    apk
-      "libcrypto3-3.5.9-r0"
-      "2676a2b0b6e23ea2edccf3ee982b9842a665d52603d047de3d0a185dc316d983"
-      "6632d758d8f5e9ea3b650fe966f23bbf9a202f8b8dceecac93da135dec5e3689",
-    apk
-      "libssl3-3.5.9-r0"
-      "20ac252b276d73f2c69c1d25f84537c7fba81caefc026c6be1094b394af2082e"
-      "05e3393fb95aa5751ca2f9d242f659f6cff82c1cc7767cc2df4a086f7ad01877",
-
-    # The CA trust store, same override pattern. alpine-minirootfs-3.24.1 ships
-    # ca-certificates-bundle 20260611-r0 (119 roots), which still trusts
-    # "emSign ECC Root CA - G3" (SHA-256 86A1ECBA...A36BBE6B). Its operator,
-    # eMudhra, had an intermediate key compromised (CVE-2026-111943, Mozilla
-    # bug 2083449) and Mozilla distrusted the root; 20261020-r0 (118 roots) is
-    # Alpine's rebuild without it. The package is a single file,
-    # etc/ssl/certs/ca-certificates.crt (plus the etc/ssl/cert.pem and
-    # etc/ssl1.1 symlinks), and has no install script, so overlaying it replaces
-    # the base layer's bundle outright; build.sh's apk-db reconcile then moves
-    # the recorded `V:` to 20261020-r0.
-    #
-    # DROP THIS once `alpine_release` reaches a minirootfs carrying
-    # >= 20261020-r0.
-    apk
-      "ca-certificates-bundle-20261020-r0"
-      "d0a573c27d337c369ad3abe3f39f09ffe67b95af23861577a8d134738375176a"
-      "bb008f6d214b6af7576324659856fb63dc8dcb4373f8345ff706388696f1254d",
-
-    # musl itself, same override pattern. alpine-minirootfs-3.24.1 ships musl
-    # and musl-utils 1.2.6-r2, and every musl through 1.2.6 has the regcomp
-    # integer overflows of CVE-2026-107891 (undersized heap allocations, then
-    # out-of-bounds heap writes, from a large or complex pattern;
-    # https://www.openwall.com/lists/oss-security/2026/10/21/18). Upstream's
-    # fix ships in 1.2.7; Alpine carries the patch in 1.2.6-r3 (aports
-    # 3.24-stable main/musl secfixes). Reaching it needs a regex from an
-    # untrusted source compiled by a guest tool (busybox grep/sed/awk, bash
-    # `=~`, git); matching untrusted text with a trusted pattern is not enough.
-    #
-    # musl owns lib/ld-musl-<arch>.so.1 (the loader and libc in one) and its
-    # lib/libc.musl-<arch>.so.1 symlink; musl-utils owns ldconfig, getconf,
-    # getent, iconv and ldd. Neither has an install script, so the overlay
-    # replaces the base layer's files outright and the apk-db reconcile moves
-    # both recorded versions to 1.2.6-r3.
-    #
-    # DROP THESE once `alpine_release` reaches a minirootfs carrying
-    # >= 1.2.6-r3.
-    apk
-      "musl-1.2.6-r3"
-      "2e17864102278d9049c3a56f1bceed9e8cf287065617e579325123443daed8a5"
-      "e142255d0fa397f14318996bc10378093dcc069dc3dd1b6818c8f28a789c21da",
-    apk
-      "musl-utils-1.2.6-r3"
-      "bb460bdc009e88989bd5adca8a7c8298c339cba99da11c6196c818e042fbaf49"
-      "47263d05842c5e12d01e0369e5b5bea51733323501c00ca21968a5102de137ca",
 
     # zlib, same override pattern. alpine-minirootfs-3.24.1 ships zlib
     # 1.3.2-r0 (`lib/apk/db/installed`), which is missing CVE-2026-85091
