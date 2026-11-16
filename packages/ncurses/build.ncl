@@ -1,10 +1,9 @@
-let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let attr = import "../attr/build.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
-let gcc-runtime = import "../gcc-runtime/build.ncl" in
 
 let version = "6.6" in
 {
@@ -21,7 +20,9 @@ let version = "6.6" in
   ],
   runtime_deps = [
     attr,
-    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
+    # No gcc-runtime: ncurses is in gcc's build graph, and anything there
+    # that depends on gcc-runtime makes gcc-runtime copy a second gcc build
+    # (gcc_runtime_guard.py rule 4). Hence no C++ binding (build.sh).
   ],
 
   cmd = "./build.sh",

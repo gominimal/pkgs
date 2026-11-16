@@ -27,8 +27,22 @@ field (a replace_on_cycle breaker's included), rejects:
                    crates/op/src/specs.rs materialize_prebuilt), so a whole
                    dep would link all of gcc 15.2 into that root.
 
-build_deps, test_deps and tests are not checked: building or testing with gcc
-is what gcc is for. `gcc` here means the identifier bound to
+It also rejects:
+
+  4. gcc-closure   gcc's build graph reaching gcc-runtime or
+                   gcc-runtime-fortran. Both copy their files from their gcc
+                   build dep. If gcc's graph contains them, cycle breaking
+                   resolves gcc differently inside their build (a different
+                   replace_on_cycle on the path) than on its own, so they copy
+                   a second gcc build whose bytes differ from the published
+                   gcc's at the same /usr/lib paths: a file conflict (arch
+                   registry spec, registry-model.md §12) in any box that holds
+                   both, and gcc built twice. The 16.2 canary had exactly this
+                   via binutils, gmp and ncurses. The check follows every
+                   dependency outside tests and replace_on_cycle.
+
+build_deps, test_deps and tests are not checked by rules 1-3: building or
+testing with gcc is what gcc is for. `gcc` here means the identifier bound to
 `import ".../gcc/build.ncl"` in the file (whatever it is called), not
 gcc-runtime or gcc-arm-none-eabi. Comments and strings are ignored.
 
@@ -219,7 +233,87 @@ def scan_repo(root: str) -> tuple[int, int, dict[str, list[str]]]:
         problems.setdefault("gcc-runtime", []).append(p)
     for p in stage_helper_problems(root):
         problems.setdefault("gcc-runtime", []).append(p)
+    for p in gcc_closure_problems(root):
+        problems.setdefault("gcc", []).append(p)
     return files, fields, problems
+
+
+# Packages that copy their files out of their gcc build dep.
+COPIERS = ("gcc-runtime", "gcc-runtime-fortran")
+LET_IMPORT = re.compile(
+    rf"""\blet\s+([A-Za-z_][{IDENT_CHARS}]*)\s*=\s*import\s+"\.\./([^"/]+)/build\.ncl\""""
+)
+INLINE_IMPORT = re.compile(r"""\bimport\s+"\.\./([^"/]+)/build\.ncl\"""")
+NOT_A_DEP = re.compile(rf"(?<![{IDENT_CHARS}.])(?:replace_on_cycle|tests)\s*=")
+
+
+def blank(text: str, spans: list[tuple[int, int]]) -> str:
+    out = list(text)
+    for lo, hi in spans:
+        for k in range(lo, hi):
+            if out[k] != "\n":
+                out[k] = " "
+    return "".join(out)
+
+
+def package_deps(root: str) -> dict[str, set[str]]:
+    """{package: packages its .ncl files depend on}, outside tests and
+    replace_on_cycle (a breaker is what a cycle resolves to, not an edge)."""
+    edges: dict[str, set[str]] = {}
+    pkgs_dir = os.path.join(root, "packages")
+    for pkg in sorted(os.listdir(pkgs_dir)):
+        pdir = os.path.join(pkgs_dir, pkg)
+        if not os.path.isdir(pdir):
+            continue
+        deps: set[str] = set()
+        for fn in sorted(os.listdir(pdir)):
+            if not fn.endswith(".ncl"):
+                continue
+            with open(os.path.join(pdir, fn), encoding="utf-8") as f:
+                text = f.read()
+            with_strings = strip(text, keep_strings=True)
+            code = strip(text, keep_strings=False)
+            lets = list(LET_IMPORT.finditer(with_strings))
+            spans = [(m.start(), m.end()) for m in lets]
+            spans += [(m.end(), field_end(code, m.end())) for m in NOT_A_DEP.finditer(code)]
+            code, with_strings = blank(code, spans), blank(with_strings, spans)
+            for m in lets:
+                name = re.escape(m.group(1))
+                if re.search(rf"(?<![{IDENT_CHARS}.]){name}(?![{IDENT_CHARS}.])", code):
+                    deps.add(m.group(2))
+            deps.update(INLINE_IMPORT.findall(with_strings))
+        edges[pkg] = deps
+    return edges
+
+
+def gcc_closure_problems(root: str) -> list[str]:
+    """Rule 4: gcc's build graph must not reach a package that copies from gcc."""
+    pkgs_dir = os.path.join(root, "packages")
+    present = [c for c in COPIERS if os.path.isdir(os.path.join(pkgs_dir, c))]
+    if not present or not os.path.isdir(os.path.join(pkgs_dir, "gcc")):
+        return []
+    edges = package_deps(root)
+    parent: dict[str, str] = {}
+    stack = ["gcc"]
+    while stack:
+        p = stack.pop()
+        for d in sorted(edges.get(p, ())):
+            if d not in parent and d != "gcc":
+                parent[d] = p
+                stack.append(d)
+    problems = []
+    for c in present:
+        if c not in parent:
+            continue
+        path = [c]
+        while path[-1] != "gcc":
+            path.append(parent[path[-1]])
+        problems.append(
+            f"gcc-closure: gcc's build graph reaches {c} ({' -> '.join(reversed(path))}), so {c} "
+            f"copies a second gcc build whose files differ from gcc's at the same paths; "
+            f"drop that dependency from {path[1]}, or move the part that needs it into its own package"
+        )
+    return problems
 
 
 STAGE_HELPERS = ("packages/gcc-runtime/stage.sh", "packages/gcc-runtime-fortran/stage.sh")

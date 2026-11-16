@@ -230,6 +230,42 @@ class Repo(unittest.TestCase):
         self.assertEqual(code, 1, out)
         self.assertIn("stage-helper: missing", out)
 
+    def closure_tree(self, gmp_runtime="glibc,", gmp_extra=""):
+        files = self.with_stage()
+        files["packages/gcc-runtime/build.ncl"] = self.breaker(self.PIN_A)
+        gcc = recipe("glibc,", build="gmp,").replace(
+            'let glibc = import "../glibc/build.ncl" in',
+            'let glibc = import "../glibc/build.ncl" in\nlet gmp = import "../gmp/build.ncl" in',
+        )
+        breaker = "\nreplace_on_cycle = { build_deps = [ {\n        " + self.PIN_A + "\n      } ] }\n"
+        files["packages/gcc/build.ncl"] = gcc + breaker
+        files["packages/gmp/build.ncl"] = recipe(gmp_runtime, build="m4,", extra=gmp_extra)
+        return files
+
+    def test_gcc_closure_without_gcc_runtime_passes(self):
+        code, out = self.run_main(self.tree(self.closure_tree()))
+        self.assertEqual(code, 0, out)
+
+    def test_negative_control_gcc_closure_reaching_gcc_runtime_fails(self):
+        files = self.closure_tree(gmp_runtime='glibc, subsetOf gcc-runtime ["libstdcpp"],')
+        code, out = self.run_main(self.tree(files))
+        self.assertEqual(code, 1, out)
+        self.assertIn("gcc-closure", out)
+        self.assertIn("gcc -> gmp -> gcc-runtime", out)
+
+    def test_gcc_closure_ignores_tests_breakers_and_comments(self):
+        extra = """  replace_on_cycle = { runtime_deps = [subsetOf gcc-runtime ["libgcc"]] },
+  tests = { t = { test_deps = [gcc-runtime], cmds = [] } },"""
+        files = self.closure_tree(gmp_runtime="glibc, # not gcc-runtime", gmp_extra=extra)
+        code, out = self.run_main(self.tree(files))
+        self.assertNotIn("gcc-closure", out)
+
+    def test_gcc_closure_follows_inline_imports(self):
+        files = self.closure_tree(gmp_runtime='glibc, (import "../gcc-runtime-fortran/build.ncl"),')
+        files["packages/gcc-runtime-fortran/build.ncl"] = recipe("glibc,")
+        code, out = self.run_main(self.tree(files))
+        self.assertIn("gcc -> gmp -> gcc-runtime-fortran", out)
+
     def test_unverified_without_packages(self):
         code, _ = self.run_main(tempfile.mkdtemp())
         self.assertEqual(code, 2)

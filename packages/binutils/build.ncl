@@ -1,4 +1,4 @@
-let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
@@ -12,7 +12,6 @@ let sed = import "../sed/build.ncl" in
 # toolchain
 let binutils = import "../binutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
@@ -44,7 +43,8 @@ let version = "2.47" in
   runtime_deps = [
     glibc,
     zlib,
-    subsetOf gcc-runtime ["libstdcpp", "libgcc"],
+    # No gcc-runtime: binutils is in gcc's build graph (gcc_runtime_guard.py
+    # rule 4). gprofng was its only C++ part, so it is not built (build.sh).
   ],
 
   cmd = "./build.sh",
@@ -73,9 +73,6 @@ let version = "2.47" in
 
     ltconfigs = { glob = "usr/lib/*.la" } | OutputData,
     ldscripts = { glob = "usr/lib/ldscripts/*" } | OutputData,
-
-    gprofng_libs = { glob = "usr/lib/gprofng/*.so*" } | OutputLib,
-    gprofng_ltconfigs = { glob = "usr/lib/gprofng/*.la" } | OutputData,
 
     bfdplugins = { glob = "usr/lib/bfd-plugins/**" } | OutputLib,
 
