@@ -37,14 +37,14 @@ let npm_undici = "6.28.0" in
 let npm_undici_llhttp = "8.1.0" in
 # amaro is recorded once, in amaro-wasm/versions.ncl, so node, node-lts and amaro-wasm agree.
 let amaro = (import "../amaro-wasm/versions.ncl").bundled.node-lts in
-let version = "24.22.1" in
+let version = "24.22.3" in
 {
   name = "node-lts",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://nodejs.org/dist/v%{version}/node-v%{version}.tar.gz",
-      sha256 = "001773d9bd53fbd27a25efd42aa6a9693ebfe500998ca9bec635e9b6ee79bc91",
+      sha256 = "4690edccae352134bbe31d844b37898f2a28b2c3d67901d0112fb6c4996d556a",
     } | Source,
     {
       url = "gs://minimal-staging-archives/undici-%{npm_undici}.tar.gz",
