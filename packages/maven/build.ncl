@@ -10,14 +10,14 @@ let glibc = import "../glibc/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 let patchelf = import "../patchelf/build.ncl" in
 
-let version = "3.10.0" in
+let version = "3.10.1" in
 {
   name = "maven",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://archive.apache.org/dist/maven/maven-3/%{version}/binaries/apache-maven-%{version}-bin.tar.gz",
-      sha256 = "a46cc51bc74fa23fd267c7a0b9132b146dcf526da60d31aa5174e565632e9e0e",
+      sha256 = "810b8348f0a40f9116c202093fae007ebeabf67699bf34d81ee7e272289e085a",
     } | Source,
     base,
     binutils, # objdump: verify the version-needs rewrite (build.sh)
