@@ -76,7 +76,6 @@ let version = "2.47" in
 
     bfdplugins = { glob = "usr/lib/bfd-plugins/**" } | OutputLib,
 
-    etcs = { glob = "etc/*" } | OutputData,
     includes = { glob = "usr/include/**" } | OutputData,
   },
 
