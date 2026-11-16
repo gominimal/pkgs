@@ -14,8 +14,11 @@ export LDFLAGS="-Wl,--build-id=none"
 export ARFLAGS=Drc
 export CXXFLAGS="${CFLAGS}"
 
+# The oniguruma package, not jq's bundled copy: the bundled one installs
+# libonig, oniguruma.h and oniguruma.pc at the paths oniguruma ships, a file
+# conflict in any box that has both (bat and delta depend on oniguruma).
 ./configure --prefix=/usr                   \
-            --with-oniguruma=builtin
+            --with-oniguruma=/usr
 
 make -j$(nproc)
 make DESTDIR=$OUTPUT_DIR install
