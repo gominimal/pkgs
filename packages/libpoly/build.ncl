@@ -4,6 +4,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
+let gmpxx = import "../gmpxx/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc-runtime = import "../gcc-runtime/build.ncl" in
 
@@ -29,11 +30,14 @@ let version = "0.2.1" in
     cmake,
     ninja,
     gmp,
+    gmpxx, # polyxx includes gmpxx.h
   ],
 
   runtime_deps = [
     glibc,
     gmp,
+    # The installed polyxx headers include gmpxx.h.
+    gmpxx,
     subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 

@@ -11,6 +11,7 @@ let python = import "../python/build.ncl" in
 let py-pyparsing = import "../py-pyparsing/build.ncl" in
 let symfpu = import "../symfpu/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
+let gmpxx = import "../gmpxx/build.ncl" in
 let libpoly = import "../libpoly/build.ncl" in
 let cocoalib = import "../cocoalib/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -63,6 +64,7 @@ let cadical_commit = "a384d221a920d473b770df6a7221f35fc5d99e90" in
     py-pyparsing,
     symfpu,
     gmp,
+    gmpxx, # src/util includes gmpxx.h (header only: nothing links libgmpxx)
     libpoly,
     # Static (libcocoa.a, carrying cvc5's own patch), linked into libcvc5.
     cocoalib,

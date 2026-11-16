@@ -11,6 +11,7 @@ let python = import "../python/build.ncl" in
 let py-pyparsing = import "../py-pyparsing/build.ncl" in
 let symfpu = import "../symfpu/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
+let gmpxx = import "../gmpxx/build.ncl" in
 let libpoly = import "../libpoly/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc-runtime = import "../gcc-runtime/build.ncl" in
@@ -59,6 +60,7 @@ let cadical_commit = "a384d221a920d473b770df6a7221f35fc5d99e90" in
     # Header-only, compiled in; cvc5's FP theory bit-blasts through it.
     symfpu,
     gmp,
+    gmpxx, # src/util includes gmpxx.h (header only: nothing links libgmpxx)
     # Nonlinear real arithmetic: cylindrical algebraic coverings (`--nl-cov`),
     # ICP and exact algebraic-number models. Linked as a shared library.
     libpoly,
