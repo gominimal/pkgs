@@ -1,5 +1,6 @@
 let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -52,6 +53,9 @@ in
     python,
     glibc,
     subsetOf sqlite ["libs"],
+    # The bundled python and its C++ wheels NEED libstdc++ and libgcc_s, which came
+    # only through python -> ncurses before ncurses dropped gcc-runtime.
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",
