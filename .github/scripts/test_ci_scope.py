@@ -85,9 +85,9 @@ class Scope(unittest.TestCase):
     def test_shared_helper_reaches_its_importers(self):
         importers = files_referencing('"../llvm/versioned.ncl"')
         self.assertGreaterEqual(len(importers), 3)
-        # The edge itself, not just reachability: the importers also reach
-        # llvm through build.ncl, which would hide a regex that only matches
-        # build.ncl imports.
+        # The edge itself: llvm-21/22/23 reach llvm only through
+        # versioned.ncl (none imports ../llvm/build.ncl), so a regex that
+        # matched only build.ncl imports would leave them out and fail here.
         self.assertLessEqual(importers - {"llvm"}, Graph.importers["llvm"])
         records = [rec("packages/llvm/versioned.ncl")]
         mode, pkgs, _, _ = self.check(records, max_scoped=UNLIMITED)
