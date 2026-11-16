@@ -46,7 +46,9 @@ let version = "21.1.8" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc-runtime ["libgcc"],
+    # clang-21 NEEDs libstdc++.so.6 and libgcc_s.so.1 on both arches
+    # (readelf, gcc-runtime output audit 2026-11-14).
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     zlib,
     zstd, # clang-21 and its tools NEED libzstd.so.1; it came only through subsetOf gcc (inbox#1261)
   ],
