@@ -28,10 +28,13 @@ interpolation, paired with its sha256, on the architecture that uses it; rules
 url literals no package on either architecture evaluates; rules 1 and 3 run
 there.
 
-Exit codes: 0 = PASS, 1 = a bad pin, 2 = UNVERIFIED (a dump or a generation's
-MANIFEST.txt could not be read, or no pin was found at all). 2 is deliberately
-non-zero: a guard that cannot see the catalog or the manifest must not report
-success.
+Exit codes: 0 = PASS, 1 = a bad pin, 2 = UNVERIFIED (a dump, a scanned
+directory or a published generation's MANIFEST.txt could not be read, or an
+input yielded no pin at all). 2 is deliberately non-zero: a guard that cannot
+see the catalog or the manifest must not report success. A pin naming a
+generation that has no MANIFEST.txt (HTTP 404: a typo, or a generation not
+released yet) is a bad pin, rule 3, reported at the pin; only a read that
+fails for another reason is UNVERIFIED.
 """
 
 from __future__ import annotations
@@ -46,7 +49,7 @@ import urllib.request
 
 BUCKET = "gs://minimal-bootstrap/"
 PIN = re.compile(r"^gs://minimal-bootstrap/(gen-[0-9]+)/sha256/([0-9a-f]{64})/([^/]+)$")
-LITERAL = re.compile(r'gs://minimal-bootstrap/[^"\s]*')
+LITERAL = re.compile(r"gs://minimal-bootstrap/[^\"'\s]*")
 MANIFEST_URL = "https://storage.googleapis.com/minimal-bootstrap/{gen}/MANIFEST.txt"
 OTHER_ARCH = {"amd64": "-aarch64", "arm64": "-x86_64"}
 SCANNED = (".ncl", ".sh", ".toml", ".json", ".kaem")
@@ -54,6 +57,10 @@ SCANNED = (".ncl", ".sh", ".toml", ".json", ".kaem")
 
 class Unverified(Exception):
     pass
+
+
+class Unpublished(Exception):
+    """The generation has no MANIFEST.txt: the pin is wrong, not the guard."""
 
 
 def parse_manifest(text: str) -> set[tuple[str, str]]:
@@ -79,21 +86,36 @@ class Manifests:
 
     def read(self, gen: str) -> str:
         if self.directory:
-            with open(os.path.join(self.directory, f"{gen}.txt"), encoding="utf-8") as f:
-                return f.read()
-        with urllib.request.urlopen(MANIFEST_URL.format(gen=gen), timeout=60) as r:
-            return r.read().decode("utf-8")
+            try:
+                with open(os.path.join(self.directory, f"{gen}.txt"), encoding="utf-8") as f:
+                    return f.read()
+            except FileNotFoundError as e:
+                raise Unpublished(gen) from e
+        try:
+            with urllib.request.urlopen(MANIFEST_URL.format(gen=gen), timeout=60) as r:
+                return r.read().decode("utf-8")
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                raise Unpublished(gen) from e
+            raise
 
-    def objects(self, gen: str) -> set[tuple[str, str]]:
+    def objects(self, gen: str) -> set[tuple[str, str]] | None:
+        """The generation's objects, or None when it has no MANIFEST.txt."""
         if gen not in self.cache:
             try:
                 found = parse_manifest(self.read(gen))
+            except Unpublished:
+                self.cache[gen] = None
+                return None
             except (OSError, urllib.error.URLError, UnicodeDecodeError) as e:
                 raise Unverified(f"{gen}/MANIFEST.txt: {e}") from e
             if not found:
                 raise Unverified(f"{gen}/MANIFEST.txt lists no objects")
             self.cache[gen] = found
         return self.cache[gen]
+
+    def published(self) -> list[str]:
+        return sorted((g for g, o in self.cache.items() if o is not None), key=lambda g: int(g[4:]))
 
 
 def check_url(url: str, manifests: Manifests) -> list[str]:
@@ -102,7 +124,11 @@ def check_url(url: str, manifests: Manifests) -> list[str]:
     if not m:
         return [f"shape: {url} is not gs://minimal-bootstrap/gen-<N>/sha256/<sha256>/<file>"]
     gen, sha, name = m.groups()
-    if (sha, name) not in manifests.objects(gen):
+    objects = manifests.objects(gen)
+    if objects is None:
+        return [f"manifest: {gen} is not published (no {gen}/MANIFEST.txt); "
+                "check the generation number, or wait for its release"]
+    if (sha, name) not in objects:
         return [f"manifest: {gen}/MANIFEST.txt does not list {sha} as {name}"]
     return []
 
@@ -162,11 +188,17 @@ def check_dump(path: str, arch: str, manifests: Manifests) -> tuple[int, list[st
     return seen, failures
 
 
+def walk_error(e: OSError) -> None:
+    # os.walk skips a directory it cannot list unless told otherwise, and a
+    # missing root yields nothing at all; either would pass unseen pins.
+    raise Unverified(f"{e.filename}: {e.strerror or e}")
+
+
 def check_tree(roots: list[str], manifests: Manifests) -> tuple[int, list[str]]:
     """(literals seen, failures) over the text of every scanned file under roots."""
     seen, failures = 0, []
     for root in roots:
-        for dirpath, dirnames, filenames in os.walk(root):
+        for dirpath, dirnames, filenames in os.walk(root, onerror=walk_error):
             dirnames.sort()
             for fn in sorted(filenames):
                 if not fn.endswith(SCANNED):
@@ -189,18 +221,20 @@ def check_tree(roots: list[str], manifests: Manifests) -> tuple[int, list[str]]:
 
 def run(dumps: list[tuple[str, str]], trees: list[str], manifest_dir: str | None) -> int:
     manifests = Manifests(manifest_dir)
-    seen, failures = 0, []
+    failures, empty = [], []
     try:
         for arch, path in dumps:
             n, bad = check_dump(path, arch, manifests)
             print(f"checked {n} pins in {os.path.basename(path)} ({arch})")
-            seen += n
             failures += bad
+            if not n:
+                empty.append(f"{path} ({arch})")
         if trees:
             n, bad = check_tree(trees, manifests)
             print(f"checked {n} url literals under {', '.join(trees)}")
-            seen += n
             failures += bad
+            if not n:
+                empty.append(", ".join(trees))
     except Unverified as e:
         print(f"UNVERIFIED {e}")
         return 2
@@ -210,10 +244,14 @@ def run(dumps: list[tuple[str, str]], trees: list[str], manifest_dir: str | None
         print(f"{len(failures)} bad pin(s). Copy url and sha256 from the generation's manifest "
               "(gominimal/bootstrap generations/gen-N/manifest.json, or tools/pkgs-flip.py).")
         return 1
-    if not seen:
-        print("UNVERIFIED no gs://minimal-bootstrap pin found; the catalog has some, so the inputs are wrong")
+    # Each input on its own: the tree scan always finds literals, so a total
+    # would let a dump that lost its pins (a dump format that drops
+    # replace_on_cycle, a changed Source shape) pass with rules 2 and 4 unrun.
+    if empty:
+        for e in empty:
+            print(f"UNVERIFIED no gs://minimal-bootstrap pin found in {e}; the catalog has some, so the input is wrong")
         return 2
-    print(f"PASS ({', '.join(sorted(manifests.cache, key=lambda g: int(g[4:])))})")
+    print(f"PASS ({', '.join(manifests.published())})")
     return 0
 
 

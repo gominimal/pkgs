@@ -6,6 +6,10 @@ import os
 import sys
 import tempfile
 import unittest
+import urllib.error
+from contextlib import redirect_stdout
+from io import StringIO
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bootstrap_pin_guard as g  # noqa: E402
@@ -86,9 +90,16 @@ class Guard(unittest.TestCase):
             got = g.check_pin(bad, A, "amd64", self.m)
             self.assertTrue(got and got[0].startswith("shape:"), bad)
 
-    def test_unpublished_generation_is_unverified(self):
-        with self.assertRaises(g.Unverified):
-            g.check_pin(url("gen-9", A, "gcc-x86_64.tar.zst"), A, "amd64", self.m)
+    def run_quiet(self, *args):
+        out = StringIO()
+        with redirect_stdout(out):
+            code = g.run(*args)
+        return code, out.getvalue()
+
+    def test_unpublished_generation_is_a_bad_pin(self):
+        got = g.check_pin(url("gen-9", A, "gcc-x86_64.tar.zst"), A, "amd64", self.m)
+        self.assertEqual(len(got), 1)
+        self.assertTrue(got[0].startswith("manifest: gen-9 is not published"), got)
 
     def test_empty_manifest_is_unverified(self):
         with open(os.path.join(self.mdir, "gen-3.txt"), "w", encoding="utf-8") as f:
@@ -125,9 +136,60 @@ class Guard(unittest.TestCase):
         self.assertEqual(g.run([("amd64", os.path.join(self.tmp.name, "absent.json"))], [], self.mdir), 2)
         self.assertEqual(g.run([("amd64", self.dump([]))], [], self.mdir), 2)
 
-    def test_run_unverified_on_unpublished_generation(self):
+    def test_run_locates_an_unpublished_generation(self):
         amd = self.dump([{"name": "gcc", "build_deps": [source(url("gen-9", A, "gcc-x86_64.tar.zst"), A)]}])
-        self.assertEqual(g.run([("amd64", amd)], [], self.mdir), 2)
+        code, out = self.run_quiet([("amd64", amd)], [], self.mdir)
+        self.assertEqual(code, 1, out)
+        self.assertIn("FAIL amd64 gcc: manifest: gen-9 is not published", out)
+        root = self.tree(f'url = "{url("gen-9", A, "gcc-x86_64.tar.zst")}",\n')
+        code, out = self.run_quiet([], [root], self.mdir)
+        self.assertEqual(code, 1, out)
+        self.assertIn("build.ncl:1: manifest: gen-9 is not published", out)
+
+    def test_bucket_404_is_unpublished_other_errors_unverified(self):
+        m = g.Manifests()
+        e404 = urllib.error.HTTPError("u", 404, "Not Found", {}, None)
+        with mock.patch.object(g.urllib.request, "urlopen", side_effect=e404):
+            self.assertIsNone(m.objects("gen-61"))
+        for err in (urllib.error.HTTPError("u", 500, "boom", {}, None), urllib.error.URLError("dns")):
+            with mock.patch.object(g.urllib.request, "urlopen", side_effect=err):
+                with self.assertRaises(g.Unverified):
+                    g.Manifests().objects("gen-1")
+
+    def test_dump_without_pins_is_unverified_beside_a_good_tree(self):
+        # The tree scan always finds literals; a dump that yields none (no
+        # replace_on_cycle in the dump, a changed Source shape) must not hide.
+        root = self.tree(f'url = "{url("gen-1", A, "gcc-x86_64.tar.zst")}",\n')
+        amd = self.dump([{"name": "zlib", "build_deps": []}])
+        code, out = self.run_quiet([("amd64", amd)], [root], self.mdir)
+        self.assertEqual(code, 2, out)
+        self.assertIn("no gs://minimal-bootstrap pin found in", out)
+        # Negative control: the same tree with a dump that has a pin passes.
+        good = self.dump([{"name": "gcc", "build_deps": [source(url("gen-1", A, "gcc-x86_64.tar.zst"), A)]}], "g.json")
+        self.assertEqual(self.run_quiet([("amd64", good)], [root], self.mdir)[0], 0)
+
+    def test_missing_tree_root_is_unverified_beside_a_good_dump(self):
+        amd = self.dump([{"name": "gcc", "build_deps": [source(url("gen-1", A, "gcc-x86_64.tar.zst"), A)]}])
+        self.tree(f'url = "{url("gen-1", A, "gcc-x86_64.tar.zst")}",\n')
+        missing = os.path.join(self.tmp.name, "no-such-dir")
+        code, out = self.run_quiet([("amd64", amd)], [os.path.join(self.tmp.name, "packages"), missing], self.mdir)
+        self.assertEqual(code, 2, out)
+        self.assertIn("no-such-dir", out)
+
+    @unittest.skipIf(hasattr(os, "geteuid") and os.geteuid() == 0, "root reads any directory")
+    def test_unlistable_subtree_is_unverified(self):
+        root = self.tree(f'url = "{url("gen-1", A, "gcc-x86_64.tar.zst")}",\n')
+        locked = os.path.join(root, "locked")
+        os.mkdir(locked)
+        os.chmod(locked, 0)
+        self.addCleanup(os.chmod, locked, 0o700)
+        with self.assertRaises(g.Unverified) as cm:
+            g.check_tree([root], self.m)
+        self.assertIn("locked", str(cm.exception))
+
+    def test_single_quoted_literal(self):
+        root = self.tree(f"URL='{url('gen-1', A, 'gcc-x86_64.tar.zst')}'\n", name="fetch.sh")
+        self.assertEqual(g.check_tree([root], self.m), (1, []))
 
     def test_tree_literal_checked_and_located(self):
         root = self.tree(f'url = "{url("gen-1", A, "gcc-x86_64.tar.zst")}",\nurl = "{url("gen-2", A, "gcc-x86_64.tar.zst")}",\n')
