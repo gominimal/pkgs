@@ -10,14 +10,14 @@ let glibc = import "../glibc/build.ncl" in
 # harness. build.zig.zon declares NO dependencies and `minimum_zig_version =
 # "0.17.0"` (fx moved to zig 0.17 in 0.0.14), so `zig build` is fully hermetic — no network,
 # and `readGitCommit` falls back to "unknown" without a .git dir.
-let version = "0.0.16" in
+let version = "0.0.17" in
 {
   name = "fx",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/vercel-labs/fx/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "545d95702ad2a0ce811af9261b7fe2daa1a4e6394ff6de54f4020e419d333079",
+      sha256 = "54c16e60ca2ec2d2428dd5806a4967bbe58df29a67dcd2daf948b6af24167753",
       extract = true,
       strip_prefix = "fx-%{version}",
     } | Source,
