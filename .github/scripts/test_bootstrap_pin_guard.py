@@ -33,6 +33,11 @@ class Guard(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
+        # run() prints findings as workflow commands under Actions.
+        env = mock.patch.dict(os.environ)
+        env.start()
+        self.addCleanup(env.stop)
+        os.environ.pop("GITHUB_ACTIONS", None)
         self.mdir = os.path.join(self.tmp.name, "manifests")
         os.mkdir(self.mdir)
         for gen, text in (("gen-1", GEN1), ("gen-2", GEN2)):
@@ -145,6 +150,10 @@ class Guard(unittest.TestCase):
         code, out = self.run_quiet([], [root], self.mdir)
         self.assertEqual(code, 1, out)
         self.assertIn("build.ncl:1: manifest: gen-9 is not published", out)
+        with mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}):
+            code, out = self.run_quiet([("amd64", amd)], [], self.mdir)
+        self.assertEqual(code, 1, out)
+        self.assertIn("::error title=bootstrap-pin-guard::amd64 gcc: manifest: gen-9 is not published", out)
 
     def test_bucket_404_is_unpublished_other_errors_unverified(self):
         m = g.Manifests()
