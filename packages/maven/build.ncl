@@ -1,27 +1,22 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
-let binutils = import "../binutils/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let sed = import "../sed/build.ncl" in
-let glibc = import "../glibc/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
-let patchelf = import "../patchelf/build.ncl" in
 
-let version = "3.10.0" in
+let version = "3.10.1" in
 {
   name = "maven",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://archive.apache.org/dist/maven/maven-3/%{version}/binaries/apache-maven-%{version}-bin.tar.gz",
-      sha256 = "a46cc51bc74fa23fd267c7a0b9132b146dcf526da60d31aa5174e565632e9e0e",
+      sha256 = "810b8348f0a40f9116c202093fae007ebeabf67699bf34d81ee7e272289e085a",
     } | Source,
     base,
-    binutils, # objdump: verify the version-needs rewrite (build.sh)
-    patchelf, # repoints libjlinenative's stale libutil.so.1 dependency at libc (build.sh)
   ],
   runtime_deps = [
     bash, # mvn is a shell script
@@ -29,7 +24,6 @@ let version = "3.10.0" in
     # .mvn/jvm.config it pipes it through tr and sed.
     coreutils,
     sed,
-    glibc, # libjlinenative.so (JLine's native terminal support, 3.10.0+)
     jdk,
   ],
   # Not for maven's own build (that is offline): the abstract network dep a
@@ -49,12 +43,9 @@ let version = "3.10.0" in
 
   outputs = {
     mvn = { glob = "usr/bin/mvn" } | OutputBin,
-    # Maven 3.10.0 bundles JLine's native terminal library; bin/mvn points JLine
-    # at it with -Dlibrary.jline.path=$MAVEN_HOME/lib/jline-native, which looks
-    # under <OS>/<arch>/. build.sh keeps only Linux/<host arch>. Declared as a
-    # library, with maven_home's data glob allowed to span it -- the same split
-    # packages/jdk uses for usr/lib/jvm/lib.
-    jline_native = { glob = "usr/share/maven/lib/jline-native/**/*.so" } | OutputLib,
+    # All Java and shell: 3.10.1 dropped 3.10.0's bundled JLine native library
+    # (lib/jline-native/<OS>/<arch>/libjlinenative.so), and build.sh fails if
+    # any shared object comes back, since it would need glibc and an OutputLib.
     maven_home = { glob = "usr/share/maven/**", allow_executable = true } | OutputData,
   },
 
