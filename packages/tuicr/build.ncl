@@ -7,14 +7,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.28.0" in
+let version = "0.29.0" in
 {
   name = "tuicr",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/agavra/tuicr/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "f8b877dae2bb7af49f807698c14d55451856fc2099ff011b97aa53977bb4e22a",
+      sha256 = "8e3d06161750b5d98ae6633de9cc47c0720fa86b6aa7afa7652b8aa3c6e85f7a",
       extract = true,
       strip_prefix = "tuicr-%{version}",
     } | Source,
