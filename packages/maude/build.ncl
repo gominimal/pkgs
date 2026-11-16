@@ -17,6 +17,7 @@ let m4 = import "../m4/build.ncl" in
 let flex = import "../flex/build.ncl" in
 let bison = import "../bison/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
+let gmpxx = import "../gmpxx/build.ncl" in
 let libsigsegv = import "../libsigsegv/build.ncl" in
 let libtecla = import "../libtecla/build.ncl" in
 let buddy = import "../buddy/build.ncl" in
@@ -44,6 +45,7 @@ let version = "3.5.1" in
     flex,
     bison,
     gmp,
+    gmpxx, # maude links -lgmpxx
     libsigsegv,
     libtecla,
     buddy,
@@ -52,6 +54,7 @@ let version = "3.5.1" in
   runtime_deps = [
     glibc,
     gmp,
+    gmpxx,
     libsigsegv,
     libtecla,
     buddy,

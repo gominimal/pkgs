@@ -19,6 +19,8 @@ export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 export ARFLAGS=Drc
 
+# --disable-gprofng: gprofng is C++ and needs gcc's libstdc++, which binutils
+# cannot depend on (build.ncl). Nothing in pkgs uses it.
 ../configure    --prefix=/usr       \
                 --sysconfdir=/etc   \
                 --enable-ld=default \
@@ -29,7 +31,8 @@ export ARFLAGS=Drc
                 --enable-new-dtags  \
                 --with-system-zlib  \
                 --enable-default-hash-style=gnu \
-                --enable-deterministic-archives
+                --enable-deterministic-archives \
+                --disable-gprofng
 
 make -j$(nproc) tooldir=/usr
 # make -k check # TODO
