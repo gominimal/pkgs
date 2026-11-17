@@ -11,6 +11,22 @@ tar -xof eigen-3.4.0.tar.gz -C "$DEPS_SRC"
 EIGEN3_SRC="$DEPS_SRC/eigen-3.4.0"
 (cd "$EIGEN3_SRC" && git apply --ignore-whitespace "$OLDPWD/patches/eigen3-3.4.0.patch")
 
+# SoPlex, as or-tools patches it (patches/soplex-v8.0.0.patch), stops at
+# configure unless the targets Boost::multiprecision and Boost::serialization
+# already exist; it never looks for Boost itself. Only or-tools' own Boost build
+# (BUILD_Boost=ON) defines them. The boost package has a CMake config for
+# serialization and none for multiprecision, which is headers only. Define both
+# from the package, in or-tools' top directory right after its project() call,
+# so every subdirectory, SoPlex's included, sees them.
+BOOST_TARGETS="$DEPS_SRC/minimal-boost-targets.cmake"
+cat > "$BOOST_TARGETS" <<'CMAKE'
+find_package(Boost 1.70 CONFIG REQUIRED COMPONENTS serialization)
+if(NOT TARGET Boost::multiprecision)
+  add_library(Boost::multiprecision INTERFACE IMPORTED)
+  target_link_libraries(Boost::multiprecision INTERFACE Boost::headers)
+endif()
+CMAKE
+
 mkdir build
 cd build
 
@@ -60,6 +76,7 @@ cmake -G Ninja \
   -DBUILD_Cgl=ON \
   -DBUILD_Cbc=ON \
   -DFETCHCONTENT_SOURCE_DIR_EIGEN3="$EIGEN3_SRC" \
+  -DCMAKE_PROJECT_ortools_INCLUDE="$BOOST_TARGETS" \
   -DBUILD_CXX=ON \
   -DBUILD_PYTHON=OFF \
   -DBUILD_JAVA=OFF \
