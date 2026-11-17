@@ -11,6 +11,7 @@ let patch = import "../patch/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 let version = "6.11.0" in
@@ -22,6 +23,8 @@ let version = "6.11.0" in
   # solver.
   build_deps = [
     { file = "build.sh" } | Local,
+    # diffblue/cbmc#9024 (post-6.11.0): gcc 16 -Werror fixes. See build.sh.
+    { file = "gcc16-warnings.patch" } | Local,
     {
       url = "https://github.com/diffblue/cbmc/archive/refs/tags/cbmc-%{version}.tar.gz",
       sha256 = "217e5ed631bbd4b39659fde37a603482003605abd4cb2586b09c2da344d925db",
@@ -55,7 +58,7 @@ let version = "6.11.0" in
 
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

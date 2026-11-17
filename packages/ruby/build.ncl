@@ -10,7 +10,7 @@ let rust = import "../rust/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let gdbm = import "../gdbm/build.ncl" in
 # Sessions set LANG=C.UTF-8, which the glibc locale-archive lacks. Without it
 # setlocale fails and Encoding.default_external falls back to US-ASCII, so a
@@ -47,7 +47,7 @@ let api = std.string.join "." (std.array.slice 0 2 (std.string.split "." version
     # Verifies TLS against /etc/ssl/certs at runtime; see AGENTS.md "Trust store".
     ca-certificates,
     glibc-locale-c-utf8,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     gdbm,
     gmp,
     libffi,

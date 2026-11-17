@@ -19,7 +19,7 @@ let { subsetOf, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let llvm-bootstrap = import "../llvm-bootstrap/build.ncl" in
@@ -27,6 +27,7 @@ let ninja = import "../ninja/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+let zstd = import "../zstd/build.ncl" in
 fun llvm_version llvm_sha256 =>
   let llvm_major = std.array.first (std.string.split "." llvm_version) in
   let rel = "usr/lib/llvm-%{llvm_major}" in
@@ -52,7 +53,11 @@ fun llvm_version llvm_sha256 =>
       glibc,
       libffi,
       zlib,
-      subsetOf gcc ["libgcc", "libstdcpp"],
+      # libLLVM, lld and llvm-config NEED libzstd.so.1 (published llvm 23.1.5,
+      # readelf). It used to arrive only through `subsetOf gcc`, which inherits
+      # gcc's runtime_deps; gcc-runtime does not (inbox#1261).
+      zstd,
+      subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     ],
 
     cmd = "./versioned-build.sh",

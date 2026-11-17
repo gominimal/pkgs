@@ -12,6 +12,7 @@ let libcap = import "../libcap/build.ncl" in
 let libjpeg-turbo = import "../libjpeg-turbo/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let acl = import "../acl/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let mpfr = import "../mpfr/build.ncl" in
@@ -48,7 +49,7 @@ let version = "0.22.02" in
     completions = { glob = "usr/share/bash-completion/**" } | OutputData,
     data = { glob = "usr/share/stress-ng/**" } | OutputData,
   },
-  runtime_deps = [glibc, subsetOf gcc ["libatomic"], acl, gmp, libjpeg-turbo, mpfr, xz, zlib],
+  runtime_deps = [glibc, subsetOf gcc-runtime ["libatomic"], acl, gmp, libjpeg-turbo, mpfr, xz, zlib],
   attrs =
     {
       upstream_version = version,
