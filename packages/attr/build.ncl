@@ -82,6 +82,7 @@ let version = "2.6.0" in
       ],
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,
+        etcs = { glob = "etc/*" } | OutputData, # etc/xattr.conf, read by libattr
       },
     } | BuildSpec,
 

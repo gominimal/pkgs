@@ -122,7 +122,21 @@ let version = "2.44" in
             } | Source,
         } target,
       ],
-      outputs = all_outputs,
+      # Under the registry spec a prebuilt keeps only what its output globs name
+      # (gominimal/arch#183, D-24), and the gen-13 objects hold more than the real
+      # spec's globs: the glibc-bedrock-2.42 sysroot (gen-13 tools, the amd64 gcc
+      # breaker among them, may still name its loader) and, on arm64, a second
+      # copy of the libraries and crt objects under usr/lib64. Keep both until no
+      # pinned object needs them.
+      outputs =
+        all_outputs
+        & { bedrock = { glob = "usr/lib/glibc-bedrock-*/**", allow_data = true } | OutputLib }
+        & (
+          match {
+            { arch = 'Amd64, .. } => {},
+            { arch = 'Arm64, .. } => { lib64 = { glob = "usr/lib64/**", allow_data = true } | OutputLib },
+          } target
+        ),
     } | BuildSpec,
 
   tests = {
