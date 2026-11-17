@@ -82,7 +82,12 @@ let version = "9.15" in
   },
 
   outputs = {
-    bins = { glob = "usr/bin/*" } | OutputBin,
+    fzn_cp_sat = { glob = "usr/bin/fzn-cp-sat" } | OutputBin,
+    highs = { glob = "usr/bin/highs" } | OutputBin,
+    sat_runner = { glob = "usr/bin/sat_runner" } | OutputBin,
+    scip = { glob = "usr/bin/scip" } | OutputBin,
+    solve = { glob = "usr/bin/solve" } | OutputBin,
+    vector_bin_packing = { glob = "usr/bin/vector_bin_packing" } | OutputBin,
     libortools = { glob = "usr/lib/libortools*.so*" } | OutputLib,
     libs = { glob = "usr/lib/lib*.so*" } | OutputLib,
     includes = { glob = "usr/include/**" } | OutputData,
