@@ -1,0 +1,32 @@
+# pkgscan triage for wrangler (see pkgmgr-rs src/pkgscan/repo_allowlist.rs).
+# Each entry is pinned to the whole file's sha256: any change to the file makes
+# the finding gate again. A match regrades (Critical -> Medium, High -> Info),
+# never hides.
+
+[[allow]]
+file = "wrangler-dist/cli.js"
+category = "FileSystemAccess"
+pattern = "~/.bashrc"
+sha256 = "8eefa7cf2585e93ab1a3de791e1e5fcb0dd849640babfe96149d451572c474e5"
+reason = "False positive: yargs' bundled shell-completion template (generateCompletionScript). ~/.bashrc and ~/.bash_profile appear only in the '# Installation: {{app_path}} {{completion_command}} >> ~/.bashrc' comment of the script that 'wrangler complete' prints for the person to install; nothing writes to either file. sha256 is wrangler-dist/cli.js of the wrangler@4.163.0 npm tarball, line 378217. Reviewed for the 4.159.0 -> 4.163.0 bot update (pkgscan abort 2026-11-17)."
+
+[[allow]]
+file = "wrangler-dist/cli.js"
+category = "FileSystemAccess"
+pattern = "/.bashrc"
+sha256 = "8eefa7cf2585e93ab1a3de791e1e5fcb0dd849640babfe96149d451572c474e5"
+reason = "False positive: yargs' bundled shell-completion template (generateCompletionScript). ~/.bashrc and ~/.bash_profile appear only in the '# Installation: {{app_path}} {{completion_command}} >> ~/.bashrc' comment of the script that 'wrangler complete' prints for the person to install; nothing writes to either file. sha256 is wrangler-dist/cli.js of the wrangler@4.163.0 npm tarball, line 378217. Reviewed for the 4.159.0 -> 4.163.0 bot update (pkgscan abort 2026-11-17)."
+
+[[allow]]
+file = "wrangler-dist/cli.js"
+category = "FileSystemAccess"
+pattern = "~/.bash_profile"
+sha256 = "8eefa7cf2585e93ab1a3de791e1e5fcb0dd849640babfe96149d451572c474e5"
+reason = "False positive: yargs' bundled shell-completion template (generateCompletionScript). ~/.bashrc and ~/.bash_profile appear only in the '# Installation: {{app_path}} {{completion_command}} >> ~/.bashrc' comment of the script that 'wrangler complete' prints for the person to install; nothing writes to either file. sha256 is wrangler-dist/cli.js of the wrangler@4.163.0 npm tarball, line 378217. Reviewed for the 4.159.0 -> 4.163.0 bot update (pkgscan abort 2026-11-17)."
+
+[[allow]]
+file = "wrangler-dist/cli.js"
+category = "FileSystemAccess"
+pattern = "/.bash_profile"
+sha256 = "8eefa7cf2585e93ab1a3de791e1e5fcb0dd849640babfe96149d451572c474e5"
+reason = "False positive: yargs' bundled shell-completion template (generateCompletionScript). ~/.bashrc and ~/.bash_profile appear only in the '# Installation: {{app_path}} {{completion_command}} >> ~/.bashrc' comment of the script that 'wrangler complete' prints for the person to install; nothing writes to either file. sha256 is wrangler-dist/cli.js of the wrangler@4.163.0 npm tarball, line 378217. Reviewed for the 4.159.0 -> 4.163.0 bot update (pkgscan abort 2026-11-17)."

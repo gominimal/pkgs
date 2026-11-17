@@ -104,3 +104,92 @@ category = "FileSystemAccess"
 pattern = "launchctl"
 sha256 = "5a6bc693670d6c43ec299171ca848ac4f32d8142b280fb22befd1d2f09202568"
 reason = "False positive: line 151 is a bun test NAME (\"what launchd and the session give (SSH_AUTH_SOCK, a launchctl proxy, LC_*) reaches the shell and the --bg env\"); the test only asserts that existing env vars pass through createLoginEnv/launchSpawnEnv with a fake runner. Nothing in v0.28.51 executes launchctl (the only other occurrence, packages/server/inbox-launch-env.ts:12, is a JSDoc comment). Test files are not bundled (build.sh bundles apps/hook/server/index.ts). Added in https://github.com/backnotprop/plannotator/commit/37f0e88cd6184b9745564c6febae3f98b7ef898a (#2376)"
+
+# --- 0.28.66: Routines and System launchd agents (2026-11-17) -------------
+# The Critical launchctl / LaunchAgents and .pypirc / .kube/config findings of
+# the 0.28.50 -> 0.28.66 diff. Hashes are each file at the v0.28.66 tag and
+# match the stanzas the gate printed.
+
+[[allow]]
+file = "apps/hook/server/system-command.ts"
+category = "FileSystemAccess"
+pattern = "launchctl"
+sha256 = "a5ed73b12b7d4a99089628d829fbe7baed18557bd71ae37a6a80950fb20948e4"
+reason = "ACCEPTED REAL CAPABILITY, not a false positive: opt-in launchd agents written by the shipped binary. The Inbox login item (packages/server/inbox-scheduled-login.ts, plist ~/Library/LaunchAgents/ai.plannotator.inbox.plist) is written only when the person turns Routines on in Settings, runs plannotator's own argv + 'inbox --no-open', and is removed when the switch goes off and by 'plannotator uninstall'. The System check (packages/system/src/node/schedule.ts, ai.plannotator.system.<key>) is installed only when a first drawing finishes with 'An agent on this Mac', runs 'plannotator system tick', and is removed when System is switched off. Both by the upstream maintainer (Scheduled threads/Routines b70e20afc, 2026-11-15; system command 45aaa8a24, 2026-11-06). Reviewed for the 0.28.50 -> 0.28.66 bot update (pkgscan abort 2026-11-17)."
+
+[[allow]]
+file = "packages/system/src/node/schedule.ts"
+category = "FileSystemAccess"
+pattern = "launchctl"
+sha256 = "5ea3267138f6dae0a2f1c7b02ad5445393422b1b4d24eb4087aeae319c4abeb8"
+reason = "ACCEPTED REAL CAPABILITY, not a false positive: opt-in launchd agents written by the shipped binary. The Inbox login item (packages/server/inbox-scheduled-login.ts, plist ~/Library/LaunchAgents/ai.plannotator.inbox.plist) is written only when the person turns Routines on in Settings, runs plannotator's own argv + 'inbox --no-open', and is removed when the switch goes off and by 'plannotator uninstall'. The System check (packages/system/src/node/schedule.ts, ai.plannotator.system.<key>) is installed only when a first drawing finishes with 'An agent on this Mac', runs 'plannotator system tick', and is removed when System is switched off. Both by the upstream maintainer (Scheduled threads/Routines b70e20afc, 2026-11-15; system command 45aaa8a24, 2026-11-06). Reviewed for the 0.28.50 -> 0.28.66 bot update (pkgscan abort 2026-11-17)."
+
+[[allow]]
+file = "packages/system/src/node/schedule.ts"
+category = "FileSystemAccess"
+pattern = "LaunchAgents"
+sha256 = "5ea3267138f6dae0a2f1c7b02ad5445393422b1b4d24eb4087aeae319c4abeb8"
+reason = "ACCEPTED REAL CAPABILITY, not a false positive: opt-in launchd agents written by the shipped binary. The Inbox login item (packages/server/inbox-scheduled-login.ts, plist ~/Library/LaunchAgents/ai.plannotator.inbox.plist) is written only when the person turns Routines on in Settings, runs plannotator's own argv + 'inbox --no-open', and is removed when the switch goes off and by 'plannotator uninstall'. The System check (packages/system/src/node/schedule.ts, ai.plannotator.system.<key>) is installed only when a first drawing finishes with 'An agent on this Mac', runs 'plannotator system tick', and is removed when System is switched off. Both by the upstream maintainer (Scheduled threads/Routines b70e20afc, 2026-11-15; system command 45aaa8a24, 2026-11-06). Reviewed for the 0.28.50 -> 0.28.66 bot update (pkgscan abort 2026-11-17)."
+
+[[allow]]
+file = "packages/server/inbox-scheduled-login.ts"
+category = "FileSystemAccess"
+pattern = "LaunchAgents"
+sha256 = "47fcd8110ffaad1cc796d27665b4cef6059c5642663f981be8fbfb8d9f501560"
+reason = "ACCEPTED REAL CAPABILITY, not a false positive: opt-in launchd agents written by the shipped binary. The Inbox login item (packages/server/inbox-scheduled-login.ts, plist ~/Library/LaunchAgents/ai.plannotator.inbox.plist) is written only when the person turns Routines on in Settings, runs plannotator's own argv + 'inbox --no-open', and is removed when the switch goes off and by 'plannotator uninstall'. The System check (packages/system/src/node/schedule.ts, ai.plannotator.system.<key>) is installed only when a first drawing finishes with 'An agent on this Mac', runs 'plannotator system tick', and is removed when System is switched off. Both by the upstream maintainer (Scheduled threads/Routines b70e20afc, 2026-11-15; system command 45aaa8a24, 2026-11-06). Reviewed for the 0.28.50 -> 0.28.66 bot update (pkgscan abort 2026-11-17)."
+
+[[allow]]
+file = "apps/hook/server/system-command.test.ts"
+category = "FileSystemAccess"
+pattern = "launchctl"
+sha256 = "25a059ba706451d3f7ea5e988ffb6ef62f9777b8f44e7eb95ab4db70660d84e1"
+reason = "False positive: a test that drives the launchd code through an injected recorder and a temp HOME; it never runs launchctl. Reviewed for the 0.28.50 -> 0.28.66 bot update (pkgscan abort 2026-11-17)."
+
+[[allow]]
+file = "apps/hook/server/system-command.test.ts"
+category = "FileSystemAccess"
+pattern = "LaunchAgents"
+sha256 = "25a059ba706451d3f7ea5e988ffb6ef62f9777b8f44e7eb95ab4db70660d84e1"
+reason = "False positive: a test that drives the launchd code through an injected recorder and a temp HOME; it never runs launchctl. Reviewed for the 0.28.50 -> 0.28.66 bot update (pkgscan abort 2026-11-17)."
+
+[[allow]]
+file = "packages/server/inbox-launch-env.test.ts"
+category = "FileSystemAccess"
+pattern = "launchctl"
+sha256 = "e699e646fdfaed3bd8d65d41f29167e1376ac041d430499f0fdecfbd59a805e1"
+reason = "False positive: a test that drives the launchd code through an injected recorder and a temp HOME; it never runs launchctl. Reviewed for the 0.28.50 -> 0.28.66 bot update (pkgscan abort 2026-11-17)."
+
+[[allow]]
+file = "packages/server/uninstall.test.ts"
+category = "FileSystemAccess"
+pattern = "launchctl"
+sha256 = "e05c05095a91ef79b4ffda84d9c9e2fc5d2651f8e768b9cabf82064fff30fc03"
+reason = "False positive: a test that drives the launchd code through an injected recorder and a temp HOME; it never runs launchctl. Reviewed for the 0.28.50 -> 0.28.66 bot update (pkgscan abort 2026-11-17)."
+
+[[allow]]
+file = "packages/server/uninstall.test.ts"
+category = "FileSystemAccess"
+pattern = "LaunchAgents"
+sha256 = "e05c05095a91ef79b4ffda84d9c9e2fc5d2651f8e768b9cabf82064fff30fc03"
+reason = "False positive: a test that drives the launchd code through an injected recorder and a temp HOME; it never runs launchctl. Reviewed for the 0.28.50 -> 0.28.66 bot update (pkgscan abort 2026-11-17)."
+
+[[allow]]
+file = "packages/server/inbox-scheduled-login.test.ts"
+category = "FileSystemAccess"
+pattern = "LaunchAgents"
+sha256 = "01de4c55ee785c8263774c37c0453f81a9656a2d26b73c76e41e10cd631728ed"
+reason = "False positive: a test that drives the launchd code through an injected recorder and a temp HOME; it never runs launchctl. Reviewed for the 0.28.50 -> 0.28.66 bot update (pkgscan abort 2026-11-17)."
+
+[[allow]]
+file = "packages/server/inbox-code-hover.test.ts"
+category = "CredentialAccess"
+pattern = ".pypirc"
+sha256 = "00cc398ba60b8ddf736a2ce3eb1591cdb686fb2c5e9214f9daeee5c4d82018a9"
+reason = "False positive: a security test that writes decoy credential files into a temp project and asserts the code-hover route answers found:false for each (.ssh, .aws, .kube/config, .pypirc, .netrc, ...) without asking the forge; it reads no real credentials. https://github.com/backnotprop/plannotator/blob/v0.28.66/packages/server/inbox-code-hover.test.ts#L162-L178. Reviewed for the 0.28.50 -> 0.28.66 bot update (pkgscan abort 2026-11-17)."
+
+[[allow]]
+file = "packages/server/inbox-code-hover.test.ts"
+category = "CredentialAccess"
+pattern = ".kube/config"
+sha256 = "00cc398ba60b8ddf736a2ce3eb1591cdb686fb2c5e9214f9daeee5c4d82018a9"
+reason = "False positive: a security test that writes decoy credential files into a temp project and asserts the code-hover route answers found:false for each (.ssh, .aws, .kube/config, .pypirc, .netrc, ...) without asking the forge; it reads no real credentials. https://github.com/backnotprop/plannotator/blob/v0.28.66/packages/server/inbox-code-hover.test.ts#L162-L178. Reviewed for the 0.28.50 -> 0.28.66 bot update (pkgscan abort 2026-11-17)."
