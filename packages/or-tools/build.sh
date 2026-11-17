@@ -1,18 +1,15 @@
 #!/bin/bash
 set -euo pipefail
 
-# Pinned, mirrored sources for the deps or-tools would otherwise git-clone
+# Pinned, mirrored source for Eigen, which or-tools would otherwise git-clone
 # from gitlab.com at build time (see build.ncl, pkgs#1146). FetchContent's
 # SOURCE_DIR override skips both the download and or-tools' PATCH_COMMAND, so
-# apply or-tools' own patches here, exactly as its PATCH_COMMAND would.
+# apply or-tools' own patch here, exactly as its PATCH_COMMAND would.
 DEPS_SRC="$(pwd)/minimal-deps"
 mkdir -p "$DEPS_SRC"
 tar -xof eigen-3.4.0.tar.gz -C "$DEPS_SRC"
-tar -xof bzip2-66c46b8c9436613fd81bc5d03f63a61933a4dcc3.tar.gz -C "$DEPS_SRC"
 EIGEN3_SRC="$DEPS_SRC/eigen-3.4.0"
-BZIP2_SRC="$DEPS_SRC/bzip2-66c46b8c9436613fd81bc5d03f63a61933a4dcc3"
 (cd "$EIGEN3_SRC" && git apply --ignore-whitespace "$OLDPWD/patches/eigen3-3.4.0.patch")
-(cd "$BZIP2_SRC" && git apply --ignore-whitespace "$OLDPWD/patches/bzip2.patch")
 
 mkdir build
 cd build
@@ -46,9 +43,23 @@ cmake -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_SKIP_INSTALL_RPATH=ON \
   -DBUILD_SHARED_LIBS=ON \
-  -DBUILD_DEPS=ON \
+  -DBUILD_DEPS=OFF \
+  -DBUILD_ZLIB=OFF \
+  -DBUILD_BZip2=OFF \
+  -DBUILD_absl=OFF \
+  -DBUILD_Protobuf=OFF \
+  -DBUILD_re2=OFF \
+  -DBUILD_Boost=OFF \
+  -DBUILD_Eigen3=ON \
+  -DBUILD_HIGHS=ON \
+  -DBUILD_soplex=ON \
+  -DBUILD_SCIP=ON \
+  -DBUILD_CoinUtils=ON \
+  -DBUILD_Osi=ON \
+  -DBUILD_Clp=ON \
+  -DBUILD_Cgl=ON \
+  -DBUILD_Cbc=ON \
   -DFETCHCONTENT_SOURCE_DIR_EIGEN3="$EIGEN3_SRC" \
-  -DFETCHCONTENT_SOURCE_DIR_BZIP2="$BZIP2_SRC" \
   -DBUILD_CXX=ON \
   -DBUILD_PYTHON=OFF \
   -DBUILD_JAVA=OFF \
@@ -67,15 +78,18 @@ cmake -G Ninja \
   ..
 # Fail closed: the pinned sources were used, nothing was cloned from GitLab
 # (FetchContent creates _deps/<name>-src only when it downloads).
-for d in eigen3-src bzip2-src; do
-  [ ! -d "_deps/$d" ] || { echo "ERROR: FetchContent downloaded $d instead of the pinned source" >&2; exit 1; }
+[ ! -d "_deps/eigen3-src" ] || { echo "ERROR: FetchContent downloaded eigen3-src instead of the pinned source" >&2; exit 1; }
+# Fail closed: the registry's packages were used. FetchContent creates
+# _deps/<name>-src for every dependency or-tools builds itself.
+for d in zlib bzip2 absl abseil-cpp protobuf re2 boost; do
+  [ ! -d "_deps/$d-src" ] || { echo "ERROR: or-tools built its own $d instead of using the package" >&2; exit 1; }
 done
 
 # protoc and other build-time tools need to find their shared libs
 export LD_LIBRARY_PATH="$(pwd)/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 # Cap parallelism to nproc/4 (matches packages/foundationdb). or-tools'
-# inline-built deps (protobuf, abseil, HiGHS, eigen) link together at peak
+# inline-built deps (HiGHS, SCIP, the COIN-OR solvers) link together at peak
 # and explode memory at -j32, OOMing the whole build.
 JOBS=$(( $(nproc) / 4 ))
 [ "$JOBS" -lt 1 ] && JOBS=1
@@ -83,3 +97,9 @@ JOBS=$(( $(nproc) / 4 ))
 ninja -j"$JOBS"
 
 DESTDIR="$OUTPUT_DIR" ninja install
+
+# Fail closed: nothing of the packages or-tools now depends on was installed
+# into this package.
+for p in usr/include/boost usr/include/absl usr/include/google/protobuf usr/include/re2 usr/include/zlib.h usr/include/bzlib.h usr/bin/protoc; do
+  [ ! -e "$OUTPUT_DIR/$p" ] || { echo "ERROR: $p was installed into or-tools; it belongs to another package" >&2; exit 1; }
+done
