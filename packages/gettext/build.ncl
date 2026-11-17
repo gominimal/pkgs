@@ -26,7 +26,7 @@ let version = "1.0" in
     acl,
     ncurses,
     glibc,
-    subsetOf gcc-runtime ["libgomp"],
+    subsetOf gcc-runtime ["libgcc", "libgomp", "libstdcpp"], # libasprintf is C++
   ],
 
   cmd = "./build.sh",

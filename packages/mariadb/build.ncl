@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let grep = import "../grep/build.ncl" in
@@ -68,6 +69,8 @@ let version = "13.2.0" in
     # missing-runtime_deps checker rather than guessed at.
     pcre2,
     zlib,
+    # C++: NEEDs libstdc++ and libgcc_s, which came only through gmp/ncurses before those dropped gcc-runtime (gcc_runtime_guard.py rule 4).
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     zstd, # usr/lib/plugin/zstd.so NEEDs libzstd.so.1; it came only through bash/ncurses -> subsetOf gcc (inbox#1261)
   ],
 

@@ -72,7 +72,7 @@ let version = "18.1" in
     # gdb 18 links libatomic.so.1 (DT_NEEDED); without it the binary cannot
     # load ("error while loading shared libraries: libatomic.so.1") and gef,
     # which runs through gdb, fails with it. Only the library, not all of gcc.
-    subsetOf gcc-runtime ["libatomic"],
+    subsetOf gcc-runtime ["libatomic", "libgcc", "libstdcpp"], # gdb is C++
   ],
 
   cmd = "./build.sh",
