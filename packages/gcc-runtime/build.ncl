@@ -52,7 +52,7 @@ in
 
   # gcc-runtime sits on gcc's bootstrap cycle (gcc -> glibc -> python ->
   # ncurses -> gcc-runtime -> gcc). Break it with the same gominimal/bootstrap
-  # gen-13 gcc objects gcc's own breaker uses (gcc_runtime_guard.py fails if
+  # bootstrap gcc objects gcc's own breaker uses (gcc_runtime_guard.py fails if
   # the two breakers' pins differ, so a repin must move both).
   # A prebuilt's cache entry is the WHOLE extracted object (output globs are not
   # applied to prebuilts), so consumers must take a subset, never all of
@@ -75,9 +75,9 @@ in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              # gominimal/bootstrap gen-13 object (generations/gen-13/manifest.json)
-              url = "gs://minimal-bootstrap/gen-13/sha256/4777e5fe9bd1476171abb46d6ec53f49f5e50f17a25b9ab612894d758eba5f1f/gcc-15.2.0-glibc-aarch64.tar.zst",
-              sha256 = "4777e5fe9bd1476171abb46d6ec53f49f5e50f17a25b9ab612894d758eba5f1f",
+              # gominimal/bootstrap gen-17 object (generations/gen-17/manifest.json)
+              url = "gs://minimal-bootstrap/gen-17/sha256/ad09a27cf021c341d50cf5c7a43d9cfcb45af363890c8e0b695259edc2c27d43/gcc-15.2.0-glibc-seed-15.2.0-aarch64.tar.zst",
+              sha256 = "ad09a27cf021c341d50cf5c7a43d9cfcb45af363890c8e0b695259edc2c27d43",
               extract = true,
             } | Source,
         } target,

@@ -5,11 +5,11 @@ let gmp = import "../gmp/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 let bash = import "../bash/build.ncl" in # bin/ghc is a /bin/sh wrapper
 let llvm = import "../llvm/build.ncl" in # arm64: settings name ld.lld as the linker and object merger
-# ghc-9.6.7: the boot compiler for `ghc`, from gen-15 of gominimal/bootstrap: the top of the
+# ghc-9.6.7: the boot compiler for `ghc`, from gominimal/bootstrap (amd64 gen-16, arm64 gen-15): the top of the
 # source-only GHC ladder, microhs-0.16 (C, gcc) -> ghc-4.08.2 -> 5.04.3 -> 6.6.1 -> 6.10.4 -> 7.0.4
 # -> 7.6.3 -> 7.8.4 -> 7.10.3 -> 8.2.2 -> 8.6.5 -> 8.10.7 -> 9.2.8 -> 9.6.7, every rung built on the
 # hex0-rooted toolchain and this one reproduced byte for byte on two independent machines before
-# publishing (generations/gen-15/manifest.json). Installs the whole compiler at /usr/lib/ghc-9.6.7;
+# publishing (amd64: generations/gen-16/manifest.json; arm64: gen-15, which gen-16 left byte-identical). Installs the whole compiler at /usr/lib/ghc-9.6.7;
 # nothing lands on /usr/bin. Its `settings` name the shipped C compiler wrapper
 # /usr/lib/ghc-9.6.7/bin/ghc-cc, which runs the gcc on PATH (amd64: linking with the
 # /usr/lib/ld-linux-x86-64.so.2 loader its own binaries load through).
@@ -22,8 +22,9 @@ let version = "9.6.7" in
     match {
       { arch = 'Amd64, .. } =>
         {
-          url = "gs://minimal-bootstrap/gen-15/sha256/fd4510bb45d9e22452498272c5f181349661b0a9b02a4fbec6985eb0acaddd3c/ghc-9.6.7-9.6.7-x86_64.tar.zst",
-          sha256 = "fd4510bb45d9e22452498272c5f181349661b0a9b02a4fbec6985eb0acaddd3c",
+          # gen-16: unlit-ghc-9.6.7 and lib/bin/unlit on the plain loader too (bootstrap#12)
+          url = "gs://minimal-bootstrap/gen-16/sha256/fc0d0c2b6e8dd19bd0eac8bdb4f84bbe5ab1dc2db7b13a6f127c78e174d60f01/ghc-9.6.7-9.6.7-x86_64.tar.zst",
+          sha256 = "fc0d0c2b6e8dd19bd0eac8bdb4f84bbe5ab1dc2db7b13a6f127c78e174d60f01",
           extract = true,
         } | Source,
       { arch = 'Arm64, .. } =>
