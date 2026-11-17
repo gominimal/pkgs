@@ -27,6 +27,28 @@ if(NOT TARGET Boost::multiprecision)
 endif()
 CMAKE
 
+# or-tools 9.15 carries its own `absl::SourceLocation`
+# (ortools/base/source_location.h), written for the abseil it pins
+# (20250814), which had none. The abseil package (20260817) has the real one
+# in absl/types/source_location.h, so with both in a translation unit the name
+# is ambiguous and nothing that includes absl/status/status.h compiles. Make
+# or-tools' header forward to abseil's. Nothing in or-tools uses the two
+# macros the old header also defined (ABSL_LOC, ABSL_LOC_CURRENT_DEFAULT_ARG).
+OWN_LOC=ortools/base/source_location.h
+grep -q '^class SourceLocation {' "$OWN_LOC" \
+  || { echo "ERROR: $OWN_LOC no longer defines its own SourceLocation; drop this patch" >&2; exit 1; }
+if grep -rqE 'ABSL_LOC(_CURRENT_DEFAULT_ARG)?\b' --include='*.h' --include='*.cc' ortools \
+     --exclude=source_location.h; then
+  echo "ERROR: or-tools now uses ABSL_LOC; the forwarding header must define it" >&2; exit 1
+fi
+cat > "$OWN_LOC" <<'HEADER'
+// Replaced by the minimal build: abseil provides absl::SourceLocation.
+#ifndef ORTOOLS_BASE_SOURCE_LOCATION_H_
+#define ORTOOLS_BASE_SOURCE_LOCATION_H_
+#include "absl/types/source_location.h"
+#endif  // ORTOOLS_BASE_SOURCE_LOCATION_H_
+HEADER
+
 mkdir build
 cd build
 
