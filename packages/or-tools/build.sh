@@ -142,3 +142,15 @@ DESTDIR="$OUTPUT_DIR" ninja install
 for p in usr/include/boost usr/include/absl usr/include/google/protobuf usr/include/re2 usr/include/zlib.h usr/include/bzlib.h usr/bin/protoc; do
   [ ! -e "$OUTPUT_DIR/$p" ] || { echo "ERROR: $p was installed into or-tools; it belongs to another package" >&2; exit 1; }
 done
+
+# Fail closed: every shared library installed is named by an output in
+# build.ncl (`libortools` or `libs`). A library neither glob matches would be
+# left out of the package without an error.
+for f in "$OUTPUT_DIR"/usr/lib/lib*.so*; do
+  case "$(basename "$f")" in
+    libortools*.so*) ;;
+    libCbc.so*|libCbcSolver.so*|libCgl.so*|libClp.so*|libClpSolver.so*|libCoinUtils.so*) ;;
+    libhighs.so*|libOsi.so*|libOsiCbc.so*|libOsiClp.so*|libscip.so*|libsoplexshared.so*) ;;
+    *) echo "ERROR: $(basename "$f") is in no output of build.ncl; add it to \`libs\`" >&2; exit 1 ;;
+  esac
+done

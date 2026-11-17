@@ -91,7 +91,7 @@ let version = "9.15" in
     libortools = { glob = "usr/lib/libortools*.so*" } | OutputLib,
     # The solver libraries or-tools builds itself. Named one by one so that
     # no file is also in `libortools` (each file in one output, arch#183
-    # D-24), and so that a library this misses fails the build as unmatched.
+    # D-24). build.sh fails the build on a library neither output names.
     libs = { glob = "usr/lib/lib{Cbc,CbcSolver,Cgl,Clp,ClpSolver,CoinUtils,highs,Osi,OsiCbc,OsiClp,scip,soplexshared}.so*" } | OutputLib,
     includes = { glob = "usr/include/**" } | OutputData,
     cmake_data = { glob = "usr/lib/cmake/**" } | OutputData,
