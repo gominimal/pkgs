@@ -10,7 +10,7 @@ let libpng = import "../libpng/build.ncl" in
 let libjpeg-turbo = import "../libjpeg-turbo/build.ncl" in
 let openjpeg = import "../openjpeg/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
 
 let version = "10.08.0" in
@@ -36,7 +36,7 @@ let version = "10.08.0" in
     libjpeg-turbo,
     openjpeg,
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     bzip2,
   ],
 

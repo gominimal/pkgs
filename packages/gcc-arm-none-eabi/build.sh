@@ -72,5 +72,9 @@ make MAKEINFO=true DESTDIR="$OUTPUT_DIR" install-strip
 
 cd ..
 
-# Remove info/man pages that conflict with host gcc
+# Remove info/man pages that conflict with host gcc. man7 holds gcc's generic
+# fsf-funding, gfdl and gpl pages, which gcc ships at the same paths from a
+# different gcc build: a file conflict under the registry spec (arch#183, model
+# §12; found by build-servers' amd64 file-list survey of pkgs b8911794).
 rm -rf "$OUTPUT_DIR$PREFIX/share/info"
+rm -rf "$OUTPUT_DIR$PREFIX/share/man/man7"

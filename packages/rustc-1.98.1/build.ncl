@@ -1,7 +1,7 @@
 let { subsetOf, Attrs, BuildSpec, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let libssh2 = import "../libssh2/build.ncl" in
 let llvm-21 = import "../llvm-21/build.ncl" in # LLVM 21, prefixed under /usr/lib/llvm-21
@@ -46,7 +46,7 @@ let version = "1.98.1" in
     openssl-3-5,
     sqlite,
     zlib,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
   # the binary runs from its own runtime closure, outside any build sandbox; libLLVM.so.21.1 is
   # under llvm-21's prefix, which only the environment can name (see runtime_deps above)

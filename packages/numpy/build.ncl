@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let cython = import "../cython/build.ncl" in
@@ -28,6 +29,8 @@ let version = "2.5.4" in
   runtime_deps = [
     python,
     openblas,
+    # C++: NEEDs libstdc++ and libgcc_s, which came only through gmp/ncurses before those dropped gcc-runtime (gcc_runtime_guard.py rule 4).
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

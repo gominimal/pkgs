@@ -5,7 +5,7 @@ let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let boost = import "../boost/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let git = import "../git/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let mono = import "../mono/build.ncl" in
@@ -49,7 +49,7 @@ let version = "7.3.81" in
   runtime_deps = [
     glibc,
     openssl-3-5,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     zlib,
   ],
 

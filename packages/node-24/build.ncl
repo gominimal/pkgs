@@ -19,7 +19,7 @@ let zlib = import "../zlib/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 let gtest = import "../gtest/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 
 # node-24: the Node.js 24 line, versioned. 24 entered maintenance on 2026-10-20
 # and is supported until 2028-04-30 (nodejs/Release schedule.json); 26 becomes
@@ -64,7 +64,7 @@ let version = "24.22.3" in
     zstd,
     gtest,
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

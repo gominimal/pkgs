@@ -8,7 +8,7 @@ let toolchain = import "../toolchain/build.ncl" in
 
 let fontconfig = import "../fontconfig/build.ncl" in
 let freetype = import "../freetype/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let libjpeg-turbo = import "../libjpeg-turbo/build.ncl" in
 let libpng = import "../libpng/build.ncl" in
@@ -38,7 +38,7 @@ let version = "2.3.3" in
     libjpeg-turbo,
     libpng,
     zlib,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

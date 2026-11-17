@@ -1,10 +1,11 @@
-let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let zlib = import "../zlib/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 
 let version = "0.117.0" in
@@ -26,8 +27,9 @@ let version = "0.117.0" in
 
   runtime_deps = [
     glibc,
-    gcc,
+    subsetOf gcc-runtime ["libgcc"],
     openssl,
+    zlib, # usr/bin/nu NEEDs libz.so.1; it came only through subsetOf gcc (inbox#1261)
   ],
 
   cmd = "./build.sh",
