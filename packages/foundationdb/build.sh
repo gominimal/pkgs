@@ -49,6 +49,15 @@ if grep -nE 'explicit (Promise<T>|ReplyPromise<T>|IteratorImpl<isConst>)\(' \
   exit 1
 fi
 
+# ClientWorkload.h uses uint64_t/uint32_t without including <cstdint>; gcc 16's
+# libstdc++ no longer pulls it in through <memory> and friends, so c_workloads
+# fails with "'uint64_t' does not name a type" (gcc 16.2 canary, pkgs#1340
+# run 2b69a34d, both arches). Adding the include is a no-op for gcc 15.
+cw=bindings/c/foundationdb/ClientWorkload.h
+grep -q '^#include <cstdint>' "$cw" || sed -i 's/^#include <memory>$/#include <memory>\n#include <cstdint>/' "$cw"
+grep -q '^#include <cstdint>' "$cw" || {
+  echo "foundationdb: <cstdint> fix did not apply to $cw" >&2; exit 1; }
+
 cmake -B build -G Ninja \
   -DCMAKE_INSTALL_PREFIX=/usr \
   -DCMAKE_BUILD_TYPE=Release \

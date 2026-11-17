@@ -27,14 +27,16 @@ let mpfr = import "../mpfr/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 
-let version = "15.2.0" in
+let version = "16.2.0" in
 {
   name = "gcc",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/gcc-%{version}.tar.xz",
-      sha256 = "438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e"
+      # Upstream https URL (registry spec, gominimal/arch#183 model §6.1: https only, and the
+      # URL is not hashed). sha256 matches ftp.gnu.org's copy and gcc.gnu.org's sha512.sum.
+      url = "https://mirrors.kernel.org/gnu/gcc/gcc-%{version}/gcc-%{version}.tar.xz",
+      sha256 = "e6738e29597f733270731aa90600f37ffdc045079dfc27ec7e8192cc81085c3e"
     } | Source,
     # base
     bash-bootstrap,

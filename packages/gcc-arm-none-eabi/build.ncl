@@ -12,19 +12,19 @@ let zstd = import "../zstd/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let binutils-arm-none-eabi = import "../binutils-arm-none-eabi/build.ncl" in
 
-let gcc_version = "14.2.0" in
-let newlib_version = "4.4.0.20231231" in
+let gcc_version = "16.2.0" in
+let newlib_version = "4.6.0.20260123" in
 {
   name = "gcc-arm-none-eabi",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://mirrors.kernel.org/gnu/gcc/gcc-%{gcc_version}/gcc-%{gcc_version}.tar.xz",
-      sha256 = "a7b39bc69cbf9e25826c5a60ab26477001f7c08d85cec04bc0e29cabed6f3cc9"
+      sha256 = "e6738e29597f733270731aa90600f37ffdc045079dfc27ec7e8192cc81085c3e"
     } | Source,
     {
       url = "https://sourceware.org/pub/newlib/newlib-%{newlib_version}.tar.gz",
-      sha256 = "0c166a39e1bf0951dfafcd68949fe0e4b6d3658081d6282f39aeefc6310f2f13"
+      sha256 = "6ff27e3bf022666f43f7802255be680eeff722ac181b1725d21e2e8318604ee3"
     } | Source,
     base,
     make,
