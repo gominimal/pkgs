@@ -29,3 +29,23 @@ cmake -B build \
   -DCMAKE_CXX_STANDARD=14
 make -C build -j$(nproc)
 make DESTDIR=$OUTPUT_DIR -C build install
+
+# SECURITY, CVE-2026-111943 (eMudhra key compromise; GHSA-rjr3-9pq9-5wm4):
+# grpc's bundled root store, installed as usr/share/grpc/roots.pem and read
+# when no system or env roots are configured, still trusts emSign Root CA - G1
+# (eMudhra). Drop it, as ca-certificates did on 2026-10-20. Each entry runs
+# from its "# <sha256>" line to the next one; some entries have a blank line
+# between the text dump and the PEM, so a paragraph split would orphan a PEM.
+ROOTS="$OUTPUT_DIR/usr/share/grpc/roots.pem"
+before=$(grep -c 'BEGIN CERTIFICATE' "$ROOTS")
+awk '/^# [0-9a-f]+$/ && length($0) == 66 { if (buf !~ /eMudhra/) printf "%s", buf; buf = "" }
+     { buf = buf $0 "\n" }
+     END { if (buf !~ /eMudhra/) printf "%s", buf }' "$ROOTS" > "$ROOTS.tmp"
+mv "$ROOTS.tmp" "$ROOTS"
+after=$(grep -c 'BEGIN CERTIFICATE' "$ROOTS")
+if grep -qi -e emudhra -e emsign "$ROOTS"; then
+  echo "ERROR: roots.pem still names eMudhra/emSign" >&2; exit 1
+fi
+if [ "$after" -ne "$(grep -cE '^# [0-9a-f]{64}$' "$ROOTS")" ] || [ "$after" -ne $((before - 1)) ]; then
+  echo "ERROR: roots.pem filter removed $((before - after)) certs (want 1); grpc's file changed, re-check" >&2; exit 1
+fi
