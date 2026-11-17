@@ -6,6 +6,7 @@ let diffutils = import "../diffutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let oniguruma = import "../oniguruma/build.ncl" in
 
 let version = "1.8.2" in
 {
@@ -19,10 +20,12 @@ let version = "1.8.2" in
     } | Source,
     base,
     make,
+    oniguruma,
     toolchain,
   ],
   runtime_deps = [
     glibc,
+    oniguruma,
   ],
 
   cmd = "./build.sh",
@@ -34,7 +37,6 @@ let version = "1.8.2" in
     jq = { glob = "usr/bin/jq" } | OutputBin,
 
     libjq = { glob = "usr/lib/libjq.{so*,a}" } | OutputLib,
-    libonig = { glob = "usr/lib/libonig.{so*,a}" } | OutputLib,
 
     ltconfigs = { glob = "usr/lib/*.la" } | OutputData,
     pkgconfigs = { glob = "usr/lib/pkgconfig/**" } | OutputData,
