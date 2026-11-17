@@ -118,12 +118,23 @@ let version = "2.47" in
       runtime_deps = [
         zlib,
       ],
-      outputs = {
-        usr_bin = { glob = "usr/bin/**/*" } | OutputLib,
-        usr_lib = { glob = "usr/lib/**/*" } | OutputLib,
-        usr_include = { glob = "usr/include/**/*" } | OutputLib,
-        usr_share = { glob = "usr/share/**/*" } | OutputLib,
-      },
+      outputs =
+        {
+          usr_bin = { glob = "usr/bin/**/*" } | OutputLib,
+          usr_lib = { glob = "usr/lib/**/*" } | OutputLib,
+          usr_include = { glob = "usr/include/**/*" } | OutputLib,
+          usr_share = { glob = "usr/share/**/*" } | OutputLib,
+        }
+        & (
+          match {
+            { arch = 'Amd64, .. } => {},
+            # The arm64 object also installs the target tool dir
+            # (usr/aarch64-linux-gnu/{bin,lib/ldscripts}): gcc runs as and ld
+            # from it. Under the registry spec a prebuilt keeps only what its
+            # output globs name (gominimal/arch#183, D-24).
+            { arch = 'Arm64, .. } => { target_tools = { glob = "usr/aarch64-linux-gnu/**/*" } | OutputLib },
+          } target
+        ),
     } | BuildSpec,
 
   tests = {
