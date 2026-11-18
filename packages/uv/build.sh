@@ -11,7 +11,7 @@ export RUSTFLAGS="-C linker=gcc"
 # >>> pkgmgr lock-patch (generated; regenerate with `pkgmgr lock-patch uv`, never edit)
 # security-floors-lock.patch is a cargo-resolved delta against upstream's Cargo.lock; it is
 # only valid for the exact lock it was generated from.
-echo "97c02f24815e01c1519241841e03d50c44c62e3c2100ba763b93b3a2e7d98e50  Cargo.lock" | sha256sum -c --status - || {
+echo "dab86594a946ebcfa50f8d90b417f0e73679a82e73d0dcfd746184fba7dd278d  Cargo.lock" | sha256sum -c --status - || {
   echo "ERROR: upstream Cargo.lock changed; run: pkgmgr lock-patch uv" >&2
   exit 1
 }
@@ -27,6 +27,14 @@ if grep -A1 '^name = "event-listener"$' Cargo.lock | grep -qE '^version = "5[.]4
 fi
 if grep -A1 '^name = "memmap2"$' Cargo.lock | grep -qE '^version = "0[.]9[.](([0-9]|10)([-+][^"]*)?|11-[^"]*)"$'; then
   echo "ERROR: memmap2 below its security floor 0.9.11 is in Cargo.lock (RUSTSEC-2026-0186)" >&2
+  exit 1
+fi
+if grep -A1 '^name = "quinn-proto"$' Cargo.lock | grep -qE '^version = "0[.]11[.](([0-9]|1[0-8])([-+][^"]*)?|19-[^"]*)"$'; then
+  echo "ERROR: quinn-proto below its security floor 0.11.19 is in Cargo.lock (RUSTSEC-2026-0523, RUSTSEC-2026-0524)" >&2
+  exit 1
+fi
+if grep -A1 '^name = "quinn-udp"$' Cargo.lock | grep -qE '^version = "0[.]5[.](([0-9]|1[0-5])([-+][^"]*)?|16-[^"]*)"$'; then
+  echo "ERROR: quinn-udp below its security floor 0.5.16 is in Cargo.lock (RUSTSEC-2026-0538)" >&2
   exit 1
 fi
 if grep -A1 '^name = "rustix"$' Cargo.lock | grep -qE '^version = "1[.]1[.](([0-5])([-+][^"]*)?|6-[^"]*)"$'; then
