@@ -11,8 +11,35 @@ INSTALL="$OUTPUT_DIR/usr/share/jreleaser"
 mkdir -p "$OUTPUT_DIR/usr/bin" "$INSTALL/bin" "$INSTALL/lib"
 # The zip stores the jars as 0600; install with explicit modes.
 install -m 0755 "$SRC/bin/jreleaser" "$INSTALL/bin/jreleaser"
+
+# jackson-core and jackson-databind 2.22.0 (10 advisories) are replaced by the
+# pinned ${MINIMAL_ARG_JACKSON} jars (build.ncl). The bundled versions must be
+# exactly 2.22.0: a distribution that moved them is re-decided, not patched
+# blind.
+JACKSON="${MINIMAL_ARG_JACKSON:?build.ncl forwards jackson}"
+for a in jackson-core jackson-databind; do
+  test -f "$SRC/lib/$a-2.22.0.jar" || {
+    echo "jreleaser: $SRC/lib no longer bundles $a-2.22.0.jar:" >&2
+    ls "$SRC"/lib/jackson-* >&2
+    exit 1
+  }
+done
 for jar in "$SRC"/lib/*.jar; do
+  case "${jar##*/}" in
+    jackson-core-2.22.0.jar | jackson-databind-2.22.0.jar) continue ;;
+  esac
   install -m 0644 "$jar" "$INSTALL/lib/"
+done
+for a in jackson-core jackson-databind; do
+  install -m 0644 "$a-$JACKSON.jar" "$INSTALL/lib/"
+done
+# Exactly one of each on the classpath (lib/*), and it is the pinned one.
+for a in jackson-core jackson-databind; do
+  n=$(ls "$INSTALL"/lib/"$a"-[0-9]*.jar | wc -l)
+  [ "$n" -eq 1 ] && test -f "$INSTALL/lib/$a-$JACKSON.jar" || {
+    echo "jreleaser: lib/ has $n $a jars, want only $a-$JACKSON.jar" >&2
+    exit 1
+  }
 done
 install -m 0644 "$SRC/LICENSE" "$SRC/NOTICE" "$INSTALL/"
 # licenses/ holds the texts for the bundled jars' licenses (BSD-2-Clause,
