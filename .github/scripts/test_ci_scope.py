@@ -96,7 +96,7 @@ class Scope(unittest.TestCase):
         self.assertEqual(old_decide(records), ("scoped", ["llvm"], []))
 
     def test_helper_imported_by_a_helper(self):
-        # jdk-21 imports jdk/cve-2026-111943.ncl, which imports
+        # jdk-21 imports jdk/from-source.ncl, which imports jdk/cve-2026-111943.ncl, which imports
         # ca-certificates/cve-2026-111943.ncl.
         records = [rec("packages/ca-certificates/cve-2026-111943.ncl")]
         # Reachability is checked with the cap lifted, as

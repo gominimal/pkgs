@@ -9,8 +9,7 @@ let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .
 let openjdk-26 = import "../openjdk-26/build.ncl" in # the boot JDK
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 # not the `jdk` meta-package: the inputs of build.sh's CVE-2026-111943 step
-let jdk = import "../jdk/cve-2026-111943.ncl" in
-let jdk_src = import "../jdk/from-source.ncl" in # the shared build script
+let jdk = import "../jdk/from-source.ncl" in # the shared build script and the CVE-2026-111943 step
 let ca-certificates = import "../ca-certificates/build.ncl" in # the cacerts source
 let binutils = import "../binutils/build.ncl" in # readelf, for the libstdc++ test
 let toolchain = import "../toolchain/build.ncl" in
@@ -61,7 +60,7 @@ let build_num = "4" in
   name = "jdk-27",
   build_deps = [
     { file = "build.sh" } | Local,
-    jdk_src.script,
+    jdk.script,
     {
       # https://github.com/openjdk/jdk27u/archive/refs/tags/jdk-27.0.1.1-ga.tar.gz (CVE-2026-114938, Java4Shell)
       url = "gs://minimal-staging-archives/jdk-%{version}-ga.tar.gz",
@@ -109,10 +108,10 @@ let build_num = "4" in
     libxcomposite,
     libxt,
     xorgproto,
-    jdk.script,
-    jdk.program,
-    jdk.fixtures,
-    jdk.blocked_sha256,
+    jdk.cve.script,
+    jdk.cve.program,
+    jdk.cve.fixtures,
+    jdk.cve.blocked_sha256,
     ca-certificates,
   ],
   # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, lcms2, libpng, giflib and libjpeg
