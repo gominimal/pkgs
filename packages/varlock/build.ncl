@@ -28,24 +28,29 @@ let node-lts = import "../node-lts/build.ncl" in
 # emSign roots and blocks the 8 compromised keys (nodejs/node#66871, #66877).
 # Go back to the binary only once a release is built with Bun >= 1.4.4, and
 # check it with the harness.
-let version = "1.24.0" in
+let version = "1.25.0" in
+# The native helpers are versioned on their own: varlock 1.25.0 still
+# declares @varlock/native-helper-linux-* 1.24.0 (optionalDependencies), and
+# no 1.25.0 helper exists on npm. Keep this equal to what varlock's
+# package.json declares; build.sh fails if it isn't.
+let helper_version = "1.24.0" in
 {
   name = "varlock",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://registry.npmjs.org/varlock/-/varlock-%{version}.tgz",
-      sha256 = "c90d73765bcb81e6d246b26ddc88d4d15f7a37db287a83eb493b02e2393a09da",
+      sha256 = "cac51a856bb7134e518a8b766ce30d526035caa227b56ea3cc807ea8cc4305c7",
     } | Source,
     match {
       { arch = 'Amd64, .. } =>
         {
-          url = "https://registry.npmjs.org/@varlock/native-helper-linux-x64/-/native-helper-linux-x64-%{version}.tgz",
+          url = "https://registry.npmjs.org/@varlock/native-helper-linux-x64/-/native-helper-linux-x64-%{helper_version}.tgz",
           sha256 = "326635b64c2fd33b2ec893519a36b623f78c925dc3393d89a89a5d511e407187",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
-          url = "https://registry.npmjs.org/@varlock/native-helper-linux-arm64/-/native-helper-linux-arm64-%{version}.tgz",
+          url = "https://registry.npmjs.org/@varlock/native-helper-linux-arm64/-/native-helper-linux-arm64-%{helper_version}.tgz",
           sha256 = "fc02283e4d6816767653300134c35396f4615d858ecb03b352bb87ce53cf2ff3",
         } | Source,
     } target,
@@ -59,6 +64,7 @@ let version = "1.24.0" in
   cmd = "./build.sh",
   build_args = {
     include version,
+    include helper_version,
   },
 
   outputs = {

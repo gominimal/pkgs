@@ -1,6 +1,18 @@
 #!/bin/sh
 set -e
 
+# cmake/Install.cmake's fish_try_create_dirs calls `install(SCRIPT CODE "...")`:
+# SCRIPT takes a file and CODE is its own keyword, so SCRIPT has no value.
+# CMake before 4.5 ignored that; 4.5 fails configure with "install SCRIPT given
+# invalid argument: SCRIPT: missing required value" (pkgs#1526). `install(CODE
+# "...")` is what it means and does the same on every CMake. Still on fish
+# master as of 2026-11-15. sed is silent on a miss, so check after.
+sed -i 's/install(SCRIPT CODE "/install(CODE "/' cmake/Install.cmake
+if grep -n 'install(SCRIPT CODE' cmake/Install.cmake; then
+  echo "fish: install(SCRIPT CODE) fix did not apply" >&2
+  exit 1
+fi
+
 mkdir build && cd build
 
 case $(uname -m) in

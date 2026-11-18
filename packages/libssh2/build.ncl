@@ -69,6 +69,10 @@ let version = "1.11.1" in
   ],
 
   cmd = "./build.sh",
+  # build.sh stamps this into include/libssh2.h (the tag archive says "<version>_DEV").
+  build_args = {
+    include version,
+  },
 
   outputs = {
     libs = { glob = "usr/lib/libssh2.so*" } | OutputLib,

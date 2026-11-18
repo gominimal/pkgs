@@ -15,8 +15,17 @@ esac
 NM="$OUTPUT_DIR/usr/libexec/varlock/node_modules"
 install -d "$NM/varlock" "$NM/@varlock/native-helper-linux-${ARCH}"
 tar -xzof "varlock-${MINIMAL_ARG_VERSION}.tgz" --strip-components=1 -C "$NM/varlock"
-tar -xzof "native-helper-linux-${ARCH}-${MINIMAL_ARG_VERSION}.tgz" --strip-components=1 \
+tar -xzof "native-helper-linux-${ARCH}-${MINIMAL_ARG_HELPER_VERSION}.tgz" --strip-components=1 \
   -C "$NM/@varlock/native-helper-linux-${ARCH}"
+# The helper is pinned on its own version (build.ncl helper_version); it must
+# be the one this varlock declares, or varlock would run a helper it wasn't
+# released with.
+grep -q "\"@varlock/native-helper-linux-${ARCH}\": \"${MINIMAL_ARG_HELPER_VERSION}\"" \
+  "$NM/varlock/package.json" || {
+  echo "varlock ${MINIMAL_ARG_VERSION} does not declare native-helper-linux-${ARCH} ${MINIMAL_ARG_HELPER_VERSION}:" >&2
+  grep native-helper "$NM/varlock/package.json" >&2
+  exit 1
+}
 chmod 0755 "$NM/varlock/bin/cli.js" "$NM/@varlock/native-helper-linux-${ARCH}/varlock-local-encrypt"
 
 # Relative PATH symlinks into the private prefix. `test -e` follows the chain, so
