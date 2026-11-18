@@ -95,7 +95,7 @@ in
   cmd = "./build.sh",
   build_args = {
     include version,
-    dotnet_version = dotnet_version,
+    include dotnet_version,
   },
 
   outputs = {
