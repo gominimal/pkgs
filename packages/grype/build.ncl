@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.121.3" in
+let version = "0.122.0" in
 {
   name = "grype",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/anchore/grype/v%{version}.tar.gz",
-      sha256 = "ced703b9f94606d33f346369ec3d2f84aaa420147232b633d8d847987f9c64bd",
+      sha256 = "0dd01b59d92287b080258a7fb2cd905f8de88ea07d95d747ec062cd8b96c021d",
       extract = true,
       strip_prefix = "grype-%{version}",
     } | Source,
