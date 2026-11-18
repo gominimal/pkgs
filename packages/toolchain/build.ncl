@@ -24,14 +24,14 @@ let linux_headers = import "../linux_headers/build.ncl" in
   outputs = {},
 
   tests = {
-    # `cc` (gcc installs it) assembles and links through binutils; nothing beyond
-    # the group and a shell.
+    # gcc assembles and links through binutils; nothing beyond the group and a
+    # shell. `gcc`, not `cc`: gcc ships no `cc` link (gcc/build.sh's TODO).
     hello_c =
       {
         class = 'Standalone,
         test_deps = [bash-bootstrap, coreutils],
         cmds = [
-          ["/bin/bash", "-c", "printf '#include <stdio.h>\\nint main(void){puts(\"hello c\");return 0;}\\n' > h.c && cc h.c -o h && [ \"$(./h)\" = 'hello c' ]"],
+          ["/bin/bash", "-c", "printf '#include <stdio.h>\\nint main(void){puts(\"hello c\");return 0;}\\n' > h.c && gcc h.c -o h && [ \"$(./h)\" = 'hello c' ]"],
         ],
       } | Test,
     # The kernel headers come from the group too (the #805 failure: <linux/types.h>
