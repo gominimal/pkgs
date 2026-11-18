@@ -35,9 +35,10 @@ patch -Np1 -i "CVE-2026-58051.patch"
 # it, and the SSH banner sends it ("SSH-2.0-libssh2_1.11.1_DEV"). libssh2-sys 0.3.4
 # (cargo in rust 1.100) semver-parses the pkg-config version and panics on `_DEV`.
 # Stamp the release version, as the release tarball has it; fail if it didn't take.
-sed -i "s/^\(#define LIBSSH2_VERSION[[:space:]]*\"\)${MINIMAL_ARG_VERSION:-1.11.1}_DEV\"/\1${MINIMAL_ARG_VERSION:-1.11.1}\"/" include/libssh2.h
-grep -q "^#define LIBSSH2_VERSION[[:space:]]*\"${MINIMAL_ARG_VERSION:-1.11.1}\"$" include/libssh2.h || {
-  echo "ERROR: include/libssh2.h LIBSSH2_VERSION is not \"${MINIMAL_ARG_VERSION:-1.11.1}\"" >&2
+: "${MINIMAL_ARG_VERSION:?build.ncl passes the version}"
+sed -i "s/^\(#define LIBSSH2_VERSION[[:space:]]*\"\)${MINIMAL_ARG_VERSION}_DEV\"/\1${MINIMAL_ARG_VERSION}\"/" include/libssh2.h
+grep -q "^#define LIBSSH2_VERSION[[:space:]]*\"${MINIMAL_ARG_VERSION}\"$" include/libssh2.h || {
+  echo "ERROR: include/libssh2.h LIBSSH2_VERSION is not \"${MINIMAL_ARG_VERSION}\"" >&2
   grep -n '^#define LIBSSH2_VERSION ' include/libssh2.h >&2
   exit 1
 }
@@ -59,8 +60,8 @@ cmake -B build \
 
 cmake --build build -j$(nproc)
 DESTDIR=$OUTPUT_DIR cmake --install build
-grep -qx "Version: ${MINIMAL_ARG_VERSION:-1.11.1}" "$OUTPUT_DIR/usr/lib/pkgconfig/libssh2.pc" || {
-  echo "ERROR: libssh2.pc does not report Version: ${MINIMAL_ARG_VERSION:-1.11.1}" >&2
+grep -qx "Version: ${MINIMAL_ARG_VERSION}" "$OUTPUT_DIR/usr/lib/pkgconfig/libssh2.pc" || {
+  echo "ERROR: libssh2.pc does not report Version: ${MINIMAL_ARG_VERSION}" >&2
   grep -n '^Version:' "$OUTPUT_DIR/usr/lib/pkgconfig/libssh2.pc" >&2 || true
   exit 1
 }
