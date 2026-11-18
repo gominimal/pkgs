@@ -4,12 +4,13 @@ let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let bash = import "../bash/build.ncl" in
+let binutils = import "../binutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let icu = import "../icu/build.ncl" in
+let jq = import "../jq/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
-let openssl-3-5 = import "../openssl-3.5/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
 let version = "2.338.2" in
@@ -17,6 +18,17 @@ let version = "2.338.2" in
 let { amd64_sha256, arm64_sha256 } = {
   amd64_sha256 = "baebf204307bac6193480852732f0aba2ae97b6c5597c244f4d5558390147c40",
   arm64_sha256 = "670adb2f268fe21dcbb58b3db0e0aa9d5b3bddfe2c651481336e561ff86de945",
+}
+in
+
+# The .NET runtime the runner runs on (see build.sh): Microsoft's portable
+# linux build. 10.0.15 is the first that loads OpenSSL 4 (dotnet/runtime#135534).
+# sha256 of the files whose sha512 matches Microsoft's
+# release-metadata/10.0/releases.json.
+let dotnet_version = "10.0.15" in
+let { dotnet_amd64_sha256, dotnet_arm64_sha256 } = {
+  dotnet_amd64_sha256 = "6fd6f9029008e0985271f3bd285de9efe249e38438cd2ea431e3f8a5b2420815",
+  dotnet_arm64_sha256 = "1e963b7c51de5fd51fbd8b7059a8e5b7c19351f46fc5cea8723adf2e458cf4b1",
 }
 in
 
@@ -36,7 +48,21 @@ in
           sha256 = arm64_sha256,
         } | Source,
     } target,
+    match {
+      { arch = 'Amd64, .. } =>
+        {
+          url = "https://builds.dotnet.microsoft.com/dotnet/Runtime/%{dotnet_version}/dotnet-runtime-%{dotnet_version}-linux-x64.tar.gz",
+          sha256 = dotnet_amd64_sha256,
+        } | Source,
+      { arch = 'Arm64, .. } =>
+        {
+          url = "https://builds.dotnet.microsoft.com/dotnet/Runtime/%{dotnet_version}/dotnet-runtime-%{dotnet_version}-linux-arm64.tar.gz",
+          sha256 = dotnet_arm64_sha256,
+        } | Source,
+    } target,
     base,
+    binutils, # readelf: the no-OpenSSL-3 check in build.sh
+    jq, # reads the runner's deps.json / runtimeconfig.json
   ],
   # CVE-2026-111943: the wrappers export NODE_OPTIONS=--use-openssl-ca, so the
   # bundled externals/node{20,24} trust ca-certificates (OpenSSL's default
@@ -59,17 +85,17 @@ in
     glibc,
     grep, # upstream config.sh checks for ICU with `ldconfig -NXv | grep libicu` and exits if grep fails
     icu,
+    # .NET dlopens libssl: upstream's bundled .NET 8 knew only libssl.so.3 and
+    # older (hence openssl-3.5 until now); build.sh swaps in .NET 10.0.15, which
+    # also loads OpenSSL 4's libssl.so.4.
     openssl,
-    # The bundled .NET 8 runtime (sdk 8.0.422 at 2.336.0) dlopens libssl.so.3 /
-    # libcrypto.so.3 and does not know OpenSSL 4's .so.4 names; only .NET 10 got that
-    # loader (dotnet/runtime#135534). Drop once the runner ships .NET 10.
-    openssl-3-5,
     zlib,
   ],
 
   cmd = "./build.sh",
   build_args = {
     include version,
+    dotnet_version = dotnet_version,
   },
 
   outputs = {
@@ -135,6 +161,74 @@ exec "$@"
                   echo "control failed: bundled $n trusted the system store without the wrapper" >&2; exit 1
                 fi
               done
+            "%
+          ],
+        ],
+      } | Test,
+    # The runner's .NET runs on .NET 10 (build.sh) and starts: the host, CoreCLR
+    # and the runner's net8.0 assemblies load together.
+    listener_starts_on_dotnet10 =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap],
+        cmds = [
+          ["/bin/bash", "-c", "set -e; RUNNER_HOME=/tmp/r /usr/bin/actions-runner --help >/dev/null 2>&1 || true; v=$(/tmp/r/bin/Runner.Listener --version); echo \"$v\"; [[ $v =~ ^[0-9]+\\.[0-9]+\\.[0-9]+$ ]]; grep -q '\"Microsoft.NETCore.App\"' /tmp/r/bin/Runner.Listener.runtimeconfig.json; ! grep -q '\"version\": \"8\\.' /tmp/r/bin/Runner.Listener.runtimeconfig.json"],
+        ],
+      } | Test,
+    # .NET 10 makes a real TLS connection through OpenSSL 4 (libssl.so.4; no
+    # openssl-3.5 in the closure) and verifies the server against the system
+    # store. `config` registers against a GHES-style URL, i.e. POSTs
+    # https://<host>/api/v3/actions/runner-registration on port 443; a local
+    # s_server answers 404 (one attempt, no retries), with a leaf signed by a
+    # throwaway CA that SSL_CERT_FILE adds. Pass = s_server decrypted the POST
+    # and the runner reports the 404. Control: without SSL_CERT_FILE the same
+    # runner must refuse the certificate.
+    dotnet_tls_via_openssl4 =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, openssl, coreutils],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -euo pipefail
+              d=$(mktemp -d); cd "$d"; export HOME=$d
+              openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -keyout ca.key -out ca.pem -days 2 -subj /CN=throwaway-test-ca 2>/dev/null
+              openssl req -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -keyout leaf.key -out leaf.csr -subj /CN=127.0.0.1 2>/dev/null
+              printf 'subjectAltName=IP:127.0.0.1\nbasicConstraints=CA:FALSE\nextendedKeyUsage=serverAuth\n' > leaf.ext
+              openssl x509 -req -in leaf.csr -CA ca.pem -CAkey ca.key -CAcreateserial -days 1 -extfile leaf.ext -out leaf.pem 2>/dev/null
+              cat /etc/ssl/cert.pem ca.pem > bundle.pem
+              pids=()
+              trap 'exec 3>&- 4>&- 2>/dev/null || true; kill "${pids[@]}" 2>/dev/null || true' EXIT
+              serve() { # serve <name> <fd>: s_server on 443, stdin from a fifo held open on <fd>
+                mkfifo "$1.in"
+                openssl s_server -accept 127.0.0.1:443 -cert leaf.pem -key leaf.key < "$1.in" > "$1.out" 2>&1 &
+                pids+=($!)
+                eval "exec $2> $1.in"
+                sleep 1
+              }
+              register() { # register <home> [env...]: one unattended registration attempt
+                local home=$1; shift
+                env "$@" RUNNER_HOME="$d/$home" RUNNER_ALLOW_RUNASROOT=1 timeout 90 /usr/bin/actions-runner-config --unattended --url https://127.0.0.1/o/r --token t --name n 2>&1 || true
+              }
+
+              serve ok 3
+              printf 'HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n' >&3
+              out=$(register rc-ok SSL_CERT_FILE="$d/bundle.pem")
+              echo "$out"; echo "--- s_server:"; cat ok.out
+              [[ $out != *'No usable version of libssl'* ]]
+              grep -q 'POST /api/v3/actions/runner-registration' ok.out
+              [[ $out == *'Http response code: NotFound'* ]]
+              kill "${pids[0]}"; wait "${pids[0]}" 2>/dev/null || true; exec 3>&-
+
+              serve refuse 4
+              out=$(register rc-refuse)
+              echo "control:"; echo "$out"; echo "--- s_server:"; cat refuse.out
+              if grep -q 'POST /api' refuse.out || [[ $out == *'Http response code'* ]]; then
+                echo "control failed: the runner trusted a CA outside the system store" >&2; exit 1
+              fi
+              [[ $out == *'SSL connection could not be established'* ]]
             "%
           ],
         ],
