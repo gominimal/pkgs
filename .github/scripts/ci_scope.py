@@ -11,7 +11,7 @@ only right for its own package can still break its importers (renaming gcc's
 `libstdcpp` output breaks every `subsetOf gcc` caller), so checking the
 touched directories alone would pass a PR that breaks the catalog. The graph
 is blast_radius_report.load_graph: every `"../<pkg>/` path in any .ncl under a
-package directory, so an edit to a shared helper (hex0's amd64-ladder.ncl)
+package directory, so an edit to a shared helper (llvm's versioned.ncl)
 reaches the packages that import it.
 
 Everything falls back to the full check whenever the scope cannot be trusted

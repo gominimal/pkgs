@@ -3,7 +3,7 @@ let base = import "../base/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 
-let version = "6.0.3" in
+let version = "6.1.0" in
 {
   name = "typescript-language-server",
   build_deps = [
@@ -29,7 +29,6 @@ let version = "6.0.3" in
   outputs = {
     typescript-language-server = { glob = "usr/bin/typescript-language-server" } | OutputBin,
     tsserver = { glob = "usr/bin/tsserver" } | OutputBin,
-    tsc = { glob = "usr/bin/tsc" } | OutputBin,
     libexec = { glob = "usr/libexec/typescript-language-server/**", allow_executable = true } | OutputData,
   },
 
