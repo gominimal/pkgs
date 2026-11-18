@@ -12,6 +12,15 @@ let sed = import "../sed/build.ncl" in
 let unzip = import "../unzip/build.ncl" in
 
 let version = "1.27.0" in
+# jackson-core and jackson-databind replace the 2.22.0 jars the distribution
+# bundles: 2.22.0 has 10 advisories (2 HIGH in core, 3 HIGH and 5 MODERATE in
+# databind, e.g. GHSA-p6pp-m3f8-5c89, GHSA-cxp5-3px4-pw24), all fixed by 2.22.3,
+# and jreleaser 1.27.0 is upstream's newest release. A patch release within
+# 2.22 is binary compatible with the other 2.22.0 jackson modules it ships
+# (dataformat-yaml/toml/xml, datatype-jsr310). build.sh refuses a distribution
+# that no longer bundles exactly 2.22.0, so a jreleaser bump re-decides this.
+let jackson = "2.22.4" in
+let central = "https://repo1.maven.org/maven2/com/fasterxml/jackson/core" in
 {
   name = "jreleaser",
   # JReleaser automates releases: changelogs, GitHub/GitLab/Gitea releases,
@@ -31,6 +40,15 @@ let version = "1.27.0" in
     {
       url = "https://github.com/jreleaser/jreleaser/releases/download/v%{version}/jreleaser-%{version}.zip",
       sha256 = "3e9b9131ad4e8445b007c234d219ea09482f59aaeb891b12bfec4e16c7cdfa44",
+    } | Source,
+    # sha256 = Maven Central's own .sha256 for each jar (sha1 matches too).
+    {
+      url = "%{central}/jackson-core/%{jackson}/jackson-core-%{jackson}.jar",
+      sha256 = "2d30c375cddea9657a1e1ef97547a2694b663b355facb4de53a097782b312d1a",
+    } | Source,
+    {
+      url = "%{central}/jackson-databind/%{jackson}/jackson-databind-%{jackson}.jar",
+      sha256 = "d4cbf8947087f305869826801913abdc50735a1fab2074a1993e7bc67ca974a3",
     } | Source,
     base,
     unzip,
@@ -55,6 +73,7 @@ let version = "1.27.0" in
   cmd = "./build.sh",
   build_args = {
     include version,
+    include jackson,
   },
 
   outputs = {
