@@ -8,15 +8,15 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let libpipeline = import "../libpipeline/build.ncl" in
 let less = import "../less/build.ncl" in
 
-let version = "2.13.1" in
+let version = "2.13.3" in
 {
   name = "man-db",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://download.savannah.gnu.org/releases/man-db/man-db-2.13.1.tar.xz
+      # https://download.savannah.gnu.org/releases/man-db/man-db-2.13.3.tar.xz
       url = "gs://minimal-staging-archives/man-db-%{version}.tar.xz",
-      sha256 = "8afebb6f7eb6bb8542929458841f5c7e6f240e30c86358c1fbcefbea076c87d9",
+      sha256 = "7c10ac705433c740af91264fc29eee471090ead63a408541ab9736284a8c9deb",
     } | Source,
     base,
     toolchain,

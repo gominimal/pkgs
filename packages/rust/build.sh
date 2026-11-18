@@ -17,24 +17,26 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
-# stage0 = rustc-1.98.1 (the gen-13 prebuilt) on both arches (1.99.0's src/stage0 pins 1.98.0; x.py accepts any
-# 1.98.x), hydrated read-only at /usr/lib/rustc-1.98.1.  The stage0 is injected into bootstrap.toml
+# stage0 = rustc-1.99.1 (the gen-16 prebuilt) on both arches (1.100.0's src/stage0 pins 1.99.0; x.py accepts
+# any 1.99.x), hydrated read-only at /usr/lib/rustc-1.99.1.  The stage0 is injected into bootstrap.toml
 # [build] rustc/cargo below; x.py never downloads one, and a missing stage0 fails the build.
-STAGE0_PREFIX=/usr/lib/rustc-1.98.1
-# The stage0's librustc_driver needs libLLVM.so.21.1 and carries only an $ORIGIN/../lib RUNPATH;
-# neither gen-13 tarball bundles a libLLVM, so it comes from the frozen, prefixed llvm-21 (the default
-# llvm is a later major). LD_LIBRARY_PATH is the one way to reach it; the compilers x.py builds link
-# the default llvm's libLLVM under another soname, so this shadows nothing of theirs.
-export LD_LIBRARY_PATH=/usr/lib/llvm-21/lib
+STAGE0_PREFIX=/usr/lib/rustc-1.99.1
+# The stage0's librustc_driver needs libLLVM.so.23.1 and carries only an $ORIGIN/../lib RUNPATH.
+# No LD_LIBRARY_PATH: the default llvm is 23.1.5 too, so its /usr/lib/libLLVM.so.23.1 (the one
+# llvm-config and the compilers x.py builds use) satisfies the stage0 on the standard search path.
+# Exporting /usr/lib/llvm-23/lib here would instead make the stage1/stage2 compilers load the
+# prefixed copy under the SAME soname. When the default llvm moves past 23 the sonames differ again,
+# and the stage0 then needs `export LD_LIBRARY_PATH=/usr/lib/llvm-23/lib` (rustc-1.99.1 pins
+# llvm-23); until then the --version check below fails loudly (the loader error lands in S0V).
 SEED_RUSTC="${STAGE0_PREFIX}/bin/rustc"
 SEED_CARGO="${STAGE0_PREFIX}/bin/cargo"
-[ -x "$SEED_RUSTC" ] || { echo "rust: FATAL stage0 rustc missing at $SEED_RUSTC — the rustc-1.98.1 package is required" >&2; exit 1; }
+[ -x "$SEED_RUSTC" ] || { echo "rust: FATAL stage0 rustc missing at $SEED_RUSTC — the rustc-1.99.1 package is required" >&2; exit 1; }
 [ -x "$SEED_CARGO" ] || { echo "rust: FATAL stage0 cargo missing at $SEED_CARGO" >&2; exit 1; }
 # x.py's check_stage0_version accepts the same or the previous MINOR (patch is not compared), so the
-# 1.98.1 rung passes for 1.99.0's 1.98.0 pin.
+# 1.99.1 rung passes for 1.100.0's 1.99.0 pin.
 S0V="$("$SEED_RUSTC" --version 2>&1 || true)"
-echo "$S0V" | grep -qF "1.98.1" || { echo "rust: FATAL stage0 rustc --version = '$S0V', expected 1.98.1" >&2; exit 1; }
-echo "rust stage0: rustc-1.98.1 -> $S0V"
+echo "$S0V" | grep -qF "1.99.1" || { echo "rust: FATAL stage0 rustc --version = '$S0V', expected 1.99.1" >&2; exit 1; }
+echo "rust stage0: rustc-1.99.1 -> $S0V"
 
 # Drop the stage0's bundled rust-src: x.py compiles that stale copy of rustc_macros instead of the
 # in-tree source (E0433 on the renamed proc_macro::tracked_env API).  The hydrated stage0 is

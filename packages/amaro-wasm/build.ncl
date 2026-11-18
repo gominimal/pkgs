@@ -17,7 +17,7 @@ let amaro_versions =
 in
 let amaro = std.string.join " " amaro_versions in
 # the rust package's version; build.sh fails if rustc is not this version
-let rustc = "1.99.1" in
+let rustc = "1.100.0" in
 {
   name = "amaro-wasm",
   # amaro is node's built-in TypeScript type stripper (`node x.ts`): swc's
@@ -44,7 +44,7 @@ let rustc = "1.99.1" in
       {
         # the rust package's own source
         url = "gs://minimal-staging-archives/rustc-%{rustc}-src.tar.xz",
-        sha256 = "6451598a99e77f07571960f6b21d577399d3a30f33e80cbd2e3a4aae6535d265",
+        sha256 = "90dab90b8084eb57c35ae2b1d0b70c8e5138ace6023b22c60a5a400f586f63b2",
         extract = false,
       } | Source,
       base,
