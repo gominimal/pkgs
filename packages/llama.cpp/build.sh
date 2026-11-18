@@ -62,6 +62,18 @@ echo "594c2fe35d49488b4382dbfaec8f98366defca819d916ac95becf3e75f4200b3  vendor/s
 patch -Np1 -i ./stb-cve-2023-45663.patch
 echo "a604136650368a391554f4a4b45f285d4c8fe94c7bf28a414b37edd28407899e  vendor/stb/stb_image.h" | sha256sum -c -
 
+# With GGML_BACKEND_DL, ggml_backend_load_best() searches GGML_BACKEND_DIR, then the
+# executable's directory, then the CURRENT directory, and dlopen()s every
+# libggml-<name>-*.so it finds there before scoring them (constructors run on load).
+# Starting llama-server/llama-cli in a directory someone else can write (a downloaded
+# model folder, a cloned repo) would run a planted library. The static build never
+# did this. The patch makes an installed build (GGML_BACKEND_DIR set) search only
+# /usr/lib/ggml; GGML_BACKEND_PATH, an explicit opt-in, still works. Both hashes are
+# checked: a changed loader fails here instead of patching blind.
+echo "0a23a627cec97926fb1fbb2b1bf4fa7fed4900aa21b0215302eced797231578b  ggml/src/ggml-backend-reg.cpp" | sha256sum -c -
+patch -Np1 -i ./ggml-backend-dir-only.patch
+echo "607514a82eb47dbf21994914ea3c6abe7c8c5aca1a48d5d620f74f6c7d1f7815  ggml/src/ggml-backend-reg.cpp" | sha256sum -c -
+
 # GGML_NATIVE=OFF: ggml already defaults it OFF when SOURCE_DATE_EPOCH is set (the
 # sandbox sets it), and it must be: -march=native would follow the build host's CPU,
 # and ggml refuses GGML_NATIVE with GGML_BACKEND_DL.
