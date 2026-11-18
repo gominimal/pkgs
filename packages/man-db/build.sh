@@ -1,8 +1,8 @@
 #!/bin/sh
 set -ex
 
-tar -xof man-db-2.13.1.tar.xz
-cd man-db-2.13.1
+tar -xof man-db-2.13.3.tar.xz
+cd man-db-2.13.3
 
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
