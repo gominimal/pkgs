@@ -32,6 +32,17 @@ mkdir -p /tmp/bin
 ln -sf "$(command -v gcc)" /tmp/bin/cc
 export PATH="/tmp/bin:$PATH"
 
+# Cargo.lock takes fluent-ftl-tools as a git dependency from codeberg.org, which
+# dropped out of the .org zone on 2026-11-18 (NXDOMAIN at the registry) and failed
+# the build ("failed to resolve address for codeberg.org"). Fetch it from the
+# author's GitHub copy instead: git's insteadOf rewrites only the URL, and cargo
+# still checks out the commit Cargo.lock pins (5917664c), so the source is the
+# same. Cargo's built-in git client ignores insteadOf, hence the git CLI.
+export CARGO_NET_GIT_FETCH_WITH_CLI=true
+export GIT_CONFIG_COUNT=1
+export GIT_CONFIG_KEY_0=url.https://github.com/danielrainer/fluent-ftl-tools.insteadOf
+export GIT_CONFIG_VALUE_0=https://codeberg.org/danielrainer/fluent-ftl-tools
+
 cmake -D CMAKE_INSTALL_PREFIX=/usr       \
       -D CMAKE_BUILD_TYPE=Release        \
       -D FISH_USE_SYSTEM_PCRE2=ON        \
