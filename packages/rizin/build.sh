@@ -20,24 +20,24 @@ export ARFLAGS=Drc
 # THE use_sys_* DECISIONS ARE THE WHOLE JOB HERE, not the build.
 #
 # All seventeen `use_sys_*` options default to DISABLED, so out of the box
-# rizin statically links its own copies of zlib, zstd, xz, lz4, pcre2, openssl
-# and tree-sitter. Those copies are then INVISIBLE to pkgscan: a CVE in any of
-# them would not appear against this package, because nothing in the tree
-# declares them. For a distro whose entire premise is supply-chain vuln
-# tracking, shipping seven silently-vendored libraries is the wrong default.
+# rizin statically links its own copies of zlib, zstd, xz, lz4, pcre2, openssl,
+# tree-sitter, xxhash and libmagic. Those copies are then INVISIBLE to pkgscan:
+# a CVE in any of them would not appear against this package, because nothing
+# in the tree declares them. For a distro whose entire premise is supply-chain
+# vuln tracking, shipping silently-vendored libraries is the wrong default.
 #
 # So flip every one we actually package, and no more:
-#   zlib zstd lzma(xz) lz4 pcre2 openssl tree_sitter   -> system
+#   zlib zstd lzma(xz) lz4 pcre2 openssl tree_sitter xxhash magic(file) -> system
 #
 # Deliberately left VENDORED, with reasons:
 #   capstone   rizin defaults to use_capstone_version=next, i.e. the
 #              unreleased capstone 6 — there is no released tarball that
-#              corresponds, so a "system" capstone would be a DIFFERENT
-#              disassembler than the one rizin was tested against.
-#   libzip, magic, zydis, xxhash, libmspack, softfloat, blake2, blake3
-#              not packaged here; vendored is the only option today. Each is a
-#              future pkgscan blind spot, so they are named rather than left
-#              for someone to discover.
+#              corresponds, so a "system" capstone (ours is 5.x) would be a
+#              DIFFERENT disassembler than the one rizin was tested against.
+#   libzip, zydis, libmspack, softfloat, blake2, blake3
+#              not packaged here (`zip` is Info-ZIP, not libzip); vendored is
+#              the only option today. Each is a future pkgscan blind spot, so
+#              they are named rather than left for someone to discover.
 #
 # --wrap-mode=nodownload is what makes the build hermetic: the official
 # `rizin-src` tarball vendors its subprojects (capstone-next, tree-sitter,
@@ -57,8 +57,26 @@ meson setup \
   -Duse_sys_pcre2=enabled \
   -Duse_sys_openssl=enabled \
   -Duse_sys_tree_sitter=enabled \
+  -Duse_sys_xxhash=enabled \
+  -Duse_sys_magic=enabled \
   ..
 
 ninja
 
 DESTDIR="$OUTPUT_DIR" ninja install
+
+# Fail closed at build time, not only in the standalone test: `enabled` makes
+# meson error if a library is missing, but nothing else here would notice the
+# linkage moving (e.g. a future rizin folding librz_hash into another lib).
+# Each system library must be a DT_NEEDED of the librz_* that uses it.
+command -v readelf >/dev/null
+needs() { # <librz_* stem> <NEEDED prefix>
+  so=$(ls "$OUTPUT_DIR"/usr/lib/lib"$1".so.* 2>/dev/null | head -n1)
+  [ -n "$so" ] || { echo "ERROR: lib$1.so.* not installed" >&2; exit 1; }
+  readelf -d "$so" | sed -n 's/.*(NEEDED).*\[\(.*\)\]/\1/p' | grep -q "^$2\.so" || {
+    echo "ERROR: $so does not NEED $2 — use_sys_* fell back to the vendored copy" >&2
+    exit 1
+  }
+}
+needs rz_hash libxxhash
+needs rz_magic libmagic
