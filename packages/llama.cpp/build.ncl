@@ -1,4 +1,4 @@
-let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
@@ -57,6 +57,9 @@ let version = "b12359" in
     llama-cli = { glob = "usr/bin/llama-cli" } | OutputBin,
 
     libs = { glob = "usr/lib/*" } | OutputLib,
+    # One CPU backend per microarchitecture, dlopen()ed from GGML_BACKEND_DIR
+    # (/usr/lib/ggml) at run time; the loader keeps the best one for the host.
+    cpu-backends = { glob = "usr/lib/ggml/libggml-cpu-*.so*" } | OutputLib,
   },
 
   attrs =
@@ -81,7 +84,8 @@ let version = "b12359" in
         owner = "ggml-org",
         repo = "llama.cpp",
       },
-      build_cost_multiple = 3,
+      # ggml-cpu is compiled once per CPU variant: 8 on arm64, 14 on x86_64.
+      build_cost_multiple = 5,
     } | Attrs,
 
   # No test_deps: base would mask a missing library. Both binaries exited 127
@@ -89,5 +93,23 @@ let version = "b12359" in
   tests = {
     llama-cli = standaloneTest "/usr/bin/llama-cli --version",
     llama-server = standaloneTest "/usr/bin/llama-server --version",
+    # The CPU backend is not linked in: it is loaded from /usr/lib/ggml at run
+    # time, and --version never loads it. `-ot x=CPU` loads every backend and
+    # throws "unknown buffer type" (exit 1) unless a CPU backend loaded and
+    # registered its "CPU" buffer type; --list-devices then exits 0 with no
+    # model. (--list-devices alone lists only non-CPU devices, so it passes with
+    # no CPU backend at all.)
+    cpu-backend-cli =
+      {
+        class = 'Standalone,
+        test_deps = [],
+        cmds = [["/usr/bin/llama-cli", "-ot", "x=CPU", "--list-devices"]],
+      } | Test,
+    cpu-backend-server =
+      {
+        class = 'Standalone,
+        test_deps = [],
+        cmds = [["/usr/bin/llama-server", "-ot", "x=CPU", "--list-devices"]],
+      } | Test,
   },
 } | BuildSpec
