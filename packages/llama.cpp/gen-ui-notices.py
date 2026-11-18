@@ -432,9 +432,10 @@ def main():
     for what in no_file or ["none"]:
         w("  " + what)
     w("")
-    w("llama-brand (the llama.cpp logo, favicons and app icons) is CC-BY-NC-4.0;")
-    w("its BRAND-USAGE.md, reproduced below, permits redistribution, including")
-    w("commercially, as part of software distributions and packages.")
+    w("llama-brand (the llama.cpp logo, favicons and app icons) is declared as")
+    w("LicenseRef-llama-brand: CC-BY-NC-4.0, plus the grant in its BRAND-USAGE.md")
+    w("(reproduced below), which permits redistribution, including commercially,")
+    w("as part of software distributions and packages.")
     for name, ver, spdx, source, notes, files in sections + vendor_sections:
         w("")
         w(SEP)

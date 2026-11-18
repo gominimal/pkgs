@@ -84,15 +84,18 @@ let version = "b12359" in
       #   (Unlicense), tslib (0BSD). The KaTeX fonts embedded in its CSS are MIT.
       #   The llama.cpp logo, favicons and app icons are from ggml-org's
       #   llama-brand: CC-BY-NC-4.0, plus its BRAND-USAGE.md grant to
-      #   redistribute them, commercially too, in software packages. That grant
-      #   has no SPDX id, so CC-BY-NC-4.0 is left out of the expression below.
+      #   redistribute them, commercially too, in software packages. CC-BY-NC
+      #   alone would not allow that, and the combination has no SPDX id, so it
+      #   is declared as LicenseRef-llama-brand: an SBOM or license scan sees
+      #   the marks' terms instead of an expression that silently omits them.
+      #   Both texts are in ui-THIRD-PARTY-NOTICES.
       # The minified bundle carries no license texts or NOTICE files, so every
       # one is in ui-THIRD-PARTY-NOTICES (pkgs#994), installed under
       # usr/share/licenses/llama.cpp and generated from the lock by
       # gen-ui-notices.py: the npm packages plus 3 libraries vendored in
       # tools/ui/src/lib/vendors (nerdamer-prime, decimal.js: MIT; big-integer:
       # Unlicense).
-      license_spdx = "MIT AND Apache-2.0 AND BSD-3-Clause AND BSD-2-Clause AND ISC AND 0BSD AND Unlicense",
+      license_spdx = "MIT AND Apache-2.0 AND BSD-3-Clause AND BSD-2-Clause AND ISC AND 0BSD AND Unlicense AND LicenseRef-llama-brand",
       source_provenance = {
         category = 'GithubRepo,
         owner = "ggml-org",

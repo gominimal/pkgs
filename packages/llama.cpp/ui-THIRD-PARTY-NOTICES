@@ -32,9 +32,10 @@ SPDX id is given, with its package.json author as the copyright holder:
   sirv@3.0.2
   strictdom@1.0.1
 
-llama-brand (the llama.cpp logo, favicons and app icons) is CC-BY-NC-4.0;
-its BRAND-USAGE.md, reproduced below, permits redistribution, including
-commercially, as part of software distributions and packages.
+llama-brand (the llama.cpp logo, favicons and app icons) is declared as
+LicenseRef-llama-brand: CC-BY-NC-4.0, plus the grant in its BRAND-USAGE.md
+(reproduced below), which permits redistribution, including commercially,
+as part of software distributions and packages.
 
 ===============================================================================
 @antfu/install-pkg@1.1.0
