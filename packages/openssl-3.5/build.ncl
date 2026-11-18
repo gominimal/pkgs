@@ -12,6 +12,8 @@ let glibc = import "../glibc/build.ncl" in
 # sonames:
 #   - rustc-1.98.1's stage0: both sealed rustc-1.97.1 bedrock tarballs (amd64, arm64) ship
 #     a cargo with DT_NEEDED libssl.so.3 + libcrypto.so.3.
+#   - actions-runner: its bundled .NET 8 runtime dlopens libssl.so.3. Only .NET 10 got the
+#     OpenSSL 4 loader (dotnet/runtime#135534, merged 2026-10-10).
 #   - sources that do not build against 4.x: foundationdb 7.3 (C++ X509 const errors;
 #     upstream is itself moving to a pinned 3.5, apple/foundationdb#14348).
 #
