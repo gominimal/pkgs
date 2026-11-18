@@ -1,12 +1,17 @@
 let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
-# jdk-25: the current Java LTS line. OpenJDK built from the openjdk/jdk25u tag that Eclipse Temurin's
-# release of the same version is built from, booted by ../openjdk-25 (a rung of the JVM ladder) and
-# compiled by the production toolchain. Same /usr/lib/jvm layout and outputs as the Temurin package
-# it replaces. Leaves out the CDS archives and src.zip, which do not reproduce.
+# jdk-25: the current Java LTS line. OpenJDK built from the
+# openjdk/jdk25u `-ga` tag that Eclipse Temurin's release of the same version is built from,
+# booted by a rung of the JVM ladder and compiled by the production toolchain. The build is
+# ../jdk/build-from-source.sh (shared): Temurin's layout and version shape under our own vendor
+# name, CDS archives, src.zip, static libstdc++, cacerts from ../ca-certificates, and the registry's
+# freetype/lcms2/libpng/libjpeg/giflib/zlib instead of bundled copies (gominimal/pkgs#1556).
 let openjdk-25 = import "../openjdk-25/build.ncl" in # the boot JDK
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 # not the `jdk` meta-package: the inputs of build.sh's CVE-2026-111943 step
 let jdk = import "../jdk/cve-2026-111943.ncl" in
+let jdk_src = import "../jdk/from-source.ncl" in # the shared build script
+let ca-certificates = import "../ca-certificates/build.ncl" in # the cacerts source
+let binutils = import "../binutils/build.ncl" in # readelf, for the libstdc++ test
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let bash = import "../bash/build.ncl" in
@@ -55,6 +60,7 @@ let build_num = "2" in
   name = "jdk-25",
   build_deps = [
     { file = "build.sh" } | Local,
+    jdk_src.script,
     {
       # https://github.com/openjdk/jdk25u/archive/refs/tags/jdk-25.0.5.1-ga.tar.gz (CVE-2026-114938, Java4Shell)
       url = "gs://minimal-staging-archives/jdk-%{version}-ga.tar.gz",
@@ -106,6 +112,7 @@ let build_num = "2" in
     jdk.program,
     jdk.fixtures,
     jdk.blocked_sha256,
+    ca-certificates,
   ],
   # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, lcms2, libpng, giflib and libjpeg
   runtime_deps = [
@@ -128,6 +135,9 @@ let build_num = "2" in
   build_args = {
     include version,
     include build_num,
+    feature = "25",
+    boot = "openjdk-25",
+    version_opt = "LTS",
   },
 
   outputs = {
@@ -155,12 +165,44 @@ let build_num = "2" in
     } | Attrs,
 
   tests = {
+    # `java -version` in Temurin's shape with our vendor name, and the CDS archive in use.
     java_version =
       {
         class = 'Standalone,
         test_deps = [bash-bootstrap, grep],
         cmds = [
-          ["/bin/bash", "-c", "java -version 2>&1 | grep -q 'version \"25'"],
+          ["/bin/bash", "-c", "set -eu; v=$(java -version 2>&1); echo \"$v\"; grep -qF 'Runtime Environment Minimal-%{version}+%{build_num} (build %{version}+%{build_num}-LTS)' <<< \"$v\"; grep -q 'sharing)' <<< \"$v\"; if grep -qiE 'adoptium|temurin' <<< \"$v\"; then exit 1; fi"],
+        ],
+      } | Test,
+
+    # The shipped CDS archive maps (-Xshare:on fails if not), and a user can dump their own.
+    cds =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap],
+        cmds = [
+          ["/usr/bin/java", "-Xshare:on", "-version"],
+          ["/bin/bash", "-c", "set -eu; java -XX:SharedArchiveFile=$PWD/app.jsa -Xshare:dump > dump.log 2>&1 || { tail -5 dump.log; exit 1; }; java -XX:SharedArchiveFile=$PWD/app.jsa -Xshare:on -version"],
+        ],
+      } | Test,
+
+    # src.zip ships, as Temurin's, for IDEs and debuggers.
+    src_zip =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, grep],
+        cmds = [
+          ["/bin/bash", "-c", "jar tf /usr/lib/jvm/lib/src.zip | grep -qx java.base/java/lang/Object.java"],
+        ],
+      } | Test,
+
+    # libstdc++ is linked statically, as Temurin's: libjvm does not NEED it.
+    libjvm_static_libstdcpp =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, grep, binutils],
+        cmds = [
+          ["/bin/bash", "-c", "set -eu; d=$(readelf -d /usr/lib/jvm/lib/server/libjvm.so); grep -q NEEDED <<< \"$d\"; if grep -E 'NEEDED.*libstdc\\+\\+' <<< \"$d\"; then exit 1; fi"],
         ],
       } | Test,
 
