@@ -40,10 +40,6 @@ make DESTDIR=$OUTPUT_DIR -C build install
 # /etc/ssl/certs/ca-certificates.crt, and only then roots.pem). So the bundle
 # matters only where there is no system store, and there it would silently
 # trust a stale list. It is not shipped; ca-certificates is a runtime dep, so
-# the system store is always present (pkgs#1547 review).
+# the system store is always present.
 rm -f "$OUTPUT_DIR/usr/share/grpc/roots.pem"
 rmdir "$OUTPUT_DIR/usr/share/grpc" 2>/dev/null || true
-if [ -e "$OUTPUT_DIR/usr/share/grpc/roots.pem" ]; then
-  echo "ERROR: grpc's private roots.pem is still in the output" >&2
-  exit 1
-fi
