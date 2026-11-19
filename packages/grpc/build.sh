@@ -30,22 +30,20 @@ cmake -B build \
 make -C build -j$(nproc)
 make DESTDIR=$OUTPUT_DIR -C build install
 
-# SECURITY, CVE-2026-111943 (eMudhra key compromise; GHSA-rjr3-9pq9-5wm4):
-# grpc's bundled root store, installed as usr/share/grpc/roots.pem and read
-# when no system or env roots are configured, still trusts emSign Root CA - G1
-# (eMudhra). Drop it, as ca-certificates did on 2026-10-20. Each entry runs
-# from its "# <sha256>" line to the next one; some entries have a blank line
-# between the text dump and the PEM, so a paragraph split would orphan a PEM.
-ROOTS="$OUTPUT_DIR/usr/share/grpc/roots.pem"
-before=$(grep -c 'BEGIN CERTIFICATE' "$ROOTS")
-awk '/^# [0-9a-f]+$/ && length($0) == 66 { if (buf !~ /eMudhra/) printf "%s", buf; buf = "" }
-     { buf = buf $0 "\n" }
-     END { if (buf !~ /eMudhra/) printf "%s", buf }' "$ROOTS" > "$ROOTS.tmp"
-mv "$ROOTS.tmp" "$ROOTS"
-after=$(grep -c 'BEGIN CERTIFICATE' "$ROOTS")
-if grep -qi -e emudhra -e emsign "$ROOTS"; then
-  echo "ERROR: roots.pem still names eMudhra/emSign" >&2; exit 1
-fi
-if [ "$after" -ne "$(grep -cE '^# [0-9a-f]{64}$' "$ROOTS")" ] || [ "$after" -ne $((before - 1)) ]; then
-  echo "ERROR: roots.pem filter removed $((before - after)) certs (want 1); grpc's file changed, re-check" >&2; exit 1
+# Do not embed a trust store (AGENTS.md). grpc installs its own root bundle as
+# usr/share/grpc/roots.pem, a private copy that never gets our ca-certificates
+# distrust list (CVE-2026-111943: emSign ECC Root CA - G3 and AAA Certificate
+# Services, packages/ca-certificates/distrust.txt). grpc 1.85's C core reads the
+# OS trust store before it (DefaultSslRootStore::ComputePemRootCerts in
+# src/core/credentials/transport/tls/ssl_utils.cc: config path, language
+# override, then LoadSystemRootCerts, whose first Linux path is
+# /etc/ssl/certs/ca-certificates.crt, and only then roots.pem). So the bundle
+# matters only where there is no system store, and there it would silently
+# trust a stale list. It is not shipped; ca-certificates is a runtime dep, so
+# the system store is always present (pkgs#1547 review).
+rm -f "$OUTPUT_DIR/usr/share/grpc/roots.pem"
+rmdir "$OUTPUT_DIR/usr/share/grpc" 2>/dev/null || true
+if [ -e "$OUTPUT_DIR/usr/share/grpc/roots.pem" ]; then
+  echo "ERROR: grpc's private roots.pem is still in the output" >&2
+  exit 1
 fi
