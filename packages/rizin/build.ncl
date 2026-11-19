@@ -3,7 +3,6 @@ let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
-let file = import "../file/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -42,11 +41,9 @@ let version = "0.9.1" in
     pkgconf,
     python, # meson is Python
     glibc,
-    # The nine libraries we link from the SYSTEM rather than let rizin vendor,
+    # The eight libraries we link from the SYSTEM rather than let rizin vendor,
     # so a CVE in any of them is visible to pkgscan instead of buried in a
-    # static blob. See the use_sys_* rationale in build.sh. `file` provides
-    # libmagic (magic.h + libmagic.so; it ships no libmagic.pc output, so
-    # meson takes its find_library('magic') fallback).
+    # static blob. See the use_sys_* rationale in build.sh.
     zlib,
     zstd,
     xz,
@@ -55,7 +52,6 @@ let version = "0.9.1" in
     openssl,
     tree-sitter,
     xxhash,
-    file,
   ],
   runtime_deps = [
     bash,
@@ -68,7 +64,6 @@ let version = "0.9.1" in
     openssl,
     tree-sitter,
     xxhash, # librz_hash NEEDs libxxhash.so.0
-    file, # librz_magic NEEDs libmagic.so.1
   ],
 
   cmd = "./build.sh",
@@ -93,7 +88,7 @@ let version = "0.9.1" in
     # SILENTLY: meson probes for each system library and falls back to the
     # vendored subproject when one is not found, printing a note and carrying
     # on to a successful build. You would get a rizin that works perfectly and
-    # has nine invisible bundled libraries — the exact outcome these flags
+    # has eight invisible bundled libraries — the exact outcome these flags
     # exist to prevent, and one nothing else here would detect.
     system_libs =
       {
@@ -113,7 +108,7 @@ let version = "0.9.1" in
             "-c",
             m%"
               set -eu
-              need="libz.so libzstd liblzma liblz4 libpcre2 libcrypto libtree-sitter libxxhash libmagic"
+              need="libz.so libzstd liblzma liblz4 libpcre2 libcrypto libtree-sitter libxxhash"
               all=$(readelf -d /usr/lib/librz*.so.* 2>/dev/null)
               for lib in $need; do
                 case "$all" in
