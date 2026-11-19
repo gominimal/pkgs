@@ -19,9 +19,14 @@ TCL_API="${MINIMAL_ARG_VERSION%.*}"
 cd unix
 # --with-tzdata: configure otherwise skips the bundled zone data whenever
 # /usr/share/zoneinfo exists (base ships tzdata), leaving the tzdata output empty.
+# --disable-zipfs: Tcl 9 otherwise appends its script library and encodings to
+# libtcl as a zip and skips install-libraries/install-msgs, so /usr/lib/tcl<api>
+# (the datas output, tdbc's library path below) would lose them. Debian builds
+# tcl9.1 the same way.
 ./configure  --prefix=/usr            \
             --mandir=/usr/share/man \
             --disable-rpath         \
+            --disable-zipfs         \
             --with-tzdata
 
 make -j$(nproc)

@@ -1,0 +1,207 @@
+Provenance: Debian expect 5.45.4-10, debian/patches/41-uninitialized.patch
+  https://salsa.debian.org/tcltk-team/expect/-/raw/7968658ab944388db44d3b3f9ee2a32f84294bc6/debian/patches/41-uninitialized.patch
+  (tcltk-team/expect master at commit 7968658ab944388db44d3b3f9ee2a32f84294bc6, fetched 2026-11-18)
+  sha256 of the file as fetched: a05bb6681b3e0c5ff8e0c347d5753df24df951d2122094f6a9883729f33d1acd
+License: public domain. Expect is a NIST work in the public domain, and Debian's
+  debian/copyright places its packaging (debian/*, these patches included) in the
+  public domain too.
+Everything below the END-OF-PROVENANCE line is the fetched file, byte for byte
+(check: sed '1,/^END-OF-PROVENANCE$/d' <this file> | sha256sum).
+END-OF-PROVENANCE
+From: Sergei Golovan
+Subject: Patch fixes a few uses of uninitialized variables.
+Last-Modified: Sun, 26 Apr 2026 17:57:07 +0300
+
+--- a/exp_command.c
++++ b/exp_command.c
+@@ -893,7 +893,7 @@
+ 	/*
+ 	 * process "-open $channel"
+ 	 */
+-	int mode, rfd, wfd;
++	int mode, rfd = -1, wfd = -1;
+ 	ClientData rfdc, wfdc;
+ 
+ 	if (echo) {
+@@ -1985,7 +1985,7 @@
+ #define SEND_STYLE_BREAK	0x20
+     int send_style = SEND_STYLE_PLAIN;
+     int want_cooked = TRUE;
+-    char *string;		/* string to send */
++    char *string = "";		/* string to send */
+     Tcl_Size len = -1;		/* length of string to send */
+     int clen;
+     int zeros;		/* count of how many ascii zeros to send */
+--- a/exp_inter.c
++++ b/exp_inter.c
+@@ -412,16 +412,18 @@
+     if (skipBytes >= seenBytes) {
+ 	echoBytes = matchBytes;
+ 	offsetBytes = skipBytes;
+-    } else if ((matchBytes + skipBytes - seenBytes) > 0) {
++    } else {
+ 	echoBytes = matchBytes + skipBytes - seenBytes;
+ 	offsetBytes = seenBytes;
+     }
+ 
+-    (void) expWriteCharsUni(esPtr,
+-			    esPtr->input.buffer + offsetBytes,
+-		   echoBytes);
++    if (echoBytes > 0) {
++        (void) expWriteCharsUni(esPtr,
++			        esPtr->input.buffer + offsetBytes,
++		                echoBytes);
+ 
+-    esPtr->echoed = matchBytes + skipBytes - esPtr->printed;
++        esPtr->echoed = matchBytes + skipBytes - esPtr->printed;
++    }
+ }
+ 
+ /*
+@@ -1345,7 +1347,7 @@
+ 	int rc;	/* return code from ready.  This is further refined by matcher. */
+ 	int cc;			/* # of chars from read() */
+ 	struct action *action = 0;
+-	time_t previous_time;
++	time_t previous_time = 0; /* initialize to silence warning */
+ 	time_t current_time;
+ 	int matchLen;	/* # of chars matched */
+ 	int skip;		/* # of chars not involved in match */
+@@ -1353,7 +1355,7 @@
+ 	int oldprinted;		/* old version of u->printed */
+ 	int change;		/* if action requires cooked mode */
+ 	int attempt_match = TRUE;
+-	struct input *soonest_input;
++	struct input *soonest_input = NULL;
+ 	int timeout;	/* current as opposed to default_timeout */
+ 	Tcl_Time temp_time;
+ 
+@@ -1362,9 +1364,10 @@
+ 	if (timeout_simple) {
+ 	    timeout = default_timeout;
+ 	} else {
+-	    timeout = arbitrary_timeout;
++	    soonest_input = input_base;
++	    timeout = input_base->timeout_remaining;
+ 
+-	    for (inp=input_base;inp;inp=inp->next) {
++	    for (inp=input_base->next;inp;inp=inp->next) {
+ 		if ((inp->timeout_remaining != EXP_TIME_INFINITY) &&
+ 			(inp->timeout_remaining <= timeout)) {
+ 		    soonest_input = inp;
+@@ -1637,7 +1640,7 @@
+ 		int matchLen, skip;
+ 		int change;	/* if action requires cooked mode */
+ 		int attempt_match = TRUE;
+-		struct input *soonest_input;
++		struct input *soonest_input = NULL;
+ 		int print;		/* # of chars to print */
+ 		int oldprinted;		/* old version of u->printed */
+ 
+@@ -1670,9 +1673,10 @@
+ 		if (timeout_simple) {
+ 			timeout = default_timeout;
+ 		} else {
+-			timeout = arbitrary_timeout;
++			soonest_input = input_base;
++			timeout = input_base->timeout_remaining;
+ 
+-			for (inp=input_base;inp;inp=inp->next) {
++			for (inp=input_base->next;inp;inp=inp->next) {
+ 				if ((inp->timeout_remaining != EXP_TIME_INFINITY) &&
+ 				    (inp->timeout_remaining < timeout))
+ 					soonest_input = inp;
+@@ -1900,9 +1904,10 @@
+ 		if (timeout_simple) {
+ 			timeout = default_timeout;
+ 		} else {
+-			timeout = arbitrary_timeout;
++			soonest_input = input_base;
++			timeout = input_base->timeout_remaining;
+ 
+-			for (inp=input_base;inp;inp=inp->next) {
++			for (inp=input_base->next;inp;inp=inp->next) {
+ 				if ((inp->timeout_remaining != EXP_TIME_INFINITY) &&
+ 				    (inp->timeout_remaining < timeout))
+ 					soonest_input = inp;
+--- a/exp_clib.c
++++ b/exp_clib.c
+@@ -2450,7 +2450,7 @@
+ 	int remtime;		/* remaining time in timeout */
+ 
+ 	struct f *f;
+-	int return_val;
++	int return_val = 0;
+ 	int sys_error = 0;
+ #define return_normally(x)	{return_val = x; goto cleanup;}
+ #define return_errno(x)	{sys_error = x; goto cleanup;}
+--- a/exp_log.c
++++ b/exp_log.c
+@@ -77,7 +77,7 @@
+  *
+  * Output to channel (and log if channel is stdout or devtty)
+  *
+- * Returns: TCL_OK or TCL_ERROR;
++ * Returns: 0 if succeeded or -1 in case of errors;
+  */
+ 
+ int
+@@ -91,6 +91,9 @@
+ 
+     if (esPtr->valid)
+ 	wc = expWriteCharsUni(esPtr,buf,lenChars);
++    else
++        wc = 0; /* Silence compiler warning on unitialized variable:
++                 * esPtr->valid is always TRUE, it is set to FALSE only when the ExpState is being destroyed */
+ 
+     if (tsdPtr->logChannel && ((esPtr->fdout == 1) || expDevttyIs(esPtr))) {
+       Tcl_DString ds;
+--- a/Dbg.c
++++ b/Dbg.c
+@@ -251,24 +251,29 @@
+     result = 1;
+     if (*string == '#') {
+ 	if (Tcl_GetInt(interp, string+1, &level) != TCL_OK) {
+-	    return TCL_ERROR;
++	    return -1;
+ 	}
+ 	if (level < 0) {
+ 	    levelError:
+ 	    Tcl_AppendResult(interp, "bad level \"", string, "\"",
+ 		    (char *) NULL);
+-	    return TCL_ERROR;
++	    return -1;
+ 	}
+ 	framePtr = origFramePtr; /* start search here */
+ 	
+-    } else if (isdigit(*string)) {
+-	if (Tcl_GetInt(interp, string, &level) != TCL_OK) {
+-	    return TCL_ERROR;
+-	}
++    } else {
++        if (isdigit(*string)) {
++	    if (Tcl_GetInt(interp, string, &level) != TCL_OK) {
++	        return -1;
++	    }
++        } else {
++	    level = 1;
++	    result = 0;
++        }
+ 	if (dir == up) {
+ 		if (curFramePtr == 0) {
+ 			Tcl_SetResult(interp,already_at_top_level,TCL_STATIC);
+-			return TCL_ERROR;
++			return -1;
+ 		}
+ 		level = curFramePtr->level - level;
+ 		framePtr = curFramePtr; /* start search here */
+@@ -278,9 +283,6 @@
+ 		}
+ 		framePtr = origFramePtr; /* start search here */
+ 	}
+-    } else {
+-	level = curFramePtr->level - 1;
+-	result = 0;
+     }
+ 
+     /*

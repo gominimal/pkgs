@@ -1,6 +1,7 @@
 let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let expect = import "../expect/build.ncl" in
@@ -15,8 +16,12 @@ let version = "1.6.3" in
       url = "gs://minimal-staging-archives/dejagnu-%{version}.tar.gz",
       sha256 = "87daefacd7958b4a69f88c6856dbd1634261963c414079d0c371f589cd66a2e3"
     } | Source,
+    { file = "fedora-tcl9.patch" } | Local,
     base,
+    # runs `make check` against the expect this ships with.
+    expect,
     make,
+    patch,
     toolchain,
   ],
   runtime_deps = [
