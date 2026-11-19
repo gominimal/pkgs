@@ -398,10 +398,13 @@ exec "$@"
               mkdir -p h/bin h/externals/node20 h/bin.2.330.0 h/_work/r h/_diag
               echo old-listener > h/bin/Runner.Listener
               echo old > h/externals/node20/marker
-              printf '{"agentId": 7, "agentName": "n", "disableUpdate": false}' > h/.runner
-              echo secret-cred > h/.credentials
+              # Registration files in upstream's formats: HostContext parses .runner
+              # (RunnerSettings) and .credentials (CredentialData) as JSON at every
+              # start, --version included (LoadDefaultUserAgents).
+              printf '{"agentId": 7, "agentName": "n", "poolId": 1, "poolName": "Default", "serverUrl": "https://pipelines.example.invalid/x", "gitHubUrl": "https://github.com/o/r", "workFolder": "_work", "disableUpdate": false}' > h/.runner
+              printf '{"scheme": "OAuth", "data": {"clientId": "kept-marker-0b7e", "authorizationUrl": "https://vstoken.example.invalid/x", "requireFipsCryptography": "False"}}' > h/.credentials
               echo keep > h/_work/r/file
-              echo keep > h/.env
+              echo 'LANG=C.UTF-8 # kept-marker-env' > h/.env
               out=$(RUNNER_HOME=$d/h /usr/bin/actions-runner --version 2>&1) || { echo "$out" >&2; exit 1; }
               echo "$out"
               grep -q 'Upgrading the runner in' <<<"$out"
@@ -410,9 +413,9 @@ exec "$@"
               test ! -e h/externals/node20/marker
               test ! -e h/bin.2.330.0
               same h/.minimal-installed-stamp "$pkg/.minimal-package-stamp"
-              test "$(cat h/.credentials)" = secret-cred
+              grep -q '"clientId": "kept-marker-0b7e"' h/.credentials
               test "$(cat h/_work/r/file)" = keep
-              test "$(cat h/.env)" = keep
+              grep -q kept-marker-env h/.env
               grep -q '"agentId": 7' h/.runner
               grep -q '"disableUpdate": true' h/.runner
               # The upgraded runner starts: run.sh -> Runner.Listener --version on .NET 10.
