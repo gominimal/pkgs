@@ -149,6 +149,9 @@ extendedKeyUsage=serverAuth
               # A RUNNER_HOME whose run.sh just runs its arguments, so the
               # wrapper's environment reaches the bundled node as it would.
               mkdir -p rh/bin; ln -s /usr/lib/actions-runner/externals rh/externals
+              # The installed stamp marks the home current, so the wrapper
+              # does not replace this stub home with the packaged runner.
+              cp /usr/lib/actions-runner/.minimal-package-stamp rh/.minimal-installed-stamp
               printf '#!/bin/bash
 exec "$@"
 ' > rh/run.sh; chmod +x rh/run.sh
@@ -256,6 +259,184 @@ exec "$@"
                 echo "control failed: no certificate-chain refusal in the runner diag" >&2; diag rc-refuse; exit 1
               fi
               grep -r -h -o -m1 -E 'certificate chain: (PartialChain|UntrustedRoot)|RemoteCertificateChainErrors' "$d/rc-refuse/_diag" | head -1 || true
+            "%
+          ],
+        ],
+      } | Test,
+    # actions-runner-config registers with --disableupdate unless the caller passed
+    # it, and not for `remove` or help. Flags are whole arguments: a value such as
+    # `--work "jobs --help"` is not a help flag.
+    config_wrapper_disables_update =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils, grep],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -euo pipefail
+              d=$(mktemp -d); cd "$d"
+              # A home that already holds this package's runner (so nothing is copied), with
+              # a config.sh that prints each argument it receives on its own line.
+              mkdir -p h/bin
+              cp /usr/lib/actions-runner/.minimal-package-stamp h/.minimal-installed-stamp
+              printf '#!/bin/bash\nfor a in "$@"; do echo "[$a]"; done\n' > h/config.sh
+              chmod +x h/config.sh
+              cfg() { RUNNER_HOME=$d/h /usr/bin/actions-runner-config "$@"; }
+              flags() { grep -c -x -F '[--disableupdate]' <<<"$1" || true; }
+              check() { # check <name> <expected count of --disableupdate> <args...>
+                local name=$1 want=$2; shift 2
+                local out; out=$(cfg "$@")
+                local got; got=$(flags "$out")
+                echo "$name: --disableupdate x$got (want $want)"
+                if [ "$got" != "$want" ]; then echo "$out" >&2; exit 1; fi
+              }
+              check registration 1 --url https://github.com/o/r --token x
+              check remove 0 remove --token x
+              check help 0 --help
+              check short-help 0 -h
+              check caller-chose 1 --url https://github.com/o/r --token x --disableupdate
+              # A flag inside a value is not a flag: `--work "jobs --help"` still registers.
+              check help-in-a-value 1 --url https://github.com/o/r --token x --work "jobs --help"
+              # The value reaches config.sh as one argument.
+              cfg --url u --work "jobs --help" | grep -q -x -F '[jobs --help]'
+            "%
+          ],
+        ],
+      } | Test,
+    # actions-runner sets disableUpdate in the .runner a start uses: inside a
+    # --jitconfig blob (argument, --jitconfig=, or ACTIONS_RUNNER_INPUT_JITCONFIG)
+    # and in an existing .runner, keeping every other field. A jitconfig it cannot
+    # read stops the start (control).
+    self_update_off_at_start =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils, grep],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -euo pipefail
+              d=$(mktemp -d); cd "$d"
+              node=/usr/lib/actions-runner/externals/node24/bin/node
+              # A home that already holds this package's runner, with a run.sh that prints
+              # the .runner each start would write: from --jitconfig, from
+              # ACTIONS_RUNNER_INPUT_JITCONFIG, or the .runner file in the home.
+              mkdir -p h/bin
+              cp /usr/lib/actions-runner/.minimal-package-stamp h/.minimal-installed-stamp
+              cat > h/run.sh << 'STUB'
+              #!/bin/bash
+              node=/usr/lib/actions-runner/externals/node24/bin/node
+              show() { "$node" -e 'const m = JSON.parse(Buffer.from(process.argv[1], "base64").toString()); const r = JSON.parse(Buffer.from(m[".runner"], "base64").toString()); console.log("runner " + JSON.stringify(r)); console.log("credentials " + m[".credentials"]);' "$1"; }
+              while [ $# -gt 0 ]; do
+                case "$1" in
+                  --jitconfig) show "$2"; shift 2 ;;
+                  --jitconfig=*) show "${1#--jitconfig=}"; shift ;;
+                  *) echo "arg [$1]"; shift ;;
+                esac
+              done
+              if [ -n "${ACTIONS_RUNNER_INPUT_JITCONFIG:-}" ]; then show "$ACTIONS_RUNNER_INPUT_JITCONFIG"; fi
+              if [ -f .runner ]; then echo "file $(tr -d '\n ' < .runner)"; fi
+              STUB
+              chmod +x h/run.sh
+              b64() { "$node" -e 'process.stdout.write(Buffer.from(process.argv[1]).toString("base64"))' "$1"; }
+              runner=$(b64 '{"agentId":9,"agentName":"jit-1","ephemeral":true,"disableUpdate":false}')
+              creds=$(b64 '{"scheme":"OAuth"}')
+              blob=$(b64 "{\".runner\":\"$runner\",\".credentials\":\"$creds\"}")
+              run() { RUNNER_HOME=$d/h /usr/bin/actions-runner "$@"; }
+              expect() { # expect <output> <name>: the .runner seen by run.sh has updates off, the rest kept
+                grep -q -F 'runner {"agentId":9,"agentName":"jit-1","ephemeral":true,"disableUpdate":true}' <<<"$1" \
+                  || { echo "$2: updates not off, or .runner changed otherwise:" >&2; echo "$1" >&2; exit 1; }
+                grep -q -F "credentials $creds" <<<"$1" || { echo "$2: .credentials changed" >&2; exit 1; }
+                echo "$2: ok"
+              }
+              expect "$(run --jitconfig "$blob" --once)" jitconfig-arg
+              expect "$(run "--jitconfig=$blob")" jitconfig-equals
+              expect "$(ACTIONS_RUNNER_INPUT_JITCONFIG=$blob run)" jitconfig-env
+              run --jitconfig "$blob" --once | grep -q -x -F 'arg [--once]'
+              # A home registered before this package (updates on) is switched off at start.
+              printf '\xef\xbb\xbf{"agentId": 7, "disableUpdate": false, "serverUrl": "https://example.invalid"}' > h/.runner
+              out=$(run)
+              grep -q -F 'file {"agentId":7,"disableUpdate":true,"serverUrl":"https://example.invalid"}' <<<"$out" \
+                || { echo "existing .runner: updates not off:" >&2; echo "$out" >&2; exit 1; }
+              echo "existing-runner-file: ok"
+              rm h/.runner
+              # Fail closed: a jitconfig the wrapper cannot read stops the start before run.sh.
+              if out=$(run --jitconfig not-base64-json 2>&1); then
+                echo "control failed: an unreadable jitconfig started the runner" >&2; echo "$out" >&2; exit 1
+              fi
+              grep -q 'Could not turn the runner' <<<"$out"
+              ! grep -q '^arg ' <<<"$out"
+              echo "unreadable-jitconfig: refused"
+            "%
+          ],
+        ],
+      } | Test,
+    # A RUNNER_HOME an older package set up (no stamp, its own bin/) is upgraded to
+    # the packaged runner at the next start, keeping .runner, .credentials, .env
+    # and _work, and the upgraded runner starts. A current home is left alone.
+    # Control: a home whose runner is still running is not replaced.
+    home_upgrade_keeps_registration =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils, grep],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -euo pipefail
+              d=$(mktemp -d); cd "$d"
+              pkg=/usr/lib/actions-runner
+              same() { # same <a> <b>: identical content (diffutils' cmp is not in this closure)
+                [ "$(sha256sum < "$1")" = "$(sha256sum < "$2")" ] || { echo "differs: $1 $2" >&2; return 1; }
+              }
+              # A RUNNER_HOME as an older package left it: its own bin/ and externals/, an
+              # upstream self-update leftover, a registration and work data, no stamp.
+              mkdir -p h/bin h/externals/node20 h/bin.2.330.0 h/_work/r h/_diag
+              echo old-listener > h/bin/Runner.Listener
+              echo old > h/externals/node20/marker
+              printf '{"agentId": 7, "agentName": "n", "disableUpdate": false}' > h/.runner
+              echo secret-cred > h/.credentials
+              echo keep > h/_work/r/file
+              echo keep > h/.env
+              out=$(RUNNER_HOME=$d/h /usr/bin/actions-runner --version 2>&1) || { echo "$out" >&2; exit 1; }
+              echo "$out"
+              grep -q 'Upgrading the runner in' <<<"$out"
+              same h/bin/Runner.Listener "$pkg/bin/Runner.Listener"
+              same h/externals/node24/bin/node "$pkg/externals/node24/bin/node"
+              test ! -e h/externals/node20/marker
+              test ! -e h/bin.2.330.0
+              same h/.minimal-installed-stamp "$pkg/.minimal-package-stamp"
+              test "$(cat h/.credentials)" = secret-cred
+              test "$(cat h/_work/r/file)" = keep
+              test "$(cat h/.env)" = keep
+              grep -q '"agentId": 7' h/.runner
+              grep -q '"disableUpdate": true' h/.runner
+              # The upgraded runner starts: run.sh -> Runner.Listener --version on .NET 10.
+              grep -q -E '^[0-9]+\.[0-9]+\.[0-9]+$' <<<"$out"
+              # A second start finds the stamp current and copies nothing.
+              echo marker > h/bin/local-marker
+              out=$(RUNNER_HOME=$d/h /usr/bin/actions-runner --version 2>&1)
+              ! grep -q 'Upgrading the runner' <<<"$out"
+              test -e h/bin/local-marker
+              echo "upgrade: ok"
+              # Control: a runner still running from an outdated home is not replaced. bash
+              # copied in as bin/Runner.Listener stands in for it (/proc/<pid>/exe).
+              mkdir -p r/bin
+              cp "$(command -v bash)" r/bin/Runner.Listener
+              r/bin/Runner.Listener -c 'sleep 60' & pid=$!
+              trap 'kill $pid 2>/dev/null || true' EXIT
+              sleep 1
+              if out=$(RUNNER_HOME=$d/r /usr/bin/actions-runner --version 2>&1); then
+                echo "control failed: the wrapper replaced the bin/ of a running runner" >&2; echo "$out" >&2; exit 1
+              fi
+              grep -q 'is still running' <<<"$out"
+              same r/bin/Runner.Listener "$(command -v bash)"
+              test ! -e r/.minimal-installed-stamp
+              echo "running-runner: refused"
             "%
           ],
         ],

@@ -112,13 +112,62 @@ cmp "$bin/System.Private.CoreLib.dll" "$fw/System.Private.CoreLib.dll"
 mkdir -p $OUTPUT_DIR/usr/{bin,lib}
 mv runner $OUTPUT_DIR/usr/lib/actions-runner
 
-# Create wrapper script for run.sh
-cat > "${OUTPUT_DIR}/usr/bin/actions-runner" << 'EOF'
-#!/bin/bash
-if [ ! -d "$RUNNER_HOME/bin" ]; then
-    echo "Setting up writable runner directory at $RUNNER_HOME..." >&2
-    cp -a /usr/lib/actions-runner/. "$RUNNER_HOME/"
-fi
+# What the wrappers compare to decide whether a RUNNER_HOME holds this package's
+# runner: the versions plus a hash over every file the package ships.
+tree=$(cd "$OUTPUT_DIR/usr/lib/actions-runner" && {
+  find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum
+  find . -type l -printf 'link %p %l\n' | LC_ALL=C sort
+} | sha256sum | cut -d' ' -f1)
+test -n "$tree"
+printf 'actions-runner %s dotnet %s tree %s\n' "$MINIMAL_ARG_VERSION" "$DOTNET_VERSION" "$tree" \
+  > "$OUTPUT_DIR/usr/lib/actions-runner/.minimal-package-stamp"
+
+# Shared by both wrappers.
+#
+# RUNNER_HOME is a state directory that outlives package upgrades, and the
+# runner runs from its copy there. A home set up by an older package (the .NET 8
+# runner before this one) would keep that bin/ for good, and with no
+# libssl.so.3 in the closure that runner cannot make a TLS connection. So when
+# the home's installed stamp differs from the package's, bin/, externals/ and
+# the top-level scripts are replaced from the package, and upstream self-update
+# leftovers (bin.*, externals.*) are dropped. The registration (.runner,
+# .credentials*), .env, .path, _work and _diag are not in the package and are
+# left alone. While a runner from that home is still running the wrapper
+# refuses instead.
+cat > prelude.sh << 'EOF'
+pkg=/usr/lib/actions-runner
+prepare_home() {
+    if [ -z "${RUNNER_HOME:-}" ]; then
+        echo "RUNNER_HOME is not set" >&2; exit 1
+    fi
+    if [ ! -d "$RUNNER_HOME/bin" ]; then
+        echo "Setting up writable runner directory at $RUNNER_HOME..." >&2
+        mkdir -p "$RUNNER_HOME"
+        cp -a "$pkg/." "$RUNNER_HOME/"
+        cp "$pkg/.minimal-package-stamp" "$RUNNER_HOME/.minimal-installed-stamp"
+        return
+    fi
+    # (no cmp: diffutils is not in the runtime closure)
+    if [ -f "$RUNNER_HOME/.minimal-installed-stamp" ] &&
+        [ "$(cat "$pkg/.minimal-package-stamp")" = "$(cat "$RUNNER_HOME/.minimal-installed-stamp")" ]; then
+        return
+    fi
+    local home exe target
+    home=$(cd "$RUNNER_HOME" && pwd -P)
+    for exe in /proc/[0-9]*/exe; do
+        target=$(readlink "$exe" 2>/dev/null) || continue
+        case "$target" in
+            "$home"/bin*/Runner.*)
+                echo "A runner from $RUNNER_HOME is still running (${exe%/exe}): stop it, then start it again to upgrade it to the packaged runner." >&2
+                exit 1 ;;
+        esac
+    done
+    echo "Upgrading the runner in $RUNNER_HOME to the packaged one ($(cut -d' ' -f1-4 "$pkg/.minimal-package-stamp")); the registration and _work are kept." >&2
+    rm -f "$home/.minimal-installed-stamp"
+    rm -rf "$home/bin" "$home/externals" "$home"/bin.* "$home"/externals.*
+    cp -a "$pkg/." "$home/"
+    cp "$pkg/.minimal-package-stamp" "$home/.minimal-installed-stamp"
+}
 # CVE-2026-111943: the bundled externals/node{20,24} trust their compiled-in
 # root store, which still holds emSign ECC Root CA - G3. --use-openssl-ca
 # makes them trust OpenSSL's default store instead, i.e. our ca-certificates
@@ -130,30 +179,96 @@ case " ${NODE_OPTIONS:-} " in
     *" --use-openssl-ca "*|*" --use-bundled-ca "*) ;;
     *) export NODE_OPTIONS="--use-openssl-ca${NODE_OPTIONS:+ $NODE_OPTIONS}" ;;
 esac
-cd "$RUNNER_HOME"
-exec ./run.sh "$@"
 EOF
+
+# actions-runner: run.sh, with self-update off at every start.
+#
+# A self-update replaces bin/ with upstream's .NET 8 build, which cannot load
+# OpenSSL 4 (see above). On every message poll the runner tells the server
+# whether it takes updates, from `disableUpdate` in .runner (upstream
+# MessageListener / BrokerMessageListener pass _settings.DisableUpdate to
+# GetAgentMessage / GetRunnerMessage). So every start sets it in .runner, which
+# also covers runners registered before this package added --disableupdate. A
+# JIT runner writes .runner at start from its --jitconfig blob (or
+# ACTIONS_RUNNER_INPUT_JITCONFIG), so the field is set inside the blob. If it
+# cannot be set, the runner does not start.
+{
+  echo '#!/bin/bash'
+  cat prelude.sh
+  cat << 'EOF'
+no_update_js='
+const fs = require("fs");
+const off = (text) => {
+  const o = JSON.parse(text.replace(/^\uFEFF/, ""));
+  if (o === null || typeof o !== "object" || Array.isArray(o)) throw new Error(".runner is not a JSON object");
+  o.disableUpdate = true;
+  return JSON.stringify(o, null, 2);
+};
+const [mode, arg] = process.argv.slice(1);
+if (mode === "file") {
+  fs.writeFileSync(arg + ".tmp", off(fs.readFileSync(arg, "utf8")));
+  fs.renameSync(arg + ".tmp", arg);
+} else if (mode === "jit") {
+  const m = JSON.parse(Buffer.from(arg, "base64").toString("utf8"));
+  if (m === null || typeof m[".runner"] !== "string") throw new Error("the jitconfig has no .runner");
+  m[".runner"] = Buffer.from(off(Buffer.from(m[".runner"], "base64").toString("utf8"))).toString("base64");
+  process.stdout.write(Buffer.from(JSON.stringify(m)).toString("base64"));
+} else throw new Error("usage: file <path> | jit <base64>");
+'
+no_update() {
+    "$pkg/externals/node24/bin/node" -e "$no_update_js" "$@" && return 0
+    echo "Could not turn the runner's self-update off ($1); not starting it, because an update would install upstream's .NET 8 runner, which cannot load OpenSSL 4." >&2
+    exit 1
+}
+
+prepare_home
+cd "$RUNNER_HOME"
+if [ -f .runner ]; then
+    no_update file .runner
+fi
+if [ -n "${ACTIONS_RUNNER_INPUT_JITCONFIG:-}" ]; then
+    jit=$(no_update jit "$ACTIONS_RUNNER_INPUT_JITCONFIG") || exit 1
+    export ACTIONS_RUNNER_INPUT_JITCONFIG="$jit"
+fi
+args=()
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --jitconfig)
+            if [ $# -lt 2 ]; then echo "--jitconfig needs a value" >&2; exit 1; fi
+            jit=$(no_update jit "$2") || exit 1
+            args+=("$1" "$jit"); shift 2 ;;
+        --jitconfig=*)
+            jit=$(no_update jit "${1#--jitconfig=}") || exit 1
+            args+=("--jitconfig=$jit"); shift ;;
+        *) args+=("$1"); shift ;;
+    esac
+done
+exec ./run.sh "${args[@]}"
+EOF
+} > "${OUTPUT_DIR}/usr/bin/actions-runner"
 chmod +x "${OUTPUT_DIR}/usr/bin/actions-runner"
 
-# Create wrapper script for config.sh
-cat > "${OUTPUT_DIR}/usr/bin/actions-runner-config" << 'EOF'
-#!/bin/bash
-if [ ! -d "$RUNNER_HOME/bin" ]; then
-    echo "Setting up writable runner directory at $RUNNER_HOME..." >&2
-    cp -a /usr/lib/actions-runner/. "$RUNNER_HOME/"
-fi
-# CVE-2026-111943: same as actions-runner (bundled node -> our ca-certificates).
-case " ${NODE_OPTIONS:-} " in
-    *" --use-openssl-ca "*|*" --use-bundled-ca "*) ;;
-    *) export NODE_OPTIONS="--use-openssl-ca${NODE_OPTIONS:+ $NODE_OPTIONS}" ;;
-esac
+# actions-runner-config: config.sh, registering with updates off unless the
+# caller passed --disableupdate itself. `remove` and help take no such flag.
+# Flags are matched as whole arguments, not inside a value such as
+# `--work "jobs --help"`.
+{
+  echo '#!/bin/bash'
+  cat prelude.sh
+  cat << 'EOF'
+prepare_home
 cd "$RUNNER_HOME"
-# A self-update would replace bin/ with upstream's .NET 8 build, which cannot
-# load OpenSSL 4 (see build.sh): register with updates off unless the caller
-# chose. The package is the update path. `remove` takes no such flag.
-case " $* " in
-    *" --disableupdate "*|" remove "*|*" --help "*|*" -h "*) exec ./config.sh "$@" ;;
-    *) exec ./config.sh "$@" --disableupdate ;;
-esac
+add_flag=1
+if [ "${1:-}" = remove ]; then add_flag=0; fi
+for a in "$@"; do
+    case "$a" in
+        --disableupdate|--help|-h) add_flag=0 ;;
+    esac
+done
+if [ "$add_flag" = 1 ]; then
+    exec ./config.sh "$@" --disableupdate
+fi
+exec ./config.sh "$@"
 EOF
+} > "${OUTPUT_DIR}/usr/bin/actions-runner-config"
 chmod +x "${OUTPUT_DIR}/usr/bin/actions-runner-config"
