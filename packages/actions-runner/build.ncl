@@ -215,9 +215,12 @@ exec "$@"
                 for _ in $(seq 50); do grep -q LISTENING "$1" && return 0; sleep 0.2; done
                 echo "server did not start" >&2; cat "$1"; exit 1
               }
+              # The runner masks its token everywhere in _diag, so it must be a
+              # string no assertion below could contain (`t` masked every "t").
+              token=QZXJ7VKW2
               register() { # register <home> [env...]: one unattended configure against the dev-service URL
                 local home=$1; shift
-                env "$@" USE_DEV_ACTIONS_SERVICE_URL=1 RUNNER_HOME="$d/$home" RUNNER_ALLOW_RUNASROOT=1 timeout 90 /usr/bin/actions-runner-config --unattended --url https://127.0.0.1:18443/o/r --token t --name n 2>&1 || true
+                env "$@" USE_DEV_ACTIONS_SERVICE_URL=1 RUNNER_HOME="$d/$home" RUNNER_ALLOW_RUNASROOT=1 timeout 90 /usr/bin/actions-runner-config --unattended --url https://127.0.0.1:18443/o/r --token "$token" --name n 2>&1 || true
               }
 
               serve ok.log
@@ -229,7 +232,7 @@ exec "$@"
               # whole root store, with no system bundle to parse first.
               out=$(register rc-ok SSL_CERT_FILE="$d/ca.pem")
               echo "$out"; echo "--- server:"; cat ok.log
-              if [[ $out == *'No usable version of libssl'* ]] || ! grep -q '^REQUEST GET /' ok.log; then
+              if [[ $out == *'No usable version of libssl'* ]] || ! grep -q '^REQUEST GET /' ok.log || [[ $out != *'Not Found'* ]]; then
                 diag rc-ok; exit 1
               fi
               kill $srv; wait $srv 2>/dev/null || true
@@ -237,11 +240,19 @@ exec "$@"
               serve refuse.log
               out=$(register rc-refuse)
               echo "control:"; echo "$out"; echo "--- server:"; cat refuse.log
+              # Each of the three fails if TLS were accepted: a request would
+              # reach the server, the console would show the 404 instead, and
+              # _diag would hold no chain error.
               if grep -q '^REQUEST' refuse.log; then
-                echo "control failed: the runner trusted a CA outside the system store" >&2; exit 1
+                echo "control failed: a request reached the server, the runner trusted a CA outside the system store" >&2; exit 1
               fi
-              grep -r -E 'UntrustedRoot|SSL connection could not be established|RemoteCertificate' "$d/rc-refuse/_diag" | head -3 || diag rc-refuse
-              grep -r -q -E 'UntrustedRoot|SSL connection could not be established|RemoteCertificate' "$d/rc-refuse/_diag"
+              if [[ $out != *'SSL connection could not be established'* ]]; then
+                echo "control failed: the runner did not report a TLS failure" >&2; diag rc-refuse; exit 1
+              fi
+              if ! grep -r -q -E 'PartialChain|UntrustedRoot|RemoteCertificateChainErrors' "$d/rc-refuse/_diag"; then
+                echo "control failed: no certificate-chain refusal in the runner diag" >&2; diag rc-refuse; exit 1
+              fi
+              grep -r -h -o -m1 -E 'certificate chain: (PartialChain|UntrustedRoot)|RemoteCertificateChainErrors' "$d/rc-refuse/_diag" | head -1
             "%
           ],
         ],
