@@ -363,6 +363,26 @@ exec "$@"
                 || { echo "existing .runner: updates not off:" >&2; echo "$out" >&2; exit 1; }
               echo "existing-runner-file: ok"
               rm h/.runner
+              # Fail closed: a number a JS rewrite would change (agentId above
+              # 2^53) refuses the start and leaves .runner byte-identical.
+              printf '{"agentId": 9007199254740993, "disableUpdate": false}' > h/.runner
+              before=$(sha256sum < h/.runner)
+              if out=$(run 2>&1); then
+                echo "control failed: a .runner with an unsafe integer was rewritten and started" >&2; echo "$out" >&2; exit 1
+              fi
+              grep -q 'Could not turn the runner' <<<"$out"
+              grep -q '9007199254740993' <<<"$out"
+              ! grep -q '^file ' <<<"$out"
+              test "$(sha256sum < h/.runner)" = "$before"
+              rm h/.runner
+              echo "unsafe-integer-runner-file: refused, unchanged"
+              big=$(b64 '{"agentId":9007199254740993,"disableUpdate":false}')
+              if out=$(run --jitconfig "$(b64 "{\".runner\":\"$big\"}")" 2>&1); then
+                echo "control failed: a jitconfig with an unsafe integer started the runner" >&2; echo "$out" >&2; exit 1
+              fi
+              grep -q '9007199254740993' <<<"$out"
+              ! grep -q '^runner ' <<<"$out"
+              echo "unsafe-integer-jitconfig: refused"
               # Fail closed: a jitconfig the wrapper cannot read stops the start before run.sh.
               if out=$(run --jitconfig not-base64-json 2>&1); then
                 echo "control failed: an unreadable jitconfig started the runner" >&2; echo "$out" >&2; exit 1

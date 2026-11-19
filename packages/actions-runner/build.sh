@@ -198,22 +198,40 @@ EOF
   cat << 'EOF'
 no_update_js='
 const fs = require("fs");
+// Every number must serialize back to its exact source text, or the rewrite
+// would change it (a JS number is exact only to 2^53; agentId is a ulong).
+// JSON.parse source access (context.source) is in V8 since 11.4; node24 has 13.6.
+// Without it, or on any mismatch, nothing is written and the start is refused.
+const exact = function (key, value, context) {
+  if (typeof value === "number") {
+    if (!context || typeof context.source !== "string") throw new Error("this node has no JSON.parse source access");
+    if (String(value) !== context.source || (/^-?[0-9]+$/.test(context.source) && !Number.isSafeInteger(value)))
+      throw new Error("number " + context.source + " at \"" + key + "\" would not survive a rewrite");
+  }
+  return value;
+};
 const off = (text) => {
-  const o = JSON.parse(text.replace(/^\uFEFF/, ""));
+  const o = JSON.parse(text.replace(/^\uFEFF/, ""), exact);
   if (o === null || typeof o !== "object" || Array.isArray(o)) throw new Error(".runner is not a JSON object");
   o.disableUpdate = true;
   return JSON.stringify(o, null, 2);
 };
 const [mode, arg] = process.argv.slice(1);
-if (mode === "file") {
-  fs.writeFileSync(arg + ".tmp", off(fs.readFileSync(arg, "utf8")));
-  fs.renameSync(arg + ".tmp", arg);
-} else if (mode === "jit") {
-  const m = JSON.parse(Buffer.from(arg, "base64").toString("utf8"));
-  if (m === null || typeof m[".runner"] !== "string") throw new Error("the jitconfig has no .runner");
-  m[".runner"] = Buffer.from(off(Buffer.from(m[".runner"], "base64").toString("utf8"))).toString("base64");
-  process.stdout.write(Buffer.from(JSON.stringify(m)).toString("base64"));
-} else throw new Error("usage: file <path> | jit <base64>");
+try {
+  if (mode === "file") {
+    const next = off(fs.readFileSync(arg, "utf8"));
+    fs.writeFileSync(arg + ".tmp", next);
+    fs.renameSync(arg + ".tmp", arg);
+  } else if (mode === "jit") {
+    const m = JSON.parse(Buffer.from(arg, "base64").toString("utf8"));
+    if (m === null || typeof m[".runner"] !== "string") throw new Error("the jitconfig has no .runner");
+    m[".runner"] = Buffer.from(off(Buffer.from(m[".runner"], "base64").toString("utf8"))).toString("base64");
+    process.stdout.write(Buffer.from(JSON.stringify(m)).toString("base64"));
+  } else throw new Error("usage: file <path> | jit <base64>");
+} catch (e) {
+  console.error("actions-runner: " + e.message);
+  process.exit(1);
+}
 '
 no_update() {
     "$pkg/externals/node24/bin/node" -e "$no_update_js" "$@" && return 0
