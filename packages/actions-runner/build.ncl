@@ -252,7 +252,7 @@ exec "$@"
               if ! grep -r -q -E 'PartialChain|UntrustedRoot|RemoteCertificateChainErrors' "$d/rc-refuse/_diag"; then
                 echo "control failed: no certificate-chain refusal in the runner diag" >&2; diag rc-refuse; exit 1
               fi
-              grep -r -h -o -m1 -E 'certificate chain: (PartialChain|UntrustedRoot)|RemoteCertificateChainErrors' "$d/rc-refuse/_diag" | head -1
+              grep -r -h -o -m1 -E 'certificate chain: (PartialChain|UntrustedRoot)|RemoteCertificateChainErrors' "$d/rc-refuse/_diag" | head -1 || true
             "%
           ],
         ],
