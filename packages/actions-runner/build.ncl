@@ -177,16 +177,19 @@ exec "$@"
       } | Test,
     # .NET 10 makes a real TLS connection through OpenSSL 4 (libssl.so.4; no
     # openssl-3.5 in the closure) and verifies the server against the system
-    # store. `config` registers against a GHES-style URL, i.e. POSTs
-    # https://<host>/api/v3/actions/runner-registration on port 443; a local
-    # s_server answers 404 (one attempt, no retries), with a leaf signed by a
-    # throwaway CA that SSL_CERT_FILE adds. Pass = s_server decrypted the POST
-    # and the runner reports the 404. Control: without SSL_CERT_FILE the same
-    # runner must refuse the certificate.
+    # store. The sandbox cannot bind 443, and `config` drops the port from a
+    # GHES URL, so this uses the runner's dev-service path
+    # (USE_DEV_ACTIONS_SERVICE_URL), which connects to the URL as given:
+    # GET https://127.0.0.1:18443/_apis/connectionData. The server is the
+    # bundled node (it takes concurrent connections and any method), with a
+    # leaf signed by a throwaway CA that SSL_CERT_FILE adds; it logs each
+    # decrypted request and answers 404. Pass = a request reached the server.
+    # Control: without SSL_CERT_FILE no request may arrive, and the runner's
+    # diag log must show it refused the certificate.
     dotnet_tls_via_openssl4 =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, openssl, coreutils],
+        test_deps = [bash-bootstrap, openssl, coreutils, grep],
         cmds = [
           [
             "/bin/bash",
@@ -199,36 +202,39 @@ exec "$@"
               printf 'subjectAltName=IP:127.0.0.1\nbasicConstraints=CA:FALSE\nextendedKeyUsage=serverAuth\n' > leaf.ext
               openssl x509 -req -in leaf.csr -CA ca.pem -CAkey ca.key -CAcreateserial -days 1 -extfile leaf.ext -out leaf.pem 2>/dev/null
               cat /etc/ssl/cert.pem ca.pem > bundle.pem
-              pids=()
-              trap 'exec 3>&- 4>&- 2>/dev/null || true; kill "${pids[@]}" 2>/dev/null || true' EXIT
-              serve() { # serve <name> <fd>: s_server on 443, stdin from a fifo held open on <fd>
-                mkfifo "$1.in"
-                openssl s_server -accept 127.0.0.1:443 -cert leaf.pem -key leaf.key < "$1.in" > "$1.out" 2>&1 &
-                pids+=($!)
-                eval "exec $2> $1.in"
-                sleep 1
+              js="const fs=require('fs'),log=(s)=>fs.appendFileSync(process.env.LOG,s+'\n');
+                const srv=require('https').createServer({key:fs.readFileSync('leaf.key'),cert:fs.readFileSync('leaf.pem')},(q,r)=>{log('REQUEST '+q.method+' '+q.url);r.writeHead(404,{'Content-Length':'0',Connection:'close'});r.end()});
+                srv.on('tlsClientError',(e)=>log('TLSERROR '+e.message));
+                srv.listen(18443,'127.0.0.1',()=>log('LISTENING'))"
+              node=/usr/lib/actions-runner/externals/node24/bin/node
+              srv=
+              trap 'kill $srv 2>/dev/null || true' EXIT
+              serve() { # serve <log>: start the server, wait until it listens
+                : > "$1"
+                LOG=$d/$1 "$node" -e "$js" & srv=$!
+                for _ in $(seq 50); do grep -q LISTENING "$1" && return 0; sleep 0.2; done
+                echo "server did not start" >&2; cat "$1"; exit 1
               }
-              register() { # register <home> [env...]: one unattended registration attempt
+              register() { # register <home> [env...]: one unattended configure against the dev-service URL
                 local home=$1; shift
-                env "$@" RUNNER_HOME="$d/$home" RUNNER_ALLOW_RUNASROOT=1 timeout 90 /usr/bin/actions-runner-config --unattended --url https://127.0.0.1/o/r --token t --name n 2>&1 || true
+                env "$@" USE_DEV_ACTIONS_SERVICE_URL=1 RUNNER_HOME="$d/$home" RUNNER_ALLOW_RUNASROOT=1 timeout 90 /usr/bin/actions-runner-config --unattended --url https://127.0.0.1:18443/o/r --token t --name n 2>&1 || true
               }
 
-              serve ok 3
-              printf 'HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n' >&3
+              serve ok.log
               out=$(register rc-ok SSL_CERT_FILE="$d/bundle.pem")
-              echo "$out"; echo "--- s_server:"; cat ok.out
+              echo "$out"; echo "--- server:"; cat ok.log
               [[ $out != *'No usable version of libssl'* ]]
-              grep -q 'POST /api/v3/actions/runner-registration' ok.out
-              [[ $out == *'Http response code: NotFound'* ]]
-              kill "${pids[0]}"; wait "${pids[0]}" 2>/dev/null || true; exec 3>&-
+              grep -q '^REQUEST GET /' ok.log
+              kill $srv; wait $srv 2>/dev/null || true
 
-              serve refuse 4
+              serve refuse.log
               out=$(register rc-refuse)
-              echo "control:"; echo "$out"; echo "--- s_server:"; cat refuse.out
-              if grep -q 'POST /api' refuse.out || [[ $out == *'Http response code'* ]]; then
+              echo "control:"; echo "$out"; echo "--- server:"; cat refuse.log
+              if grep -q '^REQUEST' refuse.log; then
                 echo "control failed: the runner trusted a CA outside the system store" >&2; exit 1
               fi
-              [[ $out == *'SSL connection could not be established'* ]]
+              grep -r -E 'UntrustedRoot|SSL connection could not be established|RemoteCertificate' "$d/rc-refuse/_diag" | head -3
+              grep -r -q -E 'UntrustedRoot|SSL connection could not be established|RemoteCertificate' "$d/rc-refuse/_diag"
             "%
           ],
         ],
