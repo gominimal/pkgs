@@ -22,6 +22,9 @@ let version = "b12359" in
     # The CPU backends are dlopen()ed: search only GGML_BACKEND_DIR, never the
     # executable's or the current directory. See build.sh.
     { file = "ggml-backend-dir-only.patch" } | Local,
+    # The x86 CPU variant scorer checks CPUID only: also require the OS to have
+    # enabled the register state (XCR0). See build.sh.
+    { file = "ggml-cpu-feats-xcr0.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/ggml-org/llama.cpp/%{version}.tar.gz",
       sha256 = "e2eadc0fd06f81abea3b8012584e67bea3b403d91bcd1b3072b656cbcb2fb4bb",

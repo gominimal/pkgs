@@ -74,6 +74,21 @@ echo "0a23a627cec97926fb1fbb2b1bf4fa7fed4900aa21b0215302eced797231578b  ggml/src
 patch -Np1 -i ./ggml-backend-dir-only.patch
 echo "607514a82eb47dbf21994914ea3c6abe7c8c5aca1a48d5d620f74f6c7d1f7815  ggml/src/ggml-backend-reg.cpp" | sha256sum -c -
 
+# The x86 variant scorer (ggml_backend_cpu_x86_score) reads CPUID feature bits only;
+# upstream marks it "FIXME: this does not check for OS support"
+# (ggml/src/ggml-cpu/arch/x86/cpu-feats.cpp:264 at b12359, unchanged on master). A
+# host whose CPU has AVX-512 (or AVX/AVX2, or AMX) while the OS or hypervisor leaves
+# that register state off in XCR0 would load skylakex (etc.) and SIGILL, where
+# haswell runs. The patch reads XCR0 (XGETBV, only when CPUID.1:ECX.OSXSAVE is set)
+# and counts AVX/AVX2/FMA/F16C/AVX-VNNI only with XCR0[2:1], AVX-512 only with
+# XCR0[7:5] too, and AMX only with XCR0[18:17]; amx.cpp's arch_prctl request is
+# untouched. Scores are otherwise unchanged. Upstream has open, unmerged PRs for this
+# (ggml-org/llama.cpp#19514, #20940); drop the patch when one lands.
+# https://github.com/gominimal/pkgs/pull/1559#discussion_r4621978298
+echo "b0f6aaaeb0b12a4f3e15ceec14d0c2031633f91e864a6c15954a001d6390f6d4  ggml/src/ggml-cpu/arch/x86/cpu-feats.cpp" | sha256sum -c -
+patch -Np1 -i ./ggml-cpu-feats-xcr0.patch
+echo "33c17ca73a60a7fb30eb399a4f8e6562062b82b3ea02907e0156765df111a080  ggml/src/ggml-cpu/arch/x86/cpu-feats.cpp" | sha256sum -c -
+
 # GGML_NATIVE=OFF: ggml already defaults it OFF when SOURCE_DATE_EPOCH is set (the
 # sandbox sets it), and it must be: -march=native would follow the build host's CPU,
 # and ggml refuses GGML_NATIVE with GGML_BACKEND_DL.
