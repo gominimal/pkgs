@@ -182,7 +182,7 @@ exec "$@"
     # (USE_DEV_ACTIONS_SERVICE_URL), which connects to the URL as given:
     # GET https://127.0.0.1:18443/_apis/connectionData. The server is the
     # bundled node (it takes concurrent connections and any method), with a
-    # leaf signed by a throwaway CA that SSL_CERT_FILE adds; it logs each
+    # leaf signed by a throwaway CA that SSL_CERT_FILE names; it logs each
     # decrypted request and answers 404. Pass = a request reached the server.
     # Control: without SSL_CERT_FILE no request may arrive, and the runner's
     # diag log must show it refused the certificate.
@@ -201,7 +201,7 @@ exec "$@"
               openssl req -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -keyout leaf.key -out leaf.csr -subj /CN=127.0.0.1 2>/dev/null
               printf 'subjectAltName=IP:127.0.0.1\nbasicConstraints=CA:FALSE\nextendedKeyUsage=serverAuth\n' > leaf.ext
               openssl x509 -req -in leaf.csr -CA ca.pem -CAkey ca.key -CAcreateserial -days 1 -extfile leaf.ext -out leaf.pem 2>/dev/null
-              cat /etc/ssl/cert.pem ca.pem > bundle.pem
+              openssl version
               js="const fs=require('fs'),log=(s)=>fs.appendFileSync(process.env.LOG,s+'\n');
                 const srv=require('https').createServer({key:fs.readFileSync('leaf.key'),cert:fs.readFileSync('leaf.pem')},(q,r)=>{log('REQUEST '+q.method+' '+q.url);r.writeHead(404,{'Content-Length':'0',Connection:'close'});r.end()});
                 srv.on('tlsClientError',(e)=>log('TLSERROR '+e.message));
@@ -221,10 +221,17 @@ exec "$@"
               }
 
               serve ok.log
-              out=$(register rc-ok SSL_CERT_FILE="$d/bundle.pem")
+              diag() { # the runner's own record of what went wrong, inner exceptions included
+                echo "--- runner diag ($1):"
+                grep -rh -E -B1 -A4 'Exception|SSL|[Cc]ertificate|[Cc]hain|libssl' "$d/$1/_diag" | head -150 || true
+              }
+              # SSL_CERT_FILE names only the throwaway CA: .NET reads it as its
+              # whole root store, with no system bundle to parse first.
+              out=$(register rc-ok SSL_CERT_FILE="$d/ca.pem")
               echo "$out"; echo "--- server:"; cat ok.log
-              [[ $out != *'No usable version of libssl'* ]]
-              grep -q '^REQUEST GET /' ok.log
+              if [[ $out == *'No usable version of libssl'* ]] || ! grep -q '^REQUEST GET /' ok.log; then
+                diag rc-ok; exit 1
+              fi
               kill $srv; wait $srv 2>/dev/null || true
 
               serve refuse.log
@@ -233,7 +240,7 @@ exec "$@"
               if grep -q '^REQUEST' refuse.log; then
                 echo "control failed: the runner trusted a CA outside the system store" >&2; exit 1
               fi
-              grep -r -E 'UntrustedRoot|SSL connection could not be established|RemoteCertificate' "$d/rc-refuse/_diag" | head -3
+              grep -r -E 'UntrustedRoot|SSL connection could not be established|RemoteCertificate' "$d/rc-refuse/_diag" | head -3 || diag rc-refuse
               grep -r -q -E 'UntrustedRoot|SSL connection could not be established|RemoteCertificate' "$d/rc-refuse/_diag"
             "%
           ],
