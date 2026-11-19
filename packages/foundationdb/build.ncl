@@ -216,7 +216,13 @@ let version = "7.3.81" in
 
             echo "test:testid@127.0.0.1:4520:tls" > fdb.cluster
 
+            # After one failed handshake fdbserver refuses that peer IP's next
+            # connections for 9s without a handshake (TLS_SERVER_CONNECTION_THROTTLE_*,
+            # flow/Net2.actor.cpp). Every client here is 127.0.0.1, so the rogue client
+            # would be dropped unverified right after the intruder; raise the attempt
+            # limit so each refusal is a real verification.
             /bin/fdbserver -p 127.0.0.1:4520:tls -C fdb.cluster -d data -L logs \
+              --knob_tls_server_connection_throttle_attempts 1000000 \
               --tls-certificate-file server.pem --tls-key-file server.key --tls-ca-file ca.pem \
               --tls-verify-peers 'Check.Valid=1,S.CN=fdb-test' &
             SERVER_PID=$!
