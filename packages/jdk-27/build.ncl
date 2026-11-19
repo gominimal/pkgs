@@ -114,11 +114,12 @@ let build_num = "4" in
     jdk.cve.blocked_sha256,
     ca-certificates,
   ],
-  # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, lcms2, libpng, giflib and libjpeg
+  # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, fontconfig, lcms2, libpng, giflib and libjpeg
   runtime_deps = [
     glibc,
     zlib,
     freetype,
+    fontconfig, # libfontmanager dlopens libfontconfig at run time (CodeRabbit on #1556)
     libpng,
     giflib,
     libjpeg-turbo,

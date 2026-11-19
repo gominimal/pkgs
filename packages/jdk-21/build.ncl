@@ -113,11 +113,12 @@ let build_num = "2" in
     jdk.cve.blocked_sha256,
     ca-certificates,
   ],
-  # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, lcms2, libpng, giflib and libjpeg
+  # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, fontconfig, lcms2, libpng, giflib and libjpeg
   runtime_deps = [
     glibc,
     zlib,
     freetype,
+    fontconfig, # libfontmanager dlopens libfontconfig at run time (CodeRabbit on #1556)
     libpng,
     giflib,
     libjpeg-turbo,
@@ -192,6 +193,18 @@ let build_num = "2" in
         test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "jar tf /usr/lib/jvm/lib/src.zip | grep -qx java.base/java/lang/Object.java"],
+        ],
+      } | Test,
+
+    # The shipped jmods still link: java.base.jmod records every module's .jmod hash, so a
+    # rewritten .jmod fails jlink with "Hash of <module> differs" (CodeRabbit on #1556). Only
+    # jdk-21 ships jmods; 25 and 27 use --enable-linkable-runtime.
+    jlink_roundtrip =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, grep],
+        cmds = [
+          ["/bin/bash", "-c", "set -eu; jlink --module-path /usr/lib/jvm/jmods --add-modules java.base,java.logging --output $PWD/rt; $PWD/rt/bin/java -version 2>&1 | grep -qF '%{version}+%{build_num}'"],
         ],
       } | Test,
 

@@ -132,7 +132,11 @@ if readelf -d "${DST}/lib/server/libjvm.so" | grep -E 'NEEDED.*libstdc\+\+'; the
   die "libjvm.so NEEDs libstdc++ (--with-stdc++lib=static did not take)"
 fi
 
-# zip entry timestamps and order are build-time noise (jars, jmods, ct.sym, src.zip)
+# zip entry timestamps and order are build-time noise (jars, ct.sym, src.zip). NOT .jmod files:
+# java.base.jmod records the hash of every other module's .jmod, so rewriting one makes
+# `jlink --module-path .../jmods` fail with "Hash of <module> differs" (CodeRabbit on #1556).
+# The jmods are already deterministic: --with-source-date=version makes the build pass a fixed
+# --date to `jmod`. jdk-21's jlink_roundtrip test proves they stay linkable.
 python3 - "${DST}" <<'PYEOF'
 import io, os, shutil, sys, zipfile
 def norm_bytes(b):
@@ -153,12 +157,9 @@ root = sys.argv[1]; n = 0
 for dp, _, fn in os.walk(root):
     for f in fn:
         p = os.path.join(dp, f)
-        if os.path.islink(p) or not (f.endswith(('.jar', '.zip', '.war', '.jmod')) or f == 'ct.sym'): continue
+        if os.path.islink(p) or not (f.endswith(('.jar', '.zip', '.war')) or f == 'ct.sym'): continue
         with open(p, 'rb') as fh: raw = fh.read()
         head = b''
-        if f.endswith('.jmod'):   # a jmod is a zip behind a 4-byte "JM" magic
-            if raw[:2] != b'JM': continue
-            head, raw = raw[:4], raw[4:]
         if not zipfile.is_zipfile(io.BytesIO(raw)): continue
         tmp = p + '.tmp'
         with open(tmp, 'wb') as out: out.write(head); out.write(norm_bytes(raw))
