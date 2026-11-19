@@ -7,7 +7,7 @@ let curl = import "../curl/build.ncl" in
 let liberation-fonts = import "../liberation-fonts/build.ncl" in
 let zig = import "../zig/build.ncl" in
 
-let version = "0.2.0" in
+let version = "0.3.0" in
 {
   name = "tmd",
   # Terminal Markdown viewer, built from source with the zig package.
@@ -19,7 +19,7 @@ let version = "0.2.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/jtnk/tmd/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "3ca9a15d02e4d969394a72e63491fc73b6cc1a9ee505aff791c3c9a49b8a186d",
+      sha256 = "41f8c26c3358b80a769ea5e9974494167674303bc3e493a8c4f6082a316df642",
       extract = true,
       strip_prefix = "tmd-%{version}",
     } | Source,
