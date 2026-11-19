@@ -231,13 +231,14 @@ let build_num = "2" in
 
     # CVE-2026-111943: the shipped trust store no longer holds emSign ECC Root CA - G3 or
     # AAA Certificate Services, still holds the rest, and blocked.certs lists the compromised
-    # intermediates (one ECDSA-malleated encoding checked; the build checks all 48).
+    # intermediates (one ECDSA-malleated encoding checked; the build checks all 48). Izenpe.com
+    # must be absent too: left out like Temurin, as Mozilla trusts it only to a distrust-after date.
     cve_2026_111943 =
       {
         class = 'Standalone,
         test_deps = [bash-bootstrap, coreutils, grep],
         cmds = [
-          ["/bin/bash", "-c", "set -eu; ks=$(keytool -list -cacerts -storepass changeit -v 2>&1); n=$(grep -c '^Alias name:' <<< \"$ks\"); echo \"cacerts entries: $n\"; [ \"$n\" -ge 80 ]; if grep -E 'SHA256: (86:A1:EC:BA:08:9C:4A:8D|D7:A7:A0:FB:5D:7E:27:31)' <<< \"$ks\"; then echo 'distrusted root still in cacerts'; exit 1; fi; bc=/usr/lib/jvm/lib/security/blocked.certs; head -n 1 $bc | grep -qx 'Algorithm=SHA-256'; grep -qx 37E866582D43C35D7C17D47794B974F291B3047B868DC123382477F7A08AEFA8 $bc"],
+          ["/bin/bash", "-c", "set -eu; ks=$(keytool -list -cacerts -storepass changeit -v 2>&1); n=$(grep -c '^Alias name:' <<< \"$ks\"); echo \"cacerts entries: $n\"; [ \"$n\" -ge 80 ]; if grep -E 'SHA256: (86:A1:EC:BA:08:9C:4A:8D|D7:A7:A0:FB:5D:7E:27:31|25:30:CC:8E:98:32:15:02)' <<< \"$ks\"; then echo 'distrusted or omitted root still in cacerts'; exit 1; fi; bc=/usr/lib/jvm/lib/security/blocked.certs; head -n 1 $bc | grep -qx 'Algorithm=SHA-256'; grep -qx 37E866582D43C35D7C17D47794B974F291B3047B868DC123382477F7A08AEFA8 $bc"],
         ],
       } | Test,
   },

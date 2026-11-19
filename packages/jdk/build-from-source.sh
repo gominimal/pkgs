@@ -52,10 +52,22 @@ echo "${VERSION}" > .src-rev
 # alias-shaped like OpenJDK's make/data/cacerts: lowercase letters and digits only.
 CERTS="${BUILDROOT}/cacerts-src"; mkdir -p "${CERTS}"
 export LC_COLLATE=C   # the glob below, and so any collision numbering, in byte order
+
+# Left out of the JDK's store only (the system ca-certificates keeps it): Izenpe.com. Mozilla
+# trusts it for TLS only up to a distrust-after date, which Java's cacerts cannot express, so
+# like Temurin (whose store is otherwise this exact set) we leave it out. Bryan, 2026-11-18.
+# Found by its label's file name, then proven by SHA-256; either check failing fails the build.
+OMIT_CRT=/etc/ssl/certs/Izenpe.com.crt
+OMIT_SHA256=2530CC8E98321502BAD96F9B1FBA1B099E2D299E0F4548BB914F363BC0D4531F
+[ -f "$OMIT_CRT" ] || die "$OMIT_CRT is missing: Izenpe.com moved or left the Mozilla store; revisit OMIT_CRT"
+omit_fp="$("${BOOT}/bin/keytool" -printcert -file "$OMIT_CRT" | sed -n 's/^[[:space:]]*SHA256: //p' | tr -d ':')"
+[ "$omit_fp" = "$OMIT_SHA256" ] || die "$OMIT_CRT has SHA-256 '$omit_fp', not Izenpe.com's $OMIT_SHA256"
+
 n=0
 for crt in /etc/ssl/certs/*.crt; do
   [ -f "$crt" ] && [ ! -L "$crt" ] || continue
   [ "$(basename "$crt")" = ca-certificates.crt ] && continue
+  [ "$crt" = "$OMIT_CRT" ] && continue
   alias="$(basename "$crt" .crt | LC_ALL=C tr -cd 'A-Za-z0-9' | LC_ALL=C tr 'A-Z' 'a-z')"
   [ -n "$alias" ] || die "certificate $crt has no ASCII letters for an alias"
   # two labels that differ only in punctuation or case: number the later one (the glob is sorted)
@@ -66,7 +78,9 @@ for crt in /etc/ssl/certs/*.crt; do
   n=$((n + 1))
 done
 want="$(grep -c '^-----BEGIN CERTIFICATE-----$' /etc/ssl/certs/ca-certificates.crt)"
-[ "$n" = "$want" ] || die "cacerts source has $n certificates, ca-certificates.crt has $want"
+# Every root of the bundle but the one left out above: 117 today, Temurin 25.0.5.1's exact set.
+want=$((want - 1))
+[ "$n" = "$want" ] || die "cacerts source has $n certificates, expected $want (ca-certificates.crt minus Izenpe.com)"
 [ "$n" -ge 100 ] || die "only $n certificates in the cacerts source"
 echo "${NAME}: cacerts source: $n certificates from ca-certificates"
 
@@ -219,8 +233,7 @@ done
 # The SHIPPED trust store holds every root of the source: GenerateCacerts or the step above
 # must not drop one silently. ($n is the source count checked against ca-certificates.crt
 # above; the distrusted anchors are absent from the Mozilla store, so nothing is removed.)
-# For scale: Temurin 25.0.5.1's cacerts holds 117 roots, curl's 2026-11-05 extract 118. The
-# one difference is Izenpe.com, which Mozilla still trusts for TLS and Adoptium leaves out.
+# With Izenpe.com left out this is Temurin 25.0.5.1's set exactly: 117 roots, the same by SHA-256.
 shipped="$("${DST}/bin/keytool" -list -cacerts -storepass changeit 2>/dev/null | grep -c 'trustedCertEntry')" \
   || die "keytool cannot list the shipped cacerts"
 [ "$shipped" = "$n" ] || die "shipped cacerts has $shipped entries, its source had $n"
