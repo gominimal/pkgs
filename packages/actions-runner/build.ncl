@@ -448,11 +448,18 @@ exec "$@"
               echo "upgrade: ok"
               # Control: a runner still running from an outdated home is not replaced. bash
               # copied in as bin/Runner.Listener stands in for it (/proc/<pid>/exe).
+              # The loop keeps that bash alive as itself: `-c 'sleep 60'` would exec
+              # sleep in its place (bash's single-command exec), and the process would
+              # no longer be bin/Runner.Listener.
               mkdir -p r/bin
               cp "$(command -v bash)" r/bin/Runner.Listener
-              r/bin/Runner.Listener -c 'sleep 60' & pid=$!
+              r/bin/Runner.Listener -c 'while :; do sleep 1; done' & pid=$!
               trap 'kill $pid 2>/dev/null || true' EXIT
               sleep 1
+              # The stand-in really is a process running bin/Runner.Listener.
+              stand_in=$(readlink /proc/$pid/exe)
+              echo "stand-in: $stand_in"
+              test "$stand_in" = "$(cd r/bin && pwd -P)/Runner.Listener"
               if out=$(RUNNER_HOME=$d/r /usr/bin/actions-runner --version 2>&1); then
                 echo "control failed: the wrapper replaced the bin/ of a running runner" >&2; echo "$out" >&2; exit 1
               fi
