@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.5.1" in
+let version = "0.5.2" in
 {
   name = "nats-cli",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/nats-io/natscli/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "808a8905383949625e0a3f86821865eda29d381274021ff2d9ea7d7448c951fc",
+      sha256 = "6a735b879a19a7abaa4b45e512f23ddb7df6e8f1cd14b32091cd8568e4e94f63",
       extract = true,
       strip_prefix = "natscli-%{version}",
     } | Source,
