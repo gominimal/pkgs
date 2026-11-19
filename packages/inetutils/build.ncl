@@ -2,10 +2,12 @@ let { Attrs, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.n
 let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
+let grep = import "../grep/build.ncl" in
 let sed = import "../sed/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let iana-etc = import "../iana-etc/build.ncl" in
 let version = "2.8" in
 {
   name = "inetutils",
@@ -22,6 +24,10 @@ let version = "2.8" in
   ],
   runtime_deps = [
     glibc,
+    # pkgs#849: ping, ping6 and traceroute resolve their protocol through
+    # getprotobyname (/etc/protocols), and the telnet/ftp clients their ports through
+    # getservbyname (/etc/services). Without these files the lookups fail at run time.
+    iana-etc,
   ],
 
   cmd = "./build.sh",
@@ -42,6 +48,18 @@ let version = "2.8" in
           ["/usr/bin/ping", "--version"],
           ["/usr/bin/ping6", "--version"],
           ["/usr/bin/traceroute", "--version"],
+        ],
+      } | Test,
+    # pkgs#849 part 2: the protocol and service lookups ping/traceroute/telnet/ftp
+    # make resolve through the files iana-etc brings (getent uses the same NSS path).
+    protocol_lookups =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, grep],
+        cmds = [
+          ["/bin/bash", "-c", "getent protocols icmp | grep -qE '^icmp +1( |$)'"],
+          ["/bin/bash", "-c", "getent protocols ipv6-icmp | grep -qE '^ipv6-icmp +58( |$)'"],
+          ["/bin/bash", "-c", "getent services telnet/tcp | grep -qE '^telnet +23/tcp'"],
         ],
       } | Test,
   },
