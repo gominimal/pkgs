@@ -199,7 +199,12 @@ for jsa in "${DST}"/lib/server/classes*.jsa; do
   done
   cmp -s "${TMPDIR}/${base}.a.jsa" "${TMPDIR}/${base}.b.jsa" \
     || die "${base}.jsa: two dumps of the same image differ; CDS is not deterministic here (use --disable-cds-archive)"
+  # The image installs the archives read-only (0444), so `cp` over one fails with
+  # "Permission denied" (#1556 at 2eef2870, both arches). Replace the file instead, and give
+  # it Temurin's mode: Temurin ships every classes*.jsa 0644.
+  rm -f "$jsa"
   cp "${TMPDIR}/${base}.a.jsa" "$jsa"
+  chmod 0644 "$jsa"
   echo "${NAME}: ${base}.jsa re-dumped, deterministic ($(wc -c < "$jsa") bytes)"
 done
 # The archive maps and is used.
@@ -210,6 +215,16 @@ done
 # The cacerts source is now the registry's Mozilla store, which already lacks the distrusted
 # anchors; the step then reports "not present" for them and still appends and checks blocked.certs.
 (cd "${BUILDROOT}" && sh ./cve-2026-111943.sh "${DST}")
+
+# The SHIPPED trust store holds every root of the source: GenerateCacerts or the step above
+# must not drop one silently. ($n is the source count checked against ca-certificates.crt
+# above; the distrusted anchors are absent from the Mozilla store, so nothing is removed.)
+# For scale: Temurin 25.0.5.1's cacerts holds 117 roots, curl's 2026-11-05 extract 118. The
+# one difference is Izenpe.com, which Mozilla still trusts for TLS and Adoptium leaves out.
+shipped="$("${DST}/bin/keytool" -list -cacerts -storepass changeit 2>/dev/null | grep -c 'trustedCertEntry')" \
+  || die "keytool cannot list the shipped cacerts"
+[ "$shipped" = "$n" ] || die "shipped cacerts has $shipped entries, its source had $n"
+echo "${NAME}: shipped cacerts: $shipped roots"
 
 mkdir -p "${OUTPUT_DIR}/usr/bin"
 for path in "${DST}"/bin/*; do
