@@ -8,8 +8,8 @@ let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .
 # freetype/lcms2/libpng/libjpeg/giflib/zlib instead of bundled copies (gominimal/pkgs#1556).
 let openjdk-26 = import "../openjdk-26/build.ncl" in # the boot JDK
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
-# not the `jdk` meta-package: the inputs of build.sh's CVE-2026-111943 step
-let jdk = import "../jdk/from-source.ncl" in # the shared build script and the CVE-2026-111943 step
+# not the `jdk` meta-package: the shared build script and the CVE-2026-111943 step's inputs
+let jdk = import "../jdk/from-source.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in # the cacerts source
 let binutils = import "../binutils/build.ncl" in # readelf, for the libstdc++ test
 let toolchain = import "../toolchain/build.ncl" in
@@ -119,7 +119,7 @@ let build_num = "4" in
     glibc,
     zlib,
     freetype,
-    fontconfig, # libfontmanager dlopens libfontconfig at run time (CodeRabbit on #1556)
+    fontconfig, # libfontmanager dlopens libfontconfig at run time
     libpng,
     giflib,
     libjpeg-turbo,
@@ -194,6 +194,21 @@ let build_num = "4" in
         test_deps = [bash-bootstrap, grep],
         cmds = [
           ["/bin/bash", "-c", "jar tf /usr/lib/jvm/lib/src.zip | grep -qx java.base/java/lang/Object.java"],
+        ],
+      } | Test,
+
+    # jlink links from the installed image (JEP 493, --enable-linkable-runtime; no jmods/). It
+    # re-hashes every file of each module it links against the SHA-512 the build recorded and
+    # refuses one that changed ("has been modified"): java.base's lib/classlist, jrt-fs.jar and
+    # security/blocked.certs, jdk.compiler's lib/ct.sym. The linked runtime runs and carries the
+    # CVE-2026-111943 blocked.certs. (cacerts is exempt from the check: upgrade_files_java.base.conf.)
+    jlink_from_runtime =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, grep],
+        cmds = [
+          ["/bin/bash", "-c", "set -eu; jlink --add-modules java.base --output $PWD/rt; $PWD/rt/bin/java -version 2>&1 | grep -qF '%{version}+%{build_num}'; grep -qx 37E866582D43C35D7C17D47794B974F291B3047B868DC123382477F7A08AEFA8 $PWD/rt/lib/security/blocked.certs"],
+          ["/bin/bash", "-c", "set -eu; jlink --add-modules java.base,jdk.compiler --output $PWD/rtc; echo 'public class Hi { public static void main(String[] a) { System.out.println(\"ok\"); } }' > Hi.java; $PWD/rtc/bin/java Hi.java | grep -qx ok"],
         ],
       } | Test,
 

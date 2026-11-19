@@ -7,8 +7,8 @@ let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .
 # freetype/lcms2/libpng/libjpeg/giflib/zlib instead of bundled copies (gominimal/pkgs#1556).
 let openjdk-21 = import "../openjdk-21/build.ncl" in # the boot JDK
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
-# not the `jdk` meta-package: the inputs of build.sh's CVE-2026-111943 step
-let jdk = import "../jdk/from-source.ncl" in # the shared build script and the CVE-2026-111943 step
+# not the `jdk` meta-package: the shared build script and the CVE-2026-111943 step's inputs
+let jdk = import "../jdk/from-source.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in # the cacerts source
 let binutils = import "../binutils/build.ncl" in # readelf, for the libstdc++ test
 let toolchain = import "../toolchain/build.ncl" in
@@ -118,7 +118,7 @@ let build_num = "2" in
     glibc,
     zlib,
     freetype,
-    fontconfig, # libfontmanager dlopens libfontconfig at run time (CodeRabbit on #1556)
+    fontconfig, # libfontmanager dlopens libfontconfig at run time
     libpng,
     giflib,
     libjpeg-turbo,
@@ -197,14 +197,15 @@ let build_num = "2" in
       } | Test,
 
     # The shipped jmods still link: java.base.jmod records every module's .jmod hash, so a
-    # rewritten .jmod fails jlink with "Hash of <module> differs" (CodeRabbit on #1556). Only
-    # jdk-21 ships jmods; 25 and 27 use --enable-linkable-runtime.
+    # rewritten .jmod fails jlink with "Hash of <module> differs". Only jdk-21 ships jmods; 25
+    # and 27 use --enable-linkable-runtime (their jlink_from_runtime test). The linked runtime
+    # carries the CVE-2026-111943 blocked.certs too: the build puts it in java.base.jmod.
     jlink_roundtrip =
       {
         class = 'Standalone,
         test_deps = [bash-bootstrap, grep],
         cmds = [
-          ["/bin/bash", "-c", "set -eu; jlink --module-path /usr/lib/jvm/jmods --add-modules java.base,java.logging --output $PWD/rt; $PWD/rt/bin/java -version 2>&1 | grep -qF '%{version}+%{build_num}'"],
+          ["/bin/bash", "-c", "set -eu; jlink --module-path /usr/lib/jvm/jmods --add-modules java.base,java.logging --output $PWD/rt; $PWD/rt/bin/java -version 2>&1 | grep -qF '%{version}+%{build_num}'; grep -qx 37E866582D43C35D7C17D47794B974F291B3047B868DC123382477F7A08AEFA8 $PWD/rt/lib/security/blocked.certs"],
         ],
       } | Test,
 
