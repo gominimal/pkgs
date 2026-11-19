@@ -177,15 +177,17 @@ exec "$@"
       } | Test,
     # .NET 10 makes a real TLS connection through OpenSSL 4 (libssl.so.4; no
     # openssl-3.5 in the closure) and verifies the server against the system
-    # store. The sandbox cannot bind 443, and `config` drops the port from a
-    # GHES URL, so this uses the runner's dev-service path
-    # (USE_DEV_ACTIONS_SERVICE_URL), which connects to the URL as given:
-    # GET https://127.0.0.1:18443/_apis/connectionData. The server is the
-    # bundled node (it takes concurrent connections and any method), with a
-    # leaf signed by a throwaway CA that SSL_CERT_FILE names; it logs each
-    # decrypted request and answers 404. Pass = a request reached the server.
-    # Control: without SSL_CERT_FILE no request may arrive, and the runner's
-    # diag log must show it refused the certificate.
+    # store: SSL_CERT_FILE is our ca-certificates bundle with a throwaway CA
+    # appended, i.e. the file .NET reads in place of /etc/ssl/cert.pem. The
+    # sandbox cannot bind 443, and `config` drops the port from a GHES URL, so
+    # this uses the runner's dev-service path (USE_DEV_ACTIONS_SERVICE_URL),
+    # which connects to the URL as given: GET
+    # https://127.0.0.1:18443/_apis/connectionData. The server is the bundled
+    # node (it takes concurrent connections and any method), with a leaf signed
+    # by that CA; it logs each decrypted request and answers 404. Pass = a
+    # request reached the server and the runner saw the 404. Control: without
+    # SSL_CERT_FILE no request may arrive, the runner reports a TLS failure, and
+    # its diag log shows the certificate chain was refused.
     dotnet_tls_via_openssl4 =
       {
         class = 'Standalone,
@@ -202,6 +204,8 @@ exec "$@"
               printf 'subjectAltName=IP:127.0.0.1\nbasicConstraints=CA:FALSE\nextendedKeyUsage=serverAuth\n' > leaf.ext
               openssl x509 -req -in leaf.csr -CA ca.pem -CAkey ca.key -CAcreateserial -days 1 -extfile leaf.ext -out leaf.pem 2>/dev/null
               openssl version
+              cat /etc/ssl/cert.pem ca.pem > bundle.pem
+              echo "bundle: $(grep -c 'BEGIN CERTIFICATE' bundle.pem) certificates, the throwaway CA last"
               js="const fs=require('fs'),log=(s)=>fs.appendFileSync(process.env.LOG,s+'\n');
                 const srv=require('https').createServer({key:fs.readFileSync('leaf.key'),cert:fs.readFileSync('leaf.pem')},(q,r)=>{log('REQUEST '+q.method+' '+q.url);r.writeHead(404,{'Content-Length':'0',Connection:'close'});r.end()});
                 srv.on('tlsClientError',(e)=>log('TLSERROR '+e.message));
@@ -228,9 +232,8 @@ exec "$@"
                 echo "--- runner diag ($1):"
                 grep -rh -E -B1 -A4 'Exception|SSL|[Cc]ertificate|[Cc]hain|libssl' "$d/$1/_diag" | head -150 || true
               }
-              # SSL_CERT_FILE names only the throwaway CA: .NET reads it as its
-              # whole root store, with no system bundle to parse first.
-              out=$(register rc-ok SSL_CERT_FILE="$d/ca.pem")
+              # .NET reads the whole bundle (every root, then the CA at the end).
+              out=$(register rc-ok SSL_CERT_FILE="$d/bundle.pem")
               echo "$out"; echo "--- server:"; cat ok.log
               if [[ $out == *'No usable version of libssl'* ]] || ! grep -q '^REQUEST GET /' ok.log || [[ $out != *'Not Found'* ]]; then
                 diag rc-ok; exit 1
