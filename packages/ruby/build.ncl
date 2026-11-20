@@ -25,7 +25,7 @@ let openssl = import "../openssl/build.ncl" in
 let readline = import "../readline/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "4.0.9" in
+let version = "4.0.10" in
 # Release directory on cache.ruby-lang.org is the major.minor series.
 let api = std.string.join "." (std.array.slice 0 2 (std.string.split "." version)) in
 {
@@ -34,7 +34,7 @@ let api = std.string.join "." (std.array.slice 0 2 (std.string.split "." version
     { file = "build.sh" } | Local,
     {
       url = "https://cache.ruby-lang.org/pub/ruby/%{api}/ruby-%{version}.tar.gz",
-      sha256 = "c35350682ff050b79702d57ade4516e7336063f510155d19fb2fb5b3f3909511",
+      sha256 = "b53eef3371fa5d3e3b74340edcd015f06d5d8853968d4e539a5264fce41ed9f1",
     } | Source,
     base,
     make,

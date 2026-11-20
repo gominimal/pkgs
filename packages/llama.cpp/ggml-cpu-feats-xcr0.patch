@@ -1,0 +1,115 @@
+diff --git a/ggml/src/ggml-cpu/arch/x86/cpu-feats.cpp b/ggml/src/ggml-cpu/arch/x86/cpu-feats.cpp
+--- a/ggml/src/ggml-cpu/arch/x86/cpu-feats.cpp
++++ b/ggml/src/ggml-cpu/arch/x86/cpu-feats.cpp
+@@ -6,6 +6,7 @@
+ #include <intrin.h>
+ #endif
+ 
++#include <cstdint>
+ #include <cstring>
+ #include <vector>
+ #include <bitset>
+@@ -87,7 +88,22 @@
+     bool AMX_FP16(void) { return f_7_1_eax[21]; }
+     bool AMX_BF16(void) { return f_7_edx[22]; }
+ 
++    // The CPUID bits above say what the CPU implements. Using a register set
++    // also needs the OS to save and restore it, which it reports in XCR0, read
++    // with XGETBV. XGETBV is only valid when CPUID.1:ECX.OSXSAVE[27] is set.
++    uint64_t xcr0(void) { return OSXSAVE() ? xgetbv(0) : 0; }
++    // XCR0[2:1]: SSE + AVX state (YMM). AVX, AVX2, FMA, F16C, AVX-VNNI.
++    bool OS_YMM(void) { return (xcr0() & 0x6) == 0x6; }
++    // + XCR0[7:5]: opmask, ZMM_Hi256, Hi16_ZMM. Every AVX-512 feature.
++    bool OS_ZMM(void) { return (xcr0() & 0xe6) == 0xe6; }
++    // XCR0[18:17]: XTILECFG, XTILEDATA. AMX. (On Linux the process must still
++    // request XTILEDATA with arch_prctl(ARCH_REQ_XCOMP_PERM): amx.cpp does.)
++    bool OS_AMX(void) { return (xcr0() & 0x60000) == 0x60000; }
++
+ #ifdef _MSC_VER
++    static uint64_t xgetbv(unsigned int xcr) {
++        return _xgetbv(xcr);
++    }
+     static void cpuid(int cpu_info[4], int eax) {
+         __cpuid(cpu_info, eax);
+     }
+@@ -95,6 +111,11 @@
+         __cpuidex(cpu_info, eax, ecx);
+     }
+ #else
++    static uint64_t xgetbv(unsigned int xcr) {
++        uint32_t eax, edx;
++        __asm__ __volatile__("xgetbv" : "=a"(eax), "=d"(edx) : "c"(xcr));
++        return ((uint64_t)edx << 32) | eax;
++    }
+     static void cpuid(int cpu_info[4], int eax) {
+         __asm__ __volatile__(
+             "cpuid"
+@@ -261,17 +282,18 @@
+ #endif
+ 
+ static int ggml_backend_cpu_x86_score() {
+-    // FIXME: this does not check for OS support
++    // A feature counts only when the CPU has it (CPUID) and the OS has enabled
++    // its register state (XCR0); otherwise the variant would load and SIGILL.
+ 
+     int score = 1;
+     cpuid_x86 is;
+ 
+ #ifdef GGML_FMA
+-    if (!is.FMA()) { return 0; }
++    if (!is.FMA() || !is.OS_YMM()) { return 0; }
+     score += 1;
+ #endif
+ #ifdef GGML_F16C
+-    if (!is.F16C()) { return 0; }
++    if (!is.F16C() || !is.OS_YMM()) { return 0; }
+     score += 1<<1;
+ #endif
+ #ifdef GGML_SSE42
+@@ -283,18 +305,19 @@
+     score += 1<<3;
+ #endif
+ #ifdef GGML_AVX
+-    if (!is.AVX()) { return 0; }
++    if (!is.AVX() || !is.OS_YMM()) { return 0; }
+     score += 1<<4;
+ #endif
+ #ifdef GGML_AVX2
+-    if (!is.AVX2()) { return 0; }
++    if (!is.AVX2() || !is.OS_YMM()) { return 0; }
+     score += 1<<5;
+ #endif
+ #ifdef GGML_AVX_VNNI
+-    if (!is.AVX_VNNI()) { return 0; }
++    if (!is.AVX_VNNI() || !is.OS_YMM()) { return 0; }
+     score += 1<<6;
+ #endif
+ #ifdef GGML_AVX512
++    if (!is.OS_ZMM()) { return 0; }
+     if (!is.AVX512F()) { return 0; }
+     if (!is.AVX512CD()) { return 0; }
+     if (!is.AVX512VL()) { return 0; }
+@@ -303,19 +326,19 @@
+     score += 1<<7;
+ #endif
+ #ifdef GGML_AVX512_VBMI
+-    if (!is.AVX512_VBMI()) { return 0; }
++    if (!is.AVX512_VBMI() || !is.OS_ZMM()) { return 0; }
+     score += 1<<8;
+ #endif
+ #ifdef GGML_AVX512_BF16
+-    if (!is.AVX512_BF16()) { return 0; }
++    if (!is.AVX512_BF16() || !is.OS_ZMM()) { return 0; }
+     score += 1<<9;
+ #endif
+ #ifdef GGML_AVX512_VNNI
+-    if (!is.AVX512_VNNI()) { return 0; }
++    if (!is.AVX512_VNNI() || !is.OS_ZMM()) { return 0; }
+     score += 1<<10;
+ #endif
+ #ifdef GGML_AMX_INT8
+-    if (!is.AMX_INT8()) { return 0; }
++    if (!is.AMX_INT8() || !is.OS_AMX()) { return 0; }
+     score += 1<<11;
+ #endif
+ 

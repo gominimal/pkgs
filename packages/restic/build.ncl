@@ -6,14 +6,14 @@ let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "0.19.1" in
+let version = "0.20.0" in
 {
   name = "restic",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/restic/restic/v%{version}.tar.gz",
-      sha256 = "bb9b1a19040744d26d8a79be029d4e6b189c45ccc9d8831d7fe367d3c33df725",
+      sha256 = "7def5bbe05e62640f7b030b865b6f304701fd876f7836f5a6a603b56e1f4e30a",
       extract = true,
       strip_prefix = "restic-%{version}",
     } | Source,

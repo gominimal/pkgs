@@ -21,6 +21,12 @@ let version = "b12359" in
     # CVE-2023-45663: upstream stb's TGA/HDR fix (nothings/stb cd44845) for the
     # vendored stb_image 2.30. See build.sh.
     { file = "stb-cve-2023-45663.patch" } | Local,
+    # The CPU backends are dlopen()ed: search only GGML_BACKEND_DIR, never the
+    # executable's or the current directory. See build.sh.
+    { file = "ggml-backend-dir-only.patch" } | Local,
+    # The x86 CPU variant scorer checks CPUID only: also require the OS to have
+    # enabled the register state (XCR0). See build.sh.
+    { file = "ggml-cpu-feats-xcr0.patch" } | Local,
     # License texts and NOTICEs of everything compiled into the embedded web UI
     # (pkgs#994), generated from this version's tools/ui/package-lock.json by
     # gen-ui-notices.py. The build doesn't run it: rerun it on every bump.
@@ -64,6 +70,9 @@ let version = "b12359" in
     llama-cli = { glob = "usr/bin/llama-cli" } | OutputBin,
 
     libs = { glob = "usr/lib/*" } | OutputLib,
+    # One CPU backend per microarchitecture, dlopen()ed from GGML_BACKEND_DIR
+    # (/usr/lib/ggml) at run time; the loader keeps the best one for the host.
+    cpu-backends = { glob = "usr/lib/ggml/libggml-cpu-*.so*" } | OutputLib,
     # ui-THIRD-PARTY-NOTICES: the web UI's third-party license texts (pkgs#994).
     licenses = { glob = "usr/share/licenses/llama.cpp/*" } | OutputData,
   },
@@ -101,7 +110,8 @@ let version = "b12359" in
         owner = "ggml-org",
         repo = "llama.cpp",
       },
-      build_cost_multiple = 3,
+      # ggml-cpu is compiled once per CPU variant: 8 on arm64, 14 on x86_64.
+      build_cost_multiple = 5,
     } | Attrs,
 
   # No test_deps: base would mask a missing library. Both binaries exited 127
@@ -109,6 +119,24 @@ let version = "b12359" in
   tests = {
     llama-cli = standaloneTest "/usr/bin/llama-cli --version",
     llama-server = standaloneTest "/usr/bin/llama-server --version",
+    # The CPU backend is not linked in: it is loaded from /usr/lib/ggml at run
+    # time, and --version never loads it. `-ot x=CPU` loads every backend and
+    # throws "unknown buffer type" (exit 1) unless a CPU backend loaded and
+    # registered its "CPU" buffer type; --list-devices then exits 0 with no
+    # model. (--list-devices alone lists only non-CPU devices, so it passes with
+    # no CPU backend at all.)
+    cpu-backend-cli =
+      {
+        class = 'Standalone,
+        test_deps = [],
+        cmds = [["/usr/bin/llama-cli", "-ot", "x=CPU", "--list-devices"]],
+      } | Test,
+    cpu-backend-server =
+      {
+        class = 'Standalone,
+        test_deps = [],
+        cmds = [["/usr/bin/llama-server", "-ot", "x=CPU", "--list-devices"]],
+      } | Test,
     # The web UI's notices ship, for this UI version, with the texts that must
     # travel: svelte (MIT), dompurify (MPL-2.0 OR Apache-2.0, both texts) and
     # pdfjs-dist (Apache-2.0; its npm package has no NOTICE, which is recorded).

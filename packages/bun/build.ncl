@@ -27,11 +27,11 @@ let glibc = import "../glibc/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 
-let version = "1.4.4" in
+let version = "1.4.5" in
 let dl_base = "https://github.com/oven-sh/bun/releases/download/bun-v%{version}" in
 let { amd64_sha256, arm64_sha256 } = {
-  amd64_sha256 = "bf8ccbfb2b0b80159e0f9a6d15c55317add8077534dbc6130a3edb52fccb395c",
-  arm64_sha256 = "baa6bb36f51d6e58561e02bbea825038a9df454f673d6d776e8bbf86f8c7850e",
+  amd64_sha256 = "94559b3b528995a49452f9f2404cec74f2efd7d06e0a000a8cd214b02c3666eb",
+  arm64_sha256 = "18656a3bf0ea5641f5796ae4213b75255579a70a0fded2f337933785568cdf84",
 }
 in
 {
@@ -43,7 +43,7 @@ in
     { file = "system-ca-store-default.patch" } | Local,
     {
       url = "https://github.com/oven-sh/bun/archive/refs/tags/bun-v%{version}.tar.gz",
-      sha256 = "00ce37fa5ac393a7d225bcf847365982fceb818b56a19b6884fefd67918468ff",
+      sha256 = "118dc25c12ec4ef3d95b597866a477079e170a071c79ccebca90954e05b0215e",
       extract = true,
       strip_prefix = "bun-bun-v%{version}",
     } | Source,
@@ -179,7 +179,7 @@ in
     # per mode (bun builds its store once per process), checked through
     # tls.connect against local `openssl s_server`s.
     #
-    # What builds the store (bun-v1.4.4 us_get_default_ca_store()). Every mode,
+    # What builds the store (bun-v1.4.5 us_get_default_ca_store()). Every mode,
     # stock or patched, adds what X509_STORE_set_default_paths would: all of
     # $SSL_CERT_FILE (else /etc/ssl/cert.pem) plus <subject-hash>.N lookups in
     # $SSL_CERT_DIR (else /etc/ssl/certs). On Minimal that IS the ca-certificates store, so a CA
@@ -198,7 +198,7 @@ in
     # Probes are CONSTRUCTED, not taken from real differences between the two
     # stores. Up to bun-v1.3.14 we used a compiled-in-only root (DigiCert Global
     # Root CA) and a ca-certificates-only one (Telia RSA TLS Root CA v3), but
-    # bun-v1.4.4's compiled-in roots (packages/bun-usockets/root_certs.der, 118)
+    # bun-v1.4.5's compiled-in roots (packages/bun-usockets/root_certs.der, 118)
     # are exactly ca-certificates 2026.11.05's 118: both follow the same NSS
     # release, so no real root tells them apart, and any later NSS or bun bump
     # can open or close that gap again. So the store under test is built here:
@@ -244,7 +244,7 @@ in
     #   empty file + empty dir         default (fallback)     R=in  S=out
     #
     # Which rows catch which wrong bun:
-    #   - Unpatched bun-v1.4.4 trusts the compiled-in roots by default and
+    #   - Unpatched bun-v1.4.5 trusts the compiled-in roots by default and
     #     skips the loader: default gives R=in and T=out, so the sysx and
     #     SSL_CERT_DIR default rows BOTH fail.
     #   - A union patch (system roots on top of the compiled-in ones on the
