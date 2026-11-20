@@ -5,14 +5,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "4.40" in
+let version = "4.41" in
 {
   name = "nspr",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/nspr-%{version}.tar.gz",
-      sha256 = "c0c1884c627f3db7a783f7c7314c695226b2043696791d15519e7e0578c19bdc",
+      sha256 = "c562b8ddfe93704b7dc077be013f01448fdc6c124b1821c0f10471a71cb2e9e6",
       extract = true,
       strip_prefix = "nspr-%{version}",
     } | Source,
