@@ -51,8 +51,8 @@ in
   # Terminal Markdown viewer, built from source with the zig package.
   #
   # Offline: every zig package the build resolves is pinned (`zig_deps` above),
-  # and build.sh seeds zig's global cache from them with `zig fetch <file>`,
-  # checking each against the content hash the upstream build.zig.zon pins.
+  # and build.sh unpacks each into zig-pkg/<hash>/ once `zig fetch <file>` has
+  # checked it against the content hash the upstream build.zig.zon pins.
   # There is no `needs`, so the sandbox has no network: a missing package fails
   # the build instead of being downloaded (pkgs#1545 lost an amd64 world build
   # to a ConnectionResetByPeer from deps.files.ghostty.org).

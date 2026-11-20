@@ -6,12 +6,22 @@ set -euo pipefail
 export ZIG_GLOBAL_CACHE_DIR="$PWD/.zig-global-cache"
 export ZIG_LOCAL_CACHE_DIR="$PWD/.zig-local-cache"
 
-# Seed the global cache from the pinned Sources (build.ncl), so `zig build`
-# never downloads. `zig fetch <file>` unpacks a local archive, computes its zig
-# package hash and stores it as p/<hash>.tar.gz; `zig build` looks there before
-# it would go to the network. Each hash must equal the one the parent
-# build.zig.zon pins, and the cached archive must exist: a hash that drifts
-# fails here, by name, rather than as a network error in an offline sandbox.
+# Seed zig's package directory from the pinned Sources (build.ncl), so
+# `zig build` never downloads. zig 0.17 resolves a dependency hash from
+# <build root>/zig-pkg/<hash>/ first, then $ZIG_GLOBAL_CACHE_DIR/p/<hash>.tar.gz,
+# then the network.
+#
+# `zig fetch <file>` is the verifier: it unpacks the archive, applies the
+# package's `paths` filter and prints its zig package hash, which must equal
+# the hash the parent build.zig.zon pins. Its cache entry is NOT usable,
+# though: without --save, zig 0.17.1 recompresses the temporary directory
+# rather than the archive's root inside it (Maker/Fetch.zig: `package_root =
+# tmp_directory_path`), so p/<hash>.tar.gz holds <hash>/<archive root>/...
+# and `zig build` unpacks it to a tree with no build.zig.zon at the top,
+# hashing it as a naked N-V-... package (the pkgs#1598 hash mismatch). So the
+# verified archive is unpacked into zig-pkg/<hash>/ directly, and the broken
+# global entries are removed, which leaves the sandbox's lack of network as
+# the only fallback.
 seed() {
   local file="$1" want="$2" got
   got="$(zig fetch "$file")"
@@ -19,10 +29,14 @@ seed() {
     echo "zig package hash mismatch for $file: got $got, want $want" >&2
     exit 1
   fi
-  if [ ! -f "$ZIG_GLOBAL_CACHE_DIR/p/$want.tar.gz" ]; then
-    echo "zig fetch did not cache $want for $file" >&2
+  # zig fetch strips the archive's single top-level directory; so does this.
+  if [ "$(tar -tf "$file" | grep -v '^pax_global_header$' | cut -d/ -f1 | sort -u | wc -l)" != 1 ]; then
+    echo "$file does not have a single top-level directory" >&2
     exit 1
   fi
+  mkdir -p "zig-pkg/$want"
+  tar -xof "$file" -C "zig-pkg/$want" --strip-components=1
+  [ -n "$(ls -A "zig-pkg/$want")" ] || { echo "zig-pkg/$want is empty" >&2; exit 1; }
 }
 seed v1.4.0.tar.gz ghostty-1.4.0-5UdBC-qohwWqLS0BImOz05t4hVyTwbaKslyTPvKYvAtE
 seed uucode-ea62149739404a73c202b48a33bf6dd2af4bd9b0.tar.gz uucode-0.2.0-ZZjBPoGFVgCiflJNFc6Io8xzC67B6PA5bUkk4LT0kCxg
@@ -42,9 +56,11 @@ case "$(uname -m)" in
   *)       echo "unsupported arch: $(uname -m)" >&2; exit 1 ;;
 esac
 
+rm -rf "$ZIG_GLOBAL_CACHE_DIR/p" "$ZIG_GLOBAL_CACHE_DIR/tmp"
+
 # ReleaseSmall is upstream's documented release build. The sandbox has no
 # network (build.ncl declares no `needs`), so this resolves every package from
-# the cache seeded above or fails.
+# zig-pkg/ as seeded above or fails.
 zig build -Doptimize=ReleaseSmall -Dtarget="$ZTARGET" \
   -Dversion="$MINIMAL_ARG_VERSION" --prefix "$OUTPUT_DIR/usr"
 
