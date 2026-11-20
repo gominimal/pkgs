@@ -268,6 +268,24 @@ in
       "zlib-1.4-r0"
       "d3e30d012a3445222b0b4a28f1d4d97ce67387f8b48561921111696da174f0de"
       "7b05bc778b8b25cd880835b40114182bd4d1581717504d0129c810c0a14291cb",
+
+    # Base-layer override added by `pkgmgr alpine-pins --update`: the
+    # alpine-minirootfs-3.24.4 base layer ships libcrypto3 3.5.9-r0, missing
+    # 3.5.9-r1 (CVE-2026-88822, CVE-2026-88823, CVE-2026-95691, CVE-2026-95692, CVE-2026-107496).
+    # DROP THIS once `alpine_release` reaches a minirootfs carrying >= 3.5.9-r1.
+    apk
+      "libcrypto3-3.5.9-r1"
+      "58ea027d8bd64fffac7d2106a9034341d6735387298a5e01b551429c73a13c71"
+      "042026082cc9bc7872d1baa81755c50efa70b05f03b5369fdc5f0a1303009720",
+
+    # Base-layer override added by `pkgmgr alpine-pins --update`: the
+    # alpine-minirootfs-3.24.4 base layer ships libssl3 3.5.9-r0, missing
+    # 3.5.9-r1 (CVE-2026-88822, CVE-2026-88823, CVE-2026-95691, CVE-2026-95692, CVE-2026-107496).
+    # DROP THIS once `alpine_release` reaches a minirootfs carrying >= 3.5.9-r1.
+    apk
+      "libssl3-3.5.9-r1"
+      "4aff30f84e7ac922b026f8b2dd574d91bb3bb01d22767a8a9a0a10c5ef64a44b"
+      "18c5778cbe52e1991303f8531970b05d4e6e036ea08349322f7422f42a689dc7",
   ],
 
   cmd = "./build.sh",

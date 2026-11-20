@@ -24,17 +24,17 @@ let zlib = import "../zlib/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 
-let version = "26.3.0" in
+let version = "26.3.1" in
 {
   name = "mesa",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://archive.mesa3d.org/mesa-26.3.0.tar.xz
+      # https://archive.mesa3d.org/mesa-26.3.1.tar.xz
       # (mesa is developed at gitlab.freedesktop.org/mesa/mesa; archive.mesa3d.org
       #  serves the release tarballs. The gs:// URL is a staged mirror of that.)
       url = "gs://minimal-staging-archives/mesa-%{version}.tar.xz",
-      sha256 = "91d729aa68bb89e4ec857841300bbe922bcb3e52b1f97566ca83930d3b28343a",
+      sha256 = "4e4e438eac7b840a9383988cbb7c08dad8041da544b9319fc26d319fa7348961",
       extract = true,
       strip_prefix = "mesa-%{version}",
     } | Source,

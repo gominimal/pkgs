@@ -103,6 +103,20 @@ let version = "23.1.5" in
           ["/bin/bash", "-c", "./hello | grep -qx 'hello llvm'"],
         ],
       } | Test,
+    # Plain `clang h.c`: the driver links through the system `ld`, which the
+    # `toolchain` group supplies with glibc and the kernel headers (pkgs#805's clang
+    # case). A test dep, not a runtime dep, so llvm's closure does not grow
+    # (gominimal/arch#183), as rust's default_linker tests do.
+    hello_clang_toolchain =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, toolchain, grep],
+        cmds = [
+          ["/bin/bash", "-c", "printf '#include <linux/types.h>\\n#include <stdio.h>\\nint main(void){__u32 x=7;printf(\"hello clang %%u\\\\n\",x);return 0;}\\n' > h.c"],
+          ["/usr/bin/clang", "h.c", "-o", "h"],
+          ["/bin/bash", "-c", "./h | grep -qx 'hello clang 7'"],
+        ],
+      } | Test,
   },
   attrs =
     {

@@ -1,0 +1,202 @@
+Provenance: Debian expect 5.45.4-10, debian/patches/13-implicit-defs.patch
+  https://salsa.debian.org/tcltk-team/expect/-/raw/7968658ab944388db44d3b3f9ee2a32f84294bc6/debian/patches/13-implicit-defs.patch
+  (tcltk-team/expect master at commit 7968658ab944388db44d3b3f9ee2a32f84294bc6, fetched 2026-11-18)
+  sha256 of the file as fetched: 3dfcf4474520134fc88893b7d917aa0834d6b017a625bac80836d351bde9fd2f
+License: public domain. Expect is a NIST work in the public domain, and Debian's
+  debian/copyright places its packaging (debian/*, these patches included) in the
+  public domain too.
+Everything below the END-OF-PROVENANCE line is the fetched file, byte for byte
+(check: sed '1,/^END-OF-PROVENANCE$/d' <this file> | sha256sum).
+END-OF-PROVENANCE
+Author: LaMont Jones <lamont@debian.org>
+Description: Fix implicit definitions throughout (Closes: #441115).
+ Also, closes #1066257.
+
+--- a/exp_chan.c
++++ b/exp_chan.c
+@@ -34,6 +34,7 @@
+ #include "exp_rename.h"
+ #include "exp_prog.h"
+ #include "exp_command.h"
++#include "exp_event.h"
+ #include "exp_log.h"
+ #include "tcldbg.h" /* Dbg_StdinMode */
+ 
+--- a/exp_clib.c
++++ b/exp_clib.c
+@@ -7,6 +7,9 @@
+ would appreciate credit if this program or parts of it are used.
+ */
+ 
++#include <unistd.h>
++#include <sys/wait.h>
++
+ #include "expect_cf.h"
+ #include <stdio.h>
+ #include <setjmp.h>
+@@ -1734,6 +1737,7 @@
+ #define sysreturn(x)	return(errno = x, -1)
+ 
+ void exp_init_pty();
++void exp_init_tty();
+ 
+ /*
+    The following functions are linked from the Tcl library.  They
+--- a/exp_command.h
++++ b/exp_command.h
+@@ -7,6 +7,9 @@
+ would appreciate credit if this program or parts of it are used.
+ */
+ 
++#ifndef __EXP_COMMAND_H
++#define __EXP_COMMAND_H
++
+ #ifdef HAVE_SYS_WAIT_H
+   /* ISC doesn't def WNOHANG unless _POSIX_SOURCE is def'ed */
+ # ifdef WNOHANG_REQUIRES_POSIX_SOURCE
+@@ -100,11 +103,11 @@
+     char name[EXP_CHANNELNAMELEN+1]; /* expect and interact set variables
+ 				   to channel name, so for efficiency
+ 				   cache it here */
+-    int fdin;		/* input fd */
+-    int fdout;		/* output fd - usually the same as fdin, although
++    long fdin;		/* input fd - may be used for storing ClientData, a pointer */
++    long fdout;	/* output fd - usually the same as fdin, although
+ 			   may be different if channel opened by tcl::open */
+     ExpOrigin* chan_orig;   /* If opened by someone else, i.e. tcl::open */
+-    int fd_slave;	/* slave fd if "spawn -pty" used */
++    long fd_slave;	/* slave fd if "spawn -pty" used */
+ 
+     /* this may go away if we find it is not needed */
+     /* it might be needed by inherited channels */
+@@ -242,6 +245,7 @@
+ EXTERN void		exp_init_send _ANSI_ARGS_((void));
+ EXTERN void		exp_init_unit_random _ANSI_ARGS_((void));
+ EXTERN void		exp_init_sig _ANSI_ARGS_((void));
++EXTERN void		exp_ecmd_remove_state_direct_and_indirect _ANSI_ARGS_((Tcl_Interp *interp,ExpState *esPtr));
+ EXTERN void		expChannelInit _ANSI_ARGS_((void));
+ EXTERN int		expChannelCountGet _ANSI_ARGS_((void));
+ EXTERN int              expChannelStillAlive _ANSI_ARGS_((ExpState *, char *));
+@@ -338,6 +342,8 @@
+ EXTERN ExpState *	expStdinoutGet _ANSI_ARGS_((void));
+ EXTERN ExpState *	expDevttyGet _ANSI_ARGS_((void));
+ 
++EXTERN int		Exp_StringCaseMatch _ANSI_ARGS_((Tcl_UniChar *string, int strlen, Tcl_UniChar *pattern, int plen, int nocase, int *offset));
++
+ /* generic functions that really should be provided by Tcl */
+ #if 0 /* Redefined as macros. */
+ EXTERN int		expSizeGet _ANSI_ARGS_((ExpState *));
+@@ -349,6 +355,8 @@
+ 
+ #define EXP_CMDINFO_CLOSE  "expect/cmdinfo/close"
+ #define EXP_CMDINFO_RETURN "expect/cmdinfo/return"
++
++#endif /* __EXP_COMMAND_H */
+ 
+ /*
+  * Local Variables:
+--- a/exp_main_sub.c
++++ b/exp_main_sub.c
+@@ -2,6 +2,7 @@
+ 
+ #include "expect_cf.h"
+ #include <stdio.h>
++#include <getopt.h>
+ #include <errno.h>
+ #ifdef HAVE_INTTYPES_H
+ #  include <inttypes.h>
+--- a/exp_tty.h
++++ b/exp_tty.h
+@@ -21,6 +21,7 @@
+ int exp_tty_raw_noecho(Tcl_Interp *interp, exp_tty *tty_old, int *was_raw, int *was_echo);
+ int exp_israw(void);
+ int exp_isecho(void);
++EXTERN int exp_tty_cooked_echo _ANSI_ARGS_((Tcl_Interp *interp, exp_tty *tty_old, int *was_raw, int *was_echo));
+ 
+ void exp_tty_set(Tcl_Interp *interp, exp_tty *tty, int raw, int echo);
+ int exp_tty_set_simple(exp_tty *tty);
+--- a/exp_tty_in.h
++++ b/exp_tty_in.h
+@@ -11,6 +11,8 @@
+ #define __EXP_TTY_IN_H__
+ 
+ #include "expect_cf.h"
++#include "expect.h"
++#include <tcl.h>
+ 
+ #ifdef __MACHTEN__
+ #include "sys/types.h"
+--- a/exp_win.c
++++ b/exp_win.c
+@@ -51,6 +51,7 @@
+ #   include <sys/ptem.h>
+ #endif /* HAVE_SYS_PTEM_H */
+ 
++#include "expect.h"
+ #include "exp_tty_in.h"
+ #include "exp_win.h"
+ 
+--- a/exp_win.h
++++ b/exp_win.h
+@@ -1,3 +1,5 @@
++#ifndef __EXP_WIN_H
++#define __EXP_WIN_H
+ /* exp_win.h - window support
+ 
+ Written by: Don Libes, NIST, 10/25/93
+@@ -8,8 +10,8 @@
+ 
+ #include <tcl.h> /* For _ANSI_ARGS_ */
+ 
+-int exp_window_size_set();
+-int exp_window_size_get();
++EXTERN int exp_window_size_set _ANSI_ARGS_((int fd));
++EXTERN int exp_window_size_get _ANSI_ARGS_((int fd));
+ 
+ void  exp_win_rows_set    _ANSI_ARGS_ ((char* rows));
+ char* exp_win_rows_get    _ANSI_ARGS_ ((void));
+@@ -20,3 +22,5 @@
+ char* exp_win2_rows_get    _ANSI_ARGS_ ((int fd));
+ void  exp_win2_columns_set _ANSI_ARGS_ ((int fd, char* columns));
+ char* exp_win2_columns_get _ANSI_ARGS_ ((int fd));
++
++#endif /* __EXP_WIN_H */
+--- a/pty_termios.c
++++ b/pty_termios.c
+@@ -9,12 +9,19 @@
+ 
+ #include <stdio.h>
+ #include <signal.h>
++#include <string.h>
++#include <pty.h>
++#include <utmp.h>
+ 
+ #if defined(SIGCLD) && !defined(SIGCHLD)
+ #define SIGCHLD SIGCLD
+ #endif
+ 
+ #include "expect_cf.h"
++#include <tcl.h>
++#include "expect.h"
++#include "exp_tty_in.h"
++#include "exp_int.h"  /* expErrnoMsg() prototype */
+ 
+ /*
+    The following functions are linked from the Tcl library.  They
+@@ -99,7 +106,6 @@
+ 
+ #include "exp_win.h"
+ 
+-#include "exp_tty_in.h"
+ #include "exp_rename.h"
+ #include "exp_pty.h"
+ 
+@@ -369,7 +375,7 @@
+ #define W_OK 02
+ #endif
+ 
+-static int ttyname_checked(int fd) {
++static char * ttyname_checked(int fd) {
+ 	const char *result;
+ 	result= ttyname(fd);
+ 	if (!result) {

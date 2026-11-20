@@ -18,6 +18,7 @@ let openssl = import "../openssl/build.ncl" in
 let protobuf = import "../protobuf/build.ncl" in
 let re2 = import "../re2/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 let python = import "../python/build.ncl" in
 
 {
@@ -55,6 +56,8 @@ let python = import "../python/build.ncl" in
 
   runtime_deps = [
     glibc,
+    # The system trust store grpc reads instead of its own roots.pem (build.sh).
+    ca-certificates,
     subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     abseil-cpp,
     c-ares,
@@ -75,7 +78,6 @@ let python = import "../python/build.ncl" in
     headers = { glob = "usr/include/**" } | OutputData,
     cmake = { glob = "usr/lib/cmake/**" } | OutputData,
     pkgconfig = { glob = "usr/lib/pkgconfig/**" } | OutputData,
-    roots = { glob = "usr/share/grpc/roots.pem" } | OutputData,
   },
 
   attrs = {
@@ -88,6 +90,16 @@ let python = import "../python/build.ncl" in
   },
 
   tests = {
+    # No private trust store: the system bundle (ca-certificates, with the
+    # CVE-2026-111943 distrust applied) is what grpc's C core loads.
+    system_trust_store =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap],
+        cmds = [
+          ["/bin/bash", "-c", "test ! -e /usr/share/grpc/roots.pem && test -s /etc/ssl/certs/ca-certificates.crt"],
+        ],
+      } | Test,
     link_and_run =
       {
         class = 'Standalone,
