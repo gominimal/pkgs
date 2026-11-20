@@ -3,6 +3,10 @@ set -euo pipefail
 
 # The kernel tarball is extracted with strip_prefix, so we start at the tree
 # root; perf lives in tools/perf and is built with its own Makefile.
+#
+# min's build and test sandboxes mount no /sys. perf reads software events
+# and PMUs from /sys/bus/event_source, so there `perf list sw` shows only its
+# tool events and `perf record` writes no samples (see the tests in build.ncl).
 
 # Reproducibility (pkgs AGENTS.md). perf's Makefile.config builds CFLAGS from
 # EXTRA_CFLAGS and appends to LDFLAGS from the environment.
