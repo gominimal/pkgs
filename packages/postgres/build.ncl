@@ -21,7 +21,7 @@ let zlib = import "../zlib/build.ncl" in
 # without it `initdb` aborts with "invalid locale settings".
 let glibc-locale-c-utf8 = import "../glibc-locale-c-utf8/build.ncl" in
 
-let version = "18.7" in
+let version = "19.0" in
 
 # server_test runs `check` (bash, with `start` and `q` defined) against a
 # throwaway cluster, after the same passwd handling as initdb_c_utf8 below.
@@ -57,7 +57,7 @@ in
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/postgresql-%{version}.tar.gz",
-      sha256 = "19c2dc7d8520e10532d082b43c36c4d2dcc6cd9e40506c6f598e7338f84bbde7",
+      sha256 = "763a0da85d78278db309b7fdc63dc7f980b256507a97384f074a6c78dd6d926a",
     } | Source,
     base,
     make,
