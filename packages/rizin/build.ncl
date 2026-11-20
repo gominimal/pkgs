@@ -15,6 +15,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let tree-sitter = import "../tree-sitter/build.ncl" in
+let xxhash = import "../xxhash/build.ncl" in
 let xz = import "../xz/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
@@ -40,7 +41,7 @@ let version = "0.9.1" in
     pkgconf,
     python, # meson is Python
     glibc,
-    # The seven libraries we link from the SYSTEM rather than let rizin vendor,
+    # The eight libraries we link from the SYSTEM rather than let rizin vendor,
     # so a CVE in any of them is visible to pkgscan instead of buried in a
     # static blob. See the use_sys_* rationale in build.sh.
     zlib,
@@ -50,6 +51,7 @@ let version = "0.9.1" in
     pcre2,
     openssl,
     tree-sitter,
+    xxhash,
   ],
   runtime_deps = [
     bash,
@@ -61,6 +63,7 @@ let version = "0.9.1" in
     pcre2,
     openssl,
     tree-sitter,
+    xxhash, # librz_hash NEEDs libxxhash.so.0
   ],
 
   cmd = "./build.sh",
@@ -85,7 +88,7 @@ let version = "0.9.1" in
     # SILENTLY: meson probes for each system library and falls back to the
     # vendored subproject when one is not found, printing a note and carrying
     # on to a successful build. You would get a rizin that works perfectly and
-    # has seven invisible bundled libraries — the exact outcome these flags
+    # has eight invisible bundled libraries — the exact outcome these flags
     # exist to prevent, and one nothing else here would detect.
     system_libs =
       {
@@ -105,7 +108,7 @@ let version = "0.9.1" in
             "-c",
             m%"
               set -eu
-              need="libz.so libzstd liblzma liblz4 libpcre2 libcrypto libtree-sitter"
+              need="libz.so libzstd liblzma liblz4 libpcre2 libcrypto libtree-sitter libxxhash"
               all=$(readelf -d /usr/lib/librz*.so.* 2>/dev/null)
               for lib in $need; do
                 case "$all" in

@@ -7,14 +7,14 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let nasm = import "../nasm/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.5.4" in
+let version = "1.5.5" in
 {
   name = "dav1d",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://downloads.videolan.org/pub/videolan/dav1d/%{version}/dav1d-%{version}.tar.xz",
-      sha256 = "686616b7c69eb88d44459391ab25cac13b6647a3b288835c5784e71c1514a5c5",
+      sha256 = "ca96b1d0ba3f01f55de7231d775892b64994ba061aaeeaaa4f662a390b3abf9e",
       extract = true,
       strip_prefix = "dav1d-%{version}",
     } | Source,

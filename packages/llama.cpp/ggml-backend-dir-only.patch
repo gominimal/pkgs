@@ -1,0 +1,26 @@
+diff --git a/ggml/src/ggml-backend-reg.cpp b/ggml/src/ggml-backend-reg.cpp
+index c3bc926..f752ae9 100644
+--- a/ggml/src/ggml-backend-reg.cpp
++++ b/ggml/src/ggml-backend-reg.cpp
+@@ -486,8 +486,12 @@ static ggml_backend_reg_t ggml_backend_load_best(const char * name, bool silent,
+     std::vector<fs::path> search_paths;
+     if (user_search_path == nullptr) {
+ #ifdef GGML_BACKEND_DIR
++        // minimal (pkgs#975): an installed build searches ONLY its backend directory.
++        // Every matching file found is dlopen()ed (constructors run) before scoring,
++        // so searching the executable's directory or the current directory would run
++        // any libggml-*.so planted where llama-server/llama-cli is started.
+         search_paths.push_back(fs::u8path(GGML_BACKEND_DIR));
+-#endif
++#else
+         // default search paths: executable directory, current directory
+         search_paths.push_back(get_executable_path());
+         std::error_code cwd_ec;
+@@ -497,6 +501,7 @@ static ggml_backend_reg_t ggml_backend_load_best(const char * name, bool silent,
+         } else {
+             search_paths.push_back(cwd);
+         }
++#endif
+     } else {
+         search_paths.push_back(fs::u8path(user_search_path));
+     }

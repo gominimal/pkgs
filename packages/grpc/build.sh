@@ -29,3 +29,17 @@ cmake -B build \
   -DCMAKE_CXX_STANDARD=14
 make -C build -j$(nproc)
 make DESTDIR=$OUTPUT_DIR -C build install
+
+# Do not embed a trust store (AGENTS.md). grpc installs its own root bundle as
+# usr/share/grpc/roots.pem, a private copy that never gets our ca-certificates
+# distrust list (CVE-2026-111943: emSign ECC Root CA - G3 and AAA Certificate
+# Services, packages/ca-certificates/distrust.txt). grpc 1.85's C core reads the
+# OS trust store before it (DefaultSslRootStore::ComputePemRootCerts in
+# src/core/credentials/transport/tls/ssl_utils.cc: config path, language
+# override, then LoadSystemRootCerts, whose first Linux path is
+# /etc/ssl/certs/ca-certificates.crt, and only then roots.pem). So the bundle
+# matters only where there is no system store, and there it would silently
+# trust a stale list. It is not shipped; ca-certificates is a runtime dep, so
+# the system store is always present.
+rm -f "$OUTPUT_DIR/usr/share/grpc/roots.pem"
+rmdir "$OUTPUT_DIR/usr/share/grpc" 2>/dev/null || true

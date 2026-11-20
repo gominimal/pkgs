@@ -1,0 +1,253 @@
+Provenance: the part of Linux From Scratch's expect-5.45.4-gcc15-1.patch that
+  Debian's patches (debian-*.patch, applied first) do not already make.
+  https://www.linuxfromscratch.org/patches/lfs/development/expect-5.45.4-gcc15-1.patch
+  sha256 ab5fc0af9e2e0f80d7623c1a3a3dbeb1da3d8c9134276792199df401f9eb2cec
+  (Xi Ruoyao, 2025-04-21; from Fedora's covscan/c99 patches plus C23 fixes.
+  It was the whole patch until the Tcl 9 port; mirrored as
+  gs://minimal-staging-archives/expect-5.45.4-gcc15-1.patch.)
+  Produced by applying the LFS patch on top of the Debian series and keeping
+  the hunks that applied; every hunk that did not apply makes a change Debian
+  already makes (prototypes, exp_deleteProc, the channel type). What is left:
+  the configure C99 test programs (int main, no implicit exit), the
+  exp_background_channelhandler prototype, va_end on early returns, <pty.h>.
+License: these are the LFS patch's own lines, carried as before (this recipe has
+  applied the whole LFS patch since its gcc 15 fix); expect itself is a NIST
+  work in the public domain.
+END-OF-PROVENANCE
+diff --git a/configure b/configure
+index 28563f8..dfbd000 100755
+--- a/configure
++++ b/configure
+@@ -7994,7 +7994,6 @@ main ()
+ {
+ extern long timezone;
+ 	    timezone += 1;
+-	    exit (0);
+   ;
+   return 0;
+ }
+@@ -8030,7 +8029,6 @@ main ()
+ {
+ extern time_t timezone;
+ 		timezone += 1;
+-		exit (0);
+   ;
+   return 0;
+ }
+@@ -8791,7 +8789,7 @@ fi
+ $as_echo_n "checking for memcpy... " >&6; }
+ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+-
++#include <string.h>
+ int
+ main ()
+ {
+@@ -8831,7 +8829,7 @@ else
+ /* end confdefs.h.  */
+ 
+ #include <sys/wait.h>
+-main() {
++int main() {
+ #ifndef WNOHANG
+ 	return 0;
+ #else
+@@ -8867,7 +8865,7 @@ else
+ 
+ #include <stdio.h>
+ #include <sys/wait.h>
+-main() {
++int main() {
+ #ifdef WNOHANG
+ 	FILE *fp = fopen("wnohang","w");
+ 	fprintf(fp,"%d",WNOHANG);
+@@ -8935,7 +8933,9 @@ else
+ /* end confdefs.h.  */
+ 
+ #include <signal.h>
+-#define RETSIGTYPE $retsigtype
++#include <stdlib.h>
++#include <unistd.h>
++#include <sys/wait.h>
+ 
+ int signal_rearms = 0;
+ 
+@@ -8952,7 +8952,7 @@ int n;
+ signal_rearms++;
+ }
+ 
+-main()
++int main()
+ {
+ 	signal(SIGINT,parent_sigint_handler);
+ 
+@@ -9234,10 +9234,9 @@ else
+ /* end confdefs.h.  */
+ 
+ #include <sgtty.h>
+-main()
++int main()
+ {
+   struct sgttyb tmp;
+-  exit(0);
+ }
+ _ACEOF
+ if ac_fn_c_try_run "$LINENO"; then :
+@@ -9274,10 +9273,9 @@ else
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+ #include <termio.h>
+-  main()
++  int main()
+   {
+     struct termio tmp;
+-    exit(0);
+   }
+ _ACEOF
+ if ac_fn_c_try_run "$LINENO"; then :
+@@ -9312,10 +9310,9 @@ else
+ #  include <inttypes.h>
+ #  endif
+ #  include <termios.h>
+-  main()
++  int main()
+   {
+     struct termios tmp;
+-    exit(0);
+   }
+ _ACEOF
+ if ac_fn_c_try_run "$LINENO"; then :
+@@ -9350,7 +9347,7 @@ else
+ #include <inttypes.h>
+ #endif
+ #include <termios.h>
+-main() {
++int main() {
+ #if defined(TCGETS) || defined(TCGETA)
+ 	return 0;
+ #else
+@@ -9388,7 +9385,7 @@ else
+ #include <inttypes.h>
+ #endif
+ #include <termios.h>
+-main() {
++int main() {
+ #ifdef TIOCGWINSZ
+ 	return 0;
+ #else
+@@ -9423,7 +9420,7 @@ else
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+ 
+-main(){
++int main(){
+ #ifdef CRAY
+ 	return 0;
+ #else
+@@ -9565,12 +9562,10 @@ else
+ 
+ extern char *tzname[2];
+ extern int daylight;
+-main()
++int main()
+ {
+   int *x = &daylight;
+   char **y = tzname;
+-
+-  exit(0);
+ }
+ _ACEOF
+ if ac_fn_c_try_run "$LINENO"; then :
+diff --git a/exp_chan.c b/exp_chan.c
+index da348d7..af0e71e 100644
+--- a/exp_chan.c
++++ b/exp_chan.c
+@@ -55,6 +55,8 @@ static void		ExpWatchProc _ANSI_ARGS_((ClientData instanceData,
+ 		            int mask));
+ static int		ExpGetHandleProc _ANSI_ARGS_((ClientData instanceData,
+ 		            int direction, ClientData *handlePtr));
++void			exp_background_channelhandler _ANSI_ARGS_((ClientData,
++		            int));
+ 
+ /*
+  * This structure describes the channel type structure for Expect-based IO:
+diff --git a/exp_clib.c b/exp_clib.c
+index b886fd5..320d1fe 100644
+--- a/exp_clib.c
++++ b/exp_clib.c
+@@ -40,6 +40,14 @@ would appreciate credit if this program or parts of it are used.
+ # endif
+ #endif
+ 
++#ifdef HAVE_UNISTD_H
++# include <unistd.h>
++#endif
++
++//#ifdef HAVE_SYS_WAIT_H
++# include <sys/wait.h>
++//#endif
++
+ #ifdef HAVE_SYS_FCNTL_H
+ #  include <sys/fcntl.h>
+ #else
+@@ -2261,6 +2269,7 @@ exp_spawnl TCL_VARARGS_DEF(char *,arg1)
+ 		argv[i] = va_arg(args,char *);
+ 		if (!argv[i]) break;
+ 	}
++	va_end(args);
+ 	i = exp_spawnv(argv[0],argv+1);
+ 	free((char *)argv);
+ 	return(i);
+@@ -2734,6 +2743,7 @@ exp_expectl TCL_VARARGS_DEF(int,arg1)
+ 		/* Ultrix 4.2 compiler refuses enumerations comparison!? */
+ 		if ((int)type < 0 || (int)type >= (int)exp_bogus) {
+ 			fprintf(stderr,"bad type (set %d) in exp_expectl\n",i);
++			va_end(args);
+ 			sysreturn(EINVAL);
+ 		}
+ 
+@@ -2799,6 +2809,7 @@ exp_fexpectl TCL_VARARGS_DEF(FILE *,arg1)
+ 		/* Ultrix 4.2 compiler refuses enumerations comparison!? */
+ 		if ((int)type < 0 || (int)type >= (int)exp_bogus) {
+ 			fprintf(stderr,"bad type (set %d) in exp_expectl\n",i);
++			va_end(args);
+ 			sysreturn(EINVAL);
+ 		}
+ 
+diff --git a/exp_log.c b/exp_log.c
+index d22a747..96d826e 100644
+--- a/exp_log.c
++++ b/exp_log.c
+@@ -178,7 +178,10 @@ expStdoutLog TCL_VARARGS_DEF(int,arg1)
+     force_stdout = TCL_VARARGS_START(int,arg1,args);
+     fmt = va_arg(args,char *);
+ 
+-    if ((!tsdPtr->logUser) && (!force_stdout) && (!tsdPtr->logAll)) return;
++    if ((!tsdPtr->logUser) && (!force_stdout) && (!tsdPtr->logAll)) {
++	va_end(args);
++	return;
++    }
+ 
+     (void) vsprintf(bigbuf,fmt,args);
+     expDiagWriteBytes(bigbuf,-1);
+diff --git a/pty_termios.c b/pty_termios.c
+index 0549c99..f556b62 100644
+--- a/pty_termios.c
++++ b/pty_termios.c
+@@ -192,6 +192,7 @@ static char slave_name[MAXPTYNAMELEN];
+ #endif /* HAVE_SCO_CLIST_PTYS */
+ 
+ #ifdef HAVE_OPENPTY
++#include <pty.h>
+ static char master_name[64];
+ static char slave_name[64];
+ #endif
+@@ -207,7 +208,7 @@ char *name;		/* name of pty */
+ {
+ #define MAX_ARGLIST 10240
+ 	char buf[MAX_ARGLIST];	/* overkill is easier */
+-	RETSIGTYPE (*old)();	/* save old sigalarm handler */
++	RETSIGTYPE (*old)(int);	/* save old sigalarm handler */
+ 	int pid;
+ 	
+ 	old = signal(SIGCHLD, SIG_DFL);

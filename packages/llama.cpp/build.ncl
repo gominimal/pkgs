@@ -1,10 +1,12 @@
-let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let git = import "../git/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
+let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let grep = import "../grep/build.ncl" in
 
 let curl = import "../curl/build.ncl" in
 let hwdata = import "../hwdata/build.ncl" in
@@ -19,6 +21,17 @@ let version = "b12359" in
     # CVE-2023-45663: upstream stb's TGA/HDR fix (nothings/stb cd44845) for the
     # vendored stb_image 2.30. See build.sh.
     { file = "stb-cve-2023-45663.patch" } | Local,
+    # The CPU backends are dlopen()ed: search only GGML_BACKEND_DIR, never the
+    # executable's or the current directory. See build.sh.
+    { file = "ggml-backend-dir-only.patch" } | Local,
+    # The x86 CPU variant scorer checks CPUID only: also require the OS to have
+    # enabled the register state (XCR0). See build.sh.
+    { file = "ggml-cpu-feats-xcr0.patch" } | Local,
+    # License texts and NOTICEs of everything compiled into the embedded web UI
+    # (pkgs#994), generated from this version's tools/ui/package-lock.json by
+    # gen-ui-notices.py. The build doesn't run it: rerun it on every bump.
+    # build.sh fails if the file's header doesn't match the UI and lock it builds.
+    { file = "ui-THIRD-PARTY-NOTICES" } | Local,
     {
       url = "gs://minimal-staging-archives/ggml-org/llama.cpp/%{version}.tar.gz",
       sha256 = "e2eadc0fd06f81abea3b8012584e67bea3b403d91bcd1b3072b656cbcb2fb4bb",
@@ -57,6 +70,11 @@ let version = "b12359" in
     llama-cli = { glob = "usr/bin/llama-cli" } | OutputBin,
 
     libs = { glob = "usr/lib/*" } | OutputLib,
+    # One CPU backend per microarchitecture, dlopen()ed from GGML_BACKEND_DIR
+    # (/usr/lib/ggml) at run time; the loader keeps the best one for the host.
+    cpu-backends = { glob = "usr/lib/ggml/libggml-cpu-*.so*" } | OutputLib,
+    # ui-THIRD-PARTY-NOTICES: the web UI's third-party license texts (pkgs#994).
+    licenses = { glob = "usr/share/licenses/llama.cpp/*" } | OutputData,
   },
 
   attrs =
@@ -66,22 +84,34 @@ let version = "b12359" in
       # - vendor/ C++: cpp-httplib, nlohmann/json (MIT); miniaudio, stb,
       #   sheredom/subprocess.h (public domain or Unlicense).
       # - The embedded web UI (llama-ui dist for this build, in
-      #   libllama-server-impl.so): 402 npm packages per tools/ui's
+      #   libllama-server-impl.so): 362 npm packages from tools/ui's
       #   package-lock.json. Mostly MIT and ISC, plus BSD-3-Clause (d3 modules,
       #   highlight.js), Apache-2.0 (pdfjs-dist, dexie, @internationalized/date,
       #   @swc/helpers, @chevrotain/types, aria-query, axobject-query),
       #   BSD-2-Clause (entities, json-schema-typed), DOMPurify
       #   (MPL-2.0 OR Apache-2.0; Apache-2.0 taken), robust-predicates
       #   (Unlicense), tslib (0BSD). The KaTeX fonts embedded in its CSS are MIT.
-      # The minified bundle keeps only pdf.js's Apache-2.0 header and ships no
-      # license texts or NOTICE files: tracked in pkgs#994.
-      license_spdx = "MIT AND Apache-2.0 AND BSD-3-Clause AND BSD-2-Clause AND ISC AND 0BSD AND Unlicense",
+      #   The llama.cpp logo, favicons and app icons are from ggml-org's
+      #   llama-brand: CC-BY-NC-4.0, plus its BRAND-USAGE.md grant to
+      #   redistribute them, commercially too, in software packages. CC-BY-NC
+      #   alone would not allow that, and the combination has no SPDX id, so it
+      #   is declared as LicenseRef-llama-brand: an SBOM or license scan sees
+      #   the marks' terms instead of an expression that silently omits them.
+      #   Both texts are in ui-THIRD-PARTY-NOTICES.
+      # The minified bundle carries no license texts or NOTICE files, so every
+      # one is in ui-THIRD-PARTY-NOTICES (pkgs#994), installed under
+      # usr/share/licenses/llama.cpp and generated from the lock by
+      # gen-ui-notices.py: the npm packages plus 3 libraries vendored in
+      # tools/ui/src/lib/vendors (nerdamer-prime, decimal.js: MIT; big-integer:
+      # Unlicense).
+      license_spdx = "MIT AND Apache-2.0 AND BSD-3-Clause AND BSD-2-Clause AND ISC AND 0BSD AND Unlicense AND LicenseRef-llama-brand",
       source_provenance = {
         category = 'GithubRepo,
         owner = "ggml-org",
         repo = "llama.cpp",
       },
-      build_cost_multiple = 3,
+      # ggml-cpu is compiled once per CPU variant: 8 on arm64, 14 on x86_64.
+      build_cost_multiple = 5,
     } | Attrs,
 
   # No test_deps: base would mask a missing library. Both binaries exited 127
@@ -89,5 +119,38 @@ let version = "b12359" in
   tests = {
     llama-cli = standaloneTest "/usr/bin/llama-cli --version",
     llama-server = standaloneTest "/usr/bin/llama-server --version",
+    # The CPU backend is not linked in: it is loaded from /usr/lib/ggml at run
+    # time, and --version never loads it. `-ot x=CPU` loads every backend and
+    # throws "unknown buffer type" (exit 1) unless a CPU backend loaded and
+    # registered its "CPU" buffer type; --list-devices then exits 0 with no
+    # model. (--list-devices alone lists only non-CPU devices, so it passes with
+    # no CPU backend at all.)
+    cpu-backend-cli =
+      {
+        class = 'Standalone,
+        test_deps = [],
+        cmds = [["/usr/bin/llama-cli", "-ot", "x=CPU", "--list-devices"]],
+      } | Test,
+    cpu-backend-server =
+      {
+        class = 'Standalone,
+        test_deps = [],
+        cmds = [["/usr/bin/llama-server", "-ot", "x=CPU", "--list-devices"]],
+      } | Test,
+    # The web UI's notices ship, for this UI version, with the texts that must
+    # travel: svelte (MIT), dompurify (MPL-2.0 OR Apache-2.0, both texts) and
+    # pdfjs-dist (Apache-2.0; its npm package has no NOTICE, which is recorded).
+    ui-notices =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, grep],
+        cmds = [
+          ["/bin/bash", "-c", "grep -qx 'llama-ui version: %{version}' /usr/share/licenses/llama.cpp/ui-THIRD-PARTY-NOTICES"],
+          ["/bin/bash", "-c", "grep -qx 'svelte@[0-9.]*' /usr/share/licenses/llama.cpp/ui-THIRD-PARTY-NOTICES && grep -qx 'dompurify@[0-9.]*' /usr/share/licenses/llama.cpp/ui-THIRD-PARTY-NOTICES"],
+          ["/bin/bash", "-c", "grep -A4 -x 'pdfjs-dist@[0-9.]*' /usr/share/licenses/llama.cpp/ui-THIRD-PARTY-NOTICES | grep -qx 'License: Apache-2.0'"],
+          ["/bin/bash", "-c", "grep -A4 -x 'pdfjs-dist@[0-9.]*' /usr/share/licenses/llama.cpp/ui-THIRD-PARTY-NOTICES | grep -qx 'NOTICE: none in the package'"],
+          ["/bin/bash", "-c", "grep -q 'Apache License' /usr/share/licenses/llama.cpp/ui-THIRD-PARTY-NOTICES && grep -q 'Mozilla Public License' /usr/share/licenses/llama.cpp/ui-THIRD-PARTY-NOTICES"],
+        ],
+      } | Test,
   },
 } | BuildSpec

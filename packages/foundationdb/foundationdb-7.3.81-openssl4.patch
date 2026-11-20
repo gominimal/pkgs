@@ -1,0 +1,88 @@
+foundationdb 7.3.81: build against OpenSSL 4.x
+
+OpenSSL 4.0 const-qualified the X509 accessors (X509_get_subject_name(),
+X509_get_issuer_name(), X509_NAME_get_entry(), X509_NAME_ENTRY_get_data())
+and made ASN1_STRING opaque. FDB 7.3 breaks in four places:
+
+  1. flow/MkCert.cpp makeCertNative() added entries to the pointer
+     X509_get_subject_name() returns, which is now const. It now builds a
+     fresh X509_NAME and installs a copy with X509_set_subject_name(); the
+     encoded certificate is the same. MkCert only generates test/tool certs.
+  2. flow/TLSConfig.actor.cpp match_criteria_entry()/match_name_criteria():
+     const X509_NAME_ENTRY / ASN1_STRING. Type qualifiers only.
+  3. flow/TLSConfig.actor.cpp check_verify()/match_criteria(): const
+     X509_NAME for the subject/issuer. Type qualifiers only; no comparison,
+     branch or return value changes in the peer-verification rules.
+  4. The bundled Boost 1.78 asio rfc2818_verification.ipp reads ASN1_STRING
+     members directly. Not patched here: build.sh pre-defines its include
+     guard (FDB never uses that deprecated class; Boost >= 1.87 removed it).
+
+Source-compatible with OpenSSL 3.x. Not upstream: apple/foundationdb#14348
+pins OpenSSL 3.5 instead. Drop this patch when upstream supports OpenSSL 4.
+
+--- a/flow/MkCert.cpp
++++ b/flow/MkCert.cpp
+@@ -213,7 +213,9 @@
+ 	OSSL_ASSERT(notAfter);
+ 	OSSL_ASSERT(::X509_gmtime_adj(notAfter, spec.offsetNotAfter));
+ 	OSSL_ASSERT(0 < ::X509_set_pubkey(x, keypair.nativeHandle()));
+-	auto subjectName = ::X509_get_subject_name(x);
++	// OpenSSL 4 returns the certificate's own subject name as const, so build the
++	// name separately and install a copy with X509_set_subject_name().
++	auto subjectName = AutoCPointer(::X509_NAME_new(), &::X509_NAME_free);
+ 	OSSL_ASSERT(subjectName);
+ 	for (const auto& entry : spec.subjectName) {
+ 		// field names are expected to null-terminate
+@@ -222,9 +224,11 @@
+ 		            ::X509_NAME_add_entry_by_txt(
+ 		                subjectName, fieldName.c_str(), MBSTRING_ASC, entry.bytes.begin(), entry.bytes.size(), -1, 0));
+ 	}
++	OSSL_ASSERT(0 < ::X509_set_subject_name(x, subjectName));
+ 	auto issuerName = ::X509_get_issuer_name(x);
+ 	OSSL_ASSERT(issuerName);
+-	OSSL_ASSERT(::X509_set_issuer_name(x, (isSelfSigned ? subjectName : ::X509_get_subject_name(issuer.cert.get()))));
++	OSSL_ASSERT(::X509_set_issuer_name(
++	    x, (isSelfSigned ? ::X509_get_subject_name(x) : ::X509_get_subject_name(issuer.cert.get()))));
+ 	auto ctx = X509V3_CTX{};
+ 	X509V3_set_ctx_nodb(&ctx);
+ 	::X509V3_set_ctx(&ctx, (isSelfSigned ? x : issuer.cert.get()), x, nullptr, nullptr, 0);
+--- a/flow/TLSConfig.actor.cpp
++++ b/flow/TLSConfig.actor.cpp
+@@ -610,7 +610,7 @@
+ 	}
+ }
+ 
+-bool match_criteria_entry(const std::string& criteria, ASN1_STRING* entry, MatchType mt) {
++bool match_criteria_entry(const std::string& criteria, const ASN1_STRING* entry, MatchType mt) {
+ 	bool rc = false;
+ 	ASN1_STRING* asn_criteria = nullptr;
+ 	unsigned char* criteria_utf8 = nullptr;
+@@ -645,8 +645,8 @@
+ 	return rc;
+ }
+ 
+-bool match_name_criteria(X509_NAME* name, NID nid, const std::string& criteria, MatchType mt) {
+-	X509_NAME_ENTRY* name_entry;
++bool match_name_criteria(const X509_NAME* name, NID nid, const std::string& criteria, MatchType mt) {
++	const X509_NAME_ENTRY* name_entry;
+ 	int idx;
+ 
+ 	// If name does not exist, or has multiple of this RDN, refuse to proceed.
+@@ -717,7 +717,7 @@
+ }
+ 
+ bool match_criteria(X509* cert,
+-                    X509_NAME* subject,
++                    const X509_NAME* subject,
+                     NID nid,
+                     const std::string& criteria,
+                     MatchType mt,
+@@ -735,7 +735,7 @@
+ }
+ 
+ std::tuple<bool, std::string> check_verify(const TLSPolicy::Rule* verify, X509_STORE_CTX* store_ctx, bool is_client) {
+-	X509_NAME *subject, *issuer;
++	const X509_NAME *subject, *issuer;
+ 	bool rc = false;
+ 	X509* cert = nullptr;
+ 	// if returning false, give a reason string
