@@ -142,7 +142,10 @@ in
               out=$(perf stat -h 2>&1)
               grep -q 'Usage: perf stat' <<<"$out" || fail "perf stat -h: $out"
               out=$(perf list sw 2>&1) || fail "perf list sw (rc=$?): $out"
-              grep -q 'task-clock' <<<"$out" || fail "perf list sw: $out"
+              # Software events (task-clock, ...) are read from
+              # /sys/bus/event_source; build-bot's test sandbox has no /sys and
+              # lists only perf's own tool events (duration_time, ...).
+              grep -Eq 'task-clock|duration_time' <<<"$out" || fail "perf list sw: $out"
               out=$(perf version --build-options 2>&1) || fail "build-options: $out"
               grep -Eq 'libcapstone: \[ on' <<<"$out" || fail "capstone missing: $out"
               echo "cli: ok"
