@@ -1,0 +1,66 @@
+name: bootstrap-pin-guard
+
+# BLOCKING. Every gs://minimal-bootstrap pin must name an object its
+# generation published: the url's sha256 is the Source's sha256, the
+# generation's MANIFEST.txt lists that sha256 under that file name, and the
+# object is this architecture's. Sources are fetched by sha256, so a pin that
+# breaks any of these evaluates cleanly and fails only in the first build that
+# misses the store. Evaluates the whole catalog on both arches and scans
+# packages/ and stacks/ for url literals neither arch evaluates. Rules live in
+# .github/scripts/bootstrap_pin_guard.py; the shape mirrors
+# ruby-flavor-guard.yml.
+#
+# Network: anonymous HTTPS GETs of
+# storage.googleapis.com/minimal-bootstrap/gen-N/MANIFEST.txt, one per
+# generation pinned. No secrets.
+#
+# A dump or manifest that cannot be read fails too (exit 2 = UNVERIFIED): a
+# guard that cannot see the catalog or the manifest must not go green.
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "packages/**"
+      - "stacks/**"
+      - ".github/scripts/bootstrap_pin_guard.py"
+      - ".github/scripts/test_bootstrap_pin_guard.py"
+      - ".github/workflows/bootstrap-pin-guard.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bootstrap-pin-guard-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Guard unit tests
+        run: python3 -m unittest discover -s .github/scripts -p 'test_bootstrap_pin_guard.py' -v
+
+      # The runner's pinned, sha256-verified evaluator, as node-runtime-guard uses.
+      - uses: ./.github/actions/setup-mip
+
+      - name: Dump catalog (amd64 + arm64)
+        run: |
+          set -euo pipefail
+          mip --version || true
+          for arch in amd64 arm64; do
+            mip dump -p --format json --arch "$arch" > "dump-$arch.json"
+            echo "dumped $(jq 'length' "dump-$arch.json") packages ($arch)"
+          done
+
+      - name: bootstrap-pin guard
+        run: |
+          python3 .github/scripts/bootstrap_pin_guard.py \
+            --dump amd64 dump-amd64.json \
+            --dump arm64 dump-arm64.json \
+            --tree packages --tree stacks

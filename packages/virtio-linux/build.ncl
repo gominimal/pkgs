@@ -13,7 +13,7 @@ let perl = import "../perl/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "6.12.117" in
+let version = "6.12.118" in
 {
   name = "virtio-linux",
 
@@ -21,7 +21,7 @@ let version = "6.12.117" in
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/linux-%{version}.tar.xz",
-      sha256 = "74e99aa5e60e242e0a165fed8cb2ea0d054bf7a401f01861d403d75733456613",
+      sha256 = "08308460320e852ac0745b2be3c7ae1cd81bdad713506ed7d817ba1ec9e1a5a5",
       extract = true,
       strip_prefix = "linux-%{version}",
     } | Source,

@@ -1,0 +1,81 @@
+Provenance: Debian expect 5.45.4-10, debian/patches/22-segfault-with-stubs.patch
+  https://salsa.debian.org/tcltk-team/expect/-/raw/7968658ab944388db44d3b3f9ee2a32f84294bc6/debian/patches/22-segfault-with-stubs.patch
+  (tcltk-team/expect master at commit 7968658ab944388db44d3b3f9ee2a32f84294bc6, fetched 2026-11-18)
+  sha256 of the file as fetched: 70792075aed4ded1a6b50e4c0c7d5d9ec7893714189ac32d581f9e0417f72eea
+License: public domain. Expect is a NIST work in the public domain, and Debian's
+  debian/copyright places its packaging (debian/*, these patches included) in the
+  public domain too.
+Everything below the END-OF-PROVENANCE line is the fetched file, byte for byte
+(check: sed '1,/^END-OF-PROVENANCE$/d' <this file> | sha256sum).
+END-OF-PROVENANCE
+Author: Sergei Golovan <sgolovan@debian.org>
+Description: This dirty hack fixes segfaults if Tcl is built with stubs
+ and Expect is used directly from C program.
+ Example:
+ #include <stdio.h>
+ #include <tcl8.5/expect.h>
+ int main()
+ {
+     FILE *pipe;
+     char *some_command = "uname";
+     char datum;
+     pipe = exp_popen(some_command);
+     if (pipe == NULL) return 1;
+     while ((datum = getc (pipe)) != EOF)
+ 	printf("%c",datum);
+ }
+ Example:
+ #include <stdio.h>
+ #include "expect.h"
+ main()
+ {
+     int fd = 0;
+     fd = exp_spawnl("echo", "echo", "Hello User: Whats up?", (char*) 0);
+     switch (exp_expectl(fd, exp_regexp, "ser:", 1, exp_end)) {
+ 	case 1: {
+ 	    printf("GOT ser:\n");
+ 	    break;
+ 	}
+ 	default: {
+ 	    printf("DEFAULT\n");
+ 	    return 1;
+ 	}
+     }
+     printf("Normal Exit\n");
+     return 0;
+ }
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=588817
+
+--- a/exp_clib.c
++++ b/exp_clib.c
+@@ -117,7 +117,11 @@
+ #include <stdlib.h>		/* for malloc */
+ #endif
+ 
+-#include <tcl.h>
++#define ckalloc(x) Tcl_Alloc(x)
++#define ckfree(x) Tcl_Free(x)
++extern char *Tcl_ErrnoMsg(int err);
++extern char *Tcl_Alloc(unsigned int size);
++extern void Tcl_Free(char *ptr);
+ #include "expect.h"
+ #define TclRegError exp_TclRegError
+ 
+@@ -392,7 +396,7 @@
+ 		FAIL("regexp too big");
+ 
+ 	/* Allocate space. */
+-	r = (regexp *)ckalloc(sizeof(regexp) + (unsigned)rcstate->regsize);
++	r = (regexp *)malloc(sizeof(regexp) + (unsigned)rcstate->regsize);
+ 	if (r == NULL)
+ 		FAIL("out of space");
+ 
+@@ -402,7 +406,7 @@
+ 	rcstate->regcode = r->program;
+ 	regc(MAGIC, rcstate);
+ 	if (reg(0, &flags, rcstate) == NULL) {
+-	  ckfree ((char*) r);
++	  free ((char*) r);
+ 	  return(NULL);
+ 	}
+ 

@@ -50,6 +50,20 @@ test -s tools/ui/dist/index.html || {
 }
 find tools/ui/dist -exec touch -h -d @315532800 {} +
 
+# The UI's third-party notices (pkgs#994) are generated outside the build by
+# gen-ui-notices.py, from this version's tools/ui/package-lock.json. Fail closed
+# if they weren't regenerated for what is built here: the UI version, the dist
+# and the lock recorded in the header must all match. An empty header field
+# fails sha256sum --strict -c too.
+notices=./ui-THIRD-PARTY-NOTICES
+notices_field() { sed -n "s/^$1: //p" "$notices" | head -n1; }
+[ "$(notices_field 'llama-ui version')" = "$MINIMAL_ARG_VERSION" ] || {
+  echo "ERROR: $notices is for llama-ui '$(notices_field 'llama-ui version')', not $MINIMAL_ARG_VERSION: rerun gen-ui-notices.py" >&2
+  exit 1
+}
+echo "$(notices_field 'llama-ui dist sha256')  ${MINIMAL_ARG_VERSION}-dist.tar.gz" | sha256sum --strict -c -
+echo "$(notices_field 'package-lock sha256')  tools/ui/package-lock.json" | sha256sum --strict -c -
+
 # CVE-2023-45663: the vendored stb_image 2.30 ignores stbi__getn's return in the
 # TGA and HDR loaders, so a short file leaves uninitialized heap/stack in the
 # decoded pixels. llama-server decodes image_url data with stbi_load_from_memory
@@ -144,6 +158,7 @@ cp -av build/bin/*.so* $OUTPUT_DIR/usr/lib/
 # The CPU variants go where GGML_BACKEND_DIR points.
 mv -v $OUTPUT_DIR/usr/lib/libggml-cpu-*.so* $OUTPUT_DIR/usr/lib/ggml/
 install -vm755 build/bin/llama-{cli,server} $OUTPUT_DIR/usr/bin/
+install -Dvm644 "$notices" $OUTPUT_DIR/usr/share/licenses/llama.cpp/ui-THIRD-PARTY-NOTICES
 
 # Fail closed: every library a shipped ELF needs that this build produced (it is
 # in build/bin) must be in the output under that exact name. `found` keeps the

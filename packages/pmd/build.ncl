@@ -8,7 +8,7 @@ let jdk = import "../jdk/build.ncl" in
 let sed = import "../sed/build.ncl" in
 let unzip = import "../unzip/build.ncl" in
 
-let version = "7.28.0" in
+let version = "7.29.0" in
 {
   name = "pmd",
   # The upstream binary distribution (pmd-dist-<v>-bin.zip: the bin/pmd
@@ -19,7 +19,7 @@ let version = "7.28.0" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/pmd/pmd/releases/download/pmd_releases/%{version}/pmd-dist-%{version}-bin.zip",
-      sha256 = "f974ba571f7bc01c73fffe11bade25fbc1f438698f9e9c00e416e8d65e9fbac2",
+      sha256 = "d27177c185b837fa57f097e482d1253468aa035379c5eb2671fa0a279109b179",
     } | Source,
     base,
     unzip,

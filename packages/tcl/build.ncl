@@ -7,8 +7,9 @@ let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "8.6.18" in
-# tclsh and the script library are named for the major.minor series (tclsh8.6, /usr/lib/tcl8.6).
+let version = "9.1.0" in
+# tclsh, libtcl and the script library are named for the major.minor series
+# (tclsh9.1, libtcl9.1.so, /usr/lib/tcl9.1).
 let api = std.string.join "." (std.array.slice 0 2 (std.string.split "." version)) in
 {
   name = "tcl",
@@ -16,7 +17,7 @@ let api = std.string.join "." (std.array.slice 0 2 (std.string.split "." version
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/tcl%{version}-src.tar.gz",
-      sha256 = "14f9af32b1767ff718477a8f974ad03c34341097e6b43f4ce54644ee974e268e"
+      sha256 = "536c45543f64d6eb11832d97ba3494aacff046fbc5040273bd55258d0e448ff1"
     } | Source,
     base,
     make,
@@ -33,7 +34,7 @@ let api = std.string.join "." (std.array.slice 0 2 (std.string.split "." version
     tclsh_versioned = { glob = "usr/bin/tclsh%{api}" } | OutputBin,
     libs = { glob = "usr/lib/**/*.{a,so*}" } | OutputLib,
 
-    datas = { glob = "usr/lib/**/{tclIndex,*.c,*.tm,*.uuid,*.tcl,*.sh,*.enc,*.msg}" } | OutputData,
+    datas = { glob = "usr/lib/**/{tclIndex,*.c,*.tm,*.uuid,*.tcl,*.sh,*.enc,*.msg,*.gz}" } | OutputData,
     tzdata = { glob = "usr/lib/tcl*/tzdata/**" } | OutputData,
 
     includes = { glob = "usr/include/**" } | OutputData,
