@@ -4,14 +4,14 @@ let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "0.36.7" in
+let version = "0.36.8" in
 {
   name = "go-swagger",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/go-swagger/go-swagger/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "2ea3b734b954edf1b7b2cef73ab191a788e24a5cbbe8d334d73c65ed3fe05455",
+      sha256 = "88e6be5f201e9039a78d818cda7cf5b13c411085701c02001b385c2c6978963c",
       extract = true,
       strip_prefix = "go-swagger-%{version}",
     } | Source,
