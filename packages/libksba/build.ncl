@@ -22,7 +22,7 @@ let glibc = import "../glibc/build.ncl" in
 let gettext = import "../gettext/build.ncl" in
 let bison = import "../bison/build.ncl" in
 let libgpg-error = import "../libgpg-error/build.ncl" in
-let version = "1.9.0" in
+let version = "1.9.1" in
 {
   name = "libksba",
   build_deps = [
@@ -43,7 +43,7 @@ let version = "1.9.0" in
     libgpg-error,
     {
       url = "https://github.com/gpg/libksba/archive/refs/tags/libksba-%{version}.tar.gz",
-      sha256 = "e4cc3d8fc610191122b7475f25e2743e88fe3e43bfc684a06d69d26d4a3d25db",
+      sha256 = "2e5c47825b6d44f26bd0c97061a5cdd686c75bf5f820c7d989d9d40669d4c4ae",
       extract = true,
       strip_prefix = "libksba-libksba-%{version}",
     } | Source,
