@@ -2,23 +2,30 @@ let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, ..
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let bison = import "../bison/build.ncl" in
+let bzip2 = import "../bzip2/build.ncl" in
 let capstone = import "../capstone/build.ncl" in
+let coreutils = import "../coreutils/build.ncl" in
 let elfutils = import "../elfutils/build.ncl" in
+let findutils = import "../findutils/build.ncl" in
 let flex = import "../flex/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let grep = import "../grep/build.ncl" in
+let inetutils = import "../inetutils/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 let make = import "../make/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let python = import "../python/build.ncl" in
+let tar = import "../tar/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let xz = import "../xz/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 
-# perf ships in the kernel tree (tools/perf). This is the same 6.12 LTS
-# tarball virtio-linux already mirrors; perf talks to the running kernel
-# through the stable perf_event_open ABI, so it need not match the host kernel.
+# perf ships in the kernel tree (tools/perf). perf follows the 6.12 LTS line,
+# and its tarball comes from the same mirror bucket as virtio-linux's (each
+# package pins its own version). perf talks to the running kernel through the
+# stable perf_event_open ABI, so it need not match the host kernel.
 let version = "6.12.118" in
 
 # Run one perf command that needs perf_event_open. Where the kernel allows it
@@ -29,7 +36,8 @@ let version = "6.12.118" in
 #  * no sysfs (the minimal test sandbox): perf cannot read the CPU list, so
 #    `perf record` maps no ring buffers and writes a file with no samples.
 #    Counting (`perf stat`) still works there.
-# A signal (exit 129-192) is a crash and always fails.
+# A signal (exit 130-192) is a crash and always fails. Exit 129 is perf's
+# usage error (a wrong option), reported as such.
 let perf_event_test = fun name cmd check =>
   {
     class = 'Standalone,
@@ -44,7 +52,10 @@ let perf_event_test = fun name cmd check =>
           rc=0
           out=$(%{cmd} 2>&1) || rc=$?
           printf '%s\n' "$out"
-          if [ "$rc" -gt 128 ] && [ "$rc" -le 192 ]; then
+          if [ "$rc" -eq 129 ]; then
+            echo "%{name}: perf rejected the command line (usage error, rc=129)" >&2
+            exit 1
+          elif [ "$rc" -gt 129 ] && [ "$rc" -le 192 ]; then
             echo "%{name}: perf died with signal $((rc - 128))" >&2
             exit 1
           elif grep -Eq 'perf_event_paranoid|sys_perf_event_open\(\) syscall returned with|No permission to enable' <<<"$out"; then
@@ -88,6 +99,16 @@ in
   runtime_deps = [
     # perf-archive / perf-iostat are bash scripts
     bash,
+    # perf-archive (libexec/perf-core) runs, in 6.12.118: tar cjf / tar xvf
+    # (tar + bzip2), grep, find, and coreutils' cut, tr, wc, comm, ls, mktemp,
+    # readlink, rm and date; `perf archive --all` also runs hostname, which
+    # only inetutils ships. The archive_tools test checks them without base.
+    bzip2,
+    coreutils,
+    findutils,
+    grep,
+    inetutils,
+    tar,
     capstone,
     elfutils,
     glibc,
@@ -170,10 +191,36 @@ in
               out=$(perf test "${suites[@]}" 2>&1)
               printf '%s\n' "$out"
               # A name can match more than one suite (amd64 adds "x86 Sample
-              # parsing"), so require at least one Ok per name and nothing else.
-              ok=$(grep -c ': Ok$' <<<"$out")
-              bad=$(grep -Ec 'FAILED|Skip' <<<"$out")
-              [ "$ok" -ge "${#suites[@]}" ] && [ "$bad" -eq 0 ] || { echo "selftest: $ok Ok, $bad failed/skipped" >&2; exit 1; }
+              # parsing"), so each name needs its own Ok line, and nothing may
+              # fail or skip.
+              for s in "${suites[@]}"; do
+                grep -F -- "$s" <<<"$out" | grep -q ': Ok$' || { echo "selftest: no Ok line for '$s'" >&2; exit 1; }
+              done
+              ! grep -Eq 'FAILED|Skip' <<<"$out" || { echo "selftest: a suite failed or skipped" >&2; exit 1; }
+            "%
+          ],
+        ],
+      } | Test,
+    # perf-archive's tools come from perf's own closure: no base here, so a
+    # missing runtime dep is command-not-found.
+    archive_tools =
+      {
+        class = 'Standalone,
+        test_deps = [],
+        cmds = [
+          [
+            "/usr/bin/bash",
+            "-c",
+            m%"
+              set -u
+              for t in tar bzip2 grep find cut tr wc comm ls mktemp readlink rm date hostname; do
+                command -v "$t" >/dev/null || { echo "archive_tools: $t is not in perf's closure" >&2; exit 1; }
+              done
+              cd "$(mktemp -d)"
+              echo x > f
+              tar cjf f.tar.bz2 f && tar tjf f.tar.bz2 | grep -qx f || { echo "archive_tools: tar cjf round trip failed" >&2; exit 1; }
+              [ -x /usr/libexec/perf-core/perf-archive ] || { echo "archive_tools: perf-archive not shipped" >&2; exit 1; }
+              echo "archive_tools: ok"
             "%
           ],
         ],
