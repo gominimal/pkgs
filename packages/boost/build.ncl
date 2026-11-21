@@ -2,12 +2,13 @@ let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, ..
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
 let xz = import "../xz/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
+let openssl = import "../openssl/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
 let version = "1.92.0" in
@@ -25,10 +26,11 @@ let version = "1.92.0" in
     bzip2,
     xz,
     zstd,
+    openssl, # boost.cobalt builds libboost_cobalt_io_ssl when it finds OpenSSL
   ],
   runtime_deps = [
     subsetOf
-      gcc
+      gcc-runtime
       (
         ["libgcc", "libstdcpp"]
         @ match {
@@ -39,6 +41,9 @@ let version = "1.92.0" in
     subsetOf bzip2 ["libs"],
     subsetOf xz ["liblzma"],
     subsetOf zstd ["libzstd"],
+    # libboost_cobalt_io_ssl NEEDs libssl.so.4 + libcrypto.so.4 (missing
+    # runtime_deps check, gcc 16 canary pkgs#1340 run 34ab070b)
+    subsetOf openssl ["libssl", "libcrypto"],
     glibc,
   ],
 

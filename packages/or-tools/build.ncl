@@ -7,7 +7,7 @@ let git = import "../git/build.ncl" in
 let make = import "../make/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 # Dependencies or-tools used to build and install its own copy of. Its copies
@@ -61,7 +61,7 @@ let version = "9.15" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp", "libgomp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp", "libgomp"],
     zlib,
     abseil-cpp,
     subsetOf boost ["libs"],

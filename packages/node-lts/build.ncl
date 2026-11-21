@@ -19,7 +19,7 @@ let zlib = import "../zlib/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 let gtest = import "../gtest/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let llvm = import "../llvm/build.ncl" in
 let wasi-libc = import "../wasi-libc/build.ncl" in
 let llhttp-wasm-rebuild = import "../llhttp-wasm-rebuild/build.ncl" in
@@ -78,7 +78,7 @@ let version = "24.22.3" in
     zstd,
     gtest,
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     # node trusts OpenSSL's default store, /etc/ssl (see build.sh), so the
     # system bundle must be present or every TLS connection fails.
     ca-certificates,

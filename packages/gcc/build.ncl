@@ -27,14 +27,16 @@ let mpfr = import "../mpfr/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let zstd = import "../zstd/build.ncl" in
 
-let version = "15.2.0" in
+let version = "16.2.0" in
 {
   name = "gcc",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/gcc-%{version}.tar.xz",
-      sha256 = "438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e"
+      # Upstream https URL (registry spec, gominimal/arch#183 model §6.1: https only, and the
+      # URL is not hashed). sha256 matches ftp.gnu.org's copy and gcc.gnu.org's sha512.sum.
+      url = "https://mirrors.kernel.org/gnu/gcc/gcc-%{version}/gcc-%{version}.tar.xz",
+      sha256 = "e6738e29597f733270731aa90600f37ffdc045079dfc27ec7e8192cc81085c3e"
     } | Source,
     # base
     bash-bootstrap,
@@ -72,33 +74,52 @@ let version = "15.2.0" in
   ],
 
   cmd = "./build.sh",
+  # The outputs of the registry spec's gcc example (gominimal/arch#183,
+  # specs/registry/nickel/examples/packages/gcc/build.ncl), in today's run-time
+  # kinds: no file is in two outputs. Checked against the gcc 16.2.0 canary
+  # artifacts (pkgs#1340: 1,823 files on amd64, 1,700 on arm64) and main's gcc
+  # 15.2.0 ones: each file in exactly one output, no output empty. The
+  # differences from the example: libssp is its own output (stlink needs only
+  # it), and runtime_stage is the copy gcc-runtime repacks (build.sh). When the
+  # spec's per-output runtime_deps land, the library outputs take ["glibc"] and
+  # their gcc siblings, as in the example; until then the package's list holds.
+  # The old catch-alls (libs, libs_all) and their flags are gone; outputs that
+  # took their files keep allow_data / allow_executable.
   outputs =
     {
-      bins = { glob = "usr/bin/*" } | OutputBin,
-
-      libs = { glob = "usr/lib/**/*.{a,o,so*}", allow_data = true } | OutputLib, # allows data as a few .so's are stubs that don't parse in our checker
-      libatomic = { glob = "usr/lib/libatomic.so*" } | OutputLib,
-
-      libgcc = { glob = "usr/lib/libgcc_s.so*", allow_data = true } | OutputLib, # allows data as libgcc_s.so is a stub that does not parse in our checker
+      # Run-time libraries, the outputs consumers name (today through gcc-runtime).
+      libgcc = { glob = "usr/lib/libgcc_s*.so*", allow_data = true } | OutputLib, # libgcc_s.so and gcc 16's libgcc_s_asneeded.so are linker scripts
+      libstdcpp = { glob = "usr/lib/libstdc++*.so*", allow_data = true } | OutputLib, # libstdc++.so.6.*-gdb.py
       libgomp = { glob = "usr/lib/libgomp.so*" } | OutputLib,
-      libstdcpp = { glob = "usr/lib/libstdc++*.so*", allow_data = true } | OutputLib, # libstdc++.so.6.0.34-gdb.py...
+      libatomic = { glob = "usr/lib/libatomic*.so*", allow_data = true } | OutputLib, # gcc 16's libatomic_asneeded.so is a linker script
+      libgfortran = { glob = "usr/lib/libgfortran.so*" } | OutputLib,
+      libssp = { glob = "usr/lib/libssp.so*" } | OutputLib,
+      sanitizers = { glob = "usr/lib/lib{asan,hwasan,lsan,tsan,ubsan}.so*" } | OutputLib,
+      libs_other = { glob = "usr/lib/lib{cc1,itm}.so*" } | OutputLib,
+      runtime_stage = { glob = "usr/lib/gcc-runtime-stage/**", allow_data = true } | OutputLib,
 
-      libs_all = { glob = "usr/lib/**", allow_executable = true } | OutputData,
-      share_data = { glob = "usr/share/gcc-*/**" } | OutputData,
-      ltconfigs = { glob = "usr/lib/**/*.la" } | OutputData,
-
+      # The compilers, and what they compile and link with.
+      bins = { glob = "usr/bin/*" } | OutputBin,
       # Wildcards are target/version
       libexec_bins = { glob = "usr/libexec/gcc/*/*/{cc1,cc1plus,f951,collect2,lto1,lto-wrapper}" } | OutputBin,
       libexec_libs = { glob = "usr/libexec/gcc/*/*/g++-mapper-server" } | OutputLib,
       plugins = { glob = "usr/libexec/gcc/*/*/plugin/*" } | OutputBin,
       # mkinstalldirs technically needs /bin/sh but depending on bash at this package would be difficult, ignore lint for now
       install_tools = { glob = "usr/libexec/gcc/*/*/install-tools/*", allow_missing_interpreter = true } | OutputBin,
-
       liblto_plugin = { glob = "usr/libexec/gcc/*/*/liblto_plugin.so" } | OutputLib,
-      lto_plugin_ltconfig = { glob = "usr/libexec/gcc/*/*/liblto_plugin.la" } | OutputData,
-
-      mans = { glob = "usr/share/man/**" } | OutputData,
+      gcc_objects = { glob = "usr/lib/gcc/*/*/*", allow_data = true } | OutputLib,
+      gcc_headers = { glob = "usr/lib/gcc/*/*/{include,include-fixed,finclude}/**", allow_executable = true } | OutputData,
+      gcc_install_tools = { glob = "usr/lib/gcc/*/*/install-tools/**", allow_executable = true } | OutputData,
       includes = { glob = "usr/include/**" } | OutputData,
+      static_libs = { glob = "usr/lib/*.{a,o}", allow_data = true } | OutputLib,
+      specs = { glob = "usr/lib/*.{spec,json}" } | OutputData,
+      share_data = { glob = "usr/share/gcc-*/**" } | OutputData,
+
+      # The spec's `dev` and `doc` kinds, as data until min has them.
+      ltconfigs = { glob = "usr/lib/*.la" } | OutputData,
+      lto_plugin_ltconfig = { glob = "usr/libexec/gcc/*/*/liblto_plugin.la" } | OutputData,
+      plugin_dev = { glob = "usr/lib/gcc/*/*/plugin/**", allow_executable = true } | OutputData,
+      mans = { glob = "usr/share/man/**" } | OutputData,
       ..
     }
       | match {
@@ -137,9 +158,9 @@ let version = "15.2.0" in
             } | Source,
           { arch = 'Arm64, .. } =>
             {
-              # gominimal/bootstrap gen-13 object (generations/gen-13/manifest.json)
-              url = "gs://minimal-bootstrap/gen-13/sha256/4777e5fe9bd1476171abb46d6ec53f49f5e50f17a25b9ab612894d758eba5f1f/gcc-15.2.0-glibc-aarch64.tar.zst",
-              sha256 = "4777e5fe9bd1476171abb46d6ec53f49f5e50f17a25b9ab612894d758eba5f1f",
+              # gominimal/bootstrap gen-17 object (generations/gen-17/manifest.json)
+              url = "gs://minimal-bootstrap/gen-17/sha256/ad09a27cf021c341d50cf5c7a43d9cfcb45af363890c8e0b695259edc2c27d43/gcc-15.2.0-glibc-seed-15.2.0-aarch64.tar.zst",
+              sha256 = "ad09a27cf021c341d50cf5c7a43d9cfcb45af363890c8e0b695259edc2c27d43",
               extract = true,
             } | Source,
         } target,

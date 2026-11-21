@@ -15,7 +15,7 @@
 #    jar's com.microsoft.z3 Java classes are the 4.14.1 bindings and call
 #    libz3java's JNI entry points, which are generated per z3 release, and
 #    z3-turnkey only loads the copies inside the jar. Needs GLIBC_2.34,
-#    GLIBCXX_3.4.30, libstdc++ and libgcc_s, hence the gcc subset below.
+#    GLIBCXX_3.4.30, libstdc++ and libgcc_s, hence the gcc-runtime subset below.
 #  - cvc5 JNI (an optional alternative solver) and zstd-jni, same story;
 #    neither needs more than the z3 libraries do.
 #
@@ -30,7 +30,7 @@ let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
@@ -55,7 +55,7 @@ let version = "0.62.4" in
     jdk,
     # z3 / cvc5 JNI libraries extracted from the jar at run time.
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

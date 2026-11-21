@@ -3,6 +3,7 @@ let cabal = import "../cabal/build.ncl" in
 let base = import "../base/build.ncl" in
 let ghc = import "../ghc/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
+let zlib = import "../zlib/build.ncl" in
 
 let version = "3.11.1" in
 {
@@ -22,6 +23,7 @@ let version = "3.11.1" in
   ],
   runtime_deps = [
     gmp,
+    zlib, # usr/bin/stack NEEDs libz.so.1; it came only through gmp -> subsetOf gcc (inbox#1261)
   ],
 
   needs =

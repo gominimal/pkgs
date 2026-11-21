@@ -7,7 +7,7 @@ let cmake = import "../cmake/build.ncl" in
 let libcap = import "../libcap/build.ncl" in
 let detbuild = import "../detbuild/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let git = import "../git/build.ncl" in
@@ -36,7 +36,7 @@ let version = "0.169.0" in
 
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-runtime ["libgcc"],
     openssl,
     libcap,
     git,

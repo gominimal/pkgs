@@ -28,7 +28,7 @@ export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -std=gnu++17"
 
 ./configure  --prefix=/usr     \
-            --enable-cxx     \
+            --disable-cxx    \
             --disable-static \
             --docdir=/usr/share/doc/gmp-6.3.0
 

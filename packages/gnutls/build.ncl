@@ -1,4 +1,5 @@
-let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let base = import "../base/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -37,6 +38,8 @@ let api = std.string.join "." (std.array.slice 0 2 (std.string.split "." version
     libtasn1,
     libunistring,
     nettle,
+    # libgnutlsxx is C++; libstdc++ came only through gmp before gmp dropped gcc-runtime.
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

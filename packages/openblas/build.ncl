@@ -5,7 +5,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime-fortran = import "../gcc-runtime-fortran/build.ncl" in
 
 let version = "0.3.34" in
 {
@@ -24,7 +24,12 @@ let version = "0.3.34" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libs"],
+    # libopenblasp-r0.3.34.so NEEDs libgfortran.so.5, libm, libc and the
+    # loader, on both arches (readelf on the gcc 15 and gcc 16 builds, pkgs#1340
+    # run d168779c): LAPACK is built with gfortran, and the pthreads build uses
+    # no libgomp. libgfortran's own libgcc_s (and libquadmath on amd64) come
+    # with gcc-runtime-fortran. Replaces gcc's catch-all `libs` (inbox#1261).
+    subsetOf gcc-runtime-fortran ["libgfortran"],
   ],
 
   cmd = "./build.sh",

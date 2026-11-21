@@ -2,7 +2,7 @@ let { subsetOf, Attrs, BuildSpec, OutputBin, Source, .. } = import "minimal.ncl"
 let { target, .. } = import "config.ncl" in
 let icu = import "../icu/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 # node-26.12.1: the node that regenerates `node`'s bundled JavaScript, from gen-14 of
 # gominimal/bootstrap: node 26.12.1 as shipped with its wasm blobs rebuilt from source, then
@@ -32,7 +32,7 @@ let version = "26.12.1" in
   runtime_deps = [
     icu,
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     # node trusts OpenSSL's default store, /etc/ssl
     ca-certificates,
   ],

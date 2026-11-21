@@ -10,7 +10,7 @@ let libpng = import "../libpng/build.ncl" in
 let libjpeg-turbo = import "../libjpeg-turbo/build.ncl" in
 let openjpeg = import "../openjpeg/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
 # In place of ghostscript's bundled zlib (build.sh deletes the copy).
 let zlib = import "../zlib/build.ncl" in
@@ -41,7 +41,7 @@ let version = "10.08.0" in
     glibc,
     # libstdcpp was for the bundled tesseract OCR (C++), now not built;
     # build.sh fails if gs still needs libstdc++.
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-runtime ["libgcc"],
     bzip2,
     zlib,
   ],

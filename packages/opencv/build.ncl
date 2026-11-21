@@ -4,7 +4,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let make = import "../make/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let openjpeg = import "../openjpeg/build.ncl" in
@@ -43,7 +43,7 @@ let version = "4.14.0" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     zlib,
     # libopencv_imgcodecs NEEDs libopenjp2, libpng16, libjpeg and libwebp
     # (build.sh checks it).

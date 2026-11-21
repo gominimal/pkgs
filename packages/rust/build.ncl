@@ -12,7 +12,7 @@ let sqlite = import "../sqlite/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let libssh2 = import "../libssh2/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let rustc-1-99-1 = import "../rustc-1.99.1/build.ncl" in # the stage0
 let version = "1.100.0" in
 {
@@ -56,7 +56,7 @@ let version = "1.100.0" in
     llvm,
     openssl,
     sqlite,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",
