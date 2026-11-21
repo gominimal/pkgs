@@ -2,6 +2,7 @@ let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Sou
 let base = import "../base/build.ncl" in
 let ghc = import "../ghc/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
+let zlib = import "../zlib/build.ncl" in
 let python = import "../python/build.ncl" in
 
 let version = "3.18.2.0" in
@@ -22,6 +23,7 @@ let version = "3.18.2.0" in
   ],
   runtime_deps = [
     gmp,
+    zlib, # usr/bin/cabal NEEDs libz.so.1; it came only through gmp -> subsetOf gcc (inbox#1261)
   ],
 
   needs =

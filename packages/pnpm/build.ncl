@@ -7,7 +7,7 @@ let sed = import "../sed/build.ncl" in
 let file = import "../file/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let tar = import "../tar/build.ncl" in
 
@@ -43,7 +43,7 @@ let version = "12.22.0" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-runtime ["libgcc"],
     # `pn`/`pnpx`/`pnx` are upstream's `#!/bin/sh` alias scripts (they resolve
     # their symlink with `command -p readlink`), and pnpm runs lifecycle scripts
     # through `sh`.

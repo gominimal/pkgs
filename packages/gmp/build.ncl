@@ -1,4 +1,4 @@
-let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let { target, .. } = import "config.ncl" in
 # base
@@ -56,7 +56,9 @@ let version = "6.3.0" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libstdcpp", "libgcc"],
+    # No gcc-runtime: gmp is in gcc's build graph (gcc_runtime_guard.py
+    # rule 4), so the C++ interface, which needs libstdc++, is the gmpxx
+    # package.
   ],
 
   cmd = "./build.sh",

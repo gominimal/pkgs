@@ -4,8 +4,9 @@ let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
+let gmpxx = import "../gmpxx/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 
 # LibPoly (SRI-CSL): polynomial arithmetic and real algebraic numbers. cvc5
 # uses it for its complete nonlinear-real-arithmetic procedure
@@ -29,12 +30,15 @@ let version = "0.2.1" in
     cmake,
     ninja,
     gmp,
+    gmpxx, # polyxx includes gmpxx.h
   ],
 
   runtime_deps = [
     glibc,
     gmp,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    # The installed polyxx headers include gmpxx.h.
+    gmpxx,
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

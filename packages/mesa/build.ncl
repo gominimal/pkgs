@@ -1,7 +1,7 @@
 let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let base = import "../base/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let meson = import "../meson/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
@@ -22,6 +22,7 @@ let xorgproto = import "../xorgproto/build.ncl" in
 let expat = import "../expat/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
+let zstd = import "../zstd/build.ncl" in
 
 let version = "26.3.1" in
 {
@@ -58,8 +59,9 @@ let version = "26.3.1" in
     libxshmfence,
     expat,
     zlib,
+    zstd, # libgallium NEEDs libzstd.so.1; it came only through subsetOf gcc (inbox#1261)
     glibc,
-    subsetOf gcc ["libstdcpp", "libgcc"],
+    subsetOf gcc-runtime ["libstdcpp", "libgcc"],
   ],
 
   cmd = "./build.sh",
