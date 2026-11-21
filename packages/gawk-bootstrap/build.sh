@@ -19,7 +19,13 @@ export CXXFLAGS="${CFLAGS}"
             --without-readline
 
 make -j$(nproc)
-make DESTDIR=$OUTPUT_DIR install
 
-# gawkbug is a shell script to report bugs in gawk- not needed
-rm "$OUTPUT_DIR/usr/bin/gawkbug"
+# Install ONLY the interpreter, as usr/bin/awk: a real file, not upstream's
+# awk -> gawk symlink. Every other path gawk installs (usr/bin/gawk*,
+# usr/lib/gawk, usr/libexec/awk, usr/include, usr/share/{awk,man,locale})
+# belongs to packages/gawk, which takes its awk from here, so the two packages
+# never install the same path (gominimal/pkgs#973). The name is `awk`, not
+# `gawk`: base-bootstrap carries this package into every build sandbox, where
+# configure's AC_PROG_AWK and Makefiles find it as `awk`. A recipe that needs
+# `gawk` by name imports packages/gawk.
+install -D -m 755 gawk "$OUTPUT_DIR/usr/bin/awk"

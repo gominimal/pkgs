@@ -24,3 +24,8 @@ make DESTDIR=$OUTPUT_DIR install
 
 # gawkbug is a shell script to report bugs in gawk- not needed
 rm "$OUTPUT_DIR/usr/bin/gawkbug"
+
+# usr/bin/awk comes from gawk-bootstrap, a runtime dep. It has to own that path:
+# base-bootstrap puts gawk-bootstrap in every build sandbox, and two packages
+# installing the same path collide (gominimal/pkgs#973).
+rm "$OUTPUT_DIR/usr/bin/awk"
