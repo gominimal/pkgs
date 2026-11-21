@@ -1,7 +1,7 @@
 [stdlib]
 minimum_version = "0.0.18"
 
-[sessions.shell]
+[sessions.default]
 packages = ["base", "bash", "claude-code", "claude-code-minimal-plugin", "curl"]
 exec = "bash --noprofile -l"
 
