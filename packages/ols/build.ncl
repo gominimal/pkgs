@@ -7,18 +7,18 @@ let odin = import "../odin/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let util-linux = import "../util-linux/build.ncl" in
 
-let version = "dev-2026-10" in
+let version = "dev-2026-11" in
 {
   name = "ols",
 
   build_deps = [
     { file = "build.sh" } | Local,
-    # Upstream 78bf891 (after dev-2026-10): builds against odin dev-2026-11's
+    # Upstream 78bf891 (after dev-2026-11): builds against odin dev-2026-11's
     # changed io.write_quoted_string. build.sh fails once it is no longer needed.
     { file = "ols-write-quoted-json-string.patch" } | Local,
     {
       url = "https://github.com/DanielGavin/ols/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "49ce783760429421645f6b4125dda374154148fdfbcb66fce61f772dbfaba851",
+      sha256 = "9cbcb116d666075c51cf7c005faf7392a398c75e8adbea476d6a01f779793565",
       extract = true,
     } | Source,
     base,

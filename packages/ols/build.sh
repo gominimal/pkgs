@@ -6,7 +6,7 @@ set -ex
 cd "ols-$MINIMAL_ARG_VERSION"
 
 # odin dev-2026-11 changed io.write_quoted_string's last parameter from a bool to
-# a bit_set; upstream 78bf891 (after dev-2026-10) adapts ols to it. Once the
+# a bit_set; upstream 78bf891 (after dev-2026-11) adapts ols to it. Once the
 # release we build already contains that fix, the patch is redundant: fail here
 # with a clear message so the bump drops it, rather than at a confusing reject.
 if grep -q 'json.write_quoted_json_string' src/server/marshal.odin; then
