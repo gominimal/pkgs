@@ -10,12 +10,12 @@ let version = "4.33" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # Upstream is http://dist.schmorp.de/libev/Attic/libev-%{version}.tar.gz (libev has
-      # no GitHub repo; it is developed in CVS). dist.schmorp.de did not answer from here
-      # (2026-11-22), so this sha256 was checked two independent ways instead: Debian's
-      # libev_%{version}.orig.tar.gz has it, and so does Homebrew's libev formula, which
+      # Mirror of http://dist.schmorp.de/libev/Attic/libev-%{version}.tar.gz (libev has no
+      # GitHub repo; it is developed in CVS). dist.schmorp.de did not answer on 2026-11-22
+      # (from a Mac and from a min box), so the mirrored bytes are Debian's
+      # libev_%{version}.orig.tar.gz; their sha256 matches Homebrew's libev formula, which
       # fetches the schmorp URL.
-      url = "https://deb.debian.org/debian/pool/main/libe/libev/libev_%{version}.orig.tar.gz",
+      url = "gs://minimal-staging-archives/libev-%{version}.tar.gz",
       sha256 = "507eb7b8d1015fbec5b935f34ebed15bf346bed04a11ab82b8eee848c4205aea",
       extract = true,
       strip_prefix = "libev-%{version}",
@@ -35,7 +35,8 @@ let version = "4.33" in
   attrs =
     {
       upstream_version = version,
-      # LICENSE: BSD 2-clause, "Alternatively ... GPL version 2 or any later version".
+      # LICENSE: BSD 2-clause, or "alternatively" GPL-2.0-or-later, at the recipient's
+      # choice. Both are offered; we redistribute under the BSD-2-Clause terms.
       license_spdx = "BSD-2-Clause OR GPL-2.0-or-later",
       repology_project = "libev",
     } | Attrs,
