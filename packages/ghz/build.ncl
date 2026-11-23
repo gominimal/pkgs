@@ -68,8 +68,13 @@ let version = "0.121.0" in
             "-c",
             m%"
               set -euo pipefail
-              ghz --version 2>&1 | grep -qxF "%{version}"
-              ghz --help 2>&1 | grep -q -- '--proto'
+              # Capture first: `ghz ... | grep -q` lets grep exit on the first match,
+              # ghz then dies of SIGPIPE, and pipefail turns that into exit 141
+              # (it did, in the merge queue).
+              v=$(ghz --version 2>&1)
+              grep -qxF "%{version}" <<<"$v"
+              h=$(ghz --help 2>&1)
+              grep -q -- '--proto' <<<"$h"
               d=$(mktemp -d)
               cat >"$d/otelcol.yaml" <<'YAML'
               receivers:
