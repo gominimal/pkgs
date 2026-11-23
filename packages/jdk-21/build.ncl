@@ -5,6 +5,13 @@ let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .
 # ../jdk/build-from-source.sh (shared): Temurin's layout and version shape under our own vendor
 # name, CDS archives, src.zip, static libstdc++, cacerts from ../ca-certificates, and the registry's
 # freetype/lcms2/libpng/libjpeg/giflib/zlib instead of bundled copies (gominimal/pkgs#1556).
+#
+# Trust store: OpenJDK reads its roots from a keystore (by default lib/security/cacerts, or the
+# file javax.net.ssl.trustStore names), and on Linux it has no keystore type that reads
+# /etc/ssl/certs or a PEM bundle, so it cannot use the system store. The build makes cacerts from
+# ../ca-certificates, whose own build fails on any root in its distrust.txt, and the
+# CVE-2026-111943 step applies the JDK's denylist (blocked.certs). A ca-certificates update reaches
+# cacerts by rebuilding the JDK: ca-certificates is a build dep, so it is in the hash.
 let openjdk-21 = import "../openjdk-21/build.ncl" in # the boot JDK
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 # not the `jdk` meta-package: the shared build script and the CVE-2026-111943 step's inputs

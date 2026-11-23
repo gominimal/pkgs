@@ -175,7 +175,9 @@ else
 fi
 # libstdc++ linked statically, as Temurin's: libjvm must not NEED it
 command -v readelf >/dev/null || die "no readelf"
-if readelf -d "${DST}/lib/server/libjvm.so" | grep -E 'NEEDED.*libstdc\+\+'; then
+dyn="$(readelf -d "${DST}/lib/server/libjvm.so")" || die "readelf cannot read libjvm.so"
+grep -q NEEDED <<< "$dyn" || die "readelf lists no NEEDED entries for libjvm.so"
+if grep -E 'NEEDED.*libstdc\+\+' <<< "$dyn"; then
   die "libjvm.so NEEDs libstdc++ (--with-stdc++lib=static did not take)"
 fi
 
