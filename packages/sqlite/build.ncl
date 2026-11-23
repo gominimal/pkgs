@@ -112,7 +112,10 @@ let version = "3.54.1" in
 
               # 2. The attack itself: plant .shell and .print lines after a
               # valid CREATE, recover, and replay the script into a new db.
+              # The CLI turns SQLITE_DBCONFIG_DEFENSIVE on by default, which
+              # makes sqlite_schema read-only even with writable_schema=ON.
               /usr/bin/sqlite3 evil.db <<'END' || fail "could not build evil.db"
+              .dbconfig defensive off
               CREATE TABLE t1(a);
               INSERT INTO t1 VALUES(42);
               PRAGMA writable_schema = ON;
