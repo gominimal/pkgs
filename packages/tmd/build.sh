@@ -67,7 +67,11 @@ esac
 # --system also sets system_package_mode, which turns ON every zig
 # systemIntegrationOption that has no explicit default. ghostty declares six
 # such options; each -fno-sys keeps the bundled copy, as without --system.
-zig build --system "$PWD/zig-pkg" \
+#
+# The directory must be relative: zig roots packages at it (Path.initCwd), and
+# an absolute one makes every `.path` dependency inside them (ghostty's
+# ./pkg/*) fail "expected path relative to build root" (Maker/Fetch.zig).
+zig build --system zig-pkg \
   -fno-sys=freetype -fno-sys=harfbuzz -fno-sys=fontconfig \
   -fno-sys=libpng -fno-sys=zlib -fno-sys=oniguruma \
   -Doptimize=ReleaseSmall -Dtarget="$ZTARGET" \
