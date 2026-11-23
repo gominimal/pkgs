@@ -9,14 +9,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.6.1" in
+let version = "2.6.2" in
 {
   name = "libseccomp",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/seccomp/libseccomp/releases/download/v%{version}/libseccomp-%{version}.tar.gz",
-      sha256 = "501f66c667225d53791b97e1d7cf85ab764c297d04881f60f38f451c4b0ee1be",
+      sha256 = "6b845d352c6d7887d8d134c43d86850d40f5dcee11ad1675c18197ae4d869d42",
       extract = true,
       strip_prefix = "libseccomp-%{version}",
     } | Source,
