@@ -6,7 +6,7 @@ let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 
-let version = "0.11.2" in
+let version = "0.11.4" in
 {
   name = "mcs",
   # mcs searches the Maven Central Repository from the command line
@@ -24,7 +24,7 @@ let version = "0.11.2" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/mthmulders/mcs/releases/download/v%{version}/mcs-%{version}.jar",
-      sha256 = "ac99d2015ac40ec46b678ea36a1a89d3b01bec8bd641d03b79ff8609a0bf3ad0",
+      sha256 = "e447ea0e3a5ae12816767aaf39913e1bf62541331d148d44141e64cbfbc2df5c",
     } | Source,
     base,
   ],
