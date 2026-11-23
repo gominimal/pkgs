@@ -6,16 +6,19 @@ let make = import "../make/build.ncl" in
 let nasm = import "../nasm/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "4.3.0" in
+let version = "4.3.1" in
 {
   name = "libsvtav1",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v%{version}/SVT-AV1-v%{version}.tar.bz2",
-      sha256 = "9223ce06e6172ad41357ed23b3b00f036e03794b86b0e20ea9ccb3f648b8955d",
+      # Upstream moved to GitHub ("The canonical URL for this project is at
+      # https://github.com/AOMediaCodec/SVT-AV1"); GitLab stopped at v4.3.0 (same
+      # commit, e3d63405), and v4.3.1 exists only on GitHub.
+      url = "https://github.com/AOMediaCodec/SVT-AV1/archive/refs/tags/v%{version}.tar.gz",
+      sha256 = "ad94f481cb74821af183f37f4533fc52324b76ffbd98ec7723e282bab0cf9fc4",
       extract = true,
-      strip_prefix = "SVT-AV1-v%{version}",
+      strip_prefix = "SVT-AV1-%{version}",
     } | Source,
     base,
     toolchain,
