@@ -8,7 +8,7 @@ let coreutils = import "../coreutils/build.ncl" in
 let elfutils = import "../elfutils/build.ncl" in
 let findutils = import "../findutils/build.ncl" in
 let flex = import "../flex/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let inetutils = import "../inetutils/build.ncl" in
@@ -117,7 +117,7 @@ in
     zstd,
     # libstdc++ for C++ demangling (__cxa_demangle); elfutils already
     # carries the same subset at runtime, so this adds nothing to the closure.
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",
