@@ -1,8 +1,9 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 
 let base = import "../base/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -51,6 +52,11 @@ in
   ],
   runtime_deps = [
     glibc,
+    # iperf3 cancels its worker threads (pthread_cancel); glibc then dlopens
+    # libgcc_s.so.1 for unwinding and aborts without it ("libgcc_s.so.1 must be
+    # installed for pthread_cancel to work"). A dlopen is not DT_NEEDED, so the
+    # missing-runtime_deps check cannot see it.
+    subsetOf gcc-runtime ["libgcc"],
     openssl,
   ],
   cmd = "./build.sh",
