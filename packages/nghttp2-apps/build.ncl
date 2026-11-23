@@ -120,7 +120,10 @@ in
               nghttpd --version | grep -q '^nghttpd nghttp2/%{version}'
               # nghttpx names the QUIC libraries only when built with HTTP/3.
               nghttpx --version | grep -Eqx 'nghttpx nghttp2/%{version} ngtcp2/[0-9.]+ nghttp3/[0-9.]+'
-              h2load --help | grep -q -- '--h3'
+              # Capture before grep -q: grep exits on the first match, the writer then
+              # gets SIGPIPE, and pipefail fails the test with 141 (ghz, pkgs#1645).
+              h=$(h2load --help)
+              grep -q -- '--h3' <<<"$h"
             "%
           ],
         ],
@@ -143,7 +146,8 @@ in
               wait_ok https://127.0.0.1:18443/blob
               load h2c http://127.0.0.1:18080/blob
               load h2 https://127.0.0.1:18443/blob
-              nghttp -v -n http://127.0.0.1:18080/blob | grep -q ':status: 200'
+              v=$(nghttp -v -n http://127.0.0.1:18080/blob)
+              grep -q ':status: 200' <<<"$v"
             "%
           ],
         ],
