@@ -105,10 +105,13 @@ let version = "2.13.0" in
               echo "reset_peer toxic: '$out' in ${ms} ms"
               [ -z "$out" ]
               [ "$ms" -lt 5000 ]
-              # Only the reset_peer connection may have been reset.
+              # The latency connection must not have been reset. Whether socat
+              # sees the reset_peer RST depends on timing (its 0.5 s half-close
+              # window), so at most one reset; the client's empty, closed stream
+              # above is the real check.
               for i in $(seq 25); do grep -q 'reset by peer' "$d/backend.err" && break; sleep 0.2; done
               cat "$d/backend.err"
-              [ "$(grep -c 'reset by peer' "$d/backend.err")" = 1 ]
+              [ "$(grep -c 'reset by peer' "$d/backend.err" || true)" -le 1 ]
               cli delete echo
               # (not `! ...`: set -e does not apply to a negated pipeline)
               if cli list | grep -q echo; then exit 1; fi
