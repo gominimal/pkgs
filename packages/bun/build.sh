@@ -274,4 +274,7 @@ head -1 "$OUTPUT_DIR/usr/share/zsh/site-functions/_bun" | grep -qx '#compdef bun
 # `complete -c $bat`), so embedding the name fails on them. Pair it with a
 # negative check that this is not another shell's script.
 grep -q 'complete -c' "$OUTPUT_DIR/usr/share/fish/vendor_completions.d/bun.fish"
-! grep -qi 'bash completion' "$OUTPUT_DIR/usr/share/fish/vendor_completions.d/bun.fish"
+if grep -qi 'bash completion' "$OUTPUT_DIR/usr/share/fish/vendor_completions.d/bun.fish"; then
+  echo "ERROR: bun.fish is a bash completion script, not fish" >&2
+  exit 1
+fi
