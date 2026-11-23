@@ -1,4 +1,5 @@
-let { BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -33,6 +34,9 @@ let version = "2.1.6" in
   ],
 
   runtime_deps = [
+    # glibc dlopens libgcc_s.so.1 to unwind on pthread_exit and aborts without it.
+    # A dlopen is not DT_NEEDED, so missing-runtime_deps can't see it.
+    subsetOf gcc-runtime ["libgcc"],
     base,
     gmp,
   ],

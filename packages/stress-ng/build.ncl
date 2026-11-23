@@ -49,7 +49,18 @@ let version = "0.22.02" in
     completions = { glob = "usr/share/bash-completion/**" } | OutputData,
     data = { glob = "usr/share/stress-ng/**" } | OutputData,
   },
-  runtime_deps = [glibc, subsetOf gcc-runtime ["libatomic"], acl, gmp, libjpeg-turbo, mpfr, xz, zlib],
+  runtime_deps = [
+    glibc,
+    # libgcc: stress-ng calls pthread_cancel/pthread_exit; glibc dlopens
+    # libgcc_s.so.1 to unwind and aborts without it. A dlopen is not DT_NEEDED.
+    subsetOf gcc-runtime ["libatomic", "libgcc"],
+    acl,
+    gmp,
+    libjpeg-turbo,
+    mpfr,
+    xz,
+    zlib,
+  ],
   attrs =
     {
       upstream_version = version,

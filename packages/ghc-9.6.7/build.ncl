@@ -1,5 +1,6 @@
-let { Attrs, BuildSpec, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
@@ -36,7 +37,9 @@ let version = "9.6.7" in
     } target,
   ],
   # the compiler links libgmp and libncursesw from /usr/lib (libffi is bundled); arm64 also needs lld
-  runtime_deps = (if is_arm then [glibc, llvm] else [glibc]) @ [gmp, ncurses],
+  # libgcc: the GHC RTS calls pthread_exit; glibc dlopens libgcc_s.so.1 to unwind
+  # and aborts without it. A dlopen is not DT_NEEDED.
+  runtime_deps = (if is_arm then [glibc, llvm] else [glibc]) @ [gmp, ncurses, subsetOf gcc-runtime ["libgcc"]],
   # the binary runs from its own runtime closure, outside any build sandbox
   tests = {
     ghc_version =

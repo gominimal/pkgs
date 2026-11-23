@@ -9,7 +9,8 @@
 # build.sh is libgpg-error's verbatim, including `make MAKEINFO=true` — these
 # autotools trees regenerate .info docs and texinfo is not in the fleet, the
 # same convention emacs/gdb/binutils-arm-none-eabi already use.
-let { Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let base = import "../base/build.ncl" in
 let autoconf = import "../autoconf/build.ncl" in
 let automake = import "../automake/build.ncl" in
@@ -51,7 +52,12 @@ let version = "1.8" in
     share = { glob = "usr/share/**" } | OutputData,
   },
   # libnpth.so.0 links only libc.
-  runtime_deps = [glibc],
+  runtime_deps = [
+    glibc,
+    # glibc dlopens libgcc_s.so.1 to unwind on pthread_exit and aborts without it.
+    # A dlopen is not DT_NEEDED, so missing-runtime_deps can't see it.
+    subsetOf gcc-runtime ["libgcc"],
+  ],
   attrs =
     {
       upstream_version = version,

@@ -1,4 +1,5 @@
-let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { subsetOf, standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let base = import "../base/build.ncl" in
 let ghc = import "../ghc/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
@@ -22,6 +23,9 @@ let version = "3.18.2.0" in
     python,
   ],
   runtime_deps = [
+    # glibc dlopens libgcc_s.so.1 to unwind on pthread_exit and aborts without it.
+    # A dlopen is not DT_NEEDED, so missing-runtime_deps can't see it.
+    subsetOf gcc-runtime ["libgcc"],
     gmp,
     zlib, # usr/bin/cabal NEEDs libz.so.1; it came only through gmp -> subsetOf gcc (inbox#1261)
   ],

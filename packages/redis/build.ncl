@@ -36,7 +36,10 @@ let version = "8.10.3" in
 
   runtime_deps = [
     glibc,
-    subsetOf gcc-runtime ["libstdcpp"],
+    # redis-server/redis-check-* call pthread_cancel (and backtrace() in the
+    # crash log); glibc dlopens libgcc_s.so.1 to unwind and aborts without it.
+    # A dlopen is not DT_NEEDED. No redis ELF NEEDs libstdc++ (amd64 + arm64).
+    subsetOf gcc-runtime ["libgcc"],
   ],
 
   cmd = "./build.sh",
