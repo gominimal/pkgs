@@ -86,8 +86,8 @@ in
     grep, # upstream config.sh checks for ICU with `ldconfig -NXv | grep libicu` and exits if grep fails
     icu,
     # .NET dlopens libssl: upstream's bundled .NET 8 knew only libssl.so.3 and
-    # older (hence openssl-3.5 until now); build.sh swaps in .NET 10.0.15, which
-    # also loads OpenSSL 4's libssl.so.4.
+    # older; build.sh swaps in .NET 10.0.15, which also loads OpenSSL 4's
+    # libssl.so.4.
     openssl,
     zlib,
   ],
@@ -207,6 +207,9 @@ exec "$@"
               printf 'subjectAltName=IP:127.0.0.1\nbasicConstraints=CA:FALSE\nextendedKeyUsage=serverAuth\n' > leaf.ext
               openssl x509 -req -in leaf.csr -CA ca.pem -CAkey ca.key -CAcreateserial -days 1 -extfile leaf.ext -out leaf.pem 2>/dev/null
               openssl version
+              # Without SSL_CERT_FILE (the control, and a real runner) this libssl
+              # reads OPENSSLDIR/cert.pem, i.e. the ca-certificates bundle below.
+              openssl version -d | grep -q -x -F 'OPENSSLDIR: "/etc/ssl"'
               cat /etc/ssl/cert.pem ca.pem > bundle.pem
               echo "bundle: $(grep -c 'BEGIN CERTIFICATE' bundle.pem) certificates, the throwaway CA last"
               js="const fs=require('fs'),log=(s)=>fs.appendFileSync(process.env.LOG,s+'\n');
@@ -294,7 +297,10 @@ exec "$@"
               }
               check registration 1 --url https://github.com/o/r --token x
               check remove 0 remove --token x
+              check remove-upper 0 REMOVE --token x
               check help 0 --help
+              check help-upper 0 --HELP
+              check help-slash 0 '/?'
               check short-help 0 -h
               check caller-chose 1 --url https://github.com/o/r --token x --disableupdate
               # A flag inside a value is not a flag: `--work "jobs --help"` still registers.
@@ -305,10 +311,11 @@ exec "$@"
           ],
         ],
       } | Test,
-    # actions-runner sets disableUpdate in the .runner a start uses: inside a
-    # --jitconfig blob (argument, --jitconfig=, or ACTIONS_RUNNER_INPUT_JITCONFIG)
-    # and in an existing .runner, keeping every other field. A jitconfig it cannot
-    # read stops the start (control).
+    # actions-runner sets disableUpdate in the settings a start uses: inside a
+    # jitconfig (the --jitconfig argument in any case, or
+    # ACTIONS_RUNNER_INPUT_JITCONFIG in any case; the argument wins) and in an
+    # existing .runner and .runner_migrated, keeping every other field. A
+    # jitconfig it cannot read stops the start (control).
     self_update_off_at_start =
       {
         class = 'Standalone,
@@ -322,23 +329,31 @@ exec "$@"
               d=$(mktemp -d); cd "$d"
               node=/usr/lib/actions-runner/externals/node24/bin/node
               # A home that already holds this package's runner, with a run.sh that prints
-              # the .runner each start would write: from --jitconfig, from
-              # ACTIONS_RUNNER_INPUT_JITCONFIG, or the .runner file in the home.
+              # what the listener would read: the jitconfig after --jitconfig (option
+              # name in any case), else from ACTIONS_RUNNER_INPUT_JITCONFIG in any case,
+              # and the settings files in the home.
               mkdir -p h/bin
               cp /usr/lib/actions-runner/.minimal-package-stamp h/.minimal-installed-stamp
               cat > h/run.sh << 'STUB'
               #!/bin/bash
               node=/usr/lib/actions-runner/externals/node24/bin/node
-              show() { "$node" -e 'const m = JSON.parse(Buffer.from(process.argv[1], "base64").toString()); const r = JSON.parse(Buffer.from(m[".runner"], "base64").toString()); console.log("runner " + JSON.stringify(r)); console.log("credentials " + m[".credentials"]);' "$1"; }
+              show() { "$node" -e 'const m = JSON.parse(Buffer.from(require("fs").readFileSync(0, "utf8").trim(), "base64").toString()); const r = JSON.parse(Buffer.from(m[".runner"], "base64").toString()); console.log("runner " + JSON.stringify(r)); console.log("credentials " + m[".credentials"]);' <<<"$1"; }
+              shopt -s nocasematch
+              cli=0
               while [ $# -gt 0 ]; do
                 case "$1" in
-                  --jitconfig) show "$2"; shift 2 ;;
-                  --jitconfig=*) show "${1#--jitconfig=}"; shift ;;
+                  --jitconfig) show "$2"; cli=1; shift 2 ;;
                   *) echo "arg [$1]"; shift ;;
                 esac
               done
-              if [ -n "${ACTIONS_RUNNER_INPUT_JITCONFIG:-}" ]; then show "$ACTIONS_RUNNER_INPUT_JITCONFIG"; fi
-              if [ -f .runner ]; then echo "file $(tr -d '\n ' < .runner)"; fi
+              if [ "$cli" = 0 ]; then
+                while IFS= read -r n; do
+                  if [[ $n == ACTIONS_RUNNER_INPUT_JITCONFIG ]]; then show "${!n}"; fi
+                done < <(compgen -e)
+              fi
+              for f in .runner .runner_migrated; do
+                if [ -f "$f" ]; then echo "file $f $(tr -d '\n ' < "$f")"; fi
+              done
               STUB
               chmod +x h/run.sh
               b64() { "$node" -e 'process.stdout.write(Buffer.from(process.argv[1]).toString("base64"))' "$1"; }
@@ -353,16 +368,34 @@ exec "$@"
                 echo "$2: ok"
               }
               expect "$(run --jitconfig "$blob" --once)" jitconfig-arg
-              expect "$(run "--jitconfig=$blob")" jitconfig-equals
+              expect "$(run --JITCONFIG "$blob")" jitconfig-arg-upper
               expect "$(ACTIONS_RUNNER_INPUT_JITCONFIG=$blob run)" jitconfig-env
+              expect "$(env actions_runner_input_jitconfig="$blob" RUNNER_HOME="$d/h" /usr/bin/actions-runner)" jitconfig-env-lower
+              # The argument wins, as in the listener: an unreadable variable beside it
+              # does not stop the start.
+              expect "$(ACTIONS_RUNNER_INPUT_JITCONFIG=not-base64-json run --jitconfig "$blob")" jitconfig-arg-over-env
               run --jitconfig "$blob" --once | grep -q -x -F 'arg [--once]'
-              # A home registered before this package (updates on) is switched off at start.
+              # The listener does not read --jitconfig=<value>, so the wrapper passes it on as it is.
+              out=$(run "--jitconfig=$blob")
+              grep -q -x -F "arg [--jitconfig=$blob]" <<<"$out" || { echo "--jitconfig= was changed:" >&2; echo "$out" >&2; exit 1; }
+              echo "jitconfig-equals: passed on unchanged"
+              # A home registered before this package (updates on) is switched off at start,
+              # in .runner and in the migrated settings the listener tries first.
               printf '\xef\xbb\xbf{"agentId": 7, "disableUpdate": false, "serverUrl": "https://example.invalid"}' > h/.runner
+              printf '{"agentId": 7, "disableUpdate": false, "serverUrl": "https://migrated.example.invalid"}' > h/.runner_migrated
+              chmod 640 h/.runner
               out=$(run)
-              grep -q -F 'file {"agentId":7,"disableUpdate":true,"serverUrl":"https://example.invalid"}' <<<"$out" \
+              grep -q -x -F 'file .runner {"agentId":7,"disableUpdate":true,"serverUrl":"https://example.invalid"}' <<<"$out" \
                 || { echo "existing .runner: updates not off:" >&2; echo "$out" >&2; exit 1; }
-              echo "existing-runner-file: ok"
-              rm h/.runner
+              grep -q -x -F 'file .runner_migrated {"agentId":7,"disableUpdate":true,"serverUrl":"https://migrated.example.invalid"}' <<<"$out" \
+                || { echo "existing .runner_migrated: updates not off:" >&2; echo "$out" >&2; exit 1; }
+              # The rewrite keeps the file's mode and leaves no temporary file behind.
+              test "$(stat -c %a h/.runner)" = 640
+              if ls -A h | grep -q '^\.\.runner'; then
+                echo "a temporary settings file was left in the home:" >&2; ls -A h >&2; exit 1
+              fi
+              echo "existing-settings-files: ok"
+              rm h/.runner h/.runner_migrated
               # Fail closed: a number a JS rewrite would change (agentId above
               # 2^53) refuses the start and leaves .runner byte-identical.
               printf '{"agentId": 9007199254740993, "disableUpdate": false}' > h/.runner
@@ -370,9 +403,11 @@ exec "$@"
               if out=$(run 2>&1); then
                 echo "control failed: a .runner with an unsafe integer was rewritten and started" >&2; echo "$out" >&2; exit 1
               fi
-              grep -q 'Could not turn the runner' <<<"$out"
+              grep -q 'Could not set disableUpdate in .*/\.runner' <<<"$out"
               grep -q '9007199254740993' <<<"$out"
-              ! grep -q '^file ' <<<"$out"
+              if grep -q '^file ' <<<"$out"; then
+                echo "control failed: run.sh started after the refusal" >&2; echo "$out" >&2; exit 1
+              fi
               test "$(sha256sum < h/.runner)" = "$before"
               rm h/.runner
               echo "unsafe-integer-runner-file: refused, unchanged"
@@ -381,14 +416,23 @@ exec "$@"
                 echo "control failed: a jitconfig with an unsafe integer started the runner" >&2; echo "$out" >&2; exit 1
               fi
               grep -q '9007199254740993' <<<"$out"
-              ! grep -q '^runner ' <<<"$out"
+              if grep -q '^runner ' <<<"$out"; then
+                echo "control failed: run.sh started after the refusal" >&2; echo "$out" >&2; exit 1
+              fi
               echo "unsafe-integer-jitconfig: refused"
-              # Fail closed: a jitconfig the wrapper cannot read stops the start before run.sh.
+              # Fail closed: a jitconfig the wrapper cannot read stops the start before
+              # run.sh, from the argument and from the variable.
               if out=$(run --jitconfig not-base64-json 2>&1); then
                 echo "control failed: an unreadable jitconfig started the runner" >&2; echo "$out" >&2; exit 1
               fi
-              grep -q 'Could not turn the runner' <<<"$out"
-              ! grep -q '^arg ' <<<"$out"
+              grep -q 'Could not set disableUpdate in the jitconfig from --jitconfig' <<<"$out"
+              if grep -q '^arg ' <<<"$out"; then
+                echo "control failed: run.sh started after the refusal" >&2; echo "$out" >&2; exit 1
+              fi
+              if out=$(env Actions_Runner_Input_JitConfig=not-base64-json RUNNER_HOME="$d/h" /usr/bin/actions-runner 2>&1); then
+                echo "control failed: an unreadable jitconfig variable started the runner" >&2; echo "$out" >&2; exit 1
+              fi
+              grep -q 'Could not set disableUpdate in the jitconfig from Actions_Runner_Input_JitConfig' <<<"$out"
               echo "unreadable-jitconfig: refused"
             "%
           ],
@@ -396,8 +440,10 @@ exec "$@"
       } | Test,
     # A RUNNER_HOME an older package set up (no stamp, its own bin/) is upgraded to
     # the packaged runner at the next start, keeping .runner, .credentials, .env
-    # and _work, and the upgraded runner starts. A current home is left alone.
-    # Control: a home whose runner is still running is not replaced.
+    # and _work, and the upgraded runner starts. A current home is left alone. A
+    # home an upstream self-update rearranged, and one whose copy was
+    # interrupted, are upgraded again. Controls: a home whose runner is still
+    # running, and a directory with a bin/ that holds no runner, are not changed.
     home_upgrade_keeps_registration =
       {
         class = 'Standalone,
@@ -432,6 +478,8 @@ exec "$@"
               same h/externals/node24/bin/node "$pkg/externals/node24/bin/node"
               test ! -e h/externals/node20/marker
               test ! -e h/bin.2.330.0
+              test ! -e h/.minimal-copying
+              test ! -e h/.minimal-setup.lock
               same h/.minimal-installed-stamp "$pkg/.minimal-package-stamp"
               grep -q '"clientId": "kept-marker-0b7e"' h/.credentials
               test "$(cat h/_work/r/file)" = keep
@@ -443,9 +491,37 @@ exec "$@"
               # A second start finds the stamp current and copies nothing.
               echo marker > h/bin/local-marker
               out=$(RUNNER_HOME=$d/h /usr/bin/actions-runner --version 2>&1)
-              ! grep -q 'Upgrading the runner' <<<"$out"
+              if grep -q 'Upgrading the runner' <<<"$out"; then
+                echo "a current home was upgraded again:" >&2; echo "$out" >&2; exit 1
+              fi
               test -e h/bin/local-marker
               echo "upgrade: ok"
+              # A home an upstream self-update rearranged (bin -> bin.<version>, as
+              # update.sh leaves it) is upgraded again although its stamp matches.
+              mv h/bin h/bin.2.999.0; ln -s "$d/h/bin.2.999.0" h/bin
+              out=$(RUNNER_HOME=$d/h /usr/bin/actions-runner --version 2>&1) || { echo "$out" >&2; exit 1; }
+              grep -q 'Upgrading the runner in' <<<"$out"
+              test -d h/bin && test ! -L h/bin && test ! -e h/bin.2.999.0
+              same h/bin/Runner.Listener "$pkg/bin/Runner.Listener"
+              echo "self-updated-home: upgraded"
+              # A copy that was interrupted (marker left, no bin/Runner.Listener yet) is
+              # done again at the next start.
+              mkdir -p p/bin; echo partial > p/bin/partial; : > p/.minimal-copying
+              out=$(RUNNER_HOME=$d/p /usr/bin/actions-runner --version 2>&1) || { echo "$out" >&2; exit 1; }
+              same p/bin/Runner.Listener "$pkg/bin/Runner.Listener"
+              test ! -e p/bin/partial && test ! -e p/.minimal-copying
+              same p/.minimal-installed-stamp "$pkg/.minimal-package-stamp"
+              echo "interrupted-copy: redone"
+              # Control: a directory with a bin/ that holds no runner (RUNNER_HOME=$HOME
+              # with a ~/bin) is refused and nothing in it changes.
+              mkdir -p u/bin u/bin.old; echo mine > u/bin/tool; echo mine > u/bin.old/tool
+              if out=$(RUNNER_HOME=$d/u /usr/bin/actions-runner --version 2>&1); then
+                echo "control failed: the wrapper took over a directory that holds no runner" >&2; echo "$out" >&2; exit 1
+              fi
+              grep -q 'no runner (no bin/Runner.Listener)' <<<"$out"
+              test "$(cat u/bin/tool)" = mine && test "$(cat u/bin.old/tool)" = mine
+              test ! -e u/run.sh && test ! -e u/.minimal-installed-stamp && test ! -e u/.minimal-setup.lock
+              echo "unrelated-bin: refused, unchanged"
               # Control: a runner still running from an outdated home is not replaced. bash
               # copied in as bin/Runner.Listener stands in for it (/proc/<pid>/exe).
               # The loop keeps that bash alive as itself: `-c 'sleep 60'` would exec
@@ -463,9 +539,9 @@ exec "$@"
               if out=$(RUNNER_HOME=$d/r /usr/bin/actions-runner --version 2>&1); then
                 echo "control failed: the wrapper replaced the bin/ of a running runner" >&2; echo "$out" >&2; exit 1
               fi
-              grep -q 'is still running' <<<"$out"
+              grep -q "is still running (PID $pid)" <<<"$out"
               same r/bin/Runner.Listener "$(command -v bash)"
-              test ! -e r/.minimal-installed-stamp
+              test ! -e r/.minimal-installed-stamp && test ! -e r/.minimal-setup.lock
               echo "running-runner: refused"
             "%
           ],
