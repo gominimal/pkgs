@@ -9,14 +9,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "1.13.1" in
+let version = "1.13.2" in
 {
   name = "hex-patch",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/Etto48/HexPatch/v%{version}.tar.gz",
-      sha256 = "95e36866e2a22616c3642a943038ece6bdfce693284ea91bc3ae4f900ba85f83",
+      sha256 = "5399811ba7ea435d450698243319bd7844a9442300f43a5e384106bdd0f3b652",
       extract = true,
       strip_prefix = "HexPatch-%{version}",
     } | Source,
