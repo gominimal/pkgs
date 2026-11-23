@@ -22,6 +22,17 @@ export LDFLAGS="-Wl,--build-id=none"
 export CFLAGS="$CFLAGS -std=gnu17"
 export CPPFLAGS="-D_GNU_SOURCE"
 
+# Resolve hosts without AI_ADDRCONFIG. glibc skips loopback addresses when it
+# decides whether a family is "configured", so in a box whose only interface is lo
+# (a test sandbox, a no-network session) even `netperf -H 127.0.0.1` fails with
+# "Name or service not known". -4 / -6 still pick the family explicitly. Two call
+# sites (src/netlib.c resolve_host, src/nettest_bsd.c complete_addrinfo); fail if
+# upstream moves them so the change cannot silently stop applying.
+n=$(grep -c 'AI_ADDRCONFIG' src/netlib.c src/nettest_bsd.c | awk -F: '{s+=$2} END {print s}')
+[ "$n" = 2 ] || { echo "expected 2 AI_ADDRCONFIG uses, found $n" >&2; exit 1; }
+sed -i 's/ *| *AI_ADDRCONFIG//' src/netlib.c src/nettest_bsd.c
+! grep -q 'AI_ADDRCONFIG' src/netlib.c src/nettest_bsd.c
+
 # A commit archive has no generated configure; this is upstream's autogen.sh.
 aclocal -I src/missing/m4
 automake --add-missing

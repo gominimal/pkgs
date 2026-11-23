@@ -25,33 +25,11 @@ let version = "2.7.1" in
 
 # Start netserver on loopback in the foreground (-D) and wait until it accepts the
 # control connection. 127.0.0.1, not localhost: the test sandbox has no /etc/hosts.
-#
-# The test sandbox's only interface is lo, and netperf resolves the -H host with
-# getaddrinfo(AI_ADDRCONFIG) (src/netlib.c resolve_host, src/nettest_bsd.c
-# complete_addrinfo). glibc ignores loopback addresses for AI_ADDRCONFIG, so with no
-# other interface even the literal 127.0.0.1 fails ("getaddrinfo returned -2 Name or
-# service not known") and no test can run. On any host with a configured address (a
-# lab VM) this does not happen. So the tests build a small preload that clears
-# AI_ADDRCONFIG and run the real netperf and netserver with it preloaded; nothing else about
-# them changes, and it is not part of the package.
+# The sandbox's only interface is lo, which is why build.sh drops AI_ADDRCONFIG: these
+# tests run the shipped binaries unmodified.
 let start-netserver = m%"
-  gcc -shared -fPIC -o noaddrconfig.so -x c - <<'EOF'
-  #define _GNU_SOURCE
-  #include <dlfcn.h>
-  #include <netdb.h>
-  int getaddrinfo(const char *node, const char *service, const struct addrinfo *hints,
-                  struct addrinfo **res) {
-    static int (*real)(const char *, const char *, const struct addrinfo *,
-                       struct addrinfo **);
-    struct addrinfo copy;
-    if (!real) real = dlsym(RTLD_NEXT, "getaddrinfo");
-    if (hints) { copy = *hints; copy.ai_flags &= ~AI_ADDRCONFIG; hints = &copy; }
-    return real(node, service, hints, res);
-  }
-  EOF
-  noaddrconfig="$PWD/noaddrconfig.so"
   port=12866
-  LD_PRELOAD="$noaddrconfig" netserver -D -4 -L 127.0.0.1 -p "$port" > netserver.log 2>&1 &
+  netserver -D -4 -L 127.0.0.1 -p "$port" > netserver.log 2>&1 &
   srv=$!
   trap 'kill "$srv" 2>/dev/null || true; cat netserver.log' EXIT
   for _ in $(seq 1 50); do
@@ -91,11 +69,14 @@ in
   attrs =
     {
       upstream_version = version,
-      # MIT (COPYING, and the header of every netperf source file). src/dscp.c, which
-      # is compiled into both programs, is BSD-2-Clause (lifted from OpenSSH). The
-      # BSD-4-Clause src/missing/inet_ntop.c is only built where libc lacks inet_ntop,
-      # so not here.
-      license_spdx = "MIT AND BSD-2-Clause",
+      # MIT (COPYING, and most netperf source headers). src/dscp.c, compiled into both
+      # programs, is BSD-2-Clause (lifted from OpenSSH). src/net_uuid.c, also compiled
+      # into both, is the RFC 4122 sample code under the OSF/HP/DEC/Microsoft notice
+      # ("permission to use, copy, modify, and distribute this file for any purpose",
+      # keep the notices, no use of the names in advertising); SPDX has no id for it.
+      # The BSD-4-Clause src/missing/inet_ntop.c is only built where libc lacks
+      # inet_ntop, so not here.
+      license_spdx = "MIT AND BSD-2-Clause AND LicenseRef-RFC4122-OSF-sample",
       source_provenance = {
         category = 'GithubRepo,
         owner = "HewlettPackard",
@@ -126,7 +107,7 @@ in
     tcp_rr =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, coreutils, gawk, grep, toolchain],
+        test_deps = [bash-bootstrap, coreutils, gawk, grep],
         cmds = [
           [
             "/bin/bash",
@@ -135,7 +116,7 @@ in
               set -euo pipefail
               %{start-netserver}
               rc=0
-              out="$(LD_PRELOAD="$noaddrconfig" netperf -H 127.0.0.1 -p "$port" -t TCP_RR -l 1 2>&1)" || rc=$?
+              out="$(netperf -H 127.0.0.1 -p "$port" -t TCP_RR -l 1 2>&1)" || rc=$?
               printf '%s\n' "$out"
               [ "$rc" = 0 ]
               grep -q 'TCP REQUEST/RESPONSE TEST' <<<"$out"
@@ -151,7 +132,7 @@ in
     udp_rr =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, coreutils, gawk, grep, toolchain],
+        test_deps = [bash-bootstrap, coreutils, gawk, grep],
         cmds = [
           [
             "/bin/bash",
@@ -160,7 +141,7 @@ in
               set -euo pipefail
               %{start-netserver}
               rc=0
-              out="$(LD_PRELOAD="$noaddrconfig" netperf -H 127.0.0.1 -p "$port" -t UDP_RR -l 1 -P 0 -- -o THROUGHPUT,THROUGHPUT_UNITS,PROTOCOL 2>&1)" || rc=$?
+              out="$(netperf -H 127.0.0.1 -p "$port" -t UDP_RR -l 1 -P 0 -- -o THROUGHPUT,THROUGHPUT_UNITS,PROTOCOL 2>&1)" || rc=$?
               printf '%s\n' "$out"
               [ "$rc" = 0 ]
               awk -F, '$2 == "Trans/s" && $3 == "UDP" && $1 + 0 > 0 { ok = 1 } END { exit !ok }' <<<"$out"
