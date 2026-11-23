@@ -17,10 +17,12 @@ export LDFLAGS="-Wl,--build-id=none"
 # HTTP/3 goes through ngtcp2's OpenSSL backend (libngtcp2_crypto_ossl, the OpenSSL 3.5+
 # QUIC TLS API) and nghttp3.
 #
-# Optional libraries the apps would pick up if present are off explicitly, so the result
-# does not depend on what else is in the sandbox: libxml2 (nghttp -a asset fetching),
-# jemalloc, brotli, systemd (nghttpx sd_notify), jansson (nghttp -r HAR
-# output), libevent (examples), mruby, neverbleed, libbpf.
+# Optional dependencies the build would pick up if present are off explicitly, so the
+# result does not depend on what else is in the sandbox: libxml2 (nghttp -a asset
+# fetching), jemalloc, brotli, systemd (nghttpx sd_notify), jansson (nghttp -r HAR
+# output), libevent (examples), mruby, neverbleed, libbpf, wolfSSL (an alternative TLS
+# backend; OpenSSL is the one used), and Python3, which is not a library: CMake looks
+# for it only to install nghttpx's Python helper scripts, which are not shipped.
 cmake -B build -G Ninja \
   -DCMAKE_INSTALL_PREFIX=/usr \
   -DCMAKE_INSTALL_LIBDIR=lib \

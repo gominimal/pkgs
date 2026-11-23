@@ -4,6 +4,7 @@ let coreutils = import "../coreutils/build.ncl" in
 
 let base = import "../base/build.ncl" in
 let c-ares = import "../c-ares/build.ncl" in
+let ca-certificates = import "../ca-certificates/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -74,6 +75,9 @@ in
     glibc,
     subsetOf gcc ["libgcc", "libstdcpp"],
     c-ares,
+    # nghttpx verifies a TLS backend against the system trust store unless given
+    # --cacert or -k; declare the store it reads.
+    ca-certificates,
     libev,
     nghttp3,
     ngtcp2,
