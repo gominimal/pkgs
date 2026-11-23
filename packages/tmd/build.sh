@@ -6,10 +6,8 @@ set -euo pipefail
 export ZIG_GLOBAL_CACHE_DIR="$PWD/.zig-global-cache"
 export ZIG_LOCAL_CACHE_DIR="$PWD/.zig-local-cache"
 
-# Seed zig's package directory from the pinned Sources (build.ncl), so
-# `zig build` never downloads. zig 0.17 resolves a dependency hash from
-# <build root>/zig-pkg/<hash>/ first, then $ZIG_GLOBAL_CACHE_DIR/p/<hash>.tar.gz,
-# then the network.
+# Seed zig's package directory from the pinned Sources (build.ncl); `zig
+# build --system` below then resolves every package from it and nothing else.
 #
 # `zig fetch <file>` is the verifier: it unpacks the archive, applies the
 # package's `paths` filter and prints its zig package hash, which must equal
@@ -18,10 +16,9 @@ export ZIG_LOCAL_CACHE_DIR="$PWD/.zig-local-cache"
 # rather than the archive's root inside it (Maker/Fetch.zig: `package_root =
 # tmp_directory_path`), so p/<hash>.tar.gz holds <hash>/<archive root>/...
 # and `zig build` unpacks it to a tree with no build.zig.zon at the top,
-# hashing it as a naked N-V-... package (the pkgs#1598 hash mismatch). So the
-# verified archive is unpacked into zig-pkg/<hash>/ directly, and the broken
-# global entries are removed, which leaves the sandbox's lack of network as
-# the only fallback.
+# hashing it as a naked N-V-... package. So the verified archive is unpacked
+# into zig-pkg/<hash>/ directly, and the broken global entries are removed
+# after the last seed (under --system an entry there would trip an assert).
 seed() {
   local file="$1" want="$2" got
   got="$(zig fetch "$file")"
@@ -46,6 +43,7 @@ seed arocc-d0c8c4d9c55daa7ef6e40cf0f630a5b5e900989b.tar.gz aro-0.0.0-JSD1QtuBNwC
 seed zlib-1220fed0c74e1019b3ee29edae2051788b080cd96e90d56836eea857b0b966742efb.tar.gz N-V-__8AAB0eQwD-0MdOEBmz7intriBReIsIDNlukNVoNu6o
 seed wuffs-7411f488fe2e2c205c3d3b3d28638b7356522930.tar.gz N-V-__8AAP5JWgCGP_AD0teWpa4krRvE9VPZzvviGdbmN4jI
 seed pixels-12207ff340169c7d40c570b4b6a97db614fe47e0d83b5801a932dcd44917424c8806.tar.gz N-V-__8AADYiAAB_80AWnH1AxXC0tql9thT-R-DYO1gBqTLc
+rm -rf "$ZIG_GLOBAL_CACHE_DIR/p" "$ZIG_GLOBAL_CACHE_DIR/tmp"
 
 # tmd links libc, so pin musl for the static binary upstream documents. An
 # explicit arch also selects the baseline CPU model, where a bare `zig build`
@@ -56,12 +54,23 @@ case "$(uname -m)" in
   *)       echo "unsupported arch: $(uname -m)" >&2; exit 1 ;;
 esac
 
-rm -rf "$ZIG_GLOBAL_CACHE_DIR/p" "$ZIG_GLOBAL_CACHE_DIR/tmp"
-
-# ReleaseSmall is upstream's documented release build. The sandbox has no
-# network (build.ncl declares no `needs`), so this resolves every package from
-# zig-pkg/ as seeded above or fails.
-zig build -Doptimize=ReleaseSmall -Dtarget="$ZTARGET" \
+# ReleaseSmall is upstream's documented release build.
+#
+# The sandbox HAS the network: curl (a runtime dep) declares needs.internet,
+# and a build gets the network when anything in its closure does. So zig
+# enforces offline resolution instead: `--system <dir>` makes its package
+# fetch read-only (Maker/Fetch.zig `read_only`), and a package missing from
+# zig-pkg/ fails the build ("package not found" / "lazy dependency package not
+# found") instead of downloading. Never drop the flag to get a build through:
+# mirror the missing package (build.ncl) and seed it above.
+#
+# --system also sets system_package_mode, which turns ON every zig
+# systemIntegrationOption that has no explicit default. ghostty declares six
+# such options; each -fno-sys keeps the bundled copy, as without --system.
+zig build --system "$PWD/zig-pkg" \
+  -fno-sys=freetype -fno-sys=harfbuzz -fno-sys=fontconfig \
+  -fno-sys=libpng -fno-sys=zlib -fno-sys=oniguruma \
+  -Doptimize=ReleaseSmall -Dtarget="$ZTARGET" \
   -Dversion="$MINIMAL_ARG_VERSION" --prefix "$OUTPUT_DIR/usr"
 
 # The binary is static, so the licences of everything compiled into it ship with it:

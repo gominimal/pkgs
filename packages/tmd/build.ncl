@@ -53,9 +53,11 @@ in
   # Offline: every zig package the build resolves is pinned (`zig_deps` above),
   # and build.sh unpacks each into zig-pkg/<hash>/ once `zig fetch <file>` has
   # checked it against the content hash the upstream build.zig.zon pins.
-  # There is no `needs`, so the sandbox has no network: a missing package fails
-  # the build instead of being downloaded (pkgs#1545 lost an amd64 world build
-  # to a ConnectionResetByPeer from deps.files.ghostty.org).
+  # The sandbox still has the network (curl, in runtime_deps, declares
+  # needs.internet), so build.sh runs `zig build --system zig-pkg`: zig's fetch
+  # is read-only and a missing package fails the build instead of being
+  # downloaded (pkgs#1545 lost an amd64 world build to a ConnectionResetByPeer
+  # from deps.files.ghostty.org).
   build_deps =
     [
       { file = "build.sh" } | Local,
