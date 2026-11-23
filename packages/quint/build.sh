@@ -72,6 +72,36 @@ got=$(node -e "require('$mgr').getRustEvaluatorPath().then(p => console.log(requ
 [ "$got" = "$(realpath "$prefix/bin/quint_evaluator")" ] ||
   { echo "patched getRustEvaluatorPath() resolves to '$got', not the packaged evaluator" >&2; exit 1; }
 
+# --- 3. Apalache, from the apalache package ----------------------------------
+# quint looks for <apalacheDistDir(version)>/apalache/{bin/apalache-mc,lib/apalache.jar};
+# the apalache package installs /usr/lib/apalache/{bin,lib}. Only the version
+# this quint pins is redirected: an explicit --apalache-version for another
+# keeps upstream's download.
+AV="${MINIMAL_ARG_APALACHE_VERSION:?build.ncl forwards apalache_version}"
+dist="$prefix/node_modules/@informalsystems/quint/dist/src"
+grep -qF "exports.DEFAULT_APALACHE_VERSION_TAG = '$AV';" "$dist/apalache.js" || {
+  echo "quint $V pins a different Apalache than the packaged $AV:" >&2
+  grep -F "DEFAULT_APALACHE_VERSION_TAG =" "$dist/apalache.js" >&2 || true
+  exit 1
+}
+asig="function apalacheDistDir(version) {"
+[ "$(grep -cF "$asig" "$dist/config.js")" = 1 ] || { echo "config.js: apalacheDistDir signature moved — re-check the patch" >&2; exit 1; }
+sed -i "s|^$asig\$|&\n    if (version === '$AV') return '/usr/lib'; // minimal: the packaged apalache|" "$dist/config.js"
+# TLC (`--backend tlc`) spawns `java` from PATH; run it on the packaged JDK,
+# the one apalache's launcher is pinned to.
+tsig="(0, child_process_1.spawn)('java', ["
+[ "$(grep -cF "$tsig" "$dist/tlc.js")" = 1 ] || { echo "tlc.js: the java spawn moved — re-check the patch" >&2; exit 1; }
+sed -i "s|(0, child_process_1.spawn)('java', \[|(0, child_process_1.spawn)('/usr/lib/jvm/bin/java', [ // minimal: the packaged jdk|" "$dist/tlc.js"
+# Fail closed: the pinned version resolves to /usr/lib, another version does
+# not, and no bare java spawn is left.
+got=$(node -e "const c=require('$dist/config.js'); console.log(c.apalacheDistDir('$AV') + ' ' + c.apalacheDistDir('0.0.0-other'))")
+case "$got" in
+  "/usr/lib "*/apalache-dist-0.0.0-other) ;;
+  *) echo "patched apalacheDistDir() gives '$got'" >&2; exit 1 ;;
+esac
+grep -qF "spawn)('/usr/lib/jvm/bin/java', [" "$dist/tlc.js" || { echo "tlc.js: java patch did not apply" >&2; exit 1; }
+if grep -nF "spawn)('java'" "$dist/tlc.js"; then echo "tlc.js: a bare java spawn is left" >&2; exit 1; fi
+
 # --- bins ---------------------------------------------------------------------
 mkdir -p "$OUTPUT_DIR/usr/bin"
 ln -s ../libexec/quint/node_modules/.bin/quint "$OUTPUT_DIR/usr/bin/quint"
