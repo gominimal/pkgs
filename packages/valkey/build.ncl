@@ -92,7 +92,7 @@ in
               done
               # The redis compat links are not shipped (see outputs).
               for b in redis-server redis-cli redis-benchmark; do
-                ! command -v "$b"
+                if command -v "$b"; then echo "unexpected $b on PATH" >&2; exit 1; fi
               done
             "%
           ],
