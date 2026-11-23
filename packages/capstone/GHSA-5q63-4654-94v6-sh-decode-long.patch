@@ -1,0 +1,28 @@
+Port to capstone v5 (5.0.9) of the core fix from upstream next commit
+de4b58b2e74b92296a1e181f4121c42bd65eb286 ("Merge commit from fork",
+Rot127, 2026-08-06), which fixes GHSA-5q63-4654-94v6: an out-of-bounds read
+in SH_printInst after a failed SH2A 32-bit decode falls through into the
+16-bit dispatch with a dirty op_count.
+
+Only the sh_disassemble() hunk is carried: the missing
+`else return MCDisassembler_Fail;` after decode_long(). The rest of
+de4b58b2 is CS_ASSERT_RET hardening (a macro v5 does not have), a
+clang-format of the opRR() list, and test_poc.c changes for a file v5 does
+not have. The two added lines are byte-for-byte those of de4b58b2; only the
+hunk offset differs. Applies on top of CVE-2026-55893-55894-sh-bounds.patch
+(e17ee44a), which turns opFMOVm's `op_count = 2` into two `op_count++`, the
+increment this read depends on.
+
+diff --git a/arch/SH/SHDisassembler.c b/arch/SH/SHDisassembler.c
+index 9986b32..a3f3226 100644
+--- a/arch/SH/SHDisassembler.c
++++ b/arch/SH/SHDisassembler.c
+@@ -2179,6 +2179,8 @@ static bool sh_disassemble(const uint8_t *code, MCInst *MI, uint64_t address,
+ 			insn |= code[2] << 8 | code[3];
+ 			if (decode_long(insn, address,	MI, info, detail))
+ 				return MCDisassembler_Success;
++			else
++				return MCDisassembler_Fail;
+ 		}
+ 	}
+ 	/* Co-processor instructions */
