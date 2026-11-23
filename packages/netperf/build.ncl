@@ -132,7 +132,7 @@ in
     udp_rr =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, coreutils, gawk, grep],
+        test_deps = [bash-bootstrap, coreutils, gawk],
         cmds = [
           [
             "/bin/bash",

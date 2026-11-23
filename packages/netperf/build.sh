@@ -31,7 +31,7 @@ export CPPFLAGS="-D_GNU_SOURCE"
 n=$(grep -c 'AI_ADDRCONFIG' src/netlib.c src/nettest_bsd.c | awk -F: '{s+=$2} END {print s}')
 [ "$n" = 2 ] || { echo "expected 2 AI_ADDRCONFIG uses, found $n" >&2; exit 1; }
 sed -i 's/ *| *AI_ADDRCONFIG//' src/netlib.c src/nettest_bsd.c
-! grep -q 'AI_ADDRCONFIG' src/netlib.c src/nettest_bsd.c
+if grep -q 'AI_ADDRCONFIG' src/netlib.c src/nettest_bsd.c; then echo 'AI_ADDRCONFIG still present' >&2; exit 1; fi
 
 # A commit archive has no generated configure; this is upstream's autogen.sh.
 aclocal -I src/missing/m4
