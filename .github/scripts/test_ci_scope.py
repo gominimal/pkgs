@@ -84,8 +84,9 @@ class Scope(unittest.TestCase):
 
     def test_shared_helper_reaches_its_importers(self):
         importers = files_referencing('"../llvm/versioned.ncl"')
-        self.assertGreaterEqual(len(importers), 3)
-        # The edge itself: llvm-21/22/23 reach llvm only through
+        # llvm-22 and llvm-23 (llvm-21 was removed once nothing imported it).
+        self.assertGreaterEqual(len(importers), 2)
+        # The edge itself: the llvm-<major> lines reach llvm only through
         # versioned.ncl (none imports ../llvm/build.ncl), so a regex that
         # matched only build.ncl imports would leave them out and fail here.
         self.assertLessEqual(importers - {"llvm"}, Graph.importers["llvm"])
