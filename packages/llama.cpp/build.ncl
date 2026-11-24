@@ -13,7 +13,14 @@ let hwdata = import "../hwdata/build.ncl" in
 let pciutils = import "../pciutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 
+# `version` keys the source tarball (GitHub's archive of the tag: `v1.0.1` for a
+# stable release, so `version = "1.0.1"`). `build_num` is the b#### build the
+# release was cut from (its nightly-tag.txt): the web UI bundle is published only
+# under it, and it is the package's upstream_version, because llama.cpp's
+# advisories are written in builds. For a build with no stable release name, the
+# two are the same. pkgmgr moves both.
 let version = "b12640" in
+let build_num = "b12640" in
 {
   name = "llama.cpp",
   build_deps = [
@@ -37,11 +44,11 @@ let version = "b12640" in
     } | Source,
     {
       # llama-server's web UI for this build number, mirrored from
-      # https://huggingface.co/buckets/ggml-org/llama-ui/resolve/%{version}/dist.tar.gz
+      # https://huggingface.co/buckets/ggml-org/llama-ui/resolve/%{build_num}/dist.tar.gz
       # (sha256 matches upstream's dist.tar.gz.sha256). build.sh unpacks it into
       # ui/apps/chat/dist so the build doesn't fetch the moving `latest` UI.
-      # Bump with `version`.
-      url = "gs://minimal-staging-archives/ggml-org/llama-ui/%{version}-dist.tar.gz",
+      # Bump with `build_num`.
+      url = "gs://minimal-staging-archives/ggml-org/llama-ui/%{build_num}-dist.tar.gz",
       sha256 = "44143c391d9d2b7500573ac6543a03531b85f7b4560d87022a12509577270d8c",
       extract = false,
     } | Source,
@@ -61,6 +68,7 @@ let version = "b12640" in
   cmd = "./build.sh",
   build_args = {
     include version,
+    include build_num,
   },
   outputs = {
     llama-server = { glob = "usr/bin/llama-server" } | OutputBin,
@@ -76,7 +84,7 @@ let version = "b12640" in
 
   attrs =
     {
-      upstream_version = version,
+      upstream_version = build_num,
       # llama.cpp itself is MIT. What ships also carries:
       # - vendor/ C++: cpp-httplib, nlohmann/json (MIT); miniaudio, stb,
       #   sheredom/subprocess.h (public domain or Unlicense).
@@ -192,7 +200,7 @@ let version = "b12640" in
         class = 'Standalone,
         test_deps = [bash-bootstrap, grep],
         cmds = [
-          ["/bin/bash", "-c", "grep -qx 'llama-ui version: %{version}' /usr/share/licenses/llama.cpp/ui-THIRD-PARTY-NOTICES"],
+          ["/bin/bash", "-c", "grep -qx 'llama-ui version: %{build_num}' /usr/share/licenses/llama.cpp/ui-THIRD-PARTY-NOTICES"],
           ["/bin/bash", "-c", "grep -qx 'svelte@[0-9.]*' /usr/share/licenses/llama.cpp/ui-THIRD-PARTY-NOTICES && grep -qx 'dompurify@[0-9.]*' /usr/share/licenses/llama.cpp/ui-THIRD-PARTY-NOTICES"],
           ["/bin/bash", "-c", "grep -A4 -x 'pdfjs-dist@[0-9.]*' /usr/share/licenses/llama.cpp/ui-THIRD-PARTY-NOTICES | grep -qx 'License: Apache-2.0'"],
           ["/bin/bash", "-c", "grep -A4 -x 'pdfjs-dist@[0-9.]*' /usr/share/licenses/llama.cpp/ui-THIRD-PARTY-NOTICES | grep -qx 'NOTICE: none in the package'"],
