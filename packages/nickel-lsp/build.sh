@@ -6,6 +6,7 @@ export LD=gcc
 export RUSTFLAGS="-C linker=gcc"
 
 # >>> pkgmgr lock-patch (generated; regenerate with `pkgmgr lock-patch nickel-lsp`, never edit)
+# not floored (unreachable): webpki-root-certs 1.0.7 RUSTSEC-2026-0383
 # security-floors-lock.patch is a cargo-resolved delta against upstream's Cargo.lock; it is
 # only valid for the exact lock it was generated from.
 echo "2fdafec3df7887a526b84bb95bb5ae43c25ecbd48a3da73e89d232dd0dcb3ec2  Cargo.lock" | sha256sum -c --status - || {
@@ -38,8 +39,16 @@ if grep -A1 '^name = "memmap2"$' Cargo.lock | grep -qE '^version = "0[.]9[.](([0
   echo "ERROR: memmap2 below its security floor 0.9.11 is in Cargo.lock (RUSTSEC-2026-0186)" >&2
   exit 1
 fi
-if grep -A1 '^name = "quinn-proto"$' Cargo.lock | grep -qE '^version = "0[.]11[.](([0-9]|1[0-7])([-+][^"]*)?|18-[^"]*)"$'; then
-  echo "ERROR: quinn-proto below its security floor 0.11.18 is in Cargo.lock (RUSTSEC-2026-0338, RUSTSEC-2026-0339, RUSTSEC-2026-0340, RUSTSEC-2026-0341, RUSTSEC-2026-0342)" >&2
+if grep -A1 '^name = "quinn-proto"$' Cargo.lock | grep -qE '^version = "0[.]11[.](([0-9]|1[0-8])([-+][^"]*)?|19-[^"]*)"$'; then
+  echo "ERROR: quinn-proto below its security floor 0.11.19 is in Cargo.lock (RUSTSEC-2026-0338, RUSTSEC-2026-0339, RUSTSEC-2026-0340, RUSTSEC-2026-0341, RUSTSEC-2026-0342, RUSTSEC-2026-0523, RUSTSEC-2026-0524)" >&2
+  exit 1
+fi
+if grep -A1 '^name = "quinn-udp"$' Cargo.lock | grep -qE '^version = "0[.]5[.](([0-9]|1[0-5])([-+][^"]*)?|16-[^"]*)"$'; then
+  echo "ERROR: quinn-udp below its security floor 0.5.16 is in Cargo.lock (RUSTSEC-2026-0538)" >&2
+  exit 1
+fi
+if grep -A1 '^name = "rustix"$' Cargo.lock | grep -qE '^version = "1[.]1[.](([0-5])([-+][^"]*)?|6-[^"]*)"$'; then
+  echo "ERROR: rustix below its security floor 1.1.6 is in Cargo.lock (RUSTSEC-2026-0486)" >&2
   exit 1
 fi
 if grep -A1 '^name = "rustls"$' Cargo.lock | grep -qE '^version = "0[.]23[.](([0-9]|[1-3][0-9]|4[0-5])([-+][^"]*)?|46-[^"]*)"$'; then
@@ -54,8 +63,8 @@ if grep -A1 '^name = "tokio"$' Cargo.lock | grep -qE '^version = "(1[.]51[.](([0
   echo "ERROR: tokio below its security floor 1.51.6 is in Cargo.lock (RUSTSEC-2026-0386)" >&2
   exit 1
 fi
-if grep -A1 '^name = "webpki-root-certs"$' Cargo.lock | grep -qE '^version = "1[.]0[.](([0-9])([-+][^"]*)?|10-[^"]*)"$'; then
-  echo "ERROR: webpki-root-certs below its security floor 1.0.10 is in Cargo.lock (RUSTSEC-2026-0383)" >&2
+if grep -A1 '^name = "url"$' Cargo.lock | grep -qE '^version = "2[.]5[.](([0-8])([-+][^"]*)?|9-[^"]*)"$'; then
+  echo "ERROR: url below its security floor 2.5.9 is in Cargo.lock (RUSTSEC-2026-0592)" >&2
   exit 1
 fi
 # <<< pkgmgr lock-patch
