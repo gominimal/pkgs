@@ -1,0 +1,8 @@
+{
+  "name": "pkgmgr-node-import",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@informalsystems/quint": "0.33.1"
+  }
+}

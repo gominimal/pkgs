@@ -10,10 +10,13 @@ let glibc = import "../glibc/build.ncl" in
 # OpenSSL 3.5 LTS (supported to 2030-04-08) as a COMPAT library beside packages/openssl
 # (4.x). It is for code that cannot use 4.x and needs the libssl.so.3 / libcrypto.so.3
 # sonames:
-#   - rustc-1.98.1's stage0: both sealed rustc-1.97.1 bedrock tarballs (amd64, arm64) ship
-#     a cargo with DT_NEEDED libssl.so.3 + libcrypto.so.3.
+#   - rustc-1.99.1 (rust's stage0): bootstrap's sealed rustc objects ship a cargo with
+#     DT_NEEDED libssl.so.3 + libcrypto.so.3 (rustc-1.98.1, the previous rung, was removed
+#     once rust 1.100 moved to 1.99.1).
 #   - actions-runner: its bundled .NET 8 runtime dlopens libssl.so.3. Only .NET 10 got the
 #     OpenSSL 4 loader (dotnet/runtime#135534, merged 2026-10-10).
+#   - foundationdb 7.3: its certificate code does not build against OpenSSL 4 (nor does
+#     8.0.1's; apple/foundationdb#14348).
 #   - sources that do not build against 4.x: foundationdb 7.3 (C++ X509 const errors;
 #     upstream is itself moving to a pinned 3.5, apple/foundationdb#14348).
 #

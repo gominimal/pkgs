@@ -37,7 +37,7 @@ let version = "3.2.4" in
     { file = "build.sh" } | Local,
     { file = "requirements.lock" } | Local,
     {
-      url = "https://github.com/httpie/httpie/archive/refs/tags/%{version}.tar.gz",
+      url = "https://github.com/httpie/cli/archive/refs/tags/%{version}.tar.gz",
       sha256 = "b185cd8d81325f97c773582e50f1c5e047c2d8575b53d676469c9daf2a52f341",
       extract = true,
       strip_prefix = "cli-%{version}",
