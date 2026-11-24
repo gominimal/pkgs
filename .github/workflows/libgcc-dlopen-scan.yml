@@ -1,0 +1,71 @@
+name: libgcc-dlopen-scan
+
+# Keeps .github/scripts/libgcc_dlopen_importers.toml (read by the BLOCKING
+# libgcc-dlopen-guard) true against what main actually ships. It dumps the
+# catalog's spec hashes on both arches with the pinned evaluator, streams each
+# package's built artifact from the public cache (https://cache.minimal.dev,
+# sha256-checked against the cache index), and reads every ELF's .dynsym for
+# undefined pthread_cancel / pthread_exit / thrd_exit / backtrace. It FAILS
+# when a package imports one and is not listed, when a listed package no
+# longer does, or when the symbols or arches differ. The step summary carries
+# the regenerated file; or run locally:
+#
+#   mip dump -p --format json --arch amd64 > dump-amd64.json   # and arm64
+#   python3 .github/scripts/libgcc_dlopen_scan.py --write \
+#     --dump amd64=dump-amd64.json --dump arm64=dump-arm64.json
+#
+# It also fails closed (exit 2 = UNVERIFIED) when a dump or the cache index
+# cannot be read, a download or digest check fails, or more than 5% of an
+# arch's packages have no cache artifact.
+#
+# Why a schedule and not a PR check: the facts are in BUILT outputs, which a
+# PR does not have until build-bot builds it, and an upstream bump can start
+# importing pthread_exit with no recipe change. Same "drift happens
+# independently of any PR" logic as source-liveness.yml. ~15 GB per arch is
+# streamed (never written to disk).
+#
+# Network: unauthenticated HTTPS GETs against cache.minimal.dev and the
+# pinned evaluator download. No secrets.
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "41 6 * * 4" # weekly; Thursday, offset from the Mon-Wed siblings
+
+permissions:
+  contents: read
+
+concurrency:
+  group: libgcc-dlopen-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Scanner unit tests
+        run: python3 -m unittest discover -s .github/scripts -p 'test_libgcc_dlopen_scan.py' -v
+
+      # The runner's pinned, sha256-verified evaluator: its spec hashes are
+      # the ones build-bot caches under.
+      - uses: ./.github/actions/setup-mip
+
+      - name: Dump catalog (amd64 + arm64)
+        run: |
+          set -euo pipefail
+          mip --version || true
+          for arch in amd64 arm64; do
+            mip dump -p --format json --arch "$arch" > "$RUNNER_TEMP/dump-$arch.json"
+            echo "dumped $(jq 'length' "$RUNNER_TEMP/dump-$arch.json") packages ($arch)"
+          done
+
+      - name: libgcc dlopen scan
+        run: |
+          python3 .github/scripts/libgcc_dlopen_scan.py \
+            --dump "amd64=$RUNNER_TEMP/dump-amd64.json" \
+            --dump "arm64=$RUNNER_TEMP/dump-arm64.json"
