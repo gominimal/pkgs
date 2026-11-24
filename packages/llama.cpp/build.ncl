@@ -17,8 +17,8 @@ let gcc = import "../gcc/build.ncl" in
 # stable release, so `version = "1.0.1"`). `build_num` is the b#### build the
 # release was cut from (its nightly-tag.txt): the web UI bundle is published only
 # under it, and it is the package's upstream_version, because llama.cpp's
-# advisories are written in builds. This pin is a build with no stable release
-# name, so the two are the same. pkgmgr moves both.
+# advisories are written in builds. For a build with no stable release name, the
+# two are the same. pkgmgr moves both.
 let version = "b12640" in
 let build_num = "b12640" in
 {
