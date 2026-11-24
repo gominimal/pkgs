@@ -4,6 +4,13 @@ set -e
 # Security backport (see build.ncl). `set -e` plus patch's non-zero exit on a
 # rejected hunk means a stale patch ABORTS the build rather than silently
 # shipping an unpatched libasound.
+#
+# VEX: pkgsec carries a not_affected statement for CVE-2026-90781 (products
+# pkg:github/alsa-project/alsa-lib and cpe:2.3:a:alsa-project:alsa-lib,
+# justification inline_mitigations_already_exist) that rests on these two
+# patches. VEX statements are version-blind: if you drop a patch before an
+# upstream release contains the fix, withdraw that statement too, or the
+# finding stays hidden.
 patch -Np1 -i "CVE-2026-90781-numid.patch"   # control/ctlparse.c  numid= one-byte stack overrun (1e27d63e)
 patch -Np1 -i "CVE-2026-90781.patch"         # control/ctlparse.c  name= one-byte stack overruns (f84cd4ce)
 

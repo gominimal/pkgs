@@ -15,6 +15,10 @@ cd "Python-${MINIMAL_ARG_VERSION}"
 # them: gh-155999, gh-155694, gh-156002, gh-155292 in 3.14.8; gh-157265 (tarfile),
 # gh-157579 (tempfile) and the CVE-2026-111943 ensurepip pip swap (gh-159894, pip
 # 26.2.2) in 3.14.9. Each is listed in that release's own Misc/NEWS.
+# VEX: pkgsec carries a not_affected statement for CVE-2025-15367 (product
+# pkg:github/python/cpython, inline_mitigations_already_exist) that rests on
+# this patch. VEX statements are version-blind: if you drop the patch before an
+# upstream release contains gh-143923, withdraw that statement too.
 patch -Np1 -F0 -i "../0003-gh-143923-poplib-reject-control-characters.patch"
 
 # OpenSSL 4 support for _ssl (python/cpython#149783, Modules/ only; see build.ncl).
