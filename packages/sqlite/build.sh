@@ -7,6 +7,13 @@ set -e
 tar -xof sqlite-autoconf-3540100.tar.gz
 cd sqlite-autoconf-3540100
 
+# CVE-2026-119586 (.recover smuggles dot-commands from sqlite_schema.sql into
+# its output). Upstream check-in d684ccc9ec4e41d8, re-targeted at the
+# amalgamated shell.c; see the patch header. Drop it at the first release
+# after 3.54.1 that contains that check-in. --fuzz=0: a hunk that only
+# applies loosely means the tarball changed and the patch needs rereading.
+patch -p1 --fuzz=0 < ../CVE-2026-119586-recover-tail.patch
+
 case $(uname -m) in
   x86_64)  MARCH="-march=x86-64-v3" ;;
   aarch64) MARCH="-march=armv8-a" ;;

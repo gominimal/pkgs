@@ -17,8 +17,8 @@ let zstd = import "../zstd/build.ncl" in
 let version = "23.1.5" in
 
 # The default, UNPREFIXED LLVM (/usr/bin/clang, /usr/lib/libLLVM.so.23.1, ...). Consumers
-# that must stay on an older major use the prefixed lines instead (llvm-21: the Rust ladder
-# rungs, emscripten and bun; llvm-22: zig, odin), which live under /usr/lib/llvm-<major> so
+# that must stay on an older major use the prefixed lines instead (llvm-22: zig, odin;
+# llvm-23: bun, emscripten, rustc-1.99.1), which live under /usr/lib/llvm-<major> so
 # they can share a closure with this package. Built by llvm-bootstrap (LLVM 21, built by
 # gcc): LLVM 23 needs a GCC 7.4 / Clang 5.0 host and CMake 3.20, same as 21.
 {
