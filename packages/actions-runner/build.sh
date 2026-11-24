@@ -143,17 +143,19 @@ printf 'actions-runner %s dotnet %s tree %s\n' "$MINIMAL_ARG_VERSION" "$DOTNET_V
 # (bin/Runner.Listener) or one it was copying into when a start was
 # interrupted (.minimal-copying). Any other directory with a bin/ or externals/
 # is refused, so RUNNER_HOME=$HOME does not cost ~/bin. While a runner from the
-# home is running it refuses too. One start at a time sets a home up (a lock
-# holding the starting PID; a lock whose process is gone is taken over), and
-# the stamp is checked again under the lock. The installed stamp is written
-# only after every step succeeded, so a copy that failed (a full disk) is redone
-# by the next start.
+# home is running, or any other process works in it, it refuses too. Every
+# start takes a lock on the home (a symlink naming the starting PID; a lock
+# whose process is gone is taken over), checks the stamp under it, and moves
+# into the home before releasing it, so a later start sees it as in use. The
+# installed stamp is removed before a copy and written only after every step
+# succeeded, and a home with .minimal-copying is never current, so a copy that
+# failed (a full disk) is redone by the next start.
 cat > prelude.sh << 'EOF'
 pkg=/usr/lib/actions-runner
 home_current() {
     local bin_dirs=("$RUNNER_HOME"/bin.*)
     # (no cmp: diffutils is not in the runtime closure)
-    [ -f "$RUNNER_HOME/.minimal-installed-stamp" ] &&
+    [ ! -e "$RUNNER_HOME/.minimal-copying" ] && [ -f "$RUNNER_HOME/.minimal-installed-stamp" ] &&
         [ "$(cat "$pkg/.minimal-package-stamp")" = "$(cat "$RUNNER_HOME/.minimal-installed-stamp")" ] &&
         [ -d "$RUNNER_HOME/bin" ] && [ ! -L "$RUNNER_HOME/bin" ] && [ ! -e "${bin_dirs[0]}" ]
 }
@@ -203,33 +205,60 @@ lock_home() { # lock_home <home>
 unlock_home() {
     rm -f "$lock"; trap - EXIT
 }
+# Is a process other than this start or one of its parents running a runner
+# from <home>, or working in it? Prints "<pid> <exe>" for the first one found.
+# Call it as $(cd / && home_in_use ...): it and the subshells it runs then work
+# in /, so the scan does not find itself working in the home.
+home_in_use() ( # home_in_use <home>
+    mine=" $$ " p=$$
+    while [ "$p" -gt 1 ]; do
+        ppid=
+        while read -r k v; do
+            if [ "$k" = PPid: ]; then ppid=$v; break; fi
+        done 2>/dev/null < "/proc/$p/status"
+        [ -n "$ppid" ] || break
+        mine="$mine$ppid "; p=$ppid
+    done
+    for proc in /proc/[0-9]*; do
+        pid=${proc#/proc/}
+        case "$mine" in *" $pid "*) continue ;; esac
+        exe=$(readlink "$proc/exe" 2>/dev/null)
+        cwd=$(readlink "$proc/cwd" 2>/dev/null)
+        case "$exe" in "$1"/bin*/Runner.*) echo "$pid $exe"; return 0 ;; esac
+        case "$cwd/" in "$1"/*) echo "$pid ${exe:-?}"; return 0 ;; esac
+    done
+    return 1
+)
 prepare_home() {
     if [ -z "${RUNNER_HOME:-}" ]; then
         echo "RUNNER_HOME is not set. Set RUNNER_HOME to an empty directory or to a runner directory, then start again." >&2; exit 1
     fi
-    if home_current; then return; fi
     if ! mkdir -p "$RUNNER_HOME"; then
         echo "Could not create the runner directory $RUNNER_HOME (the error is above). Set RUNNER_HOME to an empty directory or to a runner directory, then start again." >&2; exit 1
     fi
-    local home exe target pid
+    local home busy
     home=$(cd "$RUNNER_HOME" && pwd -P) || exit 1
     lock_home "$home"
-    # Another start may have set the home up while this one waited for the lock.
+    # Under the lock this start moves into the home, so from here until the
+    # runner exits a start that finds the home outdated sees it in /proc (this
+    # start's working directory, then run.sh's and the listener's) and does not
+    # replace bin/ under it.
+    cd "$home" || { unlock_home; exit 1; }
     if home_current; then unlock_home; return; fi
     if [ -e "$home/bin" ] || [ -e "$home/externals" ]; then
         if [ ! -e "$home/bin/Runner.Listener" ] && [ ! -e "$home/.minimal-copying" ]; then
             echo "$RUNNER_HOME has a bin/ or externals/ directory but no runner (no bin/Runner.Listener), so nothing was changed in it. Set RUNNER_HOME to an empty directory or to a runner directory, then start again." >&2
             unlock_home; exit 1
         fi
-        for exe in /proc/[0-9]*/exe; do
-            target=$(readlink "$exe" 2>/dev/null) || continue
-            case "$target" in
+        if busy=$(cd / && home_in_use "$home"); then
+            case "${busy#* }" in
                 "$home"/bin*/Runner.*)
-                    pid=${exe#/proc/}; pid=${pid%/exe}
-                    echo "A runner from $RUNNER_HOME is still running (PID $pid). Stop it, then start it again to upgrade it to the packaged runner." >&2
-                    unlock_home; exit 1 ;;
+                    echo "A runner from $RUNNER_HOME is still running (PID ${busy%% *}). Stop it, then start it again to upgrade it to the packaged runner." >&2 ;;
+                *)
+                    echo "A process is still working in $RUNNER_HOME (PID ${busy%% *}, ${busy#* }), so the runner there was not upgraded. Stop it or move it out of that directory, then start again." >&2 ;;
             esac
-        done
+            unlock_home; exit 1
+        fi
         echo "Upgrading the runner in $RUNNER_HOME to the packaged one ($(cut -d' ' -f1-4 "$pkg/.minimal-package-stamp")). The registration and _work are kept." >&2
         if ! { : > "$home/.minimal-copying" &&
             rm -f "$home/.minimal-installed-stamp" &&
@@ -239,7 +268,8 @@ prepare_home() {
         fi
     else
         echo "Setting up writable runner directory at $RUNNER_HOME..." >&2
-        if ! : > "$home/.minimal-copying"; then
+        # A stamp left from an earlier copy says nothing about this one.
+        if ! { : > "$home/.minimal-copying" && rm -f "$home/.minimal-installed-stamp"; }; then
             echo "Could not write to $RUNNER_HOME. Fix the permissions there, then start again." >&2
             unlock_home; exit 1
         fi
@@ -316,13 +346,20 @@ try {
     const next = off(fs.readFileSync(arg, "utf8"));
     const perm = fs.statSync(arg).mode & 0o7777;
     const tmp = path.join(path.dirname(arg), "." + path.basename(arg) + "." + require("crypto").randomBytes(8).toString("hex"));
-    let created = false;
+    // Created before anything is written, so a write that fails (a full
+    // disk) still removes it.
+    let fd = -1, created = false;
     try {
-      fs.writeFileSync(tmp, next, { flag: "wx", mode: 0o600 });
+      fd = fs.openSync(tmp, "wx", 0o600);
       created = true;
+      fs.writeFileSync(fd, next);
+      fs.fsyncSync(fd);
+      fs.closeSync(fd);
+      fd = -1;
       fs.chmodSync(tmp, perm);
       fs.renameSync(tmp, arg);
     } catch (e) {
+      if (fd !== -1) try { fs.closeSync(fd); } catch (_) {}
       if (created) try { fs.unlinkSync(tmp); } catch (_) {}
       throw e;
     }

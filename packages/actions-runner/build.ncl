@@ -396,6 +396,23 @@ exec "$@"
               fi
               echo "existing-settings-files: ok"
               rm h/.runner h/.runner_migrated
+              # A rewrite whose write fails refuses the start and leaves .runner
+              # unchanged and no temporary file. A file size limit of 0 makes the
+              # write fail with EFBIG after the temporary file is created (SIGXFSZ
+              # is ignored, so node sees the error instead of being killed).
+              printf '{"agentId": 7, "disableUpdate": false}' > h/.runner
+              before=$(sha256sum < h/.runner)
+              if out=$( (trap '' XFSZ; ulimit -f 0; run) 2>&1); then
+                echo "control failed: a .runner rewrite that could not be written started the runner" >&2; echo "$out" >&2; exit 1
+              fi
+              grep -q 'Could not set disableUpdate in .*/\.runner' <<<"$out" || { echo "$out" >&2; exit 1; }
+              grep -q EFBIG <<<"$out" || { echo "$out" >&2; exit 1; }
+              test "$(sha256sum < h/.runner)" = "$before"
+              if ls -A h | grep -q '^\.\.runner'; then
+                echo "a temporary settings file was left in the home after a failed write:" >&2; ls -A h >&2; exit 1
+              fi
+              rm h/.runner
+              echo "failed-write: refused, nothing left behind"
               # Fail closed: a number a JS rewrite would change (agentId above
               # 2^53) refuses the start and leaves .runner byte-identical.
               printf '{"agentId": 9007199254740993, "disableUpdate": false}' > h/.runner
@@ -442,8 +459,10 @@ exec "$@"
     # the packaged runner at the next start, keeping .runner, .credentials, .env
     # and _work, and the upgraded runner starts. A current home is left alone. A
     # home an upstream self-update rearranged, and one whose copy was
-    # interrupted, are upgraded again. Controls: a home whose runner is still
-    # running, and a directory with a bin/ that holds no runner, are not changed.
+    # interrupted (with or without the package's stamp installed), are upgraded
+    # again, also when started from inside the home. Controls: a home whose
+    # runner is still running, one another process works in, and a directory
+    # with a bin/ that holds no runner, are not changed.
     home_upgrade_keeps_registration =
       {
         class = 'Standalone,
@@ -512,6 +531,37 @@ exec "$@"
               test ! -e p/bin/partial && test ! -e p/.minimal-copying
               same p/.minimal-installed-stamp "$pkg/.minimal-package-stamp"
               echo "interrupted-copy: redone"
+              # The same with the package's stamp already installed (a copy into a
+              # set-up home that failed after creating bin/): .minimal-copying
+              # outweighs the stamp.
+              mkdir -p q/bin; echo partial > q/bin/partial; : > q/.minimal-copying
+              cp "$pkg/.minimal-package-stamp" q/.minimal-installed-stamp
+              out=$(RUNNER_HOME=$d/q /usr/bin/actions-runner --version 2>&1) || { echo "interrupted-copy-stamped: the start failed:" >&2; echo "$out" >&2; exit 1; }
+              same q/bin/Runner.Listener "$pkg/bin/Runner.Listener"
+              test ! -e q/bin/partial && test ! -e q/.minimal-copying
+              echo "interrupted-copy-stamped: redone"
+              # Control: an outdated home another process works in (here a sleep
+              # whose working directory is the home, as run.sh's is while a start
+              # that found the home current has not yet started the listener) is
+              # not replaced.
+              mkdir -p w/bin; echo old-listener > w/bin/Runner.Listener
+              (cd w && exec sleep 60) & wpid=$!
+              trap 'kill $wpid 2>/dev/null || true' EXIT
+              sleep 1
+              if out=$(RUNNER_HOME=$d/w /usr/bin/actions-runner --version 2>&1); then
+                echo "control failed: the wrapper replaced the runner in a home another process works in" >&2; echo "$out" >&2; exit 1
+              fi
+              grep -q "A process is still working in $d/w (PID $wpid," <<<"$out" || { echo "$out" >&2; exit 1; }
+              test "$(cat w/bin/Runner.Listener)" = old-listener && test ! -e w/.minimal-setup.lock
+              kill $wpid; wait $wpid 2>/dev/null || true
+              echo "home-in-use: refused, unchanged"
+              # A start from a shell whose working directory is the home is not
+              # in its own way.
+              mkdir -p i/bin; echo old-listener > i/bin/Runner.Listener
+              out=$(cd i && RUNNER_HOME=$d/i /usr/bin/actions-runner --version 2>&1) || { echo "start-from-home: the start failed:" >&2; echo "$out" >&2; exit 1; }
+              grep -q 'Upgrading the runner in' <<<"$out"
+              same i/bin/Runner.Listener "$pkg/bin/Runner.Listener"
+              echo "start-from-home: upgraded"
               # Control: a directory with a bin/ that holds no runner (RUNNER_HOME=$HOME
               # with a ~/bin) is refused and nothing in it changes.
               mkdir -p u/bin u/bin.old; echo mine > u/bin/tool; echo mine > u/bin.old/tool
