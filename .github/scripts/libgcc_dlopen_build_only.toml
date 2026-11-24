@@ -1,0 +1,10 @@
+# Packages exempt from libgcc_dlopen_guard.py although their ELFs import a
+# symbol for which glibc dlopens libgcc_s.so.1. Hand-maintained; the scan
+# (libgcc_dlopen_scan.py) leaves them out of libgcc_dlopen_importers.toml.
+#
+# A package belongs here only if it runs in no box: it is a build dep of
+# other packages and never a runtime dep. The guard fails if any recipe takes
+# it in runtime_deps. Each entry says why it cannot take gcc-runtime.
+
+[build_only."python-bootstrap"]
+reason = "Runs only inside glibc's build (configure and scripts/*.py). It is in gcc's build graph (gcc -> glibc -> python-bootstrap), so gcc_runtime_guard rule 4 forbids gcc-runtime in it, and glibc's build never cancels or exits a thread."

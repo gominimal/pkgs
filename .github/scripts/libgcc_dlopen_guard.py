@@ -251,15 +251,49 @@ def load_importers(path: str) -> dict[str, dict]:
     return imp
 
 
-def check(root: str, importers: dict[str, dict]) -> tuple[Recipes, dict[str, str]]:
+def load_build_only(path: str) -> dict[str, str]:
+    """{package: reason} from libgcc_dlopen_build_only.toml; no file = none."""
+    if not os.path.exists(path):
+        return {}
+    with open(path, "rb") as f:
+        doc = tomllib.load(f)
+    out = {}
+    for pkg, e in (doc.get("build_only") or {}).items():
+        reason = e.get("reason") if isinstance(e, dict) else None
+        if not reason:
+            raise ValueError(f"build_only.{pkg}: needs a reason")
+        out[pkg] = reason
+    return out
+
+
+def check(
+    root: str, importers: dict[str, dict], build_only: dict[str, str] | None = None
+) -> tuple[Recipes, dict[str, str]]:
     """(recipes, {package: problem})."""
+    build_only = build_only or {}
     r = Recipes(root)
     # Parse the whole catalog once, so the field count says the parser saw it.
     for pkg in sorted(os.listdir(r.pkgs_dir)):
         if os.path.isfile(os.path.join(r.pkgs_dir, pkg, "build.ncl")):
             r.edges(pkg)
     problems: dict[str, str] = {}
+    # A build-only package is exempt because no box runs it: hold it to that.
+    for pkg in sorted(build_only):
+        if not os.path.isfile(os.path.join(r.pkgs_dir, pkg, "build.ncl")):
+            problems[pkg] = (
+                f"listed as build-only but packages/{pkg}/build.ncl does not exist; "
+                "remove it from libgcc_dlopen_build_only.toml"
+            )
+            continue
+        users = sorted(p for p in r._pkg_cache if any(d == pkg for d, _, _ in r._pkg_cache[p]))
+        if users:
+            problems[pkg] = (
+                f"`{pkg}` is exempt as build-only, but {', '.join(users)} take it in runtime_deps; "
+                "give it libgcc or drop the exemption in libgcc_dlopen_build_only.toml"
+            )
     for pkg in sorted(importers):
+        if pkg in build_only:
+            continue
         e = importers[pkg]
         syms = ", ".join(sorted(e["symbols"]))
         ev = (e.get("elfs") or ["?"])[0]
@@ -297,7 +331,13 @@ def main(argv: list[str] | None = None) -> int:
     if len(importers) < args.min_importers:
         print(f"UNVERIFIED: {data} lists only {len(importers)} importers", file=sys.stderr)
         return 2
-    r, problems = check(args.root, importers)
+    bo_path = os.path.join(os.path.dirname(data), "libgcc_dlopen_build_only.toml")
+    try:
+        build_only = load_build_only(bo_path)
+    except Exception as e:  # noqa: BLE001
+        print(f"UNVERIFIED: cannot read {bo_path}: {e}", file=sys.stderr)
+        return 2
+    r, problems = check(args.root, importers, build_only)
     if r.fields < args.min_fields:
         print(f"UNVERIFIED: parsed only {r.fields} runtime_deps fields", file=sys.stderr)
         return 2

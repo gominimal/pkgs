@@ -238,6 +238,15 @@ amd64) and only glibc as a runtime dep. Take them from there; `.github/scripts/g
 rejects `subsetOf gcc` and a whole `gcc` in `runtime_deps` (only `toolchain` may ship the compiler).
 Building with gcc (`build_deps`, `toolchain`) is unaffected.
 
+A binary that calls `pthread_cancel`, `pthread_exit`, `thrd_exit` or `backtrace` needs `libgcc_s.so.1`
+at runtime even though it does not NEED it: glibc dlopens it to unwind, and aborts without it. The
+missing-runtime_deps check cannot see a dlopen, so give such a package `subsetOf gcc-runtime ["libgcc"]`.
+`.github/scripts/libgcc_dlopen_guard.py` fails a PR when a package listed in
+`libgcc_dlopen_importers.toml` has no libgcc in its runtime closure, and the weekly
+`libgcc-dlopen-scan` workflow regenerates that list from the built artifacts and fails when it is out of
+date. A package that only runs inside other builds can be exempted in `libgcc_dlopen_build_only.toml`
+(the guard fails if anything takes it at runtime).
+
 
 ### Build steps/script
 

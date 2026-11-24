@@ -243,11 +243,6 @@ arches = ["amd64", "arm64"]
 elfs = ["usr/bin/clang-tblgen", "usr/bin/lli-child-target", "usr/bin/llvm-exegesis", "usr/bin/llvm-jitlink-executor", "usr/bin/llvm-tblgen"]
 elf_count = 10
 
-[importers."llvm-21"]
-symbols = ["backtrace"]
-arches = ["amd64", "arm64"]
-elfs = ["usr/lib/llvm-21/bin/clang-tblgen", "usr/lib/llvm-21/bin/lli-child-target", "usr/lib/llvm-21/bin/llvm-exegesis", "usr/lib/llvm-21/bin/llvm-jitlink-executor", "usr/lib/llvm-21/bin/llvm-tblgen"]
-elf_count = 10
 
 [importers."llvm-22"]
 symbols = ["backtrace"]
@@ -447,11 +442,6 @@ arches = ["amd64", "arm64"]
 elfs = ["usr/lib/libLLVM.so.23.1-rust-1.100.0-nightly", "usr/lib/librustc_driver-415cc549468a4aa5.so", "usr/lib/librustc_driver-61d225838afd1915.so", "usr/lib/rustlib/aarch64-unknown-linux-gnu/lib/librustc_driver-61d225838afd1915.so", "usr/lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_driver-415cc549468a4aa5.so"]
 elf_count = 5
 
-[importers."rustc-1.98.1"]
-symbols = ["backtrace"]
-arches = ["amd64", "arm64"]
-elfs = ["usr/lib/rustc-1.98.1/lib/librustc_driver-074128fdb21d8774.so", "usr/lib/rustc-1.98.1/lib/librustc_driver-86f6ceee59638b7f.so"]
-elf_count = 2
 
 [importers."rustc-1.99.1"]
 symbols = ["backtrace"]

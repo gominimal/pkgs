@@ -385,6 +385,16 @@ def main(argv: list[str] | None = None) -> int:
     for e in errors:
         lines.append(f"- error: {e}")
 
+    # Build-only packages (libgcc_dlopen_build_only.toml, hand-maintained) run
+    # in no box, so they are never listed; the guard checks that claim.
+    bo_path = os.path.join(os.path.dirname(os.path.abspath(args.data)), "libgcc_dlopen_build_only.toml")
+    if os.path.exists(bo_path):
+        with open(bo_path, "rb") as f:
+            build_only = set((tomllib.load(f).get("build_only") or {}).keys())
+        for pkg in sorted(build_only & set(found)):
+            lines.append(f"- build-only, not listed: `{pkg}`")
+            del found[pkg]
+
     status = 0
     if unverified:
         lines.append(f"\nUNVERIFIED: {'; '.join(unverified)}")

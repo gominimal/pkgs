@@ -258,5 +258,67 @@ class RealTree(unittest.TestCase):
             self.assertTrue(os.path.isfile(os.path.join(root, "packages", pkg, "build.ncl")), pkg)
 
 
+class BuildOnly(Repo):
+    """libgcc_dlopen_build_only.toml exempts a package no box runs, and the
+    guard holds it to that."""
+
+    BO = '[build_only."pyboot"]\nreason = "only glibc\'s build runs it"\n'
+
+    def test_exempt_build_only_importer_passes(self):
+        root = self.tree(
+            {
+                "packages/pyboot/build.ncl": recipe("glibc,"),
+                ".github/scripts/libgcc_dlopen_build_only.toml": self.BO,
+            },
+            listed=("pyboot",),
+        )
+        code, out = self.run_main(root)
+        self.assertEqual(code, 0, out)
+
+    def test_same_importer_without_exemption_fails(self):
+        # Negative control for the test above: no exemption, no libgcc.
+        root = self.tree({"packages/pyboot/build.ncl": recipe("glibc,")}, listed=("pyboot",))
+        code, out = self.run_main(root)
+        self.assertEqual(code, 1, out)
+        self.assertIn("pyboot", out)
+
+    def test_build_only_taken_at_runtime_fails(self):
+        head = HEAD + 'let pyboot = import "../pyboot/build.ncl" in\n'
+        root = self.tree(
+            {
+                "packages/pyboot/build.ncl": recipe("glibc,"),
+                "packages/app/build.ncl": recipe("glibc, pyboot, " + LIBGCC, head=head),
+                ".github/scripts/libgcc_dlopen_build_only.toml": self.BO,
+            },
+            listed=("app",),
+        )
+        code, out = self.run_main(root)
+        self.assertEqual(code, 1, out)
+        self.assertIn("exempt as build-only, but app", out)
+
+    def test_build_only_as_build_dep_passes(self):
+        head = HEAD + 'let pyboot = import "../pyboot/build.ncl" in\n'
+        root = self.tree(
+            {
+                "packages/pyboot/build.ncl": recipe("glibc,"),
+                "packages/app/build.ncl": recipe("glibc, " + LIBGCC, build="gcc, pyboot,", head=head),
+                ".github/scripts/libgcc_dlopen_build_only.toml": self.BO,
+            },
+            listed=("app",),
+        )
+        code, out = self.run_main(root)
+        self.assertEqual(code, 0, out)
+
+    def test_entry_without_reason_is_unverified(self):
+        root = self.tree(
+            {
+                "packages/pyboot/build.ncl": recipe("glibc,"),
+                ".github/scripts/libgcc_dlopen_build_only.toml": '[build_only."pyboot"]\n',
+            }
+        )
+        code, out = self.run_main(root)
+        self.assertEqual(code, 2, out)
+
+
 if __name__ == "__main__":
     unittest.main()
