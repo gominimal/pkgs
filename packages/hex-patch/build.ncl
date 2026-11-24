@@ -41,7 +41,7 @@ let version = "1.13.2" in
   attrs =
     {
       upstream_version = version,
-      license_spdx = "MIT",
+      license_spdx = "AGPL-3.0-only",
       source_provenance = {
         category = 'GithubRepo,
         owner = "Etto48",
