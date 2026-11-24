@@ -24,11 +24,11 @@ let node-lts = import "../node-lts/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "0.33.1" in
+let version = "0.34.0" in
 # The Rust evaluator release this quint version pins (QUINT_EVALUATOR_VERSION in
 # dist/src/rust/binaryManager.js). build.sh fails if the two disagree, so a quint
 # bump that moves it stops for a reviewer to bump this and the Source below.
-let evaluator_version = "0.7.1" in
+let evaluator_version = "0.8.0" in
 # quint's DEFAULT_APALACHE_VERSION_TAG must equal the packaged apalache's
 # version; build.sh fails otherwise, so a bump of either stops for a reviewer.
 let apalache_version = apalache.attrs.upstream_version in
@@ -39,9 +39,9 @@ let apalache_version = apalache.attrs.upstream_version in
     { file = "package.json" } | Local,
     { file = "package-lock.json" } | Local,
     {
-      # Upstream: https://github.com/quint-co/quint/archive/refs/tags/evaluator/v0.7.1.tar.gz
+      # Upstream: https://github.com/quint-co/quint/archive/refs/tags/evaluator/v0.8.0.tar.gz
       url = "gs://minimal-staging-archives/quint-co/quint/evaluator-v%{evaluator_version}.tar.gz",
-      sha256 = "5d4cd64a69f5d8b61ed800ed14044899930029c7c14f160d0aedc212a1bf5432",
+      sha256 = "49006a83f32fab352ea72babcb8b09795d498c1154a67d27b159a8d8e92a996a",
       # a GitHub archive under a renamed file; build.sh unpacks it
       extract = false,
     } | Source,
