@@ -1,4 +1,5 @@
-let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -23,6 +24,11 @@ let version = "4.1.0" in
     toolchain,
   ],
   runtime_deps = [
+    # glibc dlopens libgcc_s.so.1 to unwind on pthread_exit and aborts without it.
+    # A dlopen is not DT_NEEDED, so missing-runtime_deps can't see it. glibc builds
+    # with python-bootstrap, so this package is outside gcc's build graph and
+    # gcc_runtime_guard rule 4 allows the edge.
+    subsetOf gcc-runtime ["libgcc"],
     glibc,
   ],
 
