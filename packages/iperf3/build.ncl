@@ -69,7 +69,11 @@ in
       # compiles in src/cjson.c (MIT), src/net.c (MIT, Russ Cox / MIT; plus a BSD-3-Clause
       # part by Eric Jackson), src/queue.h (BSD-3-Clause, UC) and src/units.c (the iperf2
       # NCSA licence). GitHub's licence API reports NOASSERTION for this file.
-      license_spdx = "BSD-3-Clause-LBNL AND MIT AND BSD-3-Clause AND NCSA",
+      # LICENSE also carries the 2003 Lucent notice (Pike/Mullender/Cox, "parts of an
+      # earlier library"): the netlib permission text SPDX names `dtoa`, whose author
+      # and company lines are template variables. And src/portable_endian.h is placed
+      # in the public domain by its author, per the minimal LicenseRef convention.
+      license_spdx = "BSD-3-Clause-LBNL AND MIT AND BSD-3-Clause AND NCSA AND dtoa AND LicenseRef-Public-Domain",
       source_provenance = {
         category = 'GithubRepo,
         owner = "esnet",
