@@ -50,10 +50,13 @@ in
       license_spdx = "GPL-3.0-or-later WITH GCC-exception-3.1 AND LGPL-2.1-or-later",
     } | Attrs,
 
-  # gcc-runtime sits on gcc's bootstrap cycle (gcc -> glibc -> python ->
-  # ncurses -> gcc-runtime -> gcc). Break it with the same gominimal/bootstrap
-  # bootstrap gcc objects gcc's own breaker uses (gcc_runtime_guard.py fails if
-  # the two breakers' pins differ, so a repin must move both).
+  # gcc-runtime is on no bootstrap cycle: gcc_runtime_guard rule 4 keeps it out
+  # of gcc's build graph, and its own build deps (bash-bootstrap, coreutils,
+  # gcc) are all inside that graph, so none of them can reach it. This breaker
+  # is unused while that holds. It stays so that a cycle through gcc-runtime,
+  # if one ever forms, resolves to the same gominimal/bootstrap gcc objects
+  # gcc's own breaker uses (gcc_runtime_guard.py fails if the two breakers'
+  # pins differ, so a repin must move both).
   # A prebuilt's cache entry is the WHOLE extracted object (output globs are not
   # applied to prebuilts), so consumers must take a subset, never all of
   # gcc-runtime (the guard enforces it); a subset still gets just its globs.

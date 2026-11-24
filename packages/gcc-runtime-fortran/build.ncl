@@ -36,6 +36,11 @@ let glibc = import "../glibc/build.ncl" in
   ],
 
   cmd = "./build.sh",
+  # build.sh's seed-pass branch refuses to run against this gcc version: only
+  # the bootstrap breaker (a different gcc) may take it.
+  build_args = {
+    gcc_version = gcc.attrs.upstream_version,
+  },
   outputs = {
     libgfortran = { glob = "usr/lib/libgfortran.so*" } | OutputLib,
   },

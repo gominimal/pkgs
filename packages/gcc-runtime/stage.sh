@@ -2,15 +2,20 @@
 # copies must stay byte-identical (.github/scripts/gcc_runtime_guard.py).
 #
 # Where to copy from. gcc's build stages its shared runtime libraries a second
-# time under /usr/lib/gcc-runtime-stage, a path no other object ships. Plain
-# /usr/lib is not safe: this build root also holds gcc-runtime's cycle breaker
-# (a bootstrap gcc, via gcc -> gmp -> gcc-runtime), and where two layers ship
-# one path the first wins by spec-hash order. On arm64 that shipped the gen-13
-# gcc 15 libstdc++.so.6 and libgcc_s.so.1 in the gcc 16 canary (pkgs#1340).
+# time under /usr/lib/gcc-runtime-stage, a path no other object ships, and this
+# copies from there rather than /usr/lib. Where two layers of a build root ship
+# one path, the first wins by spec-hash order, so a second gcc in this root
+# would silently supply /usr/lib's files. On arm64 the gcc 16 canary
+# (pkgs#1340) shipped gen-13 gcc 15's libstdc++.so.6 and libgcc_s.so.1 that
+# way, through a bootstrap gcc that gmp's gcc-runtime edge pulled in.
+# gcc_runtime_guard rule 4 now keeps gcc-runtime out of gcc's build graph, so
+# that path cannot form; the stage keeps a regression there from shipping the
+# wrong libraries without an error.
 #
-# No stage means the gcc build dep is itself the bootstrap breaker: the first
-# pass of the gcc <-> gcc-runtime cycle, whose output only feeds builds inside
-# the cycle before both are rebuilt. Then /usr/lib is all bootstrap gcc, and
+# No stage means the gcc build dep is itself gcc's bootstrap breaker: minimal's
+# planner seed-builds a dependent of an unbuilt cycle member against that
+# member's replace_on_cycle. Such an output is never published and is rebuilt
+# against the real gcc. Then /usr/lib is all bootstrap gcc, and
 # one_real_file below still fails the build if two gccs collided there.
 
 src=/usr/lib/gcc-runtime-stage

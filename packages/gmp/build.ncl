@@ -29,7 +29,7 @@ let version = "6.3.0" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "gs://minimal-staging-archives/gmp-%{version}.tar.xz",
+      url = "https://mirrors.kernel.org/gnu/gmp/gmp-%{version}.tar.xz",
       sha256 = "a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898"
     } | Source,
     # base

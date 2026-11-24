@@ -20,6 +20,14 @@ set -eu
 if [ "$src" = /usr/lib ]; then
   set -- /usr/lib/libgfortran.so*
   if [ ! -e "$1" ] && [ ! -L "$1" ]; then
+    # Only the bootstrap breaker may take this branch. The real gcc always
+    # stages its runtime; if it ever stops, fail here instead of publishing a
+    # placeholder. loads_without_gcc (build.ncl) also fails without the library.
+    have=$(gcc -dumpfullversion)
+    if [ "$have" = "$MINIMAL_ARG_GCC_VERSION" ]; then
+      echo "ERROR: gcc $have has no /usr/lib/gcc-runtime-stage and no libgfortran; refusing the seed placeholder" >&2
+      exit 1
+    fi
     echo "seed pass: the gcc breaker ships no libgfortran; writing a placeholder (never published)"
     echo "gcc-runtime-fortran seed placeholder: rebuilt against the real gcc" >"$dst/libgfortran.so.seed-placeholder"
     exit 0

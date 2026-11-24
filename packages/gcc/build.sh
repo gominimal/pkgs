@@ -50,10 +50,11 @@ make DESTDIR=$OUTPUT_DIR install-strip
 
 # A second copy of the shared runtime libraries, under a path no other object
 # ships, for gcc-runtime and gcc-runtime-fortran to repack. They cannot repack
-# usr/lib: their build roots also hold gcc-runtime's cycle breaker (a bootstrap
-# gcc, via gcc -> gmp -> gcc-runtime), and where two layers ship one path the
-# first wins by spec-hash order. On arm64 that shipped the gen-13 gcc 15
-# libstdc++.so.6 and libgcc_s.so.1 in the gcc 16 canary (pkgs#1340). Symlinks
+# usr/lib safely if a second gcc is ever in their build roots: where two layers
+# ship one path the first wins by spec-hash order. On arm64 that shipped the
+# gen-13 gcc 15 libstdc++.so.6 and libgcc_s.so.1 in the gcc 16 canary
+# (pkgs#1340), through a bootstrap gcc that gmp's gcc-runtime edge pulled in.
+# gcc_runtime_guard rule 4 now forbids that edge; the stage is the backstop. Symlinks
 # are copied as symlinks, so the SONAME links still point at this build's files.
 stage="$OUTPUT_DIR/usr/lib/gcc-runtime-stage"
 mkdir -p "$stage"
