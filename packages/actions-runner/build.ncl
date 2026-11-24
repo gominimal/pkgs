@@ -547,6 +547,64 @@ exec "$@"
           ],
         ],
       } | Test,
+    # A RUNNER_HOME the wrapper cannot set up is refused at once, with a message
+    # that names a next step, instead of waited on: a home it cannot write to,
+    # a regular file or a directory where the setup lock goes, an unset
+    # RUNNER_HOME and one that cannot be created. The unwritable home is /proc,
+    # which root cannot create files in either (chmod does not stop root, and
+    # the sandbox may run the test as root). A lock left by a start that is gone
+    # is taken over, and nothing of it is left behind.
+    home_setup_refusals =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils, grep],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -euo pipefail
+              d=$(mktemp -d); cd "$d"
+              refused() { # refused <name> <expected message> <RUNNER_HOME, or "unset">: a non-zero exit within 30 s, with the message
+                local name=$1 want=$2 home=$3 out rc=0
+                if [ "$home" = unset ]; then
+                  out=$(env -u RUNNER_HOME timeout 30 /usr/bin/actions-runner --version 2>&1) || rc=$?
+                else
+                  out=$(RUNNER_HOME=$home timeout 30 /usr/bin/actions-runner --version 2>&1) || rc=$?
+                fi
+                if [ "$rc" = 0 ] || [ "$rc" = 124 ]; then
+                  echo "$name: exit $rc, want a prompt refusal (124: still running after 30 s):" >&2; echo "$out" >&2; exit 1
+                fi
+                if ! grep -q -F "$want" <<<"$out"; then
+                  echo "$name: the message does not say '$want':" >&2; echo "$out" >&2; exit 1
+                fi
+                echo "$name: refused (exit $rc)"
+              }
+              refused unwritable-home "Could not write to /proc (the error is above)." /proc
+              test ! -e /proc/.minimal-setup.lock
+              mkdir rf; echo mine > rf/.minimal-setup.lock
+              refused regular-file-lock "rf/.minimal-setup.lock is not a lock an actions-runner start made" "$d/rf"
+              test "$(cat rf/.minimal-setup.lock)" = mine && test ! -e rf/run.sh
+              mkdir -p rd/.minimal-setup.lock
+              refused directory-lock "rd/.minimal-setup.lock is not a lock an actions-runner start made" "$d/rd"
+              test -z "$(ls -A rd/.minimal-setup.lock)" && test ! -e rd/run.sh
+              refused unset "RUNNER_HOME is not set. Set RUNNER_HOME to an empty directory or to a runner directory, then start again." unset
+              : > file
+              refused uncreatable "Could not create the runner directory $d/file/home (the error is above). Set RUNNER_HOME to an empty directory or to a runner directory, then start again." "$d/file/home"
+              # A lock naming a PID whose process has exited is taken over.
+              bash -c 'exit 0' & dead=$!; wait "$dead" || true
+              test ! -d "/proc/$dead"
+              mkdir s; ln -s "$dead" s/.minimal-setup.lock
+              out=$(RUNNER_HOME=$d/s timeout 300 /usr/bin/actions-runner --version 2>&1) || { echo "stale-lock: the start failed:" >&2; echo "$out" >&2; exit 1; }
+              test -x s/run.sh && test ! -e s/.minimal-setup.lock
+              if ls -A s | grep -q -e '^\.minimal-setup\.lock\.' -e '^\.minimal-write-test'; then
+                echo "stale-lock: a lock or probe file was left in the home:" >&2; ls -A s >&2; exit 1
+              fi
+              echo "stale-lock: taken over"
+            "%
+          ],
+        ],
+      } | Test,
   },
 
   attrs =

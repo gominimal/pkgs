@@ -159,14 +159,41 @@ home_current() {
 }
 lock_home() { # lock_home <home>
     lock=$1/.minimal-setup.lock
-    local owner waited=0
-    until ln -s "$$" "$lock" 2>/dev/null; do
-        owner=$(readlink "$lock") || continue
-        if [ ! -d "/proc/$owner" ]; then
-            rm -f "$lock"; continue
+    local owner err waited=0 probe=$1/.minimal-write-test.$$
+    # The lock is created in the home, so a home this start cannot write to is
+    # refused here instead of waited on.
+    if ! { : > "$probe" && rm -f "$probe"; }; then
+        echo "Could not write to $RUNNER_HOME (the error is above). Fix the permissions there, or free space if the disk is full, then start again." >&2
+        exit 1
+    fi
+    # -T: a directory at $lock is a conflict, not a place to create the link in.
+    until err=$(ln -sT "$$" "$lock" 2>&1); do
+        if owner=$(readlink "$lock" 2>/dev/null); then
+            if [ ! -d "/proc/$owner" ]; then
+                # Its process is gone. Starts that found the same dead PID take
+                # the lock over one at a time: each must first create
+                # $lock.takeover-<PID>, and the one that did removes the lock only
+                # if it still names that PID. Only a start's own exit removes a
+                # lock that names a live start, so two starts never both hold it.
+                if ln -sT "$$" "$lock.takeover-$owner" 2>/dev/null; then
+                    if [ "$(readlink "$lock" 2>/dev/null)" = "$owner" ]; then
+                        rm -f "$lock"
+                    fi
+                    rm -f "$lock.takeover-$owner"
+                    continue
+                fi
+            fi
+        elif [ -e "$lock" ]; then
+            echo "$lock is not a lock an actions-runner start made (that is a symlink to the PID of the start), so this start stopped. Remove it, then start again." >&2
+            exit 1
         fi
+        # Every other failure waits, and counts against the limit.
         if [ "$waited" -ge 600 ]; then
-            echo "Another start (PID $owner) has been setting up $RUNNER_HOME for 10 minutes, so this one stopped. If that process is not an actions-runner start, remove $lock and start again." >&2
+            if [ -n "$owner" ]; then
+                echo "Another start (PID $owner) has been setting up $RUNNER_HOME for 10 minutes, so this one stopped. If that process is not an actions-runner start, remove $lock and start again." >&2
+            else
+                echo "Could not create the lock $lock for 10 minutes ($err), so this start stopped. Fix the permissions in $RUNNER_HOME, or free space if the disk is full, then start again." >&2
+            fi
             exit 1
         fi
         sleep 1; waited=$((waited + 1))
@@ -178,11 +205,11 @@ unlock_home() {
 }
 prepare_home() {
     if [ -z "${RUNNER_HOME:-}" ]; then
-        echo "RUNNER_HOME is not set" >&2; exit 1
+        echo "RUNNER_HOME is not set. Set RUNNER_HOME to an empty directory or to a runner directory, then start again." >&2; exit 1
     fi
     if home_current; then return; fi
     if ! mkdir -p "$RUNNER_HOME"; then
-        echo "Could not create the runner directory $RUNNER_HOME." >&2; exit 1
+        echo "Could not create the runner directory $RUNNER_HOME (the error is above). Set RUNNER_HOME to an empty directory or to a runner directory, then start again." >&2; exit 1
     fi
     local home exe target pid
     home=$(cd "$RUNNER_HOME" && pwd -P) || exit 1
