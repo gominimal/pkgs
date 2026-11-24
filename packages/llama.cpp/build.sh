@@ -37,21 +37,27 @@ export CXXFLAGS="${CFLAGS}"
 # time, and with no .git in the tarball the build number is 0, so it falls back to
 # the moving `latest` tag: a different UI got embedded as upstream published new
 # ones, which was the 2026-10 prod-pair diff (31% of libllama-server-impl.so,
-# identical symbols). Instead, the b12359 UI is a pinned Source, unpacked where the
-# script looks first (tools/ui/dist), and both fetch paths are off. The script
+# identical symbols). Instead, this version's UI is a pinned Source, unpacked where
+# the script looks first (ui/apps/chat/dist; tools/ui/dist before the UI moved to
+# ui/ after b12359), and both fetch paths are off. The script
 # gzips each asset without -n, so the gzip header carries the file's mtime: pin
 # the mtimes too. Not to SOURCE_DATE_EPOCH: the sandbox's is 0, which gzip can't
 # store ("file timestamp out of range", exit 2), so 1980-01-01 instead.
-mkdir -p tools/ui/dist
-tar -xof "${MINIMAL_ARG_VERSION}-dist.tar.gz" -C tools/ui/dist
-test -s tools/ui/dist/index.html || {
+ui_app=ui/apps/chat
+test -f "$ui_app/CMakeLists.txt" || {
+  echo "ERROR: no $ui_app/CMakeLists.txt: the UI moved again, update build.sh and gen-ui-notices.py" >&2
+  exit 1
+}
+mkdir -p "$ui_app/dist"
+tar -xof "${MINIMAL_ARG_VERSION}-dist.tar.gz" -C "$ui_app/dist"
+test -s "$ui_app/dist/index.html" || {
   echo "ERROR: pinned llama-ui dist has no index.html" >&2
   exit 1
 }
-find tools/ui/dist -exec touch -h -d @315532800 {} +
+find "$ui_app/dist" -exec touch -h -d @315532800 {} +
 
 # The UI's third-party notices (pkgs#994) are generated outside the build by
-# gen-ui-notices.py, from this version's tools/ui/package-lock.json. Fail closed
+# gen-ui-notices.py, from this version's ui/apps/chat/package-lock.json. Fail closed
 # if they weren't regenerated for what is built here: the UI version, the dist
 # and the lock recorded in the header must all match. An empty header field
 # fails sha256sum --strict -c too.
@@ -62,19 +68,20 @@ notices_field() { sed -n "s/^$1: //p" "$notices" | head -n1; }
   exit 1
 }
 echo "$(notices_field 'llama-ui dist sha256')  ${MINIMAL_ARG_VERSION}-dist.tar.gz" | sha256sum --strict -c -
-echo "$(notices_field 'package-lock sha256')  tools/ui/package-lock.json" | sha256sum --strict -c -
+echo "$(notices_field 'package-lock sha256')  $ui_app/package-lock.json" | sha256sum --strict -c -
 
-# CVE-2023-45663: the vendored stb_image 2.30 ignores stbi__getn's return in the
-# TGA and HDR loaders, so a short file leaves uninitialized heap/stack in the
-# decoded pixels. llama-server decodes image_url data with stbi_load_from_memory
-# and every stb_image decoder is compiled in. The patch is upstream's own fix,
-# nothings/stb cd44845 ("stb_image: Fix bugs in TGA and HDR", v2.31), unchanged.
-# Both hashes are checked, so a different vendored copy fails here instead of
-# patching the wrong file, and a partial apply cannot pass. Drop when llama.cpp
-# vendors stb_image >= 2.31.
-echo "594c2fe35d49488b4382dbfaec8f98366defca819d916ac95becf3e75f4200b3  vendor/stb/stb_image.h" | sha256sum -c -
-patch -Np1 -i ./stb-cve-2023-45663.patch
-echo "a604136650368a391554f4a4b45f285d4c8fe94c7bf28a414b37edd28407899e  vendor/stb/stb_image.h" | sha256sum -c -
+# CVE-2023-45663 (stb_image TGA/HDR loaders ignored stbi__getn's return, leaving
+# uninitialized memory in decoded pixels; llama-server decodes image_url data with
+# stbi_load_from_memory). Through b12359 we carried upstream's fix, nothings/stb
+# cd44845 (v2.31). llama.cpp now vendors stb_image 2.32 (ggml-org/llama.cpp#32305),
+# which has it, so the patch is gone. Fail closed if an older copy comes back: the
+# fixed TGA read and the HDR loader's byte-wise header read must both be there.
+grep -q '^/\* stb_image - v2\.3[1-9]' vendor/stb/stb_image.h
+grep -qF 'if (!stbi__getn(s, tga_row, tga_width * tga_comp))' vendor/stb/stb_image.h
+if grep -qF 'stbi__getn(s, rgbe, 4);' vendor/stb/stb_image.h; then
+  echo "ERROR: vendor/stb/stb_image.h still has the HDR read that CVE-2023-45663 fixed" >&2
+  exit 1
+fi
 
 # With GGML_BACKEND_DL, ggml_backend_load_best() searches GGML_BACKEND_DIR, then the
 # executable's directory, then the CURRENT directory, and dlopen()s every
@@ -90,7 +97,7 @@ echo "607514a82eb47dbf21994914ea3c6abe7c8c5aca1a48d5d620f74f6c7d1f7815  ggml/src
 
 # The x86 variant scorer (ggml_backend_cpu_x86_score) reads CPUID feature bits only;
 # upstream marks it "FIXME: this does not check for OS support"
-# (ggml/src/ggml-cpu/arch/x86/cpu-feats.cpp:264 at b12359, unchanged on master). A
+# (ggml/src/ggml-cpu/arch/x86/cpu-feats.cpp:264 at b12359, unchanged at b12640). A
 # host whose CPU has AVX-512 (or AVX/AVX2, or AMX) while the OS or hypervisor leaves
 # that register state off in XCR0 would load skylakex (etc.) and SIGILL, where
 # haswell runs. The patch reads XCR0 (XGETBV, only when CPUID.1:ECX.OSXSAVE is set)
