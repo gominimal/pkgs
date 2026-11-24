@@ -11,7 +11,7 @@ The build does NOT run this script. Rerun it on every llama.cpp bump: build.sh
 fails closed when the header's UI version, lock sha256 or dist sha256 no longer
 match what is being built.
 
-Usage (from the pkgs repo root; V is the `version` in build.ncl, e.g. b12359):
+Usage (from the pkgs repo root; V is the `version` in build.ncl, e.g. b12640):
 
     W=$(mktemp -d)
     gcloud storage cat --project=minimal-pkgsec \
@@ -29,12 +29,24 @@ or installed: each npm tarball is checked against the lock's `integrity` and
 only its top-level LICENSE*/LICENCE*/COPYING*/NOTICE* files and package.json
 are read.
 
-Which packages count as bundled. llama-ui lists every dependency, runtime or
+Where the UI lives. Between b12359 and b12640 it moved to ui/: the app (Llama
+Chat) in ui/apps/chat, and two libraries it compiles from source rather than
+installing, Llama UI (ui/lib/ui, its src/lib) and Llama Voice (ui/lib/voice,
+its src). The app's vite config resolves every bare import of those library
+sources from the APP's node_modules (ui/apps/chat/scripts/llama-ui.js), so
+ui/apps/chat/package-lock.json is the one lock that says what is bundled; the
+libraries' own locks are for their standalone dev builds and are not read.
+Before that the app was tools/ui; this script handles only the ui/ layout.
+
+Which packages count as bundled. The app lists every dependency, runtime or
 not, under devDependencies (the SvelteKit convention: the app is bundled, never
 installed), so the lock's `dev` flag says nothing. Instead the roots are the
-bare specifiers that tools/ui/src imports for their value (`import type`,
-*.d.ts, tests and stories are skipped; CSS @import/@plugin/@use count), plus
-the workbox modules the dist's service worker reports (`workbox:<module>:`).
+bare specifiers that the app's src, Llama UI's src/lib and Llama Voice's src
+import for their value (`import type`, *.d.ts, tests and stories are skipped;
+CSS @import/@plugin/@use count; the workspace's own @ggml-org/llama-ui and
+@ggml-org/llama-voice, which vite aliases to those sources, are not packages),
+plus the workbox modules the dist's service worker reports
+(`workbox:<module>:`), if it is a workbox one.
 From the roots the closure follows dependencies, optionalDependencies and
 installed peerDependencies, resolved the way node resolves the lock's
 node_modules tree. It does not enter @types/* (declarations only) or the build
@@ -103,6 +115,21 @@ SOFTWARE.
 """
 STANDARD_TEXTS = {"MIT": MIT_TEXT}
 
+# License files a package keeps below its top level, which npm_files would miss.
+# llama-brand (from npm since the ui/ move, from GitHub before): its top-level
+# LICENSE is CC-BY-NC-4.0 for the logos, the grant that lets us redistribute
+# them is BRAND-USAGE.md, the CSS is MIT (css/LICENSE) and the fonts OFL-1.1
+# (fonts/OFL.txt). The generator stops if one of them is missing.
+EXTRA_LICENSE_FILES = {
+    "@ggml-org/llama-brand": ("BRAND-USAGE.md", "css/LICENSE", "fonts/OFL.txt"),
+}
+
+# Fonts in Llama UI's sources (not an npm package) that the dist embeds, with
+# the license file beside them: ui/<FONTS_DIR>, and the woff2 names the dist
+# must carry (hashed: _app/immutable/assets/LlamaSans.<hash>.woff2).
+FONTS_DIR = "lib/ui/src/lib/assets/fonts/"
+FONTS = ("LlamaSans", "LlamaMono")
+
 LICENSE_FILE = re.compile(r"^(LICEN[CS]E|COPYING|NOTICE)([.\-_].*)?$", re.I)
 NOTICE_FILE = re.compile(r"^NOTICE([.\-_].*)?$", re.I)
 SRC_EXT = (".ts", ".js", ".svelte", ".css", ".scss")
@@ -113,6 +140,14 @@ IMPORT_RE = re.compile(
     r"""|@(?:import|plugin|use)\s+['"]([^'"\n]+)['"]"""
 )
 WORKBOX_RE = re.compile(rb"workbox:([a-z-]+):")
+# Paths under ui/ in the llama.cpp source.
+APP = "apps/chat/"
+SRC_TREES = (APP + "src/", "lib/ui/src/lib/", "lib/voice/src/")
+VENDORS = APP + "src/lib/vendors/"
+# The workspace's own libraries, compiled from SRC_TREES (vite aliases).
+WORKSPACE = {"@ggml-org/llama-ui", "@ggml-org/llama-voice"}
+# Bare-specifier aliases in ui/apps/chat/vite.config.ts, to the package they name.
+ALIASES = {"katex-fonts": "katex"}
 SEP = "=" * 79
 SUB = "-" * 79
 
@@ -153,56 +188,74 @@ def package_name(spec):
 
 
 def scan_roots(src_files):
-    """Bare specifiers tools/ui/src imports for their value."""
+    """Bare specifiers the bundled sources (SRC_TREES) import for their value."""
     value, typed = set(), set()
     for path, data in src_files.items():
-        # src/lib/vendors is listed separately; its imports are aliased to itself.
-        if SKIP_SRC.search(path) or not path.endswith(SRC_EXT) or path.startswith("src/lib/vendors/"):
+        # The app's src/lib/vendors is listed separately; its imports are aliased to itself.
+        if SKIP_SRC.search(path) or not path.endswith(SRC_EXT) or path.startswith(VENDORS):
             continue
         for m in IMPORT_RE.finditer(data.decode("utf-8", errors="replace")):
             spec = m.group(3) or m.group(4) or m.group(5)
-            if not spec or spec[0] in "./$~" or spec.startswith(("virtual:", "\0")) or ":" in spec:
+            # `#lib/...` is a package.json `imports` alias into the same tree.
+            if not spec or spec[0] in "./$~#" or spec.startswith(("virtual:", "\0")) or ":" in spec:
                 continue
-            (typed if m.group(2) else value).add(package_name(spec))
+            name = package_name(spec)
+            if name in WORKSPACE:
+                continue
+            # vite.config.ts aliases katex-fonts to node_modules/katex/dist/fonts.
+            name = ALIASES.get(name, name)
+            (typed if m.group(2) else value).add(name)
     return value
 
 
 def load_src(path, version):
-    prefix = "llama.cpp-%s/tools/ui/" % version
+    prefix = "llama.cpp-%s/ui/" % version
     lock = pkg = None
     src, vendors = {}, {}
+    seen_trees = set()
     with tarfile.open(path, "r:gz") as tf:
         for m in tf:
             if not m.isfile() or not m.name.startswith(prefix):
                 continue
             rel = m.name[len(prefix):]
-            if rel == "package-lock.json":
+            if rel == APP + "package-lock.json":
                 lock = tf.extractfile(m).read()
-            elif rel == "package.json":
+            elif rel == APP + "package.json":
                 pkg = tf.extractfile(m).read()
-            elif rel.startswith("src/"):
+            elif rel.startswith(SRC_TREES):
+                tree = next(t for t in SRC_TREES if rel.startswith(t))
+                seen_trees.add(tree)
                 data = tf.extractfile(m).read()
                 src[rel] = data
-                parts = rel.split("/")
-                if len(parts) == 5 and parts[2] == "vendors" and LICENSE_FILE.match(parts[4]):
-                    vendors.setdefault(parts[3], {})[parts[4]] = data
+                if rel == FONTS_DIR + "OFL.txt":
+                    vendors.setdefault(FONTS_DIR, {})["OFL.txt"] = data
+                if rel.startswith(VENDORS):
+                    parts = rel[len(VENDORS):].split("/")
+                    if len(parts) == 2 and LICENSE_FILE.match(parts[1]):
+                        vendors.setdefault(parts[0], {})[parts[1]] = data
     if lock is None or pkg is None:
-        die("tools/ui/package-lock.json or package.json missing from the source tarball")
+        die("ui/%spackage-lock.json or package.json missing from the source tarball" % APP)
+    for tree in SRC_TREES:
+        if tree not in seen_trees:
+            die("ui/%s is missing from the source tarball: has the UI layout changed?" % tree)
     return lock, json.loads(pkg), src, vendors
 
 
 def load_dist(path):
-    version, workbox = None, set()
+    version, workbox, fonts = None, set(), set()
     with tarfile.open(path, "r:gz") as tf:
         for m in tf:
             if not m.isfile():
                 continue
             name = m.name[2:] if m.name.startswith("./") else m.name
+            base = name.rsplit("/", 1)[-1]
+            if base.endswith(".woff2"):
+                fonts.add(base.split(".", 1)[0])
             if name == "build.json":
                 version = json.loads(tf.extractfile(m).read()).get("version")
             elif name.endswith(".js"):
                 workbox |= {w.decode() for w in WORKBOX_RE.findall(tf.extractfile(m).read())}
-    return version, {"workbox-" + w for w in workbox}
+    return version, {"workbox-" + w for w in workbox}, fonts
 
 
 def closure(lock, roots):
@@ -279,11 +332,14 @@ def check_integrity(data, integrity, what):
     return best[0]
 
 
-def npm_files(data):
+def npm_files(data, extra=()):
     files, pkg = {}, None
     with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tf:
         for m in tf:
             parts = m.name.split("/")
+            if m.isfile() and "/".join(parts[1:]) in extra:
+                files["/".join(parts[1:])] = tf.extractfile(m).read()
+                continue
             if len(parts) != 2 or not m.isfile():
                 continue
             if parts[1] == "package.json":
@@ -335,7 +391,7 @@ def main():
             die("--%s sha256 %s != build.ncl pin %s" % (key, sha256(data), pins[key]))
 
     lock_bytes, ui_pkg, src_files, vendors = load_src(a.src, version)
-    dist_version, workbox = load_dist(a.dist)
+    dist_version, workbox, dist_fonts = load_dist(a.dist)
     if dist_version != version:
         die("dist build.json version %r != build.ncl version %r" % (dist_version, version))
     lock = json.loads(lock_bytes)
@@ -350,7 +406,11 @@ def main():
         if url.startswith("https://registry.npmjs.org/"):
             data = fetch(url, a.cache)
             algo = check_integrity(data, entry.get("integrity", ""), what)
-            files, pkg = npm_files(data)
+            extra = EXTRA_LICENSE_FILES.get(name, ())
+            files, pkg = npm_files(data, extra)
+            for f in extra:
+                if f not in files:
+                    die("%s: %s is not in the npm tarball" % (what, f))
             spdx = spdx_of(pkg) or entry.get("license") or ""
             source = "%s (%s verified against package-lock.json)" % (url, algo)
         elif url.startswith("https://codeload.github.com/"):
@@ -393,20 +453,34 @@ def main():
         by_license[spdx] = by_license.get(spdx, 0) + 1
         sections.append((name, ver, spdx, source, notes, files))
 
-    # Code vendored into tools/ui/src (bundled through the nerdamer vite plugin),
+    # Code vendored into ui/apps/chat/src (bundled through the nerdamer vite plugin),
     # not in the lock. Their license files sit beside the source.
     vendor_sections = []
+    font_files = vendors.pop(FONTS_DIR, None)
+    if font_files is None:
+        die("ui/%sOFL.txt is missing from the source tarball" % FONTS_DIR)
+    if not set(FONTS) <= dist_fonts:
+        die("the dist has no %s woff2: check what fonts it embeds" % ", ".join(sorted(set(FONTS) - dist_fonts)))
+    # (KaTeX's fonts are inlined in its CSS as data: URLs, not woff2 files, and
+    # are covered by katex's own MIT section.)
+    if dist_fonts - set(FONTS):
+        die("the dist embeds fonts this script does not account for: %s"
+            % ", ".join(sorted(dist_fonts - set(FONTS))))
+    vendor_sections.append(("Llama Sans and Llama Mono (fonts)", "vendored", "OFL-1.1",
+                            "llama.cpp %s ui/%s (the dist's %s woff2)" % (version, FONTS_DIR, ", ".join(FONTS)),
+                            ["NOTICE: none in the package"], font_files))
+    by_license["OFL-1.1"] = by_license.get("OFL-1.1", 0) + 1
     vendor_spdx = {"big-integer": "Unlicense", "decimal.js": "MIT", "nerdamer-prime": "MIT"}
     for vname in sorted(vendors):
         if vname not in vendor_spdx:
             die("vendored %s: add its SPDX id to vendor_spdx" % vname)
         vendor_sections.append((vname, "vendored", vendor_spdx[vname],
-                                "llama.cpp %s tools/ui/src/lib/vendors/%s" % (version, vname),
+                                "llama.cpp %s ui/%s%s" % (version, VENDORS, vname),
                                 ["NOTICE: none in the package"], vendors[vname]))
         by_license[vendor_spdx[vname]] = by_license.get(vendor_spdx[vname], 0) + 1
     for vname in vendor_spdx:
         if vname not in vendors:
-            die("vendored %s has no license file in tools/ui/src/lib/vendors" % vname)
+            die("vendored %s has no license file in ui/%s" % (vname, VENDORS))
 
     out = []
     w = out.append
@@ -417,13 +491,14 @@ def main():
     w("package-lock sha256: %s" % sha256(lock_bytes))
     w("llama.cpp source sha256: %s" % pins["src"])
     w("")
-    w("Generated by packages/llama.cpp/gen-ui-notices.py from tools/ui/package-lock.json")
+    w("Generated by packages/llama.cpp/gen-ui-notices.py from ui/apps/chat/package-lock.json")
     w("in the llama.cpp %s source; do not edit by hand. build.sh checks the UI" % version)
     w("version, dist sha256 and lock sha256 above against what it builds.")
     w("")
-    w("The bundle compiles in %d npm packages (name@version, from the lock) and %d"
-      % (len(sections), len(vendor_sections)))
-    w("libraries vendored in tools/ui/src/lib/vendors. Licenses:")
+    w("The bundle compiles in %d npm packages (name@version, from the lock), %d"
+      % (len(sections), len(vendor_sections) - 1))
+    w("libraries vendored in ui/apps/chat/src/lib/vendors and Llama UI's fonts")
+    w("(ui/%s). Licenses:" % FONTS_DIR)
     for lic, n in sorted(by_license.items(), key=lambda x: (-x[1], x[0])):
         w("  %-40s %d" % (lic, n))
     w("")
@@ -432,10 +507,12 @@ def main():
     for what in no_file or ["none"]:
         w("  " + what)
     w("")
-    w("llama-brand (the llama.cpp logo, favicons and app icons) is declared as")
-    w("LicenseRef-llama-brand: CC-BY-NC-4.0, plus the grant in its BRAND-USAGE.md")
-    w("(reproduced below), which permits redistribution, including commercially,")
-    w("as part of software distributions and packages.")
+    w("@ggml-org/llama-brand: its logos, favicons and app icons are CC-BY-NC-4.0")
+    w("(its LICENSE), its CSS MIT (css/LICENSE) and its fonts OFL-1.1")
+    w("(fonts/OFL.txt). The marks are declared as LicenseRef-llama-brand:")
+    w("CC-BY-NC-4.0 plus the grant in its BRAND-USAGE.md (reproduced below), which")
+    w("permits redistribution, including commercially, as part of software")
+    w("distributions and packages.")
     for name, ver, spdx, source, notes, files in sections + vendor_sections:
         w("")
         w(SEP)
