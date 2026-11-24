@@ -52,19 +52,18 @@ DESTDIR="$OUTPUT_DIR" ninja -C build install
 
 # Keep the four programs and their man pages; the static library, headers, pkg-config
 # and CMake files, docs and nghttpx's Python helper scripts are not part of this package.
+# The release tarball ships the four pages pre-built in doc/ and ENABLE_DOC (on by
+# default) installs them, so a missing program or page fails its `mv` and the build.
 keep=$(mktemp -d)
 mkdir -p "$keep/bin" "$keep/man1"
 for app in nghttp nghttpd nghttpx h2load; do
   mv "$OUTPUT_DIR/usr/bin/$app" "$keep/bin/"
-  if [ -e "$OUTPUT_DIR/usr/share/man/man1/$app.1" ]; then
-    mv "$OUTPUT_DIR/usr/share/man/man1/$app.1" "$keep/man1/"
-  fi
+  mv "$OUTPUT_DIR/usr/share/man/man1/$app.1" "$keep/man1/"
 done
 rm -rf "${OUTPUT_DIR:?}/usr"
 mkdir -p "$OUTPUT_DIR/usr/bin" "$OUTPUT_DIR/usr/share/man/man1"
 mv "$keep"/bin/* "$OUTPUT_DIR/usr/bin/"
-mv "$keep"/man1/* "$OUTPUT_DIR/usr/share/man/man1/" 2>/dev/null || true
-rmdir "$OUTPUT_DIR/usr/share/man/man1" 2>/dev/null && rmdir "$OUTPUT_DIR/usr/share/man" "$OUTPUT_DIR/usr/share" || true
+mv "$keep"/man1/* "$OUTPUT_DIR/usr/share/man/man1/"
 
 # Fail closed on a silently dropped feature: h2load must have HTTP/3 (ngtcp2 + its
 # OpenSSL crypto backend + nghttp3) and libev, and must not need a shared libnghttp2.
