@@ -127,7 +127,7 @@ let liberation-fonts = import "../liberation-fonts/build.ncl" in
 # Bump to 158 (the first CfT Stable with root store v43) to remove the root.
 # Tracked in gominimal/pkgmgr-rs#1028.
 let revision = "1243" in
-let browser_version = "157.0.8103.78" in
+let browser_version = "158.0.8127.88" in
 {
   name = "chromium-headless-shell-bin",
   build_deps = [
@@ -140,12 +140,12 @@ let browser_version = "157.0.8103.78" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux64/chrome-headless-shell-linux64.zip",
-          sha256 = "f90329720fb61e5a76da9b6b509b6ad12a484c9c5df0359403e935177c6d153a",
+          sha256 = "63401333cc587645bfaeea7f0c90958b327d249251e23954a47f30112ca23d5b",
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://storage.googleapis.com/chrome-for-testing-public/%{browser_version}/linux-arm64/chrome-headless-shell-linux-arm64.zip",
-          sha256 = "912fbf877e53de34d7b3cca5104f3b95607d41bd35412ccc6cd2a599ff0c0dbf",
+          sha256 = "9f89b7ef6574e4bbf6ddda9f17f1fab5626e93d6f7d852653232d0d3554df975",
         } | Source,
     } target,
     base,

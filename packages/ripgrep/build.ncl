@@ -6,14 +6,14 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "15.2.0" in
+let version = "16.0.0" in
 {
   name = "ripgrep",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/BurntSushi/ripgrep/%{version}.tar.gz",
-      sha256 = "7605249d3eb0d5f170e3414498e3344e26b1e7a147aec518b57090b80036a562",
+      sha256 = "17e7a1a0db80ed9618a0963c7ae4aecb8fce25c70cf7ebed514daf2b38a0d153",
       extract = true,
       strip_prefix = "ripgrep-%{version}",
     } | Source,
