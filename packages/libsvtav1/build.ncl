@@ -12,9 +12,7 @@ let version = "4.3.1" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # Upstream moved to GitHub ("The canonical URL for this project is at
-      # https://github.com/AOMediaCodec/SVT-AV1"); GitLab stopped at v4.3.0 (same
-      # commit, e3d63405), and v4.3.1 exists only on GitHub.
+      # GitHub is the canonical upstream (AOMediaCodec/SVT-AV1).
       url = "https://github.com/AOMediaCodec/SVT-AV1/archive/refs/tags/v%{version}.tar.gz",
       sha256 = "ad94f481cb74821af183f37f4533fc52324b76ffbd98ec7723e282bab0cf9fc4",
       extract = true,
