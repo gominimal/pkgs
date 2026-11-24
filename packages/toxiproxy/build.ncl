@@ -78,6 +78,14 @@ let version = "2.13.0" in
               trap 'kill $spid $tpid 2>/dev/null || true; cat "$d/server.log"' EXIT
               cli() { toxiproxy-cli --host http://127.0.0.1:8474 "$@"; }
               for i in $(seq 50); do cli list >/dev/null 2>&1 && break; sleep 0.2; done
+              # socat is started in the background too: wait until the backend
+              # itself answers, so the first fetch does not race its listen().
+              for i in $(seq 50); do
+                b=$( { exec 4<>/dev/tcp/127.0.0.1/16379 && timeout 5 cat <&4; } 2>/dev/null || true)
+                [ "$b" = pong ] && break
+                sleep 0.2
+              done
+              [ "$b" = pong ]
               cli create --listen 127.0.0.1:26379 --upstream 127.0.0.1:16379 echo
               # One connection through the proxy: what came back, and how long it took.
               fetch() {
