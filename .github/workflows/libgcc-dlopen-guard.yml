@@ -1,0 +1,51 @@
+name: libgcc-dlopen-guard
+
+# BLOCKING. glibc dlopens libgcc_s.so.1 to unwind on pthread_cancel,
+# pthread_exit and thrd_exit (and aborts without it); backtrace() dlopens it
+# too. A dlopen is not DT_NEEDED, so minimal's missing-runtime_deps check
+# cannot see it (gominimal/pkgs#1545 review). Every package listed in
+# .github/scripts/libgcc_dlopen_importers.toml must have gcc-runtime's libgcc
+# in its runtime closure; the fix for a failure is
+# `subsetOf gcc-runtime ["libgcc"]` in its runtime_deps. Rationale and limits
+# live in .github/scripts/libgcc_dlopen_guard.py. Like gcc-runtime-guard.yml it
+# reads the .ncl source directly, so it needs no evaluator. The list itself is
+# kept true by the weekly libgcc-dlopen-scan workflow.
+#
+# An unreadable tree or data file fails too (exit 2 = UNVERIFIED): a guard
+# that cannot see the catalog must not go green.
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "packages/**"
+      - ".github/scripts/libgcc_dlopen_guard.py"
+      - ".github/scripts/libgcc_dlopen_importers.toml"
+      - ".github/scripts/test_libgcc_dlopen_guard.py"
+      - ".github/scripts/libgcc_dlopen_scan.py"
+      - ".github/scripts/test_libgcc_dlopen_scan.py"
+      - ".github/scripts/gcc_runtime_guard.py"
+      - ".github/workflows/libgcc-dlopen-guard.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: libgcc-dlopen-guard-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      # Includes the negative controls: every uncovered form must fail.
+      - name: Guard unit tests
+        run: python3 -m unittest discover -s .github/scripts -p 'test_libgcc_dlopen_*.py' -v
+
+      - name: libgcc dlopen guard
+        run: python3 .github/scripts/libgcc_dlopen_guard.py .
