@@ -6,7 +6,6 @@ export LD=gcc
 export RUSTFLAGS="-C linker=gcc"
 
 # >>> pkgmgr lock-patch (generated; regenerate with `pkgmgr lock-patch nickel`, never edit)
-# not floored (unreachable): webpki-root-certs 1.0.7 RUSTSEC-2026-0383
 # security-floors-lock.patch is a cargo-resolved delta against upstream's Cargo.lock; it is
 # only valid for the exact lock it was generated from.
 echo "2fdafec3df7887a526b84bb95bb5ae43c25ecbd48a3da73e89d232dd0dcb3ec2  Cargo.lock" | sha256sum -c --status - || {
@@ -65,6 +64,10 @@ if grep -A1 '^name = "tokio"$' Cargo.lock | grep -qE '^version = "(1[.]51[.](([0
 fi
 if grep -A1 '^name = "url"$' Cargo.lock | grep -qE '^version = "2[.]5[.](([0-8])([-+][^"]*)?|9-[^"]*)"$'; then
   echo "ERROR: url below its security floor 2.5.9 is in Cargo.lock (RUSTSEC-2026-0592)" >&2
+  exit 1
+fi
+if grep -A1 '^name = "webpki-root-certs"$' Cargo.lock | grep -qE '^version = "1[.]0[.](([0-9])([-+][^"]*)?|10-[^"]*)"$'; then
+  echo "ERROR: webpki-root-certs below its security floor 1.0.10 is in Cargo.lock (RUSTSEC-2026-0383)" >&2
   exit 1
 fi
 # <<< pkgmgr lock-patch
