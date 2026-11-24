@@ -70,7 +70,7 @@ in
       # BSD-3-Clause part by Eric Jackson), src/queue.h (BSD-3-Clause, UC), src/units.c (the
       # iperf2 NCSA licence) and src/portable_endian.h (public domain, Mathias Panzenböck;
       # LicenseRef-Public-Domain as in libbsd). GitHub's licence API reports NOASSERTION for
-      # this file.
+      # LICENSE.
       # LicenseRef-Lucent-Notice: LICENSE says net.{c,h} also contain parts of an earlier
       # library by Rob Pike, Sape Mullender and Russ Cox, (c) 2003 Lucent Technologies,
       # under a permission notice ("Permission to use, copy, modify, and distribute this
