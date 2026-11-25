@@ -182,6 +182,49 @@ exec "$@"
           ["/bin/bash", "-c", "set -e; RUNNER_HOME=/tmp/r /usr/bin/actions-runner --help >/dev/null 2>&1 || true; v=$(/tmp/r/bin/Runner.Listener --version); echo \"$v\"; [[ $v =~ ^[0-9]+\\.[0-9]+\\.[0-9]+$ ]]; grep -q '\"Microsoft.NETCore.App\"' /tmp/r/bin/Runner.Listener.runtimeconfig.json; ! grep -q '\"version\": \"8\\.' /tmp/r/bin/Runner.Listener.runtimeconfig.json"],
         ],
       } | Test,
+    # Runner.Worker (runs every job) and Runner.PluginHost (runs plugins) also
+    # start on .NET 10 without their deps.json. Each is started with no
+    # arguments: the host, CoreCLR and the app's assemblies load, its Main runs,
+    # and it rejects the argument count (upstream ArgUtil.Equal, exit 1) with a
+    # stack trace through GitHub.<app>.Program.Main. Pass = that trace and no
+    # host or assembly-load error. Their runtimeconfig.json name no 8.x runtime.
+    worker_and_pluginhost_start_on_dotnet10 =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils, grep],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -euo pipefail
+              d=$(mktemp -d); cd "$d"
+              # A home of its own: HostContext writes its trace under <home>/_diag.
+              out=$(RUNNER_HOME=$d/r /usr/bin/actions-runner --version 2>&1) || { echo "$out" >&2; exit 1; }
+              for app in Runner.Worker Runner.PluginHost; do
+                rc=0; out=$(timeout 120 "$d/r/bin/$app" 2>&1) || rc=$?
+                echo "$app: exit $rc"; head -n 4 <<<"$out"
+                if [ "$rc" != 1 ]; then
+                  echo "$app: want exit 1 (argument count rejected by its Main), got $rc:" >&2; echo "$out" >&2; exit 1
+                fi
+                if ! grep -q -F "GitHub.$app.Program.Main" <<<"$out" || ! grep -q -F ArgumentOutOfRangeException <<<"$out"; then
+                  echo "$app: its Main did not run to the argument check:" >&2; echo "$out" >&2; exit 1
+                fi
+                if grep -q -E 'hostfxr|hostpolicy|FileNotFoundException|FileLoadException|TypeLoadException|BadImageFormatException|MissingMethodException|MissingFieldException' <<<"$out"; then
+                  echo "$app: host or assembly-load error:" >&2; echo "$out" >&2; exit 1
+                fi
+                rcj=$d/r/bin/$app.runtimeconfig.json
+                grep -q '"Microsoft.NETCore.App"' "$rcj"
+                if grep -q '"version": "8\.' "$rcj"; then
+                  echo "$app: runtimeconfig still names a .NET 8 runtime:" >&2; cat "$rcj" >&2; exit 1
+                fi
+                test ! -e "$d/r/bin/$app.deps.json"
+                echo "$app: ok"
+              done
+            "%
+          ],
+        ],
+      } | Test,
     # .NET 10 makes a real TLS connection through OpenSSL 4 (libssl.so.4; no
     # openssl-3.5 in the closure) and verifies the server against the system
     # store: SSL_CERT_FILE is our ca-certificates bundle with a throwaway CA
@@ -693,6 +736,9 @@ exec "$@"
                 echo "contended: want the start still waiting after 5 s (exit 124), got exit $rc:" >&2; echo "$out" >&2; exit 1
               fi
               test ! -e c/run.sh
+              # It says that it waits, so the wait does not look like a stall.
+              grep -q -F "Waiting for another actions-runner or actions-runner-config to release $d/c/.minimal-setup.lock" <<<"$out" \
+                || { echo "contended: no waiting line:" >&2; echo "$out" >&2; exit 1; }
               echo "contended: waited"
               # SIGKILL runs no cleanup in the holder; the kernel drops its lock and
               # the next start goes ahead.

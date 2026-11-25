@@ -183,10 +183,25 @@ lock_home() { # lock_home <home>
         echo "Could not create or open the lock file $lock (the error is above). Fix the permissions in $RUNNER_HOME, free space if the disk is full, or remove $lock if it is not a regular file, then start again." >&2
         exit 1
     fi
-    if ! flock -w 600 9; then
-        echo "Another actions-runner or actions-runner-config has been using $RUNNER_HOME for 10 minutes (it holds the lock on $lock), so this start stopped. Wait for it to finish, or stop it, then start again." >&2
-        exit 1
+    # util-linux flock exits 1 only when the lock is held elsewhere (-n) or
+    # the wait timed out (-w); an error (ENOLCK on a network file system, a
+    # bad descriptor) exits with a sysexits code (64 and up) at once.
+    local rc=0
+    flock -n 9 || rc=$?
+    if [ "$rc" = 1 ]; then
+        echo "Waiting for another actions-runner or actions-runner-config to release $lock (up to 10 minutes)..." >&2
+        rc=0
+        flock -w 600 9 || rc=$?
     fi
+    case "$rc" in
+        0) ;;
+        1)
+            echo "Another actions-runner or actions-runner-config has been using $RUNNER_HOME for 10 minutes (it holds the lock on $lock), so this start stopped. Wait for it to finish, or stop it, then start again." >&2
+            exit 1 ;;
+        *)
+            echo "Could not lock $lock (flock exit $rc; the error is above), so this start stopped. If $RUNNER_HOME is on a file system without flock support, set RUNNER_HOME to a local directory, then start again." >&2
+            exit 1 ;;
+    esac
 }
 unlock_home() {
     exec 9>&-
@@ -281,7 +296,7 @@ prepare_home() {
     if ! { cp -a "$pkg/." "$home/" &&
         cp "$pkg/.minimal-package-stamp" "$home/.minimal-installed-stamp" &&
         rm -f "$home/.minimal-copying"; }; then
-        echo "Could not copy the packaged runner into $RUNNER_HOME (is the disk full?). Free space there, then start again: the next start copies it again." >&2
+        echo "Could not copy the packaged runner into $RUNNER_HOME (the error is above), so the runner was not started. Fix what the error names (for example the permissions there, or free space), then start again: the next start copies it again." >&2
         unlock_home; exit 1
     fi
 }
