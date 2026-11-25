@@ -1,5 +1,8 @@
 #!/bin/sh
 set -ex
+# A jq that fails inside `for ... | sort` must fail the build, not hand sort
+# an empty list.
+set -o pipefail
 
 case $(uname -m) in
   x86_64)  ARCH="x64" ;;
@@ -36,16 +39,23 @@ test -f "$fw/libSystem.Security.Cryptography.Native.OpenSsl.so"
 
 apps="Runner.Listener Runner.Worker Runner.PluginHost"
 
-# Fail closed unless the runner still bundles a .NET 8 runtime pack: once
-# upstream ships .NET 10 this whole block should go, not silently re-run.
-packs=$(for app in $apps; do
-  jq -r '.targets[] | keys[] | select(startswith("runtimepack.Microsoft.NETCore.App.Runtime."))' "$bin/$app.deps.json"
-done | sort -u)
-test "$(printf '%s\n' "$packs" | wc -l)" -eq 1
-case "$packs" in
-  */8.0.*) ;;
-  *) echo "expected one .NET 8 runtime pack in the runner's deps.json, found: $packs" >&2; exit 1 ;;
-esac
+# Fail closed unless every app still bundles the same, single .NET 8 runtime
+# pack: once upstream ships .NET 10 this whole block should go, not silently
+# re-run. Each app is checked on its own, so one app without a pack cannot
+# hide behind the others.
+packs=
+for app in $apps; do
+  p=$(jq -r '.targets[] | keys[] | select(startswith("runtimepack.Microsoft.NETCore.App.Runtime."))' "$bin/$app.deps.json" | sort -u)
+  case "$p" in
+    *"
+"*|"") echo "expected one runtime pack in $app.deps.json, found: '$p'" >&2; exit 1 ;;
+    */8.0.*) ;;
+    *) echo "expected a .NET 8 runtime pack in $app.deps.json, found: $p" >&2; exit 1 ;;
+  esac
+  packs="$packs$p
+"
+done
+test "$(printf '%s' "$packs" | sort -u | wc -l)" -eq 1 || { echo "the apps bundle different runtime packs: $packs" >&2; exit 1; }
 
 # Every file of the old runtime pack. Each must have a .NET 10 counterpart
 # (libhostfxr.so comes from host/fxr), so nothing of .NET 8 is left behind.
@@ -144,9 +154,11 @@ printf 'actions-runner %s dotnet %s tree %s\n' "$MINIMAL_ARG_VERSION" "$DOTNET_V
 # interrupted (.minimal-copying). Any other directory with a bin/ or externals/
 # is refused, so RUNNER_HOME=$HOME does not cost ~/bin. While a runner from the
 # home is running, or any other process works in it, it refuses too. Every
-# start takes a lock on the home (a symlink naming the starting PID; a lock
-# whose process is gone is taken over), checks the stamp under it, and moves
-# into the home before releasing it, so a later start sees it as in use. The
+# start takes a lock on the home (flock), checks the stamp under it, and moves
+# into the home before releasing it, so a later start sees it as in use.
+# actions-runner also rewrites .runner under it, and actions-runner-config
+# keeps it until config.sh exits, so a start cannot recreate a .runner that a
+# concurrent `config.sh remove` deleted. The
 # installed stamp is removed before a copy and written only after every step
 # succeeded, and a home with .minimal-copying is never current, so a copy that
 # failed (a full disk) is redone by the next start.
@@ -159,51 +171,25 @@ home_current() {
         [ "$(cat "$pkg/.minimal-package-stamp")" = "$(cat "$RUNNER_HOME/.minimal-installed-stamp")" ] &&
         [ -d "$RUNNER_HOME/bin" ] && [ ! -L "$RUNNER_HOME/bin" ] && [ ! -e "${bin_dirs[0]}" ]
 }
+# The setup lock is flock(1) on <home>/.minimal-setup.lock, held on fd 9. The
+# kernel releases it when the last descriptor closes, so a start that crashed
+# or was killed leaves no lock behind and there is nothing to take over. The
+# file itself stays in the home; only the flock on it means anything.
 lock_home() { # lock_home <home>
     lock=$1/.minimal-setup.lock
-    local owner err waited=0 probe=$1/.minimal-write-test.$$
-    # The lock is created in the home, so a home this start cannot write to is
-    # refused here instead of waited on.
-    if ! { : > "$probe" && rm -f "$probe"; }; then
-        echo "Could not write to $RUNNER_HOME (the error is above). Fix the permissions there, or free space if the disk is full, then start again." >&2
+    # Opening the lock file is also the check that the home is writable, so
+    # a home this start cannot write to is refused here instead of waited on.
+    if ! exec 9>>"$lock"; then
+        echo "Could not create or open the lock file $lock (the error is above). Fix the permissions in $RUNNER_HOME, free space if the disk is full, or remove $lock if it is not a regular file, then start again." >&2
         exit 1
     fi
-    # -T: a directory at $lock is a conflict, not a place to create the link in.
-    until err=$(ln -sT "$$" "$lock" 2>&1); do
-        if owner=$(readlink "$lock" 2>/dev/null); then
-            if [ ! -d "/proc/$owner" ]; then
-                # Its process is gone. Starts that found the same dead PID take
-                # the lock over one at a time: each must first create
-                # $lock.takeover-<PID>, and the one that did removes the lock only
-                # if it still names that PID. Only a start's own exit removes a
-                # lock that names a live start, so two starts never both hold it.
-                if ln -sT "$$" "$lock.takeover-$owner" 2>/dev/null; then
-                    if [ "$(readlink "$lock" 2>/dev/null)" = "$owner" ]; then
-                        rm -f "$lock"
-                    fi
-                    rm -f "$lock.takeover-$owner"
-                    continue
-                fi
-            fi
-        elif [ -e "$lock" ]; then
-            echo "$lock is not a lock an actions-runner start made (that is a symlink to the PID of the start), so this start stopped. Remove it, then start again." >&2
-            exit 1
-        fi
-        # Every other failure waits, and counts against the limit.
-        if [ "$waited" -ge 600 ]; then
-            if [ -n "$owner" ]; then
-                echo "Another start (PID $owner) has been setting up $RUNNER_HOME for 10 minutes, so this one stopped. If that process is not an actions-runner start, remove $lock and start again." >&2
-            else
-                echo "Could not create the lock $lock for 10 minutes ($err), so this start stopped. Fix the permissions in $RUNNER_HOME, or free space if the disk is full, then start again." >&2
-            fi
-            exit 1
-        fi
-        sleep 1; waited=$((waited + 1))
-    done
-    trap 'rm -f "$lock"' EXIT
+    if ! flock -w 600 9; then
+        echo "Another actions-runner or actions-runner-config has been using $RUNNER_HOME for 10 minutes (it holds the lock on $lock), so this start stopped. Wait for it to finish, or stop it, then start again." >&2
+        exit 1
+    fi
 }
 unlock_home() {
-    rm -f "$lock"; trap - EXIT
+    exec 9>&-
 }
 # Is a process other than this start or one of its parents running a runner
 # from <home>, or working in it? Prints "<pid> <exe>" for the first one found.
@@ -229,27 +215,45 @@ home_in_use() ( # home_in_use <home>
     done
     return 1
 )
+not_a_runner_home() { # not_a_runner_home <home>: a bin/ or externals/, but no runner and no copy under way
+    { [ -e "$1/bin" ] || [ -e "$1/externals" ]; } && [ ! -e "$1/bin/Runner.Listener" ] && [ ! -e "$1/.minimal-copying" ]
+}
+refuse_not_a_runner_home() {
+    echo "$RUNNER_HOME has a bin/ or externals/ directory but no runner (no bin/Runner.Listener), so nothing was changed in it. Set RUNNER_HOME to an empty directory or to a runner directory, then start again." >&2
+    exit 1
+}
 prepare_home() {
     if [ -z "${RUNNER_HOME:-}" ]; then
         echo "RUNNER_HOME is not set. Set RUNNER_HOME to an empty directory or to a runner directory, then start again." >&2; exit 1
     fi
+    # This start moves into the home below, so a relative RUNNER_HOME is made
+    # absolute first: the checks and messages after the cd, and run.sh, use it.
+    case "$RUNNER_HOME" in
+        /*) ;;
+        *) RUNNER_HOME=$PWD/$RUNNER_HOME ;;
+    esac
+    export RUNNER_HOME
     if ! mkdir -p "$RUNNER_HOME"; then
         echo "Could not create the runner directory $RUNNER_HOME (the error is above). Set RUNNER_HOME to an empty directory or to a runner directory, then start again." >&2; exit 1
     fi
     local home busy
     home=$(cd "$RUNNER_HOME" && pwd -P) || exit 1
+    # Checked once before the lock as well, so a directory that is not a runner
+    # home (RUNNER_HOME=$HOME) does not even get a lock file. A start that is
+    # copying into a home creates .minimal-copying before bin/, so this cannot
+    # refuse a home another start is setting up.
+    if ! home_current && not_a_runner_home "$home"; then refuse_not_a_runner_home; fi
     lock_home "$home"
     # Under the lock this start moves into the home, so from here until the
     # runner exits a start that finds the home outdated sees it in /proc (this
     # start's working directory, then run.sh's and the listener's) and does not
     # replace bin/ under it.
     cd "$home" || { unlock_home; exit 1; }
-    if home_current; then unlock_home; return; fi
+    # The caller releases the lock (unlock_home) once it is done with the
+    # home's settings.
+    if home_current; then return; fi
     if [ -e "$home/bin" ] || [ -e "$home/externals" ]; then
-        if [ ! -e "$home/bin/Runner.Listener" ] && [ ! -e "$home/.minimal-copying" ]; then
-            echo "$RUNNER_HOME has a bin/ or externals/ directory but no runner (no bin/Runner.Listener), so nothing was changed in it. Set RUNNER_HOME to an empty directory or to a runner directory, then start again." >&2
-            unlock_home; exit 1
-        fi
+        if not_a_runner_home "$home"; then unlock_home; refuse_not_a_runner_home; fi
         if busy=$(cd / && home_in_use "$home"); then
             case "${busy#* }" in
                 "$home"/bin*/Runner.*)
@@ -280,7 +284,6 @@ prepare_home() {
         echo "Could not copy the packaged runner into $RUNNER_HOME (is the disk full?). Free space there, then start again: the next start copies it again." >&2
         unlock_home; exit 1
     fi
-    unlock_home
 }
 # CVE-2026-111943: the bundled externals/node{20,24} trust their compiled-in
 # root store, which still holds emSign ECC Root CA - G3. --use-openssl-ca
@@ -390,18 +393,22 @@ no_update_jit() { # no_update_jit <value> <where it came from>: prints the value
 }
 
 prepare_home
-cd "$RUNNER_HOME" || exit 1
+# Under the lock: actions-runner-config (register, remove) holds it while
+# config.sh runs, so this cannot write back a .runner that config.sh removed.
 for f in .runner .runner_migrated; do
     if [ -f "$f" ]; then
         no_update_file "$f"
     fi
 done
+unlock_home
 args=("$@")
 cli_jit=0
 # As upstream CommandLineParser reads it: the value of --jitconfig is the next
-# argument that does not start with "-", unless a "--<name>" comes first.
+# argument that does not start with "-", unless a "--<name>" comes first, and
+# the first such value wins (a later --jitconfig is ignored), so only that one
+# is rewritten.
 shopt -s nocasematch
-for ((i = 0; i < ${#args[@]}; i++)); do
+for ((i = 0; i < ${#args[@]} && cli_jit == 0; i++)); do
     [[ ${args[i]} == --jitconfig ]] || continue
     for ((j = i + 1; j < ${#args[@]}; j++)); do
         [[ ${args[j]} == --?* ]] && break
@@ -427,23 +434,26 @@ EOF
 } > "${OUTPUT_DIR}/usr/bin/actions-runner"
 chmod +x "${OUTPUT_DIR}/usr/bin/actions-runner"
 
-# actions-runner-config: config.sh, registering with updates off unless the
-# caller passed --disableupdate itself. `remove` and help take no such flag.
-# As upstream reads them: `remove` in any case as the first argument
+# actions-runner-config: config.sh, always registering with updates off.
+# --disableupdate goes last, where upstream's CommandLineParser always reads
+# it as a flag; a caller's own `--disableupdate false` is a value there (an
+# argument named disableupdate), not the flag, and would leave updates on. A
+# repeated flag is harmless (Flags is a set). `remove` and help take no such
+# flag. As upstream reads them: `remove` in any case as the first argument
 # (config.sh), and --help in any case or `/?` (CommandLineParser). Flags are
 # matched as whole arguments, not inside a value such as `--work "jobs --help"`.
+# The home lock stays held (fd 9 is inherited) until config.sh exits.
 {
   echo '#!/bin/bash'
   cat prelude.sh
   cat << 'EOF'
 prepare_home
-cd "$RUNNER_HOME" || exit 1
 add_flag=1
 shopt -s nocasematch
 if [[ ${1:-} == remove ]]; then add_flag=0; fi
 for a in "$@"; do
     case "$a" in
-        --disableupdate|--help|-h|'/?') add_flag=0 ;;
+        --help|-h|'/?') add_flag=0 ;;
     esac
 done
 shopt -u nocasematch

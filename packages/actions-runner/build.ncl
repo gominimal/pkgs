@@ -11,6 +11,7 @@ let icu = import "../icu/build.ncl" in
 let jq = import "../jq/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
+let util-linux = import "../util-linux/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
 let version = "2.338.2" in
@@ -89,6 +90,9 @@ in
     # older; build.sh swaps in .NET 10.0.15, which also loads OpenSSL 4's
     # libssl.so.4.
     openssl,
+    # flock: the wrappers' per-RUNNER_HOME setup lock (the kernel drops it when
+    # its holder exits, so a killed start leaves no stale lock behind).
+    util-linux,
     zlib,
   ],
 
@@ -266,13 +270,15 @@ exec "$@"
           ],
         ],
       } | Test,
-    # actions-runner-config registers with --disableupdate unless the caller passed
-    # it, and not for `remove` or help. Flags are whole arguments: a value such as
-    # `--work "jobs --help"` is not a help flag.
+    # actions-runner-config registers with --disableupdate as the last argument,
+    # also when the caller passed `--disableupdate false` (a value upstream does
+    # not read as the flag), and not for `remove` or help. Flags are whole
+    # arguments: a value such as `--work "jobs --help"` is not a help flag. The
+    # home lock is held while config.sh runs.
     config_wrapper_disables_update =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, coreutils, grep],
+        test_deps = [bash-bootstrap, coreutils, grep, util-linux],
         cmds = [
           [
             "/bin/bash",
@@ -287,26 +293,42 @@ exec "$@"
               printf '#!/bin/bash\nfor a in "$@"; do echo "[$a]"; done\n' > h/config.sh
               chmod +x h/config.sh
               cfg() { RUNNER_HOME=$d/h /usr/bin/actions-runner-config "$@"; }
-              flags() { grep -c -x -F '[--disableupdate]' <<<"$1" || true; }
-              check() { # check <name> <expected count of --disableupdate> <args...>
+              check() { # check <name> last|none <args...>: --disableupdate is the last argument, or absent
                 local name=$1 want=$2; shift 2
                 local out; out=$(cfg "$@")
-                local got; got=$(flags "$out")
-                echo "$name: --disableupdate x$got (want $want)"
-                if [ "$got" != "$want" ]; then echo "$out" >&2; exit 1; fi
+                if [ "$want" = last ]; then
+                  if [ "$(tail -n 1 <<<"$out")" != '[--disableupdate]' ]; then
+                    echo "$name: --disableupdate is not the last argument:" >&2; echo "$out" >&2; exit 1
+                  fi
+                elif grep -q -x -F '[--disableupdate]' <<<"$out"; then
+                  echo "$name: --disableupdate was added:" >&2; echo "$out" >&2; exit 1
+                fi
+                echo "$name: ok ($want)"
               }
-              check registration 1 --url https://github.com/o/r --token x
-              check remove 0 remove --token x
-              check remove-upper 0 REMOVE --token x
-              check help 0 --help
-              check help-upper 0 --HELP
-              check help-slash 0 '/?'
-              check short-help 0 -h
-              check caller-chose 1 --url https://github.com/o/r --token x --disableupdate
+              check registration last --url https://github.com/o/r --token x
+              check remove none remove --token x
+              check remove-upper none REMOVE --token x
+              check help none --help
+              check help-upper none --HELP
+              check help-slash none '/?'
+              check short-help none -h
+              check caller-chose last --url https://github.com/o/r --token x --disableupdate
+              # Upstream reads `--disableupdate false` as an argument with a value, not
+              # the flag, so the wrapper's flag still goes last.
+              check caller-value last --url https://github.com/o/r --disableupdate false --token x
               # A flag inside a value is not a flag: `--work "jobs --help"` still registers.
-              check help-in-a-value 1 --url https://github.com/o/r --token x --work "jobs --help"
+              check help-in-a-value last --url https://github.com/o/r --token x --work "jobs --help"
               # The value reaches config.sh as one argument.
-              cfg --url u --work "jobs --help" | grep -q -x -F '[jobs --help]'
+              # (A here-string, not a pipe: grep -q stopping early under pipefail can
+              # fail the test with SIGPIPE.)
+              out=$(cfg --url u --work "jobs --help"); grep -q -x -F '[jobs --help]' <<<"$out"
+              # config.sh runs under the home lock (a concurrent start cannot rewrite a
+              # .runner that `config.sh remove` deletes), and the lock is free after it.
+              printf '#!/bin/bash\nif flock -n .minimal-setup.lock true; then echo lock-free; else echo lock-held; fi\n' > h/config.sh
+              out=$(cfg remove --token x)
+              if [ "$out" != lock-held ]; then echo "config.sh did not run under the home lock: $out" >&2; exit 1; fi
+              flock -n h/.minimal-setup.lock true
+              echo "config-under-lock: ok"
             "%
           ],
         ],
@@ -319,7 +341,7 @@ exec "$@"
     self_update_off_at_start =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, coreutils, grep],
+        test_deps = [bash-bootstrap, coreutils, grep, util-linux],
         cmds = [
           [
             "/bin/bash",
@@ -354,6 +376,7 @@ exec "$@"
               for f in .runner .runner_migrated; do
                 if [ -f "$f" ]; then echo "file $f $(tr -d '\n ' < "$f")"; fi
               done
+              if flock -n .minimal-setup.lock true; then echo "lock free"; else echo "lock held"; fi
               STUB
               chmod +x h/run.sh
               b64() { "$node" -e 'process.stdout.write(Buffer.from(process.argv[1]).toString("base64"))' "$1"; }
@@ -368,13 +391,21 @@ exec "$@"
                 echo "$2: ok"
               }
               expect "$(run --jitconfig "$blob" --once)" jitconfig-arg
+              # run.sh (and so the listener) starts with the home lock released, or a
+              # running runner would block every later start.
+              out=$(run --once); grep -q -x -F 'lock free' <<<"$out"
+              # Upstream keeps the first --jitconfig value and ignores a later one, so
+              # only the first is rewritten and an unreadable duplicate does not stop
+              # the start.
+              out=$(run --jitconfig "$blob" --JITCONFIG not-base64-json 2>&1) || { echo "jitconfig-duplicate: the start failed:" >&2; echo "$out" >&2; exit 1; }
+              expect "$out" jitconfig-duplicate
               expect "$(run --JITCONFIG "$blob")" jitconfig-arg-upper
               expect "$(ACTIONS_RUNNER_INPUT_JITCONFIG=$blob run)" jitconfig-env
               expect "$(env actions_runner_input_jitconfig="$blob" RUNNER_HOME="$d/h" /usr/bin/actions-runner)" jitconfig-env-lower
               # The argument wins, as in the listener: an unreadable variable beside it
               # does not stop the start.
               expect "$(ACTIONS_RUNNER_INPUT_JITCONFIG=not-base64-json run --jitconfig "$blob")" jitconfig-arg-over-env
-              run --jitconfig "$blob" --once | grep -q -x -F 'arg [--once]'
+              out=$(run --jitconfig "$blob" --once); grep -q -x -F 'arg [--once]' <<<"$out"
               # The listener does not read --jitconfig=<value>, so the wrapper passes it on as it is.
               out=$(run "--jitconfig=$blob")
               grep -q -x -F "arg [--jitconfig=$blob]" <<<"$out" || { echo "--jitconfig= was changed:" >&2; echo "$out" >&2; exit 1; }
@@ -466,7 +497,7 @@ exec "$@"
     home_upgrade_keeps_registration =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, coreutils, grep],
+        test_deps = [bash-bootstrap, coreutils, grep, util-linux],
         cmds = [
           [
             "/bin/bash",
@@ -498,7 +529,8 @@ exec "$@"
               test ! -e h/externals/node20/marker
               test ! -e h/bin.2.330.0
               test ! -e h/.minimal-copying
-              test ! -e h/.minimal-setup.lock
+              # The setup lock is released (flock; the file itself stays).
+              flock -n h/.minimal-setup.lock true
               same h/.minimal-installed-stamp "$pkg/.minimal-package-stamp"
               grep -q '"clientId": "kept-marker-0b7e"' h/.credentials
               test "$(cat h/_work/r/file)" = keep
@@ -552,7 +584,7 @@ exec "$@"
                 echo "control failed: the wrapper replaced the runner in a home another process works in" >&2; echo "$out" >&2; exit 1
               fi
               grep -q "A process is still working in $d/w (PID $wpid," <<<"$out" || { echo "$out" >&2; exit 1; }
-              test "$(cat w/bin/Runner.Listener)" = old-listener && test ! -e w/.minimal-setup.lock
+              test "$(cat w/bin/Runner.Listener)" = old-listener && flock -n w/.minimal-setup.lock true
               kill $wpid; wait $wpid 2>/dev/null || true
               echo "home-in-use: refused, unchanged"
               # A start from a shell whose working directory is the home is not
@@ -591,23 +623,32 @@ exec "$@"
               fi
               grep -q "is still running (PID $pid)" <<<"$out"
               same r/bin/Runner.Listener "$(command -v bash)"
-              test ! -e r/.minimal-installed-stamp && test ! -e r/.minimal-setup.lock
+              test ! -e r/.minimal-installed-stamp && flock -n r/.minimal-setup.lock true
               echo "running-runner: refused"
+              # A relative RUNNER_HOME is the directory relative to where the start
+              # was made, before and after the wrapper moves into it.
+              mkdir rel-start
+              out=$(cd rel-start && RUNNER_HOME=rel /usr/bin/actions-runner --version 2>&1) || { echo "relative-home: the start failed:" >&2; echo "$out" >&2; exit 1; }
+              same rel-start/rel/bin/Runner.Listener "$pkg/bin/Runner.Listener"
+              test ! -e rel-start/rel/rel
+              grep -q -E '^[0-9]+\.[0-9]+\.[0-9]+$' <<<"$out"
+              echo "relative-home: ok"
             "%
           ],
         ],
       } | Test,
     # A RUNNER_HOME the wrapper cannot set up is refused at once, with a message
     # that names a next step, instead of waited on: a home it cannot write to,
-    # a regular file or a directory where the setup lock goes, an unset
-    # RUNNER_HOME and one that cannot be created. The unwritable home is /proc,
-    # which root cannot create files in either (chmod does not stop root, and
-    # the sandbox may run the test as root). A lock left by a start that is gone
-    # is taken over, and nothing of it is left behind.
+    # a directory where the setup lock file goes, an unset RUNNER_HOME and one
+    # that cannot be created. The unwritable home is /proc, which root cannot
+    # create files in either (chmod does not stop root, and the sandbox may run
+    # the test as root). A start waits while another process holds the home's
+    # flock, and goes ahead once that holder is killed: the kernel releases the
+    # lock, so there is no stale lock to recover.
     home_setup_refusals =
       {
         class = 'Standalone,
-        test_deps = [bash-bootstrap, coreutils, grep],
+        test_deps = [bash-bootstrap, coreutils, grep, util-linux],
         cmds = [
           [
             "/bin/bash",
@@ -630,27 +671,35 @@ exec "$@"
                 fi
                 echo "$name: refused (exit $rc)"
               }
-              refused unwritable-home "Could not write to /proc (the error is above)." /proc
+              refused unwritable-home "Could not create or open the lock file /proc/.minimal-setup.lock (the error is above). Fix the permissions in /proc," /proc
               test ! -e /proc/.minimal-setup.lock
-              mkdir rf; echo mine > rf/.minimal-setup.lock
-              refused regular-file-lock "rf/.minimal-setup.lock is not a lock an actions-runner start made" "$d/rf"
-              test "$(cat rf/.minimal-setup.lock)" = mine && test ! -e rf/run.sh
               mkdir -p rd/.minimal-setup.lock
-              refused directory-lock "rd/.minimal-setup.lock is not a lock an actions-runner start made" "$d/rd"
+              refused directory-lock "or remove $d/rd/.minimal-setup.lock if it is not a regular file, then start again." "$d/rd"
               test -z "$(ls -A rd/.minimal-setup.lock)" && test ! -e rd/run.sh
               refused unset "RUNNER_HOME is not set. Set RUNNER_HOME to an empty directory or to a runner directory, then start again." unset
               : > file
               refused uncreatable "Could not create the runner directory $d/file/home (the error is above). Set RUNNER_HOME to an empty directory or to a runner directory, then start again." "$d/file/home"
-              # A lock naming a PID whose process has exited is taken over.
-              bash -c 'exit 0' & dead=$!; wait "$dead" || true
-              test ! -d "/proc/$dead"
-              mkdir s; ln -s "$dead" s/.minimal-setup.lock
-              out=$(RUNNER_HOME=$d/s timeout 300 /usr/bin/actions-runner --version 2>&1) || { echo "stale-lock: the start failed:" >&2; echo "$out" >&2; exit 1; }
-              test -x s/run.sh && test ! -e s/.minimal-setup.lock
-              if ls -A s | grep -q -e '^\.minimal-setup\.lock\.' -e '^\.minimal-write-test'; then
-                echo "stale-lock: a lock or probe file was left in the home:" >&2; ls -A s >&2; exit 1
+              # While another process holds the home's lock, a start waits and changes
+              # nothing. The holder is a sleep that inherited the locked descriptor,
+              # so killing it is the whole holder.
+              mkdir c
+              bash -c 'exec 9>>c/.minimal-setup.lock; flock 9; exec sleep 120' >/dev/null 2>&1 & holder=$!
+              trap 'kill -9 $holder 2>/dev/null || true' EXIT
+              for _ in $(seq 100); do flock -n c/.minimal-setup.lock true 2>/dev/null || break; sleep 0.1; done
+              if flock -n c/.minimal-setup.lock true; then echo "contended: the holder never took the lock" >&2; exit 1; fi
+              rc=0; out=$(RUNNER_HOME=$d/c timeout 5 /usr/bin/actions-runner --version 2>&1) || rc=$?
+              if [ "$rc" != 124 ]; then
+                echo "contended: want the start still waiting after 5 s (exit 124), got exit $rc:" >&2; echo "$out" >&2; exit 1
               fi
-              echo "stale-lock: taken over"
+              test ! -e c/run.sh
+              echo "contended: waited"
+              # SIGKILL runs no cleanup in the holder; the kernel drops its lock and
+              # the next start goes ahead.
+              kill -9 "$holder"; wait "$holder" 2>/dev/null || true
+              out=$(RUNNER_HOME=$d/c timeout 300 /usr/bin/actions-runner --version 2>&1) || { echo "killed-holder: the start failed:" >&2; echo "$out" >&2; exit 1; }
+              test -x c/run.sh
+              flock -n c/.minimal-setup.lock true
+              echo "killed-holder: lock released, start went ahead"
             "%
           ],
         ],
