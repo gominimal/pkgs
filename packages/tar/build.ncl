@@ -13,6 +13,21 @@ let version = "1.35" in
   name = "tar",
   build_deps = [
     { file = "build.sh" } | Local,
+    # Security backports onto 1.35 (no tar release carries them). Reference backport
+    # is CentOS Stream c10s tar.spec (tar-1.35-13) Patch23/24/26/27/28, src/ hunks
+    # only; each patch header lists what was dropped or adapted and why.
+    # CVE-2025-45582 openat2 extraction jail: upstream 56fb4a96 7c241126 bdd773d0
+    #   cdb58680 915a8077 8fca2d35 e1445cfd 75b03fdf 8767b1c8.
+    { file = "0001-CVE-2025-45582-openat2-extraction-jail.patch" } | Local,
+    # CVE-2026-5704 member hidden from -t: b009124f b8d8a61b 67981bbb 19a3a73e
+    #   (0003 is written on top of it).
+    { file = "0002-CVE-2026-5704-hidden-member-injection.patch" } | Local,
+    # CVE-2026-18508 --one-top-level hardlink escape: bfc33463 b4fc9ca1 67c8dff6
+    #   55e82334 0470c109 1b91f5f6 325b8992 1980e032 e335e2c8 (+ part of 941f62b2).
+    { file = "0003-CVE-2026-18508-one-top-level-hardlink-escape.patch" } | Local,
+    # CVE-2026-18477 incremental 'X' rename temp dir: 0714d2f0 d479b2cc.
+    #   NOT 79d61af0 (reverted upstream by 3903b376).
+    { file = "0004-CVE-2026-18477-incremental-rename-tempdir.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/tar-%{version}.tar.xz",
       sha256 = "4d62ff37342ec7aed748535323930c7cf94acf71c3591882b26a7ea50f3edc16"

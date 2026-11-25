@@ -4,6 +4,19 @@ set -e
 tar -xof tar-1.35.tar.xz
 cd tar-1.35
 
+# Security backports (no tar release since 1.35; see build.ncl for CVEs and
+# upstream commits). Applied in order -- each is written on top of the one
+# before -- and BEFORE the acl rename below, whose context 0001 still uses
+# (the sed then renames 0001's new call sites too, the same result as RHEL's
+# tar-1.35-Avoid-acl_-prefix-for-functions.patch). -F0 refuses fuzzy hunks so
+# context drift fails the build instead of landing a hunk somewhere else.
+# 0001 calls glibc's openat2() (glibc >= 2.43) for the extraction jail.
+patch -Np1 -F0 -i ../0001-CVE-2025-45582-openat2-extraction-jail.patch
+patch -Np1 -F0 -i ../0002-CVE-2026-5704-hidden-member-injection.patch
+patch -Np1 -F0 -i ../0003-CVE-2026-18508-one-top-level-hardlink-escape.patch
+patch -Np1 -F0 -i ../0004-CVE-2026-18477-incremental-rename-tempdir.patch
+grep -q 'RESOLVE_BENEATH' src/tar.c || { echo "tar openat2 jail patch missing" >&2; exit 1; }
+
 # tar 1.35 rolls its own static acl_*_file_at() wrappers in src/xattrs.c
 # ("acl-at wrappers, TODO: move to gnulib in future?"). libacl 2.4.0 added
 # those exact names as public functions (the CVE-2026-54369 symlink-traversal
