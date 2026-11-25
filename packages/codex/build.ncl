@@ -82,8 +82,9 @@ let version = "0.169.0" in
         owner = "openai",
         repo = "codex",
       },
-      # ~1070 crates; build-bot took 38-51 min with codegen-units=1 on all of them (see build.sh).
-      build_cost_multiple = 6,
+      # Cores it keeps busy (CPU / wall) on the build-bot: arm64 7701 s / 902 s = 8.5,
+      # amd64 9173 s / 799 s = 11.5 (pkgs#1713).
+      build_cost_multiple = 8,
       env_dir_mappings = [{ read_only = false, path = "~/.codex", class = 'State }],
     } | Attrs,
 

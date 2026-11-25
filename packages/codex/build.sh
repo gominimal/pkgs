@@ -5,16 +5,11 @@ cd codex-rs
 
 export CC=gcc
 export LD=gcc
-# Upstream's release profile (lto = "thin", codegen-units = 4) is kept as is. In 2026-10 it
-# gave a different binary every build (prod-pair diff: 36 of 36 differing symbols were
-# `.llvm.<hash>` names, which ThinLTO gives the locals it promotes across modules; 49% of
-# the binary churned; gominimal/inbox#253). #878 fixed that with `-C codegen-units=1` in
-# RUSTFLAGS AND the detbuild entropy shim below (cgu=1 alone still differed in the lab).
-# With the shim, cgu=1 is no longer needed: three local `--rebuild`s of upstream's
-# profile (4, 4 and 6 cargo jobs) gave the same usr/bin/codex sha256. In RUSTFLAGS it applied to all ~1070 crates,
-# roughly doubled the build, and in a 26 GB box got codex-core's rustc OOM-killed.
-# (lto = "off" with 16 codegen units was reproducible too, but 22% bigger: 344 vs 282 MB
-# stripped, arm64.) v0 mangling stays (the other half of the nushell / difftastic fix).
+# Upstream's release profile (lto = "thin", codegen-units = 4) is kept. It is reproducible
+# because of the detbuild entropy shim below; ThinLTO's `.llvm.<hash>` names churned
+# without it (gominimal/inbox#253). Don't put `-C codegen-units=1` back in RUSTFLAGS for
+# reproducibility: it applies to every crate (~1070) and roughly doubles the build.
+# v0 mangling stays (the other half of the nushell / difftastic fix).
 # No line tables, stripped symbols: upstream keeps them only so its own packaging can
 # archive sidecar symbols before stripping. Panic locations are still embedded strings,
 # so the source and cargo-home paths stay remapped.
@@ -22,13 +17,11 @@ export CARGO_PROFILE_RELEASE_DEBUG=0
 export CARGO_PROFILE_RELEASE_STRIP=symbols
 export RUSTFLAGS="-C linker=gcc -C symbol-mangling-version=v0 --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 
-# Link pkgs' C libraries instead of the copies vendored in -sys crates, so a CVE fix in
-# pkgs' sqlite / zstd / oniguruma / bzip2 reaches codex through the shared library rather
-# than waiting for a crate release to re-vendor it (pkgs' sqlite already carries a patch
-# the crate's bundled 3.54.1 does not). Each crate
-# falls back to its bundled copy silently when pkg-config fails, so the NEEDED check
-# after the build fails closed if any of them did. aws-lc-sys, ring and tree-sitter
-# have no system-library option and stay bundled.
+# Link pkgs' C libraries instead of the copies vendored in -sys crates: the versions are
+# the same, and a fix to pkgs' sqlite / zstd / oniguruma / bzip2 then reaches codex
+# through the one shared copy. Each crate falls back to its bundled copy silently when
+# pkg-config fails, so the NEEDED check after the build fails closed if any of them did.
+# aws-lc-sys, ring and tree-sitter have no system-library option and stay bundled.
 export LIBSQLITE3_SYS_USE_PKG_CONFIG=1 # libsqlite3-sys 0.39: bundled bindings are for 3.54.1
 export ZSTD_SYS_USE_PKG_CONFIG=1       # zstd-sys 2.0.16+zstd.1.5.7
 export RUSTONIG_SYSTEM_LIBONIG=1       # onig_sys 69.9: needs oniguruma >= 6.9.3
@@ -54,13 +47,12 @@ esac || {
 # The workspace locks `v8` (rusty_v8, a git dependency with Chromium submodules) for
 # three members codex-cli does not reach: code-mode-host, code-mode-runtime and v8-poc
 # (checked against rust-v0.169.0's Cargo.lock). Cargo checks every git dependency of the
-# workspace out, submodules included, even for `-p codex-cli`: a local build spent 413 s
-# before its first `Compiling` line, 36 s without it. Dropping the three members and the
-# v8 [patch] lets the resolve below prune v8 and the 24 crates only it needed. v8 is also
-# the only path to bindgen/libclang (no llvm build dep) and its build script downloads a prebuilt
-# librusty_v8.a with no checksum, so if codex-cli ever reaches it the pin check below
-# fails (a new registry pin); the fix then is a pinned `Source` for the archive
-# (RUSTY_V8_ARCHIVE) plus llvm for its bindgen.
+# workspace out, submodules included, even for `-p codex-cli`. Dropping the three members
+# and the v8 [patch] lets the resolve below prune v8 and the crates only it needed. v8 is
+# also the only path to bindgen/libclang (no llvm build dep) and its build script
+# downloads a prebuilt librusty_v8.a with no checksum, so if codex-cli ever reaches it
+# the pin check below fails (a new registry pin); the fix then is a pinned `Source` for
+# the archive (RUSTY_V8_ARCHIVE) plus llvm for its bindgen.
 v8_lines='^    "(code-mode-host|code-mode-runtime|v8-poc)",$|^v8 = [{] git = '
 [ "$(grep -cE "$v8_lines" Cargo.toml)" = 4 ] || {
   echo "ERROR: Cargo.toml's v8 members / [patch] no longer match; recheck what reaches v8" >&2
