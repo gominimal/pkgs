@@ -11,7 +11,7 @@ let nettle = import "../nettle/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "3.8.13" in
+let version = "3.8.14" in
 # The gnupg.org directory is the major.minor series (v3.8/).
 let api = std.string.join "." (std.array.slice 0 2 (std.string.split "." version)) in
 {
@@ -20,7 +20,7 @@ let api = std.string.join "." (std.array.slice 0 2 (std.string.split "." version
     { file = "build.sh" } | Local,
     {
       url = "https://www.gnupg.org/ftp/gcrypt/gnutls/v%{api}/gnutls-%{version}.tar.xz",
-      sha256 = "ffed8ec1bf09c2426d4f14aae377de4753b53e537d685e604e99a8b16ca9c97e",
+      sha256 = "7e2d258071f5db9620aa7ff34259331d004f7beafa3eb18560cfaf60acfbf02a",
       extract = true,
       strip_prefix = "gnutls-%{version}",
     } | Source,
