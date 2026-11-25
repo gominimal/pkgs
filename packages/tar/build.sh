@@ -10,11 +10,14 @@ cd tar-1.35
 # (the sed then renames 0001's new call sites too, the same result as RHEL's
 # tar-1.35-Avoid-acl_-prefix-for-functions.patch). -F0 refuses fuzzy hunks so
 # context drift fails the build instead of landing a hunk somewhere else.
-# 0001 calls glibc's openat2() (glibc >= 2.43) for the extraction jail.
+# 0001 calls openat2() for the extraction jail; 0005 supplies it (as the raw
+# syscall) when tar is built against glibc < 2.43, i.e. the bootstrap
+# pre-phase's glibc-bedrock 2.42 breaker.
 patch -Np1 -F0 -i ../0001-CVE-2025-45582-openat2-extraction-jail.patch
 patch -Np1 -F0 -i ../0002-CVE-2026-5704-hidden-member-injection.patch
 patch -Np1 -F0 -i ../0003-CVE-2026-18508-one-top-level-hardlink-escape.patch
 patch -Np1 -F0 -i ../0004-CVE-2026-18477-incremental-rename-tempdir.patch
+patch -Np1 -F0 -i ../0005-openat2-compat-for-glibc-before-2.43.patch
 grep -q 'RESOLVE_BENEATH' src/tar.c || { echo "tar openat2 jail patch missing" >&2; exit 1; }
 
 # tar 1.35 rolls its own static acl_*_file_at() wrappers in src/xattrs.c

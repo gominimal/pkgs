@@ -29,6 +29,9 @@ let version = "1.35" in
     # CVE-2026-18477 incremental 'X' rename temp dir: 0714d2f0 d479b2cc.
     #   NOT 79d61af0 (reverted upstream by 3903b376).
     { file = "0004-CVE-2026-18477-incremental-rename-tempdir.patch" } | Local,
+    # Not upstream: lets 0001 build against glibc < 2.43 (the pre-phase's
+    #   glibc-bedrock 2.42 breaker has no openat2/struct open_how).
+    { file = "0005-openat2-compat-for-glibc-before-2.43.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/tar-%{version}.tar.xz",
       sha256 = "4d62ff37342ec7aed748535323930c7cf94acf71c3591882b26a7ea50f3edc16"
