@@ -5,18 +5,16 @@ cd codex-rs
 
 export CC=gcc
 export LD=gcc
-# Reproducibility without serial codegen. With upstream's release profile (lto = "thin",
-# codegen-units = 4) the binary came out different on every build (2026-10 prod-pair diff:
-# 36 of 36 differing symbols were `.llvm.<hash>` names, which ThinLTO gives the locals it
-# promotes across modules; 49% of the binary churned; gominimal/inbox#253). That was
-# fixed with `-C codegen-units=1` in RUSTFLAGS plus the entropy shim below, but RUSTFLAGS
-# put cgu=1 on all ~1070 crates and roughly doubled the build. lto = "off" (not `false`,
-# which still runs rustc's crate-local ThinLTO between codegen units) takes ThinLTO out
-# entirely, so nothing gets a `.llvm.<hash>` name and every crate keeps cargo's default 16
-# codegen units. v0 mangling stays (the other half of the nushell / difftastic fix).
-# Checked: two `--rebuild`s (6 and 4 cargo jobs) gave the same usr/bin/codex sha256.
-export CARGO_PROFILE_RELEASE_LTO=off
-export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16
+# Upstream's release profile (lto = "thin", codegen-units = 4) is kept as is. In 2026-10 it
+# gave a different binary every build (prod-pair diff: 36 of 36 differing symbols were
+# `.llvm.<hash>` names, which ThinLTO gives the locals it promotes across modules; 49% of
+# the binary churned; gominimal/inbox#253). #878 fixed that with `-C codegen-units=1` in
+# RUSTFLAGS AND the detbuild entropy shim below (cgu=1 alone still differed in the lab).
+# With the shim, cgu=1 is no longer needed: three local `--rebuild`s of upstream's
+# profile (4, 4 and 6 cargo jobs) gave the same usr/bin/codex sha256. In RUSTFLAGS it applied to all ~1070 crates,
+# roughly doubled the build, and in a 26 GB box got codex-core's rustc OOM-killed.
+# (lto = "off" with 16 codegen units was reproducible too, but 22% bigger: 344 vs 282 MB
+# stripped, arm64.) v0 mangling stays (the other half of the nushell / difftastic fix).
 # No line tables, stripped symbols: upstream keeps them only so its own packaging can
 # archive sidecar symbols before stripping. Panic locations are still embedded strings,
 # so the source and cargo-home paths stay remapped.
@@ -25,8 +23,9 @@ export CARGO_PROFILE_RELEASE_STRIP=symbols
 export RUSTFLAGS="-C linker=gcc -C symbol-mangling-version=v0 --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 
 # Link pkgs' C libraries instead of the copies vendored in -sys crates, so a CVE fix in
-# sqlite / zstd / oniguruma / bzip2 reaches codex without a codex rebuild of its own
-# copy (pkgs' sqlite carries patches the crate's bundled 3.54.1 does not). Each crate
+# pkgs' sqlite / zstd / oniguruma / bzip2 reaches codex through the shared library rather
+# than waiting for a crate release to re-vendor it (pkgs' sqlite already carries a patch
+# the crate's bundled 3.54.1 does not). Each crate
 # falls back to its bundled copy silently when pkg-config fails, so the NEEDED check
 # after the build fails closed if any of them did. aws-lc-sys, ring and tree-sitter
 # have no system-library option and stay bundled.
