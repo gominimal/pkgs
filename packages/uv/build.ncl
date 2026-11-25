@@ -11,7 +11,7 @@ let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 
-let version = "0.13.9" in
+let version = "0.13.10" in
 {
   name = "uv",
   build_deps = [
@@ -22,7 +22,7 @@ let version = "0.13.9" in
     { file = "security-floors-lock.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/uv-%{version}.tar.gz",
-      sha256 = "66b26bd860dd35790bd7e3b721bbb3d39451cb18e3ff25fb0557d25a26f06c00"
+      sha256 = "70ca6903100629c77f0539ed2944dcada30d05448eee8bae51a2b28c36b02ca9"
     } | Source,
     base,
     patch,
