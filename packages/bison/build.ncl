@@ -7,6 +7,7 @@ let base = import "../base/build.ncl" in
 let flex = import "../flex/build.ncl" in
 let m4 = import "../m4/build.ncl" in
 let make = import "../make/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -20,10 +21,21 @@ let version = "3.8.2" in
       sha256 = "9bba0214ccf7f1079c5d59210045227bcf619519840ebfa80cd3849cff5a5bf2"
     } | Source,
     { file = "build.sh" } | Local,
+    # Security backports from savannah bison master. Neither fix is in a release
+    # yet; 3.8.2 is the latest. Drop both on the first release that ships them.
+    # CVE-2026-56389: `%define tool.xsltproc` reached execvp under --html. Fixed by
+    # 3169c1e7a2c6 ("html: use xsltproc from PATH").
+    { file = "0001-CVE-2026-56389-html-xsltproc-from-PATH.patch" } | Local,
+    # CVE-2026-56390: `%output` and `%header` could write anywhere. A name that
+    # contains '/' is now an error. Fixed by 8d101c19d4d9 ("bison: tighten up
+    # output file names"). The patch also carries the matching edit to the
+    # shipped, generated src/parse-gram.[ch].
+    { file = "0002-CVE-2026-56390-output-file-names.patch" } | Local,
     base,
     make,
     flex,
     m4,
+    patch,
     toolchain,
   ],
   runtime_deps = [
