@@ -7,16 +7,20 @@ security fixes and are ABI-stable by policy (no *.abilist / Versions
 changes in this range). This is the Debian git-updates.diff approach.
 
 Generated with:
-  git diff glibc-2.44..809fd7179d -- . ':!elf/tst-dl-cache-old-format.root/postclean.req'
+  git diff glibc-2.44..809fd7179d -- . \
+    ':!elf/tst-dl-cache-old-format.root/postclean.req' \
+    ':!elf/tst-origin-secure.root/postclean.req'
 
-Dropped deliberately: elf/tst-dl-cache-old-format.root/postclean.req, an
-EMPTY test-only marker file (b84047b5b7). A hunkless empty-file creation is
-the one git-diff construct we could not prove GNU patch handles here, and
-the file is only read by `make check`, which build.sh does not run.
+Dropped deliberately: elf/tst-dl-cache-old-format.root/postclean.req
+(b84047b5b7) and elf/tst-origin-secure.root/postclean.req (6b48c0b29c),
+both EMPTY test-only marker files. A hunkless empty-file creation is the
+one git-diff construct we could not prove GNU patch handles here, and the
+files are only read by `make check`, which build.sh does not run.
 Everything else, including the regenerated sysdeps/*/configure scripts that
 the branch commits alongside their configure.ac, NEWS and the advisories/ ->
 ADVISORIES move, is carried verbatim; applying it to the pinned
-glibc-2.44.tar.xz yields the 809fd7179d tree byte-for-byte except that file.
+glibc-2.44.tar.xz yields the 809fd7179d tree byte-for-byte except those two
+files.
 
 Security fixes in range: CVE-2026-19499 (63b53df549), CVE-2026-19542 /
 bug 34506 (d6ff274313), CVE-2026-77117 (6f9b2bfa50), CVE-2026-80489
@@ -3112,9 +3116,6 @@ index 0000000000..2e2b944607
 +  };
 +
 +#endif
-diff --git a/elf/tst-origin-secure.root/postclean.req b/elf/tst-origin-secure.root/postclean.req
-new file mode 100644
-index 0000000000..e69de29bb2
 diff --git a/iconvdata/Makefile b/iconvdata/Makefile
 index fbb0067302..ba2eec2b48 100644
 --- a/iconvdata/Makefile
