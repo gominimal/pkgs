@@ -13,7 +13,9 @@ let coreutils = import "../coreutils/build.ncl" in
   cmd = "./build.sh",
 
   outputs = {
-    os_release = { glob = "etc/os-release" } | OutputData,
+    # The vendor file, and the /etc symlink to it (os-release(5)).
+    os_release = { glob = "usr/lib/os-release" } | OutputData,
+    os_release_etc = { glob = "etc/os-release" } | OutputData,
   },
 
   tests = {
@@ -22,7 +24,7 @@ let coreutils = import "../coreutils/build.ncl" in
         class = 'Standalone,
         test_deps = [bash-bootstrap],
         cmds = [
-          ["/bin/bash", "-c", ". /etc/os-release && test \"$ID\" = minimal && test \"$NAME\" = Minimal"],
+          ["/bin/bash", "-c", "for f in /etc/os-release /usr/lib/os-release; do (. \"$f\" && test \"$ID\" = minimal && test \"$NAME\" = Minimal) || exit 1; done"],
         ],
       } | Test,
   },
