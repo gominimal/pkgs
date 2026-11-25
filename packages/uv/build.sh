@@ -11,7 +11,7 @@ export RUSTFLAGS="-C linker=gcc"
 # >>> pkgmgr lock-patch (generated; regenerate with `pkgmgr lock-patch uv`, never edit)
 # security-floors-lock.patch is a cargo-resolved delta against upstream's Cargo.lock; it is
 # only valid for the exact lock it was generated from.
-echo "dab86594a946ebcfa50f8d90b417f0e73679a82e73d0dcfd746184fba7dd278d  Cargo.lock" | sha256sum -c --status - || {
+echo "ef5cc9d700814bf8e45a0608880e696952987d076c2263f8eee6d2243b8ebdf3  Cargo.lock" | sha256sum -c --status - || {
   echo "ERROR: upstream Cargo.lock changed; run: pkgmgr lock-patch uv" >&2
   exit 1
 }
@@ -41,8 +41,8 @@ if grep -A1 '^name = "rustix"$' Cargo.lock | grep -qE '^version = "1[.]1[.](([0-
   echo "ERROR: rustix below its security floor 1.1.6 is in Cargo.lock (RUSTSEC-2026-0486)" >&2
   exit 1
 fi
-if grep -A1 '^name = "tokio"$' Cargo.lock | grep -qE '^version = "1[.]53[.](([0-2])([-+][^"]*)?|3-[^"]*)"$'; then
-  echo "ERROR: tokio below its security floor 1.53.3 is in Cargo.lock (RUSTSEC-2026-0386)" >&2
+if grep -A1 '^name = "url"$' Cargo.lock | grep -qE '^version = "2[.]5[.](([0-8])([-+][^"]*)?|9-[^"]*)"$'; then
+  echo "ERROR: url below its security floor 2.5.9 is in Cargo.lock (RUSTSEC-2026-0592)" >&2
   exit 1
 fi
 if grep -A1 '^name = "zstd"$' Cargo.lock | grep -qE '^version = "0[.]13[.](([0-3])([-+][^"]*)?|4-[^"]*)"$'; then
