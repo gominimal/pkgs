@@ -16,6 +16,10 @@ patch -Np1 -F0 -i "../0001-glibc-2.44-release-branch-809fd7179d.patch"
 # Last commit in the range adds this test; its presence proves the whole
 # patch went in, not a prefix of it.
 test -f posix/tst-glob-nospace.c
+# CVE-2026-124024 (IBM1390/IBM1399 iconv over-read): glibc master
+# 77fe280828, not on the 2.44 branch yet. Applied after the branch diff, also
+# with -F0. Drop it once the branch (or 2.45) carries the fix.
+patch -Np1 -F0 -i "../0002-CVE-2026-124024-iconv-ibm1390-ibm1399-overread.patch"
 
 mkdir -v build
 cd build

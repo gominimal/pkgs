@@ -68,6 +68,11 @@ let version = "2.44" in
     # (625054f30f), CVE-2026-126765 (809fd7179d); also CVE-2026-84243
     # (438677ef49). Drop on the bump to 2.45.
     { file = "0001-glibc-2.44-release-branch-809fd7179d.patch" } | Local,
+    # CVE-2026-124024, IBM1390/IBM1399 iconv encoder over-read (bug 34914):
+    # glibc master 77fe280828, not yet on release/2.44. Source hunk only (the
+    # upstream test is left out; see the patch header). Drop once the 2.44
+    # branch or 2.45 carries it.
+    { file = "0002-CVE-2026-124024-iconv-ibm1390-ibm1399-overread.patch" } | Local,
     # base
     bash,
     bzip2,
