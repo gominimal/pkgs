@@ -7,14 +7,14 @@ let bash = import "../bash/build.ncl" in
 let sed = import "../sed/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 
-let version = "3.10.1" in
+let version = "3.10.2" in
 {
   name = "maven",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://archive.apache.org/dist/maven/maven-3/%{version}/binaries/apache-maven-%{version}-bin.tar.gz",
-      sha256 = "810b8348f0a40f9116c202093fae007ebeabf67699bf34d81ee7e272289e085a",
+      sha256 = "8ba13121794243e604dbca50439f6ae649ce602675a167129556fd502947b249",
     } | Source,
     base,
   ],

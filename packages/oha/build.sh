@@ -40,6 +40,3 @@ if grep -vxE 'libc\.so\.6|libm\.so\.6|libgcc_s\.so\.1|ld-linux-(x86-64|aarch64)\
   echo "ERROR: oha NEEDs a library outside glibc and libgcc_s (above)" >&2
   exit 1
 fi
-
-# Logged so two builds can be compared (reproducibility).
-sha256sum "$OUTPUT_DIR/usr/bin/oha"

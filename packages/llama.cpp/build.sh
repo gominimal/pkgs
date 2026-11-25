@@ -49,7 +49,7 @@ test -f "$ui_app/CMakeLists.txt" || {
   exit 1
 }
 mkdir -p "$ui_app/dist"
-tar -xof "${MINIMAL_ARG_VERSION}-dist.tar.gz" -C "$ui_app/dist"
+tar -xof "${MINIMAL_ARG_BUILD_NUM}-dist.tar.gz" -C "$ui_app/dist"
 test -s "$ui_app/dist/index.html" || {
   echo "ERROR: pinned llama-ui dist has no index.html" >&2
   exit 1
@@ -63,11 +63,11 @@ find "$ui_app/dist" -exec touch -h -d @315532800 {} +
 # fails sha256sum --strict -c too.
 notices=./ui-THIRD-PARTY-NOTICES
 notices_field() { sed -n "s/^$1: //p" "$notices" | head -n1; }
-[ "$(notices_field 'llama-ui version')" = "$MINIMAL_ARG_VERSION" ] || {
-  echo "ERROR: $notices is for llama-ui '$(notices_field 'llama-ui version')', not $MINIMAL_ARG_VERSION: rerun gen-ui-notices.py" >&2
+[ "$(notices_field 'llama-ui version')" = "$MINIMAL_ARG_BUILD_NUM" ] || {
+  echo "ERROR: $notices is for llama-ui '$(notices_field 'llama-ui version')', not $MINIMAL_ARG_BUILD_NUM: rerun gen-ui-notices.py" >&2
   exit 1
 }
-echo "$(notices_field 'llama-ui dist sha256')  ${MINIMAL_ARG_VERSION}-dist.tar.gz" | sha256sum --strict -c -
+echo "$(notices_field 'llama-ui dist sha256')  ${MINIMAL_ARG_BUILD_NUM}-dist.tar.gz" | sha256sum --strict -c -
 echo "$(notices_field 'package-lock sha256')  $ui_app/package-lock.json" | sha256sum --strict -c -
 
 # CVE-2023-45663 (stb_image TGA/HDR loaders ignored stbi__getn's return, leaving
