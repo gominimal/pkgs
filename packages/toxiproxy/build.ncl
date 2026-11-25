@@ -85,7 +85,7 @@ let version = "2.13.0" in
                 [ "$b" = pong ] && break
                 sleep 0.2
               done
-              [ "$b" = pong ]
+              [ "$b" = pong ] || { echo "socat backend never answered on 127.0.0.1:16379; backend.err:"; cat "$d/backend.err"; exit 1; }
               cli create --listen 127.0.0.1:26379 --upstream 127.0.0.1:16379 echo
               # One connection through the proxy: what came back, and how long it took.
               fetch() {
