@@ -97,8 +97,17 @@ class Scope(unittest.TestCase):
         self.assertEqual(old_decide(records), ("scoped", ["llvm"], []))
 
     def test_helper_imported_by_a_helper(self):
-        # jdk-21 imports jdk/cve-2026-111943.ncl, which imports
-        # ca-certificates/cve-2026-111943.ncl.
+        # The jdk directory's helper jdk/cve-2026-111943.ncl imports another package's helper,
+        # ca-certificates/cve-2026-111943.ncl. That is jdk's only direct edge to ca-certificates:
+        # jdk/build.ncl does not import it, so a load_graph that read only build.ncl files would
+        # miss the edge. (jdk-21/25/27, and jdk through jdk-25, also import
+        # ca-certificates/build.ncl directly, so asserting on scope membership alone would pass
+        # either way; the edge is what isolates the helper chain.)
+        jdk_build = (ROOT / "packages" / "jdk" / "build.ncl").read_text(encoding="utf-8")
+        self.assertNotIn('"../ca-certificates/', jdk_build)
+        helper = (ROOT / "packages" / "jdk" / "cve-2026-111943.ncl").read_text(encoding="utf-8")
+        self.assertIn('"../ca-certificates/cve-2026-111943.ncl"', helper)
+        self.assertIn("jdk", Graph.importers["ca-certificates"])
         records = [rec("packages/ca-certificates/cve-2026-111943.ncl")]
         # Reachability is checked with the cap lifted, as
         # test_shared_helper_reaches_its_importers does: how many packages
@@ -107,8 +116,8 @@ class Scope(unittest.TestCase):
         # not a property of the helper chain.
         mode, pkgs, _, _ = self.check(records, max_scoped=UNLIMITED)
         self.assertEqual(mode, "scoped")
-        self.assertIn("jdk-21", pkgs)
-        self.assertNotIn("jdk-21", old_decide(records)[1])
+        self.assertIn("jdk", pkgs)
+        self.assertNotIn("jdk", old_decide(records)[1])
 
     def test_rename_across_packages_checks_both(self):
         a, b = leaves(2)
