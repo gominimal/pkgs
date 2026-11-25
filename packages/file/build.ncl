@@ -84,6 +84,12 @@ let version = "5.48" in
             } | Source,
         } target,
       ],
+      runtime_deps = [
+        bzip2,
+        xz,
+        zlib,
+        zstd,
+      ],
       outputs = {
         usr_bin = { glob = "usr/bin/**/*" } | OutputBin,
         usr_lib = { glob = "usr/lib/**/*" } | OutputLib,

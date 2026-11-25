@@ -100,6 +100,10 @@ let version = "10.49" in
             } | Source,
         } target,
       ],
+      runtime_deps = [
+        bzip2,
+        zlib,
+      ],
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,
       },

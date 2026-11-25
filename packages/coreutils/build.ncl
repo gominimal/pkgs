@@ -146,6 +146,7 @@ let version = "9.12" in
       ],
       runtime_deps = [
         acl,
+        attr,
         glibc,
         gmp,
         libcap,
