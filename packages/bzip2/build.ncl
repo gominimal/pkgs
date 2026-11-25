@@ -2,6 +2,7 @@ let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib,
 let { target, .. } = import "config.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
@@ -10,12 +11,26 @@ let version = "1.0.8" in
   name = "bzip2",
   build_deps = [
     { file = "build.sh" } | Local,
+    # Security backports for bzip2recover (shipped as usr/bin/bzip2recover)
+    # from sourceware bzip2 master (https://sourceware.org/git/bzip2.git);
+    # 1.0.8 is the latest release and gitlab.com/bzip2/bzip2 does not carry
+    # them. Drop each once a release contains it.
+    #   0001 CVE-2026-42250: off-by-one before tooManyBlocks wrote one past the
+    #        bStart/bEnd/rbStart/rbEnd arrays (35d122a3df8b).
+    #   0002 same fix set: reject a block whose end precedes its start, an
+    #        unsigned underflow that passed the size check (6ab7670e74d3).
+    #   0003 CWE-59, no CVE: create the predictable recNNNNN output files with
+    #        O_EXCL|0600 so a planted symlink is not followed (f5dfc96063fe).
+    { file = "0001-bzip2recover-CVE-2026-42250-max-handled-blocks.patch" } | Local,
+    { file = "0002-bzip2recover-block-bounds-underflow.patch" } | Local,
+    { file = "0003-bzip2recover-output-O_EXCL.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/bzip2-%{version}.tar.gz",
       sha256 = "ab5a03176ee106d3f0fa90e381da478ddae405918153cca248e682cd0c4a2269"
     } | Source,
     base-bootstrap,
     make,
+    patch,
     toolchain,
   ],
   runtime_deps = [

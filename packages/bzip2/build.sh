@@ -5,6 +5,16 @@ set -e
 tar -xof "bzip2-${MINIMAL_ARG_VERSION}.tar.gz"
 cd "bzip2-${MINIMAL_ARG_VERSION}"
 
+# Security backports from sourceware bzip2 master (see build.ncl). Applied
+# before any compilation; `set -e` plus patch's non-zero exit on a rejected
+# hunk aborts the build instead of shipping an unpatched bzip2recover, and -F0
+# refuses fuzzy hunks so context drift on a bump fails rather than landing the
+# change elsewhere. The patches live one level up because we cd'd into the
+# extracted tree.
+patch -Np1 -F0 -i ../0001-bzip2recover-CVE-2026-42250-max-handled-blocks.patch
+patch -Np1 -F0 -i ../0002-bzip2recover-block-bounds-underflow.patch
+patch -Np1 -F0 -i ../0003-bzip2recover-output-O_EXCL.patch
+
 sed -i 's@\(ln -s -f \)$(PREFIX)/bin/@\1@' Makefile
 sed -i "s@(PREFIX)/man@(PREFIX)/share/man@g" Makefile
 
