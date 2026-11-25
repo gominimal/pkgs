@@ -50,14 +50,14 @@ let glibc = import "../glibc/build.ncl" in
 # Bumping chromium-headless-shell-bin to 158 closes the root gap.
 let chromium-headless-shell-bin = import "../chromium-headless-shell-bin/build.ncl" in
 
-let version = "0.43.0" in
+let version = "0.44.0" in
 {
   name = "agent-browser",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/vercel-labs/agent-browser/v%{version}.tar.gz",
-      sha256 = "ed52840279526f057977a98e99d60fe0ab760122ee73ce11f4cf050e47938913",
+      sha256 = "5bf6bb004e584a36ac9e44449d71c5853f859b01ef7b2eb55c326afa30de7de1",
       extract = true,
       strip_prefix = "agent-browser-%{version}",
     } | Source,

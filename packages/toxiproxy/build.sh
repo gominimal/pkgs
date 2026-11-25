@@ -1,5 +1,9 @@
 #!/bin/bash
 set -euo pipefail
+# The latency_and_reset standalone test (build.ncl) runs only when toxiproxy
+# rebuilds: tests are not part of the spec hash. Touch this comment when that
+# test changes, so the next build runs it. Last test change: wait for the
+# socat backend before the first fetch.
 
 export GOROOT=/usr/go
 # Pipe (not comma) separator: fall back to direct on ANY proxy error (see
