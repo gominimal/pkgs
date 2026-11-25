@@ -7,8 +7,11 @@ export LD=gcc
 # paths (source dir + cargo registry) and disable incremental builds.
 export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 export CARGO_INCREMENTAL=0
-# Security floor (data/security_floors.toml): kept by pkgmgr when the lock
-# patch it guarded became unnecessary. No pre-fix version may be locked.
+# Security floor, CVE-2026-111943 (eMudhra CA distrust): Cargo.lock must not
+# lock rustls-webpki < 0.103.16 or webpki-roots / webpki-root-certs < 1.0.10,
+# the releases that drop the distrusted roots. Upstream's lock meets this, so
+# no lock patch is carried. (The standalone test in build.ncl runs only when
+# this file changes: tests are not part of the spec hash.)
 if grep -A1 -E '^name = "(rustls-webpki|webpki-roots|webpki-root-certs)"$' Cargo.lock |
   grep -qE '^version = "(0[.]103[.]([0-9]|1[0-5])|1[.]0[.][0-9])"$'; then
   echo "ERROR: a pre-CVE-2026-111943 rustls-webpki / webpki-roots is still in Cargo.lock" >&2

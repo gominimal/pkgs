@@ -43,8 +43,12 @@ head -1 _gh | grep -qx '#compdef gh'
 grep -q 'complete -c' gh.fish
 grep -qE 'complete .*(-F|-o) ' gh.bash
 # Belt and braces: the bash banner must NOT appear in the zsh or fish files.
-! grep -qi 'bash completion' _gh
-! grep -qi 'bash completion' gh.fish
+for f in _gh gh.fish; do
+  if grep -qi 'bash completion' "$f"; then
+    echo "ERROR: $f is a bash completion script (gh completion ignored -s?)" >&2
+    exit 1
+  fi
+done
 
 install -D -m 0644 gh.bash "$OUTPUT_DIR/usr/share/bash-completion/completions/gh"
 install -D -m 0644 gh.fish "$OUTPUT_DIR/usr/share/fish/vendor_completions.d/gh.fish"
