@@ -12,23 +12,11 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let sqlite = import "../sqlite/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 
-let version = "0.46.0" in
+let version = "0.46.1" in
 {
   name = "zellij",
   build_deps = [
     { file = "build.sh" } | Local,
-    # CVE-2026-111943 (eMudhra intermediate key compromise): pins rustls-webpki
-    # 0.103.16 (RUSTSEC-2026-0382, distrusts the 8 intermediates) and
-    # webpki-roots / webpki-root-certs 1.0.10 (RUSTSEC-2026-0383, drops emSign ECC
-    # Root CA - G3) in upstream's Cargo.lock. Lock-only: version + checksum lines
-    # (plus whatever cargo had to move with them). Drop on the first upstream
-    # release whose Cargo.lock already has those versions; a version bump that
-    # keeps it fails at `patch` rather than silently shipping the old lock.
-    { file = "cve-2026-111943-webpki-lock.patch" } | Local,
-    # OpenSSL 4: Cargo.lock's openssl-sys 0.9.111 panics in its build script on 4.x
-    # (4.x support starts at 0.9.114). Moves it to 0.9.117. Applied by name, so a
-    # stale patch fails the build.
-    { file = "openssl-4-openssl-sys-lock.patch" } | Local,
     # OpenSSL 4: drop isahc's `http2` feature (Cargo.toml + the matching
     # Cargo.lock edit cargo would make: libnghttp2-sys goes). With http2 on,
     # curl-sys only links a system libcurl that reports HTTP2, and ours has no
@@ -37,7 +25,7 @@ let version = "0.46.0" in
     { file = "openssl-4-no-isahc-http2.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/zellij-org/zellij/v%{version}.tar.gz",
-      sha256 = "2dfa237fea447f3cc98954e81b0097b9d25841010036720e11f67880fe7861f0",
+      sha256 = "f512621f3f54970ba46fc736e0f6581a438db9da1e5c3a8b69b314296f938a80",
       extract = true,
       strip_prefix = "zellij-%{version}",
     } | Source,

@@ -6,29 +6,21 @@ export RUSTFLAGS="-C linker=gcc"
 export OPENSSL_DIR=/usr
 export OPENSSL_NO_VENDOR=1
 
-# CVE-2026-111943: move upstream's Cargo.lock to rustls-webpki 0.103.16 and
-# webpki-roots / webpki-root-certs 1.0.10 (see build.ncl). Applied by name so a
-# missing or stale patch fails the build.
-patch -Np1 -i ./cve-2026-111943-webpki-lock.patch
-# Prove it landed, fail-closed: the fixed verifier is locked, and no pre-fix
-# rustls-webpki 0.103.x or webpki-roots / webpki-root-certs 1.0.x remains.
-grep -A1 '^name = "rustls-webpki"$' Cargo.lock | grep -q '^version = "0.103.16"$' || {
-  echo "ERROR: rustls-webpki 0.103.16 is not in Cargo.lock (CVE-2026-111943)" >&2
-  exit 1
-}
+# Security floor: Cargo.lock must hold no version below the fix in its series.
+#   rustls-webpki 0.103.x: >= 0.103.16 (CVE-2026-111943, RUSTSEC-2026-0382)
+#   webpki-roots 1.0.x: >= 1.0.10 (CVE-2026-111943, RUSTSEC-2026-0383)
+#   webpki-root-certs 1.0.x: >= 1.0.10 (CVE-2026-111943, RUSTSEC-2026-0383)
 if grep -A1 -E '^name = "(rustls-webpki|webpki-roots|webpki-root-certs)"$' Cargo.lock |
   grep -qE '^version = "(0[.]103[.]([0-9]|1[0-5])|1[.]0[.][0-9])"$'; then
   echo "ERROR: a pre-CVE-2026-111943 rustls-webpki / webpki-roots is still in Cargo.lock" >&2
   exit 1
 fi
 
-# OpenSSL 4: openssl-sys 0.9.117 (see build.ncl). Fail closed if the bump
-# did not land.
-patch -Np1 -i ./openssl-4-openssl-sys-lock.patch
-grep -A1 '^name = "openssl-sys"$' Cargo.lock | grep -q '^version = "0.9.117"$' || {
-  echo "ERROR: openssl-sys 0.9.117 is not in Cargo.lock (OpenSSL 4)" >&2
+# Lock floor (OpenSSL 4): Cargo.lock must hold no openssl-sys 0.9.x below 0.9.117.
+if grep -A1 '^name = "openssl-sys"$' Cargo.lock | grep -qE '^version = "0[.]9[.](([0-9]|[1-9][0-9]|10[0-9]|11[0-6])([-+][^"]*)?|117-[^"]*)"$'; then
+  echo "ERROR: openssl-sys below its lock floor 0.9.117 is in Cargo.lock (OpenSSL 4)" >&2
   exit 1
-}
+fi
 
 # OpenSSL 4: curl-sys's bundled curl 8.4.0 reads OpenSSL's now-opaque
 # ASN1_INTEGER and fails on 4.x, so zellij must link the system libcurl.
