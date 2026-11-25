@@ -11,6 +11,10 @@ let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let git = import "../git/build.ncl" in
+let sqlite = import "../sqlite/build.ncl" in
+let zstd = import "../zstd/build.ncl" in
+let oniguruma = import "../oniguruma/build.ncl" in
+let bzip2 = import "../bzip2/build.ncl" in
 
 let version = "0.169.0" in
 {
@@ -30,6 +34,11 @@ let version = "0.169.0" in
     # aws-lc-sys (rustls -> tokio-tungstenite) builds aws-lc with cmake.
     cmake,
     openssl,
+    # Linked instead of the -sys crates' vendored copies (see build.sh).
+    sqlite,
+    zstd,
+    oniguruma,
+    bzip2,
     # Deterministic getrandom/getentropy for the offline build (see build.sh).
     detbuild,
   ],
@@ -40,6 +49,10 @@ let version = "0.169.0" in
     openssl,
     libcap,
     git,
+    subsetOf sqlite ["libs"],
+    subsetOf zstd ["libzstd"],
+    subsetOf oniguruma ["libs"],
+    subsetOf bzip2 ["libs"],
   ],
 
   needs =
@@ -69,7 +82,7 @@ let version = "0.169.0" in
         owner = "openai",
         repo = "codex",
       },
-      # codegen-units=1 roughly doubled the build (~22 → ~46 min).
+      # ~1070 crates; build-bot took 38-51 min with codegen-units=1 on all of them (see build.sh).
       build_cost_multiple = 6,
       env_dir_mappings = [{ read_only = false, path = "~/.codex", class = 'State }],
     } | Attrs,
