@@ -3,6 +3,7 @@ let { target, .. } = import "config.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let acl = import "../acl/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gzip = import "../gzip/build.ncl" in
@@ -34,6 +35,9 @@ let version = "1.35" in
     } | Source,
     base-bootstrap,
     make,
+    # build.sh applies the carried CVE patches; GNU patch is not in
+    # base-bootstrap or toolchain.
+    patch,
     toolchain,
   ],
   runtime_deps = [
