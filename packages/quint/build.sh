@@ -78,10 +78,19 @@ got=$(node -e "require('$mgr').getRustEvaluatorPath().then(p => console.log(requ
 # this quint pins is redirected: an explicit --apalache-version for another
 # keeps upstream's download.
 AV="${MINIMAL_ARG_APALACHE_VERSION:?build.ncl forwards apalache_version}"
+PIN="${MINIMAL_ARG_APALACHE_PIN:?build.ncl forwards apalache_pin}"
+[ "$PIN" = "$AV" ] || {
+  echo "build.ncl's apalache_pin ($PIN) is not the packaged apalache ($AV)." >&2
+  echo "Fix: set apalache_pin in packages/quint/build.ncl to the Apalache quint pins," >&2
+  echo "and bump packages/apalache only to that same version." >&2
+  exit 1
+}
 dist="$prefix/node_modules/@informalsystems/quint/dist/src"
 grep -qF "exports.DEFAULT_APALACHE_VERSION_TAG = '$AV';" "$dist/apalache.js" || {
   echo "quint $V pins a different Apalache than the packaged $AV:" >&2
   grep -F "DEFAULT_APALACHE_VERSION_TAG =" "$dist/apalache.js" >&2 || true
+  echo "Fix: set apalache_pin in packages/quint/build.ncl to the version above," >&2
+  echo "and bump packages/apalache to that same version." >&2
   exit 1
 }
 asig="function apalacheDistDir(version) {"
