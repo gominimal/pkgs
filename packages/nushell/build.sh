@@ -8,18 +8,16 @@ export LD=gcc
 # rustc places codegen items in symbol-name order, those differing names shuffled
 # addresses and cascaded into a ~10% size-preserving .text/.rela.dyn reordering.
 # v0 mangling is structural (no hash) -> deterministic by construction.
-export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo -C codegen-units=1 -C symbol-mangling-version=v0"
+export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo -C symbol-mangling-version=v0"
 export CONST_RANDOM_SEED=0   # pin ahash/const-random compile-time seed
 
-# nushell's Cargo.toml [profile.release] sets lto="thin". ThinLTO's parallel
-# backend is non-deterministic — it produces the `.llvm.<hash>` codegen-unit
-# locals and section reordering that left `nu` non-reproducible even WITH
-# `-C codegen-units=1` (LTO runs on top of codegen units, so that flag can't fix
-# it). Override the profile via cargo env (which beats Cargo.toml) to disable LTO;
-# codegen-units=1 then yields deterministic codegen. Modest size/perf cost — the
-# same reproducibility-over-optimization trade as dropping PGO for python.
-export CARGO_PROFILE_RELEASE_LTO=off
-export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1
+# Upstream's release profile (lto = "thin", default codegen units) is kept. It is
+# reproducible because of the detbuild entropy shim on the build below; ThinLTO's
+# `.llvm.<hash>` names churned without it (gominimal/inbox#253). This
+# script used to turn LTO off and force codegen-units=1 (in RUSTFLAGS and the
+# profile) for that (pkgs#254, #292; #292 also added the shim), and as with codex
+# (pkgs#1713) the shim is the part that matters. Don't put them back for
+# reproducibility; compare two builds' sha256 (echoed below) instead.
 
 # Security floor (data/security_floors.toml): kept by pkgmgr when the lock
 # patch it guarded became unnecessary. No pre-fix version may be locked.
@@ -36,24 +34,15 @@ fi
 # downloads anything (checked for 0.117.0), so the build below needs no network.
 cargo fetch --locked
 
-cat > /tmp/detrand.c <<'CEOF'
-#include <stddef.h>
-#include <sys/types.h>
-ssize_t getrandom(void *buf, size_t len, unsigned int flags) {
-    (void)flags;
-    for (size_t i = 0; i < len; i++) ((unsigned char *)buf)[i] = 0;
-    return (ssize_t)len;
-}
-int getentropy(void *buf, size_t len) {
-    for (size_t i = 0; i < len; i++) ((unsigned char *)buf)[i] = 0;
-    return 0;
-}
-CEOF
-gcc -shared -fPIC -O2 -o /tmp/libdetrand.so /tmp/detrand.c
+# Deterministic build-time entropy (packages/detbuild, replacing the copy of the
+# shim this script used to compile): interposes getrandom/getentropy so build.rs /
+# proc-macro / rustc-internal HashMaps iterate identically every build. Scoped to
+# the cargo build only, and that build stays offline: `--frozen` refuses any
+# network access. The produced binary is unaffected.
+LD_PRELOAD=/usr/lib/minimal/libdetbuild.so cargo build --frozen --release
 
-# Scope the shim to the cargo build only — no global export/unset window — and
-# keep that build offline: `--frozen` refuses any network access.
-LD_PRELOAD=/tmp/libdetrand.so cargo build --frozen --release
+# For comparing two builds of the same spec (the reproducibility check).
+echo "nu binary: $(sha256sum target/release/nu | cut -d' ' -f1) $(stat -c %s target/release/nu) bytes"
 
 mkdir -p $OUTPUT_DIR/usr/bin
 install -m 755 target/release/nu $OUTPUT_DIR/usr/bin/nu
