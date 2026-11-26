@@ -11,14 +11,14 @@ let openssl = import "../openssl/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
-let version = "0.20.0" in
+let version = "0.20.1" in
 {
   name = "sccache",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/mozilla/sccache/v%{version}.tar.gz",
-      sha256 = "1957c3ec03866cb0196a4dd038faf11f8f6f14d131d9b4c93c9787762360d23a",
+      sha256 = "1568b19b3e9bcf911986670dbf92264100974319ddde0b1ccaeecfa82b953632",
       extract = true,
       strip_prefix = "sccache-%{version}",
     } | Source,
