@@ -19,8 +19,8 @@ let gcc = import "../gcc/build.ncl" in
 # under it, and it is the package's upstream_version, because llama.cpp's
 # advisories are written in builds. For a build with no stable release name, the
 # two are the same. pkgmgr moves both.
-let version = "b12640" in
-let build_num = "b12640" in
+let version = "1.1.0" in
+let build_num = "b12774" in
 {
   name = "llama.cpp",
   build_deps = [
@@ -38,7 +38,7 @@ let build_num = "b12640" in
     { file = "ui-THIRD-PARTY-NOTICES" } | Local,
     {
       url = "gs://minimal-staging-archives/ggml-org/llama.cpp/%{version}.tar.gz",
-      sha256 = "129123cf0af8efe4529fe7ab04bacbb6af548693d77039fa5205b54ae5601a9f",
+      sha256 = "370603b8d973f4c02cd68ff2b815859c0f71878a57075cf2758015ceb7fc7990",
       extract = true,
       strip_prefix = "llama.cpp-%{version}",
     } | Source,
@@ -49,7 +49,7 @@ let build_num = "b12640" in
       # ui/apps/chat/dist so the build doesn't fetch the moving `latest` UI.
       # Bump with `build_num`.
       url = "gs://minimal-staging-archives/ggml-org/llama-ui/%{build_num}-dist.tar.gz",
-      sha256 = "44143c391d9d2b7500573ac6543a03531b85f7b4560d87022a12509577270d8c",
+      sha256 = "86deb1840ffa60e1b0d43d1e2efddbd08a0993693b9c9a0d80254bfc8ab6fad0",
       extract = false,
     } | Source,
     base,

@@ -97,7 +97,7 @@ echo "607514a82eb47dbf21994914ea3c6abe7c8c5aca1a48d5d620f74f6c7d1f7815  ggml/src
 
 # The x86 variant scorer (ggml_backend_cpu_x86_score) reads CPUID feature bits only;
 # upstream marks it "FIXME: this does not check for OS support"
-# (ggml/src/ggml-cpu/arch/x86/cpu-feats.cpp:264 at b12359, unchanged at b12640). A
+# (ggml/src/ggml-cpu/arch/x86/cpu-feats.cpp:264 at b12359, unchanged at 1.1.0). A
 # host whose CPU has AVX-512 (or AVX/AVX2, or AMX) while the OS or hypervisor leaves
 # that register state off in XCR0 would load skylakex (etc.) and SIGILL, where
 # haswell runs. The patch reads XCR0 (XGETBV, only when CPUID.1:ECX.OSXSAVE is set)
