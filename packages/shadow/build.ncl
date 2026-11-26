@@ -7,14 +7,14 @@ let libxcrypt = import "../libxcrypt/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "4.20.3" in
+let version = "4.20.4" in
 {
   name = "shadow",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/shadow-%{version}.tar.xz",
-      sha256 = "623be9429f64fa2165bfc5957c6a642ec309c5cf23c0d53855c99f7591922297",
+      sha256 = "639d03cd7821b4086deba50485a1b8041acbb0d1d3c33c20ebd4708e0eeb9bc7",
     } | Source,
     base,
     make,

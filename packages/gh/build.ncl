@@ -4,14 +4,14 @@ let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.105.0" in
+let version = "2.106.0" in
 {
   name = "gh",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/cli/cli/v%{version}.tar.gz",
-      sha256 = "3a8fddd2ca0f7c96983a251d3971a84ef042b230b26ca696e5e6ed811cd0ed8d",
+      sha256 = "ffbaa7f4ba49ca7755ad29c4c92ae28046a969c47476a2218e3ae30183f81346",
       extract = true,
       strip_prefix = "cli-%{version}",
     } | Source,

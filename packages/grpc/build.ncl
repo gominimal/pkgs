@@ -1,6 +1,6 @@
 let { subsetOf, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
 
-let version = "1.85.2" in
+let version = "1.85.4" in
 
 let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
@@ -28,14 +28,14 @@ let python = import "../python/build.ncl" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/grpc/grpc/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "a2d40910e72038dd5e7a0dbe785ec2a1944992fd4559cb4c67b892124a7b03c4",
+      sha256 = "e2382869a2837e2e4f9d5ad291ae8e4b256d44def4d6839c2930a9f7b433249a",
       extract = true,
       strip_prefix = "grpc-%{version}",
     } | Source,
     # grpc 1.84.0 added `third_party/grpc-proto` as a git submodule, which the
     # GitHub tag archive leaves empty (CMake then can't find
     # grpc/reflection/v1/reflection.proto). Pinned to the submodule commit at
-    # v1.85.2; the sha256 is the one grpc's own CMakeLists.txt records for this
+    # v1.85.4; the sha256 is the one grpc's own CMakeLists.txt records for this
     # archive. build.sh unpacks it into place. Re-check the pin on every bump.
     {
       url = "https://github.com/grpc/grpc-proto/archive/dd549fc4ed04b60b0fdd3866b82ef0a7c87c6e4f.tar.gz",
