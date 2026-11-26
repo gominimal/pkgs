@@ -1,6 +1,7 @@
 let { standaloneTest, subsetOf, BuildSpec, Local, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let detbuild = import "../detbuild/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let make = import "../make/build.ncl" in
 let rust = import "../rust/build.ncl" in
@@ -29,6 +30,7 @@ let version = "2.6.9" in
       strip_prefix = "biome--biomejs-biome-%{version}",
     } | Source,
     base,
+    detbuild,
     patch,
     make,
     rust,
