@@ -3,6 +3,7 @@
 let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
+let detbuild = import "../detbuild/build.ncl" in
 let patch = import "../patch/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
@@ -29,6 +30,7 @@ let version = "0.23.6" in
       strip_prefix = "zola-%{version}",
     } | Source,
     base,
+    detbuild,
     patch,
     rust,
     toolchain,
