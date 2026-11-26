@@ -4,14 +4,14 @@ let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "3.8.0" in
+let version = "3.8.2" in
 {
   name = "libffi",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/libffi-%{version}.tar.gz",
-      sha256 = "7da3e2d9a171eb0a038f592ecad3ff2bb2550f3496d87b3b29ad0cf4430c0db4"
+      sha256 = "a699fda2b090c4b46cb79cf60c4dacfce480eb05742c0de66acf3af174a47f92"
     } | Source,
     base-bootstrap,
     make,
