@@ -19,14 +19,19 @@ let glibc = import "../glibc/build.ncl" in
 let lz4 = import "../lz4/build.ncl" in
 let xz = import "../xz/build.ncl" in
 
-let version = "1.5.7" in
+let version = "1.6.0" in
 {
   name = "zstd",
   build_deps = [
     { file = "build.sh" } | Local,
     {
+      # 1.6.0 fixes CVE-2026-124851 (streaming decompression of malformed data
+      # could expose uninitialized memory, facebook/zstd#5023). Mirrored from the
+      # GitHub release asset; sha256 matches upstream's .sha256 and the .sig
+      # verifies with the Zstandard Release Signing Key
+      # 4EF4AC63455FC9F4545D9B7DEF8FE99528B52FFD (same key as 1.5.7).
       url = "gs://minimal-staging-archives/zstd-%{version}.tar.gz",
-      sha256 = "eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3",
+      sha256 = "2ba599ae2a257976278e7e71e998433a387bfd18aa7b78678229fd5d84f5e9b8",
       extract = true,
       strip_prefix = "zstd-%{version}",
     } | Source,
