@@ -419,14 +419,19 @@ for ((i = 0; i < ${#args[@]} && cli_jit == 0; i++)); do
     done
 done
 if [ "$cli_jit" = 0 ]; then
-    while IFS= read -r name; do
+    # Exported names from `env -0` (coreutils), not `compgen -e`: compgen is
+    # a programmable-completion builtin that a bash built without it (as
+    # bash-bootstrap is) does not have, and the wrapper must not depend on
+    # which bash a box resolves /bin/bash to.
+    while IFS= read -r -d '' kv; do
+        name=${kv%%=*}
         [[ $name == ACTIONS_RUNNER_INPUT_JITCONFIG ]] || continue
         val=${!name}
         # Upstream ignores an empty or blank value.
         [[ -n ${val//[[:space:]]/} ]] || continue
         jit=$(no_update_jit "$val" "$name") || exit 1
         export "$name=$jit"
-    done < <(compgen -e)
+    done < <(env -0)
 fi
 shopt -u nocasematch
 exec ./run.sh "${args[@]}"

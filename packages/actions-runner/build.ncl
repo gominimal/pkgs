@@ -369,9 +369,10 @@ exec "$@"
                 esac
               done
               if [ "$cli" = 0 ]; then
-                while IFS= read -r n; do
+                while IFS= read -r -d '' kv; do
+                  n=${kv%%=*}
                   if [[ $n == ACTIONS_RUNNER_INPUT_JITCONFIG ]]; then show "${!n}"; fi
-                done < <(compgen -e)
+                done < <(env -0)
               fi
               for f in .runner .runner_migrated; do
                 if [ -f "$f" ]; then echo "file $f $(tr -d '\n ' < "$f")"; fi
