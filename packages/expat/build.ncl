@@ -4,14 +4,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "2.10.0" in
+let version = "2.11.0" in
 {
   name = "expat",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/expat-%{version}.tar.xz",
-      sha256 = "c624ba2998fc65df1163a49641ff3f9ab73138b11641d92c86bee0fb01b1bc7f",
+      sha256 = "61e7614b602201c28a189dafee78f5bceaee192bbde46a930752ff09cf5542fa",
       extract = true,
       strip_prefix = "expat-%{version}",
     } | Source,
