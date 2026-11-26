@@ -5,13 +5,31 @@ cd codex-rs
 
 export CC=gcc
 export LD=gcc
-# codegen-units=1 and v0 mangling: with the default parallel codegen the binary came
-# out different on every build (2026-10 prod-pair diff: 36 of 36 differing symbols were
-# `.llvm.<hash>` codegen-unit locals, 49% of the 1.25 GB binary churned). The same two
-# flags fixed nushell and difftastic (gominimal/inbox#253). The release profile keeps
-# line tables and isn't stripped, so both the source and the cargo-home paths are
-# remapped, as nushell and zola do.
-export RUSTFLAGS="-C linker=gcc -C codegen-units=1 -C symbol-mangling-version=v0 --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
+# Upstream's release profile (lto = "thin", codegen-units = 4) is kept. It is reproducible
+# because of the detbuild entropy shim below; ThinLTO's `.llvm.<hash>` names churned
+# without it (gominimal/inbox#253). Don't put `-C codegen-units=1` back in RUSTFLAGS for
+# reproducibility: it applies to every crate (~1070) and roughly doubles the build.
+# v0 mangling stays (the other half of the nushell / difftastic fix).
+# No line tables, stripped symbols: upstream keeps them only so its own packaging can
+# archive sidecar symbols before stripping. Panic locations are still embedded strings,
+# so the source and cargo-home paths stay remapped.
+export CARGO_PROFILE_RELEASE_DEBUG=0
+export CARGO_PROFILE_RELEASE_STRIP=symbols
+export RUSTFLAGS="-C linker=gcc -C symbol-mangling-version=v0 --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
+
+# Link pkgs' C libraries instead of the copies vendored in -sys crates: the versions are
+# the same, and a fix to pkgs' sqlite / zstd / oniguruma / bzip2 then reaches codex
+# through the one shared copy. Each crate falls back to its bundled copy silently when
+# pkg-config fails, so the NEEDED check after the build fails closed if any of them did.
+# aws-lc-sys, ring and tree-sitter have no system-library option and stay bundled.
+export LIBSQLITE3_SYS_USE_PKG_CONFIG=1 # libsqlite3-sys 0.39: bundled bindings are for 3.54.1
+export ZSTD_SYS_USE_PKG_CONFIG=1       # zstd-sys 2.0.16+zstd.1.5.7
+export RUSTONIG_SYSTEM_LIBONIG=1       # onig_sys 69.9: needs oniguruma >= 6.9.3
+# bzip2-sys probes pkg-config `bzip2`, but bzip2 1.0.8 ships no bzip2.pc; describe
+# pkgs' libbz2 (in /usr/lib) to it.
+pcdir=$(mktemp -d)
+printf 'Name: bzip2\nDescription: bzip2 compression library\nVersion: 1.0.8\nLibs: -lbz2\nCflags:\n' > "$pcdir/bzip2.pc"
+export PKG_CONFIG_PATH="$pcdir${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 
 # OpenSSL 4: openssl-sys before 0.9.114 panics in its build script on OpenSSL 4.x.
 # Upstream's lock carries a new enough one since 0.169.0 (0.9.118), so the lock patch
@@ -26,19 +44,41 @@ esac || {
   exit 1
 }
 
+# The workspace locks `v8` (rusty_v8, a git dependency with Chromium submodules) for
+# three members codex-cli does not reach: code-mode-host, code-mode-runtime and v8-poc
+# (checked against rust-v0.169.0's Cargo.lock). Cargo checks every git dependency of the
+# workspace out, submodules included, even for `-p codex-cli`. Dropping the three members
+# and the v8 [patch] lets the resolve below prune v8 and the crates only it needed. v8 is
+# also the only path to bindgen/libclang (no llvm build dep) and its build script
+# downloads a prebuilt librusty_v8.a with no checksum, so if codex-cli ever reaches it
+# the pin check below fails (a new registry pin); the fix then is a pinned `Source` for
+# the archive (RUSTY_V8_ARCHIVE) plus llvm for its bindgen.
+v8_lines='^    "(code-mode-host|code-mode-runtime|v8-poc)",$|^v8 = [{] git = '
+[ "$(grep -cE "$v8_lines" Cargo.toml)" = 4 ] || {
+  echo "ERROR: Cargo.toml's v8 members / [patch] no longer match; recheck what reaches v8" >&2
+  exit 1
+}
+sed -i -E "/$v8_lines/d" Cargo.toml
+
 # Upstream's release tags set the workspace version in Cargo.toml but leave the
 # workspace members at 0.0.0 in the committed Cargo.lock, so `--locked` refuses it
-# (rust-v0.169.0: 166 members). Let cargo sync ONLY the workspace members, then
-# fail closed if any registry crate's pinned version or source moved.
+# (rust-v0.169.0: 166 members). Let cargo sync the workspace members (and prune what
+# only the dropped members used), then fail closed if any registry or git crate was
+# added or its pinned version or source moved. Removals are the v8 prune above.
 registry_pins() {
   awk '/^\[\[package\]\]/ { n = ""; v = "" } /^name = / { n = $3 } /^version = / { v = $3 }
        /^source = / { print n, v, $3 }' Cargo.lock | sort
 }
 pins_before=$(registry_pins)
 cargo update --workspace
-if [ "$(registry_pins)" != "$pins_before" ]; then
-  echo "ERROR: cargo update --workspace moved a registry crate; only workspace members may change" >&2
-  diff <(printf '%s\n' "$pins_before") <(registry_pins) >&2 || true
+added=$(comm -13 <(printf '%s\n' "$pins_before") <(registry_pins))
+if [ -n "$added" ]; then
+  echo "ERROR: cargo update --workspace added or moved a registry crate; only workspace members may change:" >&2
+  printf '%s\n' "$added" >&2
+  exit 1
+fi
+if grep -q '^name = "v8"$' Cargo.lock; then
+  echo "ERROR: v8 is still in Cargo.lock after dropping its workspace members" >&2
   exit 1
 fi
 
@@ -57,15 +97,6 @@ fi
 # runs with the shim's fixed bytes.
 cargo fetch --locked
 
-# The workspace locks `v8` (rusty_v8), whose build script downloads a prebuilt
-# librusty_v8.a with no checksum. codex-cli doesn't reach it (only
-# codex-code-mode-runtime and codex-v8-poc do; checked against rust-v0.169.0's
-# Cargo.lock), and v8 is also the only path to bindgen/libclang, which is why there
-# is no llvm build dep. If codex-cli ever reaches v8, this nonexistent archive path
-# makes v8's build script panic instead of downloading; the fix then is a pinned
-# `Source` for the archive (RUSTY_V8_ARCHIVE) plus llvm for its bindgen.
-export RUSTY_V8_ARCHIVE=/nonexistent/librusty_v8-not-pinned.a
-
 # Deterministic build-time entropy (packages/detbuild, replacing the copy of the shim
 # this script used to compile): interposes getrandom/getentropy so build.rs /
 # proc-macro / rustc-internal HashMaps iterate in the same order every build. It wraps
@@ -73,6 +104,16 @@ export RUSTY_V8_ARCHIVE=/nonexistent/librusty_v8-not-pinned.a
 # is unaffected. The literal one-command prefix is what pkgs' detbuild-preload-guard
 # requires; `detbuild` is in build_deps so the library is in the sandbox.
 LD_PRELOAD=/usr/lib/minimal/libdetbuild.so cargo build --frozen --release -p codex-cli
+
+# Fail closed if a -sys crate fell back to its vendored copy.
+needed=$(readelf -d target/release/codex | sed -n 's/.*(NEEDED).*\[\(.*\)\]/\1/p')
+for lib in libsqlite3.so libzstd.so libonig.so libbz2.so; do
+  grep -q "^$lib" <<<"$needed" ||
+    { echo "ERROR: codex does not link the system $lib (NEEDED: $(echo $needed))" >&2; exit 1; }
+done
+
+# For comparing two builds of the same spec (the reproducibility check).
+echo "codex binary: $(sha256sum target/release/codex | cut -d' ' -f1) $(stat -c %s target/release/codex) bytes; NEEDED: $(echo $needed)"
 
 mkdir -p $OUTPUT_DIR/usr/bin
 install -m 755 target/release/codex $OUTPUT_DIR/usr/bin/codex
