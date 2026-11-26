@@ -5,14 +5,14 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "0.2.6" in
+let version = "0.2.7" in
 {
   name = "libyaml",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/yaml/libyaml/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "d872e14e3439245919bc0ec2793182e89b4dc6dcc156ef7db47fe3510dee8bc7",
+      sha256 = "7f76964485c67dc4e1537fdfd4ad5c8772bcef501c5451b617e43f831034994e",
       extract = true,
       strip_prefix = "libyaml-%{version}",
     } | Source,
