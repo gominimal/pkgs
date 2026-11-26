@@ -27,7 +27,7 @@ let toolchain = import "../toolchain/build.ncl" in
 # one, no release telemetry mark) are each explained in build.sh.
 #
 # `needs` is set because `bun install` fetches from the npm registry.
-let version = "0.29.3" in
+let version = "0.29.4" in
 
 {
   name = "plannotator",
@@ -35,7 +35,7 @@ let version = "0.29.3" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/backnotprop/plannotator/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "71ae8a752967724cb6959529f7d781cf2eed96cc0bfa990ded1e7a7c68b7c7c6",
+      sha256 = "d8bb2078362d5fdc3a3597fb5bfaa64029295e557bdb0a09cf69bf3c1d22a723",
       extract = true,
       strip_prefix = "plannotator-%{version}",
     } | Source,
