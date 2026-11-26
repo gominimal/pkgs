@@ -555,7 +555,11 @@ exec "$@"
               }
               # A RUNNER_HOME as an older package left it: its own bin/ and externals/, an
               # upstream self-update leftover, a registration and work data, no stamp.
-              mkdir -p h/bin h/externals/node20 h/bin.2.330.0 h/_work/r h/_diag
+              mkdir -p h/bin h/externals/node20 h/bin.2.330.0 h/externals.2.330.0 h/_work/r h/_diag
+              # A self-update leftover holds a runner; a person's bin.* or externals.*
+              # beside it does not, and is kept.
+              echo old-listener > h/bin.2.330.0/Runner.Listener
+              mkdir -p h/bin.bak h/externals.zip; echo mine > h/bin.bak/tool; echo mine > h/externals.zip/f
               echo old-listener > h/bin/Runner.Listener
               echo old > h/externals/node20/marker
               # Registration files in upstream's formats: HostContext parses .runner
@@ -571,7 +575,8 @@ exec "$@"
               same h/bin/Runner.Listener "$pkg/bin/Runner.Listener"
               same h/externals/node24/bin/node "$pkg/externals/node24/bin/node"
               test ! -e h/externals/node20/marker
-              test ! -e h/bin.2.330.0
+              test ! -e h/bin.2.330.0 && test ! -e h/externals.2.330.0
+              test "$(cat h/bin.bak/tool)" = mine && test "$(cat h/externals.zip/f)" = mine
               test ! -e h/.minimal-copying
               # The setup lock is released (flock; the file itself stays).
               flock -n h/.minimal-setup.lock true
@@ -648,6 +653,19 @@ exec "$@"
               test "$(cat u/bin/tool)" = mine && test "$(cat u/bin.old/tool)" = mine
               test ! -e u/run.sh && test ! -e u/.minimal-installed-stamp && test ! -e u/.minimal-setup.lock
               echo "unrelated-bin: refused, unchanged"
+              # A directory with only a bin.* and an externals.* that hold no runner
+              # (a person's bin.old, externals.zip) is set up, and they survive the
+              # first start and every later one: they do not make the home outdated,
+              # so the second start upgrades nothing and deletes nothing.
+              mkdir -p v/bin.old v/externals.zip; echo mine > v/bin.old/tool; echo mine > v/externals.zip/f
+              out=$(RUNNER_HOME=$d/v /usr/bin/actions-runner --version 2>&1) || { echo "bin-dot-only: the first start failed:" >&2; echo "$out" >&2; exit 1; }
+              out=$(RUNNER_HOME=$d/v /usr/bin/actions-runner --version 2>&1) || { echo "bin-dot-only: the second start failed:" >&2; echo "$out" >&2; exit 1; }
+              if grep -q 'Upgrading the runner' <<<"$out"; then
+                echo "bin-dot-only: a bin.* without a runner made the home outdated:" >&2; echo "$out" >&2; exit 1
+              fi
+              test "$(cat v/bin.old/tool)" = mine && test "$(cat v/externals.zip/f)" = mine
+              same v/bin/Runner.Listener "$pkg/bin/Runner.Listener"
+              echo "bin-dot-only: kept"
               # Control: a runner still running from an outdated home is not replaced. bash
               # copied in as bin/Runner.Listener stands in for it (/proc/<pid>/exe).
               # The loop keeps that bash alive as itself: `-c 'sleep 60'` would exec

@@ -145,7 +145,11 @@ printf 'actions-runner %s dotnet %s tree %s\n' "$MINIMAL_ARG_VERSION" "$DOTNET_V
 # upstream self-update has rearranged it (update.sh moves bin/ to bin.<version>
 # and makes bin a symlink to the new release). Otherwise bin/, externals/ and
 # the top-level scripts are replaced from the package, and self-update
-# leftovers (bin.*, externals.*) are dropped. The registration (.runner*,
+# leftovers are dropped: a bin.<suffix> that holds Runner.Listener (upstream's
+# bin.<version>, or an old bin.bak.<version>) and the externals.<suffix> of
+# the same suffix. Any other bin.* or externals.* (a person's bin.old,
+# externals.zip) is not the runner's: it neither makes the home outdated nor
+# is deleted. The registration (.runner*,
 # .credentials*), .env, .path, _work and _diag are not in the package and are
 # left alone.
 #
@@ -164,12 +168,26 @@ printf 'actions-runner %s dotnet %s tree %s\n' "$MINIMAL_ARG_VERSION" "$DOTNET_V
 # failed (a full disk) is redone by the next start.
 cat > prelude.sh << 'EOF'
 pkg=/usr/lib/actions-runner
+# find_leftovers <home>: sets the array `leftovers` to the self-update
+# leftovers in <home> (see above), and nothing else.
+find_leftovers() {
+    local d suffix
+    leftovers=()
+    for d in "$1"/bin.*; do
+        [ -d "$d" ] && [ -e "$d/Runner.Listener" ] || continue
+        leftovers+=("$d")
+        suffix=${d##*/bin.}
+        if [ -e "$1/externals.$suffix" ] || [ -L "$1/externals.$suffix" ]; then
+            leftovers+=("$1/externals.$suffix")
+        fi
+    done
+}
 home_current() {
-    local bin_dirs=("$RUNNER_HOME"/bin.*)
+    find_leftovers "$RUNNER_HOME"
     # (no cmp: diffutils is not in the runtime closure)
     [ ! -e "$RUNNER_HOME/.minimal-copying" ] && [ -f "$RUNNER_HOME/.minimal-installed-stamp" ] &&
         [ "$(cat "$pkg/.minimal-package-stamp")" = "$(cat "$RUNNER_HOME/.minimal-installed-stamp")" ] &&
-        [ -d "$RUNNER_HOME/bin" ] && [ ! -L "$RUNNER_HOME/bin" ] && [ ! -e "${bin_dirs[0]}" ]
+        [ -d "$RUNNER_HOME/bin" ] && [ ! -L "$RUNNER_HOME/bin" ] && [ "${#leftovers[@]}" = 0 ]
 }
 # The setup lock is flock(1) on <home>/.minimal-setup.lock, held on fd 9. The
 # kernel releases it when the last descriptor closes, so a start that crashed
@@ -187,11 +205,13 @@ lock_home() { # lock_home <home>
     # the wait timed out (-w); an error (ENOLCK on a network file system, a
     # bad descriptor) exits with a sysexits code (64 and up) at once.
     local rc=0
-    flock -n 9 || rc=$?
+    # By absolute path, as the package's own files are: a start with a reduced
+    # PATH still finds the closure's flock.
+    /usr/bin/flock -n 9 || rc=$?
     if [ "$rc" = 1 ]; then
         echo "Waiting for another actions-runner or actions-runner-config to release $lock (up to 10 minutes)..." >&2
         rc=0
-        flock -w 600 9 || rc=$?
+        /usr/bin/flock -w 600 9 || rc=$?
     fi
     case "$rc" in
         0) ;;
@@ -199,7 +219,7 @@ lock_home() { # lock_home <home>
             echo "Another actions-runner or actions-runner-config has been using $RUNNER_HOME for 10 minutes (it holds the lock on $lock), so this start stopped. Wait for it to finish, or stop it, then start again." >&2
             exit 1 ;;
         *)
-            echo "Could not lock $lock (flock exit $rc; the error is above), so this start stopped. If $RUNNER_HOME is on a file system without flock support, set RUNNER_HOME to a local directory, then start again." >&2
+            echo "Could not lock $lock (flock exited $rc; the error is above), so this start stopped. No other start holds it. If $RUNNER_HOME is on a file system without flock support (some network file systems), set RUNNER_HOME to a local directory, then start again." >&2
             exit 1 ;;
     esac
 }
@@ -252,7 +272,9 @@ prepare_home() {
         echo "Could not create the runner directory $RUNNER_HOME (the error is above). Set RUNNER_HOME to an empty directory or to a runner directory, then start again." >&2; exit 1
     fi
     local home busy
-    home=$(cd "$RUNNER_HOME" && pwd -P) || exit 1
+    if ! home=$(cd "$RUNNER_HOME" && pwd -P); then
+        echo "Could not open the runner directory $RUNNER_HOME (the error is above). Set RUNNER_HOME to a directory you can enter, an empty one or a runner directory, then start again." >&2; exit 1
+    fi
     # Checked once before the lock as well, so a directory that is not a runner
     # home (RUNNER_HOME=$HOME) does not even get a lock file. A start that is
     # copying into a home creates .minimal-copying before bin/, so this cannot
@@ -263,7 +285,10 @@ prepare_home() {
     # runner exits a start that finds the home outdated sees it in /proc (this
     # start's working directory, then run.sh's and the listener's) and does not
     # replace bin/ under it.
-    cd "$home" || { unlock_home; exit 1; }
+    if ! cd "$home"; then
+        echo "Could not open the runner directory $RUNNER_HOME (the error is above). Set RUNNER_HOME to a directory you can enter, an empty one or a runner directory, then start again." >&2
+        unlock_home; exit 1
+    fi
     # The caller releases the lock (unlock_home) once it is done with the
     # home's settings.
     if home_current; then return; fi
@@ -281,7 +306,8 @@ prepare_home() {
         echo "Upgrading the runner in $RUNNER_HOME to the packaged one ($(cut -d' ' -f1-4 "$pkg/.minimal-package-stamp")). The registration and _work are kept." >&2
         if ! { : > "$home/.minimal-copying" &&
             rm -f "$home/.minimal-installed-stamp" &&
-            rm -rf "${home:?}/bin" "${home:?}/externals" "${home:?}"/bin.* "${home:?}"/externals.*; }; then
+            find_leftovers "$home" &&
+            rm -rf "${home:?}/bin" "${home:?}/externals" "${leftovers[@]}"; }; then
             echo "Could not remove the old runner from $RUNNER_HOME. Fix the permissions there, then start again." >&2
             unlock_home; exit 1
         fi
