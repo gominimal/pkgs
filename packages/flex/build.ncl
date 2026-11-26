@@ -4,14 +4,14 @@ let m4 = import "../m4/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "2.6.4" in
+let version = "2.7.10" in
 {
   name = "flex",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/flex-%{version}.tar.gz",
-      sha256 = "e87aae032bf07c26f85ac0ed3250998c37621d95f8bd748b31f15b33c45ee995"
+      sha256 = "d303c2956792acd8bf3601effef76cadc85a7876852cb66da411c0d5d2f868f4"
     } | Source,
     base-bootstrap,
     m4,
