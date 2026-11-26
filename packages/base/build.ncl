@@ -8,6 +8,7 @@ let findutils = import "../findutils/build.ncl" in
 let gawk = import "../gawk/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let gzip = import "../gzip/build.ncl" in
+let os-release = import "../os-release/build.ncl" in
 let sed = import "../sed/build.ncl" in
 let tar = import "../tar/build.ncl" in
 let tzdata = import "../tzdata/build.ncl" in
@@ -27,6 +28,7 @@ let xz = import "../xz/build.ncl" in
     gawk,
     grep,
     gzip,
+    os-release,
     sed,
     tar,
     tzdata,
