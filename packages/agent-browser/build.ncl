@@ -6,6 +6,7 @@ let pkgconf = import "../pkgconf/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 let pnpm = import "../pnpm/build.ncl" in
+let detbuild = import "../detbuild/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 
 let bash = import "../bash/build.ncl" in
@@ -68,6 +69,7 @@ let version = "0.44.0" in
     rust,
     node-lts,
     pnpm,
+    detbuild,
   ],
   # node-lts and pnpm build only the dashboard the binary embeds. The CLI is a
   # native Rust binary: 0.20.0 removed the Node.js daemon (upstream #754), and
