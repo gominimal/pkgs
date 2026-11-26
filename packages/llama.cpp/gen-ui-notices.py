@@ -143,10 +143,12 @@ IMPORT_RE = re.compile(
 WORKBOX_RE = re.compile(rb"workbox:([a-z-]+):")
 # Paths under ui/ in the llama.cpp source.
 APP = "apps/chat/"
-SRC_TREES = (APP + "src/", "lib/ui/src/lib/", "lib/voice/src/")
+# lib/harness (Llama Harness, the agent loop + OpenAI client) joined at b12774;
+# like voice, the app compiles it from source.
+SRC_TREES = (APP + "src/", "lib/ui/src/lib/", "lib/voice/src/", "lib/harness/src/")
 VENDORS = APP + "src/lib/vendors/"
 # The workspace's own libraries, compiled from SRC_TREES (vite aliases).
-WORKSPACE = {"@ggml-org/llama-ui", "@ggml-org/llama-voice"}
+WORKSPACE = {"@ggml-org/llama-ui", "@ggml-org/llama-voice", "@ggml-org/llama-harness"}
 # Bare-specifier aliases in ui/apps/chat/vite.config.ts, to the package they name.
 ALIASES = {"katex-fonts": "katex"}
 SEP = "=" * 79
