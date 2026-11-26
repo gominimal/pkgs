@@ -8,6 +8,8 @@ let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let pkgconf = import "../pkgconf/build.ncl" in
+let zstd = import "../zstd/build.ncl" in
 let version = "0.17.6" in
 {
   name = "ruff",
@@ -23,6 +25,10 @@ let version = "0.17.6" in
     rust,
     toolchain,
     make,
+    # zstd-sys links pkgs' libzstd through pkg-config instead of its
+    # vendored copy (see build.sh).
+    pkgconf,
+    zstd,
   ],
   needs =
     {
@@ -33,7 +39,8 @@ let version = "0.17.6" in
   outputs = {
     ruff = { glob = "usr/bin/ruff" } | OutputBin,
   },
-  runtime_deps = [glibc, subsetOf gcc ["libgcc"]],
+  # ruff NEEDs libzstd.so.1 (build.sh checks it).
+  runtime_deps = [glibc, subsetOf gcc ["libgcc"], subsetOf zstd ["libzstd"]],
   attrs =
     {
       upstream_version = version,
