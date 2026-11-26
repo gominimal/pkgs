@@ -75,7 +75,22 @@ if grep -A1 -E '^name = "(rustls-webpki|webpki-roots|webpki-root-certs)"$' Cargo
   exit 1
 fi
 
+# Link pkgs' libzstd instead of the copy vendored in zstd-sys, so a fix to
+# pkgs' zstd reaches uv through the one shared library (the same as codex).
+# zstd-sys's build script panics when pkg-config cannot find libzstd, and the
+# NEEDED check after the build fails closed if it ever links a bundled copy.
+# The lock patch above moves zstd-sys to 2.2.0+zstd.1.6.0, whose bindings are
+# for zstd 1.6.0; the functions zstd-safe calls through them (the dictionary
+# *_advanced / byReference ones) are all exported by libzstd 1.5.7 already.
+export ZSTD_SYS_USE_PKG_CONFIG=1
+
 cargo build --locked --release
+
+needed=$(readelf -d target/release/uv | sed -n 's/.*(NEEDED).*\[\(.*\)\]/\1/p')
+if ! printf '%s\n' "$needed" | grep -q '^libzstd[.]so[.]1$'; then
+  echo "ERROR: uv does not link the system libzstd.so.1 (NEEDED: $(echo $needed))" >&2
+  exit 1
+fi
 
 mkdir -p $OUTPUT_DIR/usr/bin
 cp target/release/uv $OUTPUT_DIR/usr/bin/uv
