@@ -36,7 +36,7 @@ let version = "18.25.1" in
     glibc,
     # Verifies TLS against /etc/ssl/certs at runtime; see AGENTS.md "Trust store".
     ca-certificates,
-    subsetOf gcc-runtime ["libgcc"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     # The native-tls switch makes openssl a RUNTIME dep too, not just a build
     # one: the binary dynamically links libssl.so.3 + libcrypto.so.3. The
     # `missing runtime_deps` checker caught it — without this the package
