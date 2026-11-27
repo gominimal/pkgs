@@ -9,7 +9,7 @@ let perl = import "../perl/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "0.7.3" in
+let version = "0.7.4" in
 {
   name = "maki",
 
@@ -17,7 +17,7 @@ let version = "0.7.3" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/tontinton/maki/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "c248243dada4c76217bc62142609faa94fc329afdd30f04966d31f2d24d01bb8",
+      sha256 = "ef36113861acbf94e745caf5254d455f42047be9cc14d67ee2df32aa0929f77e",
       extract = true,
       strip_prefix = "maki-%{version}",
     } | Source,
