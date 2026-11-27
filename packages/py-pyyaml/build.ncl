@@ -10,14 +10,14 @@ let setuptools = import "../setuptools/build.ncl" in
 #
 # Pure Python: build.sh turns off the optional libyaml extension, which would
 # need Cython, a C compiler and libyaml.
-let version = "6.0.3" in
+let version = "6.0.4" in
 {
   name = "py-pyyaml",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://files.pythonhosted.org/packages/source/p/pyyaml/pyyaml-%{version}.tar.gz",
-      sha256 = "d76623373421df22fb4cf8817020cbb7ef15c725b9d5e45f17e189bfc384190f",
+      sha256 = "e24bf71af8a432d7808fabff134d38dfe16d3cbb41f2873bb4b1e42422de0a1a",
       extract = true,
       strip_prefix = "pyyaml-%{version}",
     } | Source,
