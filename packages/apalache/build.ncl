@@ -21,7 +21,7 @@
 #
 # Mirror of the release asset apalache-%{version}.tgz, sha256 checked against
 # the release's sha256sum.txt and GitHub's asset digest:
-# https://github.com/apalache-mc/apalache/releases/download/v0.62.4/apalache-0.62.4.tgz
+# https://github.com/apalache-mc/apalache/releases/download/v0.63.0/apalache-0.63.0.tgz
 #
 # The version is the one quint pins: `apalache_pin` in packages/quint/build.ncl
 # (quint's DEFAULT_APALACHE_VERSION_TAG), so `quint verify` can use this install.
@@ -35,14 +35,14 @@ let glibc = import "../glibc/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let jdk = import "../jdk/build.ncl" in
 
-let version = "0.62.4" in
+let version = "0.63.0" in
 {
   name = "apalache",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/apalache-mc/apalache/apalache-%{version}.tgz",
-      sha256 = "b781b53bba32fac14ac2e02b0332e1dc2edc64cb7b850c0608d8142cc7aa2ef4",
+      sha256 = "a756e96af249bf33cd7629667a49472cb26ac8227c48583da139b414834d59df",
       extract = false,
     } | Source,
     base,
