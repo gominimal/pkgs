@@ -2,7 +2,7 @@ let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, 
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
-let make = import "../make/build.ncl" in
+let ninja = import "../ninja/build.ncl" in
 
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
@@ -30,7 +30,7 @@ let version = "4.14.0" in
     base,
     toolchain,
     cmake,
-    make,
+    ninja,
     # The registry's image libraries, in place of opencv's bundled
     # 3rdparty/ copies. opencv looks for them at configure time and builds
     # its own copy of any it does not find; build.sh fails the build if it
