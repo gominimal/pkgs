@@ -7,7 +7,8 @@ also takes in every runtime_dep of the parent. So `subsetOf gcc ["libgcc"]`
 costs a session the whole compiler (~300 MB unpacked) plus gmp, mpc, mpfr,
 zlib, zstd, lz4 and xz, to get a 1 MB libgcc_s. packages/gcc-runtime ships
 just the shared runtime libraries, with gcc's output names (libgcc, libstdcpp,
-libgomp, libatomic, libgfortran, amd64 libquadmath) and runtime_deps [glibc].
+libgomp, libatomic, libssp, amd64 libquadmath) and runtime_deps [glibc];
+libgfortran is in packages/gcc-runtime-fortran.
 
 This guard reads every .ncl under packages/ and, inside every `runtime_deps`
 field (a replace_on_cycle breaker's included), rejects:
@@ -22,10 +23,10 @@ field (a replace_on_cycle breaker's included), rejects:
   3. whole-gcc-runtime
                    a bare `gcc-runtime` dep. Always take a subset: on a
                    bootstrap-cycle edge gcc-runtime is its prebuilt breaker,
-                   whose cache entry is the WHOLE extracted gen-13 gcc tree
+                   whose cache entry is the WHOLE extracted prebuilt gcc tree
                    (output globs are not applied to prebuilts; minimal
                    crates/op/src/specs.rs materialize_prebuilt), so a whole
-                   dep would link all of gcc 15.2 into that root.
+                   dep would link all of that prebuilt gcc into that root.
 
 It also rejects:
 
@@ -214,7 +215,7 @@ def scan_repo(root: str) -> tuple[int, int, dict[str, list[str]]]:
                 elif rule == "whole-gcc-runtime":
                     fix = (
                         "take `subsetOf gcc-runtime [...]`: on a cycle edge the breaker's cache "
-                        "entry is the whole gen-13 gcc tree"
+                        "entry is the whole prebuilt gcc tree"
                     )
                 elif rule == "whole-gcc":
                     fix = (
@@ -240,10 +241,13 @@ def scan_repo(root: str) -> tuple[int, int, dict[str, list[str]]]:
 
 # Packages that copy their files out of their gcc build dep.
 COPIERS = ("gcc-runtime", "gcc-runtime-fortran")
-LET_IMPORT = re.compile(
-    rf"""\blet\s+([A-Za-z_][{IDENT_CHARS}]*)\s*=\s*import\s+"\.\./([^"/]+)/build\.ncl\""""
+# `let NAME = import "PATH"` and `let NAME = (import "PATH") args`, for a .ncl
+# of any name: a package's recipe (`../X/build.ncl`) or a helper in another
+# package's directory (`../llvm/versioned.ncl`, `../jdk/cve-2026-111943.ncl`).
+LET_ANY_IMPORT = re.compile(
+    rf"""\blet\s+([A-Za-z_][{IDENT_CHARS}]*)\s*=\s*\(?\s*import\s+"([^"]+\.ncl)\""""
 )
-INLINE_IMPORT = re.compile(r"""\bimport\s+"\.\./([^"/]+)/build\.ncl\"""")
+INLINE_ANY_IMPORT = re.compile(r"""\bimport\s+"([^"]+\.ncl)\"""")
 NOT_A_DEP = re.compile(rf"(?<![{IDENT_CHARS}.])(?:replace_on_cycle|tests)\s*=")
 
 
@@ -256,32 +260,70 @@ def blank(text: str, spans: list[tuple[int, int]]) -> str:
     return "".join(out)
 
 
+def import_target(pkgs_dir: str, path: str, rel: str) -> tuple[str | None, str]:
+    """Resolve an import in `path`: (package, file) for `../P/build.ncl`, else
+    (None, file) for a helper .ncl."""
+    target = os.path.normpath(os.path.join(os.path.dirname(path), rel))
+    parts = os.path.relpath(target, pkgs_dir).split(os.sep)
+    if len(parts) == 2 and parts[1] == "build.ncl" and not parts[0].startswith(".."):
+        return parts[0], target
+    return None, target
+
+
+def file_deps(pkgs_dir: str, path: str, cache: dict[str, set[str]], _seen: frozenset[str] = frozenset()) -> set[str]:
+    """Packages that the .ncl at `path` depends on, outside tests and
+    replace_on_cycle (a breaker is what a cycle resolves to, not an edge). An
+    imported helper .ncl contributes the packages IT depends on, followed
+    across directories (llvm-22 -> llvm/versioned.ncl)."""
+    path = os.path.normpath(path)
+    if path in cache:
+        return cache[path]
+    if path in _seen or not os.path.isfile(path):
+        return set()
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    with_strings = strip(text, keep_strings=True)
+    code = strip(text, keep_strings=False)
+    lets = list(LET_ANY_IMPORT.finditer(with_strings))
+    spans = [(m.start(), m.end()) for m in lets]
+    spans += [(m.end(), field_end(code, m.end())) for m in NOT_A_DEP.finditer(code)]
+    code, with_strings = blank(code, spans), blank(with_strings, spans)
+    deps: set[str] = set()
+
+    def add(rel: str) -> None:
+        pkg, target = import_target(pkgs_dir, path, rel)
+        if pkg is not None:
+            deps.add(pkg)
+        else:
+            deps.update(file_deps(pkgs_dir, target, cache, _seen | {path}))
+
+    for m in lets:
+        name = re.escape(m.group(1))
+        # `pkg.version` reads a value off a recipe, not a dep; a helper's use
+        # is normally a field read (`llvm.runtime_deps`), so it counts.
+        after = IDENT_CHARS if import_target(pkgs_dir, path, m.group(2))[0] is None else IDENT_CHARS + "."
+        if re.search(rf"(?<![{IDENT_CHARS}.]){name}(?![{after}])", code):
+            add(m.group(2))
+    for rel in INLINE_ANY_IMPORT.findall(with_strings):
+        add(rel)
+    cache[path] = deps
+    return deps
+
+
 def package_deps(root: str) -> dict[str, set[str]]:
-    """{package: packages its .ncl files depend on}, outside tests and
-    replace_on_cycle (a breaker is what a cycle resolves to, not an edge)."""
+    """{package: packages its .ncl files depend on}, helper imports followed."""
     edges: dict[str, set[str]] = {}
-    pkgs_dir = os.path.join(root, "packages")
+    pkgs_dir = os.path.normpath(os.path.join(root, "packages"))
+    cache: dict[str, set[str]] = {}
     for pkg in sorted(os.listdir(pkgs_dir)):
         pdir = os.path.join(pkgs_dir, pkg)
         if not os.path.isdir(pdir):
             continue
         deps: set[str] = set()
         for fn in sorted(os.listdir(pdir)):
-            if not fn.endswith(".ncl"):
-                continue
-            with open(os.path.join(pdir, fn), encoding="utf-8") as f:
-                text = f.read()
-            with_strings = strip(text, keep_strings=True)
-            code = strip(text, keep_strings=False)
-            lets = list(LET_IMPORT.finditer(with_strings))
-            spans = [(m.start(), m.end()) for m in lets]
-            spans += [(m.end(), field_end(code, m.end())) for m in NOT_A_DEP.finditer(code)]
-            code, with_strings = blank(code, spans), blank(with_strings, spans)
-            for m in lets:
-                name = re.escape(m.group(1))
-                if re.search(rf"(?<![{IDENT_CHARS}.]){name}(?![{IDENT_CHARS}.])", code):
-                    deps.add(m.group(2))
-            deps.update(INLINE_IMPORT.findall(with_strings))
+            if fn.endswith(".ncl"):
+                deps |= file_deps(pkgs_dir, os.path.join(pdir, fn), cache)
+        deps.discard(pkg)
         edges[pkg] = deps
     return edges
 

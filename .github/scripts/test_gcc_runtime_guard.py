@@ -266,6 +266,33 @@ class Repo(unittest.TestCase):
         code, out = self.run_main(self.tree(files))
         self.assertIn("gcc -> gmp -> gcc-runtime-fortran", out)
 
+    HELPER = """let gcc-runtime = import "../gcc-runtime/build.ncl" in
+fun version => { runtime_deps = [subsetOf gcc-runtime ["libstdcpp"]], version = version }
+"""
+
+    def helper_tree(self, use):
+        head = 'let h = (import "../llvm/versioned.ncl") "1" in\n'
+        files = self.closure_tree(gmp_runtime=use)
+        files["packages/gmp/build.ncl"] = head + files["packages/gmp/build.ncl"]
+        files["packages/llvm/versioned.ncl"] = self.HELPER
+        files["packages/llvm/build.ncl"] = recipe("glibc,")
+        return files
+
+    def test_negative_control_gcc_closure_follows_helper_in_other_directory(self):
+        # llvm-22 -> ../llvm/versioned.ncl: the helper's deps are the package's.
+        code, out = self.run_main(self.tree(self.helper_tree("glibc,\n  ] @ h.runtime_deps @ [")))
+        self.assertEqual(code, 1, out)
+        self.assertIn("gcc -> gmp -> gcc-runtime", out)
+
+    def test_gcc_closure_unused_helper_is_not_an_edge(self):
+        code, out = self.run_main(self.tree(self.helper_tree("glibc,")))
+        self.assertNotIn("gcc-closure", out)
+
+    def test_gcc_closure_field_read_off_a_recipe_is_not_an_edge(self):
+        files = self.closure_tree(gmp_runtime="glibc,", gmp_extra='  version = gcc-runtime.version,')
+        code, out = self.run_main(self.tree(files))
+        self.assertNotIn("gcc-closure", out)
+
     def test_unverified_without_packages(self):
         code, _ = self.run_main(tempfile.mkdtemp())
         self.assertEqual(code, 2)

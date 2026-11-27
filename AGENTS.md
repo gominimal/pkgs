@@ -233,8 +233,9 @@ libraries cheap, package them on their own and take a subset of that.
 
 gcc is the case that matters: `subsetOf gcc [...]` costs the whole compiler (~300 MB unpacked) plus gcc's
 runtime deps (gmp, mpc, mpfr, zstd, ...). gcc's shared runtime libraries live in `gcc-runtime`, with the
-same output names (`libgcc`, `libstdcpp`, `libgomp`, `libatomic`, `libgfortran`, and `libquadmath` on
-amd64) and only glibc as a runtime dep. Take them from there; `.github/scripts/gcc_runtime_guard.py`
+same output names (`libgcc`, `libstdcpp`, `libgomp`, `libatomic`, `libssp`, and `libquadmath` on
+amd64) and only glibc as a runtime dep; `libgfortran` is in `gcc-runtime-fortran`
+(`subsetOf gcc-runtime-fortran ["libgfortran"]`). Take them from there; `.github/scripts/gcc_runtime_guard.py`
 rejects `subsetOf gcc` and a whole `gcc` in `runtime_deps` (only `toolchain` may ship the compiler).
 Building with gcc (`build_deps`, `toolchain`) is unaffected.
 

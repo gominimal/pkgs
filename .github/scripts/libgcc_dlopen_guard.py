@@ -4,9 +4,9 @@
 glibc dlopens libgcc_s.so.1 to unwind on pthread_cancel, pthread_exit and
 thrd_exit, and aborts the process when it is missing. backtrace() dlopens it
 too and returns no frames without it. A dlopen is not DT_NEEDED, so minimal's
-missing-runtime_deps check cannot see it: 27 packages were missing it on the
-gcc 16 branch (e5e9e586), most of them hidden on main by ncurses and gmp
-carrying `subsetOf gcc [...]`.
+missing-runtime_deps check cannot see it, and a package that gets libgcc_s
+only through some other dependency's runtime_deps loses it when that
+dependency drops it.
 
 libgcc_dlopen_importers.toml (next to this script) lists every package whose
 shipped ELFs import one of those symbols; libgcc_dlopen_scan.py keeps it true
@@ -60,6 +60,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from gcc_runtime_guard import (  # noqa: E402
     CLOSE,
     IDENT_CHARS,
+    LET_ANY_IMPORT,
     NOT_A_DEP,
     OPEN,
     RUNTIME_FIELD,
@@ -73,14 +74,10 @@ PROVIDERS = ("gcc-runtime", "gcc")  # packages whose `libgcc` output is libgcc_s
 DEFAULT_DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libgcc_dlopen_importers.toml")
 # Fewer than this many parsed runtime_deps fields = a broken tree or parser.
 MIN_RUNTIME_FIELDS = 100
-# A data file with fewer entries than this was truncated (~40 today).
+# A data file with fewer entries than this was truncated (80 today).
 MIN_IMPORTERS = 10
 FIX = 'add `subsetOf gcc-runtime ["libgcc"]` to its runtime_deps'
 
-# `let NAME = import "PATH"` and `let NAME = (import "PATH") args`.
-LET_ANY_IMPORT = re.compile(
-    rf"""\blet\s+([A-Za-z_][{IDENT_CHARS}]*)\s*=\s*\(?\s*import\s+"([^"]+\.ncl)\""""
-)
 INLINE_PKG_IMPORT = re.compile(r"""\bimport\s+"\.\./([^"/]+)/build\.ncl\"""")
 # (dependency package, brings libgcc if it is a provider, chosen by if/match)
 Edge = tuple[str, bool, bool]
