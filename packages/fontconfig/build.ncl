@@ -12,15 +12,15 @@ let freetype = import "../freetype/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "2.18.3" in
+let version = "2.18.4" in
 {
   name = "fontconfig",
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      # https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/2.18.3/fontconfig-2.18.3.tar.xz
+      # https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/2.18.4/fontconfig-2.18.4.tar.xz
       url = "gs://minimal-staging-archives/fontconfig-%{version}.tar.xz",
-      sha256 = "4f7b554a38cdf78c033f666c8871f3749e14a094f65a07f630c91ed0b43d35e3",
+      sha256 = "95013637eff5f81d4871dd16cd098c273264c16d0f9f0b27cc43b81b2794bee3",
       extract = true,
       strip_prefix = "fontconfig-%{version}",
     } | Source,
