@@ -10,8 +10,9 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
-# Mesa requires python packaging and mako modules
-pip3 install packaging mako pyyaml 2>/dev/null || pip install packaging mako pyyaml 2>/dev/null || true
+# meson.build needs the python modules packaging, mako and yaml. They come from
+# py-packaging, py-mako and py-pyyaml in build_deps: nothing is fetched here.
+python3 -c 'import packaging, mako, yaml'
 
 mkdir build && cd build
 meson setup --prefix=/usr --buildtype=release \
