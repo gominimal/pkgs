@@ -7,7 +7,7 @@ let toolchain = import "../toolchain/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
-let version = "5.76.0" in
+let version = "5.76.2" in
 {
   name = "railway",
   build_deps = [
@@ -22,7 +22,7 @@ let version = "5.76.0" in
     { file = "cve-2026-111943-webpki-lock.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/railwayapp/cli/v%{version}.tar.gz",
-      sha256 = "ad0e0e01a3e166f8aaddfdced1fd2c681de5adb9c722866893a6ead588c98430",
+      sha256 = "985f330f7502f8e31ad7afbee3742245250e7a0eef91085ef4ae914dce01f392",
       extract = true,
       strip_prefix = "cli-%{version}",
     } | Source,
