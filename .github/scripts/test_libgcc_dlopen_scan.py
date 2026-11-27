@@ -6,8 +6,11 @@ import os
 import struct
 import sys
 import tarfile
+import tempfile
 import tomllib
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import libgcc_dlopen_scan as s  # noqa: E402
@@ -155,6 +158,86 @@ class Compare(unittest.TestCase):
         listed = self.listed()
         listed["python"]["elfs"] = ["usr/lib/libpython3.15.so"]
         self.assertEqual(s.compare(FOUND, listed, {}, ARCHES)[0], [])
+
+
+class Write(unittest.TestCase):
+    """main() end to end with the index and the artifact fetch faked: --write
+    and the regenerated block in check mode must keep what the scan could not
+    read, as check mode's compare() does (pkgs#1545 review)."""
+
+    def run_main(self, listed: dict, unscanned_pkgs: set[str], write: bool, scanned=FOUND):
+        d = tempfile.mkdtemp()
+        data = os.path.join(d, "importers.toml")
+        with open(data, "w", encoding="utf-8") as f:
+            f.write(s.render({}) + "".join(
+                f'\n[importers."{k}"]\nsymbols = {v["symbols"]!r}\narches = {v["arches"]!r}\n'
+                f'elfs = {v.get("elfs", [])!r}\nelf_count = {v.get("elf_count", 0)}\n'.replace("'", '"')
+                for k, v in sorted(listed.items())
+            ))
+        pkgs = sorted(set(scanned) | set(listed) | {"zlib", "curl"})
+        entries = {a: [{"name": p, "spec_hash": f"{a}-{p}"} for p in pkgs] for a in ARCHES}
+        dumps = []
+        for a, es in entries.items():
+            dp = os.path.join(d, f"{a}.json")
+            with open(dp, "w", encoding="utf-8") as f:
+                f.write(__import__("json").dumps(es))
+            dumps += ["--dump", f"{a}={dp}"]
+        index = {f"{a}-{p}": f"{a}-{p}" for a in ARCHES for p in pkgs
+                 if not (p in unscanned_pkgs or (p == "redis-arm" and a == "arm64"))}
+
+        def scan(_base, sha):
+            a, p = sha.split("-", 1)
+            return scanned.get(p, {}).get(a, {}), 1, 0
+
+        argv = dumps + ["--data", data, "--max-miss-fraction", "0.9"] + (["--write"] if write else [])
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.object(s, "load_index", return_value=index), mock.patch.object(
+            s, "scan_artifact", side_effect=scan
+        ), redirect_stdout(out), redirect_stderr(err):
+            code = s.main(argv)
+        return code, open(data, encoding="utf-8").read(), out.getvalue() + err.getvalue()
+
+    BASH = {"symbols": ["backtrace"], "arches": ARCHES, "elfs": ["usr/bin/bash"], "elf_count": 1}
+
+    def test_write_keeps_unscanned_listed_entry(self):
+        listed = tomllib.loads(s.render(FOUND))["importers"]
+        listed["bash"] = self.BASH
+        code, text, out = self.run_main(listed, {"bash"}, write=True)
+        got = tomllib.loads(text)["importers"]
+        self.assertIn("bash", got, out)
+        self.assertEqual(got["bash"]["arches"], ARCHES)
+        self.assertEqual(got["bash"]["elfs"], ["usr/bin/bash"])
+        # and check mode on the written file agrees: nothing stale, nothing missing
+        code, _, out = self.run_main(got, {"bash"}, write=False)
+        self.assertEqual(code, 0, out)
+
+    def test_negative_control_write_drops_scanned_stale_entry(self):
+        listed = tomllib.loads(s.render(FOUND))["importers"]
+        listed["bash"] = self.BASH
+        code, text, out = self.run_main(listed, set(), write=True)
+        self.assertEqual(code, 1, out)
+        self.assertNotIn("bash", tomllib.loads(text)["importers"])
+
+    def test_regenerated_block_keeps_unscanned_listed_entry(self):
+        listed = tomllib.loads(s.render(FOUND))["importers"]
+        listed["bash"] = self.BASH
+        del listed["redis"]  # a real problem, so the regenerated block prints
+        code, _, out = self.run_main(listed, {"bash"}, write=False)
+        self.assertEqual(code, 1, out)
+        block = out.split("```toml\n", 1)[1].split("```", 1)[0]
+        got = tomllib.loads(block)["importers"]
+        self.assertIn("bash", got)
+        self.assertIn("redis", got)
+
+    def test_carried_keeps_listed_arch_without_artifact(self):
+        listed = tomllib.loads(s.render(FOUND))["importers"]
+        listed["redis"]["arches"] = ARCHES
+        keep, extra = s.carried(FOUND, listed, {"redis": {"arm64"}}, ARCHES)
+        self.assertEqual(keep, {})
+        self.assertEqual(extra, {"redis": {"arm64"}})
+        got = tomllib.loads(s.render(FOUND, keep, extra))["importers"]
+        self.assertEqual(got["redis"]["arches"], ARCHES)
+        self.assertEqual(s.compare(FOUND, got, {"redis": {"arm64"}}, ARCHES)[0], [])
 
 
 if __name__ == "__main__":

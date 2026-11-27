@@ -232,16 +232,58 @@ def _q(s: str) -> str:
     return json.dumps(s)  # a JSON string is a valid TOML basic string
 
 
-def render(found: dict[str, dict[str, dict[str, set[str]]]]) -> str:
-    """found: {pkg: {arch: {path: symbols}}} -> the data file."""
+def carried(
+    found: dict[str, dict[str, dict[str, set[str]]]],
+    listed: dict[str, dict],
+    unscanned: dict[str, set[str]],
+    arches: list[str],
+) -> tuple[dict[str, dict], dict[str, set[str]]]:
+    """What the scan could not read, kept from the committed file so that
+    --write agrees with check mode (which treats it as unverified, not stale).
+    (keep, extra_arches): keep = {pkg: committed entry} for a listed package
+    with no artifact on any arch it is listed for; extra_arches = {pkg: listed
+    arches with no artifact} for a scanned package."""
+    keep: dict[str, dict] = {}
+    extra: dict[str, set[str]] = {}
+    for pkg, entry in listed.items():
+        skipped = unscanned.get(pkg, set())
+        listed_arches = set(entry.get("arches", arches))
+        if pkg not in found:
+            if listed_arches <= skipped:
+                keep[pkg] = entry
+        else:
+            missing = (listed_arches & skipped) - set(found[pkg])
+            if missing:
+                extra[pkg] = missing
+    return keep, extra
+
+
+def render(
+    found: dict[str, dict[str, dict[str, set[str]]]],
+    keep: dict[str, dict] | None = None,
+    extra_arches: dict[str, set[str]] | None = None,
+) -> str:
+    """found: {pkg: {arch: {path: symbols}}} -> the data file. keep and
+    extra_arches (see carried()) hold what the scan could not read."""
+    keep = {k: v for k, v in (keep or {}).items() if k not in found}
+    extra_arches = extra_arches or {}
     out = [HEADER]
-    for pkg in sorted(found):
+    for pkg in sorted(set(found) | set(keep)):
+        out.append(f"\n[importers.{_q(pkg)}]")
+        if pkg in keep:
+            e = keep[pkg]
+            out.append(f"symbols = [{', '.join(_q(s) for s in sorted(e.get('symbols', [])))}]")
+            if "arches" in e:
+                out.append(f"arches = [{', '.join(_q(a) for a in sorted(e['arches']))}]")
+            out.append(f"elfs = [{', '.join(_q(p) for p in e.get('elfs', []))}]")
+            out.append(f"elf_count = {int(e.get('elf_count', len(e.get('elfs', []))))}")
+            continue
         per_arch = found[pkg]
         syms = sorted(set().union(*(s for paths in per_arch.values() for s in paths.values())))
         paths = sorted({p for paths in per_arch.values() for p in paths})
-        out.append(f"\n[importers.{_q(pkg)}]")
+        arch_list = sorted(set(per_arch) | extra_arches.get(pkg, set()))
         out.append(f"symbols = [{', '.join(_q(s) for s in syms)}]")
-        out.append(f"arches = [{', '.join(_q(a) for a in sorted(per_arch))}]")
+        out.append(f"arches = [{', '.join(_q(a) for a in arch_list)}]")
         out.append(f"elfs = [{', '.join(_q(p) for p in paths[:MAX_EVIDENCE])}]")
         out.append(f"elf_count = {len(paths)}")
     return "\n".join(out) + "\n"
@@ -387,6 +429,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Build-only packages (libgcc_dlopen_build_only.toml, hand-maintained) run
     # in no box, so they are never listed; the guard checks that claim.
+    build_only: set[str] = set()
     bo_path = os.path.join(os.path.dirname(os.path.abspath(args.data)), "libgcc_dlopen_build_only.toml")
     if os.path.exists(bo_path):
         with open(bo_path, "rb") as f:
@@ -403,12 +446,21 @@ def main(argv: list[str] | None = None) -> int:
         if only:
             print("refusing --write with --only: it would drop every other package", file=sys.stderr)
             return 2
-        new = render(found)
         old = open(args.data, encoding="utf-8").read() if os.path.exists(args.data) else ""
+        try:
+            listed = load_data(args.data) if old else {}
+        except Exception as e:  # noqa: BLE001
+            print(f"UNVERIFIED: cannot read {args.data}: {e}", file=sys.stderr)
+            return 2
+        # An unscanned package keeps its committed entry, as check mode does.
+        keep, extra = carried(found, listed, unscanned, sorted(dumps))
+        keep = {k: v for k, v in keep.items() if k not in build_only}
+        new = render(found, keep, extra)
         if new != old:
             with open(args.data, "w", encoding="utf-8") as f:
                 f.write(new)
-            lines.append(f"\nWROTE {args.data}: {len(found)} importers")
+            kept = f" ({len(keep)} unscanned, kept as committed)" if keep else ""
+            lines.append(f"\nWROTE {args.data}: {len(found) + len(keep)} importers{kept}")
             status = 1
         else:
             lines.append(f"\nUP TO DATE: {len(found)} importers")
@@ -430,7 +482,9 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"::error title=libgcc dlopen scan::{p}")
             # The regenerated file, so the fix is a copy-paste (or run --write).
             lines.append("\n<details><summary>Regenerated libgcc_dlopen_importers.toml</summary>\n")
-            lines.append("```toml\n" + render(found) + "```\n</details>")
+            keep, extra = carried(found, listed, unscanned, sorted(dumps))
+            keep = {k: v for k, v in keep.items() if k not in build_only}
+            lines.append("```toml\n" + render(found, keep, extra) + "```\n</details>")
             status = 1
         else:
             lines.append(f"\nUP TO DATE: {len(found)} importers")
