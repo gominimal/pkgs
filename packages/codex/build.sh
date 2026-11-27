@@ -46,7 +46,7 @@ esac || {
 
 # The workspace locks `v8` (rusty_v8, a git dependency with Chromium submodules) for
 # three members codex-cli does not reach: code-mode-host, code-mode-runtime and v8-poc
-# (checked against rust-v0.169.0's Cargo.lock). Cargo checks every git dependency of the
+# (checked against rust-v0.172.0's Cargo.lock). Cargo checks every git dependency of the
 # workspace out, submodules included, even for `-p codex-cli`. Dropping the three members
 # and the v8 [patch] lets the resolve below prune v8 and the crates only it needed. v8 is
 # also the only path to bindgen/libclang (no llvm build dep) and its build script
@@ -62,7 +62,7 @@ sed -i -E "/$v8_lines/d" Cargo.toml
 
 # Upstream's release tags set the workspace version in Cargo.toml but leave the
 # workspace members at 0.0.0 in the committed Cargo.lock, so `--locked` refuses it
-# (rust-v0.169.0: 166 members). Let cargo sync the workspace members (and prune what
+# (rust-v0.172.0: 166 members). Let cargo sync the workspace members (and prune what
 # only the dropped members used), then fail closed if any registry or git crate was
 # added or its pinned version or source moved. Removals are the v8 prune above.
 registry_pins() {
