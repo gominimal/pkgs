@@ -3,6 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
-    "@informalsystems/quint": "0.34.0"
+    "@informalsystems/quint": "0.35.0"
   }
 }

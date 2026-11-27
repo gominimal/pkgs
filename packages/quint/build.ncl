@@ -24,7 +24,7 @@ let node-lts = import "../node-lts/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "0.34.0" in
+let version = "0.35.0" in
 # The Rust evaluator release this quint version pins (QUINT_EVALUATOR_VERSION in
 # dist/src/rust/binaryManager.js). build.sh fails if the two disagree, so a quint
 # bump that moves it stops for a reviewer to bump this and the Source below.
