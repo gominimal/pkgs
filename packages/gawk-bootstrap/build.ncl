@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -26,18 +26,10 @@ let version = "5.4.1" in
   ],
 
   cmd = "./build.sh",
+  # Only usr/bin/awk. packages/gawk owns every other gawk path and takes its
+  # awk from here, so no box holds two copies of one path (gominimal/pkgs#973).
   outputs = {
-    gawk_versioned = { glob = "usr/bin/gawk-*" } | OutputBin,
-    gawk = { glob = "usr/bin/gawk" } | OutputBin,
     awk = { glob = "usr/bin/awk" } | OutputBin,
-    libs = { glob = "usr/lib/gawk/*.so" } | OutputLib,
-    libexec = { glob = "usr/libexec/awk/*" } | OutputLib,
-
-    includes = { glob = "usr/include/**" } | OutputData,
-
-    awk_data = { glob = "usr/share/awk/*" } | OutputData,
-    mans = { glob = "usr/share/man/**" } | OutputData,
-    locales = { glob = "usr/share/locale/**" } | OutputData,
   },
 
   attrs = {

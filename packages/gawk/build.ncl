@@ -5,6 +5,7 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
+let gawk-bootstrap = import "../gawk-bootstrap/build.ncl" in
 let mpfr = import "../mpfr/build.ncl" in
 let readline = import "../readline/build.ncl" in
 
@@ -22,6 +23,10 @@ let version = "5.4.2" in
     toolchain,
   ],
   runtime_deps = [
+    # Provides usr/bin/awk: the same gawk version, built without readline. This
+    # package ships every other gawk path but not awk, so the two never install
+    # the same file (gominimal/pkgs#973).
+    gawk-bootstrap,
     glibc,
     mpfr,
     readline,
@@ -35,7 +40,6 @@ let version = "5.4.2" in
   outputs = {
     "gawk-%{version}" = { glob = "usr/bin/gawk-%{version}" } | OutputBin,
     gawk = { glob = "usr/bin/gawk" } | OutputBin,
-    awk = { glob = "usr/bin/awk" } | OutputBin,
     libs = { glob = "usr/lib/gawk/*.so" } | OutputLib,
     libexec = { glob = "usr/libexec/awk/*" } | OutputLib,
 
@@ -58,6 +62,8 @@ let version = "5.4.2" in
 
   tests = {
     smoketest = standaloneTest "/bin/gawk --version",
+    # awk is gawk-bootstrap's, reached through runtime_deps.
+    awk_smoketest = standaloneTest "/bin/awk --version",
 
     matching =
       {
