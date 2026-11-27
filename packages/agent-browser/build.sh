@@ -55,10 +55,33 @@ fi
 # --- 2. Rust CLI ------------------------------------------------------------
 export CC=gcc
 export LD=gcc
-export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo -C codegen-units=1"
+# Upstream's release profile (cli/Cargo.toml) is fat LTO with codegen-units = 1,
+# and this script also forced `-C codegen-units=1` on every crate: the whole graph
+# then compiles and optimises on one core. Thin LTO over 16 units is used instead.
+# It is reproducible because of the detbuild entropy shim on the build below, as
+# codex is (pkgs#1713); compare two builds' sha256 (echoed below), don't put
+# cgu=1 back for reproducibility. v0 mangling: the legacy scheme's per-instance
+# hashes are the other source of symbol-order churn (gominimal/inbox#253).
+export CARGO_PROFILE_RELEASE_LTO=thin
+export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=16
+export RUSTFLAGS="-C linker=gcc -C symbol-mangling-version=v0 --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 export CONST_RANDOM_SEED=0   # pin ahash/const-random compile-time seed
 
-cargo build --release --locked --manifest-path cli/Cargo.toml
+# All network access happens here, with real entropy: crates are fetched (and
+# checked against Cargo.lock) before the shim below is loaded, so no TLS session
+# runs with the shim's fixed bytes. cli/build.rs only reads files (the dashboard
+# export and cdp-protocol JSON), so the build below needs no network.
+cargo fetch --locked --manifest-path cli/Cargo.toml
+
+# Deterministic build-time entropy (packages/detbuild): interposes getrandom /
+# getentropy so build.rs / proc-macro / rustc-internal HashMaps iterate in the same
+# order every build. It wraps only the offline Rust BUILD (`--frozen` refuses any
+# network access); the dashboard build above runs without it, and the produced
+# binary is unaffected.
+LD_PRELOAD=/usr/lib/minimal/libdetbuild.so cargo build --frozen --release --manifest-path cli/Cargo.toml
+
+# For comparing two builds of the same spec (the reproducibility check).
+echo "agent-browser binary: $(sha256sum cli/target/release/agent-browser | cut -d' ' -f1) $(stat -c %s cli/target/release/agent-browser) bytes"
 
 # --- install ----------------------------------------------------------------
 # Layout matches the npm package, which the binary's lookups assume:
