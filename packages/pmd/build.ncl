@@ -18,7 +18,7 @@ let version = "7.30.0" in
   build_deps = [
     { file = "build.sh" } | Local,
     {
-      url = "https://github.com/pmd/pmd/releases/download/pmd_releases/7.30.0/%{version}/pmd-dist-%{version}-bin.zip",
+      url = "https://github.com/pmd/pmd/releases/download/pmd_releases/%{version}/pmd-dist-%{version}-bin.zip",
       sha256 = "14fbf34dbcb51e895e27c33898cd6d7e9d028b1cc22ae23a5e8b100f7538446e",
     } | Source,
     base,
