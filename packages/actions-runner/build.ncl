@@ -182,6 +182,49 @@ exec "$@"
           ["/bin/bash", "-c", "set -e; RUNNER_HOME=/tmp/r /usr/bin/actions-runner --help >/dev/null 2>&1 || true; v=$(/tmp/r/bin/Runner.Listener --version); echo \"$v\"; [[ $v =~ ^[0-9]+\\.[0-9]+\\.[0-9]+$ ]]; grep -q '\"Microsoft.NETCore.App\"' /tmp/r/bin/Runner.Listener.runtimeconfig.json; ! grep -q '\"version\": \"8\\.' /tmp/r/bin/Runner.Listener.runtimeconfig.json"],
         ],
       } | Test,
+    # Runner.Worker (runs every job) and Runner.PluginHost (runs plugins) also
+    # start on .NET 10 without their deps.json. Each is started with no
+    # arguments: the host, CoreCLR and the app's assemblies load, its Main runs,
+    # and it rejects the argument count (upstream ArgUtil.Equal, exit 1) with a
+    # stack trace through GitHub.<app>.Program.Main. Pass = that trace and no
+    # host or assembly-load error. Their runtimeconfig.json name no 8.x runtime.
+    worker_and_pluginhost_start_on_dotnet10 =
+      {
+        class = 'Standalone,
+        test_deps = [bash-bootstrap, coreutils, grep],
+        cmds = [
+          [
+            "/bin/bash",
+            "-c",
+            m%"
+              set -euo pipefail
+              d=$(mktemp -d); cd "$d"
+              # A home of its own: HostContext writes its trace under <home>/_diag.
+              out=$(RUNNER_HOME=$d/r /usr/bin/actions-runner --version 2>&1) || { echo "$out" >&2; exit 1; }
+              for app in Runner.Worker Runner.PluginHost; do
+                rc=0; out=$(timeout 120 "$d/r/bin/$app" 2>&1) || rc=$?
+                echo "$app: exit $rc"; head -n 4 <<<"$out"
+                if [ "$rc" != 1 ]; then
+                  echo "$app: want exit 1 (argument count rejected by its Main), got $rc:" >&2; echo "$out" >&2; exit 1
+                fi
+                if ! grep -q -F "GitHub.$app.Program.Main" <<<"$out" || ! grep -q -F ArgumentOutOfRangeException <<<"$out"; then
+                  echo "$app: its Main did not run to the argument check:" >&2; echo "$out" >&2; exit 1
+                fi
+                if grep -q -E 'hostfxr|hostpolicy|FileNotFoundException|FileLoadException|TypeLoadException|BadImageFormatException|MissingMethodException|MissingFieldException' <<<"$out"; then
+                  echo "$app: host or assembly-load error:" >&2; echo "$out" >&2; exit 1
+                fi
+                rcj=$d/r/bin/$app.runtimeconfig.json
+                grep -q '"Microsoft.NETCore.App"' "$rcj"
+                if grep -q '"version": "8\.' "$rcj"; then
+                  echo "$app: runtimeconfig still names a .NET 8 runtime:" >&2; cat "$rcj" >&2; exit 1
+                fi
+                test ! -e "$d/r/bin/$app.deps.json"
+                echo "$app: ok"
+              done
+            "%
+          ],
+        ],
+      } | Test,
     # .NET 10 makes a real TLS connection through OpenSSL 4 (libssl.so.4; no
     # openssl-3.5 in the closure) and verifies the server against the system
     # store: SSL_CERT_FILE is our ca-certificates bundle with a throwaway CA
@@ -512,7 +555,11 @@ exec "$@"
               }
               # A RUNNER_HOME as an older package left it: its own bin/ and externals/, an
               # upstream self-update leftover, a registration and work data, no stamp.
-              mkdir -p h/bin h/externals/node20 h/bin.2.330.0 h/_work/r h/_diag
+              mkdir -p h/bin h/externals/node20 h/bin.2.330.0 h/externals.2.330.0 h/_work/r h/_diag
+              # A self-update leftover holds a runner; a person's bin.* or externals.*
+              # beside it does not, and is kept.
+              echo old-listener > h/bin.2.330.0/Runner.Listener
+              mkdir -p h/bin.bak h/externals.zip; echo mine > h/bin.bak/tool; echo mine > h/externals.zip/f
               echo old-listener > h/bin/Runner.Listener
               echo old > h/externals/node20/marker
               # Registration files in upstream's formats: HostContext parses .runner
@@ -528,7 +575,8 @@ exec "$@"
               same h/bin/Runner.Listener "$pkg/bin/Runner.Listener"
               same h/externals/node24/bin/node "$pkg/externals/node24/bin/node"
               test ! -e h/externals/node20/marker
-              test ! -e h/bin.2.330.0
+              test ! -e h/bin.2.330.0 && test ! -e h/externals.2.330.0
+              test "$(cat h/bin.bak/tool)" = mine && test "$(cat h/externals.zip/f)" = mine
               test ! -e h/.minimal-copying
               # The setup lock is released (flock; the file itself stays).
               flock -n h/.minimal-setup.lock true
@@ -605,6 +653,19 @@ exec "$@"
               test "$(cat u/bin/tool)" = mine && test "$(cat u/bin.old/tool)" = mine
               test ! -e u/run.sh && test ! -e u/.minimal-installed-stamp && test ! -e u/.minimal-setup.lock
               echo "unrelated-bin: refused, unchanged"
+              # A directory with only a bin.* and an externals.* that hold no runner
+              # (a person's bin.old, externals.zip) is set up, and they survive the
+              # first start and every later one: they do not make the home outdated,
+              # so the second start upgrades nothing and deletes nothing.
+              mkdir -p v/bin.old v/externals.zip; echo mine > v/bin.old/tool; echo mine > v/externals.zip/f
+              out=$(RUNNER_HOME=$d/v /usr/bin/actions-runner --version 2>&1) || { echo "bin-dot-only: the first start failed:" >&2; echo "$out" >&2; exit 1; }
+              out=$(RUNNER_HOME=$d/v /usr/bin/actions-runner --version 2>&1) || { echo "bin-dot-only: the second start failed:" >&2; echo "$out" >&2; exit 1; }
+              if grep -q 'Upgrading the runner' <<<"$out"; then
+                echo "bin-dot-only: a bin.* without a runner made the home outdated:" >&2; echo "$out" >&2; exit 1
+              fi
+              test "$(cat v/bin.old/tool)" = mine && test "$(cat v/externals.zip/f)" = mine
+              same v/bin/Runner.Listener "$pkg/bin/Runner.Listener"
+              echo "bin-dot-only: kept"
               # Control: a runner still running from an outdated home is not replaced. bash
               # copied in as bin/Runner.Listener stands in for it (/proc/<pid>/exe).
               # The loop keeps that bash alive as itself: `-c 'sleep 60'` would exec
@@ -693,6 +754,9 @@ exec "$@"
                 echo "contended: want the start still waiting after 5 s (exit 124), got exit $rc:" >&2; echo "$out" >&2; exit 1
               fi
               test ! -e c/run.sh
+              # It says that it waits, so the wait does not look like a stall.
+              grep -q -F "Waiting for another actions-runner or actions-runner-config to release $d/c/.minimal-setup.lock" <<<"$out" \
+                || { echo "contended: no waiting line:" >&2; echo "$out" >&2; exit 1; }
               echo "contended: waited"
               # SIGKILL runs no cleanup in the holder; the kernel drops its lock and
               # the next start goes ahead.
