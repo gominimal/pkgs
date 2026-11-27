@@ -8,7 +8,7 @@ export OPENSSL_NO_VENDOR="1"
 # CVE-2026-111943: move upstream's Cargo.lock to rustls-webpki 0.103.16 and
 # webpki-roots / webpki-root-certs 1.0.10 (see build.ncl). Applied by name so a
 # missing or stale patch fails the build.
-patch -Np1 -i ./cve-2026-111943-webpki-lock.patch
+patch -Np1 -F0 -i ./cve-2026-111943-webpki-lock.patch
 # Prove it landed, fail-closed: the fixed verifier is locked, and no pre-fix
 # rustls-webpki 0.103.x or webpki-roots / webpki-root-certs 1.0.x remains.
 grep -A1 '^name = "rustls-webpki"$' Cargo.lock | grep -q '^version = "0.103.16"$' || {

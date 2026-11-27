@@ -11,7 +11,7 @@ let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 
-let version = "0.10.2" in
+let version = "0.11.0" in
 {
   name = "gurk",
   build_deps = [
@@ -26,7 +26,7 @@ let version = "0.10.2" in
     { file = "cve-2026-111943-webpki-lock.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/boxdot/gurk-rs/v%{version}.tar.gz",
-      sha256 = "d047915916bceb221cd96a8afe53e5ba3b897f8d8798a4d36ca4cf354aa63b03",
+      sha256 = "b5e5d40a03a9b96795c406824fabd9feed281e8a4d5b49235bd75f1d06edcc9f",
       extract = true,
       strip_prefix = "gurk-rs-%{version}",
     } | Source,
