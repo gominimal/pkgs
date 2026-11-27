@@ -16,9 +16,11 @@ let glibc = import "../glibc/build.ncl" in
 # without it, and gcc_runtime_guard rule 4 forbids gcc-runtime in gcc's graph.
 #
 # It installs under its own prefix, /usr/lib/python-bootstrap, so it never ships
-# a path that python ships. It is static (no libpython.so), builds no module
-# that needs an optional library, has no pip, and its only runtime dependency is
-# glibc. Keep version and source equal to packages/python: they are the same
+# a path that python ships. It is static (no libpython.so), has no pip, and its
+# only runtime dependency is glibc: build.sh switches off every module that
+# links a library outside glibc (zlib, _bz2, _lzma, _zstd, _curses, readline,
+# ...; the build closure holds those libraries) and fails if any shipped ELF
+# NEEDs one. Keep version and source equal to packages/python: they are the same
 # CPython release, and the same VEX statements cover both.
 let version = "3.14.10" in
 {
