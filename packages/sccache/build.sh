@@ -7,16 +7,10 @@ export LD=gcc
 # paths (source dir + cargo registry) and disable incremental builds.
 export RUSTFLAGS="-C linker=gcc --remap-path-prefix=$(pwd)=/builddir --remap-path-prefix=$HOME/.cargo=/cargo"
 export CARGO_INCREMENTAL=0
-# CVE-2026-111943: move upstream's Cargo.lock to rustls-webpki 0.103.16 and
-# webpki-roots / webpki-root-certs 1.0.10 (see build.ncl). Applied by name so a
-# missing or stale patch fails the build.
-patch -Np1 -i ./cve-2026-111943-webpki-lock.patch
-# Prove it landed, fail-closed: the fixed verifier is locked, and no pre-fix
-# rustls-webpki 0.103.x or webpki-roots / webpki-root-certs 1.0.x remains.
-grep -A1 '^name = "rustls-webpki"$' Cargo.lock | grep -q '^version = "0.103.16"$' || {
-  echo "ERROR: rustls-webpki 0.103.16 is not in Cargo.lock (CVE-2026-111943)" >&2
-  exit 1
-}
+# Security floor, CVE-2026-111943 (eMudhra CA distrust): Cargo.lock must not
+# lock rustls-webpki < 0.103.16, webpki-roots / webpki-root-certs 1.0.0-1.0.9,
+# or a webpki-roots 0.26 before the 0.26.11 shim. Upstream's 0.20.0 lock meets
+# this (rustls-webpki 0.103.16), so no lock patch is carried.
 if grep -A1 -E '^name = "(rustls-webpki|webpki-roots|webpki-root-certs)"$' Cargo.lock |
   grep -qE '^version = "(0[.]103[.]([0-9]|1[0-5])|1[.]0[.][0-9]|0[.]26[.]([0-9]|10))"$'; then
   # 0.26.0-0.26.10 webpki-roots carry their own (pre-distrust) root list;
@@ -25,11 +19,16 @@ if grep -A1 -E '^name = "(rustls-webpki|webpki-roots|webpki-root-certs)"$' Cargo
   exit 1
 fi
 
-# OpenSSL 4: openssl-sys 0.9.117 and openssl 0.10.81 (see build.ncl). Fail closed if the bump
-# did not land.
-patch -Np1 -i ./openssl-4-openssl-sys-lock.patch
-grep -A1 '^name = "openssl-sys"$' Cargo.lock | grep -q '^version = "0.9.117"$' || {
-  echo "ERROR: openssl-sys 0.9.117 is not in Cargo.lock (OpenSSL 4)" >&2
+# OpenSSL 4: openssl-sys before 0.9.114 panics in its build script on OpenSSL 4.x.
+# Upstream's 0.20.0 lock carries 0.9.118, so no lock patch is needed; fail closed
+# if a release ever ships an older one.
+osys=$(grep -A1 '^name = "openssl-sys"$' Cargo.lock | sed -n 's/^version = "\(.*\)"$/\1/p')
+case "$osys" in
+  0.9.*) [ "${osys#0.9.}" -ge 114 ] 2>/dev/null ;;
+  0.[1-9][0-9].* | [1-9]*.*) true ;;
+  *) false ;;
+esac || {
+  echo "ERROR: Cargo.lock's openssl-sys ($osys) predates 0.9.114 and fails on OpenSSL 4" >&2
   exit 1
 }
 

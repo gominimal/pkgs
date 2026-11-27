@@ -17,7 +17,10 @@ sed -i \
   -e "s|https://github.com/arminbiere/cadical/archive/rel-3.0.0.tar.gz|file://$here/rel-3.0.0.tar.gz|" \
   src/solvers/CMakeLists.txt
 # Fail loudly if upstream moved a URL and the rewrite silently missed it.
-! grep -nE "URL https?://" src/solvers/CMakeLists.txt | grep -E "minisat2_2.2.1|cadical/archive/rel-3.0.0"
+if grep -nE "URL https?://" src/solvers/CMakeLists.txt | grep -E "minisat2_2.2.1|cadical/archive/rel-3.0.0"; then
+  echo "ERROR: src/solvers/CMakeLists.txt still fetches minisat2/cadical over the network (above): the file:// rewrite missed" >&2
+  exit 1
+fi
 
 # library_check.sh compiles CBMC's C library models with the host gcc under
 # -Werror. gcc 15 declares the __atomic_* builtins with volatile pointer types,

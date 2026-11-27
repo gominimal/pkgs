@@ -22,7 +22,7 @@ let glibc = import "../glibc/build.ncl" in
 #     ends in `bv_decide` (BvTac's examples, its Tests and 30 simp lemmas).
 #     The goals are 8- to 128-bit scalar goals. Any failure fails that build,
 #     and a cadical change re-keys it, so the build-bot rebuilds it.
-let version = "3.0.1" in
+let version = "3.1.0" in
 {
   name = "cadical",
   # CaDiCaL, the SAT solver behind Lean's `bv_decide`. Official Lean releases
@@ -33,7 +33,7 @@ let version = "3.0.1" in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/arminbiere/cadical/archive/refs/tags/rel-%{version}.tar.gz",
-      sha256 = "0a8ea563b5a25f5aa064634814edab45cc0e45111ea0f5d412a565f806fd7e11",
+      sha256 = "187fb83106e8d7964f1d409ebf056f3853105c2a8ec32427472eff734c9ccb01",
       extract = true,
       strip_prefix = "cadical-rel-%{version}",
     } | Source,

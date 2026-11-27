@@ -45,7 +45,14 @@ export CXXFLAGS="${CFLAGS}"
 #
 # Protobuf (dnn) is still the bundled copy: a follow-up, because opencv's
 # pregenerated .pb.cc files are for protobuf 3.19 and ours is 36.x.
-cmake \
+#
+# Tests, perf tests, examples and docs: off. BUILD_TESTS and BUILD_PERF_TESTS
+# default to ON, so every build compiled the opencv_test_* / opencv_perf_*
+# binaries (and the ts module they need) that no output ships and no test
+# here runs. Examples and docs already default to OFF; they are set so an
+# upstream default change cannot bring them back. The apps (opencv_version,
+# opencv_annotation, ...) are BUILD_opencv_apps, which stays on.
+cmake -G Ninja \
         -DCMAKE_INSTALL_PREFIX=/usr         \
         -DOPENCV_GENERATE_PKGCONFIG=ON      \
         -DOPENCV_LIB_INSTALL_PATH=/usr/lib  \
@@ -57,10 +64,14 @@ cmake \
         -DBUILD_WEBP=OFF                    \
         -DWITH_OPENEXR=OFF                  \
         -DWITH_IPP=OFF                      \
+        -DBUILD_TESTS=OFF                   \
+        -DBUILD_PERF_TESTS=OFF              \
+        -DBUILD_EXAMPLES=OFF                \
+        -DBUILD_DOCS=OFF                    \
         ../opencv-$MINIMAL_ARG_VERSION
 
 # Build
-make -j$(nproc)
+ninja -j"$(nproc)"
 
 # Fail closed: opencv built no bundled copy of a library we now take from the
 # registry. Every 3rdparty static archive lands in 3rdparty/lib; the bundled
@@ -76,7 +87,16 @@ for a in libzlib liblibpng liblibjpeg-turbo liblibwebp liblibopenjp2 libIlmImf; 
   fi
 done
 
-make DESTDIR="$OUTPUT_DIR" install
+DESTDIR="$OUTPUT_DIR" ninja install
+
+# Fail closed: BUILD_TESTS / BUILD_PERF_TESTS really are off (no test binary
+# was built, none was installed).
+for t in bin/opencv_test_* bin/opencv_perf_* "$OUTPUT_DIR"/usr/bin/opencv_test_* "$OUTPUT_DIR"/usr/bin/opencv_perf_*; do
+  if [ -e "$t" ]; then
+    echo "ERROR: $t was built although BUILD_TESTS and BUILD_PERF_TESTS are OFF" >&2
+    exit 1
+  fi
+done
 
 # Fail closed: libopencv_imgcodecs, which holds the codecs, links the
 # registry's shared libraries.

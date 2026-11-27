@@ -30,6 +30,15 @@ let version = "1.2.16.1" in
     # same one-byte overrun on the numid= branch of the same function and is
     # also not in 1.2.16.1. f84cd4ce alone leaves that site open, so both are
     # carried. Verbatim `git format-patch` of 1e27d63e.
+    #
+    # VEX: the pkgsec vulnerability database holds a not_affected statement for
+    # CVE-2026-90781 (products pkg:github/alsa-project/alsa-lib and
+    # cpe:2.3:a:alsa-project:alsa-lib, justification
+    # inline_mitigations_already_exist) that rests on both patches; see it with
+    # `pkgmgr vex list --advisory=CVE-2026-90781` (gominimal/pkgmgr-rs). VEX
+    # statements are version-blind: if either patch is dropped before an
+    # upstream release contains the fix, withdraw that statement in the same
+    # change.
     { file = "CVE-2026-90781-numid.patch" } | Local,
     base,
     make,

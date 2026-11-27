@@ -23,7 +23,8 @@ let version = "1.17.0" in
   # http3). The binary statically links three C libraries that cargo builds from the
   # crates: aws-lc (rustls' crypto provider, via aws-lc-sys, built with cmake), jemalloc
   # (tikv-jemalloc-sys, autotools + make) and SQLite (rusqlite "bundled", for
-  # `--output-format` db exports).
+  # `--db-url`, which writes the successful requests to a SQLite database;
+  # `--output-format` is text, json, csv or quiet).
   build_deps = [
     { file = "build.sh" } | Local,
     {
@@ -36,8 +37,10 @@ let version = "1.17.0" in
     # URLs): moves upstream's Cargo.lock to url 2.5.9 and form_urlencoded 1.2.3, which
     # it requires. Lock-only, produced by `cargo update -p url@2.5.8 --precise 2.5.9`.
     # oha does not call Url::origin itself; this keeps the shipped crate set free of
-    # known advisories. Drop on the first upstream release that locks url >= 2.5.9 (the
-    # stale patch then fails at `patch`).
+    # known vulnerabilities. Two informational (unmaintained) advisories still ship, with
+    # no fixed release to move to: chrono (RUSTSEC-2026-0543) and humantime
+    # (RUSTSEC-2026-0542). Drop on the first upstream release that locks url >= 2.5.9
+    # (the stale patch then fails at `patch`).
     { file = "rustsec-2026-0592-url-lock.patch" } | Local,
     base,
     rust,

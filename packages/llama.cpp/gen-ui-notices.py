@@ -11,13 +11,14 @@ The build does NOT run this script. Rerun it on every llama.cpp bump: build.sh
 fails closed when the header's UI version, lock sha256 or dist sha256 no longer
 match what is being built.
 
-Usage (from the pkgs repo root; V is the `version` in build.ncl, e.g. b12640):
+Usage (from the pkgs repo root; V is the `version` in build.ncl, e.g. 1.0.1 or
+b12640, and B its `build_num`, e.g. b12700 or b12640):
 
     W=$(mktemp -d)
     gcloud storage cat --project=minimal-pkgsec \
       gs://minimal-staging-archives/ggml-org/llama.cpp/$V.tar.gz > $W/src.tar.gz
     gcloud storage cat --project=minimal-pkgsec \
-      gs://minimal-staging-archives/ggml-org/llama-ui/$V-dist.tar.gz > $W/dist.tar.gz
+      gs://minimal-staging-archives/ggml-org/llama-ui/$B-dist.tar.gz > $W/dist.tar.gz
     python3 -I packages/llama.cpp/gen-ui-notices.py \
       --src $W/src.tar.gz --dist $W/dist.tar.gz --cache $W/npm \
       --out packages/llama.cpp/ui-THIRD-PARTY-NOTICES
@@ -142,10 +143,12 @@ IMPORT_RE = re.compile(
 WORKBOX_RE = re.compile(rb"workbox:([a-z-]+):")
 # Paths under ui/ in the llama.cpp source.
 APP = "apps/chat/"
-SRC_TREES = (APP + "src/", "lib/ui/src/lib/", "lib/voice/src/")
+# lib/harness (Llama Harness, the agent loop + OpenAI client) joined at b12774;
+# like voice, the app compiles it from source.
+SRC_TREES = (APP + "src/", "lib/ui/src/lib/", "lib/voice/src/", "lib/harness/src/")
 VENDORS = APP + "src/lib/vendors/"
 # The workspace's own libraries, compiled from SRC_TREES (vite aliases).
-WORKSPACE = {"@ggml-org/llama-ui", "@ggml-org/llama-voice"}
+WORKSPACE = {"@ggml-org/llama-ui", "@ggml-org/llama-voice", "@ggml-org/llama-harness"}
 # Bare-specifier aliases in ui/apps/chat/vite.config.ts, to the package they name.
 ALIASES = {"katex-fonts": "katex"}
 SEP = "=" * 79
@@ -170,15 +173,18 @@ def read_pins():
     m = re.search(r'let version = "([^"]+)"', ncl)
     if not m:
         die("no `let version` in build.ncl")
+    b = re.search(r'let build_num = "([^"]+)"', ncl)
+    if not b:
+        die("no `let build_num` in build.ncl")
     pins = {}
     for key, marker in (("src", "ggml-org/llama.cpp/%{version}.tar.gz"),
-                        ("dist", "ggml-org/llama-ui/%{version}-dist.tar.gz")):
+                        ("dist", "ggml-org/llama-ui/%{build_num}-dist.tar.gz")):
         i = ncl.find(marker)
         h = re.search(r'sha256 = "([0-9a-f]{64})"', ncl[i:]) if i >= 0 else None
         if not h:
             die("no sha256 pin after " + marker + " in build.ncl")
         pins[key] = h.group(1)
-    return m.group(1), pins
+    return m.group(1), b.group(1), pins
 
 
 def package_name(spec):
@@ -384,7 +390,7 @@ def main():
     ap.add_argument("--out", required=True, help="notices file to write")
     a = ap.parse_args()
 
-    version, pins = read_pins()
+    version, build, pins = read_pins()
     src_bytes, dist_bytes = open(a.src, "rb").read(), open(a.dist, "rb").read()
     for key, data in (("src", src_bytes), ("dist", dist_bytes)):
         if sha256(data) != pins[key]:
@@ -392,8 +398,8 @@ def main():
 
     lock_bytes, ui_pkg, src_files, vendors = load_src(a.src, version)
     dist_version, workbox, dist_fonts = load_dist(a.dist)
-    if dist_version != version:
-        die("dist build.json version %r != build.ncl version %r" % (dist_version, version))
+    if dist_version != build:
+        die("dist build.json version %r != build.ncl build_num %r" % (dist_version, build))
     lock = json.loads(lock_bytes)
 
     roots = scan_roots(src_files) | workbox
@@ -486,7 +492,7 @@ def main():
     w = out.append
     w("Third-party notices for llama-server's embedded web UI (llama-ui)")
     w("")
-    w("llama-ui version: %s" % version)
+    w("llama-ui version: %s" % build)
     w("llama-ui dist sha256: %s" % pins["dist"])
     w("package-lock sha256: %s" % sha256(lock_bytes))
     w("llama.cpp source sha256: %s" % pins["src"])

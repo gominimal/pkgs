@@ -10,14 +10,14 @@ let diffutils = import "../diffutils/build.ncl" in
 let oniguruma = import "../oniguruma/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
 
-let version = "0.20.1" in
+let version = "0.22.0" in
 {
   name = "delta",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/dandavison/delta/%{version}.tar.gz",
-      sha256 = "d9d502396e3595ee8fd926f1ed2e54ac9935baabd3569a3753efab36304f90fa",
+      sha256 = "71fb0ba85058a8f206f11ea227d2f940f6051c9c81dcb238935e10b0dc82c09c",
       extract = true,
       strip_prefix = "delta-%{version}",
     } | Source,

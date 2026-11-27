@@ -72,10 +72,19 @@ in
       upstream_version = version,
       # LICENSE: iperf itself is the LBNL BSD variant (three clauses naming UC, LBNL and
       # DOE, plus the "Enhancements" grant), SPDX BSD-3-Clause-LBNL. The binary also
-      # compiles in src/cjson.c (MIT), src/net.c (MIT, Russ Cox / MIT; plus a BSD-3-Clause
-      # part by Eric Jackson), src/queue.h (BSD-3-Clause, UC) and src/units.c (the iperf2
-      # NCSA licence). GitHub's licence API reports NOASSERTION for this file.
-      license_spdx = "BSD-3-Clause-LBNL AND MIT AND BSD-3-Clause AND NCSA",
+      # compiles in src/cjson.c (MIT), src/net.{c,h} (MIT, Russ Cox / MIT; plus a
+      # BSD-3-Clause part by Eric Jackson), src/queue.h (BSD-3-Clause, UC), src/units.c (the
+      # iperf2 NCSA licence) and src/portable_endian.h (public domain, Mathias Panzenböck;
+      # LicenseRef-Public-Domain as in libbsd). GitHub's licence API reports NOASSERTION for
+      # LICENSE.
+      # LicenseRef-Lucent-Notice: LICENSE says net.{c,h} also contain parts of an earlier
+      # library by Rob Pike, Sape Mullender and Russ Cox, (c) 2003 Lucent Technologies,
+      # under a permission notice ("Permission to use, copy, modify, and distribute this
+      # software for any purpose without fee is hereby granted, provided that this entire
+      # notice is included ..."). It is the same family as SPDX dtoa but does not match it
+      # ("NEITHER THE AUTHORS NOR LUCENT TECHNOLOGIES MAKE" against dtoa's "NEITHER THE
+      # AUTHOR NOR <company> MAKES"), and no other SPDX licence carries it.
+      license_spdx = "BSD-3-Clause-LBNL AND MIT AND BSD-3-Clause AND NCSA AND LicenseRef-Public-Domain AND LicenseRef-Lucent-Notice",
       source_provenance = {
         category = 'GithubRepo,
         owner = "esnet",

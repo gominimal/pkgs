@@ -43,6 +43,13 @@ let version = "3.14.10" in
     # 3.14.10's Misc/NEWS has an entry for gh-143923 (3.14.10's `_putcmd` still
     # sends the line unchecked). A straight cherry-pick (applies at fuzz 0 to
     # 3.14.10); drop it on the first 3.14.x whose changelog lists gh-143923.
+    #
+    # VEX: the pkgsec vulnerability database holds a not_affected statement for
+    # CVE-2025-15367 (product pkg:github/python/cpython, justification
+    # inline_mitigations_already_exist) that rests on this patch; see it with
+    # `pkgmgr vex list --advisory=CVE-2025-15367` (gominimal/pkgmgr-rs). VEX
+    # statements are version-blind: if this patch is dropped before an upstream
+    # release contains gh-143923, withdraw that statement in the same change.
     { file = "0003-gh-143923-poplib-reject-control-characters.patch" } | Local,
     # OpenSSL 4: the Modules/ part of python/cpython#149783 (the unmerged 3.14 backport of
     # gh-146207 / gh-148600 / gh-148292). Without it _ssl references TLSv1_method() and the

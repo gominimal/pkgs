@@ -72,7 +72,11 @@ let version = "1.9.1" in
               tldr --seed-config
               grep -qx 'tls_backend = "rustls-with-native-roots"' "$TEALDEER_CONFIG_DIR/config.toml"
               printf '[updates]\ntls_backend = "rustls-with-webpki-roots"\n' > /tmp/webpki.toml
-              ! tldr --config-path /tmp/webpki.toml --show-paths > /tmp/out 2>&1
+              if tldr --config-path /tmp/webpki.toml --show-paths > /tmp/out 2>&1; then
+                cat /tmp/out >&2
+                echo "tldr accepted tls_backend = rustls-with-webpki-roots; this build should not support it" >&2
+                exit 1
+              fi
               grep -q 'Unsupported TLS backend' /tmp/out
             "%
           ],

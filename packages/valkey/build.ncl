@@ -9,7 +9,7 @@ let grep = import "../grep/build.ncl" in
 let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let version = "9.2.0" in
+let version = "9.2.1" in
 
 # Start a throwaway server on loopback (no persistence, so nothing is written on
 # shutdown) and wait until it answers PING. 127.0.0.1, not localhost: the test sandbox
@@ -32,7 +32,7 @@ in
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/valkey-io/valkey/archive/refs/tags/%{version}.tar.gz",
-      sha256 = "a02cb44db1269b699629e419d4949e6e51e984b1f0e9a984e8ee1e1b3b7cc36f",
+      sha256 = "fec5d34ac6f5c7f35cddcaae368734d8a789f1af2f7c29853e790f093d848d71",
       extract = true,
       strip_prefix = "valkey-%{version}",
     } | Source,

@@ -3,14 +3,14 @@ let { standaloneTest, Attrs, BuildSpec, Local, Needs, OutputBin, Source, .. } = 
 let base = import "../base/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
-let version = "6.2.0" in
+let version = "6.2.1" in
 {
   name = "podman-remote",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/podman-container-tools/podman/archive/refs/tags/v%{version}.tar.gz",
-      sha256 = "cb182273c5c5e3ea079f8f88a9a30a574d247f80e0b9dd9c02df1d2e6f6f3705",
+      sha256 = "10a56f6a36c4f7ea19956d7298615a6ff1f46978fc36d31dfe31be14899d10fb",
       extract = true,
       strip_prefix = "podman-%{version}",
     } | Source,

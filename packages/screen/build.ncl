@@ -8,14 +8,14 @@ let ncurses = import "../ncurses/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let libxcrypt = import "../libxcrypt/build.ncl" in
 
-let version = "5.0.2" in
+let version = "5.0.3" in
 {
   name = "screen",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/screen-%{version}.tar.gz",
-      sha256 = "ca9a2c7e240919bc7ac12124593ae4529bb4eb5f7349d8857829b7e3f0b3b332",
+      sha256 = "941c98ffecdca4bff4bbd1cd6f08fbd18967353affc46521040a999dafbd39a2",
       extract = true,
       strip_prefix = "screen-%{version}",
     } | Source,

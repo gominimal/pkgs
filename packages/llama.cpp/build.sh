@@ -49,7 +49,7 @@ test -f "$ui_app/CMakeLists.txt" || {
   exit 1
 }
 mkdir -p "$ui_app/dist"
-tar -xof "${MINIMAL_ARG_VERSION}-dist.tar.gz" -C "$ui_app/dist"
+tar -xof "${MINIMAL_ARG_BUILD_NUM}-dist.tar.gz" -C "$ui_app/dist"
 test -s "$ui_app/dist/index.html" || {
   echo "ERROR: pinned llama-ui dist has no index.html" >&2
   exit 1
@@ -63,11 +63,11 @@ find "$ui_app/dist" -exec touch -h -d @315532800 {} +
 # fails sha256sum --strict -c too.
 notices=./ui-THIRD-PARTY-NOTICES
 notices_field() { sed -n "s/^$1: //p" "$notices" | head -n1; }
-[ "$(notices_field 'llama-ui version')" = "$MINIMAL_ARG_VERSION" ] || {
-  echo "ERROR: $notices is for llama-ui '$(notices_field 'llama-ui version')', not $MINIMAL_ARG_VERSION: rerun gen-ui-notices.py" >&2
+[ "$(notices_field 'llama-ui version')" = "$MINIMAL_ARG_BUILD_NUM" ] || {
+  echo "ERROR: $notices is for llama-ui '$(notices_field 'llama-ui version')', not $MINIMAL_ARG_BUILD_NUM: rerun gen-ui-notices.py" >&2
   exit 1
 }
-echo "$(notices_field 'llama-ui dist sha256')  ${MINIMAL_ARG_VERSION}-dist.tar.gz" | sha256sum --strict -c -
+echo "$(notices_field 'llama-ui dist sha256')  ${MINIMAL_ARG_BUILD_NUM}-dist.tar.gz" | sha256sum --strict -c -
 echo "$(notices_field 'package-lock sha256')  $ui_app/package-lock.json" | sha256sum --strict -c -
 
 # CVE-2023-45663 (stb_image TGA/HDR loaders ignored stbi__getn's return, leaving
@@ -97,7 +97,7 @@ echo "607514a82eb47dbf21994914ea3c6abe7c8c5aca1a48d5d620f74f6c7d1f7815  ggml/src
 
 # The x86 variant scorer (ggml_backend_cpu_x86_score) reads CPUID feature bits only;
 # upstream marks it "FIXME: this does not check for OS support"
-# (ggml/src/ggml-cpu/arch/x86/cpu-feats.cpp:264 at b12359, unchanged at b12640). A
+# (ggml/src/ggml-cpu/arch/x86/cpu-feats.cpp:264 at b12359, unchanged at 1.1.0). A
 # host whose CPU has AVX-512 (or AVX/AVX2, or AMX) while the OS or hypervisor leaves
 # that register state off in XCR0 would load skylakex (etc.) and SIGILL, where
 # haswell runs. The patch reads XCR0 (XGETBV, only when CPUID.1:ECX.OSXSAVE is set)

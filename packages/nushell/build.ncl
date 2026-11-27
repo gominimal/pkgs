@@ -1,5 +1,6 @@
 let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
+let detbuild = import "../detbuild/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
@@ -20,6 +21,7 @@ let version = "0.117.0" in
       strip_prefix = "nushell-%{version}",
     } | Source,
     base,
+    detbuild,
     rust,
     toolchain,
     openssl,

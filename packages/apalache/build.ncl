@@ -23,8 +23,8 @@
 # the release's sha256sum.txt and GitHub's asset digest:
 # https://github.com/apalache-mc/apalache/releases/download/v0.62.4/apalache-0.62.4.tgz
 #
-# The version is the one quint pins (DEFAULT_APALACHE_VERSION_TAG in quint
-# 0.33.1's dist/src/apalache.js), so `quint verify` can use this install.
+# The version is the one quint pins: `apalache_pin` in packages/quint/build.ncl
+# (quint's DEFAULT_APALACHE_VERSION_TAG), so `quint verify` can use this install.
 let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let bash = import "../bash/build.ncl" in

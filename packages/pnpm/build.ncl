@@ -13,7 +13,7 @@ let tar = import "../tar/build.ncl" in
 
 let node-lts = import "../node-lts/build.ncl" in
 
-let version = "12.23.0" in
+let version = "12.24.0" in
 {
   name = "pnpm",
   build_deps = [
@@ -26,17 +26,17 @@ let version = "12.23.0" in
       { arch = 'Amd64, .. } =>
         {
           url = "https://registry.npmjs.org/@pnpm/exe.linux-x64/-/exe.linux-x64-%{version}.tgz",
-          sha256 = "8aeb5ad2b7e71fc3f81f572fb3107449fc0ef8a9be4e4cdf51d9d4992921bb51"
+          sha256 = "a4a731ad9a906c36764287a57a4f8891f13b77577896a6120fc7bff4d1e46d3e"
         } | Source,
       { arch = 'Arm64, .. } =>
         {
           url = "https://registry.npmjs.org/@pnpm/exe.linux-arm64/-/exe.linux-arm64-%{version}.tgz",
-          sha256 = "986807e3baaf6310b770f3bd456ebf6dc95f469d42c610c0df4a9a3d7f84d498"
+          sha256 = "598e954c7f69376a60f9735bd7cadf0bed82779723bc028a5370179c607b0df3"
         } | Source,
     } target,
     {
       url = "https://registry.npmjs.org/pnpm/-/pnpm-%{version}.tgz",
-      sha256 = "6501a897dcfe072e8df2957c94c46f27f71901b28f2e02a167f91e0ac7905859"
+      sha256 = "92500010cc606f831510e8b734c16cb99fd328eff33b7063ea7a4f2f0ee28c1d"
     } | Source,
     base,
     tar,

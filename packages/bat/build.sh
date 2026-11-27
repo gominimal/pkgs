@@ -33,8 +33,14 @@ install -D -m 0644 "$COMP/bat.zsh"  "$OUTPUT_DIR/usr/share/zsh/site-functions/_b
 [ -s "$OUTPUT_DIR/usr/share/zsh/site-functions/_bat" ]
 head -1 "$OUTPUT_DIR/usr/share/zsh/site-functions/_bat" | grep -qx '#compdef bat'
 grep -q 'complete -c' "$OUTPUT_DIR/usr/share/fish/vendor_completions.d/bat.fish"
-! grep -qi 'bash completion' "$OUTPUT_DIR/usr/share/fish/vendor_completions.d/bat.fish"
+if grep -qi 'bash completion' "$OUTPUT_DIR/usr/share/fish/vendor_completions.d/bat.fish"; then
+  echo "ERROR: bat.fish is a bash completion script, not fish" >&2
+  exit 1
+fi
 grep -qE 'complete .*(-F|-o) ' "$OUTPUT_DIR/usr/share/bash-completion/completions/bat"
 # The templates are rendered, not copied — an unsubstituted {{VAR}} means the
 # render silently half-failed.
-! grep -q '{{' "$OUTPUT_DIR/usr/share/zsh/site-functions/_bat"
+if grep -n '{{' "$OUTPUT_DIR/usr/share/zsh/site-functions/_bat"; then
+  echo "ERROR: _bat has an unsubstituted {{VAR}} (above): the template render half-failed" >&2
+  exit 1
+fi
