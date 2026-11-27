@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -10,6 +10,8 @@ let make = import "../make/build.ncl" in
 let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
+let pkgconf = import "../pkgconf/build.ncl" in
+let zstd = import "../zstd/build.ncl" in
 
 let version = "0.13.10" in
 {
@@ -29,10 +31,16 @@ let version = "0.13.10" in
     make,
     rust,
     toolchain,
+    # zstd-sys links pkgs' libzstd through pkg-config instead of its
+    # vendored copy (see build.sh).
+    pkgconf,
+    zstd,
   ],
   runtime_deps = [
     glibc,
     gcc, # TODO, weird
+    # uv NEEDs libzstd.so.1 (build.sh checks it).
+    subsetOf zstd ["libzstd"],
   ],
   needs =
     {
