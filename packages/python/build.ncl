@@ -78,7 +78,7 @@ let version = "3.14.10" in
     bzip2, # _bz2 links libbz2
     subsetOf util-linux ["libuuid"],
     xz,
-    zstd, # _zstd (compression.zstd) links libzstd; it used to arrive via bash -> ncurses -> subsetOf gcc (inbox#1261)
+    zstd, # _zstd (compression.zstd) NEEDs libzstd.so.1
   ],
 
   cmd = "./build.sh",

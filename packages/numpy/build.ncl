@@ -29,7 +29,7 @@ let version = "2.5.5" in
   runtime_deps = [
     python,
     openblas,
-    # C++: NEEDs libstdc++ and libgcc_s, which came only through gmp/ncurses before those dropped gcc-runtime (gcc_runtime_guard.py rule 4).
+    # C++: NEEDs libstdc++ and libgcc_s.
     subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 

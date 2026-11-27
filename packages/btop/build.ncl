@@ -24,7 +24,7 @@ let version = "1.4.8" in
   ],
   runtime_deps = [
     ncurses,
-    # C++: NEEDs libstdc++ and libgcc_s, which came only through gmp/ncurses before those dropped gcc-runtime (gcc_runtime_guard.py rule 4).
+    # C++: NEEDs libstdc++ and libgcc_s.
     subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
   cmd = "./build.sh",

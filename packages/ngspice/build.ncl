@@ -34,7 +34,7 @@ let version = "46" in
   runtime_deps = [
     # ngspice (built --enable-openmp) NEEDs libgomp.so.1, libstdc++.so.6 and
     # libgcc_s.so.1 on both arches (readelf, gcc-runtime output audit
-    # 2026-11-14). On main they came only with whole gcc in its closure.
+    # 2026-11-14).
     subsetOf gcc-runtime ["libgcc", "libgomp", "libstdcpp"],
     glibc,
     ncurses,

@@ -38,7 +38,7 @@ let api = std.string.join "." (std.array.slice 0 2 (std.string.split "." version
     libtasn1,
     libunistring,
     nettle,
-    # libgnutlsxx is C++; libstdc++ came only through gmp before gmp dropped gcc-runtime.
+    # libgnutlsxx is C++: NEEDs libstdc++ and libgcc_s.
     subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 

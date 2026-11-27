@@ -39,8 +39,7 @@ let newlib_version = "4.6.0.20260123" in
     bash,
     binutils-arm-none-eabi,
     # cc1, cc1plus, lto1 and arm-none-eabi-lto-dump NEED libgmp, libmpfr, libmpc
-    # and libzstd. They came only through bash -> ncurses -> subsetOf gcc, which
-    # inherits gcc's runtime_deps (inbox#1261); zlib comes via binutils.
+    # and libzstd; libz comes with binutils.
     gmp,
     mpfr,
     mpc,

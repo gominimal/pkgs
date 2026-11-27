@@ -32,7 +32,7 @@ let version = "1.2.0" in
   runtime_deps = [
     glibc,
     subsetOf gcc-runtime ["libgcc"],
-    zlib, # usr/bin/lsd NEEDs libz.so.1; it came only through subsetOf gcc (inbox#1261)
+    zlib, # usr/bin/lsd NEEDs libz.so.1
   ],
 
   cmd = "./build.sh",

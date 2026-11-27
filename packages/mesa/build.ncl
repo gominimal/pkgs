@@ -59,7 +59,7 @@ let version = "26.3.1" in
     libxshmfence,
     expat,
     zlib,
-    zstd, # libgallium NEEDs libzstd.so.1; it came only through subsetOf gcc (inbox#1261)
+    zstd, # libgallium NEEDs libzstd.so.1
     glibc,
     subsetOf gcc-runtime ["libstdcpp", "libgcc"],
   ],

@@ -29,7 +29,7 @@ let version = "0.117.0" in
     glibc,
     subsetOf gcc-runtime ["libgcc"],
     openssl,
-    zlib, # usr/bin/nu NEEDs libz.so.1; it came only through subsetOf gcc (inbox#1261)
+    zlib, # usr/bin/nu NEEDs libz.so.1
   ],
 
   cmd = "./build.sh",

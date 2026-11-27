@@ -69,9 +69,9 @@ let version = "13.2.1" in
     # missing-runtime_deps checker rather than guessed at.
     pcre2,
     zlib,
-    # C++: NEEDs libstdc++ and libgcc_s, which came only through gmp/ncurses before those dropped gcc-runtime (gcc_runtime_guard.py rule 4).
+    # C++: NEEDs libstdc++ and libgcc_s.
     subsetOf gcc-runtime ["libgcc", "libstdcpp"],
-    zstd, # usr/lib/plugin/zstd.so NEEDs libzstd.so.1; it came only through bash/ncurses -> subsetOf gcc (inbox#1261)
+    zstd, # usr/lib/plugin/zstd.so NEEDs libzstd.so.1
   ],
 
   cmd = "./build.sh",

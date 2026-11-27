@@ -27,7 +27,7 @@ let version = "0.29.0" in
   runtime_deps = [
     glibc,
     subsetOf gcc-runtime ["libgcc"],
-    zlib, # usr/bin/tuicr NEEDs libz.so.1; it came only through subsetOf gcc (inbox#1261)
+    zlib, # usr/bin/tuicr NEEDs libz.so.1
   ],
 
   needs = {

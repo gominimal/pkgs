@@ -50,7 +50,7 @@ let version = "21.1.8" in
     # (readelf, gcc-runtime output audit 2026-11-14).
     subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     zlib,
-    zstd, # clang-21 and its tools NEED libzstd.so.1; it came only through subsetOf gcc (inbox#1261)
+    zstd, # clang-21 and its tools NEED libzstd.so.1
   ],
 
   cmd = "./build.sh",

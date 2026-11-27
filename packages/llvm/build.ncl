@@ -45,8 +45,7 @@ let version = "23.1.5" in
     libffi,
     zlib,
     # libLLVM, lld and llvm-config NEED libzstd.so.1 (published llvm 23.1.5,
-    # readelf). It used to arrive only through `subsetOf gcc`, which inherits
-    # gcc's runtime_deps; gcc-runtime does not (inbox#1261).
+    # readelf).
     zstd,
     subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],

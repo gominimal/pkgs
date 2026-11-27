@@ -53,8 +53,7 @@ in
     python,
     glibc,
     subsetOf sqlite ["libs"],
-    # The bundled python and its C++ wheels NEED libstdc++ and libgcc_s, which came
-    # only through python -> ncurses before ncurses dropped gcc-runtime.
+    # The bundled python and its C++ wheels NEED libstdc++ and libgcc_s.
     subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 

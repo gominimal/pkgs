@@ -27,7 +27,7 @@ let version = "3.11.1" in
     # A dlopen is not DT_NEEDED, so missing-runtime_deps can't see it.
     subsetOf gcc-runtime ["libgcc"],
     gmp,
-    zlib, # usr/bin/stack NEEDs libz.so.1; it came only through gmp -> subsetOf gcc (inbox#1261)
+    zlib, # usr/bin/stack NEEDs libz.so.1
   ],
 
   needs =
