@@ -1,7 +1,7 @@
 let { standaloneTest, subsetOf, BuildSpec, Local, OutputBin, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let libusb = import "../libusb/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -31,7 +31,10 @@ let version = "1.9.0" in
   runtime_deps = [
     glibc,
     libusb,
-    subsetOf gcc ["libs"],
+    # The missing-runtime_deps check found every binary and libstlink NEED
+    # libssp.so.0 (gcc 16 canary pkgs#1340 run 34ab070b); libgcc_s is kept
+    # from gcc's catch-all `libs` output this replaces (inbox#1261).
+    subsetOf gcc-runtime ["libgcc", "libssp"],
   ],
 
   cmd = "./build.sh",

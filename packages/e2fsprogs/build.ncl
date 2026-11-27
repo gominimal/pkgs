@@ -1,4 +1,5 @@
 let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let make = import "../make/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
@@ -34,6 +35,9 @@ let version = "1.47.4" in
   # outputs, not the whole ~18 MB toolset. Cycle-safe: nothing in util-linux's
   # closure uses e2fsprogs.
   runtime_deps = [
+    # glibc dlopens libgcc_s.so.1 for backtrace(); without it backtrace()
+    # returns no frames. A dlopen is not DT_NEEDED (missing-runtime_deps can't see it).
+    subsetOf gcc-runtime ["libgcc"],
     glibc,
     bash,
     subsetOf util-linux ["libblkid", "libuuid"],

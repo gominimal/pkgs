@@ -10,7 +10,7 @@ let ninja = import "../ninja/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gnutls = import "../gnutls/build.ncl" in
 let ldns = import "../ldns/build.ncl" in
@@ -132,7 +132,7 @@ let httplib_version = "0.67.0" in
   # gnutls for DoT/DoH, nghttp2 for DoH (upstream's default `doh` option is on).
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     gnutls,
     ldns,
     libuv,

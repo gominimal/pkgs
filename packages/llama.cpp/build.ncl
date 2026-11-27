@@ -11,7 +11,7 @@ let grep = import "../grep/build.ncl" in
 let curl = import "../curl/build.ncl" in
 let hwdata = import "../hwdata/build.ncl" in
 let pciutils = import "../pciutils/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 
 # `version` keys the source tarball (GitHub's archive of the tag: `v1.0.1` for a
 # stable release, so `version = "1.0.1"`). `build_num` is the b#### build the
@@ -63,7 +63,7 @@ let build_num = "b12774" in
     curl,
     hwdata,
     pciutils,
-    subsetOf gcc ["libgcc", "libstdcpp", "libgomp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp", "libgomp"],
   ],
   cmd = "./build.sh",
   build_args = {

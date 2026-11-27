@@ -7,6 +7,7 @@ let make = import "../make/build.ncl" in
 let sed = import "../sed/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
@@ -35,7 +36,10 @@ let version = "8.12.0" in
 
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libstdcpp"],
+    # redis-server/redis-check-* call pthread_cancel (and backtrace() in the
+    # crash log); glibc dlopens libgcc_s.so.1 to unwind and aborts without it.
+    # A dlopen is not DT_NEEDED. No redis ELF NEEDs libstdc++ (amd64 + arm64).
+    subsetOf gcc-runtime ["libgcc"],
   ],
 
   cmd = "./build.sh",

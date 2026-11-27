@@ -7,7 +7,7 @@ let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let libtool = import "../libtool/build.ncl" in
 let m4 = import "../m4/build.ncl" in
@@ -49,7 +49,7 @@ let version = "6.12.0.206" in
     bash, # mcs and the other usr/bin wrappers are #!/bin/sh scripts
     glibc,
     zlib,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 
 let alex = import "../alex/build.ncl" in
 let base = import "../base/build.ncl" in
@@ -30,7 +31,15 @@ let version = "2.15.0.0" in
     happy,
   ],
 
-  runtime_deps = [glibc, gmp, libffi, zlib],
+  runtime_deps = [
+    glibc,
+    gmp,
+    libffi,
+    zlib,
+    # glibc dlopens libgcc_s.so.1 to unwind on pthread_exit and aborts without it.
+    # A dlopen is not DT_NEEDED, so missing-runtime_deps can't see it.
+    subsetOf gcc-runtime ["libgcc"],
+  ],
 
   needs =
     {

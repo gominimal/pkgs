@@ -216,17 +216,37 @@ These should be used where possible in lieu of exhaustively listing dependencies
 
 ### Subsets: depending on _some_ libraries in a package
 
-Some packages are really large, like `gcc`, but provide important libraries that are used a lot like
-`libgcc` or `libstdc++`. To avoid any user of a package needing to download a whole gcc, its possible
-to depend on only some _outputs_ of a package. For instance, the `gcc` package represents `libgcc`
-and `libstdc++` with outputs `libgcc` and `libstdcpp`, so if a program needed both libraries, you could
-use:
+`subsetOf <pkg> [<outputs>]` puts only the named _outputs_ of a package into the consumer's closure,
+instead of every file the package ships. For instance, if a program needs libstdc++ and the libgcc_s
+unwinder, it can use:
 
 ```ncl
-subsetOf gcc ["libgcc", "libstdcpp"],
+subsetOf gcc-runtime ["libgcc", "libstdcpp"],
 ```
 
 as an entry to `runtime_deps`. Don't forget to add `subsetOf` to the import line for `minimal.ncl`.
+
+A subset does **not** save a download. The client still fetches the parent's whole build artifact and
+cuts the subset out of it locally, and the closure also takes in all of the parent's own `runtime_deps`.
+So a subset of a large package is no cheaper to fetch than the package itself. To keep a big package's
+libraries cheap, package them on their own and take a subset of that.
+
+gcc is the case that matters: `subsetOf gcc [...]` costs the whole compiler (~300 MB unpacked) plus gcc's
+runtime deps (gmp, mpc, mpfr, zstd, ...). gcc's shared runtime libraries live in `gcc-runtime`, with the
+same output names (`libgcc`, `libstdcpp`, `libgomp`, `libatomic`, `libssp`, and `libquadmath` on
+amd64) and only glibc as a runtime dep; `libgfortran` is in `gcc-runtime-fortran`
+(`subsetOf gcc-runtime-fortran ["libgfortran"]`). Take them from there; `.github/scripts/gcc_runtime_guard.py`
+rejects `subsetOf gcc` and a whole `gcc` in `runtime_deps` (only `toolchain` may ship the compiler).
+Building with gcc (`build_deps`, `toolchain`) is unaffected.
+
+A binary that calls `pthread_cancel`, `pthread_exit`, `thrd_exit` or `backtrace` needs `libgcc_s.so.1`
+at runtime even though it does not NEED it: glibc dlopens it to unwind, and aborts without it. The
+missing-runtime_deps check cannot see a dlopen, so give such a package `subsetOf gcc-runtime ["libgcc"]`.
+`.github/scripts/libgcc_dlopen_guard.py` fails a PR when a package listed in
+`libgcc_dlopen_importers.toml` has no libgcc in its runtime closure, and the weekly
+`libgcc-dlopen-scan` workflow regenerates that list from the built artifacts and fails when it is out of
+date. A package that only runs inside other builds can be exempted in `libgcc_dlopen_build_only.toml`
+(the guard fails if anything takes it at runtime).
 
 
 ### Build steps/script

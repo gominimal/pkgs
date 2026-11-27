@@ -6,7 +6,7 @@ let gawk = import "../gawk/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let unzip = import "../unzip/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let nss = import "../nss/build.ncl" in
 let nspr = import "../nspr/build.ncl" in
 let dbus = import "../dbus/build.ncl" in
@@ -66,7 +66,7 @@ let browser_version = chromium-headless-shell-bin.attrs.upstream_version in
   runtime_deps =
     [
       glibc,
-      subsetOf gcc ["libgcc"],
+      subsetOf gcc-runtime ["libgcc"],
       nss,
       nspr,
       glib,

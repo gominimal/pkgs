@@ -1,4 +1,5 @@
-let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let base = import "../base/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -25,6 +26,9 @@ let version = "3.18.3" in
     meson,
   ],
   runtime_deps = [
+    # glibc dlopens libgcc_s.so.1 to unwind on pthread_cancel and aborts without it.
+    # A dlopen is not DT_NEEDED, so missing-runtime_deps can't see it.
+    subsetOf gcc-runtime ["libgcc"],
     glibc,
   ],
 

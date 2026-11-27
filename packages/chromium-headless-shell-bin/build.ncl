@@ -1,11 +1,11 @@
-let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
 let unzip = import "../unzip/build.ncl" in
 
 let bash = import "../bash/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 
 let alsa-lib = import "../alsa-lib/build.ncl" in
 let cairo = import "../cairo/build.ncl" in
@@ -154,7 +154,11 @@ let browser_version = "158.0.8127.88" in
   runtime_deps = [
     bash,
     glibc,
-    gcc,
+    # libgcc_s only: chrome-headless-shell, libEGL.so, libGLESv2.so,
+    # libvk_swiftshader.so and libvulkan.so.1 all NEED libgcc_s.so.1 on both
+    # arches, and none NEEDs libstdc++ (Chrome bundles its own libc++). Read from
+    # the DT_NEEDED of every ELF in the 158.0.8127.88 linux64 and linux-arm64 zips.
+    subsetOf gcc-runtime ["libgcc"],
     alsa-lib,
     cairo,
     cups,

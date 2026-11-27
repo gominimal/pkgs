@@ -23,7 +23,7 @@ let linux_headers = import "../linux_headers/build.ncl" in
 # other
 let bison = import "../bison/build.ncl" in
 let m4 = import "../m4/build.ncl" in
-let python = import "../python/build.ncl" in
+let python-bootstrap = import "../python-bootstrap/build.ncl" in
 
 let all_outputs = {
   # Technically a few binaries (xtrace, ldd) depend on bash, but we omit that dep given how low-level glibc is +
@@ -80,7 +80,10 @@ let version = "2.44" in
     # other
     bison,
     m4,
-    python,
+    # Not `python`: that would put python (and openssl) in gcc's build graph,
+    # where gcc_runtime_guard rule 4 keeps them from taking libgcc_s from
+    # gcc-runtime. See packages/python-bootstrap.
+    python-bootstrap,
   ],
 
   cmd = "./build.sh",
@@ -122,7 +125,21 @@ let version = "2.44" in
             } | Source,
         } target,
       ],
-      outputs = all_outputs,
+      # Under the registry spec a prebuilt keeps only what its output globs name
+      # (gominimal/arch#183, D-24), and the gen-13 objects hold more than the real
+      # spec's globs: the glibc-bedrock-2.42 sysroot (gen-13 tools, the amd64 gcc
+      # breaker among them, may still name its loader) and, on arm64, a second
+      # copy of the libraries and crt objects under usr/lib64. Keep both until no
+      # pinned object needs them.
+      outputs =
+        all_outputs
+        & { bedrock = { glob = "usr/lib/glibc-bedrock-*/**", allow_data = true } | OutputLib }
+        & (
+          match {
+            { arch = 'Amd64, .. } => {},
+            { arch = 'Arm64, .. } => { lib64 = { glob = "usr/lib64/**", allow_data = true } | OutputLib },
+          } target
+        ),
     } | BuildSpec,
 
   tests = {

@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 # jdk-21: the previous Java LTS line, kept for projects pinned to 21. OpenJDK built from the
 # openjdk/jdk21u `-ga` tag that Eclipse Temurin's release of the same version is built from,
 # booted by a rung of the JVM ladder and compiled by the production toolchain. The build is
@@ -122,6 +123,9 @@ let build_num = "2" in
   ],
   # java loads libz; AWT, sound, font and image code load the X libraries, alsa, freetype, fontconfig, lcms2, libpng, giflib and libjpeg
   runtime_deps = [
+    # glibc dlopens libgcc_s.so.1 to unwind on pthread_exit and aborts without it.
+    # A dlopen is not DT_NEEDED, so missing-runtime_deps can't see it.
+    subsetOf gcc-runtime ["libgcc"],
     glibc,
     zlib,
     freetype,

@@ -2,7 +2,7 @@
 let { subsetOf, Attrs, BuildSpec, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
 let base = import "../base/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let libffi = import "../libffi/build.ncl" in
 let libssh2 = import "../libssh2/build.ncl" in
 # LLVM 23, prefixed under /usr/lib/llvm-23. Pinned to the versioned line, not the default `llvm`
@@ -56,7 +56,7 @@ let arm64_sha256 = "07b2fdce127dc849437ad0158219d87847718a3f583ec6c5b9e2722642a5
     openssl-3-5,
     sqlite,
     zlib,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
   # the binary runs from its own runtime closure, outside any build sandbox; libLLVM.so.23.1 is
   # under llvm-23's prefix, which only the environment can name (see runtime_deps above)

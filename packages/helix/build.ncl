@@ -1,4 +1,4 @@
-let { Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let grep = import "../grep/build.ncl" in
@@ -6,7 +6,7 @@ let rust = import "../rust/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let git = import "../git/build.ncl" in
 
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let helix-grammars = import "../helix-grammars/build.ncl" in
 
@@ -35,7 +35,7 @@ let version = "25.07.1" in
 
   runtime_deps = [
     glibc,
-    gcc,
+    subsetOf gcc-runtime ["libgcc"],
     helix-grammars,
   ],
 
