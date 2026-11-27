@@ -22,6 +22,7 @@ on:
       - "packages/**"
       - ".github/scripts/libgcc_dlopen_guard.py"
       - ".github/scripts/libgcc_dlopen_importers.toml"
+      - ".github/scripts/libgcc_dlopen_build_only.toml"
       - ".github/scripts/test_libgcc_dlopen_guard.py"
       - ".github/scripts/libgcc_dlopen_scan.py"
       - ".github/scripts/test_libgcc_dlopen_scan.py"
