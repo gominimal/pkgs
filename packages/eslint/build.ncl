@@ -4,7 +4,7 @@ let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, Needs, OutputBin, Outpu
 let base = import "../base/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let version = "10.15.0" in
+let version = "10.16.0" in
 {
   name = "eslint",
   build_deps = [
