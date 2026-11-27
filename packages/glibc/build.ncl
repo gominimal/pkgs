@@ -23,6 +23,7 @@ let linux_headers = import "../linux_headers/build.ncl" in
 # other
 let bison = import "../bison/build.ncl" in
 let m4 = import "../m4/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let python = import "../python/build.ncl" in
 
 let all_outputs = {
@@ -57,6 +58,21 @@ let version = "2.44" in
       url = "gs://minimal-staging-archives/glibc-%{version}.tar.xz",
       sha256 = "37f600f2bef3c5e8300147059568b2a2e40a7ad6ccc65ce942556d49429cc667"
     } | Source,
+    # glibc 2.44 release branch, `git diff glibc-2.44..809fd7179d` of
+    # sourceware release/2.44/master (2.44-87; header lists all 87 commits).
+    # Fixes CVE-2026-19499 (63b53df549), CVE-2026-19542 (d6ff274313),
+    # CVE-2026-77117 (6f9b2bfa50), CVE-2026-80489 (cb61572ea3),
+    # CVE-2026-8674 (1f50262410), CVE-2026-18374 (0b4e41fc51 + 30950ce64d),
+    # CVE-2026-86805 + CVE-2026-95818 (6b48c0b29c), CVE-2026-100290
+    # (fcfb867c58), CVE-2026-115819 (063fdd4c7e), CVE-2026-121758
+    # (625054f30f), CVE-2026-126765 (809fd7179d); also CVE-2026-84243
+    # (438677ef49). Drop on the bump to 2.45.
+    { file = "0001-glibc-2.44-release-branch-809fd7179d.patch" } | Local,
+    # CVE-2026-124024, IBM1390/IBM1399 iconv encoder over-read (bug 34914):
+    # glibc master 77fe280828, not yet on release/2.44. Source hunk only (the
+    # upstream test is left out; see the patch header). Drop once the 2.44
+    # branch or 2.45 carries it.
+    { file = "0002-CVE-2026-124024-iconv-ibm1390-ibm1399-overread.patch" } | Local,
     # base
     bash,
     bzip2,
@@ -80,6 +96,8 @@ let version = "2.44" in
     # other
     bison,
     m4,
+    # applies the release-branch patch above
+    patch,
     python,
   ],
 

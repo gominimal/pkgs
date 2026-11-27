@@ -1,0 +1,98 @@
+Build the openat2 extraction jail (0001) against glibc < 2.43.
+
+0001 calls openat2() with RESOLVE_BENEATH and uses struct open_how. It
+dropped gnulib's openat2 module on the premise that glibc >= 2.43 declares
+all three in <fcntl.h>. That holds for the glibc we ship (2.44), but tar is
+first built in the bootstrap pre-phase against glibc's gen-13 breaker,
+glibc-bedrock 2.42, which has none of them (pkgs#1694 build-bot run
+51549d61: "invalid use of undefined type 'struct open_how'", "implicit
+declaration of function 'openat2'", "RESOLVE_BENEATH undeclared").
+
+Adds src/openat2-compat.h, included from src/common.h. When <fcntl.h>
+already defines RESOLVE_BENEATH (glibc >= 2.43) it does nothing. Otherwise
+it takes struct open_how and RESOLVE_* from the kernel's <linux/openat2.h>
+(or defines the kernel ABI layout if that header is absent), and maps
+openat2 to syscall(SYS_openat2, ...) (437 on every architecture). glibc's
+own openat2 is the same bare system call, so either build behaves the same.
+Header only: no Makefile.am / Makefile.in change, no autotools rerun.
+
+Not from upstream tar; drop together with 0001.
+
+diff --git a/src/common.h b/src/common.h
+index cc8dbe5..921ab6c 100644
+--- a/src/common.h
++++ b/src/common.h
+@@ -68,6 +68,7 @@
+ #include <xvasprintf.h>
+ 
+ #include <paxlib.h>
++#include "openat2-compat.h"
+ 
+ /* Log base 2 of common values.  */
+ #define LG_8 3
+diff --git a/src/openat2-compat.h b/src/openat2-compat.h
+new file mode 100644
+index 0000000..9dcd7ef
+--- /dev/null
++++ b/src/openat2-compat.h
+@@ -0,0 +1,60 @@
++/* openat2 for C libraries that do not declare it (glibc < 2.43).
++
++   The extraction jail (CVE-2025-45582) calls openat2 with RESOLVE_BENEATH.
++   Upstream tar gets openat2 from gnulib's openat2 module, which this
++   backport does not carry.  glibc >= 2.43 declares openat2, struct
++   open_how and RESOLVE_* in <fcntl.h>, and then this header does nothing.
++   An older glibc (the bootstrap glibc 2.42 that tar is first built
++   against) has none of them, so supply them here: struct open_how from
++   the kernel's <linux/openat2.h> when available, else the kernel ABI
++   layout, and openat2 as the raw system call, which is all glibc's own
++   openat2 is.  Not in upstream tar.  */
++
++#ifndef TAR_OPENAT2_COMPAT_H
++#define TAR_OPENAT2_COMPAT_H
++
++#include <fcntl.h>
++
++#ifndef RESOLVE_BENEATH
++# include <stddef.h>
++# include <stdint.h>
++# include <sys/syscall.h>
++# include <unistd.h>
++
++# if defined __has_include
++#  if __has_include (<linux/openat2.h>)
++#   include <linux/openat2.h>
++#   define TAR_HAVE_LINUX_OPENAT2_H 1
++#  endif
++# endif
++
++# ifndef TAR_HAVE_LINUX_OPENAT2_H
++struct open_how
++{
++  uint64_t flags;
++  uint64_t mode;
++  uint64_t resolve;
++};
++#  define RESOLVE_NO_XDEV       0x01
++#  define RESOLVE_NO_MAGICLINKS 0x02
++#  define RESOLVE_NO_SYMLINKS   0x04
++#  define RESOLVE_BENEATH       0x08
++#  define RESOLVE_IN_ROOT       0x10
++# endif
++
++/* openat2 has the same number on every Linux architecture (it postdates
++   the unified syscall table).  */
++# ifndef SYS_openat2
++#  define SYS_openat2 437
++# endif
++
++static inline int
++tar_openat2 (int dirfd, char const *pathname, struct open_how const *how,
++             size_t size)
++{
++  return syscall (SYS_openat2, dirfd, pathname, how, size);
++}
++# define openat2 tar_openat2
++#endif
++
++#endif

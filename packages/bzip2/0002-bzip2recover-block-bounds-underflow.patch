@@ -1,0 +1,32 @@
+Backport of sourceware bzip2 master commit 6ab7670e74d3bada5bf9a7dc5af28a68064db151
+(https://sourceware.org/git/bzip2.git). Companion hardening
+from the same CVE-2026-42250 fix set: rejects a block whose end precedes its
+start (unsigned underflow made the >= 130 size check pass).
+Applies to the bzip2 1.0.8 release tarball with no changes (git apply
+--check -p1 passes on the pristine tree, after the earlier patches in
+this series); applied in build.sh with patch -Np1 -F0.
+
+From 6ab7670e74d3bada5bf9a7dc5af28a68064db151 Mon Sep 17 00:00:00 2001
+From: Mark Wielaard <mark@klomp.org>
+Date: Thu, 28 May 2026 18:49:42 +0200
+Subject: [PATCH] bzip2recover: Add one more wraparound sanity check
+
+Make sure the end of the current block is actually larger than the
+start of the current block. Then check the difference is big
+enough. This prevents a possible unsigned underflow.
+---
+ bzip2recover.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/bzip2recover.c b/bzip2recover.c
+index 95adeeb..4de1b6f 100644
+--- a/bzip2recover.c
++++ b/bzip2recover.c
+@@ -394,6 +394,7 @@ Int32 main ( Int32 argc, Char** argv )
+             bEnd[currBlock] = 0;
+          }
+          if (currBlock > 0 &&
++	     bEnd[currBlock] >= bStart[currBlock] &&
+ 	     (bEnd[currBlock] - bStart[currBlock]) >= 130) {
+             fprintf ( stderr, "   block %d runs from " MaybeUInt64_FMT 
+                               " to " MaybeUInt64_FMT "\n",
