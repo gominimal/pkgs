@@ -16,14 +16,14 @@ let zstd = import "../zstd/build.ncl" in
 let oniguruma = import "../oniguruma/build.ncl" in
 let bzip2 = import "../bzip2/build.ncl" in
 
-let version = "0.169.0" in
+let version = "0.172.0" in
 {
   name = "codex",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "https://github.com/openai/codex/archive/refs/tags/rust-v%{version}.tar.gz",
-      sha256 = "d9b6335151f66d1d4ae9123f55553164ff339f30b14f64a358ea78139c4c093e",
+      sha256 = "8a4a4bd174f87394ed7a63c8fe1bf8207d9d691468e465fe56e418018ecc5549",
       extract = true,
       strip_prefix = "codex-rust-v%{version}",
     } | Source,
