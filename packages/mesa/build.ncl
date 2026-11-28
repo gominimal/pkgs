@@ -7,6 +7,9 @@ let meson = import "../meson/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let python = import "../python/build.ncl" in
+let py-mako = import "../py-mako/build.ncl" in
+let py-packaging = import "../py-packaging/build.ncl" in
+let py-pyyaml = import "../py-pyyaml/build.ncl" in
 let bison = import "../bison/build.ncl" in
 let flex = import "../flex/build.ncl" in
 let m4 = import "../m4/build.ncl" in
@@ -44,6 +47,10 @@ let version = "26.3.1" in
     pkgconf,
     toolchain,
     python,
+    # Python modules meson.build imports while it configures.
+    py-mako,
+    py-packaging,
+    py-pyyaml,
     bison,
     flex,
     m4,
