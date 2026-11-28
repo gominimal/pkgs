@@ -15,7 +15,7 @@ let glibc = import "../glibc/build.ncl" in
 # >= 5.3.0, <= 14.6.0). Fix commits 4a60bf8333 + a1d34fedce (harfbuzz#6413)
 # are ancestors of 15.0.0 and of no 14.x tag. build.sh fails the build if the
 # fix regresses (ghsa-r62p-check.c, upstream's own regression vector).
-let version = "15.1.0" in
+let version = "15.2.0" in
 {
   name = "harfbuzz",
   build_deps = [
@@ -23,7 +23,7 @@ let version = "15.1.0" in
     { file = "ghsa-r62p-check.c" } | Local,
     {
       url = "gs://minimal-staging-archives/harfbuzz-%{version}.tar.xz",
-      sha256 = "0fc7c565443a5f4be7da65ac5ee5bd737d9b158dc908708b7689a0a5796b0c8d",
+      sha256 = "e2ec49090744383cdbe7df808c1cedaafba06a97be8dc4211fe546ba585f12cb",
       extract = true,
       strip_prefix = "harfbuzz-%{version}",
     } | Source,
