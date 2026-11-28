@@ -6,14 +6,14 @@ let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let go = import "../go/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let version = "0.2.98" in
+let version = "0.2.99" in
 {
   name = "act",
   build_deps = [
     { file = "build.sh" } | Local,
     {
       url = "gs://minimal-staging-archives/nektos/act/v%{version}.tar.gz",
-      sha256 = "4e572417b47a2bed56663d5a06ce60f6aa90e1cb4f6e103b9cae0dee852a0ca5",
+      sha256 = "4dd92764a93c82e8a6a088424677b8eac4f77456e52d3de2b91bb9b21f43232c",
       extract = true,
       strip_prefix = "act-%{version}",
     } | Source,
