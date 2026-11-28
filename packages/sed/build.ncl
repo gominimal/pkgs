@@ -82,11 +82,10 @@ let version = "4.10" in
             } | Source,
         } target,
       ],
-      # TODO: runtime_deps in a cycle breaker are borked?
-      # runtime_deps = [
-      #   acl,
-      #   attr,
-      # ],
+      runtime_deps = [
+        acl,
+        attr,
+      ],
       outputs = {
         sed = { glob = "usr/bin/sed" } | OutputBin,
       },

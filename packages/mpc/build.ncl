@@ -95,6 +95,10 @@ let version = "1.4.1" in
             } | Source,
         } target,
       ],
+      runtime_deps = [
+        gmp,
+        mpfr,
+      ],
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,
       },

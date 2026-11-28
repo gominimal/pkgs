@@ -94,6 +94,9 @@ let version = "4.2.2" in
             } | Source,
         } target,
       ],
+      runtime_deps = [
+        gmp,
+      ],
       outputs = {
         usr = { glob = "usr/**/*" } | OutputLib,
       },

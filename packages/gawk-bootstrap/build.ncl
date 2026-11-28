@@ -5,6 +5,7 @@ let make = import "../make/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 
 let glibc = import "../glibc/build.ncl" in
+let gmp = import "../gmp/build.ncl" in
 let mpfr = import "../mpfr/build.ncl" in
 
 let version = "5.4.1" in
@@ -70,6 +71,10 @@ let version = "5.4.1" in
               extract = true,
             } | Source,
         } target,
+      ],
+      runtime_deps = [
+        gmp,
+        mpfr,
       ],
       outputs = {
         usr_bin = { glob = "usr/bin/**/*" } | OutputBin,

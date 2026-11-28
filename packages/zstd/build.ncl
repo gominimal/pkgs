@@ -89,6 +89,11 @@ let version = "1.5.7" in
             } | Source,
         } target,
       ],
+      runtime_deps = [
+        lz4,
+        xz,
+        zlib,
+      ],
       outputs = {
         zstd_bin = { glob = "usr/bin/zstd" } | OutputLib,
         zstdcat = { glob = "usr/bin/zstdcat" } | OutputLib,
