@@ -21,7 +21,7 @@ let gcc = import "../gcc/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let valgrind = import "../valgrind/build.ncl" in
 
-let version = "0.20.0" in
+let version = "0.20.1" in
 {
   name = "gungraun-runner",
   build_deps = [
@@ -30,7 +30,7 @@ let version = "0.20.0" in
       # The published crate, not the GitHub tag archive: only the .crate carries
       # the Cargo.lock it was released with. sha256 = the crates.io index checksum.
       url = "https://static.crates.io/crates/gungraun-runner/gungraun-runner-%{version}.crate",
-      sha256 = "1e1460377fe936c3efbe8e27c422b745fa54ebaea81ffe4a53a6f17c7a478683",
+      sha256 = "ddce5549f1001ba4682a8cb0ae27e49d61327c746db6934f3386a03154cd125f",
       # a .crate is a gzipped tar; build.sh unpacks it (Source extraction keys on the extension)
       extract = false,
     } | Source,
@@ -39,7 +39,7 @@ let version = "0.20.0" in
       # self-test benchmark (nothing from it is installed). Its published
       # Cargo.lock pins the self-test's dependency tree.
       url = "https://static.crates.io/crates/gungraun/gungraun-%{version}.crate",
-      sha256 = "c041375e48b8ef7cd2d0e70715598154af627c1a551e41c35fdb4a2b3910831a",
+      sha256 = "567eb0538f181f11abc51c5f57ade9e14cfbb1177443da39ac8eafb4e66e4cab",
       extract = false,
     } | Source,
     base,
