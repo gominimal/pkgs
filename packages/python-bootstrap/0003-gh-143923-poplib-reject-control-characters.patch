@@ -1,0 +1,76 @@
+From b234a2b67539f787e191d2ef19a7cbdce32874e7 Mon Sep 17 00:00:00 2001
+From: Seth Michael Larson <seth@python.org>
+Date: Tue, 20 Jan 2026 14:46:32 -0600
+Subject: [PATCH] gh-143923: Reject control characters in POP3 commands
+ (CVE-2025-15367)
+
+Backported from main commit b234a2b67539f787e191d2ef19a7cbdce32874e7
+(python/cpython, Seth Michael Larson, 2026-01-20; first shipped in
+3.15.0a6). It is a straight cherry-pick: it applies to the 3.14.8 tree
+without any changes.
+
+NO 3.14 backport exists: the 3.14 branch has no commit touching
+Lib/poplib.py after 2025-03-02, and 3.14.8's Misc/NEWS has no entry for
+gh-143923, so no released 3.14.x contains the fix.
+
+poplib.POP3 built each command line from caller-supplied text and sent it
+unchecked, so a CR or LF inside an argument (a username, say) injected extra
+POP3 commands. _putcmd now raises ValueError for any control character
+(0x00-0x1F, 0x7F).
+
+Upstream issue: https://github.com/python/cpython/issues/143923
+Advisory: CVE-2025-15367
+
+---
+ Lib/poplib.py                                             | 2 ++
+ Lib/test/test_poplib.py                                   | 8 ++++++++
+ .../2026-01-16-11-43-47.gh-issue-143923.DuytMe.rst        | 1 +
+ 3 files changed, 11 insertions(+)
+ create mode 100644 Misc/NEWS.d/next/Security/2026-01-16-11-43-47.gh-issue-143923.DuytMe.rst
+
+diff --git a/Lib/poplib.py b/Lib/poplib.py
+index 4469bff44b4c455..b97274c5c32ee63 100644
+--- a/Lib/poplib.py
++++ b/Lib/poplib.py
+@@ -122,6 +122,8 @@ def _putline(self, line):
+     def _putcmd(self, line):
+         if self._debugging: print('*cmd*', repr(line))
+         line = bytes(line, self.encoding)
++        if re.search(b'[\x00-\x1F\x7F]', line):
++            raise ValueError('Control characters not allowed in commands')
+         self._putline(line)
+ 
+ 
+diff --git a/Lib/test/test_poplib.py b/Lib/test/test_poplib.py
+index ef2da97f86734a2..18ca7cb556836e6 100644
+--- a/Lib/test/test_poplib.py
++++ b/Lib/test/test_poplib.py
+@@ -17,6 +17,7 @@
+ from test.support import threading_helper
+ from test.support import asynchat
+ from test.support import asyncore
++from test.support import control_characters_c0
+ 
+ 
+ test_support.requires_working_socket(module=True)
+@@ -395,6 +396,13 @@ def test_quit(self):
+         self.assertIsNone(self.client.sock)
+         self.assertIsNone(self.client.file)
+ 
++    def test_control_characters(self):
++        for c0 in control_characters_c0():
++            with self.assertRaises(ValueError):
++                self.client.user(f'user{c0}')
++            with self.assertRaises(ValueError):
++                self.client.pass_(f'{c0}pass')
++
+     @requires_ssl
+     def test_stls_capa(self):
+         capa = self.client.capa()
+diff --git a/Misc/NEWS.d/next/Security/2026-01-16-11-43-47.gh-issue-143923.DuytMe.rst b/Misc/NEWS.d/next/Security/2026-01-16-11-43-47.gh-issue-143923.DuytMe.rst
+new file mode 100644
+index 000000000000000..3cde4df3e0069f7
+--- /dev/null
++++ b/Misc/NEWS.d/next/Security/2026-01-16-11-43-47.gh-issue-143923.DuytMe.rst
+@@ -0,0 +1 @@
++Reject control characters in POP3 commands.

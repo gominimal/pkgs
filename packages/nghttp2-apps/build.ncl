@@ -6,7 +6,7 @@ let base = import "../base/build.ncl" in
 let c-ares = import "../c-ares/build.ncl" in
 let ca-certificates = import "../ca-certificates/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let libev = import "../libev/build.ncl" in
@@ -73,7 +73,7 @@ in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     c-ares,
     # nghttpx verifies a TLS backend against the system trust store unless given
     # --cacert or -k; declare the store it reads.

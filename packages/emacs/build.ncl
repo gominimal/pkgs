@@ -4,7 +4,7 @@ let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let bash = import "../bash/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gmp = import "../gmp/build.ncl" in
 let gnutls = import "../gnutls/build.ncl" in
@@ -44,7 +44,7 @@ let version = "31.1" in
     jansson,
     libxml2,
     ncurses,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-runtime ["libgcc"],
     tree-sitter,
     zlib,
   ],

@@ -10,7 +10,7 @@ let make = import "../make/build.ncl" in
 let openssl = import "../openssl/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let version = "0.20.1" in
 {
   name = "sccache",
@@ -38,7 +38,7 @@ let version = "0.20.1" in
   outputs = {
     sccache = { glob = "usr/bin/sccache" } | OutputBin,
   },
-  runtime_deps = [glibc, subsetOf gcc ["libgcc"], openssl],
+  runtime_deps = [glibc, subsetOf gcc-runtime ["libgcc"], openssl],
   attrs =
     {
       upstream_version = version,

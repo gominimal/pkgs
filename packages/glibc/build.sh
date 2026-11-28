@@ -19,6 +19,9 @@ export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 export ARFLAGS=Drc
 
+# glibc's configure and scripts/*.py run python3 from PATH: python-bootstrap's
+# (see build.ncl), which lives under its own prefix.
+export PATH="/usr/lib/python-bootstrap/bin:$PATH"
 ../configure --prefix=/usr                  \
             --disable-werror                \
             --disable-nscd                  \

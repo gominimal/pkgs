@@ -17,7 +17,7 @@ let apalache = import "../apalache/build.ncl" in
 let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let grep = import "../grep/build.ncl" in
 let node-lts = import "../node-lts/build.ncl" in
@@ -61,7 +61,7 @@ let apalache_version = apalache.attrs.upstream_version in
     subsetOf node-lts ["node"],
     # quint_evaluator (Rust)
     glibc,
-    subsetOf gcc ["libgcc"],
+    subsetOf gcc-runtime ["libgcc"],
   ],
   # npm ci fetches the locked tree; cargo fetches the evaluator's locked crates.
   needs =

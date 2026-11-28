@@ -1,5 +1,6 @@
-let { Attrs, BuildSpec, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let { target, .. } = import "config.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
@@ -50,6 +51,9 @@ let version = "21.0.2" in
     # $ORIGIN entries; arm64's use the toolchain glibc
     @ (if is_arm then [glibc, toolchain] else [glibc])
     @ [
+      # libsplashscreen calls pthread_exit; glibc dlopens libgcc_s.so.1 to
+      # unwind and aborts without it. A dlopen is not DT_NEEDED.
+      subsetOf gcc-runtime ["libgcc"],
       zlib,
       freetype,
       libpng,

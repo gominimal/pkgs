@@ -1,0 +1,45 @@
+name: gcc-runtime-guard
+
+# BLOCKING. Runtime deps take gcc's shared libraries from `gcc-runtime`, never
+# from gcc (gominimal/inbox#1261). A subset fetches the parent's WHOLE build
+# and pulls in its runtime_deps, so `subsetOf gcc ["libgcc"]` costs a session
+# the whole compiler plus gmp/mpc/mpfr/zstd. Rejects `subsetOf gcc` and a
+# whole `gcc` in any runtime_deps (toolchain is allowlisted). Rationale and
+# escape hatch live in .github/scripts/gcc_runtime_guard.py; the shape mirrors
+# node-runtime-guard.yml, but this guard reads the .ncl source directly, so it
+# needs no evaluator.
+#
+# An unreadable tree fails too (exit 2 = UNVERIFIED): a guard that cannot see
+# the catalog must not go green.
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "packages/**"
+      - ".github/scripts/gcc_runtime_guard.py"
+      - ".github/scripts/test_gcc_runtime_guard.py"
+      - ".github/workflows/gcc-runtime-guard.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gcc-runtime-guard-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      # Includes the negative controls: every rejected form must be caught.
+      - name: Guard unit tests
+        run: python3 -m unittest discover -s .github/scripts -p 'test_gcc_runtime_guard.py' -v
+
+      - name: gcc-runtime guard
+        run: python3 .github/scripts/gcc_runtime_guard.py .

@@ -11,7 +11,9 @@ let toolchain = import "../toolchain/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+let zstd = import "../zstd/build.ncl" in
 let version = "23.1.5" in
 
 # The default, UNPREFIXED LLVM (/usr/bin/clang, /usr/lib/libLLVM.so.23.1, ...). Consumers
@@ -42,7 +44,10 @@ let version = "23.1.5" in
     glibc,
     libffi,
     zlib,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    # libLLVM, lld and llvm-config NEED libzstd.so.1 (published llvm 23.1.5,
+    # readelf).
+    zstd,
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
   ],
 
   cmd = "./build.sh",

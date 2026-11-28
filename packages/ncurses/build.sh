@@ -13,12 +13,14 @@ export CFLAGS="$MARCH -O2 -pipe -gno-record-gcc-switches -ffile-prefix-map=$(pwd
 export LDFLAGS="-Wl,--build-id=none"
 export CXXFLAGS="${CFLAGS}"
 
+# --without-cxx-binding: libncurses++w needs gcc's libstdc++, which ncurses
+# cannot depend on (build.ncl). Nothing in pkgs links it.
 ./configure  --prefix=/usr          \
             --mandir=/usr/share/man \
             --with-shared           \
             --without-debug         \
             --without-normal        \
-            --with-cxx-shared       \
+            --without-cxx-binding   \
             --enable-pc-files       \
             --enable-symlinks       \
             --enable-mixed-case=no  \

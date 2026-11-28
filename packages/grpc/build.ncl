@@ -6,7 +6,7 @@ let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let binutils = import "../binutils/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 let make = import "../make/build.ncl" in
@@ -58,7 +58,7 @@ let python = import "../python/build.ncl" in
     glibc,
     # The system trust store grpc reads instead of its own roots.pem (build.sh).
     ca-certificates,
-    subsetOf gcc ["libgcc", "libstdcpp"],
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     abseil-cpp,
     c-ares,
     openssl,

@@ -1,4 +1,5 @@
-let { Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, Test, .. } = import "minimal.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let grep = import "../grep/build.ncl" in
@@ -13,6 +14,7 @@ let pcre2 = import "../pcre2/build.ncl" in
 let pkgconf = import "../pkgconf/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+let zstd = import "../zstd/build.ncl" in
 
 # MariaDB CLIENT only — the `mariadb` / `mysql` CLI and the client libraries.
 #
@@ -67,6 +69,9 @@ let version = "13.2.1" in
     # missing-runtime_deps checker rather than guessed at.
     pcre2,
     zlib,
+    # C++: NEEDs libstdc++ and libgcc_s.
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
+    zstd, # usr/lib/plugin/zstd.so NEEDs libzstd.so.1
   ],
 
   cmd = "./build.sh",

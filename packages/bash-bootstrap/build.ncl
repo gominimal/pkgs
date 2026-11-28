@@ -13,6 +13,13 @@ let gcc = import "../gcc/build.ncl" in
 let linux_headers = import "../linux_headers/build.ncl" in
 
 let version = "5.3" in
+# Shared with the breaker: under the registry spec (gominimal/arch#183, D-24)
+# a prebuilt keeps only the files its output globs name.
+let bash_outputs = {
+  bash = { glob = "usr/bin/bash" } | OutputBin,
+  sh = { glob = "usr/bin/sh" } | OutputBin,
+}
+in
 {
   name = "bash-bootstrap",
   build_deps = [
@@ -42,10 +49,7 @@ let version = "5.3" in
     include version,
   },
 
-  outputs = {
-    bash = { glob = "usr/bin/bash" } | OutputBin,
-    sh = { glob = "usr/bin/sh" } | OutputBin,
-  },
+  outputs = bash_outputs,
 
   attrs = {
     upstream_version = version,
@@ -81,6 +85,6 @@ let version = "5.3" in
       runtime_deps = [
         glibc,
       ],
-      outputs = {},
+      outputs = bash_outputs,
     } | BuildSpec,
 } | BuildSpec

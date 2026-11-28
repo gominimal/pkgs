@@ -1,4 +1,4 @@
-let { BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
+let { subsetOf, BuildSpec, Local, OutputBin, OutputData, Source, Test, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let bash-bootstrap = import "../bash-bootstrap/build.ncl" in
 let coreutils = import "../coreutils/build.ncl" in
@@ -9,6 +9,7 @@ let bison = import "../bison/build.ncl" in
 let flex = import "../flex/build.ncl" in
 let make = import "../make/build.ncl" in
 
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let ncurses = import "../ncurses/build.ncl" in
 let readline = import "../readline/build.ncl" in
@@ -31,6 +32,10 @@ let version = "46" in
     toolchain,
   ],
   runtime_deps = [
+    # ngspice (built --enable-openmp) NEEDs libgomp.so.1, libstdc++.so.6 and
+    # libgcc_s.so.1 on both arches (readelf, gcc-runtime output audit
+    # 2026-11-14).
+    subsetOf gcc-runtime ["libgcc", "libgomp", "libstdcpp"],
     glibc,
     ncurses,
     readline,

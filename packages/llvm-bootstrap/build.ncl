@@ -1,12 +1,13 @@
 let { subsetOf, BuildSpec, Local, OutputBin, OutputData, OutputLib, Source, .. } = import "minimal.ncl" in
 let base = import "../base/build.ncl" in
 let cmake = import "../cmake/build.ncl" in
-let gcc = import "../gcc/build.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let ninja = import "../ninja/build.ncl" in
 let python = import "../python/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 let zlib = import "../zlib/build.ncl" in
+let zstd = import "../zstd/build.ncl" in
 let version = "21.1.8" in
 
 {
@@ -45,8 +46,11 @@ let version = "21.1.8" in
   ],
   runtime_deps = [
     glibc,
-    subsetOf gcc ["libgcc"],
+    # clang-21 NEEDs libstdc++.so.6 and libgcc_s.so.1 on both arches
+    # (readelf, gcc-runtime output audit 2026-11-14).
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
     zlib,
+    zstd, # clang-21 and its tools NEED libzstd.so.1
   ],
 
   cmd = "./build.sh",

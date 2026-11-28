@@ -1,4 +1,5 @@
-let { standaloneTest, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let { standaloneTest, subsetOf, Attrs, BuildSpec, Local, OutputBin, OutputData, Source, .. } = import "minimal.ncl" in
+let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let base = import "../base/build.ncl" in
 let make = import "../make/build.ncl" in
 let patch = import "../patch/build.ncl" in
@@ -21,7 +22,11 @@ let version = "1.4.8" in
     patch,
     toolchain,
   ],
-  runtime_deps = [ncurses],
+  runtime_deps = [
+    ncurses,
+    # C++: NEEDs libstdc++ and libgcc_s.
+    subsetOf gcc-runtime ["libgcc", "libstdcpp"],
+  ],
   cmd = "./build.sh",
   outputs = {
     btop = { glob = "usr/bin/btop" } | OutputBin,
