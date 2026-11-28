@@ -1,0 +1,78 @@
+From f3acb0a3328046741479482c51cec815839e1b05 Mon Sep 17 00:00:00 2001
+From: 007bsd <007bsd@proton.me>
+Date: Fri, 13 Nov 2026 13:15:40 +0200
+Subject: [PATCH] QUIC: garbage collect deleted streams whose receive part is
+ terminal
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+A deleted stream with a receive part was only garbage collected once
+its STOP_SENDING frame had been acknowledged: qsm_ready_for_gc() had
+recv_stream_fully_drained hard-coded to 0.  STOP_SENDING is not sent
+for a receive part that is already in a terminal state (all data
+received, or RESET_STREAM received), so such a stream stayed in the
+stream map for the life of the connection.
+
+A stream rejected by the incoming stream policy returns its stream
+credit when it is rejected.  A peer can open a stream with a
+RESET_STREAM frame: the stream is created, rejected and reset by the
+same frame, which cancels STOP_SENDING.  The stream is never collected
+while its credit has been returned, so the peer can repeat this
+without limit and grow the server's memory.
+
+Treat the terminal receive states (DATA_RECVD, DATA_READ, RESET_RECVD
+and RESET_READ) as fully drained.  Frames arriving later for a
+collected peer-initiated stream are ignored by
+depack_do_implicit_stream_create(), as for streams collected after
+STOP_SENDING was acknowledged.
+
+Fixes: CVE-2026-124709
+Fixes: 4f5b40c8fb1 "quic: collect rejected incoming streams and return their stream credit"
+
+Assisted-by: Claude:claude-opus-5-5
+Reviewed-by: Tomas Mraz <tomas@openssl.foundation>
+Reviewed-by: Saša Nedvědický <sashan@openssl.org>
+Merge-date: Mon Nov 16 13:10:34 2026
+Merged-from: https://github.com/openssl/openssl/pull/33718
+(cherry picked from commit b4ed1a8163d11f997b5ec9dce7639da3979d31a2)
+---
+ ssl/quic/quic_stream_map.c | 23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/ssl/quic/quic_stream_map.c b/ssl/quic/quic_stream_map.c
+index 761b577d261c2..c02b2d25d17c4 100644
+--- a/ssl/quic/quic_stream_map.c
++++ b/ssl/quic/quic_stream_map.c
+@@ -292,9 +292,30 @@ static ossl_unused int qsm_send_part_permits_gc(const QUIC_STREAM *qs)
+     }
+ }
+ 
++static int qsm_recv_part_is_terminal(const QUIC_STREAM *qs)
++{
++    switch (qs->recv_state) {
++    case QUIC_RSTREAM_STATE_DATA_RECVD:
++    case QUIC_RSTREAM_STATE_DATA_READ:
++    case QUIC_RSTREAM_STATE_RESET_RECVD:
++    case QUIC_RSTREAM_STATE_RESET_READ:
++        return 1;
++    default:
++        return 0;
++    }
++}
++
+ static int qsm_ready_for_gc(QUIC_STREAM_MAP *qsm, QUIC_STREAM *qs)
+ {
+-    int recv_stream_fully_drained = 0; /* TODO(QUIC FUTURE): Optimisation */
++    /*
++     * Once the receive part has reached a terminal state (all data received
++     * or the peer reset the stream) there is nothing more the peer can send
++     * which we need to track, so we do not need to wait for STOP_SENDING to
++     * be acknowledged. Note that STOP_SENDING may never be sent at all in
++     * this case (e.g. if the peer's RESET_STREAM arrives first), so waiting
++     * for it would leak the stream for the lifetime of the connection.
++     */
++    int recv_stream_fully_drained = qsm_recv_part_is_terminal(qs);
+ 
+     /*
+      * If sstream has no FIN, we auto-reset it at marked-for-deletion time, so

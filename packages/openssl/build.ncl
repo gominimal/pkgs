@@ -3,6 +3,7 @@ let gcc-runtime = import "../gcc-runtime/build.ncl" in
 let base-bootstrap = import "../base-bootstrap/build.ncl" in
 let perl = import "../perl/build.ncl" in
 let make = import "../make/build.ncl" in
+let patch = import "../patch/build.ncl" in
 let toolchain = import "../toolchain/build.ncl" in
 let glibc = import "../glibc/build.ncl" in
 
@@ -11,6 +12,16 @@ let version = "4.1.0" in
   name = "openssl",
   build_deps = [
     { file = "build.sh" } | Local,
+    # OpenSSL's November 2026 security fixes, upstream's commits as patches until 4.1.1
+    # is released. See build.sh; drop with them when version >= 4.1.1.
+    { file = "cve-2026-88823.patch" } | Local,
+    { file = "cve-2026-107496.patch" } | Local,
+    { file = "cve-2026-88822.patch" } | Local,
+    { file = "cve-2026-95692.patch" } | Local,
+    { file = "cve-2026-95691.patch" } | Local,
+    { file = "cve-2026-107493.patch" } | Local,
+    { file = "cve-2026-35190.patch" } | Local,
+    { file = "cve-2026-124709.patch" } | Local,
     {
       url = "gs://minimal-staging-archives/openssl/openssl/openssl-%{version}.tar.gz",
       # = openssl-4.1.0.tar.gz.sha256 on the GitHub release (release tarball, top dir openssl-4.1.0/).
@@ -21,6 +32,7 @@ let version = "4.1.0" in
     base-bootstrap,
     perl,
     make,
+    patch,
     toolchain,
   ],
   runtime_deps = [
